@@ -1,0 +1,332 @@
+---
+name: strategic-reframing
+description: >-
+  Triggered when the user asks to challenge a conservative design, think bigger,
+  define a greenfield target, escape incrementalism, reconsider legacy constraints,
+  or establish the big-picture direction. Also invoke during product, architecture,
+  or planning discussions when compatibility fear, refactor cost, local details, or
+  the current implementation are prematurely deciding the target model. Produces a
+  testable strategic direction judgment: sharp thesis, constraint diagnosis, clean
+  target, kill list, Conservative-vs-Clean-vs-Staged options, proof point,
+  falsifier, and concrete payoff ledger.
+---
+
+# Strategic Reframing
+
+## Purpose
+
+Open the decision frame before implementation gravity closes it. Choose the right decision horizon, system boundary, and target model—not the largest project or boldest-sounding rewrite.
+
+Strategic altitude means big-picture judgment plus conceptual compression. Prefer fewer concepts, clearer ownership, longer-lived boundaries, and higher leverage. A larger diff alone is not a better strategy.
+
+## Doctrine
+
+<system_directives>
+  <principles>
+    <rule>Bold hypothesis, careful verification: open the frame, make the call, then make it falsifiable before execution commitment.</rule>
+    <rule>Treat the thesis as a high-leverage hypothesis, never an oracle.</rule>
+    <rule>Separate the right target from the path used to reach it.</rule>
+    <rule>Price compatibility, migration, and refactor cost; do not let them silently choose the target.</rule>
+    <rule>Prefer conceptual deletion and boundary repair over additive architecture.</rule>
+    <rule>Calibrate confidence from evidence, not rhetorical conviction.</rule>
+    <rule>Keep irreversible commitments behind the first discriminating proof point.</rule>
+  </principles>
+</system_directives>
+
+## Trigger Gate
+
+Invoke on explicit cues, including:
+
+- “Think bigger,” “raise the altitude,” “step back,” or “give me the big-picture call.”
+- “Too incremental,” “too safe,” “too conservative,” or “stop optimizing locally.”
+- “Greenfield this,” “ignore the legacy for a moment,” or “what would we build today?”
+- “Do not let compatibility or refactor difficulty dictate the direction.”
+
+Invoke proactively only when at least one symptom exists:
+
+- A local patch is chosen before the target model is stated.
+- Compatibility is preserved without a named contract or stakeholder.
+- The current package, document, process, or partial implementation is treated as immutable.
+- Migration size is used to reject a direction before its value is assessed.
+- Many small concepts obscure one lifecycle, owner, or product promise.
+- Proposed options differ in mechanics but preserve the same questionable frame.
+
+Do not invoke merely because a proposal is small. Small can be correct when the boundary, target, and evidence support it.
+
+## Required Inputs
+
+Derive from supplied material before asking questions:
+
+- Decision to make.
+- Outcome and useful time horizon.
+- Current proposal or inherited model.
+- Known contracts and stakeholders.
+- Claimed constraints and supporting evidence.
+
+If a repository or document set is available:
+
+1. Search for public contracts, persisted schemas, integrations, callers, tests, migration code, and ownership boundaries.
+2. Read representative definitions and call sites; avoid exhaustive archaeology before forming the thesis.
+3. Inspect version history only when intent or compatibility status could change the decision.
+4. Label every unsupported claim as an assumption.
+
+If the outcome, horizon, boundary, or owner is missing, ask only when the answer could change the target model. Otherwise, state the assumption and lower confidence.
+
+## Constraint Classification
+
+Classify each inherited constraint before using it:
+
+| Class | Evidence | Treatment |
+| --- | --- | --- |
+| Contract | Public API, persisted data, documented integration, user promise, compliance rule, deployment limit, explicit instruction | Preserve, migrate deliberately, or renegotiate openly |
+| Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; do not mislabel as target architecture |
+| Migration cost | Internal callers, relearning, diff size, temporary dual operation | Estimate and stage if justified; never call it compatibility by default |
+| Inertia | Stale name, old package layout, partial implementation, document shape, “already built” | Remove from target reasoning |
+| Unknown | Asserted constraint without inspectable evidence | Name the assumption; seek the cheapest deciding evidence |
+
+Internal usage can create real work. It does not automatically create a contract.
+
+## Frame-Opening Moves
+
+Select the smallest set that exposes the hidden decision. Use at least one; name it in the output.
+
+| Move | Question | Guardrail |
+| --- | --- | --- |
+| End-state backcasting | If this were excellent at the chosen horizon, what would be true? | Backcast to the present; do not write fantasy architecture |
+| Zero-legacy thought experiment | With no old callers or names, what model would we choose? | Restore only constraints proven real |
+| Kill the wrong concept | Which object, phase, section, or service encodes the wrong model? | Delete the concept, not merely its label |
+| Ten-times stress | Which plausible 10x axis makes the model fail first? | Choose one relevant axis; never scale everything hypothetically |
+| Constraint inversion | If this constraint vanished, what would change? | Decide whether removal cost is worth paying |
+| Non-negotiable principles | Which two to four rules must the target never violate? | Use principles to decide, not decorate |
+| Boundary reset | Is responsibility split at the wrong system, lifecycle, or ownership boundary? | Move boundaries only when ownership becomes clearer |
+| Tasteful deletion | What can stop existing without reducing the intended outcome? | Name the lost behavior and affected stakeholder |
+
+## Workflow
+
+### 1. Reframe the decision
+
+State the real choice at the highest useful level. Define outcome, horizon, system boundary, and decision owner. Reject vague goals such as “cleaner” or “more scalable.”
+
+If missing context could change the target, ask a focused question. If it cannot, continue with an explicit assumption.
+
+### 2. Establish the evidence baseline
+
+Separate observed facts, explicit instructions, and assumptions. Record missing evidence only when it can change the decision.
+
+### 3. Diagnose the inherited frame
+
+Name the constraint currently controlling the proposal. Classify it using the constraint table. State who or what requires it. If no evidence names a contract, stop granting it contract status.
+
+### 4. Open the frame
+
+Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle. Avoid performative bigness: the result should simplify the model or increase durable leverage.
+
+### 5. Form the clean target
+
+Describe the end-state independently of migration:
+
+- Core model and system boundary.
+- Lifecycle owner and source of truth.
+- Two to four non-negotiable principles.
+- What survives.
+- Kill list: what to delete, merge, split, rename, reframe, or rebuild.
+
+Every kill-list item must identify the wrong assumption or duplicate responsibility it removes.
+
+### 6. Name what not to do
+
+Identify safe-looking actions that block the target:
+
+- Local optimizations that fix symptoms while preserving the wrong boundary.
+- Permanent shims or dual models without a named contract and retirement condition.
+- Detail work that does not reduce uncertainty or advance the target.
+
+Tie each warning to the target or kill-list item it would contradict.
+
+### 7. Compare three paths
+
+Use the canonical options:
+
+- **Conservative path**: preserve the inherited model; minimize immediate disruption.
+- **Clean target**: move directly to the preferred end-state.
+- **Staged clean path**: preserve the same clean target; sequence reversible steps and retire temporary bridges explicitly.
+
+Compare target integrity, immediate price, permanent complexity, contract risk, and time to evidence. Recommend one. Do not make Staged the automatic compromise. If a path is incoherent, mark it non-viable instead of inventing balance.
+
+### 8. Make the call
+
+Lead with a one-to-three-sentence thesis. State material tradeoffs without weakening the recommendation. Assign confidence:
+
+- **High**: decisive contracts and representative evidence inspected; no major unresolved assumption.
+- **Medium**: direction supported; one or more material assumptions remain testable.
+- **Low**: thesis mainly opens the frame; decisive evidence is absent or contradictory.
+
+### 9. Design the verification path
+
+Specify:
+
+- First proof point: cheapest artifact or observation that distinguishes this thesis from alternatives.
+- Expected signal: observable result supporting the thesis.
+- Falsifier: evidence that forces rejection or material revision.
+- Deferred commitment: irreversible choice not to make before the signal arrives.
+
+A proof point that only shows code can be written is insufficient. It must test the target model, contract assumption, boundary, or payoff.
+
+### 10. Close the payoff ledger
+
+For each major bold take or kill-list item, record:
+
+- Price paid now.
+- Specific pain removed or capability unlocked.
+- Moment or signal when payoff appears.
+- Stakeholder receiving the payoff.
+
+Include only rows that justify the direction to someone paying for it. Reject rows based solely on “cleaner,” “simpler,” “more maintainable,” or similar generic claims.
+
+## Output Contract
+
+Produce one strategic direction judgment in the user's language, using the template in this file.
+
+Required order:
+
+1. **Thesis**.
+2. **Confidence**.
+3. **The Trap**.
+4. **Target Direction**.
+5. **Frame-Opening Move**.
+6. **Bold Takes / Kill List**.
+7. **Options**.
+8. **What Not To Do**.
+9. **First Proof Point**.
+10. **Falsifier**.
+11. **Payoff Ledger**.
+
+Output rules:
+
+- Lead with the call, not methodology or caveats.
+- Keep target model separate from migration path.
+- Give every compatibility mechanism a named contract, owner, and retirement condition.
+- Use code-level detail only when it changes the direction or verifies a claim.
+- Tie every ledger row to a bold take or kill-list item.
+- End with the ledger; omit a second summary.
+
+## Handoff Boundaries
+
+Use another procedure when the primary decision is:
+
+- Whether the idea deserves investment at all: do, kill, or defer.
+- Detailed module boundaries, abstraction depth, or implementation-quality review.
+- Execution planning after the target is accepted: migration sequencing, rollout, observability, and rollback.
+- Writing the final product requirements document rather than challenging its frame.
+
+After the target is accepted, route it to an available feasibility or landing procedure. If none exists, state the unresolved landing questions without pretending this skill answered them.
+
+## Gotchas
+
+- Bigger rewrite mistaken for better strategy. Optimize the model, not diff size.
+- Compatibility dismissed because it is inconvenient. Named public and data contracts remain real.
+- Internal migration cost mislabeled as a permanent contract.
+- Clean target contaminated with temporary bridge design.
+- Staged path allowed to ossify. Every bridge needs an owner, removal trigger, and deadline or measurable gate.
+- Bold take unsupported by a falsifier. Provocation without testability is theater.
+- Proof point tests implementation effort, not the direction.
+- Three option rows padded with fake distinctions.
+- Kill list names removals but not the bad assumption removed.
+- Payoff ledger sells generic cleanliness instead of concrete outcomes.
+
+## Validation
+
+<validation_checklist>
+  <directive>Silently verify before output.</directive>
+  <item>Trigger gate satisfied; the skill was not invoked merely to make a small task larger.</item>
+  <item>Decision, outcome, horizon, and boundary stated.</item>
+  <item>Facts, instructions, and assumptions separated.</item>
+  <item>Each inherited constraint classified and evidenced.</item>
+  <item>At least one frame-opening move applied and named.</item>
+  <item>Clean target simplifies concepts or increases durable leverage.</item>
+  <item>Target design and migration path remain separate.</item>
+  <item>Kill list explains the wrong model each removal eliminates.</item>
+  <item>Warnings identify actions that would preserve the wrong model.</item>
+  <item>All three canonical paths compared or explicitly marked non-viable.</item>
+  <item>Recommendation and confidence are explicit.</item>
+  <item>Proof point distinguishes the thesis from alternatives.</item>
+  <item>Falsifier could genuinely overturn the thesis.</item>
+  <item>Every payoff row names price, specific payoff, visibility signal, and beneficiary.</item>
+  <item>No generic benefit, default shim, fake certainty, or performative bigness remains.</item>
+</validation_checklist>
+
+## Output Template
+
+Replace every `{{...}}` field. Remove all instructional placeholders before output. Preserve the section order and table structure.
+
+<output_template>
+# Strategic Direction: {{topic}}
+
+## Thesis
+
+{{Sharp, high-leverage hypothesis in one to three sentences. State the target and decisive tradeoff without claiming certainty.}}
+
+## Confidence
+
+- **Level**: {{high / medium / low}}
+- **Evidence basis**: {{decisive evidence already inspected}}
+- **Why not certain**: {{material missing evidence or assumption; write “none material” only when justified}}
+
+## The Trap
+
+- **Inherited constraint**: {{compatibility / delivery limit / migration cost / inertia / unknown}}
+- **Classification**: {{contract / delivery constraint / migration cost / inertia / unknown}}
+- **Who or what requires it**: {{named stakeholder, contract, artifact, or “not evidenced”}}
+- **Judgment**: {{preserve / migrate / renegotiate / discard / verify}}
+
+## Target Direction
+
+- **Target model**: {{clean end-state independent of migration}}
+- **System boundary**: {{where responsibility begins and ends}}
+- **Lifecycle owner / source of truth**: {{one accountable owner or canonical artifact}}
+- **Non-negotiable principles**:
+  - {{principle one}}
+  - {{principle two}}
+- **What survives**: {{valuable contract, capability, or concept retained}}
+
+## Frame-Opening Move
+
+- **Move used**: {{end-state backcasting / zero-legacy thought experiment / kill the wrong concept / ten-times stress / constraint inversion / non-negotiable principles / boundary reset / tasteful deletion}}
+- **What it reveals**: {{new option, boundary, deletion, or principle hidden by the inherited frame}}
+
+## Bold Takes / Kill List
+
+| Action | Target | Wrong model removed | Material tradeoff |
+| --- | --- | --- | --- |
+| {{delete / merge / split / rename / reframe / rebuild}} | {{specific concept, flow, phase, section, or abstraction}} | {{bad assumption or duplicate responsibility}} | {{real cost or capability lost}} |
+
+## Options
+
+| Option | Target integrity | Price now | Permanent complexity | Contract risk | Time to evidence | Verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| Conservative path | {{what remains compromised or protected}} | {{immediate cost}} | {{debt retained}} | {{named risk}} | {{duration or milestone}} | {{reject / use only if... / recommend}} |
+| Clean target | {{degree of end-state fidelity}} | {{migration, disruption, or relearning}} | {{residual complexity}} | {{named risk}} | {{duration or milestone}} | {{reject / recommend}} |
+| Staged clean path | {{same target, sequence only}} | {{sequencing and temporary bridge cost}} | {{retirement-dependent debt}} | {{named risk}} | {{first deciding milestone}} | {{fallback / recommend / non-viable}} |
+
+## What Not To Do
+
+- {{Local optimization, permanent shim, partial patch, or detail trap to avoid.}}
+- {{Safe-looking action that preserves the wrong model.}}
+
+## First Proof Point
+
+- **Artifact or observation**: {{smallest discriminating test, trace, contract map, prototype, migration sample, interview, or decision record}}
+- **Expected signal**: {{observable result supporting the thesis}}
+- **Decision unlocked**: {{choice the signal permits}}
+- **Deferred commitment**: {{irreversible choice withheld until evidence arrives}}
+
+## Falsifier
+
+{{Specific evidence that would reject or materially revise the thesis, plus the alternative it would favor.}}
+
+## Payoff Ledger
+
+| Move | Price paid now | Specific pain removed or capability unlocked | Beneficiary | When payoff becomes visible |
+| --- | --- | --- | --- | --- |
+| {{bold take or kill-list action}} | {{migration, disruption, relearning, or opportunity cost}} | {{concrete pain or unlock; no generic quality adjective}} | {{user, operator, team, business, or system owner}} | {{observable event, threshold, or milestone}} |
+</output_template>

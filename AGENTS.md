@@ -23,6 +23,9 @@ Current skills:
 * `git-commits/` — Conventional Commits standard for commit messages.
 * `authoring-skills/` — how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
+* `caveman-protocol/` — token-economical output formatting for coding workflows.
+* `strategic-reframing/` — bold, testable target-direction judgments that challenge
+  incremental or legacy-bound framing.
 
 ## Authoring and editing skills
 
