@@ -1,38 +1,43 @@
-# JavaScript Runtime Profile
+# JavaScript ES6+ Cost Model
 
 ## Disclosed Constraints
 
-- **No portable tail-call optimization.** Do not express unbounded traversals
-  as recursive calls.
-- **Object-shape sensitivity.** Deep wrapper objects and inconsistent property
-  layouts can obstruct JIT optimization and increase allocation pressure.
-- **Intermediate arrays and closures.** Native array methods are idiomatic, but
-  a chain can allocate arrays and callback closures that matter on hot paths.
-- **Dynamic semantics.** A refactor can change `this`, sparse-array behavior,
-  mutation visibility, microtask order, and thrown-error timing.
+- Assume broad ES6 availability. Do not rely on portable tail-call optimization.
+- JIT engines favor stable, flat object shapes and native arrays. Deep immutable
+  wrappers and inconsistent property layouts can inhibit optimization and make
+  debugging opaque.
+- `filter().map()` creates an intermediate array; callbacks and captured
+  closures may allocate. This matters only when scale or measurement makes it
+  material.
+- Refactors can change `this`, sparse-array behavior, identity, thrown-error
+  timing, and promise/microtask order.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Use native `Array` and iterator APIs with named predicates/projectors for
-  ordinary collection code.
-- Return flat, consistently shaped objects; avoid bespoke `Pipe`, `Map`, and
-  wrapper-object frameworks in performance-sensitive paths.
-- Use `const`, pure helpers, and immutable replacement values where callers do
-  not rely on identity or mutation.
-- Use discriminated object fields and explicit result values when they clarify
-  a state machine, without introducing a runtime abstraction library.
+- Use native array and iterator primitives with curried predicates/projectors.
+- Use `const`, replacement values, flat stable objects, and discriminant fields.
+- Use promises and `async`/`await` as native effect sequencing. Preserve
+  concurrency intentionally: sequential `await`, `Promise.all`, and
+  `Promise.allSettled` are different algebras.
+- Prefer `some`/`every`/`find` and native aggregation where available; otherwise
+  use `reduce` with a named accumulator law.
+- Prefer plain tagged result objects already used by the project over custom
+  `Pipe`, `Map`, `Option`, or immutable-wrapper frameworks.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. Replace recursive collection traversal with iteration.
-2. If native `filter` then `map` creates unacceptable intermediate arrays, use
-   one native reducer or an explicit single-pass loop with a pure projection.
-3. If a closure, wrapper object, or changed object shape is on a measured hot
-   path, use a flat native representation or a direct loop.
-4. Preserve eager mutation and callback timing when callers or event handlers
-   can observe it; do not make a synchronous path lazy by accident.
+1. Replace recursive collection traversal with native iteration.
+2. Use native `filter().map()` for ordinary code. If the intermediate array is
+   measured as material, descend to one `reduce` or a direct loop with pure
+   helpers.
+3. Keep output object fields present and consistently ordered where the hot path
+   depends on stable shapes.
+4. If currying creates opaque closure towers or material allocation, use named
+   unary/binary helpers.
+5. Preserve synchronous versus deferred effects and exact promise concurrency.
 
 ## Validation Focus
 
-Test empty and sparse arrays, object identity, error timing, asynchronous
-ordering, and performance with representative input sizes when the path is hot.
+Test empty and sparse arrays, object identity, mutation visibility, exception
+timing, promise ordering, and representative hot-path sizes. Do not claim V8 or
+SpiderMonkey optimization without measurement or engine evidence.

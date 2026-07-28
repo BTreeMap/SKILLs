@@ -1,41 +1,42 @@
-# C# Runtime Profile
+# C# Cost Model
 
 ## Disclosed Constraints
 
-- **LINQ execution varies.** Some operators stream, others buffer; multiple
-  enumeration can repeat work and side effects.
-- **Delegates and captures allocate.** Closures, iterator state machines, and
-  interface-based enumeration can matter in measured hot paths.
-- **Records and pattern matching clarify domains.** They do not replace runtime
-  validation, and reference-containing records are not deeply immutable.
-- **Async behavior is observable.** Refactors must preserve cancellation,
-  context, exception, and disposal behavior.
+- LINQ operators differ: some stream, some buffer, and repeated enumeration can
+  repeat work, effects, or I/O.
+- Delegates, captures, iterator state machines, boxing, and interface-based
+  enumeration can allocate on measured hot paths.
+- Records and pattern matching improve domain modeling, but records containing
+  references are not deeply immutable and external values still need validation.
+- Tasks, async streams, cancellation tokens, synchronization context, exceptions,
+  and disposal have observable sequencing and lifetime semantics.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Use records, discriminated unions where available in local conventions, and
-  exhaustive pattern matching to model closed domain states.
-- Use LINQ for ordinary, readable collection code. Materialize once only when a
-  collection is required or multiple traversals are intentional.
-- Use pure static helpers to avoid unnecessary capture in performance-sensitive
-  code.
-- Keep `IDisposable`, `IAsyncDisposable`, `IEnumerable`, and
-  `IAsyncEnumerable` lifetimes explicit at resource boundaries.
+- Use LINQ heavily for ordinary collection transformations: `Where`, `Select`,
+  `SelectMany`, `Aggregate`, `Any`, `All`, and native numeric aggregation.
+- Use records, readonly values, closed project-standard union representations,
+  and exhaustive pattern matching for valid-state modeling.
+- Use nullable/reference option conventions and result types already established
+  by the repository; avoid a parallel monad hierarchy.
+- Use `Task`, `ValueTask` only when justified, `IAsyncEnumerable`, and
+  `await using` while preserving cancellation and disposal.
+- Prefer static lambdas or pure static helpers when captures are unnecessary.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. If an enumerable pipeline performs repeated traversal or unexpected
-   buffering, materialize once deliberately or use a single explicit loop.
-2. If delegate or iterator allocations are measured as material, use static
-   helpers, spans, or a direct loop consistent with the project's target
-   framework.
-3. If a refactor changes deferred evaluation, preserve the original exception
-   and disposal timing instead.
-4. If a functional wrapper duplicates a native result or option convention,
-   use the established native/project representation.
+1. Identify streaming, buffering, materialization, and enumeration count for each
+   LINQ pipeline.
+2. Materialize once only when reuse or the API contract requires a collection.
+3. If measured delegate/iterator/boxing cost is material, use static helpers,
+   spans where semantically valid, or one direct loop.
+4. Never replace explicit resource scope with a deferred enumerable that can
+   outlive its resource.
+5. Preserve cancellation propagation, exception timing, context behavior, and
+   async concurrency.
 
 ## Validation Focus
 
-Run the repository's formatter, build, analyzer, and focused tests. Test
-multiple enumeration, cancellation, disposal, exception timing, and nullability
-boundaries when those behaviors apply.
+Run formatting, build, analyzers, and focused tests. Test multiple enumeration,
+nullability boundaries, cancellation, disposal, exception timing, and async
+stream termination. Benchmark before replacing readable LINQ in a hot path.

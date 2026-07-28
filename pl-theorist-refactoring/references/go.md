@@ -1,39 +1,40 @@
-# Go Runtime Profile
+# Go Cost Model
 
 ## Disclosed Constraints
 
-- **No tail-call optimization.** Do not use recursion for unbounded collection
-  processing.
-- **Escape and allocation risk.** Closures and interface-based higher-order
-  abstractions can escape to the heap; confirm costs in a hot path instead of
-  assuming they are free.
-- **Idiomatic directness.** Explicit loops, simple structs, and error returns
-  are usually clearer and more predictable than a generic FP framework.
-- **Functional options are configuration, not purity.** Applying an option
-  normally mutates a local configuration value; preserve that semantics.
+- No TCO. Collection-sized recursion risks stack growth.
+- Higher-order callbacks, closures, interface values, and generic abstraction can
+  escape or allocate; Go optimizes many direct loops more predictably.
+- The language and ecosystem favor explicit control flow, simple structs, and
+  visible error handling over generalized FP machinery.
+- Functional options mutate a fresh configuration object; they are a controlled
+  construction pattern, not mathematical purity.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Keep collection transforms as direct loops with pure helper functions when
-  higher-order callbacks do not improve clarity or allocation behavior.
-- Use value structs, explicit error returns, and small transition functions to
-  keep state changes visible.
-- Use functional options for optional construction-time configuration when that
-  is already an idiomatic fit; validate options before exposing the result.
-- Preallocate result slices when a reliable capacity is known.
+- Keep a pure conceptual pipeline, but compile ordinary collection transforms to
+  direct loops with named pure predicate/projector helpers.
+- Use explicit `(value, error)` results, concrete value structs, and small total
+  transition functions.
+- Use functional options for optional construction-time configuration when the
+  repository already favors the pattern. Validate before publication.
+- Preallocate result slices when a sound upper bound or exact capacity is known.
+- Use standard-library helpers when present; otherwise use a direct fold loop
+  rather than constructing a generic HOF framework.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. Replace recursion with an iterative loop.
-2. If callbacks or closures escape on a measured hot path, use a direct loop
-   and named functions.
-3. If generic containers or interface values add allocations or obscure types,
-   use a concrete slice, map, or struct.
-4. If mutation must occur, confine it to a new local result and return only the
-   completed value or a documented partial result with its error.
+1. Replace recursion with iteration.
+2. If a closure or interface abstraction escapes on a relevant path, use a named
+   function and concrete types.
+3. If a `map`/`filter` helper obscures allocation or control flow, retain the
+   algebra in pure helpers and use one explicit loop.
+4. Confine unavoidable mutation to a fresh local value; publish only a completed
+   valid result.
+5. Preserve explicit error timing and partial-result contracts.
 
 ## Validation Focus
 
-Run formatting, package tests, and static analysis when configured. Use the Go
-benchmark and escape-analysis tooling already available in the repository for
-hot paths; otherwise report allocation risk as unmeasured.
+Run formatting, package tests, and static analysis when configured. Use existing
+benchmarks and escape analysis for hot paths; otherwise report closure/allocation
+risk as unmeasured.

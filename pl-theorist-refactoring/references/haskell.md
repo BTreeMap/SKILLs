@@ -1,41 +1,43 @@
-# Haskell Runtime Profile
+# Haskell Cost Model
 
 ## Disclosed Constraints
 
-- **Laziness can retain memory.** A seemingly elegant composition may build
-  thunks or retain an input spine, causing a space leak.
-- **Strictness is a cost decision.** Accumulation often needs a strict fold or
-  strict data field; forcing evaluation too early can change productivity.
-- **Fusion is not a guarantee.** List and stream fusion depend on the exact
-  operations, optimization settings, and types in use.
-- **Effects remain ordered.** `IO`, resource management, exceptions, and
-  concurrency must preserve their existing operational contract.
+- Laziness supports composition and streaming but can retain input or build
+  thunks, producing space leaks.
+- Strictness is semantic and operational. Forcing too little harms accumulation;
+  forcing too much can destroy productivity or infinite-stream behavior.
+- List/stream fusion depends on exact producers, consumers, rewrite rules, and
+  optimization settings; it is not guaranteed by point-free syntax.
+- Monad transformer stacks and generalized effects can improve composition while
+  worsening inference, errors, allocation, and operational visibility.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Use algebraic data types, total pattern matching, and pure functions by
-  default.
-- Use `foldl'`, strict accumulators, strict fields, or an appropriate streaming
-  library when accumulation would otherwise retain thunks.
-- Prefer existing project abstractions for effects and streams; do not replace
-  a simple function with a new transformer stack merely to appear abstract.
-- Keep partial functions out of exported paths unless the contract proves their
-  precondition.
+- Use algebraic data types, total pattern matching, pure functions, currying, and
+  point-free composition by default.
+- Use `Maybe`, `Either`, `IO`, established project effects, applicative traversal,
+  and monadic bind according to dependency structure.
+- Prefer `foldMap` when a monoid states the aggregation, `traverse` when effects
+  preserve shape, and `foldl'` for strict left accumulation.
+- Keep exported paths free of partial functions unless the type or constructor
+  proves their preconditions.
+- Use the project's existing streaming and effect abstractions rather than adding
+  a competing transformer stack.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. If a lazy traversal risks retaining input or building thunks, introduce the
-   narrowest necessary strictness or a streaming fold.
-2. If a point-free expression hides evaluation order or resource lifetime, use
-   named arguments and an explicit binding.
-3. If a nested abstraction stack obscures inferred types or profiling, simplify
-   to the existing base abstraction or a direct recursive worker with a strict
-   accumulator.
-4. If the path is performance-sensitive, require profiling evidence before
-   asserting fusion or allocation behavior.
+1. Check whether consumers stream, retain the input spine, or build accumulator
+   thunks.
+2. Introduce only the narrowest strictness annotation, strict field, `foldl'`, or
+   streaming fold needed.
+3. If point-free composition hides sharing, strictness, or resource lifetime,
+   restore named arguments and bindings.
+4. If an effect stack obscures types or profiling, simplify to the established
+   base effect or an explicit interpreter.
+5. Require profiling evidence before asserting fusion or allocation behavior.
 
 ## Validation Focus
 
-Run the project's build and focused tests. Use existing profiler settings for
-space-sensitive code and test both finite and potentially infinite producers
-where laziness is part of the contract.
+Run the project build and focused tests. Test finite and infinite producers when
+productivity is contractual. Use existing time/space profiling for strictness-
+sensitive paths and inspect exception/resource behavior in `IO`.

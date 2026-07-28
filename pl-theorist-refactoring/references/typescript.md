@@ -1,41 +1,40 @@
-# TypeScript Runtime Profile
+# TypeScript Cost Model
 
 ## Disclosed Constraints
 
-- **No portable tail-call optimization.** Avoid structural recursion for
-  unbounded runtime data.
-- **Erased type system.** Discriminated unions, `readonly`, and exhaustive
-  checks impose no runtime representation cost, but do not validate unknown
-  input at runtime.
-- **Runtime abstraction cost.** Custom `Option`, `Either`, and monadic wrapper
-  objects can add allocations and obscure code when a native union is enough.
-- **JavaScript runtime rules remain.** Apply the JavaScript profile's runtime
-  concerns only when relevant to emitted code; do not load its full procedure.
+- Runtime behavior is JavaScript: no portable TCO, possible intermediate arrays,
+  closure allocation, identity semantics, and object-shape sensitivity.
+- Discriminated unions, `readonly`, generics, and exhaustive checks are erased.
+  They can remove representable invalid states at zero runtime representation
+  cost, but they cannot validate unknown data.
+- Deep conditional types and abstraction-heavy inference can impose substantial
+  compiler and editor cost even when runtime cost is zero.
+- Runtime `Option`/`Either` wrappers add values and allocations when a native
+  discriminated union would suffice.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Model mutually exclusive domain states with discriminated unions and
-  `readonly` data when state variants are closed.
-- Make a state transition or rendering function total. Use an exhaustive
-  `switch` with a `never`-checked unreachable branch where project conventions
-  require compile-time proof.
-- Preserve runtime data validation at module boundaries; narrowing a type does
-  not parse or authenticate input.
-- Prefer native arrays and language constructs over heavy runtime FP libraries
-  unless the repository already uses them consistently.
+- Model mutually exclusive states with `readonly` discriminated unions.
+- Make eliminators and transition functions total with exhaustive `switch`
+  handling and a `never` proof consistent with repository conventions.
+- Parse and validate external values before constructing trusted domain types.
+- Use native arrays, promises, `async`/`await`, and project-standard result
+  unions. Use `map`, `filter`, `some`, `every`, `find`, and `reduce` deliberately.
+- Use branded/opaque types when they enforce a domain boundary without forcing
+  unsafe assertions through the codebase.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. Replace unbounded recursion with iteration, a generator, or a native
-   collection operation.
-2. If a runtime wrapper carries only a tag and payload, use a discriminated
-   union instead.
-3. If a callback chain allocates intermediates on a hot path, use a fused pass
-   or direct loop while retaining pure helper functions.
-4. If exhaustive matching would mask externally supplied invalid data, validate
-   the input before constructing the union.
+1. Replace unbounded recursion with iteration or native collection operations.
+2. Replace a runtime monadic wrapper with an erased/native union when it carries
+   no behavior unavailable from functions.
+3. If a callback chain creates measured intermediate cost, fuse one level.
+4. If a type-level encoding degrades compiler responsiveness or diagnostics,
+   simplify to explicit named unions and functions.
+5. Preserve JavaScript evaluation, identity, and async ordering semantics.
 
 ## Validation Focus
 
-Run the project's typecheck and tests. Test every union variant, the
-unreachable/exhaustive branch, and invalid external input separately.
+Run typechecking and focused runtime tests. Test every union variant, invalid
+external input, exhaustive branches, and async rejection/cancellation behavior.
+Treat a passing typecheck as evidence of internal consistency, not input safety.

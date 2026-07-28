@@ -1,38 +1,47 @@
-# Python Runtime Profile
+# Python Cost Model
 
 ## Disclosed Constraints
 
-- **No tail-call optimization.** Recursive traversal consumes one Python frame
-  per step; do not use structural recursion for unbounded inputs.
-- **Allocation and GC pressure.** List slicing, list concatenation, and eager
-  intermediate collections can make a linear transform quadratic or retain
-  unnecessary memory.
-- **Iterator timing.** Generators, `map`, and `filter` defer work and errors
-  until consumed; this may differ from an eager source loop.
+- No tail-call optimization. Unbounded structural recursion consumes one frame
+  per element.
+- Slicing, concatenation, eager intermediates, and transient wrappers increase
+  allocation and GC pressure; recursive head/tail list code can become
+  quadratic.
+- `map`, `filter`, and generators are lazy and single-pass. Deferral changes
+  exception timing, resource lifetime, and when effects occur.
+- Python's type hints cannot make runtime input valid without boundary checks.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Use generator expressions, generator functions, `map`, and `filter` for
-  streaming transforms when the caller can consume lazily.
-- Use a comprehension when an eager collection is required and it is the
-  clearest single-pass form.
-- Extract pure predicates and transformations into named functions when they
-  embody a domain rule.
-- Use `functools.reduce` only when a named accumulator makes the invariant
-  clearer than a loop; it is not automatically more Pythonic or faster.
+- Prefer explicit `map` and `filter` composition over equivalent comprehension
+  syntax so the filter-transform algebra remains visible. Yield only when a
+  named predicate, required concrete collection, or repository convention makes
+  another form materially clearer.
+- Use named curried helpers through `functools.partial` when partial application
+  clarifies a reusable operation.
+- Prefer generators for streaming and $O(1)$ auxiliary memory.
+- Prefer `sum`, `any`, `all`, `min`, `max`, and `next` over generic reduction.
+- Use `functools.reduce` only for a genuine fold with an explicit accumulator
+  invariant.
+- Represent closed states with frozen dataclasses, enums, tagged unions, and
+  exhaustive type-checker-supported matching where project tooling permits.
+- Represent optional/fallible flow with established project types or explicit
+  return unions. Do not introduce a runtime monad hierarchy solely for syntax.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. If the candidate uses recursion over collection size, replace it with an
-   iterator or generator pipeline.
-2. If chaining would materialize intermediates, stream with a generator or
-   use one explicit loop.
-3. If deferred execution changes exception timing, resource lifetime, or
-   side-effect order, retain eager evaluation deliberately.
-4. If a loop provides early termination or clear error handling, keep the loop
-   and isolate the pure per-item step.
+1. Replace collection-sized recursion with an iterator or generator.
+2. If the caller requires eager output, materialize exactly once at the public
+   boundary.
+3. If lazy conversion changes exception/effect timing or closes a resource too
+   early, preserve eager evaluation inside the resource scope.
+4. If a pipeline needs early exit or complex error recovery, use a native
+   short-circuit primitive or a local loop with pure helpers.
+5. If repeated lambdas hide domain meaning, name the predicate/projector; do not
+   pursue point-free style past debuggability.
 
 ## Validation Focus
 
-Test empty inputs, large inputs, iterator inputs, exception timing, and whether
-callers expect a concrete collection rather than a one-shot iterable.
+Test empty, large, one-shot iterator, and exception-producing inputs. Verify
+whether callers require a list, reusable iterable, or lazy iterator. Measure
+peak memory before claiming a streaming improvement.

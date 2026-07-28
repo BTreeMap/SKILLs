@@ -24,6 +24,9 @@ Current skills:
 * `authoring-skills/` — how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
 * `caveman-protocol/` — token-economical output formatting for coding workflows.
+* `pdf-reading/` — text and metadata extraction from PDF files for analysis.
+* `pl-theorist-refactoring/` — cost-aware functional refactoring with progressive
+  language-specific disclosure.
 * `strategic-reframing/` — bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
 

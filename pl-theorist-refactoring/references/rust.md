@@ -1,40 +1,40 @@
-# Rust Runtime Profile
+# Rust Cost Model
 
 ## Disclosed Constraints
 
-- **No guaranteed tail-call optimization.** Avoid relying on recursive
-  traversal for unbounded inputs.
-- **Zero-cost iterator potential.** Standard iterator adapters and `Option` /
-  `Result` combinators commonly optimize to efficient loops without allocation.
-- **Borrow and lifetime friction.** Deep currying, captured borrows, and
-  `Box<dyn Fn>` can complicate lifetimes or introduce dynamic dispatch and heap
-  allocation.
-- **Ownership is behavior.** A refactor must preserve borrowing, consuming,
-  cloning, drop order, and error propagation.
+- No guaranteed TCO. Structural recursion is unsuitable for unbounded linear
+  data unless the data structure or algorithm requires it and depth is bounded.
+- Standard iterator adapters and `Option`/`Result` combinators usually compile
+  to allocation-free loops, but “zero cost” remains a claim to verify on a hot
+  path.
+- Deep currying, captured borrows, boxed closures, and trait objects can produce
+  lifetime friction, dynamic dispatch, or heap allocation.
+- Ownership is observable through consuming versus borrowing, clone behavior,
+  drop order, and resource lifetime.
 
-## Preferred Shapes
+## Preferred FP Shapes
 
-- Prefer standard iterator adapters, `Option` / `Result` combinators, enums,
-  pattern matching, and generic functions for data transformations.
-- Keep closures short and non-escaping when possible; use named generic helpers
-  when captures make types or lifetimes obscure.
-- Use `collect` only when a collection is part of the required contract;
-  otherwise maintain a lazy iterator chain.
-- Use `try_fold` or a loop when fallible accumulation and early exit need an
-  explicit invariant.
+- Use iterator adapters, enums, exhaustive matching, `Option`/`Result`
+  combinators, `?`, and `async`/`await`.
+- Prefer generic named helpers over `Box<dyn Fn>` when static composition works.
+- Keep chains lazy until collection is part of the required output contract.
+- Use `try_fold` for fallible accumulation and explicit early termination.
+- Model invalid states with enums and constructors that validate invariants.
 
-## Cost Guard and Fallback
+## Cost Guard
 
-1. Replace structural recursion with an iterator or an explicit loop.
-2. If iterator composition needs boxed closures, complex lifetime plumbing, or
-   repeated clones, drop to a named helper or direct loop.
-3. If a chain collects intermediates unnecessarily, combine adapters or use a
-   single pass.
-4. If mutation simplifies ownership without leaking partial state, use a local
-   mutable accumulator inside a narrowly scoped function.
+1. Replace structural linear recursion with an iterator or loop.
+2. If composition requires boxing, repeated cloning, or contorted lifetimes,
+   descend to named generic helpers or a direct loop.
+3. Remove intermediate `collect` calls unless ownership or API boundaries require
+   materialization.
+4. Permit a local mutable accumulator when it remains encapsulated and yields
+   the clearest ownership model.
+5. Preserve borrowing, consumption, drop order, short-circuiting, and error
+   conversion.
 
 ## Validation Focus
 
-Run formatting, compilation, and focused tests. Inspect clippy findings if it
-is part of the project. Test ownership-sensitive error paths and avoid claiming
-zero cost without an existing benchmark or compiler evidence.
+Run formatting, compilation, focused tests, and Clippy when configured. Test
+ownership-sensitive failure paths. Use existing benchmarks or generated-code
+inspection before making hot-path zero-cost claims.
