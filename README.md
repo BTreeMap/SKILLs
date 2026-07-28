@@ -18,6 +18,7 @@ unrelated repositories.
 | [caveman-protocol](caveman-protocol/SKILL.md) | Compresses agent output when token economy is explicitly requested. |
 | [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
 | [strategic-reframing](strategic-reframing/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
+| [pl-theorist-refactoring](pl-theorist-refactoring/SKILL.md) | Refactors code into cost-aware, language-idiomatic functional style. |
 
 ## How it works
 
