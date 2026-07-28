@@ -66,6 +66,12 @@ with `git submodule update --remote .github/skills` followed by committing the
 bumped pointer. Keep this in mind: a change here only reaches a project after that
 project bumps its submodule pointer.
 
+For Claude discovery in a consuming repository, commit a relative parent-level
+alias from `.claude/skills` to `../.github/skills`. A submodule cannot create that
+entry in its parent repository. The root skill directories remain canonical; the
+repository's `.github/skills/<skill-name>` entries are relative symlink aliases,
+not copies.
+
 ## Boundaries
 
 * NEVER add secrets, credentials, or project-internal data to a skill; these files

@@ -55,6 +55,30 @@ git commit -m "chore(skills): bump skills submodule"
 Then point your agent configuration (e.g. `AGENTS.md`) at the relevant skill, for
 example: `.github/skills/git-commits/SKILL.md`.
 
+## Skill discovery aliases
+
+The root skill directories are canonical. This repository also exposes each one
+through a committed `.github/skills/<skill-name>` relative symlink, so agents that
+scan either location see the same source without duplicated files. `.claude/skills`
+is a relative symlink to `.github/skills`, allowing Claude to use that same set.
+
+Git preserves these symlinks on Linux and macOS. On Windows, enable Developer Mode
+or configure Git to create symlinks before cloning. Do not replace an alias with a
+copy: edit the root skill directory instead.
+
+When this repository is mounted as a submodule at a consuming repository's
+`.github/skills`, the submodule cannot create a `.claude/skills` entry in its parent.
+Create the parent-level alias once in the consuming repository:
+
+<claude_alias_command>
+mkdir -p .claude
+ln -s ../.github/skills .claude/skills
+git add .claude/skills
+</claude_alias_command>
+
+The link target is relative to `.claude/skills`; it remains valid when the
+repository moves or is cloned elsewhere.
+
 ## Contributing a skill
 
 Read [authoring-skills/SKILL.md](authoring-skills/SKILL.md) first — it defines the

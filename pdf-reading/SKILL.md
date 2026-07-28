@@ -9,7 +9,7 @@ description: "Use when a user asks to inspect, summarize, search, quote, extract
 
 Read PDF content for analysis. Extract text, page numbers, and standard metadata. Preserve source-page provenance.
 
-Use only the default Python environment and `pypdf`. Do not install or invoke another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
+Use only `pypdf`, resolved by `uv` from the bundled script's PEP 723 metadata. Run the script with `uv run --script`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
 
 ## Procedure
 
@@ -22,24 +22,26 @@ Use only the default Python environment and `pypdf`. Do not install or invoke an
 
 ## Extract with the Bundled Script
 
-The script is [extract_pdf.py](./scripts/extract_pdf.py). It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output.
+The script is [extract_pdf.py](./scripts/extract_pdf.py). It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output. Its adjacent lockfile makes dependency resolution reproducible.
+
+Run the canonical bundled path rather than copying the script into document directories: uv caches script environments by script path. Pass each document path as an argument instead. After editing the script's dependency metadata, refresh its lockfile with `uv lock --script <skill-root>/scripts/extract_pdf.py`.
 
 <all_pages_command>
-python <skill-root>/scripts/extract_pdf.py <document.pdf>
+uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf>
 </all_pages_command>
 
 <selected_pages_command>
-python <skill-root>/scripts/extract_pdf.py <document.pdf> --pages 1-3,5,8- --output <extraction.txt>
+uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf> --pages 1-3,5,8- --output <extraction.txt>
 </selected_pages_command>
 
 <text_only_command>
-python <skill-root>/scripts/extract_pdf.py <document.pdf> --pages 4-6 --no-metadata
+uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf> --pages 4-6 --no-metadata
 </text_only_command>
 
 For an encrypted PDF, do not ask the user to disclose or paste a password into chat. Instruct the user to set a local environment variable directly in their terminal, then pass only that variable's name to the script.
 
 <encrypted_pdf_command>
-python <skill-root>/scripts/extract_pdf.py <document.pdf> --password-env <PASSWORD_VARIABLE>
+uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf> --password-env <PASSWORD_VARIABLE>
 </encrypted_pdf_command>
 
 Expected extraction shape:
