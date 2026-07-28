@@ -38,7 +38,7 @@ git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
 mkdir -p .claude
 ln -s ../.github/skills .claude/skills
 git add .claude/skills
-git commit -m "chore: add agent skills submodule"
+git commit -m "chore: Add agent skills submodule"
 ```
 
 Clone consuming projects with submodules included:
