@@ -97,7 +97,9 @@ def is_present(value: str | None) -> TypeGuard[str]:
 def format_metadata(metadata: Mapping[str, object]) -> str:
     """Build the complete metadata section from available standard fields."""
     lines = tuple(
-        filter(is_present, map(partial(format_metadata_field, metadata), METADATA_FIELDS))
+        filter(
+            is_present, map(partial(format_metadata_field, metadata), METADATA_FIELDS)
+        )
     )
     body = "".join(lines) or "- No standard document metadata found.\n"
     return f"## Document metadata\n\n{body}\n"
