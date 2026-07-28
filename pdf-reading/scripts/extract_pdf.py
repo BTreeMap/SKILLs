@@ -7,8 +7,12 @@ import argparse
 import os
 import re
 import sys
+from collections.abc import Iterable, Mapping, Sequence
+from contextlib import nullcontext
+from functools import partial
+from itertools import chain
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, TextIO
+from typing import ContextManager, TextIO, TypeGuard
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -25,43 +29,39 @@ METADATA_FIELDS = (
 )
 
 
-def parse_page_specification(
-    specification: Optional[str], page_count: int
-) -> list[int]:
+def parse_page_token(page_count: int, token: str) -> range:
+    """Parse one validated page token into its selected one-based range."""
+    match = PAGE_TOKEN.fullmatch(token)
+    if not match:
+        raise ValueError(
+            "Invalid page selection. Use one-based page numbers and ranges, "
+            "for example: 1-3,5,8-."
+        )
+
+    start = int(match.group("start"))
+    raw_end = match.group("end")
+    end = start if raw_end is None else page_count if raw_end == "" else int(raw_end)
+    if start < 1 or end < start or end > page_count:
+        raise ValueError(
+            f"Page selection {token!r} is outside the document's 1-{page_count} range."
+        )
+
+    return range(start, end + 1)
+
+
+def parse_page_specification(specification: str | None, page_count: int) -> list[int]:
     """Return unique one-based page numbers selected by a user page specification."""
     if specification is None:
         return list(range(1, page_count + 1))
 
-    selected: list[int] = []
-    seen: set[int] = set()
-    for raw_token in specification.split(","):
-        token = raw_token.strip()
-        match = PAGE_TOKEN.fullmatch(token)
-        if not match:
-            raise ValueError(
-                "Invalid page selection. Use one-based page numbers and ranges, "
-                "for example: 1-3,5,8-."
-            )
-
-        start = int(match.group("start"))
-        raw_end = match.group("end")
-        end = (
-            start if raw_end is None else page_count if raw_end == "" else int(raw_end)
-        )
-        if start < 1 or end < start or end > page_count:
-            raise ValueError(
-                f"Page selection {token!r} is outside the document's 1-{page_count} range."
-            )
-
-        for page_number in range(start, end + 1):
-            if page_number not in seen:
-                selected.append(page_number)
-                seen.add(page_number)
-
-    return selected
+    page_ranges = map(
+        partial(parse_page_token, page_count), map(str.strip, specification.split(","))
+    )
+    # `dict` is an insertion-ordered set in Python 3.11+, preserving first selection.
+    return list(dict.fromkeys(chain.from_iterable(page_ranges)))
 
 
-def decrypt_if_needed(reader: PdfReader, password_env: Optional[str]) -> None:
+def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
     """Decrypt the reader from an environment variable when the PDF requires it."""
     if not reader.is_encrypted:
         return
@@ -80,19 +80,32 @@ def decrypt_if_needed(reader: PdfReader, password_env: Optional[str]) -> None:
         raise ValueError("The supplied password could not decrypt the PDF.")
 
 
+def format_metadata_field(
+    metadata: Mapping[str, object], field: tuple[str, str]
+) -> str | None:
+    """Format one populated metadata field, or return explicit absence."""
+    key, label = field
+    value = metadata.get(key)
+    return f"- {label}: {value}\n" if value else None
+
+
+def is_present(value: str | None) -> TypeGuard[str]:
+    """Narrow optional formatted output to text that should be emitted."""
+    return value is not None
+
+
+def format_metadata(metadata: Mapping[str, object]) -> str:
+    """Build the complete metadata section from available standard fields."""
+    lines = tuple(
+        filter(is_present, map(partial(format_metadata_field, metadata), METADATA_FIELDS))
+    )
+    body = "".join(lines) or "- No standard document metadata found.\n"
+    return f"## Document metadata\n\n{body}\n"
+
+
 def write_metadata(reader: PdfReader, output: TextIO) -> None:
     """Write available document metadata without assuming optional fields exist."""
-    metadata = reader.metadata or {}
-    output.write("## Document metadata\n\n")
-    wrote_value = False
-    for key, label in METADATA_FIELDS:
-        value = metadata.get(key)
-        if value:
-            output.write(f"- {label}: {value}\n")
-            wrote_value = True
-    if not wrote_value:
-        output.write("- No standard document metadata found.\n")
-    output.write("\n")
+    output.write(format_metadata(reader.metadata or {}))
 
 
 def write_pages(reader: PdfReader, page_numbers: Iterable[int], output: TextIO) -> None:
@@ -102,6 +115,33 @@ def write_pages(reader: PdfReader, page_numbers: Iterable[int], output: TextIO) 
         output.write(f"## PDF page {page_number}\n\n")
         output.write(text.strip() or "[No extractable text on this page.]\n")
         output.write("\n\n")
+
+
+def format_header(input_name: str, page_numbers: Sequence[int]) -> str:
+    """Build the stable preamble for an extraction document."""
+    selected_pages = ", ".join(map(str, page_numbers))
+    return f"# Extracted from {input_name}\n\nSelected PDF pages: {selected_pages}\n\n"
+
+
+def write_extraction(
+    reader: PdfReader,
+    input_name: str,
+    page_numbers: Sequence[int],
+    include_metadata: bool,
+    output: TextIO,
+) -> None:
+    """Interpret a validated extraction request at the output boundary."""
+    output.write(format_header(input_name, page_numbers))
+    if include_metadata:
+        write_metadata(reader, output)
+    write_pages(reader, page_numbers, output)
+
+
+def open_output(output_path: Path | None) -> ContextManager[TextIO]:
+    """Open a UTF-8 output file or leave standard output owned by its caller."""
+    if output_path:
+        return output_path.open("w", encoding="utf-8", newline="\n")
+    return nullcontext(sys.stdout)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -134,7 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if not args.input_pdf.is_file():
         raise ValueError(f"PDF file not found: {args.input_pdf}")
@@ -143,20 +183,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     decrypt_if_needed(reader, args.password_env)
     page_numbers = parse_page_specification(args.pages, len(reader.pages))
 
-    if args.output:
-        with args.output.open("w", encoding="utf-8", newline="\n") as output:
-            output.write(f"# Extracted from {args.input_pdf.name}\n\n")
-            output.write(f"Selected PDF pages: {', '.join(map(str, page_numbers))}\n\n")
-            if not args.no_metadata:
-                write_metadata(reader, output)
-            write_pages(reader, page_numbers, output)
-    else:
-        output = sys.stdout
-        output.write(f"# Extracted from {args.input_pdf.name}\n\n")
-        output.write(f"Selected PDF pages: {', '.join(map(str, page_numbers))}\n\n")
-        if not args.no_metadata:
-            write_metadata(reader, output)
-        write_pages(reader, page_numbers, output)
+    with open_output(args.output) as output:
+        write_extraction(
+            reader,
+            args.input_pdf.name,
+            page_numbers,
+            include_metadata=not args.no_metadata,
+            output=output,
+        )
 
     return 0
 
