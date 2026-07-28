@@ -22,9 +22,9 @@ Use only `pypdf`, resolved by `uv` from the bundled script's PEP 723 metadata. R
 
 ## Extract with the Bundled Script
 
-The script is [extract_pdf.py](./scripts/extract_pdf.py). It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output. Its adjacent lockfile makes dependency resolution reproducible.
+The script is [extract_pdf.py](./scripts/extract_pdf.py). It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output. Its PEP 723 metadata is the source of truth for the required dependency.
 
-Run the canonical bundled path rather than copying the script into document directories: uv caches script environments by script path. Pass each document path as an argument instead. After editing the script's dependency metadata, refresh its lockfile with `uv lock --script <skill-root>/scripts/extract_pdf.py`.
+Run the canonical bundled path rather than copying the script into document directories: uv caches script environments by script path. Pass each document path as an argument instead.
 
 <all_pages_command>
 uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf>
