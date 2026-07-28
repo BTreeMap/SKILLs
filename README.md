@@ -30,10 +30,14 @@ the skill is selected.
 
 ## Using these skills in your project
 
-Add this repository as a git submodule mounted at `.github/skills`:
+Add this repository as a git submodule mounted at `.github/skills` and expose the
+same skills to Claude:
 
 ```bash
 git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
+mkdir -p .claude
+ln -s ../.github/skills .claude/skills
+git add .claude/skills
 git commit -m "chore: add agent skills submodule"
 ```
 
@@ -68,13 +72,7 @@ copy: edit the root skill directory instead.
 
 When this repository is mounted as a submodule at a consuming repository's
 `.github/skills`, the submodule cannot create a `.claude/skills` entry in its parent.
-Create the parent-level alias once in the consuming repository:
-
-<claude_alias_command>
-mkdir -p .claude
-ln -s ../.github/skills .claude/skills
-git add .claude/skills
-</claude_alias_command>
+The setup sequence above creates and commits that parent-level alias.
 
 The link target is relative to `.claude/skills`; it remains valid when the
 repository moves or is cloned elsewhere.
