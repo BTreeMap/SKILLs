@@ -24,6 +24,48 @@
 - Use the project's existing streaming and effect abstractions rather than adding
   a competing transformer stack.
 
+## Domain and Effect Constraints
+
+- Use `data` for sums/products and `newtype` for zero-cost semantic distinctions.
+  Hide constructors and export smart constructors when values carry invariants.
+- Use `Maybe` for expected absence and `Either DomainError` for expected failure.
+  Avoid `Maybe` when callers need to know why construction failed.
+- Prefer applicative composition when effects are independent and monadic bind
+  only when a later effect depends on an earlier value. Applicative structure
+  does not itself promise parallel execution.
+- Derive or define instances only when their laws hold. State `Semigroup`/`Monoid`
+  identity and associativity before using `foldMap` or parallel reduction.
+- Eliminate partial list functions from production paths with `NonEmpty`, total
+  folds, or pattern matching at the refinement boundary.
+- Use `bracket`/`finally` or the project's resource abstraction. Scope async work,
+  propagate cancellation, and use bounded queues/streaming combinators.
+- Keep retries and transactions in the effect interpreter; require idempotency or
+  a transaction before replaying effects.
+
+## Teaching Example
+
+<teaching_example language="haskell"><![CDATA[
+module Port (Port, PortError(..), mkPort, configuredPort) where
+
+newtype Port = Port Int
+  deriving (Eq, Show)
+
+data PortError = PortOutOfRange
+  deriving (Eq, Show)
+
+mkPort :: Int -> Either PortError Port
+mkPort n
+  | n >= 1 && n <= 65535 = Right (Port n)
+  | otherwise = Left PortOutOfRange
+
+configuredPort :: Maybe Int -> Either PortError Port
+configuredPort = maybe (mkPort 8080) mkPort
+]]></teaching_example>
+
+Taste: hide `Port` outside the module, making the smart constructor the only
+admission path. `Maybe` means absent configuration; `Either` preserves the reason
+construction failed; `maybe` eliminates absence totally.
+
 ## Cost Guard
 
 1. Check whether consumers stream, retain the input spine, or build accumulator
@@ -35,6 +77,8 @@
 4. If an effect stack obscures types or profiling, simplify to the established
    base effect or an explicit interpreter.
 5. Require profiling evidence before asserting fusion or allocation behavior.
+6. Preserve bracketed resources, async cancellation, boundedness, transaction
+  scope, and strictness/productivity under the chosen effect interpreter.
 
 ## Validation Focus
 

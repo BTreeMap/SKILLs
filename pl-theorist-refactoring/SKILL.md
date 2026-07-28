@@ -1,12 +1,13 @@
 ---
 name: pl-theorist-refactoring
 description: >-
-  Use when refactoring Python, JavaScript, TypeScript, Rust, Go, Haskell, or C#
-  toward functional style; reviewing imperative code through a programming-
-  languages lens; or teaching better FP design taste. Produces a behavior-
-  preserving refactor using immutable data, total domain models, native
-  map/filter/fold and monadic primitives, while progressively loading only the
-  target language's stack, allocation, evaluation, and runtime constraints.
+  Use when refactoring Python, JavaScript, TypeScript, Rust, Go, Haskell, C, C++,
+  Java, Kotlin, or C# toward functional style; reviewing imperative code through
+  a programming-languages lens; or teaching better FP design taste. Produces a
+  behavior-preserving refactor using immutable data, algebraic data types, smart
+  constructors, total domain models, native map/filter/fold, Option/Result, and
+  effect primitives, while progressively loading only the target language's
+  stack, allocation, evaluation, and runtime constraints.
 argument-hint: "Code or files to refactor; include the target language if ambiguous"
 ---
 
@@ -51,18 +52,60 @@ Apply this precedence. Never trade an earlier property for a later one.
   cancellation, disposal, evaluation timing, and externally visible identity.
 - Make invalid states unrepresentable with closed variants and exhaustive
   elimination. Validate untrusted values before admitting them to that domain.
+- Model alternatives as sums, simultaneous fields as products, and constrained
+  primitives as opaque/refined types. Reject boolean blindness, sentinel values,
+  and bags of nullable fields when they encode a state machine.
+- Parse, do not merely validate: use one smart constructor or decoder to turn an
+  untrusted representation into a trusted domain value. Keep raw constructors
+  private when the language permits it.
 - Keep the functional core pure. Push I/O, mutation, time, randomness, and
   exceptions to a thin imperative shell.
 - Prefer native `Option`/`Maybe`, `Result`/`Either`, iterators, tasks/promises,
   `async`/`await`, and query operators over bespoke monad frameworks.
-- Treat `async`/`await` as monadic sequencing: preserve cancellation, failure,
-  scheduling, and resource scope rather than flattening syntax mechanically.
+- Use applicative structure for independent effects and monadic structure for
+  dependent effects. Concurrency is allowed only when ordering, capacity,
+  cancellation, and failure aggregation remain correct.
 - Prefer language-provided `sum`, `any`, `all`, `find`, grouping, and traversal
   primitives. If absent, use a reduction with an explicit accumulator law.
 - Prefer named combinators when a name captures a domain invariant. Prefer
   point-free style only while data flow and diagnostics remain obvious.
 - Do not assert “zero cost,” fusion, or optimization from syntax alone. Require
   compiler/runtime guarantees, repository evidence, or measurement.
+
+## Algebra and Lawfulness
+
+- State the identity and associative operation before treating an aggregation as
+  a monoid or parallelizing/reassociating a fold. Never assume commutativity.
+- Preserve functor shape and cardinality under `map`; use `filter` only when
+  cardinality may decrease; use `flatMap`/`bind` only when nesting is real.
+- Prefer `traverse`-like structure when every element performs an effect and the
+  output shape is preserved. Choose fail-fast versus error accumulation
+  deliberately.
+- Use `Option` for expected absence and `Result` for expected failure. Reserve
+  exceptions/panics for defects or boundaries where the language convention
+  requires them.
+- Keep eliminators total. An “unreachable” branch is justified only by a closed
+  type or a validated invariant, never by optimism.
+- Check laws with representative and property-based tests when the repository
+  already supports them; do not add a property framework solely for ceremony.
+
+## Production Effect Discipline
+
+- Preserve resource scopes with the language's native bracket, context manager,
+  RAII, `defer`, `using`, or `try/finally` mechanism. Laziness must not outlive an
+  acquired resource.
+- Preserve structured cancellation. Do not detach work, lose parent
+  cancellation, serialize independent work, or parallelize dependent work by
+  accident.
+- Bound queues, concurrency, retries, and materialization. A lazy or async stream
+  is not safe merely because it is incremental; consumers must exert
+  backpressure or limits.
+- Keep transaction boundaries and exactly-once/at-least-once behavior explicit.
+  Retry only idempotent effects or effects protected by an idempotency key or
+  transaction.
+- Keep logs, traces, metrics, and domain errors at observable effect boundaries.
+  Do not bury instrumentation in a nominally pure function or erase useful
+  context through point-free composition.
 
 ## Progressive Language Disclosure
 
@@ -82,6 +125,10 @@ boundary.
 | Rust | [Rust cost model](./references/rust.md) |
 | Go | [Go cost model](./references/go.md) |
 | Haskell | [Haskell cost model](./references/haskell.md) |
+| C | [C cost model](./references/c.md) |
+| C++ | [C++ cost model](./references/cpp.md) |
+| Java | [Java cost model](./references/java.md) |
+| Kotlin | [Kotlin cost model](./references/kotlin.md) |
 | C# | [C# cost model](./references/csharp.md) |
 
 For an unlisted language, derive the same facts from repository configuration
@@ -101,6 +148,8 @@ Read the target, adjacent types, direct callers, and focused tests. Record:
 - Eager or deferred evaluation; single-use or reusable traversal.
 - Public type and identity guarantees.
 - Known hot-path or memory constraints.
+- Transaction, retry, idempotency, concurrency, and backpressure semantics.
+- Required logging, tracing, metrics, and diagnostic context.
 
 If code is supplied without repository context, state only assumptions capable
 of affecting the result.
@@ -160,6 +209,8 @@ Evaluate the pure target against the loaded profile:
 - JIT object-shape or compiler optimization barriers.
 - Borrowing, ownership, disposal, cancellation, and async scheduling.
 - Early exit and traversal count.
+- Boundedness, backpressure, retry amplification, and transaction scope.
+- Instrumentation visibility and diagnostic stack quality.
 
 On failure, descend exactly one abstraction level while preserving the algebra:
 
@@ -195,12 +246,20 @@ Explain the refactor in PL terms calibrated to the audience. Name:
 Define specialized terminology on first use. Prefer one precise law or contrast
 over broad theory. Never use jargon as a substitute for tracing behavior.
 
+When teaching a less capable model, load the target profile's teaching example.
+Use it as a taste calibration, not a universal template. Explain exactly three
+things: the invalid state removed, the native algebra chosen, and the performance
+or production constraint that prevents a more abstract form. Then ask the model
+to identify those three properties in the actual code before it edits anything.
+
 ### 7. Validate
 
 Run the narrowest available formatter, typechecker, linter, and focused tests.
 Add or update tests for changed domain modeling, empty inputs, error paths,
-evaluation timing, and effect order. For a claimed hot-path improvement, use an
-existing benchmark/profiler or label the cost conclusion unmeasured.
+evaluation timing, effect order, cancellation, and resource cleanup. Test every
+sum-type variant and smart-constructor rejection path. For a claimed hot-path
+improvement, use an existing benchmark/profiler or label the cost conclusion
+unmeasured.
 
 ## Output Contract
 
@@ -225,7 +284,8 @@ For advice or a snippet, return:
 - `map` and `filter` can alter eagerness, return type, exception timing, and
   traversal count. Functional equivalence is not merely equal final values.
 - “Immutable” outer values can retain mutable references. State the protected
-  boundary.
+  boundary; use deep copying only when its cost and ownership semantics justify
+  it.
 - Type-level invalid-state elimination does not validate JSON, database rows,
   messages, or other untrusted input.
 - `reduce` is not a universal badge of functional quality. Prefer `sum`, `any`,
@@ -237,6 +297,10 @@ For advice or a snippet, return:
   an iterator is the semantics-preserving implementation.
 - Local mutation can be observationally pure. Reject it only when it leaks,
   obscures an invariant, or prevents composition.
+- Applicative-looking parallelism can change ordering, peak memory, rate limits,
+  and failure behavior. Independence is necessary but not sufficient.
+- Exhaustive matching over an open class hierarchy is not totality. Know whether
+  the target language actually seals the variant set.
 
 ## Completion Checks
 
@@ -245,9 +309,15 @@ For advice or a snippet, return:
   <item>Observable contract and effect order remain intact.</item>
   <item>Imperative control flow was classified before transformation.</item>
   <item>Invalid states are unrepresentable where the type system permits it.</item>
+  <item>Smart constructors establish each refined invariant at one boundary.</item>
+  <item>Sum variants are closed and eliminated exhaustively where supported.</item>
   <item>Partial functions and untrusted boundaries are explicit.</item>
   <item>Native combinators and monads were considered before custom machinery.</item>
+  <item>Independent and dependent effects use applicative and monadic structure deliberately.</item>
+  <item>Fold identities, associativity, ordering, and error accumulation are explicit.</item>
   <item>Recursion, traversal count, allocation, and evaluation timing were checked.</item>
+  <item>Resources, cancellation, boundedness, retries, and transactions remain correct.</item>
+  <item>Logs, traces, metrics, and domain-error context remain observable.</item>
   <item>Any fallback descended only as far as the cost model required.</item>
   <item>Point-free and curried forms remain easier to reason about than alternatives.</item>
   <item>Claims of performance or fusion are evidenced or marked unmeasured.</item>

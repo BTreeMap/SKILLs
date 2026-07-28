@@ -22,6 +22,61 @@
 - Use standard-library helpers when present; otherwise use a direct fold loop
   rather than constructing a generic HOF framework.
 
+## Domain and Effect Constraints
+
+- Go has no native algebraic data types or exhaustive matching. Use concrete
+  structs with unexported fields and validating constructors for invariants.
+  Use a small interface with an unexported marker only when variants genuinely
+  require a closed protocol; recognize that compiler exhaustiveness is absent.
+- Use `(T, bool)` for lookup-style absence and `(T, error)` for expected failure.
+  Do not emulate `Option`/`Result` with a generic monad layer.
+- Keep zero values useful when possible. When zero is invalid, hide fields and
+  force construction through `NewX`/`ParseX`; methods must preserve the
+  invariant.
+- Pass `context.Context` explicitly as the first parameter to effectful
+  operations. Propagate cancellation and deadlines; never store context in a
+  domain value.
+- Keep dependent `(T, error)` calls sequential and explicit. Run independent
+  effects concurrently only when fan-out is bounded, errors are joined
+  deliberately, and sibling work observes the shared cancellation context.
+- Pair every acquisition with immediate `defer` after a successful open. Check
+  close/flush errors when they affect correctness.
+- Bound goroutines and channels, define channel ownership/closure, and avoid
+  goroutine leaks on early return. Preserve database transaction boundaries and
+  idempotency under retries.
+
+## Teaching Example
+
+<teaching_example language="go"><![CDATA[
+package domain
+
+import (
+	"errors"
+	"strings"
+)
+
+type Email struct{ value string }
+
+func ParseEmail(raw string) (Email, error) {
+    normalized := strings.ToLower(strings.TrimSpace(raw))
+    if !strings.Contains(normalized, "@") {
+        return Email{}, errors.New("invalid email")
+    }
+    return Email{value: normalized}, nil
+}
+
+func (e Email) String() string { return e.value }
+
+func LookupEmail(users map[string]Email, id string) (Email, bool) {
+    email, ok := users[id]
+    return email, ok
+}
+]]></teaching_example>
+
+Taste: the unexported field and parser create the strongest practical invariant;
+`error` carries invalid input while `bool` carries ordinary absence. Explicit
+control flow is preferable to importing a foreign monad vocabulary.
+
 ## Cost Guard
 
 1. Replace recursion with iteration.
@@ -32,6 +87,8 @@
 4. Confine unavoidable mutation to a fresh local value; publish only a completed
    valid result.
 5. Preserve explicit error timing and partial-result contracts.
+6. Preserve context propagation, cleanup, goroutine/channel ownership,
+   transaction scope, and concurrency bounds.
 
 ## Validation Focus
 

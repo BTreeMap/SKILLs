@@ -28,6 +28,63 @@
 - Represent optional/fallible flow with established project types or explicit
   return unions. Do not introduce a runtime monad hierarchy solely for syntax.
 
+## Domain and Effect Constraints
+
+- Python has no sealed algebraic data types. Approximate closed sums with
+  dataclass variants plus a union and exhaustive type-checker-supported `match`;
+  treat runtime closure as a project convention, not a proof.
+- Use `T | None` for expected absence. Use an established project `Result` type
+  for expected failures only when present; otherwise return a small tagged union
+  or raise at the imperative boundary according to local convention.
+- Frozen dataclasses and tuples are only shallowly immutable. Copy or freeze
+  nested values only at the ownership boundary that requires it.
+- Put invariant checks in one parsing factory. A dataclass constructor cannot be
+  made truly private, so document and type-check the construction convention.
+- Keep files, locks, transactions, and generators inside `with`/`async with`.
+  Use `asyncio.TaskGroup` where available for scoped child tasks; preserve
+  cancellation rather than swallowing `CancelledError`.
+- Run independent async effects concurrently only through a bounded, scoped
+  mechanism; sequence dependent `await` calls explicitly when later inputs come
+  from earlier outputs.
+- Bound producer/consumer pipelines with finite iterators, semaphore limits, or
+  bounded queues. Do not create every coroutine before applying a concurrency
+  limit.
+
+## Teaching Example
+
+<teaching_example language="python"><![CDATA[
+from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
+from typing import Self, TypeGuard
+
+@dataclass(frozen=True, slots=True)
+class Email:
+    value: str
+
+  def __post_init__(self) -> None:
+    if "@" not in self.value:
+      raise ValueError("invalid email")
+
+  @classmethod
+  def parse(cls, raw: str) -> Self | None:
+    normalized = raw.strip().lower()
+    return cls(normalized) if "@" in normalized else None
+
+def is_email(value: Email | None) -> TypeGuard[Email]:
+    return value is not None
+
+def email_value(email: Email) -> str:
+    return email.value
+
+def valid_emails(raw_values: Iterable[str]) -> Iterator[str]:
+  return map(email_value, filter(is_email, map(Email.parse, raw_values)))
+]]></teaching_example>
+
+Taste: untrusted strings cross one smart-constructor boundary; absence is
+explicit; the result streams. Named functions preserve type narrowing and domain
+meaning; point-free cleverness would make this version worse. `__post_init__`
+also protects direct construction because Python cannot hide the constructor.
+
 ## Cost Guard
 
 1. Replace collection-sized recursion with an iterator or generator.
@@ -39,6 +96,8 @@
    short-circuit primitive or a local loop with pure helpers.
 5. If repeated lambdas hide domain meaning, name the predicate/projector; do not
    pursue point-free style past debuggability.
+6. Preserve context-manager lifetime, task cancellation, transaction scope, and
+  concurrency bounds across lazy or async refactors.
 
 ## Validation Focus
 

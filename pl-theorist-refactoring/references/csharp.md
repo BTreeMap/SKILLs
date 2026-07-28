@@ -23,6 +23,64 @@
   `await using` while preserving cancellation and disposal.
 - Prefer static lambdas or pure static helpers when captures are unnecessary.
 
+## Domain and Effect Constraints
+
+- C# has records and pattern matching but no general native discriminated union.
+  Use a sealed record hierarchy or an established project union type; recognize
+  that a discard arm can hide a newly added variant.
+- Use private constructors plus `TryParse`/factory methods for refined values.
+  Use nullable values for incidental absence under enabled nullability analysis;
+  use an established `Option` only when the project already standardizes it.
+- Use an established `Result` type for expected domain failures when available;
+  otherwise use a small closed result hierarchy or documented `TryX` pattern.
+  Do not add exceptions as ordinary branch control.
+- Treat records and immutable collections according to actual ownership; record
+  properties can still reference mutable objects.
+- Use `Task.WhenAll` for bounded independent work and sequential `await` for
+  dependent work. Propagate `CancellationToken` through every cancellable call.
+- Scope `IDisposable`/`IAsyncDisposable` with `using`/`await using`. Preserve
+  transaction disposal, retry idempotency, and async-stream backpressure.
+
+## Teaching Example
+
+<teaching_example language="csharp"><![CDATA[
+using System;
+
+public sealed record Email
+{
+    public string Value { get; }
+    private Email(string value) => Value = value;
+
+    public static Email? TryParse(string raw)
+    {
+        var normalized = raw.Trim().ToLowerInvariant();
+        return normalized.Contains('@') ? new Email(normalized) : null;
+    }
+}
+
+public abstract record PaymentState
+{
+  private PaymentState() { }
+
+    public sealed record Unpaid : PaymentState;
+    public sealed record Settled(string TransactionId) : PaymentState;
+}
+
+public static class PaymentDescriptions
+{
+  public static string Describe(PaymentState state) => state switch
+  {
+    PaymentState.Unpaid => "payment required",
+    PaymentState.Settled settled => $"settled: {settled.TransactionId}",
+    _ => throw new ArgumentOutOfRangeException(nameof(state))
+  };
+}
+]]></teaching_example>
+
+Taste: construction validates `Email`, and the record hierarchy prevents
+contradictory payment fields. The fallback arm is still required defensively;
+C# does not prove this hierarchy exhaustively like a native sealed ADT.
+
 ## Cost Guard
 
 1. Identify streaming, buffering, materialization, and enumeration count for each
@@ -34,6 +92,8 @@
    outlive its resource.
 5. Preserve cancellation propagation, exception timing, context behavior, and
    async concurrency.
+6. Preserve disposal, bounded async fan-out, transaction scope, retry
+  idempotency, and enumeration count.
 
 ## Validation Focus
 

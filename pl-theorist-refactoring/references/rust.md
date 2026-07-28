@@ -21,6 +21,54 @@
 - Use `try_fold` for fallible accumulation and explicit early termination.
 - Model invalid states with enums and constructors that validate invariants.
 
+## Domain and Effect Constraints
+
+- Use enums for closed sums, structs/tuples for products, and newtypes with
+  private fields plus smart constructors for refined values. Prefer standard
+  refined types such as `NonZeroUsize` when they match the invariant.
+- Use `Option<T>` for absence and `Result<T, E>` for expected failure. Compose
+  with combinators when the chain stays clear; use `?` for propagation and
+  exhaustive `match` when elimination itself carries domain meaning.
+- Use `map` for a pure transformation inside `Option`/`Result` and `and_then` or
+  `?` when the next fallible computation depends on the prior value. Join
+  independent async work only through the established runtime's bounded,
+  cancellation-aware facility.
+- Avoid `unwrap`, indexing, and `unreachable!` unless a local proof is obvious
+  and maintained. Encode the proof in a type when practical.
+- Rely on ownership and `Drop` for resource safety; do not hold blocking guards
+  or borrows across `.await` unless the API explicitly supports it.
+- Scope spawned tasks with the runtime's established mechanism, propagate
+  cancellation, and bound channels/fan-out. Dropping a future is cancellation
+  only where the future and runtime document cancellation safety.
+- Preserve transaction and retry semantics; `?` short-circuits but does not roll
+  back prior effects.
+
+## Teaching Example
+
+<teaching_example language="rust"><![CDATA[
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Port(u16);
+
+#[derive(Debug, PartialEq, Eq)]
+enum PortError { OutOfRange }
+
+impl Port {
+    fn new(value: u16) -> Result<Self, PortError> {
+        (value != 0).then_some(Self(value)).ok_or(PortError::OutOfRange)
+    }
+
+    fn get(self) -> u16 { self.0 }
+}
+
+fn configured_port(raw: Option<u16>) -> Result<Port, PortError> {
+    raw.map_or_else(|| Port::new(8080), Port::new)
+}
+]]></teaching_example>
+
+Taste: a private newtype makes zero unrepresentable after construction;
+`Option` models missing configuration and `Result` models invalid configuration;
+no allocation, dynamic dispatch, or partial unwrap is required.
+
 ## Cost Guard
 
 1. Replace structural linear recursion with an iterator or loop.
@@ -32,6 +80,8 @@
    the clearest ownership model.
 5. Preserve borrowing, consumption, drop order, short-circuiting, and error
    conversion.
+6. Preserve cancellation safety, bounded channels, lock lifetimes, transaction
+  scope, and all effects performed before `?` returns.
 
 ## Validation Focus
 
