@@ -13,7 +13,6 @@ from typing import Iterable, Optional, Sequence, TextIO
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-
 PAGE_TOKEN = re.compile(r"^(?P<start>\d+)(?:-(?P<end>\d*)?)?$")
 METADATA_FIELDS = (
     ("/Title", "Title"),
@@ -26,7 +25,9 @@ METADATA_FIELDS = (
 )
 
 
-def parse_page_specification(specification: Optional[str], page_count: int) -> list[int]:
+def parse_page_specification(
+    specification: Optional[str], page_count: int
+) -> list[int]:
     """Return unique one-based page numbers selected by a user page specification."""
     if specification is None:
         return list(range(1, page_count + 1))
@@ -44,7 +45,9 @@ def parse_page_specification(specification: Optional[str], page_count: int) -> l
 
         start = int(match.group("start"))
         raw_end = match.group("end")
-        end = start if raw_end is None else page_count if raw_end == "" else int(raw_end)
+        end = (
+            start if raw_end is None else page_count if raw_end == "" else int(raw_end)
+        )
         if start < 1 or end < start or end > page_count:
             raise ValueError(
                 f"Page selection {token!r} is outside the document's 1-{page_count} range."
@@ -105,7 +108,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Extract analysis-ready text and metadata from a PDF using pypdf only."
     )
-    parser.add_argument("input_pdf", type=Path, help="PDF file to read; it is never modified")
+    parser.add_argument(
+        "input_pdf", type=Path, help="PDF file to read; it is never modified"
+    )
     parser.add_argument(
         "--pages",
         metavar="PAGE_SPEC",
