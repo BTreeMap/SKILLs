@@ -16,6 +16,7 @@ unrelated repositories.
 | [git-commits](git-commits/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages. |
 | [authoring-skills](authoring-skills/SKILL.md) | Distills a worked procedure into a reproducible skill; the meta-skill for writing every other skill here. |
 | [caveman-protocol](caveman-protocol/SKILL.md) | Compresses agent output when token economy is explicitly requested. |
+| [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
 | [strategic-reframing](strategic-reframing/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
 
 ## How it works
