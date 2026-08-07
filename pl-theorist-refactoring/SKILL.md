@@ -1,9 +1,9 @@
 ---
 name: pl-theorist-refactoring
 description: >-
-  Produces behavior-preserving refactors toward functional style — immutable
+  Produces behavior-preserving refactors toward functional style - immutable
   data, algebraic data types, smart constructors, total domain models, native
-  map/filter/fold, Option/Result, and effect primitives — while progressively
+  map/filter/fold, Option/Result, and effect primitives - while progressively
   loading only the target language's stack, allocation, evaluation, and
   runtime constraints. Use when refactoring Python, JavaScript, TypeScript,
   Rust, Go, Haskell, C, C++, Java, Kotlin, or C# toward functional style,
@@ -31,7 +31,7 @@ to a less abstract representation when stack safety, allocation, resource
 lifetimes, compiler behavior, or readability demands it.
 
 The result must be elegant, efficient, and performant. Interpret elegance as a
-small, law-like design with explicit invariants—not maximum abstraction density.
+small, law-like design with explicit invariants, not maximum abstraction density.
 Interpret efficiency as sound asymptotic behavior and bounded resource use.
 Interpret performance as fitness for the actual compiler, runtime, and workload.
 When these goals conflict, preserve the semantic design but compile it into the
@@ -233,7 +233,7 @@ for a functional design; externally visible partial mutation is not.
 - Add no FP library merely to obtain familiar names.
 - Keep object/data layouts flat when wrappers add no semantic distinction.
 - Delete obsolete mutable helpers and flags made impossible by the new model.
-- Comment laws, invariants, and non-obvious cost decisions—not syntax.
+- Comment laws, invariants, and non-obvious cost decisions, not syntax.
 
 ### 6. Teach the design
 

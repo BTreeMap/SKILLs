@@ -6,31 +6,37 @@ load and execute. Downstream projects consume this repository as a git submodule
 mounted at `.github/skills`, so **every skill here MUST be neutral and reusable
 across unrelated projects**.
 
-This file is the entry point. Load linked skills just in time — only when the task
-needs them — to keep context lean.
+This file is the entry point. Load linked skills just in time - only when the task
+needs them - to keep context lean.
 
 ## Repository shape
 
 * One directory per skill, named in kebab-case, containing a file named exactly
   `SKILL.md`. The directory name MUST match the skill's `name` in its frontmatter.
-* `LICENSE` — MIT.
+* Every top-level directory not starting with a dot IS a skill directory; that
+  namespace is reserved. Repository plumbing lives in dotted directories
+  (`.github`, `.claude`) or in single files at the root (e.g.
+  `sync-skills.example.yml`).
+* `LICENSE`: MIT.
 * There is no build system, dependency manifest, or test runner. This repository is
   documentation that other agents read; treat correctness as an editorial property,
   not a compiled one.
 
 Current skills:
 
-* `git-commits/` — Conventional Commits standard for commit messages.
-* `authoring-skills/` — how to distill a procedure into a reproducible skill (the
+* `git-commits/` - Conventional Commits standard for commit messages, with
+  lite/full/ultra effort levels loaded on demand from `references/`.
+* `authoring-skills/` - how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
-* `caveman-protocol/` — token-economical output formatting for coding workflows.
-* `pdf-reading/` — text and metadata extraction from PDF files for analysis.
-* `pl-theorist-refactoring/` — cost-aware functional refactoring with progressive
+* `caveman-protocol/` - token-economical output formatting for coding workflows.
+* `pdf-reading/` - text and metadata extraction from PDF files for analysis.
+* `pl-theorist-refactoring/` - cost-aware functional refactoring with progressive
   language-specific disclosure.
-* `strategic-reframing/` — bold, testable target-direction judgments that challenge
+* `strategic-reframing/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
-* `ponytail/` — laziest-working-solution discipline: YAGNI, stdlib-first, minimal
-  diffs, with lite/full/ultra intensity levels.
+* `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
+  diffs, with lite/full/ultra intensity levels and one-shot review/audit/debt/
+  gain/help modes loaded on demand from `references/`.
 
 ## Frontmatter protocol
 
@@ -49,7 +55,7 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   person, in two movements: what the skill does (capability statement
   carrying its key search terms), then trigger conditions starting
   "Use when ..."; append "Do not use for ..." when misfires are likely.
-* `license: MIT` on every skill — skills are vendored individually and keep
+* `license: MIT` on every skill - skills are vendored individually and keep
   their terms when copied out of this repository.
 * `compatibility` (≤500 characters) only for real environment requirements
   (runtimes, system packages, network access); most skills omit it.
@@ -65,6 +71,8 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   derive them from the consuming repository.
 * Keep each skill within context economy (~500 lines). Offload bulky reference
   material to sibling files the agent reads on demand.
+* NEVER use em-dash characters (U+2014) anywhere in this repository; use a
+  hyphen, a comma, a colon, or restructure the sentence.
 * When adding or renaming a skill, commit its discovery alias in the same change:
   `ln -s ../../<skill-name> .github/skills/<skill-name>`. The root directory is
   canonical; `.claude/skills` is a single symlink to `.github/skills`, so the
@@ -89,6 +97,12 @@ Skills are added as a submodule:
 git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
 ```
 
+The default setup also hard-copies `sync-skills.example.yml` from this
+repository's root to the consumer's `.github/workflows/sync-skills.yml`, so
+the submodule pointer auto-bumps to the upstream tip on a schedule. The copy
+MUST be a real file: GitHub Actions does not resolve symlinks under
+`.github/workflows`.
+
 Consumers clone with `--recurse-submodules` (or run
 `git submodule update --init --recursive` on an existing checkout), and refresh
 with `git submodule update --remote .github/skills` followed by committing the
@@ -106,7 +120,7 @@ not copies.
 * NEVER add secrets, credentials, or project-internal data to a skill; these files
   are public and vendored verbatim into many repositories.
 * NEVER make a skill depend on a specific language, framework, or directory layout
-  unless the skill's whole purpose is that ecosystem — and say so in the
+  unless the skill's whole purpose is that ecosystem - and say so in the
   `description`.
 * When in doubt about a project-specific value, write the skill to discover it from
   the repository at runtime rather than assuming it.

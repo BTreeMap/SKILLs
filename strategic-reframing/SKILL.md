@@ -6,7 +6,7 @@ description: >-
   options, proof point, falsifier, and concrete payoff ledger. Use when the
   user asks to challenge a conservative design, think bigger, define a
   greenfield target, escape incrementalism, reconsider legacy constraints, or
-  establish big-picture direction — or during product, architecture, or
+  establish big-picture direction - or during product, architecture, or
   planning discussions when compatibility fear, refactor cost, local details,
   or the current implementation are prematurely deciding the target model.
 license: MIT
@@ -16,7 +16,7 @@ license: MIT
 
 ## Purpose
 
-Open the decision frame before implementation gravity closes it. Choose the right decision horizon, system boundary, and target model—not the largest project or boldest-sounding rewrite.
+Open the decision frame before implementation gravity closes it. Choose the right decision horizon, system boundary, and target model, not the largest project or boldest-sounding rewrite.
 
 Strategic altitude means big-picture judgment plus conceptual compression. Prefer fewer concepts, clearer ownership, longer-lived boundaries, and higher leverage. A larger diff alone is not a better strategy.
 

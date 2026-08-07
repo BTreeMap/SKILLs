@@ -1,14 +1,14 @@
 # Reusable workflow: fast-forward a skills submodule gitlink to its upstream
 # tip on every listed branch of the calling repository.
 #
-# Downstream repositories call this on a schedule; see examples/sync-skills.yml
-# for the ready-to-use caller.
+# Downstream repositories call this on a schedule; see sync-skills.example.yml
+# at the repository root for the ready-to-use caller.
 #
 # Behavior:
 #   - For each branch in `branches` (default: main master), the submodule
 #     gitlink at `submodule-path` is set to the upstream tip and pushed as one
 #     `chore:` commit. Branches that do not exist, carry no gitlink, or are
-#     already at tip are skipped with a note — never an error. This is a
+#     already at tip are skipped with a note - never an error. This is a
 #     complementary component, built okay-to-fail: per-branch problems and
 #     rejected pushes downgrade to ::warning:: annotations, and the next
 #     scheduled run simply tries again.
@@ -20,14 +20,14 @@
 # Design notes (least privilege and containment):
 #   - GitHub scopes GITHUB_TOKEN permissions per *job*, never per step, so the
 #     job carries the unavoidable `contents: write`. Credential *material* is
-#     confined to the two network-boundary steps — the read-only branch fetch
+#     confined to the two network-boundary steps - the read-only branch fetch
 #     and the final push: checkout runs with persist-credentials: false, the
 #     token is injected only through git's environment config (never argv,
 #     never disk), and the decision/build step is unauthenticated.
 #   - The submodule is never cloned, checked out, or initialized. Its tip is
 #     resolved with `git ls-remote`, and commits are built with plumbing
 #     (read-tree / update-index / write-tree / commit-tree) against a private
-#     index — no worktree is touched, and plumbing runs no git hooks, so no
+#     index - no worktree is touched, and plumbing runs no git hooks, so no
 #     code from either repository can execute.
 
 name: Sync skills submodule
@@ -104,7 +104,7 @@ jobs:
             if git fetch --quiet --depth 1 origin "+refs/heads/${b}:refs/remotes/origin/${b}"; then
               existing="${existing} ${b}"
             else
-              note "- \`${b}\`: branch not found on origin — skipped"
+              note "- \`${b}\`: branch not found on origin - skipped"
             fi
           done
           echo "branches=${existing# }" >> "${GITHUB_OUTPUT}"
@@ -140,7 +140,7 @@ jobs:
             # is a skip note, never a broken half-update.
             entry=$(git ls-tree "${base}" -- "${SUBMODULE_PATH}")
             if [ -z "${entry}" ] || [ "${entry%% *}" != 160000 ]; then
-              note "- \`${b}\`: no submodule gitlink at \`${SUBMODULE_PATH}\` — skipped"
+              note "- \`${b}\`: no submodule gitlink at \`${SUBMODULE_PATH}\` - skipped"
               continue
             fi
             current=$(printf '%s\n' "${entry}" | awk '{ print $3 }')
@@ -154,7 +154,7 @@ jobs:
               key=$(git config --blob "${base}:.gitmodules" --get-regexp '\.path$' 2>/dev/null \
                       | awk -v p="${SUBMODULE_PATH}" '$2 == p { print $1; exit }') || true
               if [ -z "${key}" ] && [ -z "${url}" ]; then
-                note "- \`${b}\`: no .gitmodules entry for \`${SUBMODULE_PATH}\` — skipped"
+                note "- \`${b}\`: no .gitmodules entry for \`${SUBMODULE_PATH}\` - skipped"
                 continue
               fi
               if [ -n "${key}" ]; then
@@ -167,7 +167,7 @@ jobs:
             case "${url}" in
               https://*) ;;
               *)
-                warn "\`${b}\`: refusing non-https upstream URL '${url}' — skipped"
+                warn "\`${b}\`: refusing non-https upstream URL '${url}' - skipped"
                 continue
                 ;;
             esac
@@ -186,12 +186,12 @@ jobs:
             cache_key="${url} ${ref}"
             if [ -z "${tip_cache[${cache_key}]+x}" ]; then
               if ! tip=$(git ls-remote --exit-code "${url}" "${ref}" | awk 'NR == 1 { print $1 }'); then
-                warn "\`${b}\`: could not resolve '${ref}' on ${url} — skipped"
+                warn "\`${b}\`: could not resolve '${ref}' on ${url} - skipped"
                 continue
               fi
               case "${tip}" in
                 *[!0-9a-f]* | '')
-                  warn "\`${b}\`: could not resolve '${ref}' on ${url} — skipped"
+                  warn "\`${b}\`: could not resolve '${ref}' on ${url} - skipped"
                   continue
                   ;;
               esac
@@ -231,8 +231,8 @@ jobs:
           export GIT_CONFIG_VALUE_0
           # Refspecs are '<sha>:refs/heads/<branch>' words; splitting is intended.
           # Okay-to-fail: a rejected push (protected branch, concurrent update)
-          # is a warning — the next scheduled run simply tries again.
+          # is a warning - the next scheduled run simply tries again.
           if ! git push origin ${REFSPECS}; then
-            echo "::warning::Push was rejected (protected branch or concurrent update?) — will retry on the next scheduled run."
-            printf '%s\n' "- ⚠️ push rejected — will retry on the next scheduled run" >> "${GITHUB_STEP_SUMMARY}"
+            echo "::warning::Push was rejected (protected branch or concurrent update?) - will retry on the next scheduled run."
+            printf '%s\n' "- ⚠️ push rejected - will retry on the next scheduled run" >> "${GITHUB_STEP_SUMMARY}"
           fi

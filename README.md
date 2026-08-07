@@ -2,7 +2,7 @@
 
 A central, project-agnostic library of reusable [agent skills](https://agentskills.io)
 for LLM coding agents. Each skill is a self-contained `SKILL.md` that an agent can
-load on demand to perform a task consistently — commit messages, skill authoring,
+load on demand to perform a task consistently - commit messages, skill authoring,
 and more.
 
 Skills here are deliberately **neutral**: they capture reusable procedures and
@@ -13,24 +13,24 @@ unrelated repositories.
 
 | Skill | Purpose |
 | --- | --- |
-| [git-commits](git-commits/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages. |
+| [git-commits](git-commits/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages, with lite/full/ultra effort levels. |
 | [authoring-skills](authoring-skills/SKILL.md) | Distills a worked procedure into a reproducible skill; the meta-skill for writing every other skill here. |
 | [caveman-protocol](caveman-protocol/SKILL.md) | Compresses agent output when token economy is explicitly requested. |
 | [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
 | [strategic-reframing](strategic-reframing/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
 | [pl-theorist-refactoring](pl-theorist-refactoring/SKILL.md) | Refactors code into cost-aware, language-idiomatic functional style. |
-| [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity. |
+| [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity and review/audit/debt/gain/help modes. |
 
 ## How it works
 
 Each skill lives in its own kebab-case directory with a `SKILL.md` file. The YAML
 frontmatter (`name` and `description`) is the routing surface an agent reads to
-decide whether to load the full body — so descriptions state both *what* the skill
+decide whether to load the full body - so descriptions state both *what* the skill
 does and *when* to use it. The body is structured Markdown the agent follows when
 the skill is selected.
 
 Headers conform strictly to the [Agent Skills](https://agentskills.io) open
-standard — only spec fields (`name`, `description`, `license`, `compatibility`,
+standard - only spec fields (`name`, `description`, `license`, `compatibility`,
 `metadata`, `allowed-tools`), so every skill loads in any spec-compliant agent
 and uploads without hard errors. The full protocol lives in
 [AGENTS.md](AGENTS.md).
@@ -42,11 +42,17 @@ same skills to Claude:
 
 ```bash
 git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
-mkdir -p .claude
+mkdir -p .claude .github/workflows
 ln -s ../.github/skills .claude/skills
-git add .claude/skills
-git commit -m "chore: Add agent skills submodule"
+cp .github/skills/sync-skills.example.yml .github/workflows/sync-skills.yml
+git add .claude/skills .github/workflows/sync-skills.yml
+git commit -m "chore: Add agent skills submodule with scheduled auto-sync"
 ```
+
+The `cp` line opts you into the auto-updating norm: the copied workflow bumps
+the submodule pointer to the upstream tip twice a day (details below). It MUST
+be a hard copy: GitHub Actions does not resolve symlinks under
+`.github/workflows`, so a symlinked workflow file is silently ignored.
 
 Clone consuming projects with submodules included:
 
@@ -58,22 +64,23 @@ git submodule update --init --recursive
 
 ## Keeping the submodule current
 
-Copy [examples/sync-skills.yml](examples/sync-skills.yml) to
-`.github/workflows/sync-skills.yml` in your repository. Twice a day it
+The setup above already installs [sync-skills.example.yml](sync-skills.example.yml)
+as `.github/workflows/sync-skills.yml` (do this now if you skipped the `cp`
+step, and keep it a real copy, not a symlink). Twice a day it
 fast-forwards the `.github/skills` gitlink to the upstream tip on each branch
 you list (default: `main` and `master`) and pushes one `chore:` commit per
 branch; branches that are missing, unconfigured, or already current are
 skipped, and anything else that goes wrong surfaces as a warning rather than
-a failed run. The upstream is whatever each branch's `.gitmodules` records —
+a failed run. The upstream is whatever each branch's `.gitmodules` records -
 a fork of this repository with the same layout works unchanged, or can be
 forced with the `upstream-url`/`upstream-ref` inputs.
 
-The caller is a thin shell — schedule plus a `contents: write` grant — around
+The caller is a thin shell - schedule plus a `contents: write` grant - around
 the reusable workflow in
 [.github/workflows/sync-skills.yml](.github/workflows/sync-skills.yml), which
 is built for containment: checkout keeps no credentials
 (`persist-credentials: false`), only the final push step ever sees the token,
-and the submodule is never cloned — its tip is read with `git ls-remote` and
+and the submodule is never cloned - its tip is read with `git ls-remote` and
 recorded directly into the index as a gitlink, so no submodule code or git
 hook can run. If your organization restricts third-party actions, allowlist
 `BTreeMap/SKILLs/.github/workflows/sync-skills.yml@main`.
@@ -108,7 +115,7 @@ repository moves or is cloned elsewhere.
 
 ## Contributing a skill
 
-Read [authoring-skills/SKILL.md](authoring-skills/SKILL.md) first — it defines the
+Read [authoring-skills/SKILL.md](authoring-skills/SKILL.md) first - it defines the
 required structure and a validation checklist. In short:
 
 1. Create a kebab-case directory with a single `SKILL.md`.

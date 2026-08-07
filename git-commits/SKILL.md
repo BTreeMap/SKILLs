@@ -3,12 +3,29 @@ name: git-commits
 description: >-
   Drafts and reviews git commit messages that follow Conventional Commits,
   resolving scopes from repository history while minimizing output tokens.
-  Use when the user asks to draft a commit, write a message for a diff,
-  review a commit message, or run `git commit`.
+  Supports effort levels: lite (subject line only, no history scan), full
+  (default: scoped subject plus wrapped body and footer), and ultra (adds an
+  atomicity and history-consistency audit). Use when the user asks to draft a
+  commit, write a message for a diff, review a commit message, or run
+  `git commit`.
 license: MIT
+metadata:
+  argument-hint: "[lite|full|ultra]"
 ---
 
 # Git Commit Message Standards
+
+Effort levels gate how much history is scanned and how much text is produced.
+Default: **full**. Switch per invocation: `/git-commits lite|full|ultra`.
+
+| Level | Loads | Behavior |
+|-------|-------|----------|
+| **lite** | Nothing extra | Subject line only; scope from staged paths; no history scan. Cheapest. |
+| **full** | [references/full.md](references/full.md) | Scoped subject plus wrapped body and footer; scope resolved from recent history. Default. |
+| **ultra** | [references/full.md](references/full.md) then [references/ultra.md](references/ultra.md) | Full, plus an atomicity and history-consistency audit before drafting. |
+
+Read ONLY the reference files the active level lists. The core rules below
+apply at every level.
 
 <system_directives>
   <commit_schema>
@@ -32,84 +49,18 @@ license: MIT
     feat, fix, refactor, docs, style, perf, test, build, ci, chore, revert
   </allowed_types>
 
-  <body_constraints>
-    <rule>Separate the subject line and the body with exactly one blank line.</rule>
-    <rule>Wrap all body lines at exactly 72 characters.</rule>
-    <rule>Explain exactly what changed and the rationale behind the chosen solution.</rule>
-    <rule>Apply token-economical phrasing (Caveman formatting) to the body text, using dense syntactic structures and omitting conversational filler.</rule>
-  </body_constraints>
-
-  <footer_constraints>
-    <rule>Place issue tracker references in the footer (e.g., Fixes #123, Resolves #456).</rule>
-    <rule>Start breaking changes with 'BREAKING CHANGE: ' followed by the detailed migration path.</rule>
-  </footer_constraints>
-
-  <scope_resolution_procedure>
-    <step>Run a command like `git log --pretty=format:'%s' -50` to inspect recent history.</step>
-    <step>Reuse an existing scope from the log if it aligns with the current changes.</step>
-    <step>Derive new scopes from the repository's top-level packages, crates, modules, or directories if no existing scope applies.</step>
-    <step>Format new scopes as short, lowercase, single tokens using hyphens for multiple words.</step>
-    <step>Omit the scope entirely for repository-wide changes.</step>
-  </scope_resolution_procedure>
+  <lite_procedure>
+    <rule>Derive the scope from the staged file paths: the single top-level directory, package, or module touched. Omit the scope when changes span several.</rule>
+    <rule>Reuse a scope visible in `git log --oneline -10`; run no wider history scan.</rule>
+    <rule>Output the subject line only. Add a body and footer solely for a breaking change, which always requires `BREAKING CHANGE: ` plus the migration path.</rule>
+  </lite_procedure>
 
   <exception_handling>
     <rule>Retain bot-authored commits (e.g., Renovate, Dependabot) and platform-generated merge commits exactly as they are without formatting alterations.</rule>
   </exception_handling>
-
-  <gotchas>
-    <item>The blank line between the subject and the body is structurally required for Git tooling compatibility.</item>
-    <item>Imperative mood is strict (use "Add" instead of "Added" or "Adding").</item>
-    <item>The body explains the "what" and "why"; rely entirely on the code diff to communicate the "how".</item>
-    <item>Failing to reuse scopes discovered via `git log` fragments the history with duplicate synonyms.</item>
-    <item>Terminating the subject line with punctuation violates the standard.</item>
-  </gotchas>
-
-  <validation_checklist>
-    <directive>Silently verify these conditions before outputting the commit.</directive>
-    <item>Subject follows `<type>(<scope>): <subject>` and is 70 characters or less.</item>
-    <item>Type is explicitly chosen from `<allowed_types>`.</item>
-    <item>Scope (if present) is lowercase, a single token, and verified via `git log`.</item>
-    <item>Subject description is imperative, capitalized, and period-free.</item>
-    <item>A blank line separates the subject and body.</item>
-    <item>Body lines wrap at 72 characters and detail the what/why without restating the diff.</item>
-    <item>Issue references and breaking changes reside strictly in the footer.</item>
-    <item>Output contains zero conversational filler per the `<output_contract>`.</item>
-  </validation_checklist>
 
   <output_contract>
     <rule>Output strictly the raw commit text or the executable `git commit -m` command.</rule>
     <rule>Omit all conversational filler, preambles, formatting acknowledgments, and concluding remarks.</rule>
   </output_contract>
 </system_directives>
-
-## Examples
-
-<examples>
-  <example type="valid">
-    <context>A well-formed feature commit with a scope, body, and issue reference.</context>
-    <raw_output>
-feat(auth): Reject tokens that omit an expiry claim
-
-Tokens minted before the rotation fix lacked an `exp` claim, so the
-validator treated them as non-expiring. Requiring `exp` closes the
-window in which a leaked token would stay valid indefinitely.
-
-Resolves #142
-    </raw_output>
-  </example>
-
-  <example type="invalid">
-    <context>Demonstrating common failure modes to avoid.</context>
-    <raw_output>
-fixed the bug
-added a token refresh thing so users dont get logged out randomly anymore. also updated the ui to show a loading spinner while it happens
-    </raw_output>
-    <violations>
-      <item>Missing type and scope.</item>
-      <item>Past tense used instead of imperative mood ("fixed", "added").</item>
-      <item>Missing blank line between subject and body.</item>
-      <item>Body lines exceed 72 characters.</item>
-      <item>Missing capitalization.</item>
-    </violations>
-  </example>
-</examples>

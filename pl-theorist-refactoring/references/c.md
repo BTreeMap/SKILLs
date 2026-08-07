@@ -11,7 +11,7 @@
   part of the contract. `const` prevents mutation through one access path; it
   does not prove deep immutability.
 - Signed overflow is undefined, allocation can fail, and unchecked indexing,
-  null dereference, use-after-free, and data races are defects—not partial
+  null dereference, use-after-free, and data races are defects, not partial
   functions to normalize.
 
 ## Preferred FP Shapes

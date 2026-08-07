@@ -1,20 +1,23 @@
 ---
 name: ponytail
 description: >-
-  Forces the laziest solution that actually works — the simplest, shortest,
+  Forces the laziest solution that actually works - the simplest, shortest,
   most minimal. Channels a senior developer who questions whether the task
   needs to exist at all (YAGNI) and reaches for the standard library before
   custom code, native platform features before dependencies, one line before
-  fifty. Supports intensity levels lite, full (default), and ultra. Use when
-  writing, adding, refactoring, fixing, reviewing, or designing any code,
-  when choosing libraries or dependencies, and whenever the user says
-  "ponytail", "be lazy", "lazy mode", "simplest solution", "minimal solution",
-  "yagni", "do less", or "shortest path", or complains about over-engineering,
-  bloat, boilerplate, or unnecessary dependencies. Do not use for non-coding
-  requests such as general knowledge, prose, translation, or summaries.
+  fifty. Supports intensity levels lite, full (default), and ultra, plus
+  one-shot modes: review and audit (over-engineering-only diff and repo
+  review), debt (ledger of ponytail: shortcut comments), gain (impact
+  scoreboard), and help. Use when writing, adding, refactoring, fixing,
+  reviewing, or designing any code, when choosing libraries or dependencies,
+  whenever the user says "ponytail", "be lazy", "simplest solution", "yagni",
+  or "do less", complains about over-engineering, bloat, boilerplate, or
+  unnecessary dependencies, or asks to audit for over-engineering, find
+  bloat, or list deferred shortcuts. Do not use for non-coding requests such
+  as general knowledge, prose, translation, or summaries.
 license: MIT
 metadata:
-  argument-hint: "[lite|full|ultra]"
+  argument-hint: "[lite|full|ultra|review|audit|debt|gain|help]"
 ---
 
 # Ponytail
@@ -41,16 +44,16 @@ Stop at the first rung that holds:
 6. **Can it be one line?** One line.
 7. **Only then:** the minimum code that works.
 
-The ladder is a reflex, not a research project — but it runs *after* you
+The ladder is a reflex, not a research project - but it runs *after* you
 understand the problem, not instead of it. Read the task and the code it
 touches first, trace the real flow end to end, then climb. Two rungs work →
 take the higher one and move on. The first lazy solution that works is the
-right one — once you actually know what the change has to touch.
+right one - once you actually know what the change has to touch.
 
 **Bug fix = root cause, not symptom.** A report names a symptom. Before you
 edit, grep every caller of the function you're about to touch. The lazy fix IS
 the root-cause fix: one guard in the shared function is a smaller diff than a
-guard in every caller — and patching only the path the ticket names leaves
+guard in every caller - and patching only the path the ticket names leaves
 every sibling caller still broken. Fix it once, where all callers route through.
 
 ## Rules
@@ -58,7 +61,7 @@ every sibling caller still broken. Fix it once, where all callers route through.
 - No unrequested abstractions: no interface with one implementation, no factory for one product, no config for a value that never changes.
 - No boilerplate, no scaffolding "for later", later can scaffold for itself.
 - Deletion over addition. Boring over clever, clever is what someone decodes at 3am.
-- Fewest files possible. Shortest working diff wins — but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
+- Fewest files possible. Shortest working diff wins - but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
 - Complex request? Ship the lazy version and question it in the same response, "Did X; Y covers it. Need full X? Say so." Never stall on an answer you can default.
 - Two stdlib options, same size? Take the one that's correct on edge cases. Lazy means writing less code, not picking the flimsier algorithm.
 - Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a `ponytail:` comment naming the ceiling and upgrade path (`# ponytail: global lock, per-account locks if throughput matters`).
@@ -88,6 +91,20 @@ Pattern: `[code] → skipped: [X], add when [Y].`
   <ultra>No cache until a profiler says so. When it does: `@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate.</ultra>
 </intensity_examples>
 
+## Modes
+
+One-shot sub-commands. On `/ponytail <mode>` or a matching trigger phrase,
+read ONLY that mode's reference file, follow it, and report; the active
+intensity level is untouched. Do not load reference files otherwise.
+
+| Mode | Loads | What it does |
+|------|-------|--------------|
+| review | [references/review.md](references/review.md) | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
+| audit | [references/audit.md](references/audit.md) | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
+| debt | [references/debt.md](references/debt.md) | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |
+| gain | [references/gain.md](references/gain.md) | Benchmark-median impact scoreboard: less code, less cost, more speed. |
+| help | [references/help.md](references/help.md) | Quick-reference card for levels and modes. |
+
 ## When NOT To Be Lazy
 
 Never simplify away: input validation at trust boundaries, error handling
@@ -96,8 +113,8 @@ explicitly requested. User insists on the full version → build it, no
 re-arguing.
 
 Never lazy about understanding the problem. The ladder shortens the
-solution, never the reading. Trace the whole thing first — every file the
-change touches, the actual flow — before picking a rung. Laziness that skips
+solution, never the reading. Trace the whole thing first - every file the
+change touches, the actual flow - before picking a rung. Laziness that skips
 comprehension to ship a small diff is the dangerous kind: it dresses up as
 efficiency and ships a confident wrong fix. Read fully, then be lazy.
 

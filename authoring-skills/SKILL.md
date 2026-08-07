@@ -29,6 +29,7 @@ license: MIT
     <rule>Parameterize all project-specific values (paths, hostnames, IDs) or provide instructions to derive them dynamically.</rule>
     <rule>Express directives conditionally and explicitly (e.g., "If X, execute Y").</rule>
     <rule>Enforce token-economical language (Caveman formatting) in the generated skill, utilizing sentence fragments and eliminating conversational filler.</rule>
+    <rule>Never emit em-dash characters (U+2014); use a hyphen, a comma, a colon, or restructure the sentence.</rule>
   </execution_constraints>
 
   <distillation_pipeline>
