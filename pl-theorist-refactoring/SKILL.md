@@ -1,14 +1,17 @@
 ---
 name: pl-theorist-refactoring
 description: >-
-  Use when refactoring Python, JavaScript, TypeScript, Rust, Go, Haskell, C, C++,
-  Java, Kotlin, or C# toward functional style; reviewing imperative code through
-  a programming-languages lens; or teaching better FP design taste. Produces a
-  behavior-preserving refactor using immutable data, algebraic data types, smart
-  constructors, total domain models, native map/filter/fold, Option/Result, and
-  effect primitives, while progressively loading only the target language's
-  stack, allocation, evaluation, and runtime constraints.
-argument-hint: "Code or files to refactor; include the target language if ambiguous"
+  Produces behavior-preserving refactors toward functional style — immutable
+  data, algebraic data types, smart constructors, total domain models, native
+  map/filter/fold, Option/Result, and effect primitives — while progressively
+  loading only the target language's stack, allocation, evaluation, and
+  runtime constraints. Use when refactoring Python, JavaScript, TypeScript,
+  Rust, Go, Haskell, C, C++, Java, Kotlin, or C# toward functional style,
+  reviewing imperative code through a programming-languages lens, or teaching
+  better FP design taste.
+license: MIT
+metadata:
+  argument-hint: "[files-or-code] [target-language]"
 ---
 
 # PL Theorist Refactoring Kernel

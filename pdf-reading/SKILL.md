@@ -1,6 +1,13 @@
 ---
 name: pdf-reading
-description: "Use when a user asks to inspect, summarize, search, quote, extract text or metadata, analyze pages, or answer questions about a PDF. Read PDFs with pypdf only; never create, modify, merge, split, render, OCR, or otherwise write PDF files."
+description: >-
+  Reads PDFs with pypdf to extract text and metadata and answer questions
+  with page-cited evidence; never creates, modifies, merges, splits, renders,
+  OCRs, or otherwise writes PDF files. Use when the user asks to inspect,
+  summarize, search, quote, extract from, analyze, or answer questions about
+  a PDF.
+license: MIT
+compatibility: Requires uv to run the bundled PEP 723 extractor script
 ---
 
 # PDF Reading

@@ -1,14 +1,15 @@
 ---
 name: strategic-reframing
 description: >-
-  Triggered when the user asks to challenge a conservative design, think bigger,
-  define a greenfield target, escape incrementalism, reconsider legacy constraints,
-  or establish the big-picture direction. Also invoke during product, architecture,
-  or planning discussions when compatibility fear, refactor cost, local details, or
-  the current implementation are prematurely deciding the target model. Produces a
-  testable strategic direction judgment: sharp thesis, constraint diagnosis, clean
-  target, kill list, Conservative-vs-Clean-vs-Staged options, proof point,
-  falsifier, and concrete payoff ledger.
+  Produces a testable strategic direction judgment: sharp thesis, constraint
+  diagnosis, clean target, kill list, Conservative-vs-Clean-vs-Staged
+  options, proof point, falsifier, and concrete payoff ledger. Use when the
+  user asks to challenge a conservative design, think bigger, define a
+  greenfield target, escape incrementalism, reconsider legacy constraints, or
+  establish big-picture direction — or during product, architecture, or
+  planning discussions when compatibility fear, refactor cost, local details,
+  or the current implementation are prematurely deciding the target model.
+license: MIT
 ---
 
 # Strategic Reframing

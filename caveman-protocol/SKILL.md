@@ -1,6 +1,11 @@
 ---
 name: caveman-protocol
-description: Compresses language model outputs for all coding, refactoring, and debugging tasks to maximize context window longevity. Use this skill whenever the user explicitly asks to apply caveman formatting, optimize tokens, or use the slash command /caveman-compress.
+description: >-
+  Compresses language model output for coding, refactoring, and debugging
+  tasks into token-economical fragments to maximize context window longevity.
+  Use when the user explicitly asks to apply caveman formatting, optimize
+  tokens, or invokes the slash command /caveman-compress.
+license: MIT
 ---
 
 # Caveman Protocol

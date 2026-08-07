@@ -1,6 +1,11 @@
 ---
 name: git-commits
-description: Triggered when the user asks to draft a commit, write a message for a diff, review a commit, or run `git commit`. Enforces Conventional Commits formatting and repository-specific scope resolution while minimizing output tokens.
+description: >-
+  Drafts and reviews git commit messages that follow Conventional Commits,
+  resolving scopes from repository history while minimizing output tokens.
+  Use when the user asks to draft a commit, write a message for a diff,
+  review a commit message, or run `git commit`.
+license: MIT
 ---
 
 # Git Commit Message Standards
