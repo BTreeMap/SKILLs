@@ -13,7 +13,7 @@ unrelated repositories.
 
 | Skill | Purpose |
 | --- | --- |
-| [git-commits](git-commits/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages, with lite/full/ultra effort levels. |
+| [git-commits](git-commits/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages, with lite/full/ultra effort levels and a quick-ship push verb. |
 | [authoring-skills](authoring-skills/SKILL.md) | Distills a worked procedure into a reproducible skill; the meta-skill for writing every other skill here. |
 | [caveman-protocol](caveman-protocol/SKILL.md) | Compresses agent output when token economy is explicitly requested, with lite/full/ultra/wenyan levels and commit/review/compress/stats/help modes. |
 | [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |

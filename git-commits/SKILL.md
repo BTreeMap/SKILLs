@@ -5,12 +5,13 @@ description: >-
   resolving scopes from repository history while minimizing output tokens.
   Supports effort levels: lite (subject line only, no history scan), full
   (default: scoped subject plus wrapped body and footer), and ultra (adds an
-  atomicity and history-consistency audit). Use when the user asks to draft a
-  commit, write a message for a diff, review a commit message, or run
-  `git commit`.
+  atomicity and history-consistency audit), plus a push verb that commits at
+  lite level and pushes to the tracked remote. Use when the user asks to
+  draft a commit, write a message for a diff, review a commit message, run
+  `git commit`, or commit and push.
 license: MIT
 metadata:
-  argument-hint: "[lite|full|ultra]"
+  argument-hint: "[lite|full|ultra] [push]"
 ---
 
 # Git Commit Message Standards
@@ -26,6 +27,14 @@ Default: **full**. Switch per invocation: `/git-commits lite|full|ultra`.
 
 Read ONLY the reference files the active level lists. The core rules below
 apply at every level.
+
+## Push Verb
+
+`push` is a quick-ship action, not a level: stage as directed, commit, then
+push to the tracked remote, reporting the pushed range in one line. Without
+an explicit level, `push` implies **lite** (nothing extra loads); an explicit
+level wins, so `full push` and `ultra push` draft at that level first. Run
+`git push` ONLY when the user passed the push verb or asked to push.
 
 <system_directives>
   <commit_schema>

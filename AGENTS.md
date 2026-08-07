@@ -25,7 +25,8 @@ needs them - to keep context lean.
 Current skills:
 
 * `git-commits/` - Conventional Commits standard for commit messages, with
-  lite/full/ultra effort levels loaded on demand from `references/`.
+  lite/full/ultra effort levels loaded on demand from `references/` and a
+  push verb that commits at lite level and pushes.
 * `authoring-skills/` - how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
 * `caveman-protocol/` - token-economical output formatting for coding workflows,
