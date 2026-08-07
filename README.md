@@ -41,13 +41,21 @@ Add this repository as a git submodule mounted at `.github/skills` and expose th
 same skills to Claude:
 
 ```bash
-git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
+git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills 2>/dev/null \
+  || git submodule update --init --remote .github/skills
 mkdir -p .claude .github/workflows
-ln -s ../.github/skills .claude/skills
+ln -sfn ../.github/skills .claude/skills
 cp .github/skills/sync-skills.example.yml .github/workflows/sync-skills.yml
-git add .claude/skills .github/workflows/sync-skills.yml
-git commit -m "chore: Add agent skills submodule with scheduled auto-sync"
+git add .gitmodules .claude/skills .github/skills .github/workflows/sync-skills.yml
+git commit -m "chore: Add or update agent skills submodule with auto-sync" \
+  || echo "Already up to date."
 ```
+
+The script is idempotent: on first install it adds the submodule; on re-run
+the fallback updates it to the latest upstream tip instead, `ln -sfn`
+replaces a stale alias without descending into it, and `cp` refreshes the
+workflow to the current example (skip that line if you have customized your
+copy). When nothing changed, the commit is skipped.
 
 The `cp` line opts you into the auto-updating norm: the copied workflow bumps
 the submodule pointer to the upstream tip twice a day (details below). It MUST
