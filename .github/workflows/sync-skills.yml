@@ -1,0 +1,238 @@
+# Reusable workflow: fast-forward a skills submodule gitlink to its upstream
+# tip on every listed branch of the calling repository.
+#
+# Downstream repositories call this on a schedule; see examples/sync-skills.yml
+# for the ready-to-use caller.
+#
+# Behavior:
+#   - For each branch in `branches` (default: main master), the submodule
+#     gitlink at `submodule-path` is set to the upstream tip and pushed as one
+#     `chore:` commit. Branches that do not exist, carry no gitlink, or are
+#     already at tip are skipped with a note — never an error. This is a
+#     complementary component, built okay-to-fail: per-branch problems and
+#     rejected pushes downgrade to ::warning:: annotations, and the next
+#     scheduled run simply tries again.
+#   - The upstream defaults to whatever each branch's .gitmodules records, so
+#     forks with the same layout work unchanged; `upstream-url`/`upstream-ref`
+#     override it explicitly. The upstream must be anonymously readable over
+#     https (the caller's token is never sent to it).
+#
+# Design notes (least privilege and containment):
+#   - GitHub scopes GITHUB_TOKEN permissions per *job*, never per step, so the
+#     job carries the unavoidable `contents: write`. Credential *material* is
+#     confined to the two network-boundary steps — the read-only branch fetch
+#     and the final push: checkout runs with persist-credentials: false, the
+#     token is injected only through git's environment config (never argv,
+#     never disk), and the decision/build step is unauthenticated.
+#   - The submodule is never cloned, checked out, or initialized. Its tip is
+#     resolved with `git ls-remote`, and commits are built with plumbing
+#     (read-tree / update-index / write-tree / commit-tree) against a private
+#     index — no worktree is touched, and plumbing runs no git hooks, so no
+#     code from either repository can execute.
+
+name: Sync skills submodule
+
+on:
+  workflow_call:
+    inputs:
+      submodule-path:
+        description: Path of the skills submodule in the calling repository.
+        type: string
+        required: false
+        default: .github/skills
+      branches:
+        description: >-
+          Whitespace- or comma-separated branch names to sync. Missing
+          branches are skipped, not errors.
+        type: string
+        required: false
+        default: main master
+      upstream-url:
+        description: >-
+          Upstream https URL to sync from. Default: the URL each branch's
+          .gitmodules records for the submodule.
+        type: string
+        required: false
+        default: ""
+      upstream-ref:
+        description: >-
+          Upstream branch to track, or HEAD for its default branch. Default:
+          the branch each branch's .gitmodules records, else HEAD.
+        type: string
+        required: false
+        default: ""
+
+# Deny-all baseline; the sync job re-grants the minimum it needs.
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # sole grant: push the gitlink bumps to the caller repo
+    steps:
+      - name: Check out superproject (credential-free, no submodules)
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          submodules: false
+          fetch-depth: 1
+
+      - name: Fetch target branches (credentialed, read-only)
+        id: targets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCHES: ${{ inputs.branches }}
+        run: |
+          set -euo pipefail
+          note() { printf '%s\n' "$1" | tee -a "${GITHUB_STEP_SUMMARY}"; }
+
+          # Git reads this ephemeral config from the environment: the token
+          # never touches argv, the working tree, or .git/config.
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader"
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\n')"
+          export GIT_CONFIG_VALUE_0
+
+          existing=""
+          for b in ${BRANCHES//,/ }; do
+            if git fetch --quiet --depth 1 origin "+refs/heads/${b}:refs/remotes/origin/${b}"; then
+              existing="${existing} ${b}"
+            else
+              note "- \`${b}\`: branch not found on origin — skipped"
+            fi
+          done
+          echo "branches=${existing# }" >> "${GITHUB_OUTPUT}"
+
+      - name: Build gitlink commits (credential-free)
+        id: build
+        if: steps.targets.outputs.branches != ''
+        env:
+          SUBMODULE_PATH: ${{ inputs.submodule-path }}
+          BRANCHES: ${{ steps.targets.outputs.branches }}
+          UPSTREAM_URL: ${{ inputs.upstream-url }}
+          UPSTREAM_REF: ${{ inputs.upstream-ref }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          note() { printf '%s\n' "$1" | tee -a "${GITHUB_STEP_SUMMARY}"; }
+          # Complementary automation: anything wrong with one branch is a
+          # warning to investigate, never a red run.
+          warn() { echo "::warning::$1"; printf '%s\n' "- ⚠️ $1" >> "${GITHUB_STEP_SUMMARY}"; }
+
+          declare -A tip_cache
+          idx="${RUNNER_TEMP}/sync-skills-index"
+          refspecs=""
+
+          for b in ${BRANCHES}; do
+            base=$(git rev-parse "refs/remotes/origin/${b}")
+
+            # Parse, don't validate: the branch is admitted only once it
+            # yields a trusted (current, url, ref) triple; anything else
+            # is a skip note, never a broken half-update.
+            entry=$(git ls-tree "${base}" -- "${SUBMODULE_PATH}")
+            if [ -z "${entry}" ] || [ "${entry%% *}" != 160000 ]; then
+              note "- \`${b}\`: no submodule gitlink at \`${SUBMODULE_PATH}\` — skipped"
+              continue
+            fi
+            current=$(printf '%s\n' "${entry}" | awk '{ print $3 }')
+
+            # Upstream from this branch's .gitmodules unless overridden.
+            # Look the submodule up by path, not section name, so renamed
+            # submodules resolve too.
+            url="${UPSTREAM_URL}"
+            cfg_branch=""
+            if [ -z "${url}" ] || [ -z "${UPSTREAM_REF}" ]; then
+              key=$(git config --blob "${base}:.gitmodules" --get-regexp '\.path$' 2>/dev/null \
+                      | awk -v p="${SUBMODULE_PATH}" '$2 == p { print $1; exit }') || true
+              if [ -z "${key}" ] && [ -z "${url}" ]; then
+                note "- \`${b}\`: no .gitmodules entry for \`${SUBMODULE_PATH}\` — skipped"
+                continue
+              fi
+              if [ -n "${key}" ]; then
+                name=${key#submodule.}
+                name=${name%.path}
+                [ -n "${url}" ] || url=$(git config --blob "${base}:.gitmodules" --get "submodule.${name}.url")
+                cfg_branch=$(git config --blob "${base}:.gitmodules" --get "submodule.${name}.branch" 2>/dev/null) || true
+              fi
+            fi
+            case "${url}" in
+              https://*) ;;
+              *)
+                warn "\`${b}\`: refusing non-https upstream URL '${url}' — skipped"
+                continue
+                ;;
+            esac
+            if [ -n "${UPSTREAM_REF}" ]; then
+              case "${UPSTREAM_REF}" in
+                HEAD) ref=HEAD ;;
+                *) ref="refs/heads/${UPSTREAM_REF}" ;;
+              esac
+            elif [ -n "${cfg_branch}" ]; then
+              ref="refs/heads/${cfg_branch}"
+            else
+              ref=HEAD
+            fi
+
+            # Resolve the upstream tip once per (url, ref), anonymously.
+            cache_key="${url} ${ref}"
+            if [ -z "${tip_cache[${cache_key}]+x}" ]; then
+              if ! tip=$(git ls-remote --exit-code "${url}" "${ref}" | awk 'NR == 1 { print $1 }'); then
+                warn "\`${b}\`: could not resolve '${ref}' on ${url} — skipped"
+                continue
+              fi
+              case "${tip}" in
+                *[!0-9a-f]* | '')
+                  warn "\`${b}\`: could not resolve '${ref}' on ${url} — skipped"
+                  continue
+                  ;;
+              esac
+              tip_cache[${cache_key}]="${tip}"
+            fi
+            tip="${tip_cache[${cache_key}]}"
+
+            if [ "${tip}" = "${current}" ]; then
+              note "- \`${b}\`: already at tip ${current:0:12}"
+              continue
+            fi
+
+            # Plumbing only: build the bumped tree in a private index and
+            # commit it on top of the branch head. No worktree, no hooks.
+            GIT_INDEX_FILE="${idx}" git read-tree "${base}"
+            GIT_INDEX_FILE="${idx}" git update-index --add \
+              --cacheinfo "160000,${tip},${SUBMODULE_PATH}"
+            tree=$(GIT_INDEX_FILE="${idx}" git write-tree)
+            commit=$(git commit-tree "${tree}" -p "${base}" \
+              -m "chore: Update skills submodule to ${tip:0:12}")
+            refspecs="${refspecs} ${commit}:refs/heads/${b}"
+            note "- \`${b}\`: ${current:0:12} → ${tip:0:12}"
+          done
+
+          echo "refspecs=${refspecs# }" >> "${GITHUB_OUTPUT}"
+
+      - name: Push (credentialed, the only write)
+        if: steps.build.outputs.refspecs != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REFSPECS: ${{ steps.build.outputs.refspecs }}
+        run: |
+          set -euo pipefail
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader"
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 | tr -d '\n')"
+          export GIT_CONFIG_VALUE_0
+          # Refspecs are '<sha>:refs/heads/<branch>' words; splitting is intended.
+          # Okay-to-fail: a rejected push (protected branch, concurrent update)
+          # is a warning — the next scheduled run simply tries again.
+          if ! git push origin ${REFSPECS}; then
+            echo "::warning::Push was rejected (protected branch or concurrent update?) — will retry on the next scheduled run."
+            printf '%s\n' "- ⚠️ push rejected — will retry on the next scheduled run" >> "${GITHUB_STEP_SUMMARY}"
+          fi

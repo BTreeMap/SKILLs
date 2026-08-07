@@ -49,6 +49,28 @@ git clone --recurse-submodules <your-repo-url>
 git submodule update --init --recursive
 ```
 
+## Keeping the submodule current
+
+Copy [examples/sync-skills.yml](examples/sync-skills.yml) to
+`.github/workflows/sync-skills.yml` in your repository. Twice a day it
+fast-forwards the `.github/skills` gitlink to the upstream tip on each branch
+you list (default: `main` and `master`) and pushes one `chore:` commit per
+branch; branches that are missing, unconfigured, or already current are
+skipped, and anything else that goes wrong surfaces as a warning rather than
+a failed run. The upstream is whatever each branch's `.gitmodules` records —
+a fork of this repository with the same layout works unchanged, or can be
+forced with the `upstream-url`/`upstream-ref` inputs.
+
+The caller is a thin shell — schedule plus a `contents: write` grant — around
+the reusable workflow in
+[.github/workflows/sync-skills.yml](.github/workflows/sync-skills.yml), which
+is built for containment: checkout keeps no credentials
+(`persist-credentials: false`), only the final push step ever sees the token,
+and the submodule is never cloned — its tip is read with `git ls-remote` and
+recorded directly into the index as a gitlink, so no submodule code or git
+hook can run. If your organization restricts third-party actions, allowlist
+`BTreeMap/SKILLs/.github/workflows/sync-skills.yml@main`.
+
 Pull the latest skills and record the new pointer:
 
 ```bash
