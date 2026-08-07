@@ -19,6 +19,7 @@ unrelated repositories.
 | [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
 | [strategic-reframing](strategic-reframing/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
 | [pl-theorist-refactoring](pl-theorist-refactoring/SKILL.md) | Refactors code into cost-aware, language-idiomatic functional style. |
+| [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity. |
 
 ## How it works
 
@@ -27,6 +28,12 @@ frontmatter (`name` and `description`) is the routing surface an agent reads to
 decide whether to load the full body — so descriptions state both *what* the skill
 does and *when* to use it. The body is structured Markdown the agent follows when
 the skill is selected.
+
+Headers conform strictly to the [Agent Skills](https://agentskills.io) open
+standard — only spec fields (`name`, `description`, `license`, `compatibility`,
+`metadata`, `allowed-tools`), so every skill loads in any spec-compliant agent
+and uploads without hard errors. The full protocol lives in
+[AGENTS.md](AGENTS.md).
 
 ## Using these skills in your project
 
@@ -111,6 +118,9 @@ required structure and a validation checklist. In short:
    examples, a Gotchas section, and a validation checklist.
 4. Keep it within context economy (~500 lines); offload bulky references to sibling
    files.
+5. Commit the discovery alias and listings in the same change:
+   `ln -s ../../<skill-name> .github/skills/<skill-name>`, plus a row in this
+   README's table and a bullet in [AGENTS.md](AGENTS.md).
 
 Repository conventions for agents are documented in [AGENTS.md](AGENTS.md). Commit
 messages follow the [git-commits](git-commits/SKILL.md) skill.

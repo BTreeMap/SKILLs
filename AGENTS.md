@@ -29,6 +29,30 @@ Current skills:
   language-specific disclosure.
 * `strategic-reframing/` — bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
+* `ponytail/` — laziest-working-solution discipline: YAGNI, stdlib-first, minimal
+  diffs, with lite/full/ultra intensity levels.
+
+## Frontmatter protocol
+
+Every `SKILL.md` header conforms strictly to the
+[Agent Skills](https://agentskills.io) open standard, so a skill loads
+unchanged in any spec-compliant agent and uploads without hard errors:
+
+* Fields, in canonical order: `name`, `description`, then only as needed
+  `license`, `compatibility`, `metadata`, `allowed-tools`. NEVER emit
+  agent-specific extension fields (`argument-hint`, `when_to_use`, ...);
+  record such hints as quoted string values under `metadata`
+  (e.g. `metadata: {argument-hint: "[lite|full|ultra]"}`).
+* `name` equals the directory name: 1–64 characters; lowercase letters,
+  numbers, and hyphens; no leading, trailing, or consecutive hyphens.
+* `description` is a `>-` folded block scalar, ≤1024 characters, third
+  person, in two movements: what the skill does (capability statement
+  carrying its key search terms), then trigger conditions starting
+  "Use when ..."; append "Do not use for ..." when misfires are likely.
+* `license: MIT` on every skill — skills are vendored individually and keep
+  their terms when copied out of this repository.
+* `compatibility` (≤500 characters) only for real environment requirements
+  (runtimes, system packages, network access); most skills omit it.
 
 ## Authoring and editing skills
 
@@ -41,6 +65,11 @@ Current skills:
   derive them from the consuming repository.
 * Keep each skill within context economy (~500 lines). Offload bulky reference
   material to sibling files the agent reads on demand.
+* When adding or renaming a skill, commit its discovery alias in the same change:
+  `ln -s ../../<skill-name> .github/skills/<skill-name>`. The root directory is
+  canonical; `.claude/skills` is a single symlink to `.github/skills`, so the
+  alias surfaces there automatically. Update the skill lists in `AGENTS.md` and
+  `README.md` too.
 * Edit skills **here**, in this repository. NEVER edit the vendored copy inside a
   downstream project's `.github/skills` submodule; those changes are discarded on
   the next submodule update.
