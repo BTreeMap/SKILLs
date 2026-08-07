@@ -28,7 +28,9 @@ Current skills:
   lite/full/ultra effort levels loaded on demand from `references/`.
 * `authoring-skills/` - how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
-* `caveman-protocol/` - token-economical output formatting for coding workflows.
+* `caveman-protocol/` - token-economical output formatting for coding workflows,
+  with lite/full/ultra/wenyan levels and one-shot commit/review/compress/stats/
+  help modes; the compress mode is guarded by a deterministic bundled script.
 * `pdf-reading/` - text and metadata extraction from PDF files for analysis.
 * `pl-theorist-refactoring/` - cost-aware functional refactoring with progressive
   language-specific disclosure.
@@ -73,6 +75,11 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   material to sibling files the agent reads on demand.
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use a
   hyphen, a comma, a colon, or restructure the sentence.
+* Every bundled Python script starts with `#!/usr/bin/env -S uv run --script`
+  and a PEP 723 `# /// script` block declaring `requires-python` and
+  `dependencies` (an empty list for stdlib-only scripts). Skills invoke them
+  with `uv run --script` at the script's canonical bundled path, never with a
+  host `python`/`python3`.
 * When adding or renaming a skill, commit its discovery alias in the same change:
   `ln -s ../../<skill-name> .github/skills/<skill-name>`. The root directory is
   canonical; `.claude/skills` is a single symlink to `.github/skills`, so the
