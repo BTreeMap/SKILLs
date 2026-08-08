@@ -210,4 +210,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except (OSError, PdfReadError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
-        raise SystemExit(2)
+        raise SystemExit(2) from error
