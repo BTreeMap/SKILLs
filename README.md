@@ -76,21 +76,24 @@ The setup above already installs [sync-skills.example.yml](sync-skills.example.y
 as `.github/workflows/sync-skills.yml` (do this now if you skipped the `cp`
 step, and keep it a real copy, not a symlink). Twice a day it
 fast-forwards the `.github/skills` gitlink to the upstream tip on each branch
-you list (default: `main` and `master`) and pushes one `chore:` commit per
-branch; branches that are missing, unconfigured, or already current are
+you list (default: `main` and `master`) as one GitHub-signed `chore:` commit
+per branch; branches that are missing, unconfigured, or already current are
 skipped, and anything else that goes wrong surfaces as a warning rather than
-a failed run. The upstream is whatever each branch's `.gitmodules` records -
+a failed run. The upstream is whatever URL each branch records for the gitlink -
 a fork of this repository with the same layout works unchanged, or can be
 forced with the `upstream-url`/`upstream-ref` inputs.
 
 The caller is a thin shell - schedule plus a `contents: write` grant - around
 the reusable workflow in
 [.github/workflows/sync-skills.yml](.github/workflows/sync-skills.yml), which
-is built for containment: checkout keeps no credentials
-(`persist-credentials: false`), only the final push step ever sees the token,
-and the submodule is never cloned - its tip is read with `git ls-remote` and
-recorded directly into the index as a gitlink, so no submodule code or git
-hook can run. If your organization restricts third-party actions, allowlist
+is built for containment: nothing is cloned or checked out, so no submodule
+code and no git hook can run; the token is split across two jobs, a read-only
+one that decides what to bump and a write one that only creates the commit
+and fast-forwards the ref. That commit is made through the Git Data API with
+no author, committer, or signature field, which is the documented condition
+for GitHub to sign a bot commit with its own key - so the bumps satisfy a
+`Require signed commits` ruleset with no signing key, secret, or bypass actor
+anywhere. If your organization restricts third-party actions, allowlist
 `BTreeMap/SKILLs/.github/workflows/sync-skills.yml@main`.
 
 Pull the latest skills and record the new pointer:
