@@ -116,15 +116,52 @@ CONFIG_EXTENSIONS = frozenset(
     {".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".env"}
 )
 CODE_EXTENSIONS = frozenset(
-    {".py", ".js", ".ts", ".tsx", ".jsx", ".css", ".scss", ".html", ".xml",
-     ".sql", ".sh", ".bash", ".zsh", ".go", ".rs", ".java", ".c", ".cpp",
-     ".h", ".hpp", ".rb", ".php", ".swift", ".kt", ".lua", ".lock",
-     ".dockerfile", ".makefile", ".csv"}
+    {
+        ".py",
+        ".js",
+        ".ts",
+        ".tsx",
+        ".jsx",
+        ".css",
+        ".scss",
+        ".html",
+        ".xml",
+        ".sql",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".go",
+        ".rs",
+        ".java",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".rb",
+        ".php",
+        ".swift",
+        ".kt",
+        ".lua",
+        ".lock",
+        ".dockerfile",
+        ".makefile",
+        ".csv",
+    }
 )
 KNOWN_CODE_FILENAMES = frozenset(
-    {"dockerfile", "makefile", "gnumakefile", "jenkinsfile", "vagrantfile",
-     "rakefile", "gemfile", "justfile", "procfile", "brewfile",
-     "cmakelists.txt"}
+    {
+        "dockerfile",
+        "makefile",
+        "gnumakefile",
+        "jenkinsfile",
+        "vagrantfile",
+        "rakefile",
+        "gemfile",
+        "justfile",
+        "procfile",
+        "brewfile",
+        "cmakelists.txt",
+    }
 )
 CODE_LINE_PATTERNS = tuple(
     re.compile(p)
@@ -201,8 +238,14 @@ SENSITIVE_BASENAME_REGEX = re.compile(
 )
 SENSITIVE_PATH_COMPONENTS = frozenset({".ssh", ".aws", ".gnupg", ".kube", ".docker"})
 SENSITIVE_NAME_TOKENS = (
-    "secret", "credential", "password", "passwd",
-    "apikey", "accesskey", "token", "privatekey",
+    "secret",
+    "credential",
+    "password",
+    "passwd",
+    "apikey",
+    "accesskey",
+    "token",
+    "privatekey",
 )
 
 
@@ -300,7 +343,9 @@ def extract_inline_codes(text: str) -> Counter[str]:
 def _check_headings(original: str, compressed: str) -> Verdict:
     orig, comp = extract_headings(original), extract_headings(compressed)
     if orig != comp:
-        return Verdict.error(f"Headings not preserved exactly: {len(orig)} vs {len(comp)}")
+        return Verdict.error(
+            f"Headings not preserved exactly: {len(orig)} vs {len(comp)}"
+        )
     return Verdict.EMPTY
 
 
@@ -313,7 +358,9 @@ def _check_code_blocks(original: str, compressed: str) -> Verdict:
 def _check_urls(original: str, compressed: str) -> Verdict:
     orig, comp = extract_urls(original), extract_urls(compressed)
     if orig != comp:
-        return Verdict.error(f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}")
+        return Verdict.error(
+            f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}"
+        )
     return Verdict.EMPTY
 
 
@@ -368,9 +415,13 @@ def validate(original: str, compressed: str) -> Verdict:
 def backup_base() -> Path:
     """Out-of-tree backup root so skill auto-loaders never re-ingest backups."""
     if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+        base = Path(
+            os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
+        )
     else:
-        base = Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share")))
+        base = Path(
+            os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+        )
     return base / "caveman-compress" / "backups"
 
 
@@ -398,7 +449,9 @@ def write_text_atomic(path: Path, text: str) -> None:
     permission bits survive the swap.
     """
     data = text.encode("utf-8")
-    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".", suffix=".tmp")
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"
+    )
     tmp_path = Path(tmp_name)
     try:
         with os.fdopen(fd, "wb") as f:
@@ -474,7 +527,9 @@ def cmd_prepare(path: Path) -> int:
             write_text_atomic(body_path, plan.body)
             print(f"BACKUP: {backup_path}")
             print(f"BODY:   {body_path}")
-            print("Compress the BODY file's prose, then run: apply <file> <compressed-body>")
+            print(
+                "Compress the BODY file's prose, then run: apply <file> <compressed-body>"
+            )
             return 0
     raise AssertionError("unreachable: Admission is a closed union")
 
@@ -507,8 +562,12 @@ def cmd_apply(path: Path, compressed_body_path: Path) -> int:
     if not verdict.is_valid:
         for error in verdict.errors:
             print(f"ERROR: {error}")
-        print("Target file untouched. Fix ONLY the listed errors in the compressed body")
-        print("(restore missing content from the backup; do not recompress) and re-apply.")
+        print(
+            "Target file untouched. Fix ONLY the listed errors in the compressed body"
+        )
+        print(
+            "(restore missing content from the backup; do not recompress) and re-apply."
+        )
         return 3
     write_text_atomic(path, candidate)
     pct = round(100 * (len(original) - len(candidate)) / max(len(original), 1))
@@ -578,7 +637,9 @@ def cmd_self_test() -> int:
 
     good = validate("# H\nsome long prose here\n`k`\n", "# H\nprose\n`k`\n")
     assert good.is_valid
-    moved_dot = validate("See https://a.example/d and more\n", "See https://a.example/d.\n")
+    moved_dot = validate(
+        "See https://a.example/d and more\n", "See https://a.example/d.\n"
+    )
     assert moved_dot.is_valid  # sentence punctuation after a URL is prose
     bad = validate("# H\ntext https://a.example\n```\nc\n```\n", "# H\ntext\n")
     assert not bad.is_valid and len(bad.errors) == 2  # url + code block
@@ -588,7 +649,10 @@ def cmd_self_test() -> int:
     assert classify(Path("notes.md"), None) is FileKind.NATURAL_LANGUAGE
     assert classify(Path("conf.yaml"), None) is FileKind.CONFIG
     assert classify(Path("run"), "#!/bin/sh\necho hi\n") is FileKind.CODE
-    assert classify(Path("TODO"), "Buy milk.\nShip release.\n") is FileKind.NATURAL_LANGUAGE
+    assert (
+        classify(Path("TODO"), "Buy milk.\nShip release.\n")
+        is FileKind.NATURAL_LANGUAGE
+    )
 
     assert is_sensitive(Path("/home/u/.aws/config"))
     assert is_sensitive(Path("api-key.md"))

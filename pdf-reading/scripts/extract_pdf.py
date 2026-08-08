@@ -15,11 +15,12 @@ import os
 import re
 import sys
 from collections.abc import Iterable, Mapping, Sequence
+from contextlib import AbstractContextManager as ContextManager
 from contextlib import nullcontext
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import ContextManager, TextIO, TypeGuard
+from typing import TextIO, TypeGuard
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
