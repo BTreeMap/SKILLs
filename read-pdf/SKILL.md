@@ -10,7 +10,7 @@ license: MIT
 compatibility: Requires uv to run the bundled PEP 723 extractor script
 ---
 
-# PDF Reading
+# Read PDF
 
 ## Scope
 

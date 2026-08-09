@@ -18,7 +18,7 @@ metadata:
   argument-hint: "[file-or-section]"
 ---
 
-# Fact Checking
+# Fact Check
 
 Decompose a document into atomic claims, verify each against retrieved
 evidence, report evidence-first, edit only what the user approves.

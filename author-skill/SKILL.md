@@ -9,7 +9,7 @@ description: >-
 license: MIT
 ---
 
-# Authoring Skills
+# Author Skill
 
 <system_directives>
   <skill_anatomy>

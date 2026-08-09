@@ -18,7 +18,7 @@ metadata:
   argument-hint: "[lite|full|ultra|wenyan-lite|wenyan-full|wenyan-ultra|commit|review|compress|stats|help]"
 ---
 
-# Caveman Protocol
+# Caveman
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
 

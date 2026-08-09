@@ -12,7 +12,7 @@ description: >-
 license: MIT
 ---
 
-# Strategic Reframing
+# Reframe
 
 ## Purpose
 

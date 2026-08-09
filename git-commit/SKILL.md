@@ -14,7 +14,7 @@ metadata:
   argument-hint: "[lite|full|ultra] [push]"
 ---
 
-# Git Commit Message Standards
+# Git Commit
 
 Effort levels gate how much history is scanned and how much text is produced.
 Default: **full**. Switch per invocation: `/git-commit lite|full|ultra`.
