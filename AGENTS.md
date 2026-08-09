@@ -33,8 +33,10 @@ Current skills:
   with lite/full/ultra/wenyan levels and one-shot commit/review/compress/stats/
   help modes; the compress mode is guarded by a deterministic bundled script.
 * `pdf-reading/` - text and metadata extraction from PDF files for analysis.
-* `pl-theorist-refactoring/` - cost-aware functional refactoring with progressive
-  language-specific disclosure.
+* `pl-theorist/` - a PL theorist's discipline across the lifecycle via verbs
+  (design/build/refactor/review/audit/test/teach/help), with per-language cost
+  models (including Bash and GitHub Actions YAML) and verb files loaded on
+  demand from `references/`.
 * `strategic-reframing/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
 * `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal

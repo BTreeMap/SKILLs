@@ -21,6 +21,47 @@
 - Use `try_fold` for fallible accumulation and explicit early termination.
 - Model invalid states with enums and constructors that validate invariants.
 
+## Modern Surface
+
+Detect the configured edition and MSRV from `Cargo.toml` (`edition`,
+`rust-version`) and any `rust-toolchain.toml`; use the most expressive stable
+syntax they permit, never beyond.
+
+- Prefer `let ... else` (stable since 1.65) for refutable bindings with early
+  exit over nested `if let` pyramids.
+- On edition 2024 (stabilized in Rust 1.85, February 2025): async closures
+  `async |x| { ... }` are stable from 1.85; let chains
+  (`if let Some(a) = x && a.is_valid() && let Ok(b) = f(a)`) are stable from
+  1.88 on edition 2024 only, and replace nested conditional ladders.
+- Prefer one `match` with pattern guards and bindings
+  (`Some(n) if n > limit => ...`) over an `if`/`else if` ladder re-testing the
+  same scrutinee: the compiler's exhaustiveness check is the payoff, and
+  guards keep each arm's condition adjacent to its binding.
+- Reach for the combinators the stdlib already names before writing manual
+  branches: `is_some_and`/`is_ok_and`, `inspect`, `map_or_else`,
+  `unwrap_or_default`, the map `Entry` API (`entry(k).or_insert_with(...)`),
+  `slice::partition_point` for binary search by predicate,
+  `select_nth_unstable` for selection/top-k, `chunk_by` for grouping runs.
+- Treat the standard library's collection and iterator APIs as the design
+  exemplar the kernel's laws describe: ownership-aware signatures, total
+  return types (`Option`/`Result`, `Entry`), and adapters that fuse. When
+  designing your own API, imitate that shape.
+
+## Data Structures
+
+- std first: `HashMap`/`HashSet` (SipHash by default, resistant to collision
+  flooding on untrusted keys), `BTreeMap`/`BTreeSet` for ordered iteration
+  and `range` queries, `BinaryHeap` for priority scheduling (max-heap; wrap
+  keys in `std::cmp::Reverse` for a min-heap), `VecDeque` for queues and
+  monotonic-window algorithms.
+- Maintained crates when std lacks the shape, justified against the
+  repository's dependency policy: `rayon` (work-stealing data parallelism;
+  `par_iter` for folds whose operation is associative), `aho-corasick` for
+  many-pattern search, `regex` (guaranteed linear-time scanning, no
+  backtracking), `indexmap` for insertion-ordered maps, `lru`/`moka`/
+  `quick_cache` for caches, `petgraph` for graphs. Verify a candidate crate
+  is currently maintained before adopting it.
+
 ## Domain and Effect Constraints
 
 - Use enums for closed sums, structs/tuples for products, and newtypes with

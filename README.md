@@ -18,7 +18,7 @@ unrelated repositories.
 | [caveman-protocol](caveman-protocol/SKILL.md) | Compresses agent output when token economy is explicitly requested, with lite/full/ultra/wenyan levels and commit/review/compress/stats/help modes. |
 | [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
 | [strategic-reframing](strategic-reframing/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
-| [pl-theorist-refactoring](pl-theorist-refactoring/SKILL.md) | Refactors code into cost-aware, language-idiomatic functional style. |
+| [pl-theorist](pl-theorist/SKILL.md) | Applies a PL theorist's discipline across the lifecycle - design, build, refactor, review, audit, test, teach - with per-language cost models including Bash and GitHub Actions. |
 | [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity and review/audit/debt/gain/help modes. |
 
 ## How it works
