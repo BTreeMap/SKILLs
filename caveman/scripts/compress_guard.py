@@ -4,7 +4,7 @@
 # dependencies = []
 # ///
 
-"""Deterministic guard for the caveman-protocol compress mode.
+"""Deterministic guard for the caveman compress mode.
 
 The agent performs the actual prose compression; this script does everything
 an LLM is bad at, deterministically:

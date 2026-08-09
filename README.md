@@ -13,13 +13,14 @@ unrelated repositories.
 
 | Skill | Purpose |
 | --- | --- |
-| [git-commits](git-commits/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages, with lite/full/ultra effort levels and a quick-ship push verb. |
-| [authoring-skills](authoring-skills/SKILL.md) | Distills a worked procedure into a reproducible skill; the meta-skill for writing every other skill here. |
-| [caveman-protocol](caveman-protocol/SKILL.md) | Compresses agent output when token economy is explicitly requested, with lite/full/ultra/wenyan levels and commit/review/compress/stats/help modes. |
-| [pdf-reading](pdf-reading/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
-| [strategic-reframing](strategic-reframing/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
+| [git-commit](git-commit/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages, with lite/full/ultra effort levels and a quick-ship push verb. |
+| [author-skill](author-skill/SKILL.md) | Distills a worked procedure into a reproducible skill; the meta-skill for writing every other skill here. |
+| [caveman](caveman/SKILL.md) | Compresses agent output when token economy is explicitly requested, with lite/full/ultra/wenyan levels and commit/review/compress/stats/help modes. |
+| [read-pdf](read-pdf/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
+| [reframe](reframe/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
 | [pl-theorist](pl-theorist/SKILL.md) | Applies a PL theorist's discipline across the lifecycle - design, build, refactor, review, audit, test, teach - with per-language cost models including Bash and GitHub Actions. |
 | [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity and review/audit/debt/gain/help modes. |
+| [fact-check](fact-check/SKILL.md) | Verifies document claims against retrieved evidence with calibrated verdicts and user-approved corrections, auto-detecting sub-agent, web, and editing capabilities. |
 
 ## How it works
 
@@ -104,7 +105,7 @@ git commit -m "chore(skills): bump skills submodule"
 ```
 
 Then point your agent configuration (e.g. `AGENTS.md`) at the relevant skill, for
-example: `.github/skills/git-commits/SKILL.md`.
+example: `.github/skills/git-commit/SKILL.md`.
 
 ## Skill discovery aliases
 
@@ -126,7 +127,7 @@ repository moves or is cloned elsewhere.
 
 ## Contributing a skill
 
-Read [authoring-skills/SKILL.md](authoring-skills/SKILL.md) first - it defines the
+Read [author-skill/SKILL.md](author-skill/SKILL.md) first - it defines the
 required structure and a validation checklist. In short:
 
 1. Create a kebab-case directory with a single `SKILL.md`.
@@ -141,7 +142,7 @@ required structure and a validation checklist. In short:
    README's table and a bullet in [AGENTS.md](AGENTS.md).
 
 Repository conventions for agents are documented in [AGENTS.md](AGENTS.md). Commit
-messages follow the [git-commits](git-commits/SKILL.md) skill.
+messages follow the [git-commit](git-commit/SKILL.md) skill.
 
 ## License
 

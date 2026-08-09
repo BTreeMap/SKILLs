@@ -1,5 +1,5 @@
 ---
-name: authoring-skills
+name: author-skill
 description: >-
   Distills a completed task history, workflow, or procedure into a
   reproducible SKILL.md that a fresh agent can execute without external
@@ -15,7 +15,7 @@ license: MIT
   <skill_anatomy>
     <rule>Store the skill in a kebab-case directory containing a file named exactly `SKILL.md`.</rule>
     <rule>Begin the file with YAML frontmatter restricted to Agent Skills spec fields (agentskills.io), in this order: `name`, `description`, then only as needed `license`, `compatibility`, `metadata`, `allowed-tools`. Never emit agent-specific extension fields such as `argument-hint` or `when_to_use`; record such hints as quoted string values under `metadata`.</rule>
-    <rule>Set `name` equal to the directory name: 1-64 characters; lowercase letters, numbers, and hyphens; no leading, trailing, or consecutive hyphens. Prefer a gerund or noun phrase (e.g., `writing-runbooks`).</rule>
+    <rule>Set `name` equal to the directory name: 1-64 characters; lowercase letters, numbers, and hyphens; no leading, trailing, or consecutive hyphens. Name a task skill with an imperative verb phrase, the command a user would speak (e.g., `fact-check`, `read-pdf`, `git-commit`); name a persona or stance skill with a single noun (e.g., `caveman`, `ponytail`). Never append filler nouns like `-protocol`, `-helper`, or `-skills`.</rule>
     <rule>Write `description` as a `>-` folded block scalar, 1-1024 characters, third person, in two movements: first a capability statement of what the skill does carrying its key search terms, then trigger conditions starting "Use when"; append a "Do not use for ..." exclusion when misfires are likely.</rule>
     <rule>Set `license: MIT` so a skill vendored out of this repository retains its terms.</rule>
     <rule>Add `compatibility` (max 500 characters) only when the skill requires specific runtimes, system packages, or network access; most skills omit it.</rule>

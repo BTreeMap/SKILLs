@@ -1,5 +1,5 @@
 ---
-name: strategic-reframing
+name: reframe
 description: >-
   Produces a testable strategic direction judgment: sharp thesis, constraint
   diagnosis, clean target, kill list, Conservative-vs-Clean-vs-Staged

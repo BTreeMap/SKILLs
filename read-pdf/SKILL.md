@@ -1,5 +1,5 @@
 ---
-name: pdf-reading
+name: read-pdf
 description: >-
   Reads PDFs with pypdf to extract text and metadata and answer questions
   with page-cited evidence; never creates, modifies, merges, splits, renders,

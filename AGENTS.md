@@ -13,6 +13,10 @@ needs them - to keep context lean.
 
 * One directory per skill, named in kebab-case, containing a file named exactly
   `SKILL.md`. The directory name MUST match the skill's `name` in its frontmatter.
+* Naming convention: a task skill is an imperative verb phrase, the command a
+  user would speak (`fact-check`, `read-pdf`, `git-commit`); a persona or
+  stance skill is a single noun (`caveman`, `ponytail`, `pl-theorist`). No
+  filler nouns (`-protocol`, `-helper`, `-skills`), no gerunds.
 * Every top-level directory not starting with a dot IS a skill directory; that
   namespace is reserved. Repository plumbing lives in dotted directories
   (`.github`, `.claude`) or in single files at the root (e.g.
@@ -24,24 +28,30 @@ needs them - to keep context lean.
 
 Current skills:
 
-* `git-commits/` - Conventional Commits standard for commit messages, with
+* `git-commit/` - Conventional Commits standard for commit messages, with
   lite/full/ultra effort levels loaded on demand from `references/` and a
   push verb that commits at lite level and pushes.
-* `authoring-skills/` - how to distill a procedure into a reproducible skill (the
+* `author-skill/` - how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
-* `caveman-protocol/` - token-economical output formatting for coding workflows,
+* `caveman/` - token-economical output formatting for coding workflows,
   with lite/full/ultra/wenyan levels and one-shot commit/review/compress/stats/
   help modes; the compress mode is guarded by a deterministic bundled script.
-* `pdf-reading/` - text and metadata extraction from PDF files for analysis.
+* `read-pdf/` - text and metadata extraction from PDF files for analysis.
 * `pl-theorist/` - a PL theorist's discipline across the lifecycle via verbs
   (design/build/refactor/review/audit/test/teach/help), with per-language cost
   models (including Bash and GitHub Actions YAML) and verb files loaded on
   demand from `references/`.
-* `strategic-reframing/` - bold, testable target-direction judgments that challenge
+* `reframe/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
 * `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
   diffs, with lite/full/ultra intensity levels and one-shot review/audit/debt/
   gain/help modes loaded on demand from `references/`.
+* `fact-check/` - atomic-claim verification of documents against retrieved
+  evidence: calibrated verdict taxonomy, evidence-first reporting, tiered
+  user approval before edits, and capability-probed orchestration (parallel
+  sub-agents or an identical sequential pipeline), with claim routing,
+  evidence rules, report templates, and a maintainer evaluation protocol
+  loaded on demand from `references/`.
 
 ## Frontmatter protocol
 
@@ -68,7 +78,7 @@ unchanged in any spec-compliant agent and uploads without hard errors:
 ## Authoring and editing skills
 
 * Before creating or modifying any skill, load
-  [authoring-skills/SKILL.md](authoring-skills/SKILL.md) and follow it. It defines
+  [author-skill/SKILL.md](author-skill/SKILL.md) and follow it. It defines
   the required structure, the distillation workflow, and the validation checklist.
 * A skill MUST be a reproducible procedure, not a narrative of one past session,
   and MUST NOT hardcode any single project's identity (paths, scopes, service or
@@ -94,9 +104,9 @@ unchanged in any spec-compliant agent and uploads without hard errors:
 
 ## Commit conventions
 
-Follow [git-commits/SKILL.md](git-commits/SKILL.md): Conventional Commits, imperative
+Follow [git-commit/SKILL.md](git-commit/SKILL.md): Conventional Commits, imperative
 subject ≤70 characters, scope derived from the change (here, the skill directory
-name, e.g. `feat(authoring-skills): ...`). Drop the scope for repository-wide
+name, e.g. `feat(author-skill): ...`). Drop the scope for repository-wide
 changes.
 
 ## How downstream projects consume this repository

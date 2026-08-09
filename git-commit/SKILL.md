@@ -1,5 +1,5 @@
 ---
-name: git-commits
+name: git-commit
 description: >-
   Drafts and reviews git commit messages that follow Conventional Commits,
   resolving scopes from repository history while minimizing output tokens.
@@ -17,7 +17,7 @@ metadata:
 # Git Commit Message Standards
 
 Effort levels gate how much history is scanned and how much text is produced.
-Default: **full**. Switch per invocation: `/git-commits lite|full|ultra`.
+Default: **full**. Switch per invocation: `/git-commit lite|full|ultra`.
 
 | Level | Loads | Behavior |
 |-------|-------|----------|
