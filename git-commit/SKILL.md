@@ -16,11 +16,10 @@ metadata:
 
 # Git Commit
 
-## Registry
+Draft and review commit messages that follow Conventional Commits, saying
+why over what, at the cheapest effort level that does the job.
 
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
+## Registry
 
 | Name | Path |
 | --- | --- |

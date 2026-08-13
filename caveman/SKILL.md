@@ -22,12 +22,7 @@ metadata:
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
 
-
 ## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
 
 | Name | Path |
 | --- | --- |

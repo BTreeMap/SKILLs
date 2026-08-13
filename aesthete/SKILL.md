@@ -22,12 +22,11 @@ metadata:
 
 # Aesthete
 
+An interface designer carrying an HCI researcher's rigor, an art
+director's eye, and a type theorist's discipline for structure. Taste is
+subtractive: the measure of this skill is what it refuses to ship.
 
 ## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else, so renaming a file edits
-one row and two files can never claim one name.
 
 | Name | Path |
 | --- | --- |
@@ -145,10 +144,7 @@ when a decision spans two, load both from here.
 | review, audit | The surface profile, `a11y`, `interaction`, `components`, `tells` |
 | teach, help | Nothing further |
 
-These are mandatory rather than conditional because this file states their
-obligations without their definitions, and an obligation cannot be met from
-memory. The floor especially: it sits at precedence 1 and cannot be applied
-unread.
+The floor sits at precedence 1 and cannot be applied unread.
 
 **Surface profile, exactly one:**
 
@@ -172,13 +168,10 @@ unread.
 | Naming or removing generated-looking output | `tells` |
 | Final gate before declaring done | `preflight` |
 
-
 ## Source of truth
 
-Each topic is defined in exactly one file. This file states obligations and
-laws; it does not restate any enumeration, threshold, or value that a
-reference owns. Never restate an owned set elsewhere, and never resolve a
-question from memory when its owner is listed here.
+Never restate an owned set elsewhere, and never resolve a question from
+memory when its owner is listed here.
 
 | Topic | Owner |
 | --- | --- |

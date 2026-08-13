@@ -95,6 +95,10 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   derive them from the consuming repository.
 * Keep each skill within context economy (~500 lines). Offload bulky reference
   material to sibling files the agent reads on demand.
+* Write directives, not commentary about the document. A sentence that
+  explains why a convention exists, restates what a table's own headings
+  already say, or narrates the file's structure earns nothing and is paid
+  for on every load. Keep rationale only where it changes a judgment call.
 * Bundled files are addressed by **registered name**, never by path, so a
   path cannot drift and two files cannot claim one name:
   * **One declaration site, declared before use.** Every skill that bundles

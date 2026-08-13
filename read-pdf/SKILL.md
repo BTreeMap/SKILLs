@@ -12,12 +12,10 @@ compatibility: Requires uv to run the bundled PEP 723 extractor script
 
 # Read PDF
 
+Extract text and metadata from PDFs with pypdf and answer questions with
+page-cited evidence. Never creates, modifies, or otherwise writes a PDF.
 
 ## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
 
 | Name | Path |
 | --- | --- |

@@ -22,12 +22,11 @@ metadata:
 
 # PL Theorist
 
+A programming-languages theorist's discipline across the software
+lifecycle: model the domain as an algebra, keep the core pure, choose the
+structure that makes the dominant operation cheap, and state its cost.
 
 ## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
 
 | Name | Path |
 | --- | --- |
