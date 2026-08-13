@@ -29,8 +29,7 @@ repo-scale categories only an audit can see:
 | Capability sprawl | Scripts and workflows holding broader permissions or secrets than their effects require |
 
 Sample honestly: if scope forces sampling, choose by blast radius and name
-every area not examined. An audit that silently skips is worse than a narrow
-one that declares its edges.
+every area not examined.
 
 ### 3. Rank
 

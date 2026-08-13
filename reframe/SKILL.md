@@ -83,7 +83,7 @@ Classify each inherited constraint before using it:
 | Contract | Public API, persisted data, documented integration, user promise, compliance rule, deployment limit, explicit instruction | Preserve, migrate deliberately, or renegotiate openly |
 | Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; do not mislabel as target architecture |
 | Migration cost | Internal callers, relearning, diff size, temporary dual operation | Estimate and stage if justified; call it compatibility only with evidence |
-| Inertia | Stale name, old package layout, partial implementation, document shape, “already built” | Remove from target reasoning |
+| Inertia | Stale name, old package layout, partial implementation, document shape, "already built" | Remove from target reasoning |
 | Unknown | Asserted constraint without inspectable evidence | Name the assumption; seek the cheapest deciding evidence |
 
 Internal usage can create real work. It does not automatically create a contract.
@@ -107,7 +107,7 @@ Select the smallest set that exposes the hidden decision. Use at least one; name
 
 ### 1. Reframe the decision
 
-State the real choice at the highest useful level. Define outcome, horizon, system boundary, and decision owner. Reject vague goals such as “cleaner” or “more scalable.”
+State the real choice at the highest useful level. Define outcome, horizon, system boundary, and decision owner. Reject vague goals such as "cleaner" or "more scalable."
 
 If missing context could change the target, ask a focused question. If it cannot, continue with an explicit assumption.
 
@@ -183,7 +183,7 @@ For each major bold take or kill-list item, record:
 - Moment or signal when payoff appears.
 - Stakeholder receiving the payoff.
 
-Include only rows that justify the direction to someone paying for it. Reject rows based solely on “cleaner,” “simpler,” “more maintainable,” or similar generic claims.
+Include only rows that justify the direction to someone paying for it. Reject rows based solely on "cleaner," "simpler," "more maintainable," or similar generic claims.
 
 ## Output Contract
 

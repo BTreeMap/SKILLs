@@ -38,8 +38,7 @@ what capability/permission it requires.
 ### 4. Set the complexity budget
 
 For each frequent operation, state the expected size, the target bound, and
-the structure that achieves it, using the kernel's cost-signal table. A design
-whose dominant operation has no named bound is unfinished.
+the structure that achieves it, using the kernel's cost-signal table.
 
 ### 5. Plan for evolution
 

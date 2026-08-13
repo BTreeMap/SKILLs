@@ -105,10 +105,9 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     files opens with a `## Registry` section, the first `##` heading in the
     file, mapping each name to its path. Declaring names before the body
     uses them mirrors declaration-before-reference in a program. That table
-    is the only place a path appears; a path written anywhere else is a
-    defect. The registry lists every bundled file, including any not loaded
-    during a run, such as a maintainer protocol; those say so in their own
-    first line.
+    is the only place a path appears. The registry lists every bundled file,
+    including any not loaded during a run, such as a maintainer protocol;
+    those say so in their own first line.
   * **A name is the basename without `.md`, in backticks**: `` `a11y` ``,
     `` `interaction` ``. Backticks mark it as an identifier so it is never
     read as the ordinary word. Basenames are unique within a skill, so a
@@ -172,8 +171,8 @@ MUST be a real file: GitHub Actions does not resolve symlinks under
 Consumers clone with `--recurse-submodules` (or run
 `git submodule update --init --recursive` on an existing checkout), and refresh
 with `git submodule update --remote .github/skills` followed by committing the
-bumped pointer. Keep this in mind: a change here only reaches a project after that
-project bumps its submodule pointer.
+bumped pointer. A change here reaches a project only after that project
+bumps its submodule pointer.
 
 For Claude discovery in a consuming repository, commit a relative parent-level
 alias from `.claude/skills` to `../.github/skills`. A submodule cannot create that

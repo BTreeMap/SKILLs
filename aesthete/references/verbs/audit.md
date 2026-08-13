@@ -11,8 +11,8 @@ prioritized remediation plan, not a defect list. Change nothing.
 2. **Extract the implicit system.** Read what the code actually uses, not
    what the documentation claims: distinct accent colors, radius values,
    spacing values, type sizes, shadow definitions, icon families, animation
-   durations. Count the distinct values per scale. A system with nineteen
-   spacing values and four accents as residue to consolidate.
+   durations. Count the distinct values per scale. Nineteen spacing values
+   and four accents count as residue to consolidate.
 3. **Score each surface** on the five sweeps: logic, hierarchy, consistency,
    voice, structure. Note the primary goal and the friction budget per surface.
 4. **Cluster findings by cause, not by location.** Twelve contrast failures

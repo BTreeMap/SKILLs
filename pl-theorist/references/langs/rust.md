@@ -5,7 +5,7 @@
 - No guaranteed TCO. Structural recursion is unsuitable for unbounded linear
   data unless the data structure or algorithm requires it and depth is bounded.
 - Standard iterator adapters and `Option`/`Result` combinators usually compile
-  to allocation-free loops, but “zero cost” remains a claim to verify on a hot
+  to allocation-free loops, but "zero cost" remains a claim to verify on a hot
   path.
 - Deep currying, captured borrows, boxed closures, and trait objects can produce
   lifetime friction, dynamic dispatch, or heap allocation.

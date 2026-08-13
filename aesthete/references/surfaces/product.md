@@ -24,8 +24,8 @@ sees a thousand times has to stay under the latency budget like anything else.
 ## Navigation and structure
 
 * Use one primary navigation model, chosen for the depth of the product: a
-  sidebar for many peer sections, a top bar for few, tabs
-  only for switching views of one object.
+  sidebar for many peer sections, a top bar for few, tabs only for switching
+  views of one object.
 * Current location is unambiguous in the navigation, and the page title
   matches the navigation label exactly. Different names for the same place
   is the cheapest possible confusion to avoid.

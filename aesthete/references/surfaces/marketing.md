@@ -26,7 +26,7 @@ it.
 
 **Navigation fits one line on desktop** at a height that does not consume a
 meaningful share of the viewport. If items do not fit, shorten labels, drop
-secondary items, or collapse. Keep desktop navigation to one line.
+secondary items, or collapse.
 
 **Each layout family appears once.** Assign every section a distinct
 structural family: split, full-bleed, asymmetric grid, stacked editorial,

@@ -41,9 +41,9 @@ Classify each imperative region before rewriting it:
 
 Alongside the algebra, run the kernel's cost-signal table over the same
 regions: a nested scan hiding a join, a linear search in a loop, a re-sorted
-collection per iteration. A refactor that beautifies an $O(n^2)$ shape without
-noticing it is a failed refactor; propose the index or structure change as part
-of the same design (or as a flagged follow-up when it would change behavior).
+collection per iteration. When the sweep finds an $O(n^2)$ shape under the
+cosmetic rewrite, propose the index or structure change as part of the same
+design, or as a flagged follow-up when it would change behavior.
 
 Distinguish collection algebra from state machines and resource protocols. Do
 not force a resource lifetime or multi-step state transition into a cosmetic
