@@ -31,9 +31,8 @@ missing, produce them first; everything below depends on them.
 4. **Set the token spine.** Fix the scales before composing: type scale and
    pairing, spacing scale, radius scale, one accent, neutral family, motion
    curve family, elevation ladder, icon family and weight. These are
-   decided once and never renegotiated per section. Load the relevant craft
-   references from the spine for any scale that is not obvious from the
-   read.
+   decided once for the whole surface. Load the relevant craft references
+   from the spine for any scale that is not obvious from the read.
 
 5. **Compose the sequence.** For a marketing surface, plan the section
    order, assigning each section a distinct layout family and a job. For a
@@ -42,8 +41,7 @@ missing, produce them first; everything below depends on them.
    adjacent pair must differ structurally.
 
 6. **Write the kill list.** Name what this design deliberately does not
-   include and why. A design without a kill list has not made choices; it
-   has accumulated them. Include patterns the brief invited that you are
+   include and why. Include patterns the brief invited that you are
    declining, and say what replaces them.
 
 7. **Identify the risks.** Name the two or three decisions most likely to be
@@ -91,18 +89,17 @@ Icons: {family and weight}
 
 ## Rules
 
-* Commit to one direction. Presenting three options is deferral disguised as
-  thoroughness. If a genuine fork exists, name the fork, pick a side, and
-  state the one question whose answer would flip it.
-* Every section and region carries a distinct job. Two sections with the
-  same job are one section.
-* The composition plan specifies mobile behavior per region at the moment
-  the region is planned, never as a later pass.
+* Commit to one direction instead of presenting three options. If a genuine
+  fork exists, name the fork, pick a side, and state the one question whose
+  answer would flip it.
+* Give every section and region a distinct job. Combine sections that share
+  a job.
+* Specify mobile behavior for each region while planning it.
 * Decide accessibility posture here: target contrast level, target size
-  minimum, keyboard model, and reduced-motion degradation. These constrain
-  composition and cannot be retrofitted cheaply.
-* Do not write implementation code under this verb. A representative snippet
-  to pin down a token or a motion curve is fine; a component is not.
+  minimum, keyboard model, and reduced-motion degradation. Use these
+  constraints while composing.
+* Keep implementation code out of this verb. A representative snippet to pin
+  down a token or a motion curve is fine; a component is not.
 
 ## Completion checks
 

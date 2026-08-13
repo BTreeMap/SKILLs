@@ -1,7 +1,7 @@
 # Verb: redesign
 
-Rework an existing interface. Misclassifying the mode is the largest source
-of bad redesign output, so mode detection is the first action.
+Rework an existing interface. Detect the mode first so the redesign matches
+the problem.
 
 ## Mode detection
 
@@ -16,8 +16,8 @@ the visual language starts fresh. Otherwise infer and state the mode.
 
 ## Audit before touching
 
-Document the current state before proposing anything. Skipping this step is
-how redesigns delete the things that were working.
+Document the current state before proposing anything so working parts survive
+the redesign.
 
 * **Brand tokens** in actual use: colors, type stack, logo treatment, radii,
   spacing rhythm, motion character.
@@ -45,8 +45,8 @@ more visible improvement per unit of risk.
    vertical rhythm, container widths.
 3. **Color recalibration**: unify the neutral family, reduce to one accent,
    fix contrast, add the missing theme.
-4. **State completeness**: add the interaction and container states the
-   original never shipped, per `interaction`. Usually the single
+4. **State completeness**: add the interaction and container states missing
+   from the original, per `interaction`. Usually the single
    largest usability gain in an old interface.
 5. **Motion layer**: add restrained, motivated motion to existing
    components.
@@ -70,8 +70,7 @@ depend on them:
 * Extract the brand before applying any default. A brand that is already
   purple stays purple; the anti-default rules govern unbriefed choices, not
   existing identity.
-* Preserve the copy voice unless a rewrite was requested. Visual
-  modernization is not a content rewrite.
+* Preserve the copy voice and content unless a rewrite was requested.
 * Never regress an accessibility win: existing focus states, alt text,
   keyboard paths, and contrast are a floor.
 * Deliver a before-and-after account per lever applied, so the change is

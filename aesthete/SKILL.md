@@ -80,8 +80,8 @@ sources never both win, and nothing below silently overrides anything above.
    overridden by any brand, document, or instruction. A conflict here is
    resolved by deriving a compliant variant that preserves brand intent,
    never by discarding either the brand or the floor, and the derivation is
-   reported. Never state an accessibility value, conformance level, or
-   criterion number from memory.
+   reported. Read `a11y` for every accessibility value, conformance level, or
+   criterion number.
 2. **A supplied color palette.** Overrides the colors of any design document.
 3. **A supplied design document.** Tokens, components, and rules.
 4. **The repository's existing system.** Stack, tokens, component library.
@@ -131,8 +131,8 @@ Work spanning verbs runs as sequential invocations.
 
 ## Loading
 
-Every reference loads directly from this file. No reference loads another;
-when a decision spans two, load both from here.
+Load every reference directly from this file, never from another reference.
+When a decision spans two, load both from here.
 
 **Always, for the active verb:**
 
@@ -142,7 +142,7 @@ when a decision spans two, load both from here.
 | review, audit | The surface profile, `a11y`, `interaction`, `components`, `tells` |
 | teach, help | Nothing further |
 
-The floor sits at precedence 1 and cannot be applied unread.
+Load `a11y` before applying the floor.
 
 **Surface profile, exactly one:**
 
@@ -207,10 +207,10 @@ at precedence 2 or 3 determines these where it speaks; infer only the rest.
 | Dashboard, monitoring, operator tool | 2-4 | 2-3 | 8-10 |
 | Trust-first, regulated, public sector | 3-4 | 2-3 | 4-5 |
 
-**Motion claimed is motion shown**: above `MOTION 4` the interface must
-actually move where it matters, or the dial drops. **Density buys hierarchy,
-never noise**: above `DENSITY 7` decorative containers are banned and
-separation comes from alignment and hairlines.
+**Motion claimed is motion shown**: above `MOTION 4`, show motion where it
+matters or lower the dial. **Density buys hierarchy, never noise**: above
+`DENSITY 7`, remove decorative containers and separate content with alignment
+and hairlines.
 
 ## Laws of Taste
 
@@ -284,12 +284,11 @@ absent, state the install command before writing code against it.
 
 ## Honesty
 
-State what is approximated. A web build of a proprietary platform material
-is an approximation and is labeled as one in code. When the user names a
-product as inspiration, take the direction from it without reproducing its
-design system. Placeholder data is marked as placeholder. If a required
-asset cannot be produced, leave a labeled slot and say so rather than
-filling the space with something fake.
+State what is approximated. A web build of proprietary platform material is
+an approximation, so label it as one in code. When the user names a product as
+inspiration, take the direction from it. Do not reproduce its design system.
+Mark placeholder data as placeholder. If a required asset cannot be produced,
+leave a labeled slot and say so. Do not fill the space with something fake.
 
 ## Gotchas
 
@@ -297,15 +296,14 @@ filling the space with something fake.
   downstream polish recovers a wrong direction.
 * Beauty measurably suppresses reported usability problems. Polish is not
   evidence that the interaction works; walk the friction budget separately.
-* Consistency failures hide in the seams: the section that inverts theme,
-  the control with a different radius, the accent added in a later edit.
-  Audit the whole surface, not the diff.
-* Per-section correctness does not make a coherent page. Step back to the
-  full scroll or the full flow.
-* For supplied material, load `brief` and verify its tokens rather than
-  trusting them.
-* Duplication and premature abstraction are both failures, and the reflex
-  cure for one causes the other.
+* Audit the whole surface for consistency failures, including sections that
+  invert theme, controls with a different radius, and accents added in later
+  edits.
+* Check the full scroll or flow after checking each section; per-section
+  correctness alone does not ensure coherence.
+* For supplied material, load `brief` and verify its tokens.
+* Evaluate duplication and premature abstraction separately. Solving one
+  reflexively with the other creates a new problem.
 * Accessibility is decided at composition time and is expensive to retrofit.
 
 ## Completion Checks

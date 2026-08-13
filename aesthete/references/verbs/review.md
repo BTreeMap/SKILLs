@@ -29,8 +29,7 @@ verb for existing work. Change nothing.
      derivable state?
 4. **Verify before reporting.** For each candidate finding, name the
    concrete failure: the input, state, or viewport where it breaks and what
-   the user sees. A finding without a failure scenario is a preference and
-   is dropped.
+   the user sees. Drop any finding without a failure scenario.
 5. **Rank and report.** Most severe first.
 
 ## Severity
@@ -57,8 +56,8 @@ Fix: {the specific change, not a principle}
   inverts theme, the second accent introduced three commits ago, the layout
   family used four times. Reviewing only the changed lines misses the
   failures that matter most.
-* Do not rewrite the design. Suggesting a fundamentally different direction
-  is one finding at the top, not a rewrite of every finding beneath it.
+* Keep findings focused on the current design. Put a fundamentally different
+  direction in one top finding instead of rewriting every finding beneath it.
 * Say plainly when the work is good. A review that manufactures findings to
   appear thorough trains the reader to ignore reviews.
 * State what was not checked: interactions requiring a running application,

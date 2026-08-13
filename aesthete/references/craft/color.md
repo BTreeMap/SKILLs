@@ -24,7 +24,7 @@ already read.
 
 ## Tokens, not values
 
-Name by role, never by appearance. A token called `surface-raised` survives
+Name by role, not appearance. A token called `surface-raised` survives
 a theme change; one called `grey-100` becomes wrong when the theme inverts.
 Roles worth having: page and raised surfaces, primary, secondary, and
 disabled text, subtle and strong borders, the accent plus its hover, active,
@@ -41,9 +41,8 @@ mixing do the derivation so the relationship survives a token change.
 Design light and dark together. Retrofitting a theme produces the
 characteristic result where one mode is designed and the other is inverted.
 
-* Never pure black or pure white for large surfaces. Pure black kills depth
-  and causes smearing on some displays; pure white glares. Use a near-black
-  and a near-white.
+* Use near-black and near-white for large surfaces. Pure black kills depth
+  and causes smearing on some displays; pure white glares.
 * Dark mode is not an inversion. Elevation reverses: raised surfaces get
   lighter, not darker, and shadows do less work, so borders and surface
   lightness carry elevation instead.
@@ -60,13 +59,12 @@ characteristic result where one mode is designed and the other is inverted.
 ## Contrast in practice
 
 Thresholds, exemptions, and their interpretation are the floor and are owned
-by `a11y`. Compute every ratio; never estimate one, and never accept a
-supplied document's claim about it.
+by `a11y`. Compute every ratio instead of estimating or accepting a supplied
+document's claim about it.
 
-* Placeholder, helper, disabled-looking, and secondary text are styled to
-  read as secondary and then never measured. Measure each against every
-  surface it appears on, including tinted cards, not only the page
-  background.
+* Style placeholder, helper, disabled-looking, and secondary text to read as
+  secondary, then measure each against every surface it appears on, including
+  tinted cards, not only the page background.
 * An accent that fails at body size often passes at display size, so decide
   where a brand color may carry text before committing it to a button.
 * Text over imagery needs a guaranteed backing: a scrim, a gradient, or a
@@ -85,10 +83,10 @@ technology gradient, and the warm cream with brass and oxblood that appears
 on every artisan and premium consumer brief. Both are recognizable defaults
 rather than decisions, and they make distinct brands look identical.
 
-Choose instead a direction that is coherent and unusual for the category: a
-saturated single hue against one neutral, a deep natural tone with a warm
-accent, sharp near-black against a warm mid-tone, or true monochrome with one
-bright accent. Rotate across projects; using the same palette twice in a
+Choose a direction that is coherent and unusual for the category: a saturated
+single hue against one neutral, a deep natural tone with a warm accent, sharp
+near-black against a warm mid-tone, or true monochrome with one bright
+accent. Rotate across projects; shipping the same palette twice within a
 category means the palette came from habit.
 
 ## Failure modes

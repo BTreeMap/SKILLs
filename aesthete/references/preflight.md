@@ -4,15 +4,15 @@ Run before declaring any interface done. Mechanical where a count is
 defined, judgment where it is not. A gate that cannot be honestly passed
 means the work is not finished, not that the gate is too strict.
 
-Report the result. Do not silently pass.
+Report the result, including every gate that did not pass.
 
 ## Mechanical counts
 
-Each of these is countable in the source. Count, do not estimate.
+Each of these is countable in the source. Count each check from the source.
 
 Where a design system or palette was supplied, "declared" means its token
-set. Where none was, it means the scales fixed during design. A count is
-measured against the declaration, never against a preference.
+set. Where none was, it means the scales fixed during design. Measure each
+count against the declaration, not a preference.
 
 | Check | Pass condition |
 | --- | --- |
@@ -107,7 +107,7 @@ Skip only if nothing was supplied.
 - [ ] Cards enclose discrete objects the user acts on, not arbitrary text.
 - [ ] Narrow layouts were designed and verified, with stacking order
       matching DOM order.
-- [ ] Nothing shifts after paint; space is reserved for every asynchronous
+- [ ] Prevent shifts after paint by reserving space for every asynchronous
       element.
 - [ ] One theme holds across the surface, set once at the root.
 - [ ] Both themes were opened and reviewed, not just the one being built in.

@@ -38,10 +38,10 @@ Strategic altitude means big-picture judgment plus conceptual compression. Prefe
 
 Invoke on explicit cues, including:
 
-- “Think bigger,” “raise the altitude,” “step back,” or “give me the big-picture call.”
-- “Too incremental,” “too safe,” “too conservative,” or “stop optimizing locally.”
-- “Greenfield this,” “ignore the legacy for a moment,” or “what would we build today?”
-- “Do not let compatibility or refactor difficulty dictate the direction.”
+- "Think bigger," "raise the altitude," "step back," or "give me the big-picture call."
+- "Too incremental," "too safe," "too conservative," or "stop optimizing locally."
+- "Greenfield this," "ignore the legacy for a moment," or "what would we build today?"
+- "Do not let compatibility or refactor difficulty dictate the direction."
 
 Invoke proactively only when at least one symptom exists:
 
@@ -52,7 +52,8 @@ Invoke proactively only when at least one symptom exists:
 - Many small concepts obscure one lifecycle, owner, or product promise.
 - Proposed options differ in mechanics but preserve the same questionable frame.
 
-Do not invoke merely because a proposal is small. Small can be correct when the boundary, target, and evidence support it.
+A small proposal alone is not a trigger. Small can be the correct answer when
+the boundary, target, and evidence support it.
 
 ## Required Inputs
 
@@ -81,7 +82,7 @@ Classify each inherited constraint before using it:
 | --- | --- | --- |
 | Contract | Public API, persisted data, documented integration, user promise, compliance rule, deployment limit, explicit instruction | Preserve, migrate deliberately, or renegotiate openly |
 | Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; do not mislabel as target architecture |
-| Migration cost | Internal callers, relearning, diff size, temporary dual operation | Estimate and stage if justified; never call it compatibility by default |
+| Migration cost | Internal callers, relearning, diff size, temporary dual operation | Estimate and stage if justified; call it compatibility only with evidence |
 | Inertia | Stale name, old package layout, partial implementation, document shape, “already built” | Remove from target reasoning |
 | Unknown | Asserted constraint without inspectable evidence | Name the assumption; seek the cheapest deciding evidence |
 
@@ -93,10 +94,10 @@ Select the smallest set that exposes the hidden decision. Use at least one; name
 
 | Move | Question | Guardrail |
 | --- | --- | --- |
-| End-state backcasting | If this were excellent at the chosen horizon, what would be true? | Backcast to the present; do not write fantasy architecture |
+| End-state backcasting | If this were excellent at the chosen horizon, what would be true? | Backcast to the present and keep the architecture grounded |
 | Zero-legacy thought experiment | With no old callers or names, what model would we choose? | Restore only constraints proven real |
 | Kill the wrong concept | Which object, phase, section, or service encodes the wrong model? | Delete the concept, not merely its label |
-| Ten-times stress | Which plausible 10x axis makes the model fail first? | Choose one relevant axis; never scale everything hypothetically |
+| Ten-times stress | Which plausible 10x axis makes the model fail first? | Choose one relevant axis and scale only that axis |
 | Constraint inversion | If this constraint vanished, what would change? | Decide whether removal cost is worth paying |
 | Non-negotiable principles | Which two to four rules must the target never violate? | Use principles to decide, not decorate |
 | Boundary reset | Is responsibility split at the wrong system, lifecycle, or ownership boundary? | Move boundaries only when ownership becomes clearer |
@@ -116,7 +117,7 @@ Separate observed facts, explicit instructions, and assumptions. Record missing 
 
 ### 3. Diagnose the inherited frame
 
-Name the constraint currently controlling the proposal. Classify it using the constraint table. State who or what requires it. If no evidence names a contract, stop granting it contract status.
+Name the constraint currently controlling the proposal. Classify it using the constraint table. State who or what requires it. Grant contract status only when evidence names one.
 
 ### 4. Open the frame
 
@@ -152,7 +153,7 @@ Use the canonical options:
 - **Clean target**: move directly to the preferred end-state.
 - **Staged clean path**: preserve the same clean target; sequence reversible steps and retire temporary bridges explicitly.
 
-Compare target integrity, immediate price, permanent complexity, contract risk, and time to evidence. Recommend one. Do not make Staged the automatic compromise. If a path is incoherent, mark it non-viable instead of inventing balance.
+Compare target integrity, immediate price, permanent complexity, contract risk, and time to evidence. Recommend one. Choose Staged only when it preserves the clean target and has explicit retirement. If a path is incoherent, mark it non-viable instead of inventing balance.
 
 ### 8. Make the call
 
@@ -171,7 +172,7 @@ Specify:
 - Falsifier: evidence that forces rejection or material revision.
 - Deferred commitment: irreversible choice not to make before the signal arrives.
 
-A proof point that only shows code can be written is insufficient. It must test the target model, contract assumption, boundary, or payoff.
+Make the proof point test the target model, contract assumption, boundary, or payoff; showing that code can be written is not enough.
 
 ### 10. Close the payoff ledger
 
@@ -220,20 +221,20 @@ Use another procedure when the primary decision is:
 - Execution planning after the target is accepted: migration sequencing, rollout, observability, and rollback.
 - Writing the final product requirements document rather than challenging its frame.
 
-After the target is accepted, route it to an available feasibility or landing procedure. If none exists, state the unresolved landing questions without pretending this skill answered them.
+After the target is accepted, route it to an available feasibility or landing procedure. If none exists, state the unresolved landing questions.
 
 ## Gotchas
 
-- Bigger rewrite mistaken for better strategy. Optimize the model, not diff size.
-- Compatibility dismissed because it is inconvenient. Named public and data contracts remain real.
-- Internal migration cost mislabeled as a permanent contract.
-- Clean target contaminated with temporary bridge design.
-- Staged path allowed to ossify. Every bridge needs an owner, removal trigger, and deadline or measurable gate.
-- Bold take unsupported by a falsifier. Provocation without testability is theater.
-- Proof point tests implementation effort, not the direction.
-- Three option rows padded with fake distinctions.
-- Kill list names removals but not the bad assumption removed.
-- Payoff ledger sells generic cleanliness instead of concrete outcomes.
+- Optimize the model, not diff size.
+- Preserve named public and data contracts.
+- Classify internal migration cost as migration cost, not a permanent contract.
+- Keep temporary bridge design out of the clean target.
+- Give every bridge an owner, removal trigger, and deadline or measurable gate.
+- Give every bold take a falsifier; testability matters more than provocation.
+- Make the proof point test the direction, not only implementation effort.
+- Give the three option rows distinct tradeoffs.
+- Tie each kill-list removal to the bad assumption it removes.
+- Tie the payoff ledger to concrete outcomes instead of generic cleanliness.
 
 ## Validation
 

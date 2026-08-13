@@ -34,7 +34,7 @@ Multi-verb work runs as sequential invocations.
 
 ## Dials
 
-Set after the read, stated with reasons, never left at baseline.
+Set the dials after the read and state the reason for each.
 
 | Dial | 1 | 10 | Baseline |
 | --- | --- | --- | --- |
@@ -51,7 +51,7 @@ One line, before anything else:
 ## What always applies
 
 Obligations only. Every value, threshold, and enumeration lives in the file
-that owns it; resolve none of them from memory.
+that owns it; resolve each one from that file.
 
 * Every element names the job it does for the user, or it is deleted.
 * One declared accent, radius scale, spacing scale, type scale, icon family,
@@ -64,8 +64,8 @@ that owns it; resolve none of them from memory.
 * Supplied palette beats supplied document beats repo beats defaults. The
   accessibility floor beats all of them, and conflicts are resolved by
   derivation and reported, never by silence.
-* Search the repository before authoring a component. A second Button is a
-  defect, not a shortcut.
+* Search the repository before authoring a component. Extend an existing
+  Button or explain why a second one is necessary.
 * Variants and async states are closed sets eliminated exhaustively, so a
   missing state fails the build. Imports point downward only.
 * Zero U+2014 characters in user-visible copy.

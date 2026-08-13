@@ -7,23 +7,22 @@ without adding dependency code to the bundle.
 Browser support moves continuously and this file ages. Before relying on any
 capability below, verify its current baseline status and the project's
 stated support targets, and provide a graceful fallback when the feature is
-progressive rather than essential. Never assume, and never let this file
-substitute for checking.
+progressive rather than essential. Check the current status yourself; this
+file is a starting point rather than a substitute for checking.
 
 ## Choosing the layer
 
 1. **A native element** whose semantics match: the button, the disclosure,
-   the dialog, the label bound to its input, the ordered list. Free
-   correctness.
+   the dialog, the label bound to its input, the ordered list. Get its
+   semantics and behavior for free.
 2. **A platform API** for behavior: top-layer overlays, transitions between
    states or documents, scroll-linked progress, anchored positioning.
 3. **CSS** for anything visual or state-driven that CSS can express.
 4. **A dependency**, only when the above genuinely cannot express it, and
    only one per concern.
 
-Rebuilding a native control in order to style it is nearly always a poor
-trade: the styling gain is small while the accessibility and keyboard issues
-are large and permanent.
+Style a native control instead of rebuilding it. The styling gain from a
+rebuild is small, while the accessibility and keyboard issues persist.
 
 ## Capabilities worth knowing
 
@@ -31,8 +30,7 @@ are large and permanent.
 for dialogs and lightweight popovers, including backdrop styling, escape
 dismissal, focus handling, and light dismissal. It also provides anchored
 positioning that tethers an element to a reference without measurement code.
-Together these remove the most common reasons projects install a positioning
-or modal dependency.
+Use these features before installing a positioning or modal dependency.
 
 **Transitions.** Same-document and cross-document view transitions animate
 between two states or two pages, including shared-element continuity,
@@ -85,10 +83,10 @@ Match the repository. When choosing for greenfield work:
 * Stream what can be streamed. Showing a usable shell immediately beats
   showing nothing until everything resolves.
 * Add an animation library when the interaction genuinely needs
-  interruptible, physics-based, or gesture-driven motion. Simple reveals and
-  transitions no longer justify one.
-* Never mix two animation systems in one component tree; they compete for
-  the same frames.
+  interruptible, physics-based, or gesture-driven motion. Use platform
+  reveals and transitions for simpler interactions.
+* Use one animation system per component tree; two compete for the same
+  frames.
 
 ## Performance targets
 

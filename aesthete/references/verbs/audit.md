@@ -12,7 +12,7 @@ prioritized remediation plan, not a defect list. Change nothing.
    what the documentation claims: distinct accent colors, radius values,
    spacing values, type sizes, shadow definitions, icon families, animation
    durations. Count the distinct values per scale. A system with nineteen
-   spacing values and four accents does not have a system; it has residue.
+   spacing values and four accents as residue to consolidate.
 3. **Score each surface** on the five sweeps: logic, hierarchy, consistency,
    voice, structure. Note the primary goal and the friction budget per surface.
 4. **Cluster findings by cause, not by location.** Twelve contrast failures
@@ -65,13 +65,13 @@ Leverage: {why this rank}
   implementations of one primitive is normally the highest-leverage finding
   in the report: it is the cause behind many of the inconsistency
   instances, and consolidating it fixes them together.
-* Distinguish debt from decision. A deliberate deviation with a documented
-  reason is not a finding; an undocumented one is, and the finding is the
-  missing documentation.
-* Do not propose adopting a new design system as a finding. That is a
-  redesign decision with its own verb; name it in "not fixed by this plan".
+* Distinguish debt from decision. Keep deliberate deviations with documented
+  reasons out of findings, and report undocumented deviations as missing
+  documentation.
+* Record a new design-system adoption in "not fixed by this plan". It is a
+  redesign decision with its own verb.
 * Cap the ranked list at what can actually be acted on. An audit listing one
-  hundred findings gets read as noise and produces zero fixes.
+  hundred findings produces noise instead of fixes.
 * Report accessibility failures as their own cluster with the specific
   criterion each violates, since these carry obligations the rest do not.
 

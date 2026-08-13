@@ -15,9 +15,9 @@ only valid answers:
 * **Progress**: work is underway and this is how much remains.
 * **Narrative**: this sequence has an order the user should follow.
 
-"It looked good" is not an answer. Motion added because the library was
-available is the most common self-inflicted regression in generated
-interfaces. If the sentence does not come, remove the animation.
+Use a communication purpose, not visual appeal, to justify motion. Use an
+animation library only when it supplies a needed capability. If the sentence
+does not come, remove the animation.
 
 ## Duration and curve
 
@@ -47,8 +47,7 @@ interfaces. If the sentence does not come, remove the animation.
   same object persists across a state or route change, animate it rather
   than crossfading two representations. This is the one case where motion
   genuinely reduces cognitive load rather than merely decorating.
-* Entry animation on content the user is waiting for delays the content.
-  Never animate in something that was already late.
+* Show content the user is waiting for without an entry animation.
 
 ## Scroll-linked motion
 
@@ -59,10 +58,9 @@ The mechanism matters more than the library.
   scroll-orchestration library for simple reveals is over-tooling.
 * Reveals fire once. Re-animating on every scroll back through a section is
   a distraction the user did not ask for repeatedly.
-* Pinned sequences pin at the moment the section's top reaches the viewport
-  top, never partway. Starting the animation before the section is pinned is
-  the characteristic failure and shows the user half a frame of the intended
-  composition.
+* Pin sequences when the section's top reaches the viewport top. Starting the
+  animation before the section is pinned shows the user half a frame of the
+  intended composition.
 * In a stacked-card sequence, every card except the last pins, and each
   card's recede transform is driven by the arrival of the next card, not by
   its own progress.
@@ -70,13 +68,11 @@ The mechanism matters more than the library.
   the scroll length set to the track's overflow width so the pan finishes
   exactly as the pin releases. Recompute on resize.
 * Scroll hijacking removes control from the user. Budget at most one such
-  section, and never on a surface where the user has a task to complete.
+  section, and keep it off surfaces where the user has a task to complete.
 
-**Never subscribe to raw scroll events and never drive continuous values
-through render state.** Both re-run work every frame and collapse on
-mid-range hardware. Use the platform's scroll-driven timelines, an
-intersection observer, or the animation library's frame-external value
-primitives.
+**Use scroll-driven timelines, an intersection observer, or frame-external
+animation values.** Raw scroll events and render state rerun work every frame
+and collapse on mid-range hardware.
 
 ## Restraint
 
@@ -85,8 +81,8 @@ primitives.
   anything to the user.
 * At most one attention-seeking device per view. Two things looping are two
   things being ignored.
-* Motion never blocks input. The user can always click through, scroll past,
-  or skip.
+* Keep motion from blocking input. The user can always click through, scroll
+  past, or skip.
 * Interruption is normal: an animation must handle being reversed or
   restarted mid-flight without snapping.
 
@@ -111,7 +107,7 @@ principle, with a solid, high-contrast fallback for any material effect.
   Animating geometry forces layout every frame.
 * Promote sparingly and only what actually animates; blanket promotion
   consumes memory and can degrade what it was meant to help.
-* Grain, noise, and heavy filters belong on a fixed, non-interactive overlay
-  layer, never on a scrolling container where they repaint continuously.
+* Keep grain, noise, and heavy filters on a fixed, non-interactive overlay
+  layer instead of a scrolling container where they repaint continuously.
 * Lazy-load animation libraries and heavy scenes that are not needed for the
   first view, and tear down every observer, timeline, and context on unmount.

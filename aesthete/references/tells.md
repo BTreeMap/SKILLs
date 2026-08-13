@@ -2,8 +2,7 @@
 
 A tell is a pattern that appears far more often in generated interfaces than
 in considered ones. Each is banned as a **default reach**. Any of these is
-available when the brief genuinely calls for it and you can say why. Do not
-choose one by habit.
+available when the brief genuinely calls for it and you can say why.
 
 These patterns look like design decisions that nobody actually made, and
 readers who see a lot of interfaces recognize them instantly.
@@ -61,8 +60,7 @@ readers who see a lot of interfaces recognize them instantly.
 
 ## Fabrication
 
-Everything here is an honesty failure, which makes it worse than a taste
-failure.
+Treat these as honesty failures and fix them ahead of any taste issue.
 
 * **An interface built from styled containers standing in for a product
   screenshot**: an invented task list, dashboard, chart, or terminal

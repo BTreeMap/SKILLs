@@ -6,8 +6,7 @@ the work; use borders and boxes only when those signals are insufficient.
 ## Space
 
 * One spacing scale, geometric rather than arbitrary, used for every gap,
-  padding, and margin. A layout containing nineteen distinct spacing values
-  has no system.
+  padding, and margin. Keep the scale below nineteen distinct values.
 * Proximity is the strongest grouping signal available and costs nothing.
   Space between groups must clearly exceed space within a group. Most
   confusing layouts are uniform spacing applied to non-uniform content.
@@ -44,10 +43,9 @@ is text, reach for space and alignment instead.
 * Optical alignment beats mathematical alignment when they disagree.
   Punctuation, icons, and round shapes need small manual corrections to look
   aligned.
-* Align to a consistent edge. A composition with four different left edges
-  reads as unresolved regardless of how deliberate it was.
-* Asymmetry is a composition, not an absence of one. High variance means
-  deliberate weighting and tension, not random offsets.
+* Align every relevant element to a consistent edge. Correct compositions
+  with four different left edges.
+* Use asymmetry for deliberate weighting and tension, not random offsets.
 
 ## Responsive behavior
 
@@ -71,10 +69,9 @@ is text, reach for space and alignment instead.
 
 ## Layering
 
-* A named, documented elevation scale with a small number of levels: base,
-  raised, sticky, overlay, modal, notification. Arbitrary stacking values
-  scattered through components produce conflicts that get fixed by escalating
-  numbers until nothing is predictable.
+* Use a named, documented elevation scale with a small number of levels:
+  base, raised, sticky, overlay, modal, notification. Avoid arbitrary
+  stacking values that create conflicts and encourage escalating numbers.
 * Establish stacking contexts deliberately. Transforms, filters, and opacity
   create them implicitly, which is the usual cause of an overlay trapped
   behind its neighbor.
@@ -83,8 +80,8 @@ is text, reach for space and alignment instead.
 
 ## Stability
 
-Nothing may shift after paint. Reserve dimensions for images, media,
+Prevent shifts after paint. Reserve dimensions for images, media,
 embeds, and any region that loads late. Skeletons match the real layout's
 dimensions, not an approximation. Insert notifications and banners in
-reserved space or as overlays, never by pushing the page down after the user
-has started reading.
+reserved space or as overlays. Preserve the reader's position after reading
+begins.

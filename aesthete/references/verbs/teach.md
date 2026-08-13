@@ -32,8 +32,8 @@ asking. Calibrate to the audience; never lecture.
 * Cite a principle only when it genuinely applies and you can state it
   correctly. Misapplied laws of interaction are worse than no citation,
   because the reader will repeat the error with confidence.
-* Show, do not only tell. One before-and-after, one snippet, or one
-  described comparison beats three paragraphs.
+* Show one before-and-after, one snippet, or one described comparison instead
+  of three paragraphs.
 * Match length to the question. A question about one radius value gets three
   sentences, not an essay on shape language.
 * Admit taste when it is taste. Some decisions are defensible preference

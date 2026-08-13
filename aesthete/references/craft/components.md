@@ -19,8 +19,8 @@ utility, a token. Look for the thing that is nearly right and extend it.
 Authoring a second Button, Input, Card, Modal, Select, or Table is the most
 damaging habit in generated frontends. Each duplicate forks behavior,
 fragments tokens, splits accessibility fixes across files, and multiplies
-the cost of every future change. It is rarely a decision; it is the result
-of not searching first.
+the cost of every future change. It usually happens because nobody searched
+first.
 
 If the existing component is close but not sufficient, the correct move is
 to extend it with a new variant, not to copy it. If extending would require
@@ -31,8 +31,8 @@ honest answer.
 
 **Duplicated primitives are always a defect.** A design system is the claim
 that these things are the same thing. Two Buttons falsify that claim. There
-is no threshold to wait for, no rule of three; the second one
-is already wrong.
+is no threshold to wait for, no rule of three; the second one is already
+wrong.
 
 **Duplicated composition is usually fine.** Two screens arranging the same
 primitives similarly are not yet an abstraction. Wait for the third
@@ -48,7 +48,7 @@ genuinely has, or does it merely look similar today?
 
 **One axis of variation per component.** A component varies along one
 dimension and composes for everything else. When a second independent axis
-appears, that is a signal to compose, not to add a prop.
+appears, compose instead of adding a prop.
 
 **Composition over configuration.** Prefer passing content and structure to
 adding a flag that switches structure internally. A component whose props
@@ -78,7 +78,7 @@ a closed `variant`, a closed `size`.
 
 ## Prop APIs that exclude the invalid
 
-**Model variants as one closed set, never as independent booleans.**
+**Model variants as one closed set.**
 Independent flags multiply into combinations that have no meaning, and each
 one is a state someone will eventually pass.
 
@@ -106,12 +106,11 @@ catch-all branch, so that adding a variant fails the build at every site
 that must change. A default branch converts a compile error into a blank
 region in production.
 
-**Required means no sensible default.** Everything else is optional with a
-default that is correct for the common case. A component requiring six props
-at every call site has not chosen defaults.
+**Require a prop only when it has no sensible default.** Make every other
+prop optional with a default that is correct for the common case. A component
+requiring six props at every call site has not chosen defaults.
 
-**Do not accept a prop that exists for one call site.** That is a
-composition need in disguise.
+**When only one call site needs a prop, compose instead of adding it.**
 
 **Style escape hatches are for position, not identity.** Allowing a call
 site to pass spacing or layout classes is reasonable. Allowing it to
@@ -119,8 +118,8 @@ override color, radius, or type forks the design system at that call site.
 If a call site needs a different look, that look is a new variant inside the
 component, decided once.
 
-**Primitives take no domain types.** A Button that accepts a `User` belongs
-at the pattern layer. Check this mechanically.
+**Keep domain types out of primitives.** A Button that accepts a `User`
+belongs at the pattern layer. Check this mechanically.
 
 ## Layer in one direction
 
@@ -133,7 +132,7 @@ at the pattern layer. Check this mechanically.
 | Routes | Data access, layout, orchestration | Everything below |
 
 Imports point downward only. A primitive importing a pattern creates a cycle.
-Domain knowledge enters at the pattern layer and never below it.
+Keep domain knowledge at the pattern layer and above it.
 
 Effects belong at the top. Data access, mutation, storage, navigation,
 randomness, and time live in routes or thin container components.
@@ -149,13 +148,12 @@ one frame with the stale value, and desyncs the moment a path forgets to run
 it.
 
 State is the minimum that cannot be derived. Two pieces of state that must
-always agree are one piece of state plus a function. State that belongs in
-the URL belongs in the URL, not duplicated beside it.
+always agree are one piece of state plus a function. Store state that belongs
+in the URL in the URL.
 
 ## Cost
 
-Rendering has complexity, and the same interrogation applies as anywhere
-else: a lookup inside a loop is a nested loop.
+Treat a lookup inside a loop as a nested loop.
 
 <render_cost>
 Quadratic in the number of rows, re-run on every render:
@@ -183,7 +181,7 @@ Build the index once, then the loop is linear:
 
 ## Naming
 
-Name by concept, never by appearance or by where it first appeared.
+Name by concept, not by appearance or location.
 Appearance names go stale the first time the design changes, and location
 names discourage the reuse the component exists for.
 

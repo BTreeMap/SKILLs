@@ -5,7 +5,8 @@ user arrives with intent and often returns daily. The job is throughput and
 confidence: complete the task quickly, know the state, never lose work.
 
 Marketing surfaces optimize a first impression. Product surfaces optimize
-the thousandth use. Delight that costs a second per repetition is a defect.
+the thousandth use. Budget delight against repetition: an animation a user
+sees a thousand times has to stay under the latency budget like anything else.
 
 ## Governing posture
 
@@ -22,8 +23,8 @@ the thousandth use. Delight that costs a second per repetition is a defect.
 
 ## Navigation and structure
 
-* One primary navigation model, chosen for the depth of the product and
-  never mixed: a sidebar for many peer sections, a top bar for few, tabs
+* Use one primary navigation model, chosen for the depth of the product: a
+  sidebar for many peer sections, a top bar for few, tabs
   only for switching views of one object.
 * Current location is unambiguous in the navigation, and the page title
   matches the navigation label exactly. Different names for the same place
@@ -35,8 +36,8 @@ the thousandth use. Delight that costs a second per repetition is a defect.
 
 ## Forms
 
-* Label above the field, always. Placeholder text is not a label: it
-  disappears exactly when it is needed and fails contrast and recall.
+* Put a visible label above the field. Placeholder text disappears exactly
+  when it is needed and fails contrast and recall.
 * One column. Multi-column forms cause field skipping. Group related fields
   into sections with headings instead.
 * Ask for the minimum. Every field justifies itself against the primary
@@ -45,8 +46,9 @@ the thousandth use. Delight that costs a second per repetition is a defect.
   identifiers, and pasted values with spaces or separators instead of
   rejecting them. Formatting is the system's job.
 * Validate at the right moment: on blur for a completed field, on submit for
-  the whole, never on every keystroke while the user is mid-entry. Once a
-  field has errored, revalidate as they type so the error clears live.
+  the whole, and after the user finishes typing rather than on every
+  keystroke. Once a field has errored, revalidate as they type so the error
+  clears live.
 * Errors sit adjacent to the field, name the problem and the fix, and move
   focus to the first failure. A summary at the top of a long form links to
   each failure.
@@ -70,16 +72,15 @@ the thousandth use. Delight that costs a second per repetition is a defect.
   touch and is invisible to keyboard users.
 * Selection shows a persistent count and the actions that apply to it, and
   bulk destructive actions confirm with the exact count.
-* Long tables virtualize, but never at the cost of find-in-page and
-  keyboard navigation without an alternative.
+* Virtualize long tables while preserving find-in-page and keyboard
+  navigation, or provide an explicit alternative.
 * Every table ships the full container state set. The never-had-any and
   none-match-the-filter states are the pair most often conflated; the second
   must offer to clear the filter.
 
 ## Dashboards
 
-* Answer one question per view, stated in the title. A dashboard without a
-  question is a wall of charts.
+* State one question per view in the title before adding charts.
 * Rank by decision value, not by data availability. The number that changes
   behavior goes top-left in left-to-right reading orders.
 * Every metric carries its comparison. A number without a baseline, target,
@@ -95,11 +96,9 @@ the thousandth use. Delight that costs a second per repetition is a defect.
 * A modal interrupts. Use it only when the task must be completed or
   abandoned before anything else continues. Everything else is inline
   expansion, a side panel, or its own route.
-* Never stack modals. A modal that opens a modal is a flow that needed a
-  route.
+* A modal that opens a modal needs a route instead.
 * Every dialog: focus moves in on open, is trapped while open, returns to
-  the trigger on close, and escape closes. A dialog that traps a keyboard
-  user is an exclusion, not an inconvenience.
+  the trigger on close, and escape closes.
 * Confirmation dialogs name the exact object and the exact consequence, and
   the confirming button is a verb naming the action rather than a bare
   affirmative.
@@ -122,7 +121,7 @@ the thousandth use. Delight that costs a second per repetition is a defect.
 ## Empty states
 
 The empty state is the first thing most users see and the least designed
-screen in most products. It says what belongs here, why it is worth having,
-and offers the single action that populates it. Distinguish never-had-any
-from none-match-this-filter from you-cleared-them-all: they need different
-copy and different actions.
+screen in most products. Say what belongs here, why it is worth having, and
+offer the single action that populates it. Distinguish
+never-had-any from none-match-this-filter from you-cleared-them-all: they need
+different copy and different actions.

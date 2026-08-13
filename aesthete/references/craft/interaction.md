@@ -24,8 +24,8 @@ Cite these only where they genuinely apply.
   notices waiting and attention starts to drift.
 * **Memory**: recognition is cheap, recall is expensive. Show the options.
 * **Beauty bias**: attractive interfaces are rated as more usable and their
-  problems go unreported. Never accept visual polish as evidence that the
-  interaction works.
+  problems go unreported. Test the interaction separately from its visual
+  polish.
 
 ## The complete state set
 
@@ -34,7 +34,7 @@ Every interactive element:
 | State | Requirement |
 | --- | --- |
 | Rest | Affordance is visible without hover. |
-| Hover | Pointer only. Never the sole channel for information or actions. |
+| Hover | Pointer only. Provide its information and actions through another channel. |
 | Focus-visible | Always present, never suppressed, high contrast, not clipped. Obscuring rules are in `a11y`. |
 | Active | Immediate acknowledgment at press, before any network work begins. |
 | Disabled | Rare, and always explained. Prefer enabled with an explanation on attempt. |
@@ -85,12 +85,12 @@ permanently.
    spaces, separators, and surrounding characters. Trim. Correct case.
 3. **Recover.** Preserve everything the user entered, place the message
    next to the cause, name the fix, and move focus to the first failure.
-4. **Explain.** Never expose a raw fault code as the whole message. State
-   what happened, what it means, and the next action. Keep technical detail
+4. **Explain.** State what happened, what it means, and the next action
+   instead of exposing a raw fault code alone. Keep technical detail
    available but secondary.
 
-Never punish correct-but-differently-formatted input, never clear a form on
-failure, and never require re-entering information the system already has.
+Accept input that is correct but differently formatted. Preserve form data
+after failure and reuse information the system already has.
 
 ## Destructive actions
 
@@ -101,8 +101,8 @@ failure, and never require re-entering information the system already has.
   with a verb on the confirming button rather than a bare affirmative. For
   the genuinely catastrophic, require a deliberate act such as typing the
   name.
-* Never place a destructive action adjacent to a frequent one, and never as
-  the default focused control.
+* Place destructive actions away from frequent actions and away from the
+  default focused control.
 
 ## Keyboard and assistive access
 
@@ -120,19 +120,19 @@ failure, and never require re-entering information the system already has.
   and assertively only for genuine urgency.
 * Any drag interaction has a non-drag alternative, since dragging is
   unavailable to many users.
-* Do not remove the outline without replacing it with something at least as
-  visible. Suppressed focus is the single most common accessibility defect.
+* Replace any removed outline with a focus style at least as visible.
+  Suppressed focus is the single most common accessibility defect.
 
 ## Continuity
 
 * URL reflects state: record, tab, filter, sort, page, and search.
-* Back does what the user expects and never loses work.
+* Make Back do what the user expects and preserve work.
 * Scroll position and expansion state survive navigation and return.
 * Drafts persist across refresh and failure.
-* Preferences persist, including theme choice, density, and dismissed
-  guidance. Never re-show something the user dismissed.
-* Never require re-entering information already provided, and never break an
-  authentication flow that depends on password managers or paste.
+* Persist preferences, including theme choice, density, and dismissed
+  guidance. Keep dismissed guidance dismissed.
+* Reuse information already provided and preserve authentication flows that
+  depend on password managers or paste.
 
 ## Failure modes
 

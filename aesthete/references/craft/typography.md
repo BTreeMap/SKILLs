@@ -7,12 +7,12 @@ and most of the reading effort. Get it right before touching color.
 
 Fix one scale and use only its steps. A ratio near 1.2 suits dense product
 interfaces; near 1.333 suits marketing surfaces where display type does
-expressive work. Fewer steps used consistently beats more steps used
-approximately. Six to eight steps covers almost every interface.
+expressive work. Use a small set of scale steps consistently. Six to eight
+steps covers almost every interface.
 
 Set the scale in a relative unit so it honors the user's browser text size.
 Fixed pixel sizing for body text overrides an explicit accessibility
-preference. Treat it as an accessibility defect.
+preference.
 
 ## Measure and rhythm
 
@@ -23,9 +23,9 @@ preference. Treat it as an accessibility defect.
 * Line height and spacing scale should share a rhythm so text blocks align
   to the same grid as everything else.
 * Paragraph spacing separates; first-line indentation is for continuous
-  prose. Never use both.
+  prose. Use either paragraph spacing or first-line indentation.
 * Tighten letter spacing slightly as size increases; loosen it for uppercase
-  and for small text. Never letterspace lowercase body text.
+  and for small text. Letterspace uppercase and small text only.
 
 ## Choosing faces
 
@@ -40,16 +40,15 @@ the true italic being used before designing around them.
 
 **Serif discipline.** Serif is not a synonym for premium, creative, or
 considered, and reaching for it on that reasoning is the most common type
-misjudgment in generated design. Use a serif when the surface is genuinely
-editorial, literary, heritage, or when the brand specifies one, and be able
-to say why that particular serif suits that particular brand. Otherwise
-choose a display sans, the common default in contemporary brand work.
+misjudgment in generated design. Use a serif when the surface is editorial,
+literary, or heritage, or when the brand specifies one. Be able to say why
+that particular serif suits that particular brand. Otherwise choose a display
+sans, the common default in contemporary brand work.
 
 **Emphasis stays in the family.** Emphasize a word inside a heading with the
-weight or the italic of the same family. Dropping a single word of another
-family into a heading is the most visible amateur move in typography.
+weight or the italic of the same family.
 
-**Rotate.** Reusing the same two or three fashionable faces across every
+**Rotate faces.** Reusing the same two or three fashionable faces across every
 project produces a house style nobody asked for. If the last comparable
 surface used a face, choose differently unless the brand requires it.
 
@@ -59,8 +58,7 @@ surface used a face, choose differently unless the brand requires it.
   body text to avoid single-word final lines. The platform has properties
   for both; prefer them to manual line breaks, which break at other
   viewports.
-* Never hard-break a heading to force a shape unless the shape survives
-  every viewport.
+* Use a hard break in a heading only when the shape survives every viewport.
 * Italic descenders clip against tight line heights. Any italic at display
   size needs line height above 1 and reserved space below.
 * Use real typographic quotation marks and apostrophes, real ellipses, and
@@ -72,8 +70,8 @@ surface used a face, choose differently unless the brand requires it.
 
 ## Delivery
 
-* Self-host or use the framework's font pipeline. Never block first paint on
-  a third-party stylesheet request.
+* Self-host or use the framework's font pipeline. Keep third-party stylesheet
+  requests off the first-paint path.
 * Serve variable fonts when a range of weights is in use; one variable file
   usually costs less than three static cuts.
 * Subset to the character sets actually needed.

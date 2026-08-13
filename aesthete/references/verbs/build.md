@@ -6,7 +6,7 @@ Implement an interface. Default verb for new work.
 
 The design read and dials are stated. If no design plan exists, produce a
 compressed one inline (primary goal, token spine, composition order) before
-writing components; do not discover the design by typing.
+writing components.
 
 ## Order of work
 
@@ -17,17 +17,18 @@ rework.
    variant, hook, and token the screen needs before writing anything. List
    what exists and will be reused, what exists and needs a new variant, and
    what genuinely does not exist yet. Only the third category gets authored.
-   Skipping this step is how a codebase acquires its third Button.
+   Inventory first so existing components are reused and the codebase does
+   not acquire its third Button.
 2. **Tokens before components.** Adopt the supplied or existing token set,
    or define one where none exists: type scale, spacing scale, radius scale,
    color tokens for every theme, motion curves, elevation, as named values
    in one place. Verify adopted tokens against the accessibility floor
-   before building on them. Never author a component against raw literals
-   when a token exists or should exist.
+   before building on them. Use tokens for component values whenever a token
+   exists or should exist.
 3. **Layout before ornament.** Establish the structural grid, the container
    widths, and the responsive behavior. Verify the hierarchy reads with all
    color and decoration removed. If it does not read in grayscale wireframe,
-   no amount of styling will fix it.
+   fix the hierarchy before adding styling.
 4. **States before polish.** Implement every state `interaction`
    defines, for every interactive element and every data container, before
    refining any visual detail. Model each as one closed set so that omitting
@@ -50,19 +51,19 @@ rework.
 * **Isolate interactivity.** Interactive and animated pieces are leaf
   components with an explicit client boundary; structural layout stays
   static and server-rendered where the framework supports it.
-* **Never drive continuous values through render state.** Pointer position,
-  scroll progress, and physics run outside the render cycle through the
-  animation library's value primitives or CSS. Re-rendering a tree per frame
-  collapses on mid-range hardware.
+* **Drive continuous values outside render state.** Pointer position, scroll
+  progress, and physics run outside the render cycle through the animation
+  library's value primitives or CSS. Re-rendering a tree per frame collapses
+  on mid-range hardware.
 * **Reserve space for everything asynchronous.** Images, fonts, embeds, and
   late-loading regions carry explicit dimensions so nothing shifts.
 * **One family per concern.** One icon set at one weight, one animation
   library per component tree, one styling strategy, one theming mechanism.
 * **One component per concept.** Extend an existing component with a variant
-  rather than copying it. If a copy is genuinely the honest answer, say so
-  and give the reason; never fork silently.
+  rather than copying it. If a copy is genuinely the honest answer, explain
+  the reason before creating it.
 * **Close the variant sets.** Model variants and asynchronous states as one
-  closed set eliminated exhaustively, never as independent booleans with a
+  closed set eliminated exhaustively, not as independent booleans with a
   catch-all branch. Keep imports pointing downward through the layer ladder
   `components` defines, with domain types no lower than the pattern
   layer.
