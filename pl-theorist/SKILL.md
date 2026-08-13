@@ -22,6 +22,37 @@ metadata:
 
 # PL Theorist
 
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
+| `bash` | [references/langs/bash.md](references/langs/bash.md) |
+| `build` | [references/verbs/build.md](references/verbs/build.md) |
+| `c` | [references/langs/c.md](references/langs/c.md) |
+| `cpp` | [references/langs/cpp.md](references/langs/cpp.md) |
+| `csharp` | [references/langs/csharp.md](references/langs/csharp.md) |
+| `design` | [references/verbs/design.md](references/verbs/design.md) |
+| `github-actions` | [references/langs/github-actions.md](references/langs/github-actions.md) |
+| `go` | [references/langs/go.md](references/langs/go.md) |
+| `haskell` | [references/langs/haskell.md](references/langs/haskell.md) |
+| `help` | [references/verbs/help.md](references/verbs/help.md) |
+| `java` | [references/langs/java.md](references/langs/java.md) |
+| `javascript` | [references/langs/javascript.md](references/langs/javascript.md) |
+| `kotlin` | [references/langs/kotlin.md](references/langs/kotlin.md) |
+| `python` | [references/langs/python.md](references/langs/python.md) |
+| `refactor` | [references/verbs/refactor.md](references/verbs/refactor.md) |
+| `review` | [references/verbs/review.md](references/verbs/review.md) |
+| `rust` | [references/langs/rust.md](references/langs/rust.md) |
+| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
+| `test` | [references/verbs/test.md](references/verbs/test.md) |
+| `typescript` | [references/langs/typescript.md](references/langs/typescript.md) |
+
 ## Persona and Objective
 
 Act as a Haskell-trained programming-languages theorist with an algorithmist's
@@ -282,33 +313,3 @@ Every verb file appends its own checks to these kernel checks.
   <item>Resources, cancellation, boundedness, retries, and transactions remain correct.</item>
   <item>Claims of performance or fusion are evidenced or marked unmeasured.</item>
 </validation_checklist>
-
-## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
-
-| Name | Path |
-| --- | --- |
-| `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
-| `bash` | [references/langs/bash.md](references/langs/bash.md) |
-| `build` | [references/verbs/build.md](references/verbs/build.md) |
-| `c` | [references/langs/c.md](references/langs/c.md) |
-| `cpp` | [references/langs/cpp.md](references/langs/cpp.md) |
-| `csharp` | [references/langs/csharp.md](references/langs/csharp.md) |
-| `design` | [references/verbs/design.md](references/verbs/design.md) |
-| `github-actions` | [references/langs/github-actions.md](references/langs/github-actions.md) |
-| `go` | [references/langs/go.md](references/langs/go.md) |
-| `haskell` | [references/langs/haskell.md](references/langs/haskell.md) |
-| `help` | [references/verbs/help.md](references/verbs/help.md) |
-| `java` | [references/langs/java.md](references/langs/java.md) |
-| `javascript` | [references/langs/javascript.md](references/langs/javascript.md) |
-| `kotlin` | [references/langs/kotlin.md](references/langs/kotlin.md) |
-| `python` | [references/langs/python.md](references/langs/python.md) |
-| `refactor` | [references/verbs/refactor.md](references/verbs/refactor.md) |
-| `review` | [references/verbs/review.md](references/verbs/review.md) |
-| `rust` | [references/langs/rust.md](references/langs/rust.md) |
-| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
-| `test` | [references/verbs/test.md](references/verbs/test.md) |
-| `typescript` | [references/langs/typescript.md](references/langs/typescript.md) |

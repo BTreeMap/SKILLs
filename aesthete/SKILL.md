@@ -22,6 +22,37 @@ metadata:
 
 # Aesthete
 
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else, so renaming a file edits
+one row and two files can never claim one name.
+
+| Name | Path |
+| --- | --- |
+| `a11y` | [references/a11y.md](references/a11y.md) |
+| `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
+| `brief` | [references/brief.md](references/brief.md) |
+| `build` | [references/verbs/build.md](references/verbs/build.md) |
+| `color` | [references/craft/color.md](references/craft/color.md) |
+| `components` | [references/craft/components.md](references/craft/components.md) |
+| `design` | [references/verbs/design.md](references/verbs/design.md) |
+| `help` | [references/verbs/help.md](references/verbs/help.md) |
+| `interaction` | [references/craft/interaction.md](references/craft/interaction.md) |
+| `layout` | [references/craft/layout.md](references/craft/layout.md) |
+| `marketing` | [references/surfaces/marketing.md](references/surfaces/marketing.md) |
+| `motion` | [references/craft/motion.md](references/craft/motion.md) |
+| `platform` | [references/craft/platform.md](references/craft/platform.md) |
+| `preflight` | [references/preflight.md](references/preflight.md) |
+| `product` | [references/surfaces/product.md](references/surfaces/product.md) |
+| `redesign` | [references/verbs/redesign.md](references/verbs/redesign.md) |
+| `review` | [references/verbs/review.md](references/verbs/review.md) |
+| `systems` | [references/systems.md](references/systems.md) |
+| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
+| `tells` | [references/tells.md](references/tells.md) |
+| `typography` | [references/craft/typography.md](references/craft/typography.md) |
+
 ## Persona and Objective
 
 Act as a design mastermind: an interface designer carrying an HCI
@@ -303,33 +334,3 @@ Verb files add their own. The mechanical gate is
   <item>Stack and tokens were derived from the repository or supplied material, not assumed.</item>
   <item>The friction budget to the primary goal was counted and reported.</item>
 </validation_checklist>
-
-## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else, so renaming a file edits
-one row and two files can never claim one name.
-
-| Name | Path |
-| --- | --- |
-| `a11y` | [references/a11y.md](references/a11y.md) |
-| `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
-| `brief` | [references/brief.md](references/brief.md) |
-| `build` | [references/verbs/build.md](references/verbs/build.md) |
-| `color` | [references/craft/color.md](references/craft/color.md) |
-| `components` | [references/craft/components.md](references/craft/components.md) |
-| `design` | [references/verbs/design.md](references/verbs/design.md) |
-| `help` | [references/verbs/help.md](references/verbs/help.md) |
-| `interaction` | [references/craft/interaction.md](references/craft/interaction.md) |
-| `layout` | [references/craft/layout.md](references/craft/layout.md) |
-| `marketing` | [references/surfaces/marketing.md](references/surfaces/marketing.md) |
-| `motion` | [references/craft/motion.md](references/craft/motion.md) |
-| `platform` | [references/craft/platform.md](references/craft/platform.md) |
-| `preflight` | [references/preflight.md](references/preflight.md) |
-| `product` | [references/surfaces/product.md](references/surfaces/product.md) |
-| `redesign` | [references/verbs/redesign.md](references/verbs/redesign.md) |
-| `review` | [references/verbs/review.md](references/verbs/review.md) |
-| `systems` | [references/systems.md](references/systems.md) |
-| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
-| `tells` | [references/tells.md](references/tells.md) |
-| `typography` | [references/craft/typography.md](references/craft/typography.md) |

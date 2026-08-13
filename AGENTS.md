@@ -97,12 +97,14 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   material to sibling files the agent reads on demand.
 * Bundled files are addressed by **registered name**, never by path, so a
   path cannot drift and two files cannot claim one name:
-  * **One declaration site.** Every skill that bundles files carries a
-    `## Registry` section as its final section, mapping each name to its
-    path. That table is the only place a path appears; a path written
-    anywhere else is a defect. The registry lists every bundled file,
-    including any not loaded during a run, such as a maintainer protocol;
-    those say so in their own first line.
+  * **One declaration site, declared before use.** Every skill that bundles
+    files opens with a `## Registry` section, the first `##` heading in the
+    file, mapping each name to its path. Declaring names before the body
+    uses them mirrors declaration-before-reference in a program. That table
+    is the only place a path appears; a path written anywhere else is a
+    defect. The registry lists every bundled file, including any not loaded
+    during a run, such as a maintainer protocol; those say so in their own
+    first line.
   * **A name is the basename without `.md`, in backticks**: `` `a11y` ``,
     `` `interaction` ``. Backticks mark it as an identifier so it is never
     read as the ordinary word. Basenames are unique within a skill, so a
@@ -111,9 +113,12 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     and inside `references/` alike. Reference files MUST NOT contain Markdown
     links to other reference files: the spec keeps references one level deep
     from `SKILL.md`, and link syntax invites the chaining that rule forbids.
-  * **Do not restate a name that the row key already carries.** If a table
-    is keyed by verb or mode and the file shares that name, say so once and
-    drop the column.
+  * **State the name-is-the-file identity once, never per row.** When a
+    table is keyed by verb, mode, or level and each row loads the file of
+    that name, say so in one sentence above the table and drop the column;
+    a column repeating its own row key is the identity function written out
+    once per row. Rows that deviate (loading nothing, or loading two files)
+    are named in that same sentence.
   * **A name is an address, never a sentence's payload.** It appears as the
     object of a word that says what it is: "defined in `review`", "load
     `brief`", "the template in `report`". Never "Full format: `review`.",

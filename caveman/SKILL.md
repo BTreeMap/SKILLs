@@ -22,6 +22,23 @@ metadata:
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
 
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `commit` | [references/commit.md](references/commit.md) |
+| `compress` | [references/compress.md](references/compress.md) |
+| `compress_guard` | [scripts/compress_guard.py](scripts/compress_guard.py) |
+| `help` | [references/help.md](references/help.md) |
+| `review` | [references/review.md](references/review.md) |
+| `stats` | [references/stats.md](references/stats.md) |
+| `wenyan` | [references/wenyan.md](references/wenyan.md) |
+
 ## Persistence
 
 ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift. Still
@@ -101,15 +118,16 @@ Pattern: `[thing] [action] [reason]. [next step].`
 
 One-shot sub-commands. On `/caveman <mode>` or a matching trigger
 phrase, read ONLY that mode's reference file, follow it, and report; the
-active intensity level is untouched. Do not load reference files otherwise.
+active intensity level is untouched. Each mode's name is its registered
+name, so the mode selects the file. Do not load reference files otherwise.
 
-| Mode | Loads | What it does |
-|------|-------|--------------|
-| commit | `commit` | Terse Conventional Commits message: why over what, body only when needed. |
-| review | `review` | One-line review findings: location, tag, problem, fix. |
-| compress | `compress` | Rewrite a prose file in caveman style in place, code untouched, backup kept. |
-| stats | `stats` | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
-| help | `help` | Quick-reference card for levels and modes. |
+| Mode | What it does |
+|------|--------------|
+| commit | Terse Conventional Commits message: why over what, body only when needed. |
+| review | One-line review findings: location, tag, problem, fix. |
+| compress | Rewrite a prose file in caveman style in place, code untouched, backup kept. |
+| stats | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
+| help | Quick-reference card for levels and modes. |
 
 ## Auto-Clarity
 
@@ -131,19 +149,3 @@ Persisted outside chat: write normal prose - code, comments, commit messages,
 docs, issue/PR text, memory files, third-party messages (the compress mode is
 the sole exemption). "stop caveman" or "normal mode": revert. Level persists
 until changed or session end.
-
-## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
-
-| Name | Path |
-| --- | --- |
-| `commit` | [references/commit.md](references/commit.md) |
-| `compress` | [references/compress.md](references/compress.md) |
-| `compress_guard` | [scripts/compress_guard.py](scripts/compress_guard.py) |
-| `help` | [references/help.md](references/help.md) |
-| `review` | [references/review.md](references/review.md) |
-| `stats` | [references/stats.md](references/stats.md) |
-| `wenyan` | [references/wenyan.md](references/wenyan.md) |

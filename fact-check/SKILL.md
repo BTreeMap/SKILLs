@@ -23,6 +23,23 @@ metadata:
 Decompose a document into atomic claims, verify each against retrieved
 evidence, report evidence-first, edit only what the user approves.
 
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `claims` | [references/claims.md](references/claims.md) |
+| `evaluation` | [references/evaluation.md](references/evaluation.md) |
+| `evidence` | [references/evidence.md](references/evidence.md) |
+| `report` | [references/report.md](references/report.md) |
+| `verdicts` | [references/verdicts.md](references/verdicts.md) |
+
+`evaluation` is a maintainer protocol and is never loaded during a run.
+
 ## Invariants (pinned)
 
 Non-negotiable at every step, on every branch, after any context compaction.
@@ -186,19 +203,3 @@ values in its references are placeholders marked illustrative.
   <item>Edited paragraphs re-read for coherence; secondary edits reported.</item>
   <item>Final summary names verdict counts, branch, and cost; no follow-up tool or skill was auto-invoked.</item>
 </validation_checklist>
-
-## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
-
-| Name | Path |
-| --- | --- |
-| `claims` | [references/claims.md](references/claims.md) |
-| `evaluation` | [references/evaluation.md](references/evaluation.md) |
-| `evidence` | [references/evidence.md](references/evidence.md) |
-| `report` | [references/report.md](references/report.md) |
-| `verdicts` | [references/verdicts.md](references/verdicts.md) |
-
-`evaluation` is a maintainer protocol and is never loaded during a run.

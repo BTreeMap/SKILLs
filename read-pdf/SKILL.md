@@ -12,6 +12,17 @@ compatibility: Requires uv to run the bundled PEP 723 extractor script
 
 # Read PDF
 
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `extract_pdf` | [scripts/extract_pdf.py](scripts/extract_pdf.py) |
+
 ## Scope
 
 Read PDF content for analysis. Extract text, page numbers, and standard metadata. Preserve source-page provenance.
@@ -94,13 +105,3 @@ More extracted source text.
 - The response distinguishes extracted facts from interpretation.
 - Empty or unreliable pages, encryption, and layout ambiguity are disclosed when relevant.
 - No PDF package or tool other than `pypdf` was used.
-
-## Registry
-
-Every bundled file, declared once. Everywhere else a file is addressed by
-name alone; a name resolves here and nowhere else. Runnable commands keep
-the literal path because they are invocations, not references.
-
-| Name | Path |
-| --- | --- |
-| `extract_pdf` | [scripts/extract_pdf.py](scripts/extract_pdf.py) |
