@@ -111,6 +111,8 @@ Skip only if nothing was supplied.
       element.
 - [ ] One theme holds across the surface, set once at the root.
 - [ ] Both themes were opened and reviewed, not just the one being built in.
+- [ ] Theme follows the system preference with no stored state, unless the
+      user asked for a toggle.
 
 ## Craft
 

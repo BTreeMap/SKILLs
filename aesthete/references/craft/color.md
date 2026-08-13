@@ -51,10 +51,15 @@ characteristic result where one mode is designed and the other is inverted.
   value.
 * Hierarchy parity is the requirement: whatever draws the eye first in light
   draws it first in dark.
-* Prefer the platform's mechanism for selecting between theme values in one
-  declaration, and respect the system preference by default. Add an explicit
-  toggle when either mode loses meaningful brand expression, and persist the
-  choice.
+* Select between theme values through the platform's own single-declaration
+  mechanism, so the interface tracks the operating system preference live as
+  the user changes it.
+* **Default to the system preference and store nothing.** Ship no
+  `light | dark | system` setting, no persisted choice, and no app-level
+  theme state unless the user asks for a toggle.
+* Add a toggle when the user asks for one, or when a mode loses meaningful
+  brand expression. Default it to the system preference and persist that
+  choice per `interaction`.
 
 ## Contrast in practice
 

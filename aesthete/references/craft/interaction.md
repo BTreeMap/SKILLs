@@ -129,8 +129,9 @@ after failure and reuse information the system already has.
 * Make Back do what the user expects and preserve work.
 * Scroll position and expansion state survive navigation and return.
 * Drafts persist across refresh and failure.
-* Persist preferences, including theme choice, density, and dismissed
-  guidance. Keep dismissed guidance dismissed.
+* Persist preferences, including density, dismissed guidance, and an
+  explicit theme toggle where `color` calls for one. Keep dismissed guidance
+  dismissed.
 * Reuse information already provided and preserve authentication flows that
   depend on password managers or paste.
 
