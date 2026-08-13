@@ -4,10 +4,9 @@ Owns ingestion of a supplied design document and color palette: precedence,
 palette-to-role mapping, verification, conflict resolution, gap filling, and
 reporting.
 
-Supplied material is an **input, not a proof**. Design documents routinely
-carry contrast failures, stale accessibility claims, missing states, and
-rules written for a different scope. Adopt what holds, verify the rest,
-report every divergence.
+Design documents routinely carry contrast failures, stale accessibility
+claims, missing states, and rules written for a different scope. Adopt what
+holds, verify the rest, and report every divergence.
 
 ## Procedure
 
@@ -79,7 +78,7 @@ non-compliance can be as wrong as a claim of compliance.
 
 ## Resolving a conflict with the floor
 
-The floor never yields and the brand is never discarded. Resolve by
+Satisfy the floor and preserve brand intent. Resolve conflicts by
 derivation, in this order, and report which was used:
 
 1. **Restrict by size.** A brand color failing the normal-text threshold
@@ -101,7 +100,7 @@ color entirely, or by claiming the floor does not apply.
 
 ## Rules that survive supplied material
 
-Supplied documents govern appearance. They do not waive function.
+Supplied documents govern appearance. Function still applies.
 
 * **Interaction states are function, not styling.** A document that declines
   to specify hover, focus, loading, or error states has left a gap to fill,

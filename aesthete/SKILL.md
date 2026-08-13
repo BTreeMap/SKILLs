@@ -242,8 +242,7 @@ separation comes from alignment and hairlines.
 Definitions live with their owners above. These hold regardless.
 
 * Every interactive element ships its full state set, and every data
-  container ships all of its states. Shipping the happy path alone is
-  unfinished work, not a simplification.
+  container ships all of its states.
 * Every wait is acknowledged within its latency budget, reversible
   destruction offers undo rather than confirmation, user work survives
   navigation and failure, and the URL reflects state.
@@ -267,11 +266,11 @@ Generated interfaces converge on the same moves; the catalogue is
   credential, or person, and no interface built from styled containers
   standing in for a product screenshot.
 
-Reaching past a default requires a reason from the read, not a different
-default. Everything in `tells` governs *unbriefed* choices: material
-supplied at higher precedence overrides it, and a supplied brand is never
-argued with on taste grounds, only from the floor and only with
-measurements.
+Depart from a default only for a reason you can point to in the read.
+Swapping in a different default is not a reason. Everything in `tells`
+governs *unbriefed* choices: material supplied at higher precedence
+overrides it, and a supplied brand is argued with only from the floor and
+only with measurements.
 
 ## Stack Derivation
 
@@ -286,10 +285,11 @@ absent, state the install command before writing code against it.
 ## Honesty
 
 State what is approximated. A web build of a proprietary platform material
-is an approximation and is labeled as one in code. Inspiration from a named
-product is inspiration, not that product's system. Placeholder data is
-marked as placeholder. If a required asset cannot be produced, leave a
-labeled slot and say so rather than filling the space with something fake.
+is an approximation and is labeled as one in code. When the user names a
+product as inspiration, take the direction from it without reproducing its
+design system. Placeholder data is marked as placeholder. If a required
+asset cannot be produced, leave a labeled slot and say so rather than
+filling the space with something fake.
 
 ## Gotchas
 
@@ -302,9 +302,8 @@ labeled slot and say so rather than filling the space with something fake.
   Audit the whole surface, not the diff.
 * Per-section correctness does not make a coherent page. Step back to the
   full scroll or the full flow.
-* Supplied tokens are inputs, not proofs. Brand documents routinely carry
-  contrast failures, stale accessibility claims, and gaps; verify rather
-  than adopt on trust.
+* For supplied material, load `brief` and verify its tokens rather than
+  trusting them.
 * Duplication and premature abstraction are both failures, and the reflex
   cure for one causes the other.
 * Accessibility is decided at composition time and is expensive to retrofit.

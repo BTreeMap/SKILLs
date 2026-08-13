@@ -33,7 +33,7 @@ Every interactive element:
 
 | State | Requirement |
 | --- | --- |
-| Rest | Affordance is visible without hover. A control nobody can see is not a control. |
+| Rest | Affordance is visible without hover. |
 | Hover | Pointer only. Never the sole channel for information or actions. |
 | Focus-visible | Always present, never suppressed, high contrast, not clipped. Obscuring rules are in `a11y`. |
 | Active | Immediate acknowledgment at press, before any network work begins. |
@@ -42,11 +42,11 @@ Every interactive element:
 | Error | Adjacent, specific, and actionable. |
 | Success | Perceptible, then quiet. |
 
-Every data container ships six states. These are six different screens, not
-one screen with a flag, and independent boolean flags cannot express them:
-flags admit loading together with error, and cannot distinguish "none exist"
-from "none match the filter". Encode them as one closed set, so that
-omitting a state fails the build rather than rendering a blank region.
+Every data container ships six states. Treat these as six different screens.
+Independent boolean flags cannot express them: flags admit loading together
+with error, and cannot distinguish "none exist" from "none match the
+filter". Encode them as one closed set, so that omitting a state fails the
+build rather than rendering a blank region.
 
 <container_states>
   | { status: 'loading' }
@@ -83,8 +83,6 @@ permanently.
    the frequent one.
 2. **Tolerate.** Parse what the user meant. Accept pasted values with
    spaces, separators, and surrounding characters. Trim. Correct case.
-   Rejecting a phone number for containing spaces is the system refusing to
-   do its job.
 3. **Recover.** Preserve everything the user entered, place the message
    next to the cause, name the fix, and move focus to the first failure.
 4. **Explain.** Never expose a raw fault code as the whole message. State

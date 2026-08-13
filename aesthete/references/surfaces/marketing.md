@@ -9,7 +9,7 @@ is comprehension in seconds, then one action.
 **The hero fits the first viewport.** Headline at most two lines on desktop,
 supporting sentence at most twenty words and four lines, primary action
 visible without scrolling. If the value cannot be stated in twenty words,
-the value is unclear; that is a copy problem, not a rule problem.
+clarify the copy.
 
 **Plan type scale and asset size together.** A long headline at display
 scale wrapping to four lines is a sizing error, never a copy-length error.
@@ -44,8 +44,8 @@ trailing cell means the grid shape was chosen before the content was
 counted. Reshape the grid.
 
 **Multi-cell grids need visual variation.** At least a third of the cells
-carry a real image, a considered background, or a pattern. A grid of
-identical text-only cards is a list wearing a grid costume.
+carry a real image, a considered background, or a pattern. Render a set of
+identical text-only cards as a list.
 
 **Ration section labels.** The small uppercase label above a heading is
 useful once or twice per page for orientation. Above every section it
@@ -73,9 +73,8 @@ Marketing surfaces live on the first impression, not the full read.
   grouped columns, a card grid, tabs, a disclosure, or a horizontally
   scrolling set. A long list of rows each separated by a hairline is the
   weakest available choice.
-* Quotes run at most three lines. A quote longer than a glance is not a
-  quote, it is a case study. Attribution carries name and role, never a
-  bare first name.
+* Quotes run at most three lines. A longer quote should become a case study.
+  Attribution carries name and role, never a bare first name.
 
 ## Copy audit before shipping
 
@@ -95,9 +94,9 @@ editor.
 
 ## Imagery
 
-Marketing surfaces are visual products. A page of text and gradients is not
-minimalism; it is incomplete. Even a restrained editorial page needs a small
-number of real images carrying real weight.
+Marketing surfaces are visual products. A page of text and gradients is
+incomplete even when minimalism is the goal: a restrained editorial page
+still needs a small number of real images carrying real weight.
 
 Credibility logos are real marks rendered as vector assets, or, for invented
 brands, a simple generated monogram consistent with the page style. A row of
@@ -111,7 +110,6 @@ generated marketing pages.
 
 ## Theme lock
 
-The page has one theme. Sections do not invert. A single deliberate,
-strongly-transitioned theme change is allowed once per page when it is a
-composed device; random alternation is not. Background tints within one
-theme family are fine.
+Keep one theme across the page. Allow at most one theme change, and only as
+a deliberate, strongly-transitioned composed device. Background tints within
+one theme family are fine.

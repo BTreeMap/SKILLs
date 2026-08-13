@@ -2,7 +2,7 @@
 
 Reach for the platform before a dependency. Native capability arrives with
 accessibility, keyboard behavior, and top-layer rendering already correct,
-and costs nothing to ship.
+without adding dependency code to the bundle.
 
 Browser support moves continuously and this file ages. Before relying on any
 capability below, verify its current baseline status and the project's
@@ -21,9 +21,9 @@ substitute for checking.
 4. **A dependency**, only when the above genuinely cannot express it, and
    only one per concern.
 
-Rebuilding a native control in order to style it is nearly always the wrong
-trade: the styling gain is small and the accessibility and keyboard debt is
-large and permanent.
+Rebuilding a native control in order to style it is nearly always a poor
+trade: the styling gain is small while the accessibility and keyboard issues
+are large and permanent.
 
 ## Capabilities worth knowing
 
@@ -76,8 +76,8 @@ for large documents.
 Match the repository. When choosing for greenfield work:
 
 * Render as much as possible statically or on the server, and treat
-  interactivity as isolated leaves. Every interactive boundary is a cost paid
-  by every user.
+  interactivity as isolated leaves. Every interactive boundary adds client
+  work for every user.
 * Handle asynchronous state with the framework's own mechanisms for pending
   state, optimistic updates, and form submission rather than hand-rolled
   loading flags. Hand-rolled flags are where the missing loading and error
@@ -105,7 +105,7 @@ post-launch audit, and re-verify the values when they matter.
   space and fonts are metric-matched.
 
 Budget the bundle before writing it. Lazy-load anything below the fold, and
-weigh any dependency against the number of users who pay for it on every
+weigh any dependency against the number of users who incur its cost on every
 visit.
 
 ## Failure modes

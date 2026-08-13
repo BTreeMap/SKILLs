@@ -1,8 +1,8 @@
 # Craft: motion
 
 Motion exists to explain change. An animation that does not help the user
-understand what happened, what is happening, or what to do next is a cost
-charged to every user on every visit.
+understand what happened, what is happening, or what to do next adds work on
+every visit.
 
 ## The justification test
 
@@ -25,9 +25,9 @@ interfaces. If the sentence does not come, remove the animation.
   Hover and press feedback belongs at the short end.
 * Elements entering or leaving: moderate, and asymmetric. Exits run faster
   than entrances, because the user has already decided.
-* Large surfaces crossing the screen: longer, but the ceiling is low.
-  Anything past roughly half a second in a product interface starts costing
-  the user time on every repetition.
+* Large surfaces crossing the screen: longer, but keep them brief. Anything
+  past roughly half a second in a product interface starts costing the user
+  time on every repetition.
 * Distance scales duration, but sublinearly. A larger object crossing a
   larger distance takes somewhat longer, not proportionally longer.
 * Use eased curves that decelerate into rest. Linear motion reads mechanical
@@ -81,8 +81,8 @@ primitives.
 ## Restraint
 
 * Infinite loops are for genuine live state only. Ambient perpetual motion
-  in the periphery competes for attention permanently and never wins
-  anything back.
+  in the periphery competes for attention permanently and does not return
+  anything to the user.
 * At most one attention-seeking device per view. Two things looping are two
   things being ignored.
 * Motion never blocks input. The user can always click through, scroll past,
@@ -97,8 +97,8 @@ attention. Honor it: replace movement with a fade or an instant change,
 disable parallax and scroll-hijacking entirely, stop infinite loops, and
 keep every transition of state legible without the animation.
 
-Reduced motion means less movement, not less function. Never gate content,
-state changes, or affordances behind an animation that the preference
+Reduced motion means less movement. It does not reduce function. Never gate
+content, state changes, or affordances behind an animation that the preference
 disables. Check the preference at the point of use so a change mid-session
 takes effect.
 

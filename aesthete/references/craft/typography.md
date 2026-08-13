@@ -12,7 +12,7 @@ approximately. Six to eight steps covers almost every interface.
 
 Set the scale in a relative unit so it honors the user's browser text size.
 Fixed pixel sizing for body text overrides an explicit accessibility
-preference and is a defect, not a style choice.
+preference. Treat it as an accessibility defect.
 
 ## Measure and rhythm
 
@@ -43,8 +43,7 @@ considered, and reaching for it on that reasoning is the most common type
 misjudgment in generated design. Use a serif when the surface is genuinely
 editorial, literary, heritage, or when the brand specifies one, and be able
 to say why that particular serif suits that particular brand. Otherwise
-choose a display sans, which is the default in contemporary brand work for
-the same reason black is the default in tailoring.
+choose a display sans, the common default in contemporary brand work.
 
 **Emphasis stays in the family.** Emphasize a word inside a heading with the
 weight or the italic of the same family. Dropping a single word of another

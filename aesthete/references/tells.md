@@ -1,12 +1,11 @@
 # Tells: the catalogue of generated-looking output
 
 A tell is a pattern that appears far more often in generated interfaces than
-in considered ones. Each is banned as a **default reach**, not as a
-possibility: any of these is available when the brief genuinely calls for it
-and you can say why. What is forbidden is arriving at one by habit.
+in considered ones. Each is banned as a **default reach**. Any of these is
+available when the brief genuinely calls for it and you can say why. Do not
+choose one by habit.
 
-The underlying failure is always the same. These patterns simulate the
-appearance of design decisions without any decision having been made, and
+These patterns look like design decisions that nobody actually made, and
 readers who see a lot of interfaces recognize them instantly.
 
 ## Typography and punctuation
@@ -150,6 +149,6 @@ labels against section count, consecutive split layouts, marquees,
 occurrences of U+2014, distinct accent colors, distinct radius values. A
 counted violation is not a matter of opinion.
 
-When building, the discipline is not to avoid this list item by item. It is
-to derive each decision from the design read, at which point almost none of
-these can arise, because each one exists only as a substitute for a decision.
+When building, derive each decision from the design read. Most of these
+patterns disappear when each choice has a reason, because they substitute for
+decisions.

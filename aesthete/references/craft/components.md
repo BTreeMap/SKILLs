@@ -2,9 +2,8 @@
 
 An interface is code that outlives the design that motivated it. Compose it
 so the second screen costs less than the first, and the tenth costs least of
-all. A codebase where every screen re-implements the same controls is not a
-design system with a styling problem; it is an architecture failure that
-happens to be visible.
+all. When every screen re-implements the same controls, the problem is the
+architecture, not the styling.
 
 Owns component boundaries, prop APIs, duplication policy, layering, and
 render cost. Apply the discipline a type theorist applies to a domain model:
@@ -21,7 +20,7 @@ Authoring a second Button, Input, Card, Modal, Select, or Table is the most
 damaging habit in generated frontends. Each duplicate forks behavior,
 fragments tokens, splits accessibility fixes across files, and multiplies
 the cost of every future change. It is rarely a decision; it is the result
-of not looking. Look.
+of not searching first.
 
 If the existing component is close but not sufficient, the correct move is
 to extend it with a new variant, not to copy it. If extending would require
@@ -30,11 +29,9 @@ honest answer.
 
 ## The two prices of duplication
 
-These are different problems and the same answer to both is wrong.
-
-**Duplicated primitives are always a defect.** A design system is precisely
-the claim that these things are the same thing. Two Buttons falsify that
-claim. There is no threshold to wait for, no rule of three; the second one
+**Duplicated primitives are always a defect.** A design system is the claim
+that these things are the same thing. Two Buttons falsify that claim. There
+is no threshold to wait for, no rule of three; the second one
 is already wrong.
 
 **Duplicated composition is usually fine.** Two screens arranging the same
@@ -95,9 +92,8 @@ Closed and total:
 
 **Model asynchronous collections as one closed set.** `interaction`
 defines the container states and their canonical union; encode that union
-rather than a bag of flags. This is the point where type discipline and
-design discipline are the same act: a design rule about which states must
-exist becomes a build error when one is missing, instead of a review finding
+rather than a bag of flags. A design rule about which states must exist then
+becomes a build error when one is missing, instead of a review finding
 somebody has to catch.
 
 <flag_bag>
@@ -119,13 +115,12 @@ composition need in disguise.
 
 **Style escape hatches are for position, not identity.** Allowing a call
 site to pass spacing or layout classes is reasonable. Allowing it to
-override color, radius, or type is how a design system dies one call site at
-a time. If a call site needs a different look, that look is a new variant
-inside the component, decided once.
+override color, radius, or type forks the design system at that call site.
+If a call site needs a different look, that look is a new variant inside the
+component, decided once.
 
-**Primitives take no domain types.** A Button that accepts a `User` is not a
-primitive; it is a pattern that has been filed in the wrong place. This is
-mechanically checkable and worth checking.
+**Primitives take no domain types.** A Button that accepts a `User` belongs
+at the pattern layer. Check this mechanically.
 
 ## Layer in one direction
 
@@ -137,9 +132,8 @@ mechanically checkable and worth checking.
 | Patterns | Domain assemblies such as an entity table or a checkout form | Everything below, plus domain types |
 | Routes | Data access, layout, orchestration | Everything below |
 
-Imports point downward only. A primitive importing a pattern is a cycle and
-the beginning of an unmaintainable tree. Domain knowledge enters at the
-pattern layer and never below it.
+Imports point downward only. A primitive importing a pattern creates a cycle.
+Domain knowledge enters at the pattern layer and never below it.
 
 Effects belong at the top. Data access, mutation, storage, navigation,
 randomness, and time live in routes or thin container components.
@@ -150,9 +144,9 @@ anticipated.
 ## Derive, do not synchronize
 
 Anything computable from props and existing state is computed during render.
-An effect whose body copies one piece of state into another is a bug with a
-delay: it renders at least one frame with the stale value, and it desyncs
-the moment a path forgets to run it.
+An effect whose body copies one piece of state into another renders at least
+one frame with the stale value, and desyncs the moment a path forgets to run
+it.
 
 State is the minimum that cannot be derived. Two pieces of state that must
 always agree are one piece of state plus a function. State that belongs in

@@ -1,7 +1,7 @@
 # Craft: layout
 
 Layout is where hierarchy becomes visible. Space, alignment, and grouping do
-the work; borders and boxes are what you reach for when the spacing failed.
+the work; use borders and boxes only when those signals are insufficient.
 
 ## Space
 
@@ -30,9 +30,9 @@ Reach in this order and stop at the first that works:
 5. **Border.** An outline when a region must be enclosed.
 6. **Elevation.** A shadow when something genuinely floats above the plane.
 
-A card is rungs four through six at once. Use it only when the content is a
-discrete, self-contained object the user acts on as a unit. A page of cards
-containing text is a page that skipped rungs one and two.
+A card combines rungs four through six. Use it only when the content is a
+discrete, self-contained object the user acts on as a unit. When the content
+is text, reach for space and alignment instead.
 
 ## Grid and structure
 
@@ -58,8 +58,8 @@ containing text is a page that skipped rungs one and two.
   its own container works in a sidebar, a modal, and a full-width region
   without three sets of breakpoint overrides.
 * Every multi-column region declares its narrow behavior in the same place
-  it declares its wide behavior. Assuming the framework handles it is how
-  narrow layouts break.
+  it declares its wide behavior. Framework defaults do not cover every narrow
+  layout.
 * Order matters when things stack. Verify the stacked reading order is the
   intended priority order, and that it matches the DOM order so keyboard and
   assistive traversal agree with the visual sequence.

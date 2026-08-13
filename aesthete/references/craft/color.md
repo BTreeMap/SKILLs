@@ -1,8 +1,8 @@
 # Craft: color
 
 Color carries the least information and attracts the most attention. Design
-the interface in grayscale first; if the hierarchy does not read, color will
-not save it.
+the interface in grayscale first; color cannot fix a hierarchy that does not
+already read.
 
 ## Structure
 
@@ -13,8 +13,8 @@ not save it.
   declared accent plus reserved secondary hues is consistent when used as
   declared, and inconsistent the moment a component invents another value.
 * **One neutral family**, consistently warm or cool. Mixing warm and cool
-  greys in one surface produces a subtle dirtiness nobody can name and
-  everybody perceives.
+  greys in one surface creates a subtle mismatch that users perceive even if
+  they cannot name it.
 * **Semantic colors** for success, warning, danger, and information, each
   distinguishable from the accent and from each other. Danger must never be
   the accent, or destructive actions stop reading as destructive.
@@ -25,10 +25,10 @@ not save it.
 ## Tokens, not values
 
 Name by role, never by appearance. A token called `surface-raised` survives
-a theme change; one called `grey-100` becomes a lie the moment the theme
-inverts. Roles worth having: page and raised surfaces, primary, secondary,
-and disabled text, subtle and strong borders, the accent plus its hover,
-active, and subtle variants, the semantic set, and a focus ring.
+a theme change; one called `grey-100` becomes wrong when the theme inverts.
+Roles worth having: page and raised surfaces, primary, secondary, and
+disabled text, subtle and strong borders, the accent plus its hover, active,
+and subtle variants, the semantic set, and a focus ring.
 
 Author in a perceptually uniform color space where the toolchain supports
 it, so that a lightness step means the same visual change at every hue.
@@ -85,12 +85,11 @@ technology gradient, and the warm cream with brass and oxblood that appears
 on every artisan and premium consumer brief. Both are recognizable defaults
 rather than decisions, and they make distinct brands look identical.
 
-Choose instead by asking what the brand is not, then find a direction that
-is coherent and unusual for the category: a saturated single hue against one
-neutral, a deep natural tone with a warm accent, sharp near-black against a
-warm mid-tone, or true monochrome with one bright accent. Rotate across
-projects; shipping the same palette twice in a category means the palette
-came from habit.
+Choose instead a direction that is coherent and unusual for the category: a
+saturated single hue against one neutral, a deep natural tone with a warm
+accent, sharp near-black against a warm mid-tone, or true monochrome with one
+bright accent. Rotate across projects; using the same palette twice in a
+category means the palette came from habit.
 
 ## Failure modes
 
