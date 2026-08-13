@@ -17,7 +17,7 @@ measured against the declaration, never against a preference.
 | Check | Pass condition |
 | --- | --- |
 | U+2014 in user-visible strings | Exactly zero |
-| Accessibility values or WCAG citations outside a11y.md | Exactly zero |
+| Accessibility values or WCAG citations outside `a11y` | Exactly zero |
 | U+2013 as a separator | Exactly zero |
 | Accent colors used | Exactly the declared set, no additions |
 | Radius values used | Drawn from the declared scale only |
@@ -67,7 +67,7 @@ Skip only if nothing was supplied.
 ## Interaction
 
 - [ ] Every interactive element and every data container ships every state
-      interaction.md defines, encoded as one closed set.
+      `interaction` defines, encoded as one closed set.
 - [ ] No loader appears for a response under the flash threshold, and every
       wait past it is acknowledged at the point of action.
 - [ ] Input is parsed liberally; nothing is rejected for formatting the
@@ -81,9 +81,9 @@ Skip only if nothing was supplied.
 
 ## Accessibility
 
-- [ ] Every text and control pairing meets the thresholds in a11y.md,
+- [ ] Every text and control pairing meets the thresholds in `a11y`,
       measured against composited backgrounds, with exemptions applied only
-      where a11y.md allows them.
+      where `a11y` allows them.
 - [ ] Placeholder, helper, disabled, and focus-ring contrast were measured
       specifically.
 - [ ] Every control's label is readable against its own background, and text
@@ -92,7 +92,7 @@ Skip only if nothing was supplied.
       sticky regions.
 - [ ] Full keyboard parity; focus order matches visual order; dialogs trap
       and return focus; escape dismisses; backgrounds are inert.
-- [ ] Touch target hit areas meet the minimum in a11y.md, with spacing
+- [ ] Touch target hit areas meet the minimum in `a11y`, with spacing
       between neighbors.
 - [ ] No information is carried by color alone.
 - [ ] Every drag interaction has a non-drag alternative.

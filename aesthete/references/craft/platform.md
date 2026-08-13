@@ -95,7 +95,7 @@ Match the repository. When choosing for greenfield work:
 
 One vendor's product thresholds, revisable by that vendor, carrying none of
 the regulatory weight of the accessibility floor. Never trade a criterion in
-a11y.md against one of these. Treat them as design constraints rather than a
+`a11y` against one of these. Treat them as design constraints rather than a
 post-launch audit, and re-verify the values when they matter.
 
 * Largest contentful paint under 2.5 seconds. The hero image or heading is

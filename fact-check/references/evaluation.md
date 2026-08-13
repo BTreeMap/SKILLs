@@ -20,7 +20,7 @@ per run:
 Protocol: at least 5 repetitions per condition; compare against a no-skill
 baseline on the same model. Re-run per model generation: when the with-skill
 delta approaches zero, delete scaffolding (starting with
-references/evidence.md query patterns) before adding anything.
+`evidence` query patterns) before adding anything.
 
 ## Robustness scenarios
 

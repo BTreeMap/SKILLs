@@ -70,13 +70,13 @@ span with the corrected span using the available file-editing tool".
    with the inventory and pinned constraints.
 2. **Verify**: run the per-claim contract (below) for every claim via the
    selected orchestration branch. Route retrieval by claim type per
-   [claims.md](references/claims.md); apply source tiers and
+   `claims`; apply source tiers and
    conflict rules per [evidence.md](references/evidence.md).
    Flush each verdict record to the state file as it completes.
 3. **Report**: render the evidence-first report per
    [report.md](references/report.md). Include which branch ran and
    approximate token cost.
-4. **Approve**: tiered approval per report.md. Rejection is first-class:
+4. **Approve**: tiered approval per `report`. Rejection is first-class:
    record rejected verdicts as `user-rejected` in the state file and leave
    the text untouched.
 5. **Edit**: re-read `constraints` from the state file. Apply only approved
@@ -174,7 +174,7 @@ values in its references are placeholders marked illustrative.
   the primary wins; note the aggregator in `notes`.
 - Do not let report fluency invite rubber-stamping: the report leads with
   evidence and counter-evidence, and low-confidence items require
-  item-by-item approval, per report.md.
+  item-by-item approval, per `report`.
 
 ## Completion checks
 

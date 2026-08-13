@@ -60,7 +60,7 @@ characteristic result where one mode is designed and the other is inverted.
 ## Contrast in practice
 
 Thresholds, exemptions, and their interpretation are the floor and are owned
-by a11y.md. Compute every ratio; never estimate one, and never accept a
+by `a11y`. Compute every ratio; never estimate one, and never accept a
 supplied document's claim about it. What follows is the craft of not
 failing them.
 

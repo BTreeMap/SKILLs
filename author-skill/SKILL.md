@@ -20,7 +20,7 @@ license: MIT
     <rule>Set `license: MIT` so a skill vendored out of this repository retains its terms.</rule>
     <rule>Add `compatibility` (max 500 characters) only when the skill requires specific runtimes, system packages, or network access; most skills omit it.</rule>
     <rule>Use Markdown `##` or `###` headings for internal structure.</rule>
-    <rule>Link to bundled files only from `SKILL.md`, as `[basename.md](path/from/skill/root.md)` with no `./` prefix. Inside `references/`, cite a sibling by bare basename in prose and never as a link: reference files stay one level deep from `SKILL.md`, and link syntax invites chaining.</rule>
+    <rule>Address bundled files by registered name, never by path. Declare every path exactly once, in `SKILL.md`, using a `## Registry` table mapping name to path when a file is named in several contexts. A name is the basename without `.md`, written in backticks so it reads as an identifier rather than the ordinary word. Reference files cite siblings by name only and never link, since references stay one level deep from `SKILL.md`.</rule>
     <rule>Define each topic in exactly one file. Where a value, threshold, or enumeration is restated in a second file, replace the copy with an attribution naming its owner, so the two can never disagree.</rule>
     <rule>Wrap all examples, templates, and payloads strictly in XML tags to prevent instruction bleed.</rule>
   </skill_anatomy>

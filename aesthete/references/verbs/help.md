@@ -57,9 +57,9 @@ that owns it; resolve none of them from memory.
 * One declared accent, radius scale, spacing scale, type scale, icon family,
   and theme, honored across the whole surface.
 * Every interactive element ships its full state set and every data
-  container ships all of its states (interaction.md).
+  container ships all of its states (`interaction`).
 * Every wait is acknowledged within its latency budget
-  (interaction.md). Undo outranks confirm. User work is never lost.
+  (`interaction`). Undo outranks confirm. User work is never lost.
   The URL reflects state.
 * Supplied palette beats supplied document beats repo beats defaults. The
   accessibility floor beats all of them, and conflicts are resolved by
@@ -78,11 +78,11 @@ Loaded on demand, one level deep, never chained.
 
 | Need | File |
 | --- | --- |
-| Verb procedure | `references/verbs/{verb}.md` |
-| Accessibility value or citation | `references/a11y.md` (the only source) |
-| Supplied design doc or palette | `references/brief.md` |
-| Surface profile | `references/surfaces/{marketing,product}.md` |
-| Craft decision | `references/craft/{typography,color,layout,motion,interaction,components,platform}.md` |
-| Official design systems | `references/systems.md` |
-| Generated-output catalogue | `references/tells.md` |
-| Ship gate | `references/preflight.md` |
+| Verb procedure | one of `design` `build` `review` `audit` `redesign` `teach` `help` |
+| Accessibility value or citation | `a11y`, the only source |
+| Supplied design doc or palette | `brief` |
+| Surface profile | `marketing` or `product` |
+| Craft decision | `typography` `color` `layout` `motion` `interaction` `components` `platform` |
+| Official design systems | `systems` |
+| Generated-output catalogue | `tells` |
+| Ship gate | `preflight` |

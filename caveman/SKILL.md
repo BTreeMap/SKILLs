@@ -78,7 +78,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
     Output raw implementation details using standard diff formats or complete code blocks.
   </contract>
   <contract trigger="Reviewing (Audits/Critiques)">
-    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format: [review.md](references/review.md).
+    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format: `review`.
   </contract>
 </output_contracts>
 

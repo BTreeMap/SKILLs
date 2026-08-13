@@ -65,7 +65,7 @@ containing text is a page that skipped rungs one and two.
   assistive traversal agree with the visual sequence.
 * Use dynamic viewport units for full-height regions so mobile browser
   interface changes do not cause jumps.
-* Touch targets meet the minimum size a11y.md defines, with spacing between
+* Touch targets meet the minimum size `a11y` defines, with spacing between
   adjacent targets, regardless of the visual size of the mark inside them.
   The hit area is what must meet it, not the icon drawn inside.
 

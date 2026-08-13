@@ -1,6 +1,6 @@
 # Ultra Level: Atomicity and History-Consistency Audit
 
-Applies on top of SKILL.md and references/full.md. Run the audits below
+Applies on top of SKILL.md and `full`. Run the audits below
 BEFORE drafting; they may change what gets committed, not just the message.
 
 <ultra_directives>
@@ -28,7 +28,7 @@ BEFORE drafting; they may change what gets committed, not just the message.
   </reference_resolution>
 
   <verbose_validation>
-    <directive>Run the full.md validation checklist explicitly, item by item, before outputting. On any failure, fix and re-verify instead of shipping the violation.</directive>
+    <directive>Run the `full` validation checklist explicitly, item by item, before outputting. On any failure, fix and re-verify instead of shipping the violation.</directive>
   </verbose_validation>
 </ultra_directives>
 

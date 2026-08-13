@@ -95,19 +95,28 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   derive them from the consuming repository.
 * Keep each skill within context economy (~500 lines). Offload bulky reference
   material to sibling files the agent reads on demand.
-* Reference notation distinguishes the two things a file mention can mean, so
-  a load instruction is never confused with a citation:
-  * **Load directive** (`SKILL.md` only): a Markdown link whose label is the
-    target's basename and whose target is the path from the skill root, with
-    no `./` prefix: `[review.md](references/review.md)`. `SKILL.md` is the
-    only routing surface, so it is the only file that links.
-  * **Attribution** (inside `references/`): the bare basename in prose, never
-    a link: "thresholds are owned by a11y.md". Basenames are unique within a
-    skill. Reference files MUST NOT contain Markdown links to other reference
-    files: the spec keeps references one level deep from `SKILL.md`, and
-    link syntax invites the chaining that rule forbids.
-  * An attribution names the file that actually owns the topic. When
-    ownership moves, every attribution to it moves in the same change.
+* Bundled files are addressed by **registered name**, never by path, so a
+  path cannot drift and two files cannot claim one name:
+  * **One declaration site.** Every runtime-loadable bundled path appears
+    exactly once in the whole skill, in `SKILL.md`. When a file is named in
+    more than one context, declare the paths in a `## Registry` table
+    mapping name to path; when each file is named once, the table that names
+    it already is that declaration and no separate registry is warranted. A
+    file not meant to be loaded during a run (a maintainer protocol, an
+    evaluation harness) is left undeclared and says so in its first line.
+  * **A name is the basename without `.md`, in backticks**: `` `a11y` ``,
+    `` `interaction` ``. Backticks mark it as an identifier so it is never
+    read as the ordinary word. Basenames are unique within a skill, so a
+    name resolves to exactly one file.
+  * **Everything outside the declaration uses the name alone**, in `SKILL.md`
+    and inside `references/` alike. Reference files MUST NOT contain Markdown
+    links to other reference files: the spec keeps references one level deep
+    from `SKILL.md`, and link syntax invites the chaining that rule forbids.
+  * **Do not restate a name that the row key already carries.** If a table
+    is keyed by verb or mode and the file shares that name, say so once and
+    drop the column.
+  * A citation names the file that actually owns the topic. When ownership
+    moves, every citation to it moves in the same change.
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use a
   hyphen, a comma, a colon, or restructure the sentence.
 * Every bundled Python script starts with `#!/usr/bin/env -S uv run --script`
