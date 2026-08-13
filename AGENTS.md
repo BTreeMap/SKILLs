@@ -64,7 +64,7 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   agent-specific extension fields (`argument-hint`, `when_to_use`, ...);
   record such hints as quoted string values under `metadata`
   (e.g. `metadata: {argument-hint: "[lite|full|ultra]"}`).
-* `name` equals the directory name: 1–64 characters; lowercase letters,
+* `name` equals the directory name: 1-64 characters; lowercase letters,
   numbers, and hyphens; no leading, trailing, or consecutive hyphens.
 * `description` is a `>-` folded block scalar, ≤1024 characters, third
   person, in two movements: what the skill does (capability statement
