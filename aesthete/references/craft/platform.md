@@ -93,7 +93,10 @@ Match the repository. When choosing for greenfield work:
 
 ## Performance targets
 
-Treat these as design constraints, not a post-launch audit.
+One vendor's product thresholds, revisable by that vendor, carrying none of
+the regulatory weight of the accessibility floor. Never trade a criterion in
+a11y.md against one of these. Treat them as design constraints rather than a
+post-launch audit, and re-verify the values when they matter.
 
 * Largest contentful paint under 2.5 seconds. The hero image or heading is
   prioritized and not blocked by a font request or a client bundle.

@@ -79,6 +79,7 @@ Loaded on demand, one level deep, never chained.
 | Need | File |
 | --- | --- |
 | Verb procedure | `references/verbs/{verb}.md` |
+| Accessibility value or citation | `references/a11y.md` (the only source) |
 | Supplied design doc or palette | `references/brief.md` |
 | Surface profile | `references/surfaces/{marketing,product}.md` |
 | Craft decision | `references/craft/{typography,color,layout,motion,interaction,components,platform}.md` |

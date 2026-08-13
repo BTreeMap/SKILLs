@@ -48,11 +48,12 @@ Taste is subtractive. The measure of this skill is what it refuses to ship.
 Resolve every conflict by this ladder, highest first. It is total: two
 sources never both win, and nothing below silently overrides anything above.
 
-1. **Accessibility floor.** Contrast, target size, keyboard access, focus
-   visibility, and reduced-motion behavior. Never overridden by any brand,
-   document, or instruction. A conflict here is resolved by deriving a
-   compliant variant that preserves brand intent, never by discarding either
-   the brand or the floor, and the derivation is reported.
+1. **Accessibility floor**, defined in [a11y.md](./references/a11y.md) and
+   nowhere else. Never overridden by any brand, document, or instruction. A
+   conflict here is resolved by deriving a compliant variant that preserves
+   brand intent, never by discarding either the brand or the floor, and the
+   derivation is reported. Never state an accessibility value, conformance
+   level, or criterion number from memory.
 2. **A supplied color palette.** Overrides the colors of any design document.
 3. **A supplied design document.** Tokens, components, and rules.
 4. **The repository's existing system.** Stack, tokens, component library.
@@ -108,13 +109,14 @@ when a decision spans two, load both from here.
 
 | Verb | Also load |
 | --- | --- |
-| design, build, redesign | The surface profile, [craft/interaction.md](./references/craft/interaction.md), [craft/components.md](./references/craft/components.md) |
-| review, audit | The surface profile, [craft/interaction.md](./references/craft/interaction.md), [craft/components.md](./references/craft/components.md), [tells.md](./references/tells.md) |
+| design, build, redesign | The surface profile, [a11y.md](./references/a11y.md), [craft/interaction.md](./references/craft/interaction.md), [craft/components.md](./references/craft/components.md) |
+| review, audit | The surface profile, [a11y.md](./references/a11y.md), [craft/interaction.md](./references/craft/interaction.md), [craft/components.md](./references/craft/components.md), [tells.md](./references/tells.md) |
 | teach, help | Nothing further |
 
-Interaction and components are mandatory rather than conditional because
-this file states their obligations without their definitions, and an
-obligation cannot be met from memory.
+These are mandatory rather than conditional because this file states their
+obligations without their definitions, and an obligation cannot be met from
+memory. The floor especially: it sits at precedence 1 and cannot be applied
+unread.
 
 **Surface profile, exactly one:**
 
@@ -127,6 +129,7 @@ obligation cannot be met from memory.
 
 | Decision | Load |
 | --- | --- |
+| Any accessibility question, value, or citation | [a11y.md](./references/a11y.md) |
 | Supplied design document or palette | [brief.md](./references/brief.md) |
 | Type choice, scale, pairing, measure | [craft/typography.md](./references/craft/typography.md) |
 | Palette, contrast, tokens, theming | [craft/color.md](./references/craft/color.md) |
@@ -146,9 +149,10 @@ question from memory when its owner is listed here.
 
 | Topic | Owner |
 | --- | --- |
+| **Every WCAG citation, conformance level, contrast ratio, and target size** | **a11y.md** |
 | Interaction states, latency budgets, error and destructive-action policy, keyboard and focus | craft/interaction.md |
 | Component boundaries, prop APIs, duplication, layering, render cost | craft/components.md |
-| Contrast thresholds, palette roles, theming | craft/color.md |
+| Palette roles, theming, contrast in practice | craft/color.md |
 | Type scale, measure, pairing, font delivery | craft/typography.md |
 | Spacing, grouping, grid, responsive, elevation | craft/layout.md |
 | Motion justification, duration, choreography, reduced motion | craft/motion.md |

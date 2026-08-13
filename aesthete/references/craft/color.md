@@ -57,32 +57,19 @@ characteristic result where one mode is designed and the other is inverted.
   toggle when either mode loses meaningful brand expression, and persist the
   choice.
 
-## Contrast thresholds
+## Contrast in practice
 
-Canonical values. Compute the ratio; never estimate it, and never accept a
-document's claim about it.
+Thresholds, exemptions, and their interpretation are the floor and are owned
+by a11y.md. Compute every ratio; never estimate one, and never accept a
+supplied document's claim about it. What follows is the craft of not
+failing them.
 
-| Applies to | Minimum | Source |
-| --- | --- | --- |
-| Text below the large-text size | 4.5:1 | WCAG 2.2 SC 1.4.3, level AA |
-| Large text: 24px, or 18.66px at bold | 3:1 | WCAG 2.2 SC 1.4.3, level AA |
-| Visual information identifying a control or its state | 3:1 | WCAG 2.2 SC 1.4.11, level AA |
-| Parts of a graphic required to understand content | 3:1 | WCAG 2.2 SC 1.4.11, level AA |
-
-Exempt, per those criteria: disabled and otherwise inactive controls, pure
-decoration, text inside a logotype, and graphics whose exact presentation is
-essential. A divider drawn between two same-elevation surfaces is decoration
-and is exempt; the border that tells a user where an input begins is not.
-
-Consequences worth stating, because these are the commonly missed cases:
-
-* An accent that fails at body size frequently passes at display size. Size
-  is part of the measurement, so the same color can be compliant in a
-  headline and non-compliant in a button label.
-* Placeholder, helper, and secondary text are styled to look secondary and
-  then never measured. Measure them against every surface they appear on,
-  including tinted cards, not only against the page background.
-* Measure the composited result wherever transparency is involved.
+* Placeholder, helper, disabled-looking, and secondary text are styled to
+  read as secondary and then never measured. Measure each against every
+  surface it appears on, including tinted cards, not only the page
+  background.
+* An accent that fails at body size often passes at display size, so decide
+  where a brand color may carry text before committing it to a button.
 * Text over imagery needs a guaranteed backing: a scrim, a gradient, or a
   solid panel. Contrast against an image's average color is not contrast
   against the pixels behind the letters.

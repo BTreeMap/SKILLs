@@ -49,7 +49,8 @@ Current skills:
 * `aesthete/` - UI/UX design discipline with an HCI eye and a PL-informed
   structural discipline: the design read, composition dials, laws of taste,
   a precedence ladder, and a source-of-truth ownership table in the spine,
-  with verbs (design/build/review/audit/redesign/teach/help), supplied
+  with a dated WCAG 2.2 accessibility floor as the sole source of
+  accessibility truth, verbs (design/build/review/audit/redesign/teach/help), supplied
   design-document and palette ingestion, surface profiles (marketing,
   product), craft references (typography, color, layout, motion, interaction,
   components, platform), design-system selection, the generated-output tell

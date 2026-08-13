@@ -35,7 +35,7 @@ Every interactive element:
 | --- | --- |
 | Rest | Affordance is visible without hover. A control nobody can see is not a control. |
 | Hover | Pointer only. Never the sole channel for information or actions. |
-| Focus-visible | Always present, never suppressed, high contrast, never clipped or obscured by sticky regions. |
+| Focus-visible | Always present, never suppressed, high contrast, not clipped. Obscuring rules are in a11y.md. |
 | Active | Immediate acknowledgment at press, before any network work begins. |
 | Disabled | Rare, and always explained. Prefer enabled with an explanation on attempt. |
 | Loading | In place, with the label preserved so the control does not resize. |
@@ -114,7 +114,9 @@ failure, and never require re-entering information the system already has.
   trigger on close. Escape closes anything dismissible.
 * Background content behind a modal is made inert, not merely visually
   dimmed.
-* Focus is never obscured by sticky headers, footers, or floating panels.
+* Keep the focused control fully clear of sticky headers, footers, and
+  floating panels. a11y.md records which part of this is the floor and which
+  is house practice above it.
 * Provide a skip link past repeated navigation.
 * Announce asynchronous changes through a live region, politely for status
   and assertively only for genuine urgency.
