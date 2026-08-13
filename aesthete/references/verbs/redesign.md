@@ -45,9 +45,9 @@ more visible improvement per unit of risk.
    vertical rhythm, container widths.
 3. **Color recalibration**: unify the neutral family, reduce to one accent,
    fix contrast, add the missing theme.
-4. **State completeness**: add the loading, empty, partial, and error states
-   the original never shipped. Usually the single largest usability gain in
-   an old interface.
+4. **State completeness**: add the loading, empty, filtered-to-empty,
+   partial, and error states the original never shipped. Usually the single
+   largest usability gain in an old interface.
 5. **Motion layer**: add restrained, motivated motion to existing
    components.
 6. **Composition**: restructure the highest-value screens.

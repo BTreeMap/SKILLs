@@ -13,7 +13,7 @@ verb for existing work. Change nothing.
    goal and count the friction budget as built. Interaction failures
    outrank visual ones and are found by walking, not by reading style
    declarations.
-3. **Pass in four sweeps**, in this order. Do not interleave; each sweep has
+3. **Pass in five sweeps**, in this order. Do not interleave; each sweep has
    a different attention mode.
    * **Logic**: does behavior follow from appearance, is state complete, are
      errors preventable, is work preserved, does the keyboard path exist?
@@ -23,6 +23,10 @@ verb for existing work. Change nothing.
      type scale, one icon family, one theme, across the whole surface?
    * **Voice**: does the copy say what happened and what to do next, is
      anything fabricated, does anything read as generated?
+   * **Structure**: does this re-implement something the repository already
+     has, do prop APIs admit invalid combinations, is any closed set handled
+     with a catch-all, do imports point downward, does an effect synchronize
+     derivable state?
 4. **Verify before reporting.** For each candidate finding, name the
    concrete failure: the input, state, or viewport where it breaks and what
    the user sees. A finding without a failure scenario is a preference and
@@ -66,7 +70,8 @@ Fix: {the specific change, not a principle}
 <validation_checklist>
   <item>The intended read was reconstructed and stated before any finding.</item>
   <item>The flow was walked and the built friction budget counted.</item>
-  <item>All four sweeps ran in order and whole-surface consistency was checked, not just the diff.</item>
+  <item>All five sweeps ran in order and whole-surface consistency was checked, not just the diff.</item>
+  <item>The repository was checked for an existing implementation of anything the diff re-implements.</item>
   <item>Every finding carries a concrete failure scenario and a specific fix.</item>
   <item>Findings are ranked by severity and preferences were dropped.</item>
   <item>Coverage limits are stated and nothing was modified.</item>

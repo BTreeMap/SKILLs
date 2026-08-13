@@ -13,8 +13,8 @@ prioritized remediation plan, not a defect list. Change nothing.
    spacing values, type sizes, shadow definitions, icon families, animation
    durations. Count the distinct values per scale. A system with nineteen
    spacing values and four accents does not have a system; it has residue.
-3. **Score each surface** on the four sweeps: logic, hierarchy, consistency,
-   voice. Note the primary goal and the friction budget per surface.
+3. **Score each surface** on the five sweeps: logic, hierarchy, consistency,
+   voice, structure. Note the primary goal and the friction budget per surface.
 4. **Cluster findings by cause, not by location.** Twelve contrast failures
    from one bad neutral token are one finding with twelve instances. Fixing
    causes is what makes an audit worth more than a review.
@@ -36,6 +36,9 @@ prioritized remediation plan, not a defect list. Change nothing.
 | Spacing | {n} | {n} | {locations} |
 | Type size | {n} | {n} | {locations} |
 | Icon family | {n} | 1 | {locations} |
+| Implementations per primitive | {n} | 1 | {button, input, modal, ...} |
+| Components with unclosed boolean variants | {n} | 0 | {locations} |
+| Downward-import violations | {n} | 0 | {locations} |
 
 ## Ranked findings
 ### {n}. {cause} ({instances} instances, {severity})
@@ -57,6 +60,11 @@ Leverage: {why this rank}
 
 * Audit the token layer first. Most surface-level inconsistency is one or
   two bad or missing tokens expressed many times.
+* Count implementations per primitive by searching for the concept rather
+  than the name, since duplicates are usually named differently. Several
+  implementations of one primitive is normally the highest-leverage finding
+  in the report: it is the cause behind many of the inconsistency
+  instances, and consolidating it fixes them together.
 * Distinguish debt from decision. A deliberate deviation with a documented
   reason is not a finding; an undocumented one is, and the finding is the
   missing documentation.

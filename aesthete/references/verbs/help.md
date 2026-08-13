@@ -57,6 +57,10 @@ One line, before anything else:
 * Response budgets: instant under 100ms, no spinner under 400ms, determinate
   progress past 1s, background past 10s.
 * Undo outranks confirm. User work is never lost. The URL reflects state.
+* Search the repository before authoring a component. A second Button is a
+  defect, not a shortcut.
+* Variants and async states are closed sets eliminated exhaustively, so a
+  missing state fails the build. Imports point downward only.
 * Zero U+2014 characters in user-visible copy.
 * Nothing fabricated: no invented metrics, logos, testimonials, or fake
   product screenshots.
@@ -69,7 +73,7 @@ Loaded on demand, one level deep, never chained.
 | --- | --- |
 | Verb procedure | `references/verbs/{verb}.md` |
 | Surface profile | `references/surfaces/{marketing,product}.md` |
-| Craft decision | `references/craft/{typography,color,layout,motion,interaction,platform}.md` |
+| Craft decision | `references/craft/{typography,color,layout,motion,interaction,components,platform}.md` |
 | Official design systems | `references/systems.md` |
 | Generated-output catalogue | `references/tells.md` |
 | Ship gate | `references/preflight.md` |

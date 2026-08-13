@@ -13,22 +13,28 @@ writing components; do not discover the design by typing.
 Build in this order. Each stage constrains the next, and reordering causes
 rework.
 
-1. **Tokens before components.** Define the type scale, spacing scale,
+1. **Inventory before authoring.** Search the repository for every component,
+   variant, hook, and token the screen needs before writing anything. List
+   what exists and will be reused, what exists and needs a new variant, and
+   what genuinely does not exist yet. Only the third category gets authored.
+   Skipping this step is how a codebase acquires its third Button.
+2. **Tokens before components.** Define the type scale, spacing scale,
    radius scale, color tokens including both themes, motion curves, and
    elevation as named values in one place. Never author a component against
    raw literals when a token exists or should exist.
-2. **Layout before ornament.** Establish the structural grid, the container
+3. **Layout before ornament.** Establish the structural grid, the container
    widths, and the responsive behavior. Verify the hierarchy reads with all
    color and decoration removed. If it does not read in grayscale wireframe,
    no amount of styling will fix it.
-3. **States before polish.** Implement rest, hover, focus-visible, active,
+4. **States before polish.** Implement rest, hover, focus-visible, active,
    disabled, loading, error, and success for every interactive element, and
-   loading, empty, partial, error, and populated for every data container,
-   before refining any visual detail.
-4. **Content before motion.** Real copy, real or honestly-labeled data, real
+   loading, empty, filtered-to-empty, partial, error, and populated for every
+   data container, before refining any visual detail. Model these as one
+   closed set per component so that omitting a state fails the build.
+5. **Content before motion.** Real copy, real or honestly-labeled data, real
    or explicitly-slotted imagery. Motion is applied last, to a page that
    already works without it.
-5. **Verification.** Both themes, keyboard-only pass, reduced-motion pass,
+6. **Verification.** Both themes, keyboard-only pass, reduced-motion pass,
    narrow viewport, and the mechanical gate.
 
 ## Implementation rules
@@ -51,6 +57,14 @@ rework.
   late-loading regions carry explicit dimensions so nothing shifts.
 * **One family per concern.** One icon set at one weight, one animation
   library per component tree, one styling strategy, one theming mechanism.
+* **One component per concept.** Extend an existing component with a variant
+  rather than copying it. If a copy is genuinely the honest answer, say so
+  and give the reason; never fork silently.
+* **Close the variant sets.** Model variants and asynchronous states as one
+  closed set eliminated exhaustively, never as independent booleans with a
+  catch-all branch. Keep imports pointing downward through tokens,
+  primitives, compounds, patterns, and routes, with domain types no lower
+  than the pattern layer.
 * **Semantics first.** Use the native element before the composed one: a
   real button, a real dialog, a real disclosure, a real label bound to its
   input. Reach for a custom control only when the native one genuinely
@@ -80,7 +94,9 @@ plainly does.
 ## Completion checks
 
 <validation_checklist>
+  <item>The repository was inventoried first; everything reusable was reused and nothing was forked silently.</item>
   <item>Tokens were defined before components and no component hardcodes a value that belongs to a scale.</item>
+  <item>Variants and asynchronous states are closed sets eliminated exhaustively; imports point downward and domain types stay at or above the pattern layer.</item>
   <item>Hierarchy reads correctly with color and decoration removed.</item>
   <item>Every interactive element and data container ships its full state set.</item>
   <item>Stack, library, and tokens match the repository; no undeclared dependency is imported.</item>

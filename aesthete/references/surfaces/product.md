@@ -72,9 +72,9 @@ the thousandth use. Delight that costs a second per repetition is a defect.
   bulk destructive actions confirm with the exact count.
 * Long tables virtualize, but never at the cost of find-in-page and
   keyboard navigation without an alternative.
-* Every table ships loading, empty, filtered-to-empty, error, and partial
-  states. Filtered-to-empty is distinct from empty and must offer to clear
-  the filter; conflating them is a common and confusing failure.
+* Every table ships loading, empty, filtered-to-empty, partial, error, and
+  populated states. Filtered-to-empty is distinct from empty and must offer
+  to clear the filter; conflating them is a common and confusing failure.
 
 ## Dashboards
 
@@ -135,7 +135,7 @@ copy and different actions.
   <item>Forms use labels above single-column fields, ask the minimum, parse liberally, and validate at the right moment.</item>
   <item>User entry survives navigation, refresh, and server failure.</item>
   <item>Tables align numbers in tabular figures, keep headers and identity visible, and expose row actions without hover.</item>
-  <item>Empty, filtered-to-empty, loading, partial, and error states are distinct and all present.</item>
+  <item>Loading, empty, filtered-to-empty, partial, error, and populated states are distinct and all present.</item>
   <item>Every metric carries a comparison and a data-recency statement.</item>
   <item>Modals are reserved for true interruption, never stacked, and fully keyboard-correct.</item>
   <item>Every action gives perceptible feedback at its origin within the response budget.</item>

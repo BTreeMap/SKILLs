@@ -28,6 +28,12 @@ Each of these is countable in the source. Count, do not estimate.
 | Grid cells without content | Exactly zero |
 | Raw scroll event subscriptions | Exactly zero |
 | Undeclared imported dependencies | Exactly zero |
+| Implementations per primitive concept | Exactly one |
+| Catch-all branches over a closed variant set | Exactly zero |
+| Imports pointing upward through the layer ladder | Exactly zero |
+| Domain types below the pattern layer | Exactly zero |
+| Effects whose body only copies state into state | Exactly zero |
+| Array indices used as keys in reorderable lists | Exactly zero |
 
 ## Direction
 
@@ -100,7 +106,14 @@ Each of these is countable in the source. Count, do not estimate.
 
 ## Engineering
 
-- [ ] Stack, tokens, and component library were derived from the repository.
+- [ ] Stack, tokens, and component library were derived from the repository,
+      and the repository was searched before any component was authored.
+- [ ] Variants and asynchronous states are closed sets eliminated
+      exhaustively, so omitting a state fails the build.
+- [ ] Each component varies along one axis; no prop switches which subtree
+      renders and no prop exists for a single call site.
+- [ ] Call sites adjust position, not identity; new looks became variants.
+- [ ] No lookup runs inside a row loop; expensive construction is hoisted.
 - [ ] Interactivity is isolated to leaves; no continuous value is driven
       through render state.
 - [ ] Only compositor-friendly properties animate; observers, timelines, and
