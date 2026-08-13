@@ -46,6 +46,13 @@ Current skills:
 * `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
   diffs, with lite/full/ultra intensity levels and one-shot review/audit/debt/
   gain/help modes loaded on demand from `references/`.
+* `aesthete/` - UI/UX design discipline with an HCI eye: the design read,
+  composition dials, laws of taste, and an interaction kernel in the spine,
+  with verbs (design/build/review/audit/redesign/teach/help), surface
+  profiles (marketing, product), craft references (typography, color,
+  layout, motion, interaction, platform), design-system selection, the
+  generated-output tell catalogue, and a mechanical ship gate loaded on
+  demand from `references/`.
 * `fact-check/` - atomic-claim verification of documents against retrieved
   evidence: calibrated verdict taxonomy, evidence-first reporting, tiered
   user approval before edits, and capability-probed orchestration (parallel
