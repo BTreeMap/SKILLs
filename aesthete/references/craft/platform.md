@@ -4,12 +4,11 @@ Reach for the platform before a dependency. Native capability arrives with
 accessibility, keyboard behavior, and top-layer rendering already correct,
 and costs nothing to ship.
 
-**This file names capabilities, not a support matrix.** Browser support
-moves continuously and this file ages. Before relying on any capability
-below, verify its current baseline status and the project's stated support
-targets, and provide a graceful fallback when the feature is progressive
-rather than essential. Never assume, and never let this file substitute for
-checking.
+Browser support moves continuously and this file ages. Before relying on any
+capability below, verify its current baseline status and the project's
+stated support targets, and provide a graceful fallback when the feature is
+progressive rather than essential. Never assume, and never let this file
+substitute for checking.
 
 ## Choosing the layer
 

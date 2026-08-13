@@ -61,8 +61,7 @@ characteristic result where one mode is designed and the other is inverted.
 
 Thresholds, exemptions, and their interpretation are the floor and are owned
 by `a11y`. Compute every ratio; never estimate one, and never accept a
-supplied document's claim about it. What follows is the craft of not
-failing them.
+supplied document's claim about it.
 
 * Placeholder, helper, disabled-looking, and secondary text are styled to
   read as secondary and then never measured. Measure each against every

@@ -71,8 +71,6 @@ between them usually mean the design is underthought; solve it rather than
 trading it away. When a trade is forced, comprehension outranks beauty, and
 beauty outranks novelty.
 
-Taste is subtractive. The measure of this skill is what it refuses to ship.
-
 ## Precedence
 
 Resolve every conflict by this ladder, highest first. It is total: two
