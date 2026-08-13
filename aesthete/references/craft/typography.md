@@ -95,15 +95,3 @@ surface used a face, choose differently unless the brand requires it.
   read as one voice.
 * Weight used as the only hierarchy signal in a face whose weights are close
   together.
-
-## Completion checks
-
-<validation_checklist>
-  <item>One scale, in relative units, with every size drawn from its steps.</item>
-  <item>Measure sits between roughly 45 and 75 characters and line height is inverse to size.</item>
-  <item>At most two families, both shipping the weights and italics in use.</item>
-  <item>Any serif is justified by the surface or the brand, and emphasis stays within one family.</item>
-  <item>Headings and body avoid orphaned final words without hard-coded breaks.</item>
-  <item>Tabular figures are used for aligned or updating numbers.</item>
-  <item>Fonts are self-hosted or pipelined, subset, swapped, and metric-matched to their fallback.</item>
-</validation_checklist>

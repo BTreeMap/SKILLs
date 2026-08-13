@@ -8,7 +8,10 @@ not save it.
 
 * **One accent.** A single color means action, selection, and focus. Once
   chosen, it holds across every screen. A second accent appearing in one
-  section is the most common consistency failure and reads as a bug.
+  section is the most common consistency failure and reads as a bug. Where a
+  system is supplied, this means one *declared* accent honored exactly: a
+  declared accent plus reserved secondary hues is consistent when used as
+  declared, and inconsistent the moment a component invents another value.
 * **One neutral family**, consistently warm or cool. Mixing warm and cool
   greys in one surface produces a subtle dirtiness nobody can name and
   everybody perceives.
@@ -54,22 +57,39 @@ characteristic result where one mode is designed and the other is inverted.
   toggle when either mode loses meaningful brand expression, and persist the
   choice.
 
-## Contrast is a requirement, not a target
+## Contrast thresholds
 
-* Body text meets at least 4.5:1 against its actual background. Large text,
-  icons, and the boundaries of interface components meet at least 3:1.
-* Placeholder text, helper text, disabled labels, and focus rings are all
-  held to contrast. These are the four most commonly failed elements because
-  they are styled to look secondary and then never measured.
-* Text over imagery needs a guaranteed background: a scrim, a gradient, or a
-  solid panel. Contrast against an average image color is not contrast
+Canonical values. Compute the ratio; never estimate it, and never accept a
+document's claim about it.
+
+| Applies to | Minimum | Source |
+| --- | --- | --- |
+| Text below the large-text size | 4.5:1 | WCAG 2.2 SC 1.4.3, level AA |
+| Large text: 24px, or 18.66px at bold | 3:1 | WCAG 2.2 SC 1.4.3, level AA |
+| Visual information identifying a control or its state | 3:1 | WCAG 2.2 SC 1.4.11, level AA |
+| Parts of a graphic required to understand content | 3:1 | WCAG 2.2 SC 1.4.11, level AA |
+
+Exempt, per those criteria: disabled and otherwise inactive controls, pure
+decoration, text inside a logotype, and graphics whose exact presentation is
+essential. A divider drawn between two same-elevation surfaces is decoration
+and is exempt; the border that tells a user where an input begins is not.
+
+Consequences worth stating, because these are the commonly missed cases:
+
+* An accent that fails at body size frequently passes at display size. Size
+  is part of the measurement, so the same color can be compliant in a
+  headline and non-compliant in a button label.
+* Placeholder, helper, and secondary text are styled to look secondary and
+  then never measured. Measure them against every surface they appear on,
+  including tinted cards, not only against the page background.
+* Measure the composited result wherever transparency is involved.
+* Text over imagery needs a guaranteed backing: a scrim, a gradient, or a
+  solid panel. Contrast against an image's average color is not contrast
   against the pixels behind the letters.
 * Color is never the only channel. Pair it with text, icon, weight, or
-  position, for color-blind users and for anyone in bright sunlight.
-* Verify against the composited result, not against token values, wherever
-  transparency is involved.
-* Support forced-colors and high-contrast modes by keeping system color
-  keywords functional rather than overriding them.
+  position.
+* Keep forced-colors and high-contrast modes functional rather than
+  overriding the system keywords.
 
 ## Choosing a palette
 
@@ -96,16 +116,3 @@ came from habit.
 * A dark theme built by inverting lightness, leaving shadows invisible and
   accents vibrating.
 * Gradients used to add interest to a composition that lacks hierarchy.
-
-## Completion checks
-
-<validation_checklist>
-  <item>The interface reads correctly in grayscale before color is applied.</item>
-  <item>Exactly one accent, one neutral family, and a distinguishable semantic set hold across every screen.</item>
-  <item>Colors are role-named tokens, with states derived rather than hand-picked.</item>
-  <item>Both themes were designed together; elevation and saturation were rethought for dark rather than inverted.</item>
-  <item>Body text meets 4.5:1 and large text, icons, and component boundaries meet 3:1 against composited backgrounds.</item>
-  <item>Placeholder, helper, disabled, and focus-ring contrast were explicitly measured.</item>
-  <item>No information is carried by color alone, and forced-colors mode remains usable.</item>
-  <item>The palette is a decision traceable to brand or audience, not a category default.</item>
-</validation_checklist>

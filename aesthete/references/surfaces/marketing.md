@@ -115,17 +115,3 @@ The page has one theme. Sections do not invert. A single deliberate,
 strongly-transitioned theme change is allowed once per page when it is a
 composed device; random alternation is not. Background tints within one
 theme family are fine.
-
-## Completion checks
-
-<validation_checklist>
-  <item>Hero fits the first viewport with at most four text elements and the primary action visible.</item>
-  <item>Navigation is one line at desktop within a restrained height.</item>
-  <item>Every section carries a distinct layout family; no family repeats and no third consecutive split.</item>
-  <item>Grids have exactly the cell count the content requires, with real visual variation.</item>
-  <item>Section labels number at most one per three sections.</item>
-  <item>Content density holds per section and long lists use an appropriate component.</item>
-  <item>Every visible string was re-read; numbers are real, labeled, or absent.</item>
-  <item>Imagery is real, generated, or honestly slotted; no fabricated product screenshots and no text-name logo rows.</item>
-  <item>One theme holds across the page.</item>
-</validation_checklist>

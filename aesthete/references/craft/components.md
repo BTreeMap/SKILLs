@@ -6,9 +6,10 @@ all. A codebase where every screen re-implements the same controls is not a
 design system with a styling problem; it is an architecture failure that
 happens to be visible.
 
-Apply the same discipline here that a type theorist applies to a domain
-model: name the concept once, close the set of its variants, make the
-invalid combination unrepresentable, and keep effects at the edges.
+Owns component boundaries, prop APIs, duplication policy, layering, and
+render cost. Apply the discipline a type theorist applies to a domain model:
+name the concept once, close the set of its variants, make the invalid
+combination unrepresentable, and keep effects at the edges.
 
 ## Inventory before authoring
 
@@ -92,26 +93,17 @@ Closed and total:
   { variant: 'primary' | 'secondary' | 'danger'; size: 'sm' | 'md' | 'lg' }
 </variant_modeling>
 
-**Model asynchronous collections as one closed set.** The interaction kernel
-requires six distinct container states. Independent flags cannot express
-them and permit contradictions such as loading together with error. A
-discriminated union expresses exactly the six, and exhaustive handling makes
-omitting one a build error instead of a review finding. This is the point
-where type discipline and design discipline are the same act.
+**Model asynchronous collections as one closed set.** craft/interaction.md
+defines the container states and their canonical union; encode that union
+rather than a bag of flags. This is the point where type discipline and
+design discipline are the same act: a design rule about which states must
+exist becomes a build error when one is missing, instead of a review finding
+somebody has to catch.
 
-<collection_state>
-Admits contradictions and cannot distinguish "none exist" from
-"none match the filter":
+<flag_bag>
+Admits contradictions, and no exhaustiveness check can be performed on it:
   { loading: bool; error?: Error; items?: Item[] }
-
-Total, and exactly the states the kernel demands:
-  | { status: 'loading' }
-  | { status: 'error'; error: LoadError; retry: () => void }
-  | { status: 'empty' }
-  | { status: 'filtered'; clearFilter: () => void }
-  | { status: 'partial'; items: Item[]; loadMore: () => void }
-  | { status: 'ready'; items: Item[] }
-</collection_state>
+</flag_bag>
 
 **Eliminate exhaustively.** Handle every case of a closed set with no
 catch-all branch, so that adding a variant fails the build at every site
@@ -230,20 +222,3 @@ implementations of the same thing get commissioned.
 * A lookup inside a row loop, quadratic and re-run on every keystroke.
 * Copying a component to make one visual change, permanently forking its
   accessibility behavior.
-
-## Completion checks
-
-<validation_checklist>
-  <item>The repository was searched for an existing component, variant, hook, or token before any new one was authored.</item>
-  <item>No primitive is duplicated; composition was extracted only at the third occurrence with a stable shape.</item>
-  <item>Each component varies along one axis and composes for the rest; no prop switches which subtree renders.</item>
-  <item>Variants are closed sets rather than independent booleans, and asynchronous collections are a union expressing all six kernel states.</item>
-  <item>Every closed set is eliminated exhaustively with no catch-all branch.</item>
-  <item>Required props are those without sensible defaults, and no prop exists for a single call site.</item>
-  <item>Call sites may adjust position but not identity; new looks became variants.</item>
-  <item>Imports point downward only and no domain type appears below the pattern layer.</item>
-  <item>Effects live at routes or containers; everything below is a pure function of its inputs.</item>
-  <item>No effect synchronizes derivable state, and state that belongs in the URL is not duplicated beside it.</item>
-  <item>No lookup runs inside a row loop; keys are stable identities; memoization is keyed on value semantics.</item>
-  <item>Components are named for their concept, with one vocabulary shared by design and code.</item>
-</validation_checklist>

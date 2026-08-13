@@ -73,14 +73,3 @@ vendor's platforms. A web build of it is an approximation, must be labeled as
 one in code comments, and must not be presented to the user as the real
 system. Any translucent material needs a solid fallback that preserves
 contrast when transparency is reduced or unsupported.
-
-## Completion checks
-
-<validation_checklist>
-  <item>The repository's existing system was identified and preferred, or a stated reason justifies departing.</item>
-  <item>Exactly one component system exists in the tree.</item>
-  <item>Package names and installation steps were verified from current official documentation, not recalled.</item>
-  <item>Theming uses the system's intended mechanism and is set once at the root.</item>
-  <item>Copy-in components were adapted to project tokens rather than shipped at defaults.</item>
-  <item>Aesthetic directions are labeled as approximations where they imitate a proprietary material, with contrast-preserving fallbacks.</item>
-</validation_checklist>

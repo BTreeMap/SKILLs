@@ -18,19 +18,20 @@ rework.
    what exists and will be reused, what exists and needs a new variant, and
    what genuinely does not exist yet. Only the third category gets authored.
    Skipping this step is how a codebase acquires its third Button.
-2. **Tokens before components.** Define the type scale, spacing scale,
-   radius scale, color tokens including both themes, motion curves, and
-   elevation as named values in one place. Never author a component against
-   raw literals when a token exists or should exist.
+2. **Tokens before components.** Adopt the supplied or existing token set,
+   or define one where none exists: type scale, spacing scale, radius scale,
+   color tokens for every theme, motion curves, elevation, as named values
+   in one place. Verify adopted tokens against the accessibility floor
+   before building on them. Never author a component against raw literals
+   when a token exists or should exist.
 3. **Layout before ornament.** Establish the structural grid, the container
    widths, and the responsive behavior. Verify the hierarchy reads with all
    color and decoration removed. If it does not read in grayscale wireframe,
    no amount of styling will fix it.
-4. **States before polish.** Implement rest, hover, focus-visible, active,
-   disabled, loading, error, and success for every interactive element, and
-   loading, empty, filtered-to-empty, partial, error, and populated for every
-   data container, before refining any visual detail. Model these as one
-   closed set per component so that omitting a state fails the build.
+4. **States before polish.** Implement every state craft/interaction.md
+   defines, for every interactive element and every data container, before
+   refining any visual detail. Model each as one closed set so that omitting
+   a state fails the build.
 5. **Content before motion.** Real copy, real or honestly-labeled data, real
    or explicitly-slotted imagery. Motion is applied last, to a page that
    already works without it.
@@ -62,9 +63,9 @@ rework.
   and give the reason; never fork silently.
 * **Close the variant sets.** Model variants and asynchronous states as one
   closed set eliminated exhaustively, never as independent booleans with a
-  catch-all branch. Keep imports pointing downward through tokens,
-  primitives, compounds, patterns, and routes, with domain types no lower
-  than the pattern layer.
+  catch-all branch. Keep imports pointing downward through the layer ladder
+  craft/components.md defines, with domain types no lower than the pattern
+  layer.
 * **Semantics first.** Use the native element before the composed one: a
   real button, a real dialog, a real disclosure, a real label bound to its
   input. Reach for a custom control only when the native one genuinely
@@ -98,7 +99,7 @@ plainly does.
   <item>Tokens were defined before components and no component hardcodes a value that belongs to a scale.</item>
   <item>Variants and asynchronous states are closed sets eliminated exhaustively; imports point downward and domain types stay at or above the pattern layer.</item>
   <item>Hierarchy reads correctly with color and decoration removed.</item>
-  <item>Every interactive element and data container ships its full state set.</item>
+  <item>Every interactive element and data container ships every state craft/interaction.md defines.</item>
   <item>Stack, library, and tokens match the repository; no undeclared dependency is imported.</item>
   <item>Interactivity is isolated to leaf components and continuous values bypass render state.</item>
   <item>Native semantic elements were used wherever they suffice, with full keyboard contracts on any custom control.</item>

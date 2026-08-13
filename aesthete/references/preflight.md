@@ -10,14 +10,19 @@ Report the result. Do not silently pass.
 
 Each of these is countable in the source. Count, do not estimate.
 
+Where a design system or palette was supplied, "declared" means its token
+set. Where none was, it means the scales fixed during design. A count is
+measured against the declaration, never against a preference.
+
 | Check | Pass condition |
 | --- | --- |
 | U+2014 in user-visible strings | Exactly zero |
 | U+2013 as a separator | Exactly zero |
-| Distinct accent colors | Exactly one |
-| Distinct radius values | Matches the declared scale |
-| Distinct spacing values | Drawn from the declared scale only |
-| Distinct type sizes | Drawn from the declared scale only |
+| Accent colors used | Exactly the declared set, no additions |
+| Radius values used | Drawn from the declared scale only |
+| Spacing values used | Drawn from the declared scale only |
+| Type sizes used | Drawn from the declared scale only |
+| Color values not traceable to a token | Exactly zero |
 | Icon families | Exactly one, at one weight |
 | Component systems in the tree | Exactly one |
 | Animation systems per component tree | Exactly one |
@@ -35,6 +40,21 @@ Each of these is countable in the source. Count, do not estimate.
 | Effects whose body only copies state into state | Exactly zero |
 | Array indices used as keys in reorderable lists | Exactly zero |
 
+## Supplied material
+
+Skip only if nothing was supplied.
+
+- [ ] Precedence applied in order: the palette overrode the document's
+      colors, the document overrode this skill's defaults, and the
+      accessibility floor overrode everything.
+- [ ] Every supplied token pairing actually used was measured for contrast,
+      not assumed, including secondary text on tinted surfaces.
+- [ ] Every floor conflict was resolved by derivation and reported, with the
+      brand preserved wherever the threshold allowed.
+- [ ] Accessibility claims made by the document were verified against the
+      specification rather than inherited.
+- [ ] Gaps the document left were derived from its own logic and reported.
+
 ## Direction
 
 - [ ] The design read was stated, and the built result matches it.
@@ -45,10 +65,8 @@ Each of these is countable in the source. Count, do not estimate.
 
 ## Interaction
 
-- [ ] Every interactive element has rest, hover, focus-visible, active,
-      disabled, loading, error, and success.
-- [ ] Every data container has loading, empty, filtered-to-empty, partial,
-      error, and populated, and empty is distinct from filtered-to-empty.
+- [ ] Every interactive element and every data container ships every state
+      craft/interaction.md defines, encoded as one closed set.
 - [ ] No loader appears for a response under the flash threshold, and every
       wait past it is acknowledged at the point of action.
 - [ ] Input is parsed liberally; nothing is rejected for formatting the
@@ -62,8 +80,8 @@ Each of these is countable in the source. Count, do not estimate.
 
 ## Accessibility
 
-- [ ] Body text meets 4.5:1; large text, icons, and component boundaries
-      meet 3:1, measured against composited backgrounds.
+- [ ] Every text and control pairing meets the thresholds in
+      craft/color.md, measured against composited backgrounds.
 - [ ] Placeholder, helper, disabled, and focus-ring contrast were measured
       specifically.
 - [ ] Every control's label is readable against its own background, and text
@@ -91,6 +109,16 @@ Each of these is countable in the source. Count, do not estimate.
       element.
 - [ ] One theme holds across the surface, set once at the root.
 - [ ] Both themes were opened and reviewed, not just the one being built in.
+
+## Craft
+
+- [ ] Body measure sits between roughly 45 and 75 characters; type sizes are
+      in relative units.
+- [ ] Aligned or updating numbers use tabular figures.
+- [ ] Fonts are self-hosted or pipelined, subset, swapped, and
+      metric-matched to their fallback.
+- [ ] One motion curve family; every animation passes the one-sentence
+      justification test.
 
 ## Content
 

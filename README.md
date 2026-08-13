@@ -21,7 +21,7 @@ unrelated repositories.
 | [pl-theorist](pl-theorist/SKILL.md) | Applies a PL theorist's discipline across the lifecycle - design, build, refactor, review, audit, test, teach - with per-language cost models including Bash and GitHub Actions. |
 | [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity and review/audit/debt/gain/help modes. |
 | [fact-check](fact-check/SKILL.md) | Verifies document claims against retrieved evidence with calibrated verdicts and user-approved corrections, auto-detecting sub-agent, web, and editing capabilities. |
-| [aesthete](aesthete/SKILL.md) | Designs, builds, reviews, and reworks interfaces with an HCI eye and a PL-informed component discipline: design read, dials, laws of taste, interaction and component kernels, with verbs, surface profiles, craft references, and a mechanical ship gate. |
+| [aesthete](aesthete/SKILL.md) | Designs, builds, reviews, and reworks interfaces with an HCI eye and a PL-informed component discipline: design read, dials, laws of taste, a precedence ladder for supplied design documents and palettes, and single-source ownership per topic, with verbs, surface profiles, craft references, and a mechanical ship gate. |
 
 ## How it works
 

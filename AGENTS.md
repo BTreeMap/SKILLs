@@ -48,12 +48,12 @@ Current skills:
   gain/help modes loaded on demand from `references/`.
 * `aesthete/` - UI/UX design discipline with an HCI eye and a PL-informed
   structural discipline: the design read, composition dials, laws of taste,
-  an interaction kernel, and a component kernel in the spine, with verbs
-  (design/build/review/audit/redesign/teach/help), surface profiles
-  (marketing, product), craft references (typography, color, layout, motion,
-  interaction, components, platform), design-system selection, the
-  generated-output tell catalogue, and a mechanical ship gate loaded on
-  demand from `references/`.
+  a precedence ladder, and a source-of-truth ownership table in the spine,
+  with verbs (design/build/review/audit/redesign/teach/help), supplied
+  design-document and palette ingestion, surface profiles (marketing,
+  product), craft references (typography, color, layout, motion, interaction,
+  components, platform), design-system selection, the generated-output tell
+  catalogue, and a mechanical ship gate loaded on demand from `references/`.
 * `fact-check/` - atomic-claim verification of documents against retrieved
   evidence: calibrated verdict taxonomy, evidence-first reporting, tiered
   user approval before edits, and capability-probed orchestration (parallel

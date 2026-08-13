@@ -72,9 +72,9 @@ the thousandth use. Delight that costs a second per repetition is a defect.
   bulk destructive actions confirm with the exact count.
 * Long tables virtualize, but never at the cost of find-in-page and
   keyboard navigation without an alternative.
-* Every table ships loading, empty, filtered-to-empty, partial, error, and
-  populated states. Filtered-to-empty is distinct from empty and must offer
-  to clear the filter; conflating them is a common and confusing failure.
+* Every table ships the full container state set. The never-had-any and
+  none-match-the-filter states are the pair most often conflated; the second
+  must offer to clear the filter.
 
 ## Dashboards
 
@@ -126,18 +126,3 @@ screen in most products. It says what belongs here, why it is worth having,
 and offers the single action that populates it. Distinguish never-had-any
 from none-match-this-filter from you-cleared-them-all: they need different
 copy and different actions.
-
-## Completion checks
-
-<validation_checklist>
-  <item>One navigation model; location is unambiguous and page titles match navigation labels.</item>
-  <item>URL encodes record, tab, filter, sort, and page state, and survives refresh.</item>
-  <item>Forms use labels above single-column fields, ask the minimum, parse liberally, and validate at the right moment.</item>
-  <item>User entry survives navigation, refresh, and server failure.</item>
-  <item>Tables align numbers in tabular figures, keep headers and identity visible, and expose row actions without hover.</item>
-  <item>Loading, empty, filtered-to-empty, partial, error, and populated states are distinct and all present.</item>
-  <item>Every metric carries a comparison and a data-recency statement.</item>
-  <item>Modals are reserved for true interruption, never stacked, and fully keyboard-correct.</item>
-  <item>Every action gives perceptible feedback at its origin within the response budget.</item>
-  <item>Destructive actions are reversible by undo, or confirm with exact object and consequence.</item>
-</validation_checklist>

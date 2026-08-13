@@ -87,16 +87,3 @@ embeds, and any region that loads late. Skeletons match the real layout's
 dimensions, not an approximation. Insert notifications and banners in
 reserved space or as overlays, never by pushing the page down after the user
 has started reading.
-
-## Completion checks
-
-<validation_checklist>
-  <item>One spacing scale, applied through container gaps rather than child margins.</item>
-  <item>Between-group spacing clearly exceeds within-group spacing everywhere.</item>
-  <item>The grouping ladder was climbed in order; cards enclose discrete objects only.</item>
-  <item>Two-dimensional layouts use a real grid, with text width constrained independently.</item>
-  <item>Narrow layouts are designed, declared alongside wide behavior, and their stacking order matches DOM order.</item>
-  <item>Touch targets meet a comfortable minimum with spacing between neighbors.</item>
-  <item>A named elevation scale is used and no arbitrary stacking values remain.</item>
-  <item>Space is reserved for every late-loading element and nothing shifts after paint.</item>
-</validation_checklist>

@@ -21,8 +21,9 @@ Without a verb: `build` for new work, `review` for existing work.
 | teach | Explain a design decision so the next one is self-served |
 | help | This card |
 
-One verb file per invocation. Multi-verb work runs as sequential
-invocations.
+One verb file per invocation, plus the surface profile,
+`craft/interaction.md`, and `craft/components.md`, which are mandatory.
+Multi-verb work runs as sequential invocations.
 
 ## Surfaces
 
@@ -49,14 +50,20 @@ One line, before anything else:
 
 ## What always applies
 
+Obligations only. Every value, threshold, and enumeration lives in the file
+that owns it; resolve none of them from memory.
+
 * Every element names the job it does for the user, or it is deleted.
-* One accent, one radius scale, one spacing scale, one type scale, one icon
-  family, one theme, across the whole surface.
-* Full state sets: rest, hover, focus-visible, active, disabled, loading,
-  error, success. Containers add empty and partial.
-* Response budgets: instant under 100ms, no spinner under 400ms, determinate
-  progress past 1s, background past 10s.
-* Undo outranks confirm. User work is never lost. The URL reflects state.
+* One declared accent, radius scale, spacing scale, type scale, icon family,
+  and theme, honored across the whole surface.
+* Every interactive element ships its full state set and every data
+  container ships all of its states (craft/interaction.md).
+* Every wait is acknowledged within its latency budget
+  (craft/interaction.md). Undo outranks confirm. User work is never lost.
+  The URL reflects state.
+* Supplied palette beats supplied document beats repo beats defaults. The
+  accessibility floor beats all of them, and conflicts are resolved by
+  derivation and reported, never by silence.
 * Search the repository before authoring a component. A second Button is a
   defect, not a shortcut.
 * Variants and async states are closed sets eliminated exhaustively, so a
@@ -72,6 +79,7 @@ Loaded on demand, one level deep, never chained.
 | Need | File |
 | --- | --- |
 | Verb procedure | `references/verbs/{verb}.md` |
+| Supplied design doc or palette | `references/brief.md` |
 | Surface profile | `references/surfaces/{marketing,product}.md` |
 | Craft decision | `references/craft/{typography,color,layout,motion,interaction,components,platform}.md` |
 | Official design systems | `references/systems.md` |

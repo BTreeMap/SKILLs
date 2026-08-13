@@ -117,15 +117,3 @@ visit.
 * Marking a whole page as interactive because one element in it is.
 * Treating performance targets as something to measure after design rather
   than as constraints on design.
-
-## Completion checks
-
-<validation_checklist>
-  <item>Current support status was verified for every capability relied on, against the project's stated targets.</item>
-  <item>Native elements and platform APIs were exhausted before adding a dependency.</item>
-  <item>No custom control replaces a native one without a full keyboard and assistive contract.</item>
-  <item>Interactivity is isolated to leaves and asynchronous state uses framework mechanisms rather than hand-rolled flags.</item>
-  <item>One animation system per component tree.</item>
-  <item>Paint, interaction, and layout-stability targets were treated as design constraints and space is reserved for async content.</item>
-  <item>Every dependency added is justified against the cost paid by every user.</item>
-</validation_checklist>

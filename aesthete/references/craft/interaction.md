@@ -1,7 +1,8 @@
 # Craft: interaction
 
-The mechanics of an interface that works. The spine carries the kernel; this
-is the working detail.
+Owns interaction states, latency budgets, error and destructive-action
+policy, keyboard access, focus, and continuity. The spine states these as
+obligations without definitions; the definitions are here.
 
 ## Principles worth applying correctly
 
@@ -41,9 +42,23 @@ Every interactive element:
 | Error | Adjacent, specific, and actionable. |
 | Success | Perceptible, then quiet. |
 
-Every data container adds: loading, empty, filtered-to-empty, partial,
-error, populated. These are six different screens, not one screen with a
-flag.
+Every data container ships six states. These are six different screens, not
+one screen with a flag, and independent boolean flags cannot express them:
+flags admit loading together with error, and cannot distinguish "none exist"
+from "none match the filter". Encode them as one closed set, so that
+omitting a state fails the build rather than rendering a blank region.
+
+<container_states>
+  | { status: 'loading' }
+  | { status: 'error'; error: LoadError; retry: () => void }
+  | { status: 'empty' }                                  // none exist yet
+  | { status: 'filtered'; clearFilter: () => void }      // none match
+  | { status: 'partial'; items: Item[]; loadMore: () => void }
+  | { status: 'ready'; items: Item[] }
+</container_states>
+
+`empty` and `filtered` are the pair most often collapsed into one, and they
+need different copy and different actions.
 
 ## Latency
 
@@ -131,16 +146,3 @@ failure, and never require re-entering information the system already has.
 * Actions revealed only on hover, invisible to touch and keyboard.
 * Toasts carrying information the user must act on, in the corner, briefly.
 * A modal opened from a modal.
-
-## Completion checks
-
-<validation_checklist>
-  <item>Every interactive element ships the full state set; every data container ships all six.</item>
-  <item>Latency responses match the budget table, with delayed and minimum-duration loaders.</item>
-  <item>Input is parsed liberally and never rejected for formatting the system can normalize.</item>
-  <item>Errors preserve entry, sit adjacent to their cause, name the fix, and move focus.</item>
-  <item>Reversible destructive actions use undo; irreversible ones name object and consequence.</item>
-  <item>Keyboard parity, focus order, focus return, inert backgrounds, and visible focus all hold.</item>
-  <item>Every drag has a non-drag alternative and async changes are announced.</item>
-  <item>URL, scroll, drafts, and preferences persist; nothing already provided is requested twice.</item>
-</validation_checklist>

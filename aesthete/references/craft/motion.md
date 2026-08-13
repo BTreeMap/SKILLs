@@ -115,16 +115,3 @@ principle, with a solid, high-contrast fallback for any material effect.
   layer, never on a scrolling container where they repaint continuously.
 * Lazy-load animation libraries and heavy scenes that are not needed for the
   first view, and tear down every observer, timeline, and context on unmount.
-
-## Completion checks
-
-<validation_checklist>
-  <item>Every animation passes the one-sentence justification test.</item>
-  <item>Durations are short, exits faster than entrances, with one curve family across the product.</item>
-  <item>Staggers are capped and nothing the user is waiting for is animated in.</item>
-  <item>Shared-element continuity is used where an object genuinely persists.</item>
-  <item>Scroll-linked sequences pin at the correct moment and reveals fire once.</item>
-  <item>No raw scroll subscriptions and no continuous values in render state.</item>
-  <item>Reduced motion, reduced transparency, and forced colors are honored without losing function.</item>
-  <item>Only transform and opacity animate; heavy effects are isolated and torn down.</item>
-</validation_checklist>
