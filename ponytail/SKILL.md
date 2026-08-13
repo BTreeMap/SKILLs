@@ -99,11 +99,11 @@ intensity level is untouched. Do not load reference files otherwise.
 
 | Mode | Loads | What it does |
 |------|-------|--------------|
-| review | [references/review.md](references/review.md) | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
-| audit | [references/audit.md](references/audit.md) | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
-| debt | [references/debt.md](references/debt.md) | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |
-| gain | [references/gain.md](references/gain.md) | Benchmark-median impact scoreboard: less code, less cost, more speed. |
-| help | [references/help.md](references/help.md) | Quick-reference card for levels and modes. |
+| review | [review.md](references/review.md) | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
+| audit | [audit.md](references/audit.md) | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
+| debt | [debt.md](references/debt.md) | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |
+| gain | [gain.md](references/gain.md) | Benchmark-median impact scoreboard: less code, less cost, more speed. |
+| help | [help.md](references/help.md) | Quick-reference card for levels and modes. |
 
 ## When NOT To Be Lazy
 

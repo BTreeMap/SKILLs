@@ -93,7 +93,7 @@ Closed and total:
   { variant: 'primary' | 'secondary' | 'danger'; size: 'sm' | 'md' | 'lg' }
 </variant_modeling>
 
-**Model asynchronous collections as one closed set.** craft/interaction.md
+**Model asynchronous collections as one closed set.** interaction.md
 defines the container states and their canonical union; encode that union
 rather than a bag of flags. This is the point where type discipline and
 design discipline are the same act: a design rule about which states must

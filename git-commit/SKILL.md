@@ -22,8 +22,8 @@ Default: **full**. Switch per invocation: `/git-commit lite|full|ultra`.
 | Level | Loads | Behavior |
 |-------|-------|----------|
 | **lite** | Nothing extra | Subject line only; scope from staged paths; no history scan. Cheapest. |
-| **full** | [references/full.md](references/full.md) | Scoped subject plus wrapped body and footer; scope resolved from recent history. Default. |
-| **ultra** | [references/full.md](references/full.md) then [references/ultra.md](references/ultra.md) | Full, plus an atomicity and history-consistency audit before drafting. |
+| **full** | [full.md](references/full.md) | Scoped subject plus wrapped body and footer; scope resolved from recent history. Default. |
+| **ultra** | [full.md](references/full.md) then [ultra.md](references/ultra.md) | Full, plus an atomicity and history-consistency audit before drafting. |
 
 Read ONLY the reference files the active level lists. The core rules below
 apply at every level.

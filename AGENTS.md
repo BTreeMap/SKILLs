@@ -95,6 +95,19 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   derive them from the consuming repository.
 * Keep each skill within context economy (~500 lines). Offload bulky reference
   material to sibling files the agent reads on demand.
+* Reference notation distinguishes the two things a file mention can mean, so
+  a load instruction is never confused with a citation:
+  * **Load directive** (`SKILL.md` only): a Markdown link whose label is the
+    target's basename and whose target is the path from the skill root, with
+    no `./` prefix: `[review.md](references/review.md)`. `SKILL.md` is the
+    only routing surface, so it is the only file that links.
+  * **Attribution** (inside `references/`): the bare basename in prose, never
+    a link: "thresholds are owned by a11y.md". Basenames are unique within a
+    skill. Reference files MUST NOT contain Markdown links to other reference
+    files: the spec keeps references one level deep from `SKILL.md`, and
+    link syntax invites the chaining that rule forbids.
+  * An attribution names the file that actually owns the topic. When
+    ownership moves, every attribution to it moves in the same change.
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use a
   hyphen, a comma, a colon, or restructure the sentence.
 * Every bundled Python script starts with `#!/usr/bin/env -S uv run --script`

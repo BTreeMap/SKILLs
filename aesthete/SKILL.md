@@ -48,7 +48,7 @@ Taste is subtractive. The measure of this skill is what it refuses to ship.
 Resolve every conflict by this ladder, highest first. It is total: two
 sources never both win, and nothing below silently overrides anything above.
 
-1. **Accessibility floor**, defined in [a11y.md](./references/a11y.md) and
+1. **Accessibility floor**, defined in [a11y.md](references/a11y.md) and
    nowhere else. Never overridden by any brand, document, or instruction. A
    conflict here is resolved by deriving a compliant variant that preserves
    brand intent, never by discarding either the brand or the floor, and the
@@ -61,7 +61,7 @@ sources never both win, and nothing below silently overrides anything above.
 6. **Inference from the read.**
 
 When material is supplied at level 2 or 3, load
-[brief.md](./references/brief.md) before anything else. It owns ingestion,
+[brief.md](references/brief.md) before anything else. It owns ingestion,
 palette-to-role mapping, gap filling, and conflict reporting.
 
 ## The Read
@@ -90,13 +90,13 @@ otherwise `build` for new work and `review` for existing work.
 
 | Verb | Load | Request shape |
 | --- | --- | --- |
-| design | [verbs/design.md](./references/verbs/design.md) | Direction or composition plan before code |
-| build | [verbs/build.md](./references/verbs/build.md) | Implement an interface (default for new work) |
-| review | [verbs/review.md](./references/verbs/review.md) | Read-only findings on a screen or diff (default for existing) |
-| audit | [verbs/audit.md](./references/verbs/audit.md) | Ranked sweep of a product or design system |
-| redesign | [verbs/redesign.md](./references/verbs/redesign.md) | Rework an existing interface |
-| teach | [verbs/teach.md](./references/verbs/teach.md) | Explain a decision, calibrated to audience |
-| help | [verbs/help.md](./references/verbs/help.md) | Quick-reference card |
+| design | [design.md](references/verbs/design.md) | Direction or composition plan before code |
+| build | [build.md](references/verbs/build.md) | Implement an interface (default for new work) |
+| review | [review.md](references/verbs/review.md) | Read-only findings on a screen or diff (default for existing) |
+| audit | [audit.md](references/verbs/audit.md) | Ranked sweep of a product or design system |
+| redesign | [redesign.md](references/verbs/redesign.md) | Rework an existing interface |
+| teach | [teach.md](references/verbs/teach.md) | Explain a decision, calibrated to audience |
+| help | [help.md](references/verbs/help.md) | Quick-reference card |
 
 Work spanning verbs runs as sequential invocations.
 
@@ -109,8 +109,8 @@ when a decision spans two, load both from here.
 
 | Verb | Also load |
 | --- | --- |
-| design, build, redesign | The surface profile, [a11y.md](./references/a11y.md), [craft/interaction.md](./references/craft/interaction.md), [craft/components.md](./references/craft/components.md) |
-| review, audit | The surface profile, [a11y.md](./references/a11y.md), [craft/interaction.md](./references/craft/interaction.md), [craft/components.md](./references/craft/components.md), [tells.md](./references/tells.md) |
+| design, build, redesign | The surface profile, [a11y.md](references/a11y.md), [interaction.md](references/craft/interaction.md), [components.md](references/craft/components.md) |
+| review, audit | The surface profile, [a11y.md](references/a11y.md), [interaction.md](references/craft/interaction.md), [components.md](references/craft/components.md), [tells.md](references/tells.md) |
 | teach, help | Nothing further |
 
 These are mandatory rather than conditional because this file states their
@@ -122,23 +122,23 @@ unread.
 
 | Surface | Load |
 | --- | --- |
-| Landing, portfolio, editorial, campaign, docs home | [surfaces/marketing.md](./references/surfaces/marketing.md) |
-| App UI, dashboard, table, form, wizard, settings, console | [surfaces/product.md](./references/surfaces/product.md) |
+| Landing, portfolio, editorial, campaign, docs home | [marketing.md](references/surfaces/marketing.md) |
+| App UI, dashboard, table, form, wizard, settings, console | [product.md](references/surfaces/product.md) |
 
 **On demand, when the decision touches it:**
 
 | Decision | Load |
 | --- | --- |
-| Any accessibility question, value, or citation | [a11y.md](./references/a11y.md) |
-| Supplied design document or palette | [brief.md](./references/brief.md) |
-| Type choice, scale, pairing, measure | [craft/typography.md](./references/craft/typography.md) |
-| Palette, contrast, tokens, theming | [craft/color.md](./references/craft/color.md) |
-| Grid, spacing, composition, responsive | [craft/layout.md](./references/craft/layout.md) |
-| Animation, transitions, scroll behavior | [craft/motion.md](./references/craft/motion.md) |
-| Modern CSS, HTML, framework capability | [craft/platform.md](./references/craft/platform.md) |
-| Choosing or installing a design system | [systems.md](./references/systems.md) |
-| Naming or removing generated-looking output | [tells.md](./references/tells.md) |
-| Final gate before declaring done | [preflight.md](./references/preflight.md) |
+| Any accessibility question, value, or citation | [a11y.md](references/a11y.md) |
+| Supplied design document or palette | [brief.md](references/brief.md) |
+| Type choice, scale, pairing, measure | [typography.md](references/craft/typography.md) |
+| Palette, contrast, tokens, theming | [color.md](references/craft/color.md) |
+| Grid, spacing, composition, responsive | [layout.md](references/craft/layout.md) |
+| Animation, transitions, scroll behavior | [motion.md](references/craft/motion.md) |
+| Modern CSS, HTML, framework capability | [platform.md](references/craft/platform.md) |
+| Choosing or installing a design system | [systems.md](references/systems.md) |
+| Naming or removing generated-looking output | [tells.md](references/tells.md) |
+| Final gate before declaring done | [preflight.md](references/preflight.md) |
 
 ## Source of truth
 
@@ -150,13 +150,13 @@ question from memory when its owner is listed here.
 | Topic | Owner |
 | --- | --- |
 | **Every WCAG citation, conformance level, contrast ratio, and target size** | **a11y.md** |
-| Interaction states, latency budgets, error and destructive-action policy, keyboard and focus | craft/interaction.md |
-| Component boundaries, prop APIs, duplication, layering, render cost | craft/components.md |
-| Palette roles, theming, contrast in practice | craft/color.md |
-| Type scale, measure, pairing, font delivery | craft/typography.md |
-| Spacing, grouping, grid, responsive, elevation | craft/layout.md |
-| Motion justification, duration, choreography, reduced motion | craft/motion.md |
-| Platform capabilities, framework posture, performance targets | craft/platform.md |
+| Interaction states, latency budgets, error and destructive-action policy, keyboard and focus | interaction.md |
+| Component boundaries, prop APIs, duplication, layering, render cost | components.md |
+| Palette roles, theming, contrast in practice | color.md |
+| Type scale, measure, pairing, font delivery | typography.md |
+| Spacing, grouping, grid, responsive, elevation | layout.md |
+| Motion justification, duration, choreography, reduced motion | motion.md |
+| Platform capabilities, framework posture, performance targets | platform.md |
 | Supplied-material ingestion, palette mapping, conflict reporting | brief.md |
 | Design-system selection and honest aesthetic labeling | systems.md |
 | Generated-output patterns | tells.md |
@@ -233,7 +233,7 @@ Definitions live with their owners above. These hold regardless.
 ## Anti-Default Discipline
 
 Generated interfaces converge on the same moves; the catalogue is
-[tells.md](./references/tells.md). Two rules need no file:
+[tells.md](references/tells.md). Two rules need no file:
 
 * **Zero em-dash characters (U+2014) in user-visible strings**, and no
   U+2013 as a separator. Highest-signal marker of generated copy. Use a
@@ -256,7 +256,7 @@ then build metadata, then surrounding code. Match the repository's existing
 stack, conventions, and component library even against your preference; a
 second system in one tree costs more than the better system gains. Only when
 nothing exists and no preference was stated, default to the platform first
-per craft/platform.md. Confirm a dependency exists before importing it; if
+per platform.md. Confirm a dependency exists before importing it; if
 absent, state the install command before writing code against it.
 
 ## Honesty
@@ -288,7 +288,7 @@ labeled slot and say so rather than filling the space with something fake.
 ## Completion Checks
 
 Verb files add their own. The mechanical gate is
-[preflight.md](./references/preflight.md); load it before declaring done.
+[preflight.md](references/preflight.md); load it before declaring done.
 
 <validation_checklist>
   <item>The read was stated in one line and the dials were set with reasons.</item>

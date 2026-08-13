@@ -64,8 +64,8 @@ the accent, or destructive actions stop reading as destructive.
 
 Compute, do not assume. Contrast is a measured ratio between two composited
 values, and a document's own claim about it carries no weight. Thresholds
-and their exemptions are owned by craft/color.md; load it and apply it to
-every supplied pairing before adopting any of them.
+and their exemptions are owned by a11y.md; apply them to every supplied
+pairing before adopting any of it.
 
 Check at minimum: every text role against every surface it sits on, the
 accent against its on-color at the sizes actually used, secondary and muted

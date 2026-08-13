@@ -46,7 +46,7 @@ more visible improvement per unit of risk.
 3. **Color recalibration**: unify the neutral family, reduce to one accent,
    fix contrast, add the missing theme.
 4. **State completeness**: add the interaction and container states the
-   original never shipped, per craft/interaction.md. Usually the single
+   original never shipped, per interaction.md. Usually the single
    largest usability gain in an old interface.
 5. **Motion layer**: add restrained, motivated motion to existing
    components.

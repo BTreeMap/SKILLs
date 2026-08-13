@@ -22,7 +22,7 @@ Without a verb: `build` for new work, `review` for existing work.
 | help | This card |
 
 One verb file per invocation, plus the surface profile,
-`craft/interaction.md`, and `craft/components.md`, which are mandatory.
+`interaction.md`, and `components.md`, which are mandatory.
 Multi-verb work runs as sequential invocations.
 
 ## Surfaces
@@ -57,9 +57,9 @@ that owns it; resolve none of them from memory.
 * One declared accent, radius scale, spacing scale, type scale, icon family,
   and theme, honored across the whole surface.
 * Every interactive element ships its full state set and every data
-  container ships all of its states (craft/interaction.md).
+  container ships all of its states (interaction.md).
 * Every wait is acknowledged within its latency budget
-  (craft/interaction.md). Undo outranks confirm. User work is never lost.
+  (interaction.md). Undo outranks confirm. User work is never lost.
   The URL reflects state.
 * Supplied palette beats supplied document beats repo beats defaults. The
   accessibility floor beats all of them, and conflicts are resolved by

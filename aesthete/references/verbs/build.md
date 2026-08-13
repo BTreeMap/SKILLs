@@ -28,7 +28,7 @@ rework.
    widths, and the responsive behavior. Verify the hierarchy reads with all
    color and decoration removed. If it does not read in grayscale wireframe,
    no amount of styling will fix it.
-4. **States before polish.** Implement every state craft/interaction.md
+4. **States before polish.** Implement every state interaction.md
    defines, for every interactive element and every data container, before
    refining any visual detail. Model each as one closed set so that omitting
    a state fails the build.
@@ -64,7 +64,7 @@ rework.
 * **Close the variant sets.** Model variants and asynchronous states as one
   closed set eliminated exhaustively, never as independent booleans with a
   catch-all branch. Keep imports pointing downward through the layer ladder
-  craft/components.md defines, with domain types no lower than the pattern
+  components.md defines, with domain types no lower than the pattern
   layer.
 * **Semantics first.** Use the native element before the composed one: a
   real button, a real dialog, a real disclosure, a real label bound to its
@@ -99,7 +99,7 @@ plainly does.
   <item>Tokens were defined before components and no component hardcodes a value that belongs to a scale.</item>
   <item>Variants and asynchronous states are closed sets eliminated exhaustively; imports point downward and domain types stay at or above the pattern layer.</item>
   <item>Hierarchy reads correctly with color and decoration removed.</item>
-  <item>Every interactive element and data container ships every state craft/interaction.md defines.</item>
+  <item>Every interactive element and data container ships every state interaction.md defines.</item>
   <item>Stack, library, and tokens match the repository; no undeclared dependency is imported.</item>
   <item>Interactivity is isolated to leaf components and continuous values bypass render state.</item>
   <item>Native semantic elements were used wherever they suffice, with full keyboard contracts on any custom control.</item>

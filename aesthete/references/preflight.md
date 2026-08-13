@@ -67,7 +67,7 @@ Skip only if nothing was supplied.
 ## Interaction
 
 - [ ] Every interactive element and every data container ships every state
-      craft/interaction.md defines, encoded as one closed set.
+      interaction.md defines, encoded as one closed set.
 - [ ] No loader appears for a response under the flash threshold, and every
       wait past it is acknowledged at the point of action.
 - [ ] Input is parsed liberally; nothing is rejected for formatting the

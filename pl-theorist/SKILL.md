@@ -58,14 +58,14 @@ code where none exists.
 
 | Verb | Load | Request shape |
 | --- | --- | --- |
-| design | [verbs/design.md](./references/verbs/design.md) | Plan, model, or architect a domain before code exists |
-| build | [verbs/build.md](./references/verbs/build.md) | Write or implement new code |
-| refactor | [verbs/refactor.md](./references/verbs/refactor.md) | Rewrite existing code, behavior preserved (default) |
-| review | [verbs/review.md](./references/verbs/review.md) | Read-only findings on a diff, PR, or file set |
-| audit | [verbs/audit.md](./references/verbs/audit.md) | Ranked sweep of a repository or module |
-| test | [verbs/test.md](./references/verbs/test.md) | Derive tests from the code's algebra and laws |
-| teach | [verbs/teach.md](./references/verbs/teach.md) | Explain a design in PL terms, calibrated to audience |
-| help | [verbs/help.md](./references/verbs/help.md) | Quick-reference card of verbs and languages |
+| design | [design.md](references/verbs/design.md) | Plan, model, or architect a domain before code exists |
+| build | [build.md](references/verbs/build.md) | Write or implement new code |
+| refactor | [refactor.md](references/verbs/refactor.md) | Rewrite existing code, behavior preserved (default) |
+| review | [review.md](references/verbs/review.md) | Read-only findings on a diff, PR, or file set |
+| audit | [audit.md](references/verbs/audit.md) | Ranked sweep of a repository or module |
+| test | [test.md](references/verbs/test.md) | Derive tests from the code's algebra and laws |
+| teach | [teach.md](references/verbs/teach.md) | Explain a design in PL terms, calibrated to audience |
+| help | [help.md](references/verbs/help.md) | Quick-reference card of verbs and languages |
 
 Never load more than one verb file at once. A workflow spanning verbs (audit,
 then refactor the worst finding) runs as sequential invocations, each loading
@@ -214,19 +214,19 @@ binary), load exactly the profiles participating in that boundary.
 
 | Target | Dynamically load |
 | --- | --- |
-| Python | [Python cost model](./references/langs/python.md) |
-| JavaScript (ES6+) | [JavaScript cost model](./references/langs/javascript.md) |
-| TypeScript | [TypeScript cost model](./references/langs/typescript.md) |
-| Rust | [Rust cost model](./references/langs/rust.md) |
-| Go | [Go cost model](./references/langs/go.md) |
-| Haskell | [Haskell cost model](./references/langs/haskell.md) |
-| C | [C cost model](./references/langs/c.md) |
-| C++ | [C++ cost model](./references/langs/cpp.md) |
-| Java | [Java cost model](./references/langs/java.md) |
-| Kotlin | [Kotlin cost model](./references/langs/kotlin.md) |
-| C# | [C# cost model](./references/langs/csharp.md) |
-| Bash / POSIX shell | [Bash cost model](./references/langs/bash.md) |
-| GitHub Actions YAML | [GitHub Actions cost model](./references/langs/github-actions.md) |
+| Python | [python.md](references/langs/python.md) |
+| JavaScript (ES6+) | [javascript.md](references/langs/javascript.md) |
+| TypeScript | [typescript.md](references/langs/typescript.md) |
+| Rust | [rust.md](references/langs/rust.md) |
+| Go | [go.md](references/langs/go.md) |
+| Haskell | [haskell.md](references/langs/haskell.md) |
+| C | [c.md](references/langs/c.md) |
+| C++ | [cpp.md](references/langs/cpp.md) |
+| Java | [java.md](references/langs/java.md) |
+| Kotlin | [kotlin.md](references/langs/kotlin.md) |
+| C# | [csharp.md](references/langs/csharp.md) |
+| Bash / POSIX shell | [bash.md](references/langs/bash.md) |
+| GitHub Actions YAML | [github-actions.md](references/langs/github-actions.md) |
 
 For an unlisted language, derive the same facts from repository configuration
 and authoritative language knowledge: recursion/TCO, strictness/laziness,

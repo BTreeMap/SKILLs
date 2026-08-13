@@ -62,7 +62,7 @@ span with the corrected span using the available file-editing tool".
 ## Workflow
 
 1. **Inventory**: read the document. Decompose verifiable statements into
-   atomic claims per [references/claims.md](references/claims.md): one
+   atomic claims per [claims.md](references/claims.md): one
    checkable proposition each, decontextualized (pronouns and elided subjects
    resolved), mapped to its exact source span, typed, capped at the sentence
    level (never fragment below one proposition). Skip opinions,
@@ -70,11 +70,11 @@ span with the corrected span using the available file-editing tool".
    with the inventory and pinned constraints.
 2. **Verify**: run the per-claim contract (below) for every claim via the
    selected orchestration branch. Route retrieval by claim type per
-   [references/claims.md](references/claims.md); apply source tiers and
-   conflict rules per [references/evidence.md](references/evidence.md).
+   [claims.md](references/claims.md); apply source tiers and
+   conflict rules per [evidence.md](references/evidence.md).
    Flush each verdict record to the state file as it completes.
 3. **Report**: render the evidence-first report per
-   [references/report.md](references/report.md). Include which branch ran and
+   [report.md](references/report.md). Include which branch ran and
    approximate token cost.
 4. **Approve**: tiered approval per report.md. Rejection is first-class:
    record rejected verdicts as `user-rejected` in the state file and leave
@@ -112,7 +112,7 @@ document's timestamp (claim-time). Output: one verdict record.
 </verdict_record>
 
 Verdict definitions, confidence rules, and the abstention threshold:
-[references/verdicts.md](references/verdicts.md). Confidence below the
+[verdicts.md](references/verdicts.md). Confidence below the
 threshold forces `correction: null`.
 
 Temporal discipline: distinguish claim-time (document timestamp),
