@@ -22,8 +22,8 @@ Default: **full**. Switch per invocation: `/git-commit lite|full|ultra`.
 | Level | Loads | Behavior |
 |-------|-------|----------|
 | **lite** | Nothing extra | Subject line only; scope from staged paths; no history scan. Cheapest. |
-| **full** | [full.md](references/full.md) | Scoped subject plus wrapped body and footer; scope resolved from recent history. Default. |
-| **ultra** | `full` then [ultra.md](references/ultra.md) | Full, plus an atomicity and history-consistency audit before drafting. |
+| **full** | `full` | Scoped subject plus wrapped body and footer; scope resolved from recent history. Default. |
+| **ultra** | `full` then `ultra` | Full, plus an atomicity and history-consistency audit before drafting. |
 
 Read ONLY the reference files the active level lists. The core rules below
 apply at every level.
@@ -73,3 +73,14 @@ level wins, so `full push` and `ultra push` draft at that level first. Run
     <rule>Omit all conversational filler, preambles, formatting acknowledgments, and concluding remarks.</rule>
   </output_contract>
 </system_directives>
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `full` | [references/full.md](references/full.md) |
+| `ultra` | [references/ultra.md](references/ultra.md) |

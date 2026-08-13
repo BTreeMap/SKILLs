@@ -62,7 +62,7 @@ span with the corrected span using the available file-editing tool".
 ## Workflow
 
 1. **Inventory**: read the document. Decompose verifiable statements into
-   atomic claims per [claims.md](references/claims.md): one
+   atomic claims by the rules in `claims`: one
    checkable proposition each, decontextualized (pronouns and elided subjects
    resolved), mapped to its exact source span, typed, capped at the sentence
    level (never fragment below one proposition). Skip opinions,
@@ -70,13 +70,13 @@ span with the corrected span using the available file-editing tool".
    with the inventory and pinned constraints.
 2. **Verify**: run the per-claim contract (below) for every claim via the
    selected orchestration branch. Route retrieval by claim type per
-   `claims`; apply source tiers and
-   conflict rules per [evidence.md](references/evidence.md).
+   `claims`; apply the source tiers and
+   conflict rules defined in `evidence`.
    Flush each verdict record to the state file as it completes.
 3. **Report**: render the evidence-first report per
-   [report.md](references/report.md). Include which branch ran and
+   the template in `report`. Include which branch ran and
    approximate token cost.
-4. **Approve**: tiered approval per `report`. Rejection is first-class:
+4. **Approve**: tiered approval as specified in `report`. Rejection is first-class:
    record rejected verdicts as `user-rejected` in the state file and leave
    the text untouched.
 5. **Edit**: re-read `constraints` from the state file. Apply only approved
@@ -112,7 +112,7 @@ document's timestamp (claim-time). Output: one verdict record.
 </verdict_record>
 
 Verdict definitions, confidence rules, and the abstention threshold:
-[verdicts.md](references/verdicts.md). Confidence below the
+are defined in `verdicts`. Confidence below the
 threshold forces `correction: null`.
 
 Temporal discipline: distinguish claim-time (document timestamp),
@@ -174,7 +174,7 @@ values in its references are placeholders marked illustrative.
   the primary wins; note the aggregator in `notes`.
 - Do not let report fluency invite rubber-stamping: the report leads with
   evidence and counter-evidence, and low-confidence items require
-  item-by-item approval, per `report`.
+  item-by-item approval, as specified in `report`.
 
 ## Completion checks
 
@@ -186,3 +186,19 @@ values in its references are placeholders marked illustrative.
   <item>Edited paragraphs re-read for coherence; secondary edits reported.</item>
   <item>Final summary names verdict counts, branch, and cost; no follow-up tool or skill was auto-invoked.</item>
 </validation_checklist>
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `claims` | [references/claims.md](references/claims.md) |
+| `evaluation` | [references/evaluation.md](references/evaluation.md) |
+| `evidence` | [references/evidence.md](references/evidence.md) |
+| `report` | [references/report.md](references/report.md) |
+| `verdicts` | [references/verdicts.md](references/verdicts.md) |
+
+`evaluation` is a maintainer protocol and is never loaded during a run.

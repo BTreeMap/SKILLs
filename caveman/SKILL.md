@@ -78,7 +78,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
     Output raw implementation details using standard diff formats or complete code blocks.
   </contract>
   <contract trigger="Reviewing (Audits/Critiques)">
-    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format: `review`.
+    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format is defined in `review`.
   </contract>
 </output_contracts>
 
@@ -89,7 +89,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
 | **lite** | No filler or hedging. Keep articles and full sentences. Professional but tight. |
 | **full** | Drop articles, fragments OK, short synonyms. Classic caveman. Default. |
 | **ultra** | Strip conjunctions when cause-then-effect stays unambiguous. One word when one word enough. State each fact once. Code symbols, function names, error strings: never touch. |
-| **wenyan-*** | Classical Chinese compression tiers. Load [wenyan.md](references/wenyan.md). |
+| **wenyan-*** | Classical Chinese compression tiers. Load `wenyan`. |
 
 <intensity_examples request="Why does my React component re-render?">
   <lite>Your component re-renders because you create a new object reference each render. Wrap it in `useMemo`.</lite>
@@ -105,11 +105,11 @@ active intensity level is untouched. Do not load reference files otherwise.
 
 | Mode | Loads | What it does |
 |------|-------|--------------|
-| commit | [commit.md](references/commit.md) | Terse Conventional Commits message: why over what, body only when needed. |
-| review | [review.md](references/review.md) | One-line review findings: location, tag, problem, fix. |
-| compress | [compress.md](references/compress.md) | Rewrite a prose file in caveman style in place, code untouched, backup kept. |
-| stats | [stats.md](references/stats.md) | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
-| help | [help.md](references/help.md) | Quick-reference card for levels and modes. |
+| commit | `commit` | Terse Conventional Commits message: why over what, body only when needed. |
+| review | `review` | One-line review findings: location, tag, problem, fix. |
+| compress | `compress` | Rewrite a prose file in caveman style in place, code untouched, backup kept. |
+| stats | `stats` | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
+| help | `help` | Quick-reference card for levels and modes. |
 
 ## Auto-Clarity
 
@@ -131,3 +131,19 @@ Persisted outside chat: write normal prose - code, comments, commit messages,
 docs, issue/PR text, memory files, third-party messages (the compress mode is
 the sole exemption). "stop caveman" or "normal mode": revert. Level persists
 until changed or session end.
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `commit` | [references/commit.md](references/commit.md) |
+| `compress` | [references/compress.md](references/compress.md) |
+| `compress_guard` | [scripts/compress_guard.py](scripts/compress_guard.py) |
+| `help` | [references/help.md](references/help.md) |
+| `review` | [references/review.md](references/review.md) |
+| `stats` | [references/stats.md](references/stats.md) |
+| `wenyan` | [references/wenyan.md](references/wenyan.md) |

@@ -99,11 +99,11 @@ intensity level is untouched. Do not load reference files otherwise.
 
 | Mode | Loads | What it does |
 |------|-------|--------------|
-| review | [review.md](references/review.md) | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
-| audit | [audit.md](references/audit.md) | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
-| debt | [debt.md](references/debt.md) | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |
-| gain | [gain.md](references/gain.md) | Benchmark-median impact scoreboard: less code, less cost, more speed. |
-| help | [help.md](references/help.md) | Quick-reference card for levels and modes. |
+| review | `review` | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
+| audit | `audit` | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
+| debt | `debt` | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |
+| gain | `gain` | Benchmark-median impact scoreboard: less code, less cost, more speed. |
+| help | `help` | Quick-reference card for levels and modes. |
 
 ## When NOT To Be Lazy
 
@@ -146,3 +146,17 @@ revert. Level persists until changed or session end.
 - Unrequested explanation is at most three short lines.
 
 The shortest path to done is the right path.
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `audit` | [references/audit.md](references/audit.md) |
+| `debt` | [references/debt.md](references/debt.md) |
+| `gain` | [references/gain.md](references/gain.md) |
+| `help` | [references/help.md](references/help.md) |
+| `review` | [references/review.md](references/review.md) |

@@ -51,21 +51,22 @@ local mutation when that is the honest backend.
 ## Verbs
 
 One invocation loads exactly one verb file plus the language profile(s) that
-participate. Choose the verb, in descending priority: an explicit verb in the
-invocation; an unambiguous request shape (see the third column); otherwise
-`refactor` when the request changes existing code and `build` when it creates
+participate. Every verb's name is its registered name, so the verb selects
+the file. Choose the verb, in descending priority: an explicit verb in the
+invocation; an unambiguous request shape (see the second column); otherwise
+refactor when the request changes existing code and build when it creates
 code where none exists.
 
-| Verb | Load | Request shape |
-| --- | --- | --- |
-| design | [design.md](references/verbs/design.md) | Plan, model, or architect a domain before code exists |
-| build | [build.md](references/verbs/build.md) | Write or implement new code |
-| refactor | [refactor.md](references/verbs/refactor.md) | Rewrite existing code, behavior preserved (default) |
-| review | [review.md](references/verbs/review.md) | Read-only findings on a diff, PR, or file set |
-| audit | [audit.md](references/verbs/audit.md) | Ranked sweep of a repository or module |
-| test | [test.md](references/verbs/test.md) | Derive tests from the code's algebra and laws |
-| teach | [teach.md](references/verbs/teach.md) | Explain a design in PL terms, calibrated to audience |
-| help | [help.md](references/verbs/help.md) | Quick-reference card of verbs and languages |
+| Verb | Request shape |
+| --- | --- |
+| design | Plan, model, or architect a domain before code exists |
+| build | Write or implement new code |
+| refactor | Rewrite existing code, behavior preserved (default) |
+| review | Read-only findings on a diff, PR, or file set |
+| audit | Ranked sweep of a repository or module |
+| test | Derive tests from the code's algebra and laws |
+| teach | Explain a design in PL terms, calibrated to audience |
+| help | Quick-reference card of verbs and languages |
 
 Never load more than one verb file at once. A workflow spanning verbs (audit,
 then refactor the worst finding) runs as sequential invocations, each loading
@@ -214,19 +215,19 @@ binary), load exactly the profiles participating in that boundary.
 
 | Target | Dynamically load |
 | --- | --- |
-| Python | [python.md](references/langs/python.md) |
-| JavaScript (ES6+) | [javascript.md](references/langs/javascript.md) |
-| TypeScript | [typescript.md](references/langs/typescript.md) |
-| Rust | [rust.md](references/langs/rust.md) |
-| Go | [go.md](references/langs/go.md) |
-| Haskell | [haskell.md](references/langs/haskell.md) |
-| C | [c.md](references/langs/c.md) |
-| C++ | [cpp.md](references/langs/cpp.md) |
-| Java | [java.md](references/langs/java.md) |
-| Kotlin | [kotlin.md](references/langs/kotlin.md) |
-| C# | [csharp.md](references/langs/csharp.md) |
-| Bash / POSIX shell | [bash.md](references/langs/bash.md) |
-| GitHub Actions YAML | [github-actions.md](references/langs/github-actions.md) |
+| Python | `python` |
+| JavaScript (ES6+) | `javascript` |
+| TypeScript | `typescript` |
+| Rust | `rust` |
+| Go | `go` |
+| Haskell | `haskell` |
+| C | `c` |
+| C++ | `cpp` |
+| Java | `java` |
+| Kotlin | `kotlin` |
+| C# | `csharp` |
+| Bash / POSIX shell | `bash` |
+| GitHub Actions YAML | `github-actions` |
 
 For an unlisted language, derive the same facts from repository configuration
 and authoritative language knowledge: recursion/TCO, strictness/laziness,
@@ -281,3 +282,33 @@ Every verb file appends its own checks to these kernel checks.
   <item>Resources, cancellation, boundedness, retries, and transactions remain correct.</item>
   <item>Claims of performance or fusion are evidenced or marked unmeasured.</item>
 </validation_checklist>
+
+## Registry
+
+Every bundled file, declared once. Everywhere else a file is addressed by
+name alone; a name resolves here and nowhere else. Runnable commands keep
+the literal path because they are invocations, not references.
+
+| Name | Path |
+| --- | --- |
+| `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
+| `bash` | [references/langs/bash.md](references/langs/bash.md) |
+| `build` | [references/verbs/build.md](references/verbs/build.md) |
+| `c` | [references/langs/c.md](references/langs/c.md) |
+| `cpp` | [references/langs/cpp.md](references/langs/cpp.md) |
+| `csharp` | [references/langs/csharp.md](references/langs/csharp.md) |
+| `design` | [references/verbs/design.md](references/verbs/design.md) |
+| `github-actions` | [references/langs/github-actions.md](references/langs/github-actions.md) |
+| `go` | [references/langs/go.md](references/langs/go.md) |
+| `haskell` | [references/langs/haskell.md](references/langs/haskell.md) |
+| `help` | [references/verbs/help.md](references/verbs/help.md) |
+| `java` | [references/langs/java.md](references/langs/java.md) |
+| `javascript` | [references/langs/javascript.md](references/langs/javascript.md) |
+| `kotlin` | [references/langs/kotlin.md](references/langs/kotlin.md) |
+| `python` | [references/langs/python.md](references/langs/python.md) |
+| `refactor` | [references/verbs/refactor.md](references/verbs/refactor.md) |
+| `review` | [references/verbs/review.md](references/verbs/review.md) |
+| `rust` | [references/langs/rust.md](references/langs/rust.md) |
+| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
+| `test` | [references/verbs/test.md](references/verbs/test.md) |
+| `typescript` | [references/langs/typescript.md](references/langs/typescript.md) |

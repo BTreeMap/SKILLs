@@ -50,8 +50,8 @@ Current skills:
   structural discipline: the design read, composition dials, laws of taste,
   a precedence ladder, and a source-of-truth ownership table in the spine,
   with a dated WCAG 2.2 accessibility floor as the sole source of
-  accessibility truth, verbs (design/build/review/audit/redesign/teach/help), supplied
-  design-document and palette ingestion, surface profiles (marketing,
+  accessibility truth, verbs (design/build/review/audit/redesign/
+  teach/help), supplied design-document and palette ingestion, surface profiles (marketing,
   product), craft references (typography, color, layout, motion, interaction,
   components, platform), design-system selection, the generated-output tell
   catalogue, and a mechanical ship gate loaded on demand from `references/`.
@@ -97,13 +97,12 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   material to sibling files the agent reads on demand.
 * Bundled files are addressed by **registered name**, never by path, so a
   path cannot drift and two files cannot claim one name:
-  * **One declaration site.** Every runtime-loadable bundled path appears
-    exactly once in the whole skill, in `SKILL.md`. When a file is named in
-    more than one context, declare the paths in a `## Registry` table
-    mapping name to path; when each file is named once, the table that names
-    it already is that declaration and no separate registry is warranted. A
-    file not meant to be loaded during a run (a maintainer protocol, an
-    evaluation harness) is left undeclared and says so in its first line.
+  * **One declaration site.** Every skill that bundles files carries a
+    `## Registry` section as its final section, mapping each name to its
+    path. That table is the only place a path appears; a path written
+    anywhere else is a defect. The registry lists every bundled file,
+    including any not loaded during a run, such as a maintainer protocol;
+    those say so in their own first line.
   * **A name is the basename without `.md`, in backticks**: `` `a11y` ``,
     `` `interaction` ``. Backticks mark it as an identifier so it is never
     read as the ordinary word. Basenames are unique within a skill, so a
@@ -115,6 +114,13 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   * **Do not restate a name that the row key already carries.** If a table
     is keyed by verb or mode and the file shares that name, say so once and
     drop the column.
+  * **A name is an address, never a sentence's payload.** It appears as the
+    object of a word that says what it is: "defined in `review`", "load
+    `brief`", "the template in `report`". Never "Full format: `review`.",
+    which reads as a value rather than a document. In a table cell the
+    column heading supplies that word.
+  * **Runnable commands keep the literal path**, since they are invocations
+    rather than references.
   * A citation names the file that actually owns the topic. When ownership
     moves, every citation to it moves in the same change.
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use a
