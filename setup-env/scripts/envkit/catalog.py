@@ -49,12 +49,10 @@ from .steps import (
     UvVenv,
 )
 
-# --- Pinned publisher inputs --------------------------------------------------
+# --- Pinned publisher inputs ---
 #
-# conda-forge packages are deliberately unpinned: the manifest records what
-# the solver chose, and @version pins on demand. Publisher archives have no
-# solver, so they are pinned here together with their digests where the
-# publisher offers none.
+# Conda packages resolve at install time and @version pins on demand.
+# Publisher archives are pinned here with available digests.
 
 ANDROID_TOOLS_REVISION = "13114758"
 ANDROID_TOOLS_SHA256 = {
@@ -84,7 +82,7 @@ KOTLIN_NATIVE_SLUG = {
 GOOGLE_MAVEN = "https://dl.google.com/dl/android/maven2"
 
 
-# --- Small pure helpers -------------------------------------------------------
+# --- Pure helpers ---
 
 
 def conda_spec(package: str, version: str | None) -> str:
@@ -135,7 +133,7 @@ def conda_bin_dirs(layout: Layout, host: Host) -> tuple:
 
 
 def jvm_home(layout: Layout, host: Host):
-    # conda-forge's openjdk nests the JDK; the prefix is not a JAVA_HOME.
+    # openjdk nests the JDK; the prefix is not JAVA_HOME.
     if host.os is OS.WINDOWS:
         return layout.conda_host / "Library" / "lib" / "jvm"
     return layout.jvm
@@ -158,26 +156,24 @@ def _cc_env(layout: Layout, cxx: bool = False) -> EnvDelta:
     return EnvDelta(vars=tuple(vars_))
 
 
-# --- Recipe -------------------------------------------------------------------
+# --- Recipe ---
 
 
 @dataclass(frozen=True, slots=True)
 class Recipe:
     key: RecipeKey
     summary: str
-    version_doc: str | None  # meaning of @version; None: recipe takes none
+    version_doc: str | None  # @version help text; None means no version
     requirements: Callable[[Host, str | None], tuple[Step, ...]]
     env: Callable[[Layout, Host], EnvDelta]
     probes: tuple[tuple[str, ...], ...]
 
 
 def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
-    # Statement count tracks the number of catalogued toolchains, not
-    # branching: this function is the table itself, and splitting it would
-    # scatter one closed enumeration across several places.
+    # This function is the catalog; statement count tracks entries, not branching.
     r: list[Recipe] = []
 
-    # -- python: uv end to end, no conda ------------------------------------
+    # Python
     r.append(
         Recipe(
             ("python", GENERIC),
@@ -199,9 +195,9 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- javascript / typescript: nodejs from conda-forge -------------------
+    # JavaScript / TypeScript
     def js_env(layout: Layout, host: Host) -> EnvDelta:
-        # npm reads these lowercase; the spelling is npm's, not a style choice.
+        # npm expects lowercase names.
         return EnvDelta(
             vars=(
                 ("npm_config_cache", str(layout.cache / "npm")),
@@ -230,7 +226,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- go: cgo is a flavor because it changes the toolchain, not the code -
+    # Go
     r.append(
         Recipe(
             ("go", GENERIC),
@@ -271,7 +267,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- rust: a rustc that cannot link is not a toolchain, so cc rides along
+    # Rust
     r.append(
         Recipe(
             ("rust", GENERIC),
@@ -294,7 +290,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- c / cpp -------------------------------------------------------------
+    # C / C++
     def _c_req(host: Host, v: str | None) -> tuple[Step, ...]:
         _no_windows(host, "the C toolchain (conda MSVC needs its own activation)")
         return (host_conda("c-compiler", "make"), CompilerShims())
@@ -324,7 +320,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- jvm family ----------------------------------------------------------
+    # JVM
     r.append(
         Recipe(
             ("java", GENERIC),
@@ -369,7 +365,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- android: the flavor that owns the one architecture fact -------------
+    # Android
     def _android_req(host: Host, v: str | None) -> tuple[Step, ...]:
         api = _parse_api(v)
         url = (
@@ -379,7 +375,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
         steps: list[Step] = [
             host_conda("openjdk"),
-            # The zip's single top directory becomes .../latest directly.
+            # The archive's top directory becomes .../latest.
             Fetch(
                 "android-cmdline-tools",
                 url,
@@ -391,9 +387,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
             AndroidSdk(api),
             BindGradleProject(),
         ]
-        # Google ships linux aapt2 as x86_64 only. On any host that cannot
-        # execute it natively (macos/arm64 is transparent via Rosetta), the
-        # emulated shim is a first-class answer, not a degraded mode.
+        # Linux aapt2 is x86_64-only; add a QEMU shim where needed.
         match emulation(host, CondaPlatform.LINUX_64):
             case QemuUser() as emu if host.os is OS.LINUX:
                 steps.extend(qemu_steps(emu))
@@ -427,7 +421,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
             )
         )
 
-    # -- kotlin:native: JetBrains prebuilt, closed host set -------------------
+    # Kotlin/Native
     def _konan_req(host: Host, v: str | None) -> tuple[Step, ...]:
         slug = KOTLIN_NATIVE_SLUG.get(host.conda_platform)
         if slug is None:
@@ -464,10 +458,9 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- csharp ---------------------------------------------------------------
+    # C#
     def _dotnet_root(layout: Layout, host: Host):
-        # The conda package ships no bin wrapper; its activation script would
-        # export DOTNET_ROOT, so the recipe does it instead.
+        # conda ships no bin wrapper; set DOTNET_ROOT here.
         base = (
             layout.conda_host / "Library"
             if host.os is OS.WINDOWS
@@ -495,7 +488,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- haskell: conda-forge's ghc is fossilized, so ghcup owns it ----------
+    # Haskell
     def _hs_req(host: Host, v: str | None) -> tuple[Step, ...]:
         triple = GHCUP_TRIPLE.get((host.os, host.arch))
         if triple is None:
@@ -506,10 +499,8 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
             f"https://downloads.haskell.org/~ghcup/{GHCUP_VERSION}/"
             f"{triple}-ghcup-{GHCUP_VERSION}"
         )
-        # curl: ghcup shells out to it. tar + xz: bindists are .tar.xz and a
-        # bare image may lack xz. c-compiler + make + gmp + ncurses: a GHC
-        # bindist configures against them and every Haskell binary links
-        # them. All of it stays inside the prefix.
+        # ghcup needs curl; bindists need tar, xz, C, make, gmp, and ncurses.
+        # Keep all dependencies inside the prefix.
         return (
             host_conda("curl", "gmp", "ncurses", "c-compiler", "make", "tar", "xz"),
             Fetch("ghcup", url, None, "bin", "tools/haskell/bin/ghcup"),
@@ -530,8 +521,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
                         ("CABAL_DIR", str(layout.cache / "cabal")),
                         ("GHCUP_INSTALL_BASE_PREFIX", str(layout.tools / "haskell")),
                         ("STACK_ROOT", str(layout.cache / "stack")),
-                        # GHC's runtime deps (gmp, tinfo) live in the conda prefix;
-                        # scoped here because only haskell needs the loader's help.
+                        # Haskell runtime deps live in conda; only Haskell needs them.
                         ("LD_LIBRARY_PATH", str(layout.conda_host / "lib")),
                     ),
                     path=(
@@ -544,7 +534,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- bash -----------------------------------------------------------------
+    # Bash
     def _bash_req(host: Host, v: str | None) -> tuple[Step, ...]:
         _no_windows(host, "the bash toolchain")
         return (host_conda(conda_spec("bash", v), "shellcheck", "go-shfmt"),)
@@ -564,7 +554,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         )
     )
 
-    # -- standalone build tools ----------------------------------------------
+    # Standalone build tools
     for tool, probe in (
         ("cmake", ("cmake", "--version")),
         ("ninja", ("ninja", "--version")),
@@ -593,8 +583,7 @@ def _parse_api(v: str | None) -> int:
 
 CATALOG: dict[RecipeKey, Recipe] = _recipes()
 
-# Family aliases collapse spellings before catalog lookup; ("android",) also
-# forgives dropping the family entirely.
+# Normalize aliases before lookup; bare "android" maps to java:android.
 _ALIAS = {
     "js": "javascript",
     "node": "javascript",

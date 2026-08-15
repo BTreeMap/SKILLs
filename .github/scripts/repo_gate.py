@@ -35,10 +35,9 @@ from pathlib import Path
 
 import yaml
 
-# --- The conventions, as stated in AGENTS.md ---------------------------------
+# --- Conventions ---
 
-# Written as an escape so that this file, which every text file is scanned
-# against, does not itself contain the character it forbids.
+# Escape required because this file is scanned for the forbidden character.
 EM_DASH = "\u2014"
 TEXT_SUFFIXES = frozenset({".md", ".py", ".toml", ".yml", ".yaml"})
 PRUNED_DIRS = frozenset({".git", "__pycache__", ".ruff_cache"})
@@ -56,12 +55,10 @@ PEP_723_OPEN = "# /// script"
 ALIAS_DIR = Path(".github/skills")
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
-# One round is enough for every rule here, since each repair is a function of
-# the tree rather than of another repair. The bound exists so that a future
-# rule whose repair unlocks another cannot spin forever.
+# Bound repairs in case future rules unlock one another.
 FIXPOINT_ROUNDS = 4
 
-# --- Repairs ------------------------------------------------------------------
+# --- Repairs ---
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,7 +98,7 @@ class Finding:
         return f"{mark} {self.rule:<14} {self.path}: {self.message}"
 
 
-# --- The snapshot: the only place this program reads the tree -----------------
+# --- Snapshot ---
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,9 +107,9 @@ class Repo:
     function of this value."""
 
     skills: frozenset[str]
-    texts: Mapping[Path, str]  # repo-relative path -> contents
-    entry_points: frozenset[Path]  # bundled scripts a skill invokes directly
-    aliases: Mapping[str, str | None]  # skill -> discovery symlink target
+    texts: Mapping[Path, str]  # repo-relative path to contents
+    entry_points: frozenset[Path]  # bundled scripts invoked directly
+    aliases: Mapping[str, str | None]  # skill to discovery symlink target
 
 
 def snapshot(root: Path) -> Repo:
@@ -164,8 +161,7 @@ def _entry_points(
     """
 
     def is_entry_point(path: Path) -> bool:
-        # Matching the shape states the convention directly and stays total:
-        # a path too short to have the shape simply does not match.
+        # Match path shape directly; short paths fall through.
         match path.parts:
             case (skill, "scripts", *_) if skill in skills:
                 return path.suffix == ".py" and path.parent not in packages
@@ -175,7 +171,7 @@ def _entry_points(
     return frozenset(filter(is_entry_point, texts))
 
 
-# --- Listings: the blocks that must name every skill, in order ---------------
+# --- Listings ---
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,21 +243,20 @@ def _first_group(pattern: str, line: str) -> str:
     return match.group(1) if match else line
 
 
-# Each document is paired with the extractor that reads its shape, so neither
-# is looked up by searching the other.
+# Pair each document with its extractor; do not infer one from another.
 LISTINGS: tuple[tuple[Path, Callable[[str], Listing | None]], ...] = (
     (Path("README.md"), _readme_listing),
     (Path("AGENTS.md"), _agents_listing),
 )
 
-# --- Rules --------------------------------------------------------------------
+# --- Rules ---
 
 
 def rule_em_dash(repo: Repo) -> Iterator[Finding]:
     """AGENTS.md forbids U+2014 outright. The replacement is a hyphen, a comma,
     a colon, or a restructured sentence, which is a judgment, so no repair."""
     for path, text in repo.texts.items():
-        if EM_DASH not in text:  # one scan skips the per-line walk for most files
+        if EM_DASH not in text:  # Skip per-line scan for most files.
             continue
         for number, line in enumerate(text.split("\n"), start=1):
             if EM_DASH in line:
@@ -404,7 +399,7 @@ def audit(repo: Repo) -> list[Finding]:
     return [finding for rule in RULES for finding in rule(repo)]
 
 
-# --- Shell --------------------------------------------------------------------
+# --- Shell ---
 
 
 def repair_to_fixpoint(root: Path) -> tuple[list[Finding], list[Finding]]:

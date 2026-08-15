@@ -40,9 +40,9 @@ from functools import reduce
 from pathlib import Path
 from typing import ClassVar
 
-MAX_FILE_SIZE = 500_000  # bytes; larger prose files should be split first
+MAX_FILE_SIZE = 500_000  # bytes; split larger prose files first
 
-# ---------- pure: domain model ----------
+# --- Pure domain model ---
 
 
 class FileKind(Enum):
@@ -107,7 +107,7 @@ class Verdict:
 Verdict.EMPTY = Verdict()
 
 
-# ---------- pure: classification ----------
+# --- Classification ---
 
 COMPRESSIBLE_EXTENSIONS = frozenset(
     {".md", ".txt", ".markdown", ".rst", ".typ", ".typst", ".tex"}
@@ -199,17 +199,14 @@ def _looks_like_yaml(lines: list[str]) -> bool:
 
     stripped_head = [s for line in lines[:30] if (s := line.strip())]
     return bool(stripped_head) and (
-        # Majority of the head lines look like the format: a threshold used
-        # once, read here beside the predicate that produced the ratio.
+        # More than 60% of nonblank header lines must look like YAML.
         sum(map(is_indicator, stripped_head)) / len(stripped_head) > 0.6  # noqa: PLR2004
     )
 
 
 def classify(path: Path, text: str | None) -> FileKind:  # noqa: PLR0911
     """Classify by basename, then extension, then content (extensionless)."""
-    # One return per classification rule, in precedence order: a cascade of
-    # guards is the readable shape for a classifier, and collapsing it into a
-    # single exit would hide which rule decided.
+    # Keep one return per rule so precedence stays visible.
     if path.name.lower() in KNOWN_CODE_FILENAMES:
         return FileKind.CODE
     ext = path.suffix.lower()
@@ -226,13 +223,13 @@ def classify(path: Path, text: str | None) -> FileKind:  # noqa: PLR0911
     if _looks_like_json(text[:10_000]) or _looks_like_yaml(text.splitlines()[:30]):
         return FileKind.CONFIG
     lines = [s for line in text.splitlines()[:50] if (s := line.strip())]
-    # Below a plurality of code-looking lines, prose is the safer reading.
+    # Prefer prose unless code-like lines exceed 40%.
     if lines and sum(map(_is_code_line, lines)) / len(lines) > 0.4:  # noqa: PLR2004
         return FileKind.CODE
     return FileKind.NATURAL_LANGUAGE
 
 
-# ---------- pure: sensitivity refusal ----------
+# --- Sensitivity refusal ---
 
 SENSITIVE_BASENAME_REGEX = re.compile(
     r"(?ix)^("
@@ -265,7 +262,7 @@ def is_sensitive(path: Path) -> bool:
     return any(token in collapsed for token in SENSITIVE_NAME_TOKENS)
 
 
-# ---------- pure: markdown structure ----------
+# --- Markdown structure ---
 
 FRONTMATTER_REGEX = re.compile(r"\A(---\r?\n.*?\r?\n---\r?\n)(.*)", re.DOTALL)
 FENCE_OPEN_REGEX = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
@@ -343,7 +340,7 @@ def extract_inline_codes(text: str) -> Counter[str]:
     return Counter(re.findall(r"`([^`]+)`", prose))
 
 
-# ---------- pure: validation (a fold of independent checks) ----------
+# --- Validation ---
 
 
 def _check_headings(original: str, compressed: str) -> Verdict:
@@ -393,7 +390,7 @@ def _check_paths(original: str, compressed: str) -> Verdict:
 def _check_bullets(original: str, compressed: str) -> Verdict:
     orig = len(BULLET_REGEX.findall(original))
     comp = len(BULLET_REGEX.findall(compressed))
-    # Bullets may drift by a sixth before the structure counts as changed.
+    # Allow 15% bullet-count drift.
     if orig and abs(orig - comp) / orig > 0.15:  # noqa: PLR2004
         return Verdict.warning(f"Bullet count drifted: {orig} -> {comp}")
     return Verdict.EMPTY
@@ -416,7 +413,7 @@ def validate(original: str, compressed: str) -> Verdict:
     )
 
 
-# ---------- shell: filesystem effects ----------
+# --- Filesystem effects ---
 
 
 def backup_base() -> Path:
@@ -475,8 +472,7 @@ def write_text_atomic(path: Path, text: str) -> None:
 
 def admit(path: Path) -> Admission:  # noqa: PLR0911
     """Parse, don't validate: every refusal reason lives here, once."""
-    # One return per refusal reason, which is what makes this the single
-    # admission boundary; merging them would blur the reasons together.
+    # Preserve distinct refusal reasons and exit statuses.
     path = path.resolve()
     if not path.is_file():
         return Refusal(f"Not a file: {path}")
@@ -546,8 +542,7 @@ def cmd_prepare(path: Path) -> int:
 
 
 def cmd_apply(path: Path, compressed_body_path: Path) -> int:  # noqa: PLR0911
-    # Each early return is a distinct refusal with its own exit status, which
-    # the skill's contract names; one exit would have to re-derive them.
+    # Preserve each refusal's contract and exit status.
     path = path.resolve()
     backup_path, _ = artifact_paths(path)
     if not backup_path.is_file():
@@ -624,7 +619,7 @@ def cmd_clean(target: Path | None) -> int:
     return 0
 
 
-# ---------- self-test ----------
+# --- Self-test ---
 
 
 def cmd_self_test() -> int:
@@ -655,7 +650,6 @@ def cmd_self_test() -> int:
     )
     assert moved_dot.is_valid  # sentence punctuation after a URL is prose
     bad = validate("# H\ntext https://a.example\n```\nc\n```\n", "# H\ntext\n")
-    # The expected count is the assertion; naming it would only restate it.
     assert not bad.is_valid and len(bad.errors) == 2  # noqa: PLR2004  url + code block
 
     assert classify(Path("Dockerfile"), None) is FileKind.CODE
@@ -676,12 +670,11 @@ def cmd_self_test() -> int:
     return 0
 
 
-# ---------- entry ----------
+# --- Entry point ---
 
 
 def main(argv: list[str]) -> int:  # noqa: PLR0911
-    # One return per verb: this is the command dispatcher, where the returns
-    # are the interface rather than branching complexity.
+    # One return per verb; returns are the command interface.
     usage = (
         "Usage: compress_guard.py check|prepare|restore <file>\n"
         "       compress_guard.py apply <file> <compressed-body-file>\n"

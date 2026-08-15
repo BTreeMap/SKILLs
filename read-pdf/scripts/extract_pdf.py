@@ -65,7 +65,7 @@ def parse_page_specification(specification: str | None, page_count: int) -> list
     page_ranges = map(
         partial(parse_page_token, page_count), map(str.strip, specification.split(","))
     )
-    # `dict` is an insertion-ordered set in Python 3.11+, preserving first selection.
+    # Ordered dict keys preserve each page's first selection in Python 3.11+.
     return list(dict.fromkeys(chain.from_iterable(page_ranges)))
 
 

@@ -22,7 +22,7 @@ class DenvError(Exception):
     the CLI renders str(error) and exits nonzero. Nothing else escapes."""
 
 
-# --- Host ---------------------------------------------------------------------
+# --- Host ---
 
 
 class OS(Enum):
@@ -62,7 +62,7 @@ class Host:
 
     @property
     def conda_platform(self) -> CondaPlatform:
-        # Total: detect_host admits only keys of _CONDA_OF.
+        # detect_host admits only keys in _CONDA_OF.
         return _CONDA_OF[(self.os, self.arch)]
 
     def __str__(self) -> str:
@@ -93,12 +93,10 @@ def detect_host() -> Host:
     return Host(os_, arch)
 
 
-# --- Emulation: the one architecture fact, generalized ------------------------
+# --- Emulation ---
 #
-# Some publishers ship a tool for exactly one platform. How a host reaches a
-# binary of platform `needed` is a total function of (host, needed), decided
-# here and nowhere else. Downstream code branches on the answer's variant,
-# never on the architecture.
+# Publishers may support one platform. This function maps host and required
+# platform to a direct, emulated, or unsupported execution variant.
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,13 +152,12 @@ def emulation(host: Host, needed: CondaPlatform) -> Emulation:
             )
 
 
-# --- Tags ---------------------------------------------------------------------
+# --- Tags ---
 #
 # Grammar:  tag := family [":" flavor] ["@" version]
 #
-# family selects a toolchain, flavor selects what it builds FOR (default
-# "generic"), version pins the toolchain. The axes are orthogonal: the catalog
-# is keyed by (family, flavor) and version is a parameter of the recipe.
+# Family selects toolchain; flavor selects target (default "generic"); version
+# pins it. Catalog keys use (family, flavor); version is recipe data.
 
 _TAG_RE = re.compile(
     r"^(?P<family>[a-z][a-z0-9+]*)"
@@ -205,7 +202,7 @@ def parse_tag(text: str) -> RawTag:
     return RawTag(m["family"], m["flavor"] or GENERIC, m["version"])
 
 
-# --- Spec ---------------------------------------------------------------------
+# --- Spec ---
 
 
 @dataclass(frozen=True, slots=True)
@@ -246,11 +243,10 @@ def find_project(start: Path) -> Path:
     return start
 
 
-# --- Layout -------------------------------------------------------------------
+# --- Layout ---
 #
-# One name per path, derived once from the root, so no step invents its own
-# spelling. Everything mutable lives under `root`; the project checkout is
-# never written except for generated, ignored files a build tool demands.
+# Derive each path once from root. Mutable state stays under `root`; the project
+# checkout receives only generated, ignored build files.
 
 
 @dataclass(frozen=True, slots=True)
@@ -278,8 +274,7 @@ class Layout:
 
     @property
     def jvm(self) -> Path:
-        # conda-forge's openjdk nests the JDK here; the prefix itself is not
-        # a JAVA_HOME, only symlinks land in bin.
+        # openjdk nests the JDK; the prefix is not JAVA_HOME.
         return self.conda_host / "lib" / "jvm"
 
     @property
@@ -345,17 +340,15 @@ def default_root(project: Path, host: Host) -> Path:
     return Path(base) / f"{slug}-{digest}"
 
 
-# --- Env deltas ---------------------------------------------------------------
+# --- Env deltas ---
 #
-# The environment an activation script exports is a value, composed from
-# per-recipe deltas by a lawful merge, then rendered twice (sh, ps1) and used
-# a third time directly for verification probes. One source of truth.
+# One merged EnvDelta feeds shell renderers and probe verification.
 
 
 @dataclass(frozen=True, slots=True)
 class EnvDelta:
-    vars: tuple[tuple[str, str], ...] = ()  # name -> literal value
-    path: tuple[Path, ...] = ()  # PATH prepends, significant order
+    vars: tuple[tuple[str, str], ...] = ()  # variable to literal value
+    path: tuple[Path, ...] = ()  # ordered PATH prepends
     unset: frozenset[str] = frozenset()
 
     def __add__(self, other: EnvDelta) -> EnvDelta:

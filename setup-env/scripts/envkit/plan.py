@@ -22,7 +22,7 @@ class Plan:
     layout: Layout
     steps: tuple[Step, ...]
     env: EnvDelta  # merged, host-resolved delta
-    probes: tuple[tuple[str, ...], ...]  # deduplicated, order-stable
+    probes: tuple[tuple[str, ...], ...]  # unique, stable-order probes
 
 
 def _base_env(layout: Layout, host: Host, spec: Spec) -> EnvDelta:
@@ -61,14 +61,12 @@ def make_plan(spec: Spec, host: Host, layout: Layout) -> Plan:
         (CATALOG[t.key], t.version) for t in spec.targets
     ]
 
-    # Gather steps. Recipes validate host support here, so an impossible
-    # (target, host) pair dies before any effect runs.
+    # Validate host support before effects run.
     gathered: list[Step] = []
     for recipe, version in recipes:
         gathered.extend(recipe.requirements(host, version))
 
-    # Law: one conda prefix, one create call. Merge every CondaEnv bound for
-    # the same prefix into a single step with the union of its packages.
+    # Merge all packages for each prefix into one create call.
     by_prefix: dict[str, CondaEnv] = {}
     rest: list[Step] = []
     for step in gathered:
@@ -90,13 +88,11 @@ def make_plan(spec: Spec, host: Host, layout: Layout) -> Plan:
 
     steps = tuple(sorted(set(rest) | set(by_prefix.values()), key=sort_key))
 
-    # The environment is the base floor, then each recipe's delta in target
-    # order, then the conda host bin directories when a host prefix exists.
+    # Apply base env, recipe deltas, then host conda bin directories.
     deltas = [_base_env(layout, host, spec)]
     deltas += [recipe.env(layout, host) for recipe, _ in recipes]
     if "conda/host" in by_prefix:
-        # conda packages' own wrapper scripts resolve ${CONDA_PREFIX}, so an
-        # activated environment must define it; it points inside the root.
+        # Wrappers need CONDA_PREFIX; keep it inside the root.
         deltas.append(
             EnvDelta(
                 vars=(("CONDA_PREFIX", str(layout.conda_host)),),

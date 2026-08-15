@@ -68,7 +68,7 @@ def log(message: str) -> None:
     print(f"envctl: {message}", file=sys.stderr)
 
 
-# --- Downloads and extraction -------------------------------------------------
+# --- Downloads and extraction ---
 
 
 def fetch(url: str, target: Path) -> None:
@@ -130,7 +130,7 @@ def _extract_tar(archive: Path, dest: Path, strip: int) -> None:
             members.append(member)
         try:
             tf.extractall(dest, members=members, filter="tar")
-        except TypeError:  # pre-3.11.4: no filter parameter
+        except TypeError:  # Python <3.11.4 has no filter parameter.
             tf.extractall(dest, members=members)
 
 
@@ -146,14 +146,14 @@ def run_logged(
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        check=False,  # the tail below is a better error than CalledProcessError
+        check=False,  # Surface the output tail as DenvError.
     )
     if result.returncode != 0:
         tail = "\n".join((result.stdout or "").splitlines()[-40:])
         raise DenvError(f"{what} failed (exit {result.returncode}):\n{tail}")
 
 
-# --- Context ------------------------------------------------------------------
+# --- Context ---
 
 
 @dataclass
@@ -192,7 +192,7 @@ def load_manifest(layout: Layout) -> dict:
         return {}
 
 
-# --- micromamba ---------------------------------------------------------------
+# --- micromamba ---
 
 
 def ensure_micromamba(ctx: Ctx) -> None:
@@ -203,8 +203,7 @@ def ensure_micromamba(ctx: Ctx) -> None:
     url = f"{MICROMAMBA_RELEASES}/{MICROMAMBA_VERSION}/micromamba-{platform}"
     archive = ctx.layout.downloads / f"micromamba-{platform}"
     fetch(url, archive)
-    # The publisher ships a digest beside each binary; fetching it keeps the
-    # check architecture-independent with no table of constants here.
+    # Fetch the publisher digest to keep verification architecture-independent.
     fetch(url + ".sha256", archive.with_name(archive.name + ".sha256"))
     expected = archive.with_name(archive.name + ".sha256").read_text().split()[0]
     verify_sha256(archive, expected)
@@ -219,7 +218,7 @@ def conda_create(ctx: Ctx, step: CondaEnv) -> None:
     if recorded == list(step.packages) and (prefix / "conda-meta").is_dir():
         return
     ensure_micromamba(ctx)
-    assert step.platform is not None  # planner resolved None to the host's
+    assert step.platform is not None  # Planner resolves None to host platform.
     log(f"conda {step.prefix_rel} ({step.platform.value}): " + " ".join(step.packages))
     run_logged(
         f"micromamba create {step.prefix_rel}",
@@ -243,7 +242,7 @@ def conda_create(ctx: Ctx, step: CondaEnv) -> None:
     ctx.save_manifest()
 
 
-# --- Step executors -----------------------------------------------------------
+# --- Step executors ---
 
 
 def _uv(ctx: Ctx) -> str:
@@ -346,8 +345,7 @@ def do_android_sdk(ctx: Ctx, step: AndroidSdk) -> None:
     if not sdkmanager.exists():
         raise DenvError(f"sdkmanager missing at {sdkmanager}")
     env = ctx.tool_env(**_jvm_env_vars(ctx))
-    # Licenses first, so the install has nothing to ask; the install's error
-    # is the one worth reporting, so license failures stay silent.
+    # Accept licenses silently; the install reports any failure.
     subprocess.run(
         [str(sdkmanager), "--licenses"],
         env=env,
@@ -355,7 +353,7 @@ def do_android_sdk(ctx: Ctx, step: AndroidSdk) -> None:
         text=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        check=False,  # a licence refusal is reported by the install that follows
+        check=False,  # The install reports license refusal.
     )
     log("installing SDK packages: " + " ".join(packages))
     run_logged("sdkmanager --install", [str(sdkmanager), "--install", *packages], env)
@@ -385,8 +383,7 @@ def do_ghcup(ctx: Ctx, step: GhcupToolchain) -> None:
     )
     ghcup = str(base / "bin" / "ghcup")
     log(f"ghcup: installing ghc {step.ghc} + cabal (this is a large download)")
-    # Guarded separately: ghcup refuses to reinstall, so a run interrupted
-    # between the two must not repeat the first.
+    # ghcup refuses reinstall; guard each install for interrupted runs.
     if not ghc.exists():
         run_logged(
             "ghcup install ghc", [ghcup, "install", "ghc", step.ghc, "--set"], env
@@ -418,7 +415,7 @@ def do_compiler_shims(ctx: Ctx, step: CompilerShims) -> None:
             None,
         )
         if real is None:
-            continue  # recipe without this half (c-compiler has no c++)
+            continue  # c-compiler has no c++.
         for alias in (shim_name, real.name.rsplit("-", 1)[-1]):
             link = ctx.layout.shims / alias
             link.unlink(missing_ok=True)
@@ -440,7 +437,7 @@ def do_uv_shim(ctx: Ctx, step: UvShim) -> None:
             link.symlink_to(found)
 
 
-# --- aapt2: Google ships linux aapt2 as x86_64 only ---------------------------
+# --- aapt2 ---
 
 
 def _agp_version(project: Path) -> str | None:
@@ -512,9 +509,7 @@ def write_qemu_wrapper(
         else "aarch64-conda-linux-gnu"
     )
     sysroot = foreign / triple / "sysroot"
-    # libgcc lands in the prefix's lib rather than inside the sysroot, and
-    # dynamically linked tools name it directly, so place it where the
-    # emulated loader looks.
+    # The loader expects libgcc in sysroot/lib64, but conda stores it in prefix/lib.
     lib64 = sysroot / "lib64"
     libgcc = foreign / "lib" / "libgcc_s.so.1"
     if libgcc.exists() and not (lib64 / "libgcc_s.so.1").exists():
@@ -574,7 +569,7 @@ def do_bind_gradle(ctx: Ctx, step: BindGradleProject) -> None:
     local.write_text("\n".join(lines) + "\n")
 
 
-# --- Orchestration ------------------------------------------------------------
+# --- Orchestration ---
 
 
 _EXECUTORS = {
@@ -651,7 +646,7 @@ def verify(plan: Plan) -> list[ProbeResult]:
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                check=False,  # a failing probe is a reported result, not a raise
+                check=False,  # Report failed probes as results.
             )
         except subprocess.TimeoutExpired:
             results.append(ProbeResult(command, False, "probe timed out"))
@@ -663,7 +658,7 @@ def verify(plan: Plan) -> list[ProbeResult]:
     return results
 
 
-# --- Standalone foreign-binary shims ------------------------------------------
+# --- Standalone foreign-binary shims ---
 
 
 def make_shim(
@@ -686,8 +681,7 @@ def make_shim(
         raise DenvError(f"no such binary: {binary}")
     ctx = Ctx(layout, host, load_manifest(layout))
     host_step, foreign_step = qemu_steps(emu)
-    # The host prefix may already exist: merge, because a second create call
-    # would replace it and silently discard every earlier package.
+    # Merge existing packages; a second create would replace the prefix.
     existing = set(ctx.manifest.get("conda", {}).get("conda/host", []))
     merged = tuple(sorted(existing | set(host_step.packages)))
     conda_create(ctx, CondaEnv("conda/host", host.conda_platform, merged))

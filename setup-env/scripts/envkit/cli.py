@@ -154,8 +154,7 @@ def _report(plan: Plan, results, as_json: bool) -> int:
 
 
 def cmd_provision(args: argparse.Namespace) -> int:
-    # Deferred throughout this section: importing effects builds an SSL context
-    # and requires certifi, which the pure verbs (plan, list) must not need.
+    # Defer effects: importing them builds an SSL context and needs certifi.
     from .effects import provision  # noqa: PLC0415
 
     plan = _build_plan(args)
@@ -221,7 +220,7 @@ def _tag_of(key) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    # provision is the default verb: a bare tag list just works.
+    # A bare tag list defaults to provision.
     if argv and argv[0] not in (*VERBS, "-h", "--help"):
         argv.insert(0, "provision")
     args = _parser().parse_args(argv)
