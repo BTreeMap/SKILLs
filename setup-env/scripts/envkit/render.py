@@ -8,8 +8,8 @@ environment activation grants; the renderers cannot drift apart.
 
 from __future__ import annotations
 
-import os
 import shlex
+import os
 
 from .model import OS, EnvDelta, Host
 
@@ -71,6 +71,6 @@ def realize(delta: EnvDelta, host: Host) -> dict[str, str]:
         env.update(dict(delta.vars))
         env["PATH"] = path_value(delta, host, base=os.environ.get("PATH", ""))
         return env
-    env = dict(delta.vars)
+    env = dict( delta.vars )
     env["PATH"] = path_value(delta, host)
     return env
