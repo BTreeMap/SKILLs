@@ -34,3 +34,16 @@ htmlcov/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# Operating system and editor artifacts. The gate commits untracked files it
+# finds after fixing, so anything that appears in a working tree without being
+# authored belongs here.
+.DS_Store
+.AppleDouble
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
