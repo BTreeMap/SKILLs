@@ -61,6 +61,13 @@ Current skills:
   sub-agents or an identical sequential pipeline), with claim routing,
   evidence rules, report templates, and a maintainer evaluation protocol
   loaded on demand from `references/`.
+* `setup-env/` - isolated per-project dev environments provisioned entirely
+  in userspace (uv is the only assumption): a typed target algebra of
+  `family[:flavor][@version]` tags over a closed recipe catalog, micromamba
+  and publisher suppliers, qemu user-mode emulation for foreign-architecture
+  binaries, an idempotent typed Python planner/executor under `scripts/`,
+  and per-target notes plus a maintainer extension protocol under
+  `references/`.
 
 ## Frontmatter protocol
 

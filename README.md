@@ -22,6 +22,7 @@ unrelated repositories.
 | [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity and review/audit/debt/gain/help modes. |
 | [fact-check](fact-check/SKILL.md) | Verifies document claims against retrieved evidence with calibrated verdicts and user-approved corrections, auto-detecting sub-agent, web, and editing capabilities. |
 | [aesthete](aesthete/SKILL.md) | Designs, builds, reviews, and reworks interfaces with an HCI eye and a PL-informed component discipline: design read, dials, laws of taste, a precedence ladder for supplied design documents and palettes, a dated WCAG 2.2 accessibility floor as the single source of accessibility truth, with verbs, surface profiles, craft references, and a mechanical ship gate. |
+| [setup-env](setup-env/SKILL.md) | Provisions isolated per-project dev environments entirely in userspace via a typed target algebra (python@3.12, kotlin:android, go:cgo), with micromamba, uv, publisher toolchains, and qemu-emulated foreign binaries behind transparent shims. |
 
 ## How it works
 
