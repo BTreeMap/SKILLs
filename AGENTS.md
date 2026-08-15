@@ -22,30 +22,13 @@ needs them - to keep context lean.
   (`.github`, `.claude`) or in single files at the root (e.g.
   `sync-skills.example.yml`).
 * `LICENSE`: MIT.
-* There is no build system, dependency manifest, or test runner. This repository is
-  documentation that other agents read; treat correctness as an editorial property,
-  not a compiled one.
+* There is no build system or dependency manifest. This repository is documentation
+  that other agents read; treat correctness as an editorial property, not a compiled
+  one. The one exception is the bundled Python scripts, which are linted and
+  formatted (see Automated gate).
 
 Current skills:
 
-* `git-commit/` - Conventional Commits standard for commit messages, with
-  lite/full/ultra effort levels loaded on demand from `references/` and a
-  push verb that commits at lite level and pushes.
-* `author-skill/` - how to distill a procedure into a reproducible skill (the
-  meta-skill governing this repository).
-* `caveman/` - token-economical output formatting for coding workflows,
-  with lite/full/ultra/wenyan levels and one-shot commit/review/compress/stats/
-  help modes; the compress mode is guarded by a deterministic bundled script.
-* `read-pdf/` - text and metadata extraction from PDF files for analysis.
-* `pl-theorist/` - a PL theorist's discipline across the lifecycle via verbs
-  (design/build/refactor/review/audit/test/teach/help), with per-language cost
-  models (including Bash and GitHub Actions YAML) and verb files loaded on
-  demand from `references/`.
-* `reframe/` - bold, testable target-direction judgments that challenge
-  incremental or legacy-bound framing.
-* `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
-  diffs, with lite/full/ultra intensity levels and one-shot review/audit/debt/
-  gain/help modes loaded on demand from `references/`.
 * `aesthete/` - UI/UX design discipline with an HCI eye and a PL-informed
   structural discipline: the design read, composition dials, laws of taste,
   a precedence ladder, and a source-of-truth ownership table in the spine,
@@ -55,12 +38,30 @@ Current skills:
   product), craft references (typography, color, layout, motion, interaction,
   components, platform), design-system selection, the generated-output tell
   catalogue, and a mechanical ship gate loaded on demand from `references/`.
+* `author-skill/` - how to distill a procedure into a reproducible skill (the
+  meta-skill governing this repository).
+* `caveman/` - token-economical output formatting for coding workflows,
+  with lite/full/ultra/wenyan levels and one-shot commit/review/compress/stats/
+  help modes; the compress mode is guarded by a deterministic bundled script.
 * `fact-check/` - atomic-claim verification of documents against retrieved
   evidence: calibrated verdict taxonomy, evidence-first reporting, tiered
   user approval before edits, and capability-probed orchestration (parallel
   sub-agents or an identical sequential pipeline), with claim routing,
   evidence rules, report templates, and a maintainer evaluation protocol
   loaded on demand from `references/`.
+* `git-commit/` - Conventional Commits standard for commit messages, with
+  lite/full/ultra effort levels loaded on demand from `references/` and a
+  push verb that commits at lite level and pushes.
+* `pl-theorist/` - a PL theorist's discipline across the lifecycle via verbs
+  (design/build/refactor/review/audit/test/teach/help), with per-language cost
+  models (including Bash and GitHub Actions YAML) and verb files loaded on
+  demand from `references/`.
+* `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
+  diffs, with lite/full/ultra intensity levels and one-shot review/audit/debt/
+  gain/help modes loaded on demand from `references/`.
+* `read-pdf/` - text and metadata extraction from PDF files for analysis.
+* `reframe/` - bold, testable target-direction judgments that challenge
+  incremental or legacy-bound framing.
 * `setup-env/` - isolated per-project dev environments provisioned entirely
   in userspace (uv is the only assumption): a typed target algebra of
   `family[:flavor][@version]` tags over a closed recipe catalog, micromamba
@@ -68,6 +69,33 @@ Current skills:
   binaries, an idempotent typed Python planner/executor under `scripts/`,
   and per-target notes plus a maintainer extension protocol under
   `references/`.
+
+## Automated gate
+
+`.github/workflows/gate.yml` runs on every push to `main` and on manual
+dispatch. It repairs what is mechanical, commits the repair to `main` as one
+GitHub-signed `style:` commit, and fails only on findings no fixer can settle.
+Run the same fixers before pushing and the gate has nothing to do:
+
+```bash
+ruff check --fix . && ruff format .
+uv run --script .github/scripts/repo_gate.py fix
+```
+
+| Repaired automatically | Reported for a human |
+| --- | --- |
+| ruff's safe lint fixes and formatting (policy in `ruff.toml`) | Lint findings ruff cannot fix safely |
+| A missing or wrong `.github/skills/<name>` discovery alias | A skill directory with no `SKILL.md` |
+| Skill entries out of alphabetical order in this file and `README.md` | A skill missing from either list, or an entry naming no skill |
+| | Frontmatter that breaks the protocol below |
+| | An em-dash (U+2014), whose replacement is a judgment |
+| | A bundled entry-point script without the uv shebang and a PEP 723 block |
+
+Rules live in `.github/scripts/repo_gate.py`, one function each. A rule returns
+findings, and a finding carries its repair or `None`; that field alone decides
+which column above it lands in, so adding a rule never touches the driver or
+the workflow. Never silence a ruff rule repository-wide: put a
+`# noqa: RULE` carrying its reason on the line that earns it.
 
 ## Frontmatter protocol
 

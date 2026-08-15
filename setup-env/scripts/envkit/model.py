@@ -4,6 +4,7 @@ Two boundaries admit untrusted values into this domain, and both parse rather
 than validate: `detect_host` (uname facts) and `parse_tag` (user-typed tags).
 Everything else is a total function over already-trusted values.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -80,11 +81,15 @@ def detect_host() -> Host:
         "arm64": Arch.ARM64,
     }.get(machine)
     if os_ is None or arch is None:
-        raise DenvError(f"unsupported host {system}/{machine}; "
-                        "supported: linux/macos/windows on x86_64/arm64")
+        raise DenvError(
+            f"unsupported host {system}/{machine}; "
+            "supported: linux/macos/windows on x86_64/arm64"
+        )
     if (os_, arch) not in _CONDA_OF:
-        raise DenvError(f"unsupported host {system}/{machine}; "
-                        "windows/arm64 has no toolchain coverage yet - use WSL")
+        raise DenvError(
+            f"unsupported host {system}/{machine}; "
+            "windows/arm64 has no toolchain coverage yet - use WSL"
+        )
     return Host(os_, arch)
 
 
@@ -106,9 +111,9 @@ class QemuUser:
     """linux only: qemu user-mode emulation plus a sysroot of the foreign
     architecture for the dynamic linker to resolve libraries in."""
 
-    qemu_package: str      # conda-forge package providing the emulator
-    qemu_binary: str       # its executable name inside the host prefix
-    sysroot_package: str   # conda-forge sysroot package for `needed`
+    qemu_package: str  # conda-forge package providing the emulator
+    qemu_binary: str  # its executable name inside the host prefix
+    sysroot_package: str  # conda-forge sysroot package for `needed`
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,9 +131,11 @@ Emulation = Native | QemuUser | Rosetta | Unsupported
 
 _QEMU_FOR: dict[CondaPlatform, QemuUser] = {
     CondaPlatform.LINUX_64: QemuUser(
-        "qemu-execve-x86_64", "qemu-x86_64", "sysroot_linux-64"),
+        "qemu-execve-x86_64", "qemu-x86_64", "sysroot_linux-64"
+    ),
     CondaPlatform.LINUX_AARCH64: QemuUser(
-        "qemu-execve-aarch64", "qemu-aarch64", "sysroot_linux-aarch64"),
+        "qemu-execve-aarch64", "qemu-aarch64", "sysroot_linux-aarch64"
+    ),
 }
 
 
@@ -143,7 +150,8 @@ def emulation(host: Host, needed: CondaPlatform) -> Emulation:
         case _:
             return Unsupported(
                 f"host {host} cannot execute {needed.value} binaries: "
-                "qemu user-mode emulation exists only on linux")
+                "qemu user-mode emulation exists only on linux"
+            )
 
 
 # --- Tags ---------------------------------------------------------------------
@@ -157,7 +165,8 @@ def emulation(host: Host, needed: CondaPlatform) -> Emulation:
 _TAG_RE = re.compile(
     r"^(?P<family>[a-z][a-z0-9+]*)"
     r"(?::(?P<flavor>[a-z][a-z0-9-]*))?"
-    r"(?:@(?P<version>[A-Za-z0-9][A-Za-z0-9._-]*))?$")
+    r"(?:@(?P<version>[A-Za-z0-9][A-Za-z0-9._-]*))?$"
+)
 
 GENERIC = "generic"
 
@@ -191,7 +200,8 @@ def parse_tag(text: str) -> RawTag:
     if m is None:
         raise DenvError(
             f"malformed tag {text!r}; expected family[:flavor][@version], "
-            "e.g. python@3.12, kotlin:android, go:cgo")
+            "e.g. python@3.12, kotlin:android, go:cgo"
+        )
     return RawTag(m["family"], m["flavor"] or GENERIC, m["version"])
 
 
@@ -208,7 +218,7 @@ class Spec:
     """
 
     targets: tuple[Target, ...]  # sorted, unique keys
-    project: Path                # resolved project root
+    project: Path  # resolved project root
 
 
 def make_spec(targets: list[Target], project: Path) -> Spec:
@@ -216,8 +226,9 @@ def make_spec(targets: list[Target], project: Path) -> Spec:
     for t in targets:
         prior = by_key.get(t.key)
         if prior is not None and prior != t:
-            raise DenvError(f"conflicting tags {prior} and {t}: "
-                            "one toolchain, one version")
+            raise DenvError(
+                f"conflicting tags {prior} and {t}: one toolchain, one version"
+            )
         by_key.setdefault(t.key, t)
     if not by_key:
         raise DenvError("no targets given; pass at least one tag, e.g. python")
@@ -247,44 +258,77 @@ class Layout:
     root: Path
 
     @property
-    def downloads(self) -> Path: return self.root / "downloads"
+    def downloads(self) -> Path:
+        return self.root / "downloads"
+
     @property
-    def mamba_bin(self) -> Path: return self.root / "micromamba" / "bin" / "micromamba"
+    def mamba_bin(self) -> Path:
+        return self.root / "micromamba" / "bin" / "micromamba"
+
     @property
-    def mamba_root(self) -> Path: return self.root / "micromamba" / "root"
+    def mamba_root(self) -> Path:
+        return self.root / "micromamba" / "root"
+
     @property
-    def conda_host(self) -> Path: return self.root / "conda" / "host"
+    def conda_host(self) -> Path:
+        return self.root / "conda" / "host"
+
     def conda_foreign(self, platform: CondaPlatform) -> Path:
         return self.root / "conda" / platform.value
+
     @property
     def jvm(self) -> Path:
         # conda-forge's openjdk nests the JDK here; the prefix itself is not
         # a JAVA_HOME, only symlinks land in bin.
         return self.conda_host / "lib" / "jvm"
+
     @property
-    def uv_python(self) -> Path: return self.root / "uv" / "python"
+    def uv_python(self) -> Path:
+        return self.root / "uv" / "python"
+
     @property
-    def venv(self) -> Path: return self.root / "uv" / "venv"
+    def venv(self) -> Path:
+        return self.root / "uv" / "venv"
+
     @property
-    def tools(self) -> Path: return self.root / "tools"
+    def tools(self) -> Path:
+        return self.root / "tools"
+
     @property
-    def android_sdk(self) -> Path: return self.root / "android-sdk"
+    def android_sdk(self) -> Path:
+        return self.root / "android-sdk"
+
     @property
-    def gradle_home(self) -> Path: return self.root / "gradle-home"
+    def gradle_home(self) -> Path:
+        return self.root / "gradle-home"
+
     @property
-    def home(self) -> Path: return self.root / "home"
+    def home(self) -> Path:
+        return self.root / "home"
+
     @property
-    def tmp(self) -> Path: return self.root / "tmp"
+    def tmp(self) -> Path:
+        return self.root / "tmp"
+
     @property
-    def cache(self) -> Path: return self.root / "cache"
+    def cache(self) -> Path:
+        return self.root / "cache"
+
     @property
-    def shims(self) -> Path: return self.root / "shims"
+    def shims(self) -> Path:
+        return self.root / "shims"
+
     @property
-    def activate_sh(self) -> Path: return self.root / "activate.sh"
+    def activate_sh(self) -> Path:
+        return self.root / "activate.sh"
+
     @property
-    def activate_ps1(self) -> Path: return self.root / "activate.ps1"
+    def activate_ps1(self) -> Path:
+        return self.root / "activate.ps1"
+
     @property
-    def manifest(self) -> Path: return self.root / "manifest.json"
+    def manifest(self) -> Path:
+        return self.root / "manifest.json"
 
 
 def default_root(project: Path, host: Host) -> Path:
@@ -296,7 +340,8 @@ def default_root(project: Path, host: Host) -> Path:
     slug = re.sub(r"[^a-z0-9]+", "-", project.name.lower()).strip("-") or "project"
     user = f"-{os.getuid()}" if hasattr(os, "getuid") else ""
     base = os.environ.get("DENV_HOME") or str(
-        Path(tempfile.gettempdir()) / f"denv{user}")
+        Path(tempfile.gettempdir()) / f"denv{user}"
+    )
     return Path(base) / f"{slug}-{digest}"
 
 
@@ -309,11 +354,11 @@ def default_root(project: Path, host: Host) -> Path:
 
 @dataclass(frozen=True, slots=True)
 class EnvDelta:
-    vars: tuple[tuple[str, str], ...] = ()   # name -> literal value
-    path: tuple[Path, ...] = ()              # PATH prepends, significant order
+    vars: tuple[tuple[str, str], ...] = ()  # name -> literal value
+    path: tuple[Path, ...] = ()  # PATH prepends, significant order
     unset: frozenset[str] = frozenset()
 
-    def __add__(self, other: "EnvDelta") -> "EnvDelta":
+    def __add__(self, other: EnvDelta) -> EnvDelta:
         return merge_deltas([self, other])
 
 
@@ -327,8 +372,8 @@ def merge_deltas(deltas: list[EnvDelta]) -> EnvDelta:
         for name, value in delta.vars:
             if vars_.get(name, value) != value:
                 raise DenvError(
-                    f"recipes disagree on ${name}: "
-                    f"{vars_[name]!r} vs {value!r}")
+                    f"recipes disagree on ${name}: {vars_[name]!r} vs {value!r}"
+                )
             vars_[name] = value
         for entry in delta.path:
             if entry not in path:

@@ -8,6 +8,7 @@ Stages impose the only ordering that matters; within a stage, steps sort by
 their stable string key. The executor for each variant lives in `effects`;
 this module stays pure data.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,12 +18,12 @@ from .model import CondaPlatform
 
 
 class Stage(IntEnum):
-    BOOTSTRAP = 0   # micromamba itself
-    TOOLCHAIN = 1   # conda prefixes, uv venv
-    FETCH = 2       # publisher-direct archives
-    SHIM = 3        # wrappers over stage 1-2 outputs; assemblers rely on them
-    ASSEMBLE = 4    # installers that need stages 1-3 (sdkmanager, ghcup)
-    BIND = 5        # files written into project-adjacent config
+    BOOTSTRAP = 0  # micromamba itself
+    TOOLCHAIN = 1  # conda prefixes, uv venv
+    FETCH = 2  # publisher-direct archives
+    SHIM = 3  # wrappers over stage 1-2 outputs; assemblers rely on them
+    ASSEMBLE = 4  # installers that need stages 1-3 (sdkmanager, ghcup)
+    BIND = 5  # files written into project-adjacent config
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,9 +33,9 @@ class CondaEnv:
     package bound for the same prefix into a single step; a second create
     against one prefix is unrepresentable in a valid plan."""
 
-    prefix_rel: str                # e.g. "conda/host", "conda/linux-64"
-    platform: CondaPlatform | None # None: the host's own platform
-    packages: tuple[str, ...]      # sorted match specs
+    prefix_rel: str  # e.g. "conda/host", "conda/linux-64"
+    platform: CondaPlatform | None  # None: the host's own platform
+    packages: tuple[str, ...]  # sorted match specs
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,8 +54,8 @@ class Fetch:
 
     name: str
     url: str
-    sha256: str | None             # None: publisher offers no stable digest
-    kind: str                      # 'zip' | 'tar' | 'bin'
+    sha256: str | None  # None: publisher offers no stable digest
+    kind: str  # 'zip' | 'tar' | 'bin'
     dest_rel: str
     strip: int = 0
 
@@ -63,7 +64,7 @@ class Fetch:
 class GhcupToolchain:
     """Drive a fetched ghcup binary to install ghc + cabal under the root."""
 
-    ghc: str                       # version or "recommended"
+    ghc: str  # version or "recommended"
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,7 +82,7 @@ class Aapt2Shim:
     the isolated gradle.properties. Only planned when emulation() says the
     host cannot execute it natively."""
 
-    qemu_binary: str               # emulator executable in the host prefix
+    qemu_binary: str  # emulator executable in the host prefix
     sysroot_platform: CondaPlatform
 
 
@@ -104,8 +105,17 @@ class BindGradleProject:
     overrides SDK env vars and therefore must never go stale."""
 
 
-Step = (CondaEnv | UvVenv | Fetch | GhcupToolchain | AndroidSdk
-        | Aapt2Shim | CompilerShims | UvShim | BindGradleProject)
+Step = (
+    CondaEnv
+    | UvVenv
+    | Fetch
+    | GhcupToolchain
+    | AndroidSdk
+    | Aapt2Shim
+    | CompilerShims
+    | UvShim
+    | BindGradleProject
+)
 
 _STAGE: dict[type, Stage] = {
     CondaEnv: Stage.TOOLCHAIN,

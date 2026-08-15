@@ -1,0 +1,207 @@
+# Repair what is mechanical, commit it, and fail only on what needs a person.
+#
+# Contract: after this workflow, main is formatted, linted, aliased, and its
+# skill listings are sorted. Anything a tool can fix is fixed and committed
+# here; the run goes red only for findings no fixer can settle, which is the
+# signal that a human must decide something.
+#
+# The rules themselves live in the repository, not in this file: ruff.toml
+# holds the lint and format policy, and `.github/scripts/repo_gate.py` holds
+# the conventions from AGENTS.md. This file decides when they run and who is
+# allowed to write.
+#
+# Least privilege, following .github/workflows/sync-skills.yml:
+#   - `fix` holds `contents: read` and only computes; it produces the new file
+#     contents as a value. `commit` holds the sole `contents: write` and only
+#     applies that value.
+#   - `commit` checks out nothing, so no working tree, no hook, and no
+#     credential material on disk or in argv.
+#
+# Signed commits: the repair goes through the Git Data API carrying no author,
+# committer, or signature field, the documented condition for GitHub to sign a
+# bot commit with its own key, so repairs satisfy a `Require signed commits`
+# ruleset with no key, secret, or bypass actor. force=false keeps the ref
+# update a fast-forward; losing that race is a warning, because the next push
+# recomputes the same repairs.
+#
+# No loop: a commit made with GITHUB_TOKEN does not trigger workflows, so the
+# repair commit cannot start this workflow again. Every fixer is idempotent in
+# any case, so a second run over a repaired tree finds nothing to do.
+#
+# Actions are pinned to their major tag, which is the maintained line for the
+# trusted publishers used here; ruff and uv, which decide what a clean tree
+# looks like, are pinned to exact versions instead.
+
+name: Gate
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Deny-all baseline; each job re-grants the minimum it needs.
+permissions: {}
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Rule codes and formatting move between ruff releases, so CI names the exact
+  # build. ruff.toml states the floor any run must satisfy.
+  RUFF_VERSION: 0.16.1
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # read the tree under test; this job never writes to it
+    outputs:
+      changed: ${{ steps.collect.outputs.changed }}
+      entries: ${{ steps.collect.outputs.entries }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Pinned to a minor rather than a major, unlike the trusted actions
+      # above, because this one carries the toolchain that decides what a
+      # clean tree looks like.
+      - uses: astral-sh/setup-uv@v9.0.0
+
+      - name: Apply every fixer
+        # Fixers never fail this job: `ruff check --fix` exits nonzero when
+        # findings it cannot fix remain, and repo_gate does the same, but that
+        # verdict belongs to the assertion step below, after the repairs have
+        # been collected. Only safe fixes are applied, because an unsafe fix can
+        # change behavior and must not land unreviewed.
+        run: |
+          set -uo pipefail
+          uvx "ruff@${RUFF_VERSION}" check --fix . || true
+          uvx "ruff@${RUFF_VERSION}" format .
+          uv run --script .github/scripts/repo_gate.py fix || true
+
+      - name: Collect the repairs
+        id: collect
+        # The repaired files cross to the writing job as one JSON value: the
+        # exact tree entries the Git Data API accepts, so that job adds no
+        # policy of its own. Mode comes from the filesystem, which keeps an
+        # executable bit or a symlink from being flattened into a plain file.
+        run: |
+          set -euo pipefail
+          # Scratch lives outside the checkout: a file written here would show
+          # up as an untracked change and commit itself.
+          ndjson="${RUNNER_TEMP}/entries.ndjson"
+          entries="${RUNNER_TEMP}/entries.json"
+          : > "${ndjson}"
+          while IFS= read -r -d '' entry; do
+            status=${entry:0:2}
+            path=${entry:3}
+            case "${status}" in
+              ' M' | 'M ' | 'MM' | 'AM' | 'A ' | '??') ;;
+              *)
+                echo "::warning::unexpected git status '${status}' for ${path}; leaving it uncommitted"
+                continue
+                ;;
+            esac
+            if [ -L "${path}" ]; then
+              jq -n --arg path "${path}" --arg content "$(readlink "${path}")" \
+                '{path: $path, mode: "120000", type: "blob", content: $content}' \
+                >> "${ndjson}"
+            else
+              if [ -x "${path}" ]; then mode=100755; else mode=100644; fi
+              jq -n --arg path "${path}" --arg mode "${mode}" --rawfile content "${path}" \
+                '{path: $path, mode: $mode, type: "blob", content: $content}' \
+                >> "${ndjson}"
+            fi
+          done < <(git status --porcelain=v1 -z --untracked-files=all)
+
+          jq -sc . "${ndjson}" > "${entries}"
+          count=$(jq 'length' "${entries}")
+
+          # A job output is capped at 1 MB. Refusing early names the real limit
+          # instead of letting the platform truncate a repair into corruption.
+          size=$(wc -c < "${entries}")
+          if [ "${size}" -gt 524288 ]; then
+            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with 'ruff check --fix . && ruff format . && uv run --script .github/scripts/repo_gate.py fix'"
+            exit 1
+          fi
+
+          if [ "${count}" -eq 0 ]; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+            echo "Nothing to repair." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+            {
+              echo "Repaired ${count} file(s):"
+              jq -r '.[] | "- `\(.path)`"' "${entries}"
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          {
+            echo 'entries<<ENTRIES_JSON'
+            cat "${entries}"
+            echo 'ENTRIES_JSON'
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Assert what no fixer can settle
+        # The sole judge, run against the repaired tree, so it reports only
+        # what a person must decide. Both checks run even if the first fails,
+        # because their findings are independent.
+        run: |
+          set -uo pipefail
+          rc=0
+          uvx "ruff@${RUFF_VERSION}" check --output-format=github . || rc=1
+          uv run --script .github/scripts/repo_gate.py check || rc=1
+          exit "${rc}"
+
+  commit:
+    needs: fix
+    # Runs even when the assertion above failed: repairs that were computed are
+    # still correct and still worth landing, and withholding them would only
+    # make the remaining, human-sized problem harder to see.
+    if: ${{ !cancelled() && needs.fix.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # sole grant: create the repair commit and move the ref
+    steps:
+      - name: Commit the repairs and fast-forward the branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Read through the environment, never interpolated into the script.
+          ENTRIES: ${{ needs.fix.outputs.entries }}
+          BASE: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          repo="repos/${GITHUB_REPOSITORY}"
+          message=$(printf 'style: Apply automated formatting and convention repairs\n\nProduced by .github/workflows/gate.yml from ruff and repo_gate.\n\n%s\n' \
+            "$(jq -r '.[] | "- \(.path)"' <<<"${ENTRIES}")")
+
+          # tree -> commit -> ref are dependent effects, each consuming the
+          # previous sha, so they share one failure arm; gh has already printed
+          # the HTTP error. Omitting author, committer, and signature is what
+          # makes GitHub sign the commit.
+          land() {
+            tree=$(jq -n --arg base "${BASE}" --argjson entries "${ENTRIES}" \
+                     '{base_tree: $base, tree: $entries}' \
+                   | gh api "${repo}/git/trees" --input - -q .sha) || return 1
+            commit=$(jq -n --arg m "${message}" --arg t "${tree}" --arg p "${BASE}" \
+                       '{message: $m, tree: $t, parents: [$p]}' \
+                     | gh api "${repo}/git/commits" --input - -q .sha) || return 1
+            gh api --method PATCH "${repo}/git/refs/heads/${BRANCH}" \
+              -f sha="${commit}" -F force=false > /dev/null || return 1
+          }
+
+          if ! land; then
+            echo "::warning::${BRANCH} moved or GitHub rejected the update; the repairs are unchanged and the next push recomputes them"
+            exit 0
+          fi
+
+          echo "Committed ${commit:0:12} to ${BRANCH}, signed by GitHub." \
+            | tee -a "${GITHUB_STEP_SUMMARY}"

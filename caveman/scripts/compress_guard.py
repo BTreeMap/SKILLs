@@ -199,12 +199,17 @@ def _looks_like_yaml(lines: list[str]) -> bool:
 
     stripped_head = [s for line in lines[:30] if (s := line.strip())]
     return bool(stripped_head) and (
-        sum(map(is_indicator, stripped_head)) / len(stripped_head) > 0.6
+        # Majority of the head lines look like the format: a threshold used
+        # once, read here beside the predicate that produced the ratio.
+        sum(map(is_indicator, stripped_head)) / len(stripped_head) > 0.6  # noqa: PLR2004
     )
 
 
-def classify(path: Path, text: str | None) -> FileKind:
+def classify(path: Path, text: str | None) -> FileKind:  # noqa: PLR0911
     """Classify by basename, then extension, then content (extensionless)."""
+    # One return per classification rule, in precedence order: a cascade of
+    # guards is the readable shape for a classifier, and collapsing it into a
+    # single exit would hide which rule decided.
     if path.name.lower() in KNOWN_CODE_FILENAMES:
         return FileKind.CODE
     ext = path.suffix.lower()
@@ -221,7 +226,8 @@ def classify(path: Path, text: str | None) -> FileKind:
     if _looks_like_json(text[:10_000]) or _looks_like_yaml(text.splitlines()[:30]):
         return FileKind.CONFIG
     lines = [s for line in text.splitlines()[:50] if (s := line.strip())]
-    if lines and sum(map(_is_code_line, lines)) / len(lines) > 0.4:
+    # Below a plurality of code-looking lines, prose is the safer reading.
+    if lines and sum(map(_is_code_line, lines)) / len(lines) > 0.4:  # noqa: PLR2004
         return FileKind.CODE
     return FileKind.NATURAL_LANGUAGE
 
@@ -387,7 +393,8 @@ def _check_paths(original: str, compressed: str) -> Verdict:
 def _check_bullets(original: str, compressed: str) -> Verdict:
     orig = len(BULLET_REGEX.findall(original))
     comp = len(BULLET_REGEX.findall(compressed))
-    if orig and abs(orig - comp) / orig > 0.15:
+    # Bullets may drift by a sixth before the structure counts as changed.
+    if orig and abs(orig - comp) / orig > 0.15:  # noqa: PLR2004
         return Verdict.warning(f"Bullet count drifted: {orig} -> {comp}")
     return Verdict.EMPTY
 
@@ -466,8 +473,10 @@ def write_text_atomic(path: Path, text: str) -> None:
         raise
 
 
-def admit(path: Path) -> Admission:
+def admit(path: Path) -> Admission:  # noqa: PLR0911
     """Parse, don't validate: every refusal reason lives here, once."""
+    # One return per refusal reason, which is what makes this the single
+    # admission boundary; merging them would blur the reasons together.
     path = path.resolve()
     if not path.is_file():
         return Refusal(f"Not a file: {path}")
@@ -515,7 +524,8 @@ def cmd_prepare(path: Path) -> int:
             if backup_path.exists():
                 print(
                     f"REFUSED: backup already exists: {backup_path}\n"
-                    "Remove or restore it first; refusing to overwrite a prior original."
+                    "Remove or restore it first; refusing to overwrite a prior "
+                    "original."
                 )
                 return 1
             backup_path.parent.mkdir(parents=True, exist_ok=True)
@@ -528,13 +538,16 @@ def cmd_prepare(path: Path) -> int:
             print(f"BACKUP: {backup_path}")
             print(f"BODY:   {body_path}")
             print(
-                "Compress the BODY file's prose, then run: apply <file> <compressed-body>"
+                "Compress the BODY file's prose, then run: "
+                "apply <file> <compressed-body>"
             )
             return 0
     raise AssertionError("unreachable: Admission is a closed union")
 
 
-def cmd_apply(path: Path, compressed_body_path: Path) -> int:
+def cmd_apply(path: Path, compressed_body_path: Path) -> int:  # noqa: PLR0911
+    # Each early return is a distinct refusal with its own exit status, which
+    # the skill's contract names; one exit would have to re-derive them.
     path = path.resolve()
     backup_path, _ = artifact_paths(path)
     if not backup_path.is_file():
@@ -642,7 +655,8 @@ def cmd_self_test() -> int:
     )
     assert moved_dot.is_valid  # sentence punctuation after a URL is prose
     bad = validate("# H\ntext https://a.example\n```\nc\n```\n", "# H\ntext\n")
-    assert not bad.is_valid and len(bad.errors) == 2  # url + code block
+    # The expected count is the assertion; naming it would only restate it.
+    assert not bad.is_valid and len(bad.errors) == 2  # noqa: PLR2004  url + code block
 
     assert classify(Path("Dockerfile"), None) is FileKind.CODE
     assert classify(Path("CMakeLists.txt"), None) is FileKind.CODE
@@ -665,7 +679,9 @@ def cmd_self_test() -> int:
 # ---------- entry ----------
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str]) -> int:  # noqa: PLR0911
+    # One return per verb: this is the command dispatcher, where the returns
+    # are the interface rather than branching complexity.
     usage = (
         "Usage: compress_guard.py check|prepare|restore <file>\n"
         "       compress_guard.py apply <file> <compressed-body-file>\n"

@@ -1,0 +1,56 @@
+# Lint and format gate for the Python scripts bundled with skills.
+#
+# This repository is documentation, not a Python package: there is no
+# dependency manifest, so the configuration lives in ruff.toml rather than a
+# pyproject.toml that would imply one. Every bundled script is a PEP 723
+# `uv run --script` program, and ruff does not read `requires-python` from
+# inline script metadata, so the floor below is stated once here.
+#
+#   ruff check --fix .
+#   ruff format .
+
+# Rule codes and formatting both move between ruff releases, so a run older
+# than this would disagree with CI about a clean tree.
+required-version = ">=0.16"
+
+# The meet of the bundled scripts' declared floors (caveman declares >=3.10;
+# read-pdf and setup-env declare >=3.11). Keeping the lowest one means no rule
+# can rewrite a script into syntax its own header forbids. Raise this only
+# after every `requires-python` in the repository has risen past it.
+target-version = "py310"
+
+# Ruff's default. Measured against the existing scripts before adoption: only
+# three lines exceeded it, so the gate matches the prose width already in use
+# rather than imposing a new one.
+line-length = 88
+
+[lint]
+# Correctness first, then the rules that keep a small, long-lived script
+# legible. Selected explicitly so the gate does not drift when ruff changes
+# its defaults.
+select = [
+  "F",   # pyflakes: undefined names, unused imports and variables
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "I",   # import sorting, so import order is derived rather than debated
+  "UP",  # pyupgrade: stay at the constructs target-version already permits
+  "B",   # bugbear: mutable defaults, loop-variable capture, silent excepts
+  "C4",  # comprehension shapes
+  "SIM", # simplifiable conditionals and context managers
+  "RUF", # ruff's own correctness rules
+  "PL",  # pylint subset
+]
+
+# Nothing is ignored repository-wide. A rule that does not fit one line fits
+# that line, so exemptions are `# noqa: RULE` comments carrying their reason at
+# the site that earns them: a reader sees the justification beside the code,
+# and the rule keeps working everywhere else.
+ignore = []
+
+[lint.isort]
+# The bundled packages are imported by path (uv puts the script's directory on
+# sys.path), so name their roots rather than letting ruff guess from layout.
+known-first-party = ["envkit"]
+
+[format]
+docstring-code-format = true

@@ -14,16 +14,40 @@ Suppliers, each the only sensible one for what it provides:
   the project  pinned wrappers (gradlew, package.json, Cargo.toml): never
                reinstalled here; a second copy on PATH only confuses builds
 """
+
 from __future__ import annotations
 
 import difflib
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from .model import (GENERIC, Arch, CondaPlatform, DenvError, EnvDelta, Host,
-                    Layout, OS, QemuUser, RawTag, RecipeKey, Target, emulation)
-from .steps import (Aapt2Shim, AndroidSdk, BindGradleProject, CompilerShims,
-                    CondaEnv, Fetch, GhcupToolchain, Step, UvShim, UvVenv)
+from .model import (
+    GENERIC,
+    OS,
+    Arch,
+    CondaPlatform,
+    DenvError,
+    EnvDelta,
+    Host,
+    Layout,
+    QemuUser,
+    RawTag,
+    RecipeKey,
+    Target,
+    emulation,
+)
+from .steps import (
+    Aapt2Shim,
+    AndroidSdk,
+    BindGradleProject,
+    CompilerShims,
+    CondaEnv,
+    Fetch,
+    GhcupToolchain,
+    Step,
+    UvShim,
+    UvVenv,
+)
 
 # --- Pinned publisher inputs --------------------------------------------------
 #
@@ -78,12 +102,18 @@ def qemu_steps(emu: QemuUser) -> tuple[CondaEnv, CondaEnv]:
     """The two prefixes emulation needs: the emulator beside the host tools,
     and a sysroot of the foreign platform for its dynamic linker. libgcc
     rides along because common tools name it directly."""
-    foreign = CondaPlatform.LINUX_64 if "x86_64" in emu.qemu_package \
+    foreign = (
+        CondaPlatform.LINUX_64
+        if "x86_64" in emu.qemu_package
         else CondaPlatform.LINUX_AARCH64
+    )
     return (
         host_conda(emu.qemu_package),
-        CondaEnv(f"conda/{foreign.value}", foreign,
-                 tuple(sorted((emu.sysroot_package, "libgcc")))),
+        CondaEnv(
+            f"conda/{foreign.value}",
+            foreign,
+            tuple(sorted((emu.sysroot_package, "libgcc"))),
+        ),
     )
 
 
@@ -115,8 +145,9 @@ def _jvm_env(layout: Layout, host: Host) -> EnvDelta:
     return EnvDelta(
         vars=(("JAVA_HOME", str(jvm_home(layout, host))),),
         path=(jvm_home(layout, host) / "bin",),
-        unset=frozenset({"JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS",
-                         "JDK_JAVA_OPTIONS", "KOTLIN_HOME"}),
+        unset=frozenset(
+            {"JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS", "KOTLIN_HOME"}
+        ),
     )
 
 
@@ -140,75 +171,128 @@ class Recipe:
     probes: tuple[tuple[str, ...], ...]
 
 
-def _recipes() -> dict[RecipeKey, Recipe]:
+def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
+    # Statement count tracks the number of catalogued toolchains, not
+    # branching: this function is the table itself, and splitting it would
+    # scatter one closed enumeration across several places.
     r: list[Recipe] = []
 
     # -- python: uv end to end, no conda ------------------------------------
-    r.append(Recipe(
-        ("python", GENERIC),
-        "uv-managed CPython + venv",
-        "CPython version, e.g. 3.12",
-        lambda host, v: (UvVenv(v), UvShim()),
-        lambda l, h: EnvDelta(
-            vars=(("PIP_CACHE_DIR", str(l.cache / "pip")),
-                  ("UV_CACHE_DIR", str(l.cache / "uv")),
-                  ("UV_PYTHON_INSTALL_DIR", str(l.uv_python)),
-                  ("UV_PYTHON_PREFERENCE", "only-managed"),
-                  ("VIRTUAL_ENV", str(l.venv))),
-            path=(_venv_bin(l, h),),
-            unset=frozenset({"PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"})),
-        (("python", "--version"),),
-    ))
+    r.append(
+        Recipe(
+            ("python", GENERIC),
+            "uv-managed CPython + venv",
+            "CPython version, e.g. 3.12",
+            lambda host, v: (UvVenv(v), UvShim()),
+            lambda layout, host: EnvDelta(
+                vars=(
+                    ("PIP_CACHE_DIR", str(layout.cache / "pip")),
+                    ("UV_CACHE_DIR", str(layout.cache / "uv")),
+                    ("UV_PYTHON_INSTALL_DIR", str(layout.uv_python)),
+                    ("UV_PYTHON_PREFERENCE", "only-managed"),
+                    ("VIRTUAL_ENV", str(layout.venv)),
+                ),
+                path=(_venv_bin(layout, host),),
+                unset=frozenset({"PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"}),
+            ),
+            (("python", "--version"),),
+        )
+    )
 
     # -- javascript / typescript: nodejs from conda-forge -------------------
-    js_env = lambda l, h: EnvDelta(
-        vars=(("npm_config_cache", str(l.cache / "npm")),
-              ("npm_config_update_notifier", "false")))
-    r.append(Recipe(
-        ("javascript", GENERIC), "nodejs + npm", "nodejs version, e.g. 22",
-        lambda host, v: (host_conda(conda_spec("nodejs", v)),),
-        js_env,
-        (("node", "--version"), ("npm", "--version")),
-    ))
-    r.append(Recipe(
-        ("typescript", GENERIC), "nodejs + tsc", "typescript version",
-        lambda host, v: (host_conda("nodejs", conda_spec("typescript", v)),),
-        js_env,
-        (("node", "--version"), ("tsc", "--version")),
-    ))
+    def js_env(layout: Layout, host: Host) -> EnvDelta:
+        # npm reads these lowercase; the spelling is npm's, not a style choice.
+        return EnvDelta(
+            vars=(
+                ("npm_config_cache", str(layout.cache / "npm")),
+                ("npm_config_update_notifier", "false"),
+            )
+        )
+
+    r.append(
+        Recipe(
+            ("javascript", GENERIC),
+            "nodejs + npm",
+            "nodejs version, e.g. 22",
+            lambda host, v: (host_conda(conda_spec("nodejs", v)),),
+            js_env,
+            (("node", "--version"), ("npm", "--version")),
+        )
+    )
+    r.append(
+        Recipe(
+            ("typescript", GENERIC),
+            "nodejs + tsc",
+            "typescript version",
+            lambda host, v: (host_conda("nodejs", conda_spec("typescript", v)),),
+            js_env,
+            (("node", "--version"), ("tsc", "--version")),
+        )
+    )
 
     # -- go: cgo is a flavor because it changes the toolchain, not the code -
-    r.append(Recipe(
-        ("go", GENERIC), "go toolchain", "go version, e.g. 1.23",
-        lambda host, v: (host_conda(conda_spec("go", v)),),
-        lambda l, h: EnvDelta(
-            vars=(("GOCACHE", str(l.cache / "go-build")),
-                  ("GOPATH", str(l.cache / "go")),
-                  ("GOTOOLCHAIN", "local"))),
-        (("go", "version"),),
-    ))
-    r.append(Recipe(
-        ("go", "cgo"), "go + C toolchain for cgo", "go version",
-        lambda host, v: (host_conda(conda_spec("go", v), "c-compiler", "make"),
-                         CompilerShims()),
-        lambda l, h: EnvDelta(
-            vars=(("CGO_ENABLED", "1"),
-                  ("GOCACHE", str(l.cache / "go-build")),
-                  ("GOPATH", str(l.cache / "go")),
-                  ("GOTOOLCHAIN", "local"))) + _cc_env(l),
-        (("go", "version"), ("cc", "--version")),
-    ))
+    r.append(
+        Recipe(
+            ("go", GENERIC),
+            "go toolchain",
+            "go version, e.g. 1.23",
+            lambda host, v: (host_conda(conda_spec("go", v)),),
+            lambda layout, host: EnvDelta(
+                vars=(
+                    ("GOCACHE", str(layout.cache / "go-build")),
+                    ("GOPATH", str(layout.cache / "go")),
+                    ("GOTOOLCHAIN", "local"),
+                )
+            ),
+            (("go", "version"),),
+        )
+    )
+    r.append(
+        Recipe(
+            ("go", "cgo"),
+            "go + C toolchain for cgo",
+            "go version",
+            lambda host, v: (
+                host_conda(conda_spec("go", v), "c-compiler", "make"),
+                CompilerShims(),
+            ),
+            lambda layout, host: (
+                EnvDelta(
+                    vars=(
+                        ("CGO_ENABLED", "1"),
+                        ("GOCACHE", str(layout.cache / "go-build")),
+                        ("GOPATH", str(layout.cache / "go")),
+                        ("GOTOOLCHAIN", "local"),
+                    )
+                )
+                + _cc_env(layout)
+            ),
+            (("go", "version"), ("cc", "--version")),
+        )
+    )
 
     # -- rust: a rustc that cannot link is not a toolchain, so cc rides along
-    r.append(Recipe(
-        ("rust", GENERIC), "rust + cargo + linker", "rust version",
-        lambda host, v: (host_conda(conda_spec("rust", v), "c-compiler"),
-                         CompilerShims()),
-        lambda l, h: EnvDelta(
-            vars=(("CARGO_HOME", str(l.cache / "cargo")),
-                  ("RUSTUP_HOME", str(l.cache / "rustup")))) + _cc_env(l),
-        (("rustc", "--version"), ("cargo", "--version")),
-    ))
+    r.append(
+        Recipe(
+            ("rust", GENERIC),
+            "rust + cargo + linker",
+            "rust version",
+            lambda host, v: (
+                host_conda(conda_spec("rust", v), "c-compiler"),
+                CompilerShims(),
+            ),
+            lambda layout, host: (
+                EnvDelta(
+                    vars=(
+                        ("CARGO_HOME", str(layout.cache / "cargo")),
+                        ("RUSTUP_HOME", str(layout.cache / "rustup")),
+                    )
+                )
+                + _cc_env(layout)
+            ),
+            (("rustc", "--version"), ("cargo", "--version")),
+        )
+    )
 
     # -- c / cpp -------------------------------------------------------------
     def _c_req(host: Host, v: str | None) -> tuple[Step, ...]:
@@ -219,58 +303,91 @@ def _recipes() -> dict[RecipeKey, Recipe]:
         _no_windows(host, "the C++ toolchain (conda MSVC needs its own activation)")
         return (host_conda("cxx-compiler", "make"), CompilerShims())
 
-    r.append(Recipe(
-        ("c", GENERIC), "C compiler + make", None, _c_req,
-        lambda l, h: _cc_env(l),
-        (("cc", "--version"), ("make", "--version")),
-    ))
-    r.append(Recipe(
-        ("cpp", GENERIC), "C++ compiler + make", None, _cpp_req,
-        lambda l, h: _cc_env(l, cxx=True),
-        (("c++", "--version"), ("make", "--version")),
-    ))
+    r.append(
+        Recipe(
+            ("c", GENERIC),
+            "C compiler + make",
+            None,
+            _c_req,
+            lambda layout, host: _cc_env(layout),
+            (("cc", "--version"), ("make", "--version")),
+        )
+    )
+    r.append(
+        Recipe(
+            ("cpp", GENERIC),
+            "C++ compiler + make",
+            None,
+            _cpp_req,
+            lambda layout, host: _cc_env(layout, cxx=True),
+            (("c++", "--version"), ("make", "--version")),
+        )
+    )
 
     # -- jvm family ----------------------------------------------------------
-    r.append(Recipe(
-        ("java", GENERIC), "JDK", "openjdk version, e.g. 21",
-        lambda host, v: (host_conda(conda_spec("openjdk", v)),),
-        _jvm_env,
-        (("javac", "-version"),),
-    ))
-    r.append(Recipe(
-        ("kotlin", GENERIC), "kotlinc + JDK", "kotlin version",
-        lambda host, v: (host_conda(conda_spec("kotlin", v)),),
-        _jvm_env,
-        (("kotlinc", "-version"),),
-    ))
-    r.append(Recipe(
-        ("gradle", GENERIC),
-        "standalone gradle; prefer the project's gradlew when one exists",
-        "gradle version",
-        lambda host, v: (host_conda(conda_spec("gradle", v)),),
-        lambda l, h: _jvm_env(l, h) + EnvDelta(
-            vars=(("GRADLE_USER_HOME", str(l.gradle_home)),)),
-        (("gradle", "--version"),),
-    ))
-    r.append(Recipe(
-        ("maven", GENERIC), "maven + JDK", "maven version",
-        lambda host, v: (host_conda(conda_spec("maven", v)),),
-        _jvm_env,
-        (("mvn", "--version"),),
-    ))
+    r.append(
+        Recipe(
+            ("java", GENERIC),
+            "JDK",
+            "openjdk version, e.g. 21",
+            lambda host, v: (host_conda(conda_spec("openjdk", v)),),
+            _jvm_env,
+            (("javac", "-version"),),
+        )
+    )
+    r.append(
+        Recipe(
+            ("kotlin", GENERIC),
+            "kotlinc + JDK",
+            "kotlin version",
+            lambda host, v: (host_conda(conda_spec("kotlin", v)),),
+            _jvm_env,
+            (("kotlinc", "-version"),),
+        )
+    )
+    r.append(
+        Recipe(
+            ("gradle", GENERIC),
+            "standalone gradle; prefer the project's gradlew when one exists",
+            "gradle version",
+            lambda host, v: (host_conda(conda_spec("gradle", v)),),
+            lambda layout, host: (
+                _jvm_env(layout, host)
+                + EnvDelta(vars=(("GRADLE_USER_HOME", str(layout.gradle_home)),))
+            ),
+            (("gradle", "--version"),),
+        )
+    )
+    r.append(
+        Recipe(
+            ("maven", GENERIC),
+            "maven + JDK",
+            "maven version",
+            lambda host, v: (host_conda(conda_spec("maven", v)),),
+            _jvm_env,
+            (("mvn", "--version"),),
+        )
+    )
 
     # -- android: the flavor that owns the one architecture fact -------------
     def _android_req(host: Host, v: str | None) -> tuple[Step, ...]:
         api = _parse_api(v)
-        url = ("https://dl.google.com/android/repository/"
-               f"commandlinetools-{ANDROID_OS_KEY[host.os]}-"
-               f"{ANDROID_TOOLS_REVISION}_latest.zip")
+        url = (
+            "https://dl.google.com/android/repository/"
+            f"commandlinetools-{ANDROID_OS_KEY[host.os]}-"
+            f"{ANDROID_TOOLS_REVISION}_latest.zip"
+        )
         steps: list[Step] = [
             host_conda("openjdk"),
             # The zip's single top directory becomes .../latest directly.
-            Fetch("android-cmdline-tools", url,
-                  ANDROID_TOOLS_SHA256[host.os], "zip",
-                  "android-sdk/cmdline-tools/latest", strip=1),
+            Fetch(
+                "android-cmdline-tools",
+                url,
+                ANDROID_TOOLS_SHA256[host.os],
+                "zip",
+                "android-sdk/cmdline-tools/latest",
+                strip=1,
+            ),
             AndroidSdk(api),
             BindGradleProject(),
         ]
@@ -283,23 +400,32 @@ def _recipes() -> dict[RecipeKey, Recipe]:
                 steps.append(Aapt2Shim(emu.qemu_binary, CondaPlatform.LINUX_64))
         return tuple(steps)
 
-    def _android_env(l: Layout, h: Host) -> EnvDelta:
-        return _jvm_env(l, h) + EnvDelta(
-            vars=(("ANDROID_HOME", str(l.android_sdk)),
-                  ("ANDROID_SDK_ROOT", str(l.android_sdk)),
-                  ("GRADLE_USER_HOME", str(l.gradle_home))),
-            path=(l.android_sdk / "cmdline-tools" / "latest" / "bin",
-                  l.android_sdk / "platform-tools"))
+    def _android_env(layout: Layout, host: Host) -> EnvDelta:
+        return _jvm_env(layout, host) + EnvDelta(
+            vars=(
+                ("ANDROID_HOME", str(layout.android_sdk)),
+                ("ANDROID_SDK_ROOT", str(layout.android_sdk)),
+                ("GRADLE_USER_HOME", str(layout.gradle_home)),
+            ),
+            path=(
+                layout.android_sdk / "cmdline-tools" / "latest" / "bin",
+                layout.android_sdk / "platform-tools",
+            ),
+        )
 
     android_probes = (("sdkmanager", "--version"),)
     for family in ("kotlin", "java"):
-        r.append(Recipe(
-            (family, "android"),
-            "JDK + Android SDK; gradle and kotlin come from the project's "
-            "pinned wrapper and plugins, never from here",
-            f"Android API level (default {DEFAULT_ANDROID_API})",
-            _android_req, _android_env, android_probes,
-        ))
+        r.append(
+            Recipe(
+                (family, "android"),
+                "JDK + Android SDK; gradle and kotlin come from the project's "
+                "pinned wrapper and plugins, never from here",
+                f"Android API level (default {DEFAULT_ANDROID_API})",
+                _android_req,
+                _android_env,
+                android_probes,
+            )
+        )
 
     # -- kotlin:native: JetBrains prebuilt, closed host set -------------------
     def _konan_req(host: Host, v: str | None) -> tuple[Step, ...]:
@@ -307,102 +433,152 @@ def _recipes() -> dict[RecipeKey, Recipe]:
         if slug is None:
             raise DenvError(
                 f"kotlin:native has no JetBrains prebuilt for {host}; "
-                "supported: linux-64, osx-64, osx-arm64, win-64")
+                "supported: linux-64, osx-64, osx-arm64, win-64"
+            )
         name, kind = slug
         version = v or KOTLIN_NATIVE_VERSION
         ext = "tar.gz" if kind == "tar" else "zip"
-        url = ("https://github.com/JetBrains/kotlin/releases/download/"
-               f"v{version}/kotlin-native-prebuilt-{name}-{version}.{ext}")
-        return (host_conda("openjdk"),
-                Fetch("kotlin-native", url, None, kind,
-                      "tools/kotlin-native", strip=1))
+        url = (
+            "https://github.com/JetBrains/kotlin/releases/download/"
+            f"v{version}/kotlin-native-prebuilt-{name}-{version}.{ext}"
+        )
+        return (
+            host_conda("openjdk"),
+            Fetch("kotlin-native", url, None, kind, "tools/kotlin-native", strip=1),
+        )
 
-    r.append(Recipe(
-        ("kotlin", "native"), "Kotlin/Native prebuilt + JDK",
-        f"kotlin version (default {KOTLIN_NATIVE_VERSION})",
-        _konan_req,
-        lambda l, h: _jvm_env(l, h) + EnvDelta(
-            vars=(("KONAN_DATA_DIR", str(l.cache / "konan")),),
-            path=(l.tools / "kotlin-native" / "bin",)),
-        (("kotlinc-native", "-version"),),
-    ))
+    r.append(
+        Recipe(
+            ("kotlin", "native"),
+            "Kotlin/Native prebuilt + JDK",
+            f"kotlin version (default {KOTLIN_NATIVE_VERSION})",
+            _konan_req,
+            lambda layout, host: (
+                _jvm_env(layout, host)
+                + EnvDelta(
+                    vars=(("KONAN_DATA_DIR", str(layout.cache / "konan")),),
+                    path=(layout.tools / "kotlin-native" / "bin",),
+                )
+            ),
+            (("kotlinc-native", "-version"),),
+        )
+    )
 
     # -- csharp ---------------------------------------------------------------
-    def _dotnet_root(l: Layout, h: Host):
+    def _dotnet_root(layout: Layout, host: Host):
         # The conda package ships no bin wrapper; its activation script would
         # export DOTNET_ROOT, so the recipe does it instead.
-        base = l.conda_host / "Library" if h.os is OS.WINDOWS else l.conda_host
+        base = (
+            layout.conda_host / "Library"
+            if host.os is OS.WINDOWS
+            else layout.conda_host
+        )
         return base / "lib" / "dotnet"
 
-    r.append(Recipe(
-        ("csharp", GENERIC), ".NET SDK", "dotnet version, e.g. 9",
-        lambda host, v: (host_conda(conda_spec("dotnet", v)),),
-        lambda l, h: EnvDelta(
-            vars=(("DOTNET_CLI_HOME", str(l.home)),
-                  ("DOTNET_CLI_TELEMETRY_OPTOUT", "1"),
-                  ("DOTNET_NOLOGO", "1"),
-                  ("DOTNET_ROOT", str(_dotnet_root(l, h))),
-                  ("NUGET_PACKAGES", str(l.cache / "nuget"))),
-            path=(_dotnet_root(l, h),)),
-        (("dotnet", "--version"),),
-    ))
+    r.append(
+        Recipe(
+            ("csharp", GENERIC),
+            ".NET SDK",
+            "dotnet version, e.g. 9",
+            lambda host, v: (host_conda(conda_spec("dotnet", v)),),
+            lambda layout, host: EnvDelta(
+                vars=(
+                    ("DOTNET_CLI_HOME", str(layout.home)),
+                    ("DOTNET_CLI_TELEMETRY_OPTOUT", "1"),
+                    ("DOTNET_NOLOGO", "1"),
+                    ("DOTNET_ROOT", str(_dotnet_root(layout, host))),
+                    ("NUGET_PACKAGES", str(layout.cache / "nuget")),
+                ),
+                path=(_dotnet_root(layout, host),),
+            ),
+            (("dotnet", "--version"),),
+        )
+    )
 
     # -- haskell: conda-forge's ghc is fossilized, so ghcup owns it ----------
     def _hs_req(host: Host, v: str | None) -> tuple[Step, ...]:
         triple = GHCUP_TRIPLE.get((host.os, host.arch))
         if triple is None:
-            raise DenvError("haskell via ghcup is not provisionable on "
-                            "windows; use WSL")
-        url = (f"https://downloads.haskell.org/~ghcup/{GHCUP_VERSION}/"
-               f"{triple}-ghcup-{GHCUP_VERSION}")
+            raise DenvError(
+                "haskell via ghcup is not provisionable on windows; use WSL"
+            )
+        url = (
+            f"https://downloads.haskell.org/~ghcup/{GHCUP_VERSION}/"
+            f"{triple}-ghcup-{GHCUP_VERSION}"
+        )
         # curl: ghcup shells out to it. tar + xz: bindists are .tar.xz and a
         # bare image may lack xz. c-compiler + make + gmp + ncurses: a GHC
         # bindist configures against them and every Haskell binary links
         # them. All of it stays inside the prefix.
-        return (host_conda("curl", "gmp", "ncurses", "c-compiler", "make",
-                           "tar", "xz"),
-                Fetch("ghcup", url, None, "bin", "tools/haskell/bin/ghcup"),
-                GhcupToolchain(ghc=v or "recommended"),
-                CompilerShims())
+        return (
+            host_conda("curl", "gmp", "ncurses", "c-compiler", "make", "tar", "xz"),
+            Fetch("ghcup", url, None, "bin", "tools/haskell/bin/ghcup"),
+            GhcupToolchain(ghc=v or "recommended"),
+            CompilerShims(),
+        )
 
-    r.append(Recipe(
-        ("haskell", GENERIC), "ghc + cabal via ghcup (best effort)",
-        "ghc version (default: ghcup's recommended)",
-        _hs_req,
-        lambda l, h: _cc_env(l) + EnvDelta(
-            vars=(("CABAL_DIR", str(l.cache / "cabal")),
-                  ("GHCUP_INSTALL_BASE_PREFIX", str(l.tools / "haskell")),
-                  ("STACK_ROOT", str(l.cache / "stack")),
-                  # GHC's runtime deps (gmp, tinfo) live in the conda prefix;
-                  # scoped here because only haskell needs the loader's help.
-                  ("LD_LIBRARY_PATH", str(l.conda_host / "lib"))),
-            path=(l.tools / "haskell" / ".ghcup" / "bin",
-                  l.tools / "haskell" / "bin")),
-        (("ghc", "--version"), ("cabal", "--version")),
-    ))
+    r.append(
+        Recipe(
+            ("haskell", GENERIC),
+            "ghc + cabal via ghcup (best effort)",
+            "ghc version (default: ghcup's recommended)",
+            _hs_req,
+            lambda layout, host: (
+                _cc_env(layout)
+                + EnvDelta(
+                    vars=(
+                        ("CABAL_DIR", str(layout.cache / "cabal")),
+                        ("GHCUP_INSTALL_BASE_PREFIX", str(layout.tools / "haskell")),
+                        ("STACK_ROOT", str(layout.cache / "stack")),
+                        # GHC's runtime deps (gmp, tinfo) live in the conda prefix;
+                        # scoped here because only haskell needs the loader's help.
+                        ("LD_LIBRARY_PATH", str(layout.conda_host / "lib")),
+                    ),
+                    path=(
+                        layout.tools / "haskell" / ".ghcup" / "bin",
+                        layout.tools / "haskell" / "bin",
+                    ),
+                )
+            ),
+            (("ghc", "--version"), ("cabal", "--version")),
+        )
+    )
 
     # -- bash -----------------------------------------------------------------
     def _bash_req(host: Host, v: str | None) -> tuple[Step, ...]:
         _no_windows(host, "the bash toolchain")
         return (host_conda(conda_spec("bash", v), "shellcheck", "go-shfmt"),)
 
-    r.append(Recipe(
-        ("bash", GENERIC), "bash + shellcheck + shfmt", "bash version",
-        _bash_req,
-        lambda l, h: EnvDelta(),
-        (("bash", "--version"), ("shellcheck", "--version"),
-         ("shfmt", "--version")),
-    ))
+    r.append(
+        Recipe(
+            ("bash", GENERIC),
+            "bash + shellcheck + shfmt",
+            "bash version",
+            _bash_req,
+            lambda layout, host: EnvDelta(),
+            (
+                ("bash", "--version"),
+                ("shellcheck", "--version"),
+                ("shfmt", "--version"),
+            ),
+        )
+    )
 
     # -- standalone build tools ----------------------------------------------
-    for tool, probe in (("cmake", ("cmake", "--version")),
-                        ("ninja", ("ninja", "--version"))):
-        r.append(Recipe(
-            (tool, GENERIC), tool, f"{tool} version",
-            lambda host, v, _t=tool: (host_conda(conda_spec(_t, v)),),
-            lambda l, h: EnvDelta(),
-            (probe,),
-        ))
+    for tool, probe in (
+        ("cmake", ("cmake", "--version")),
+        ("ninja", ("ninja", "--version")),
+    ):
+        r.append(
+            Recipe(
+                (tool, GENERIC),
+                tool,
+                f"{tool} version",
+                lambda host, v, _t=tool: (host_conda(conda_spec(_t, v)),),
+                lambda layout, host: EnvDelta(),
+                (probe,),
+            )
+        )
 
     return {recipe.key: recipe for recipe in r}
 
@@ -419,9 +595,18 @@ CATALOG: dict[RecipeKey, Recipe] = _recipes()
 
 # Family aliases collapse spellings before catalog lookup; ("android",) also
 # forgives dropping the family entirely.
-_ALIAS = {"js": "javascript", "node": "javascript", "ts": "typescript",
-          "py": "python", "golang": "go", "c++": "cpp", "cs": "csharp",
-          "dotnet": "csharp", "sh": "bash", "shell": "bash"}
+_ALIAS = {
+    "js": "javascript",
+    "node": "javascript",
+    "ts": "typescript",
+    "py": "python",
+    "golang": "go",
+    "c++": "cpp",
+    "cs": "csharp",
+    "dotnet": "csharp",
+    "sh": "bash",
+    "shell": "bash",
+}
 
 
 def resolve(raw: RawTag) -> Target:
@@ -431,14 +616,13 @@ def resolve(raw: RawTag) -> Target:
         key = ("java", "android")
     recipe = CATALOG.get(key)
     if recipe is None:
-        known = sorted(f if fl == GENERIC else f"{f}:{fl}"
-                       for f, fl in CATALOG)
-        asked = raw.family if raw.flavor == GENERIC \
-            else f"{raw.family}:{raw.flavor}"
+        known = sorted(f if fl == GENERIC else f"{f}:{fl}" for f, fl in CATALOG)
+        asked = raw.family if raw.flavor == GENERIC else f"{raw.family}:{raw.flavor}"
         hints = difflib.get_close_matches(asked, known, n=3)
         hint = f"; did you mean {', '.join(hints)}?" if hints else ""
-        raise DenvError(f"unknown target {asked!r}{hint}\n"
-                        f"known targets: {', '.join(known)}")
+        raise DenvError(
+            f"unknown target {asked!r}{hint}\nknown targets: {', '.join(known)}"
+        )
     if raw.version is not None and recipe.version_doc is None:
         raise DenvError(f"{family} does not take a version")
     return Target(key, raw.version)

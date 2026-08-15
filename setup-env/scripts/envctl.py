@@ -11,6 +11,7 @@ single piece of wiring. certifi is the one dependency: it supplies TLS roots
 on hosts that ship none (a bare ubuntu:24.04 image), and uv can always fetch
 it because uv bundles its own roots.
 """
+
 from envkit.cli import main
 
 if __name__ == "__main__":

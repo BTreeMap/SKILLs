@@ -156,7 +156,9 @@ def open_output(output_path: Path | None) -> ContextManager[TextIO]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Extract analysis-ready text and metadata from a PDF using pypdf only."
+        description=(
+            "Extract analysis-ready text and metadata from a PDF using pypdf only."
+        )
     )
     parser.add_argument(
         "input_pdf", type=Path, help="PDF file to read; it is never modified"
