@@ -70,6 +70,19 @@ GHCUP_TRIPLE = {
     (OS.MACOS, Arch.X86_64): "x86_64-apple-darwin",
     (OS.MACOS, Arch.ARM64): "aarch64-apple-darwin",
 }
+# Publisher digests for exactly GHCUP_VERSION, from
+# https://downloads.haskell.org/~ghcup/0.1.50.2/SHA256SUMS. A pinned version
+# with an unpinned hash is half a pin.
+GHCUP_SHA256 = {
+    "x86_64-linux": "ff6288df9758211372d8242fe830d8e6be6a8365d9406f1c9bde144b7e744143",
+    "aarch64-linux": "a8f86745eb2381ca19f4ebd17652957c2e404dad8f7bb2bdfd62feab9fcf8ddd",
+    "x86_64-apple-darwin": (
+        "4ac88180ea1e54670efbb894fdb9190e94af8dce18d837ee37c15b61724d045a"
+    ),
+    "aarch64-apple-darwin": (
+        "660d6570a31b380601eb36e61ccdf7dedb7ab54b889dcac708f92152eddb2a20"
+    ),
+}
 
 KOTLIN_NATIVE_VERSION = "2.2.20"
 KOTLIN_NATIVE_SLUG = {
@@ -77,6 +90,23 @@ KOTLIN_NATIVE_SLUG = {
     CondaPlatform.OSX_64: ("macos-x86_64", "tar"),
     CondaPlatform.OSX_ARM64: ("macos-aarch64", "tar"),
     CondaPlatform.WIN_64: ("windows-x86_64", "zip"),
+}
+# Publisher digests for exactly KOTLIN_NATIVE_VERSION, from the GitHub
+# release's .sha256 assets. A user-pinned other version fetches unverified,
+# and the fetch executor says so out loud.
+KOTLIN_NATIVE_SHA256 = {
+    CondaPlatform.LINUX_64: (
+        "d857fee2b4e3fd6d2d401a3a9400dc40c20de1d023df652721717d3d199ed0dc"
+    ),
+    CondaPlatform.OSX_64: (
+        "9a6b0142bc74c8aaafbe19c3f0253ea31aa15ac393d51cefcd29e237709e1bb8"
+    ),
+    CondaPlatform.OSX_ARM64: (
+        "5270e5f708ffed15eb11a029b8068b73321fcf496c7103dffa909e49d27125e6"
+    ),
+    CondaPlatform.WIN_64: (
+        "42809169e8779b8a14afbe95c06ea728a3de8e19b7c16ac1eeb9621461eeb1f0"
+    ),
 }
 
 GOOGLE_MAVEN = "https://dl.google.com/dl/android/maven2"
@@ -436,9 +466,14 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
             "https://github.com/JetBrains/kotlin/releases/download/"
             f"v{version}/kotlin-native-prebuilt-{name}-{version}.{ext}"
         )
+        digest = (
+            KOTLIN_NATIVE_SHA256[host.conda_platform]
+            if version == KOTLIN_NATIVE_VERSION
+            else None
+        )
         return (
             host_conda("openjdk"),
-            Fetch("kotlin-native", url, None, kind, "tools/kotlin-native", strip=1),
+            Fetch("kotlin-native", url, digest, kind, "tools/kotlin-native", strip=1),
         )
 
     r.append(
@@ -503,7 +538,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         # Keep all dependencies inside the prefix.
         return (
             host_conda("curl", "gmp", "ncurses", "c-compiler", "make", "tar", "xz"),
-            Fetch("ghcup", url, None, "bin", "tools/haskell/bin/ghcup"),
+            Fetch("ghcup", url, GHCUP_SHA256[triple], "bin", "tools/haskell/bin/ghcup"),
             GhcupToolchain(ghc=v or "recommended"),
             CompilerShims(),
         )

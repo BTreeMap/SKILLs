@@ -38,7 +38,7 @@ Use only `pypdf`, resolved by `uv` from the bundled script's PEP 723 metadata. R
 
 ## Extract with the Bundled Script
 
-The bundled script is registered as `extract_pdf`. It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output. Its PEP 723 metadata is the source of truth for the required dependency.
+The bundled script is registered as `extract_pdf`. It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its PEP 723 metadata is the source of truth for the required dependency.
 
 Run the canonical bundled path rather than copying the script into document directories: uv caches script environments by script path. Pass each document path as an argument instead.
 

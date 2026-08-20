@@ -88,9 +88,14 @@ def fetch(url: str, target: Path) -> None:
 def verify_sha256(path: Path, expected: str) -> None:
     actual = hashlib.sha256(path.read_bytes()).hexdigest()
     if actual != expected:
+        # Deleting the artifact is the mechanical repair: a cached corrupt
+        # download would otherwise fail every re-run forever, since fetch()
+        # trusts an existing file.
+        path.unlink()
         raise DenvError(
             f"digest mismatch for {path.name}\n"
-            f"  expected {expected}\n  actual   {actual}"
+            f"  expected {expected}\n  actual   {actual}\n"
+            "removed the corrupt download; re-run to fetch it again"
         )
 
 
@@ -204,9 +209,15 @@ def ensure_micromamba(ctx: Ctx) -> None:
     archive = ctx.layout.downloads / f"micromamba-{platform}"
     fetch(url, archive)
     # Fetch the publisher digest to keep verification architecture-independent.
-    fetch(url + ".sha256", archive.with_name(archive.name + ".sha256"))
-    expected = archive.with_name(archive.name + ".sha256").read_text().split()[0]
-    verify_sha256(archive, expected)
+    sidecar = archive.with_name(archive.name + ".sha256")
+    fetch(url + ".sha256", sidecar)
+    try:
+        verify_sha256(archive, sidecar.read_text().split()[0])
+    except DenvError:
+        # The sidecar itself may be the corrupt cached file; clear it too so
+        # the re-run re-fetches both instead of wedging on a bad pin.
+        sidecar.unlink(missing_ok=True)
+        raise
     ctx.mamba.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(archive, ctx.mamba)
     ctx.mamba.chmod(0o755)
@@ -301,6 +312,13 @@ def do_fetch(ctx: Ctx, step: Fetch) -> None:
     fetch(step.url, archive)
     if step.sha256 is not None:
         verify_sha256(archive, step.sha256)
+    else:
+        # Never make a trust decision silently: the agent driving this run
+        # should know verification was skipped and why.
+        log(
+            f"{step.name}: fetched WITHOUT digest verification"
+            " (no pinned publisher digest for this version)"
+        )
     if step.kind == "bin":
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(archive, dest)

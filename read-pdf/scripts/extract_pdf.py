@@ -70,8 +70,19 @@ def parse_page_specification(specification: str | None, page_count: int) -> list
 
 
 def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
-    """Decrypt the reader from an environment variable when the PDF requires it."""
+    """Decrypt the reader, trying the empty user password before requiring one.
+
+    Many PDFs are owner-locked only: encrypted, but readable with the empty
+    user password. That attempt is deterministic and free, so it is never the
+    caller's problem; only a real user password gates on --password-env.
+    """
     if not reader.is_encrypted:
+        return
+    if reader.decrypt(""):
+        print(
+            "note: PDF is owner-locked only; opened with the empty user password",
+            file=sys.stderr,
+        )
         return
     if not password_env:
         raise ValueError(
@@ -118,13 +129,22 @@ def write_metadata(reader: PdfReader, output: TextIO) -> None:
     output.write(format_metadata(reader.metadata or {}))
 
 
-def write_pages(reader: PdfReader, page_numbers: Iterable[int], output: TextIO) -> None:
-    """Write text for each selected page with stable one-based page markers."""
+def write_pages(reader: PdfReader, page_numbers: Iterable[int], output: TextIO) -> int:
+    """Write text for each selected page with stable one-based page markers.
+
+    Returns the count of pages that had no extractable text, so the caller
+    can surface an aggregate signal instead of leaving the reader to infer a
+    scanned document from a wall of empty page markers.
+    """
+    empty_pages = 0
     for page_number in page_numbers:
         text = reader.pages[page_number - 1].extract_text() or ""
         output.write(f"## PDF page {page_number}\n\n")
         output.write(text.strip() or "[No extractable text on this page.]\n")
         output.write("\n\n")
+        if not text.strip():
+            empty_pages += 1
+    return empty_pages
 
 
 def format_header(input_name: str, page_numbers: Sequence[int]) -> str:
@@ -139,12 +159,14 @@ def write_extraction(
     page_numbers: Sequence[int],
     include_metadata: bool,
     output: TextIO,
-) -> None:
-    """Interpret a validated extraction request at the output boundary."""
+) -> int:
+    """Interpret a validated extraction request at the output boundary.
+
+    Returns the count of selected pages without extractable text."""
     output.write(format_header(input_name, page_numbers))
     if include_metadata:
         write_metadata(reader, output)
-    write_pages(reader, page_numbers, output)
+    return write_pages(reader, page_numbers, output)
 
 
 def open_output(output_path: Path | None) -> ContextManager[TextIO]:
@@ -183,6 +205,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Omit standard document metadata from the extraction",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace the --output file if it already exists",
+    )
     return parser
 
 
@@ -190,19 +217,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if not args.input_pdf.is_file():
         raise ValueError(f"PDF file not found: {args.input_pdf}")
+    if args.output and args.output.exists() and not args.overwrite:
+        # Destroying existing bytes is decidable here; whether it is intended
+        # is the caller's judgment, so demand it explicitly.
+        raise ValueError(
+            f"output file already exists: {args.output}; pass --overwrite to replace it"
+        )
 
     reader = PdfReader(args.input_pdf, strict=False)
     decrypt_if_needed(reader, args.password_env)
     page_numbers = parse_page_specification(args.pages, len(reader.pages))
 
     with open_output(args.output) as output:
-        write_extraction(
+        empty_pages = write_extraction(
             reader,
             args.input_pdf.name,
             page_numbers,
             include_metadata=not args.no_metadata,
             output=output,
         )
+
+    if empty_pages:
+        note = (
+            f"note: {empty_pages} of {len(page_numbers)} selected pages "
+            "had no extractable text"
+        )
+        if empty_pages == len(page_numbers):
+            note += "; likely a scanned/image-based PDF (this tool has no OCR)"
+        print(note, file=sys.stderr)
 
     return 0
 
