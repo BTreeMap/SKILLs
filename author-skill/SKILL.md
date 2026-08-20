@@ -34,6 +34,15 @@ license: MIT
     <rule>Never emit em-dash characters (U+2014); use a hyphen, a comma, a colon, or restructure the sentence.</rule>
   </execution_constraints>
 
+  <script_design>
+    <directive>A bundled script and the agent invoking it form a neuro-symbolic pair. Design the script as the symbolic half; the skill text tells the agent, the neuro half, how to consume its output.</directive>
+    <rule>The script owns exact, decidable checks: invariants (existence, size, encoding, identity), structural equality, digests, atomic writes, backups. It hard-fails (nonzero exit) only on an invariant violation.</rule>
+    <rule>A heuristic never holds refusal authority. Emit heuristic judgments as advisory signal lines that state their evidence (ratios, matched rules, best-guess classification); the skill text instructs the agent to weigh signals against user intent.</rule>
+    <rule>Gate destructive or hard-to-reverse effects on an exact witness: a marker file, an identity record, or an explicit flag the caller must pass. Provide an undo path (verified backup) where the agent's judgment could be wrong.</rule>
+    <rule>Never decide trust silently: when a check is skipped or vacuous, the script states so in its output.</rule>
+    <rule>Keep mechanical, idempotent repairs in the script (e.g., delete a corrupt artifact on digest mismatch); leave judgment calls to the agent, informed by the script's diagnostics.</rule>
+  </script_design>
+
   <distillation_pipeline>
     <phase name="extraction">
       <step>Reconstruct the verified path exclusively from executed tool calls.</step>
@@ -56,6 +65,7 @@ license: MIT
     <item>Project-specific values are parameterized or dynamically derived.</item>
     <item>Every step specifies exact tools, flags, and expected outputs.</item>
     <item>Examples and templates reside exclusively within XML blocks.</item>
+    <item>Any bundled script hard-fails only on exact invariants; heuristic judgments surface as advisory signals, and no trust decision is silent.</item>
     <item>Gotchas section contains non-obvious traps.</item>
     <item>No placeholder text remains outside intentional templates.</item>
     <item>Reproduction Test: The procedure relies exclusively on the document text, guaranteeing that a fresh agent can execute it without external memory or clarifying questions.</item>

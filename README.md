@@ -1,69 +1,54 @@
 # SKILLs
 
-A central, project-agnostic library of reusable [agent skills](https://agentskills.io)
-for LLM coding agents. Each skill is a self-contained `SKILL.md` that an agent can
-load on demand to perform a task consistently - commit messages, skill authoring,
-and more.
-
-Skills here are deliberately **neutral**: they capture reusable procedures and
-conventions, never a single project's identity, so the same skill works across many
-unrelated repositories.
+A library of reusable [agent skills](https://agentskills.io): each skill is a
+`SKILL.md` procedure an LLM coding agent loads and follows, consumed as a git
+submodule. Every skill is project-agnostic (no hardcoded paths, names, or
+services) and self-contained (one directory: `SKILL.md` plus optional
+reference files and scripts).
 
 ## Available skills
 
 | Skill | Purpose |
 | --- | --- |
-| [aesthete](aesthete/SKILL.md) | Designs, builds, reviews, and reworks interfaces with an HCI eye and a PL-informed component discipline: design read, dials, laws of taste, a precedence ladder for supplied design documents and palettes, a dated WCAG 2.2 accessibility floor as the single source of accessibility truth, with verbs, surface profiles, craft references, and a mechanical ship gate. |
-| [author-skill](author-skill/SKILL.md) | Distills a worked procedure into a reproducible skill; the meta-skill for writing every other skill here. |
-| [caveman](caveman/SKILL.md) | Compresses agent output when token economy is explicitly requested, with lite/full/ultra/wenyan levels and commit/review/compress/stats/help modes. |
-| [fact-check](fact-check/SKILL.md) | Verifies document claims against retrieved evidence with calibrated verdicts and user-approved corrections, auto-detecting sub-agent, web, and editing capabilities. |
-| [git-commit](git-commit/SKILL.md) | Enforces Conventional Commits format and best practices for commit messages, with lite/full/ultra effort levels and a quick-ship push verb. |
-| [pl-theorist](pl-theorist/SKILL.md) | Applies a PL theorist's discipline across the lifecycle - design, build, refactor, review, audit, test, teach - with per-language cost models including Bash and GitHub Actions. |
-| [ponytail](ponytail/SKILL.md) | Forces the laziest working solution: YAGNI, stdlib-first, minimal diffs, with lite/full/ultra intensity and review/audit/debt/gain/help modes. |
-| [read-pdf](read-pdf/SKILL.md) | Extracts and analyzes PDF text and metadata with pypdf without modifying PDF files. |
-| [reframe](reframe/SKILL.md) | Challenges incremental framing and produces a bold, testable target direction. |
-| [setup-env](setup-env/SKILL.md) | Provisions isolated per-project dev environments entirely in userspace via a typed target algebra (python@3.12, kotlin:android, go:cgo), with micromamba, uv, publisher toolchains, and qemu-emulated foreign binaries behind transparent shims. |
+| [aesthete](aesthete/SKILL.md) | Interface design and review: typography, color, spacing, motion, interaction states, and a dated WCAG 2.2 accessibility floor, applied through design, build, review, audit, redesign, and teach verbs. |
+| [author-skill](author-skill/SKILL.md) | Writes and reviews skills; the procedure every other skill in this repository was authored under. |
+| [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place, with a bundled script providing backup, validation, and undo. |
+| [fact-check](fact-check/SKILL.md) | Decomposes a document into checkable claims, verifies each against retrieved sources with cited quotes, and applies corrections only after per-item approval. |
+| [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages at three effort levels; a push verb commits and pushes in one step. |
+| [pl-theorist](pl-theorist/SKILL.md) | Code design, review, and refactoring grounded in typed domain modeling and complexity analysis, with per-language cost models including Bash and GitHub Actions. |
+| [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
+| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files with pypdf; strictly read-only on the documents. |
+| [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
+| [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
 
-## How it works
+## Installing in your repository
 
-Each skill lives in its own kebab-case directory with a `SKILL.md` file. The YAML
-frontmatter (`name` and `description`) is the routing surface an agent reads to
-decide whether to load the full body - so descriptions state both *what* the skill
-does and *when* to use it. The body is structured Markdown the agent follows when
-the skill is selected.
-
-Headers conform strictly to the [Agent Skills](https://agentskills.io) open
-standard - only spec fields (`name`, `description`, `license`, `compatibility`,
-`metadata`, `allowed-tools`), so every skill loads in any spec-compliant agent
-and uploads without hard errors. The full protocol lives in
-[AGENTS.md](AGENTS.md).
-
-## Using these skills in your project
-
-Add this repository as a git submodule mounted at `.github/skills` and expose the
-same skills to Claude:
+Add the library as a submodule at `.github/skills` and alias it for Claude:
 
 ```bash
-git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills 2>/dev/null \
-  || git submodule update --init --remote .github/skills
-mkdir -p .claude .github/workflows
-ln -sfn ../.github/skills .claude/skills
-cp .github/skills/sync-skills.example.yml .github/workflows/sync-skills.yml
-git add .gitmodules .claude/skills .github/skills .github/workflows/sync-skills.yml
-git commit -m "chore: Add or update agent skills submodule with auto-sync" \
-  || echo "Already up to date."
+(
+  set -eu
+  if git submodule status -- .github/skills >/dev/null 2>&1; then
+    echo "Already recorded: repairing the checkout to the recorded pointer."
+    git submodule update --init -- .github/skills
+  else
+    echo "Adding the skills submodule."
+    git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
+  fi
+  mkdir -p .claude
+  ln -sfn ../.github/skills .claude/skills
+  git add -- .gitmodules .claude/skills .github/skills
+  if git diff --cached --quiet -- .gitmodules .claude/skills .github/skills; then
+    echo "Already up to date."
+  else
+    git commit -m "chore: Add agent skills submodule" \
+      -- .gitmodules .claude/skills .github/skills
+  fi
+)
 ```
 
-The script is idempotent: on first install it adds the submodule; on re-run
-the fallback updates it to the latest upstream tip instead, `ln -sfn`
-replaces a stale alias without descending into it, and `cp` refreshes the
-workflow to the current example (skip that line if you have customized your
-copy). When nothing changed, the commit is skipped.
-
-The `cp` line opts you into the auto-updating norm: the copied workflow bumps
-the submodule pointer to the upstream tip twice a day (details below). It MUST
-be a hard copy: GitHub Actions does not resolve symlinks under
-`.github/workflows`, so a symlinked workflow file is silently ignored.
+Safe to re-run; advancing the recorded pointer is a separate step (see
+Staying current).
 
 Clone consuming projects with submodules included:
 
@@ -73,78 +58,79 @@ git clone --recurse-submodules <your-repo-url>
 git submodule update --init --recursive
 ```
 
-## Keeping the submodule current
+## Staying current
 
-The setup above already installs [sync-skills.example.yml](sync-skills.example.yml)
-as `.github/workflows/sync-skills.yml` (do this now if you skipped the `cp`
-step, and keep it a real copy, not a symlink). Twice a day it
-fast-forwards the `.github/skills` gitlink to the upstream tip on each branch
-you list (default: `main` and `master`) as one GitHub-signed `chore:` commit
-per branch; branches that are missing, unconfigured, or already current are
-skipped, and anything else that goes wrong surfaces as a warning rather than
-a failed run. The upstream is whatever URL each branch records for the gitlink -
-a fork of this repository with the same layout works unchanged, or can be
-forced with the `upstream-url`/`upstream-ref` inputs.
+### Manually
 
-The caller is a thin shell - schedule plus a `contents: write` grant - around
-the reusable workflow in
-[.github/workflows/sync-skills.yml](.github/workflows/sync-skills.yml), which
-is built for containment: nothing is cloned or checked out, so no submodule
-code and no git hook can run; the token is split across two jobs, a read-only
-one that decides what to bump and a write one that only creates the commit
-and fast-forwards the ref. That commit is made through the Git Data API with
-no author, committer, or signature field, which is the documented condition
-for GitHub to sign a bot commit with its own key - so the bumps satisfy a
-`Require signed commits` ruleset with no signing key, secret, or bypass actor
-anywhere. If your organization restricts third-party actions, allowlist
-`BTreeMap/SKILLs/.github/workflows/sync-skills.yml@main`.
-
-Pull the latest skills and record the new pointer:
+No third-party action, no extra permissions:
 
 ```bash
-git submodule update --remote .github/skills
-git commit -m "chore(skills): bump skills submodule"
+git submodule update --remote -- .github/skills
+git commit -m "chore(skills): Bump skills submodule" -- .github/skills
 ```
 
-Then point your agent configuration (e.g. `AGENTS.md`) at the relevant skill, for
-example: `.github/skills/git-commit/SKILL.md`.
+### Automatically
 
-## Skill discovery aliases
+The bundled workflow fast-forwards the `.github/skills` pointer to the
+upstream tip twice a day, one commit per configured branch (default: `main`,
+`master`, `dev`):
 
-The root skill directories are canonical. This repository also exposes each one
-through a committed `.github/skills/<skill-name>` relative symlink, so agents that
-scan either location see the same source without duplicated files. `.claude/skills`
-is a relative symlink to `.github/skills`, allowing Claude to use that same set.
+```bash
+(
+  set -eu
+  mkdir -p .github/workflows
+  if [ ! -e .github/workflows/sync-skills.yml ]; then
+    echo "Installing the sync workflow."
+    cp .github/skills/sync-skills.example.yml .github/workflows/sync-skills.yml
+  elif ! cmp -s .github/skills/sync-skills.example.yml \
+      .github/workflows/sync-skills.yml; then
+    echo "sync-skills.yml differs from the bundled example; leaving it as is." >&2
+  fi
+  git add -- .github/workflows/sync-skills.yml
+  if git diff --cached --quiet -- .github/workflows/sync-skills.yml; then
+    echo "Already up to date."
+  else
+    git commit -m "chore: Enable agent skills auto-sync workflow" \
+      -- .github/workflows/sync-skills.yml
+  fi
+)
+```
 
-Git preserves these symlinks on Linux and macOS. On Windows, enable Developer Mode
-or configure Git to create symlinks before cloning. Do not replace an alias with a
-copy: edit the root skill directory instead.
+The workflow copy must be a real file, not a symlink: GitHub Actions silently
+ignores symlinked files under `.github/workflows`.
 
-When this repository is mounted as a submodule at a consuming repository's
-`.github/skills`, the submodule cannot create a `.claude/skills` entry in its parent.
-The setup sequence above creates and commits that parent-level alias.
+The workflow is third-party code running with `contents: write`. Its
+containment:
 
-The link target is relative to `.claude/skills`; it remains valid when the
-repository moves or is cloned elsewhere.
+* Nothing is cloned or checked out, so no submodule code and no git hook runs.
+* The token is split across two jobs: a read-only job decides what to bump, a
+  `contents: write` job only creates the commit and moves the ref.
+* Commits go through the Git Data API with no author, committer, or signature
+  field, the documented condition under which GitHub signs a bot commit with
+  its own key. The bumps therefore satisfy a `Require signed commits` ruleset
+  with no stored key or bypass actor.
+* The upstream is whatever URL the branch records for the gitlink, so a fork
+  with the same layout works unchanged; `upstream-url` and `upstream-ref`
+  inputs override it.
 
-## Contributing a skill
+If your organization restricts third-party actions, allowlist
+`BTreeMap/SKILLs/.github/workflows/sync-skills.yml@main`.
 
-Read [author-skill/SKILL.md](author-skill/SKILL.md) first - it defines the
-required structure and a validation checklist. In short:
+## Repository layout
 
-1. Create a kebab-case directory with a single `SKILL.md`.
-2. Add frontmatter with a `name` matching the directory and a `description` that
-   states what the skill does and when to invoke it.
-3. Write a reproducible, project-agnostic procedure: deterministic steps, isolated
-   examples, a Gotchas section, and a validation checklist.
-4. Keep it within context economy (~500 lines); offload bulky references to sibling
-   files.
-5. Commit the discovery alias and listings in the same change:
-   `ln -s ../../<skill-name> .github/skills/<skill-name>`, plus a row in this
-   README's table and a bullet in [AGENTS.md](AGENTS.md).
+Root skill directories are canonical; `.github/skills/<skill-name>` entries
+are committed relative symlinks, and `.claude/skills` points at
+`.github/skills`. Edit the root only; never replace an alias with a copy. Git
+preserves symlinks on Linux and macOS; on Windows, enable Developer Mode or
+configure Git to create symlinks before cloning.
 
-Repository conventions for agents are documented in [AGENTS.md](AGENTS.md). Commit
-messages follow the [git-commit](git-commit/SKILL.md) skill.
+## Contributing
+
+Conventions, the CI gate, and the frontmatter protocol live in
+[AGENTS.md](AGENTS.md); the authoring procedure is
+[author-skill](author-skill/SKILL.md). CI repairs mechanical findings
+(formatting, ordering, aliases) on every push and fails only on what needs a
+person.
 
 ## License
 

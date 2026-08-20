@@ -168,6 +168,27 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     moves, every citation to it moves in the same change.
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use a
   hyphen, a comma, a colon, or restructure the sentence.
+* A bundled script and its invoking agent form a neuro-symbolic pair: the
+  script is the symbolic half, the agent the neuro half. Give each half the
+  work it is suited to:
+  * The script owns what is exact and decidable: invariants (existence,
+    size, encoding, identity), structural equality, digests, atomic writes,
+    backups. It hard-fails (nonzero exit) only on an invariant violation.
+  * A heuristic never holds refusal authority. The script emits heuristic
+    judgments as advisory signal lines stating their evidence (ratios,
+    matched rules, the best-guess classification) for the agent to weigh
+    against user intent; a signal never blocks.
+  * A destructive or hard-to-reverse effect is gated on an exact witness: a
+    marker file, an identity record, or an explicit flag the caller must
+    pass. An undo path, such as a verified backup, is what makes advisory
+    judgment safe downstream.
+  * No silent trust decisions: when a check is skipped or vacuous (no pinned
+    digest for a version, a format outside the validator's model), the
+    script says so in its output.
+  * Mechanical repairs that are exact and idempotent belong to the script
+    (for example, deleting a corrupt download on digest mismatch so a re-run
+    can succeed); judgment calls belong to the agent, informed by the
+    script's diagnostics.
 * Every bundled Python script starts with `#!/usr/bin/env -S uv run --script`
   and a PEP 723 `# /// script` block declaring `requires-python` and
   `dependencies` (an empty list for stdlib-only scripts). Skills invoke them
