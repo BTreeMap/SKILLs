@@ -40,7 +40,7 @@ on:
           branches are skipped, not errors.
         type: string
         required: false
-        default: main master
+        default: main master dev
       upstream-url:
         description: >-
           Upstream https URL to sync from. Default: the URL the calling

@@ -5,7 +5,7 @@
 #   git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
 #
 # Twice a day it fast-forwards the .github/skills gitlink to the upstream tip
-# on each branch listed below (default: main and master; missing branches
+# on each branch listed below (default: main, master, and dev; missing branches
 # are skipped, not errors) as one GitHub-signed `chore:` commit per branch; when a
 # branch is already current it is left untouched. The upstream is whatever
 # each branch records for the submodule, so a fork of SKILLs with the same layout
@@ -44,6 +44,6 @@ jobs:
     # Defaults shown; uncomment and adjust as needed:
     # with:
     #   submodule-path: .github/skills
-    #   branches: main master            # any list; missing ones are skipped
+    #   branches: main master dev        # any list; missing ones are skipped
     #   upstream-url: ""                 # e.g. https://github.com/you/SKILLs.git
     #   upstream-ref: ""                 # branch to track; default is upstream HEAD
