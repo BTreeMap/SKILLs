@@ -16,9 +16,15 @@ until validation passes.
 uv run --script <skill-root>/scripts/compress_guard.py prepare <absolute-filepath>
 </prepare_command>
 
-   On refusal (code/config file, sensitive name, empty, oversized, existing
-   backup), report the reason and stop. On success it prints BACKUP and BODY
-   paths; frontmatter is already split off and preserved verbatim.
+   On REFUSED (sensitive name, empty, oversized, non-UTF-8, backup artifact,
+   existing backup), report the reason and stop: refusals are hard
+   invariants. On success it prints BACKUP and BODY paths; frontmatter is
+   already split off and preserved verbatim. SIGNAL lines are advisory
+   evidence from the script's heuristics (content assessed as code, config,
+   or inconclusive, with the observed ratios): weigh them yourself. If
+   signals say code or config and the user did not explicitly name this
+   file for compression, stop and report instead of proceeding; if the user
+   explicitly asked, proceed: the verified backup makes it undoable.
 
 2. Compress. Read the BODY file and rewrite its prose per the rules below.
    Write the result to a scratch file. Do not touch fenced code, inline
@@ -76,8 +82,9 @@ list numbering, table structure (compress cell text only), YAML frontmatter
 
 ## Boundaries
 
-- Only natural-language files; the script refuses code, config, secrets-like names, backups, and files over 500KB. Trust its refusals; never bypass with a manual write.
+- The script hard-refuses only invariants: secrets-like names, backup artifacts, files over 500KB, non-UTF-8, empty files. Trust refusals; never bypass with a manual write. Content-type judgment arrives as SIGNAL lines for you to weigh: code or config signals mean stop unless the user explicitly asked for that exact file.
 - Mixed prose and code: compress prose only; code blocks are read-only regions. When unsure whether a span is code or prose, leave it unchanged.
-- Backups live out-of-tree (XDG data dir, or LOCALAPPDATA on Windows) so skill auto-loaders never re-ingest them; never compress a `.original.md`.
+- Non-Markdown prose (.rst, .tex, .typ): the script warns that structural validation assumes Markdown; their headings and code blocks are not protected by the checks, so preserve structure manually and with extra care.
+- Backups live out-of-tree (XDG data dir, or LOCALAPPDATA on Windows) so skill auto-loaders never re-ingest them; the script refuses anything inside the backup tree.
 - This mode is the sole exemption to the "no caveman in persisted files" boundary, and only for the file the user names.
 - One-shot: the report ends the mode; the active intensity level is untouched.
