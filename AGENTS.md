@@ -214,6 +214,24 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     (for example, deleting a corrupt download on digest mismatch so a re-run
     can succeed); judgment calls belong to the agent, informed by the
     script's diagnostics.
+* A script is frugal with the user's disk, and its state placement follows
+  the XDG base directory standard:
+  * Durable, light state (backups, logs, resumable sessions) lives in the
+    library's one state root under the XDG state directory:
+    `${XDG_STATE_HOME:-$HOME/.local/state}/btreemap-skills/`
+    (`%LOCALAPPDATA%\btreemap-skills\` on Windows). The `btreemap-skills`
+    segment marks this library as the source of every file under it, and
+    each script keeps all of its durable files inside its own skill's
+    subdirectory of that root, `btreemap-skills/<skill-name>/`, in
+    purpose-named subdirectories (`backups/`, `logs/`, `sessions/`).
+  * Heavy or regenerable artifacts (downloads, toolchains, caches,
+    extractions) live in temporary space. Any temp location serves; the
+    directory's name identifies its owner, the way `/setup-env` prefixes
+    its roots with `denv`.
+  * Logs are JSONL with one timestamped record per line and a size cap the
+    script enforces at write time by trimming or one-step rotation.
+  * Every script that writes state ships a `clean` verb that removes its
+    state, one target or `--all`, and reports the bytes freed.
 * Every bundled Python script starts with `#!/usr/bin/env -S uv run --script`
   and a PEP 723 `# /// script` block declaring `requires-python` and
   `dependencies` (an empty list for stdlib-only scripts). Skills invoke them

@@ -23,6 +23,7 @@ import http.client
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import urllib.error
@@ -440,10 +441,44 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def state_root() -> Path:
+    """Durable-state home for this skill, per repository convention."""
+    if os.name == "nt":
+        base = Path(
+            os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
+        )
+    else:
+        base = Path(
+            os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
+        )
+    return base / "btreemap-skills" / "lit-review"
+
+
+def sessions_root() -> Path:
+    return state_root() / "sessions"
+
+
+def resolve_session(argument: str) -> Path:
+    """A bare name lives under the default sessions root; a path is itself."""
+    looks_like_path = (
+        os.sep in argument
+        or (os.altsep is not None and os.altsep in argument)
+        or argument.startswith(("~", "."))
+    )
+    if looks_like_path:
+        return Path(argument).expanduser()
+    return sessions_root() / argument
+
+
+def tree_bytes(path: Path) -> int:
+    """Total size of the regular files under a directory."""
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
 def open_session(root: str) -> Session:
-    session = Session(Path(root))
+    session = Session(resolve_session(root))
     if not session.protocol_path.is_file():
-        raise CommandError(f"no session at {root}: run init first")
+        raise CommandError(f"no session at {session.root}: run init first")
     return session
 
 
@@ -548,7 +583,7 @@ def record_fetch(
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    root = Path(args.session)
+    root = resolve_session(args.session)
     session = Session(root)
     if session.protocol_path.exists():
         raise CommandError(f"session already exists at {root}; refusing to overwrite")
@@ -797,6 +832,47 @@ def verify_one(paper: Paper) -> dict[str, Any]:
     return result
 
 
+def cmd_clean(args: argparse.Namespace) -> int:
+    root = sessions_root()
+    if args.all and args.session:
+        raise CommandError("pass a session or --all, one of the two")
+    if args.all:
+        if not root.is_dir():
+            emit({"removed": None, "bytes_freed": 0})
+            return 0
+        freed = tree_bytes(root)
+        shutil.rmtree(root)
+        emit({"removed": str(root), "bytes_freed": freed})
+        return 0
+    if args.session is None:
+        listing = (
+            [
+                {"session": entry.name, "bytes": tree_bytes(entry)}
+                for entry in sorted(root.iterdir())
+                if entry.is_dir()
+            ]
+            if root.is_dir()
+            else []
+        )
+        emit(
+            {
+                "sessions_root": str(root),
+                "sessions": listing,
+                "next": "pass a session name or --all to remove and free space",
+            }
+        )
+        return 0
+    target = resolve_session(args.session)
+    if not (target / "protocol.json").is_file():
+        raise CommandError(
+            f"{target} holds no session (protocol.json absent); refusing to remove"
+        )
+    freed = tree_bytes(target)
+    shutil.rmtree(target)
+    emit({"removed": str(target), "bytes_freed": freed})
+    return 0
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     included = [
@@ -823,7 +899,10 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
 
 def add_common(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("session", help="session directory")
+    parser.add_argument(
+        "session",
+        help="session name (kept under the XDG state root) or explicit directory",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -880,6 +959,13 @@ def build_parser() -> argparse.ArgumentParser:
     verify = commands.add_parser("verify", help="check DOIs of included papers")
     add_common(verify)
     verify.set_defaults(func=cmd_verify)
+
+    clean = commands.add_parser(
+        "clean", help="list sessions, or remove one (or --all) and free the space"
+    )
+    clean.add_argument("session", nargs="?", help="session name or directory")
+    clean.add_argument("--all", action="store_true")
+    clean.set_defaults(func=cmd_clean)
 
     return parser
 

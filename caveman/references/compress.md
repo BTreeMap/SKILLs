@@ -85,6 +85,6 @@ list numbering, table structure (compress cell text only), YAML frontmatter
 - The script hard-refuses only invariants: secrets-like names, backup artifacts, files over 500KB, non-UTF-8, empty files. Trust refusals; never bypass with a manual write. Content-type judgment arrives as SIGNAL lines for you to weigh: code or config signals mean stop unless the user explicitly asked for that exact file.
 - Mixed prose and code: compress prose only; code blocks are read-only regions. When unsure whether a span is code or prose, leave it unchanged.
 - Non-Markdown prose (.rst, .tex, .typ): the script warns that structural validation assumes Markdown; their headings and code blocks are not protected by the checks, so preserve structure manually and with extra care.
-- Backups live out-of-tree (XDG data dir, or LOCALAPPDATA on Windows) so skill auto-loaders never re-ingest them; the script refuses anything inside the backup tree.
+- Backups live out-of-tree (the library's `btreemap-skills/caveman` namespace under the XDG state dir, or LOCALAPPDATA on Windows) so skill auto-loaders never re-ingest them; the script refuses anything inside the backup tree.
 - This mode is the sole exemption to the "no caveman in persisted files" boundary, and only for the file the user names.
 - One-shot: the report ends the mode; the active intensity level is untouched.

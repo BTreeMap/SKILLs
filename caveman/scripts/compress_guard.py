@@ -594,16 +594,20 @@ def validate(original: str, compressed: str) -> Verdict:
 
 
 def backup_base() -> Path:
-    """Out-of-tree backup root so skill auto-loaders never re-ingest backups."""
+    """Out-of-tree backup root so skill auto-loaders never re-ingest backups.
+
+    Durable state lands in the library's unified namespace under the XDG
+    state directory (LOCALAPPDATA on Windows), per repository convention.
+    """
     if os.name == "nt":
         base = Path(
             os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
         )
     else:
         base = Path(
-            os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local" / "share"))
+            os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
         )
-    return base / "caveman-compress" / "backups"
+    return base / "btreemap-skills" / "caveman" / "backups"
 
 
 @dataclass(frozen=True, slots=True)
@@ -893,6 +897,11 @@ def cmd_restore(path: Path) -> int:
     return 0
 
 
+def tree_bytes(path: Path) -> int:
+    """Total size of the regular files under a directory."""
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
 def cmd_clean(target: Path | None) -> int:
     """Delete backup artifacts. Destroys the undo; run only on explicit request."""
     if target is None:
@@ -900,8 +909,9 @@ def cmd_clean(target: Path | None) -> int:
         if not base.is_dir():
             print("CLEAN: no backups to remove")
             return 0
+        freed = tree_bytes(base)
         shutil.rmtree(base)
-        print(f"CLEAN: removed the backup tree at {base}")
+        print(f"CLEAN: removed the backup tree at {base} ({freed} bytes freed)")
         return 0
     slot = slot_for(target.resolve())
     recorded = recorded_source(slot)
@@ -912,12 +922,14 @@ def cmd_clean(target: Path | None) -> int:
     removed = tuple(
         p for p in (slot.backup_path, slot.body_path, slot.meta_path) if p.is_file()
     )
+    freed = sum(p.stat().st_size for p in removed)
     for artifact in removed:
         artifact.unlink()
         print(f"CLEAN: removed {artifact}")
     if not removed:
         print(f"CLEAN: no backups found for {target.name}")
         return 0
+    print(f"CLEAN: {freed} bytes freed")
     with contextlib.suppress(OSError):  # foreign files present: leave the directory
         slot.directory.rmdir()
     return 0
