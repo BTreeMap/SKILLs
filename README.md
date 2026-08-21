@@ -48,8 +48,8 @@ Add the library as a submodule at `.github/skills` and alias it for Claude:
 )
 ```
 
-Safe to re-run; advancing the recorded pointer is a separate step (see
-Staying current).
+The block is safe to re-run; advancing the recorded pointer is a separate
+step (see Staying current).
 
 Clone consuming projects with submodules included:
 
@@ -63,7 +63,7 @@ git submodule update --init --recursive
 
 ### Manually
 
-No third-party action, no extra permissions:
+This route needs neither a third-party action nor extra permissions:
 
 ```bash
 git submodule update --remote -- .github/skills
@@ -97,13 +97,14 @@ upstream tip twice a day, one commit per configured branch (default: `main`,
 )
 ```
 
-The workflow copy must be a real file, not a symlink: GitHub Actions silently
-ignores symlinked files under `.github/workflows`.
+Copy the workflow in as a real file: GitHub Actions silently ignores
+symlinked files under `.github/workflows`.
 
 The workflow is third-party code running with `contents: write`. Its
 containment:
 
-* Nothing is cloned or checked out, so no submodule code and no git hook runs.
+* The jobs skip cloning and checkout entirely, so no submodule code and no
+  git hook runs.
 * The token is split across two jobs: a read-only job decides what to bump, a
   `contents: write` job only creates the commit and moves the ref.
 * Commits go through the Git Data API with no author, committer, or signature
@@ -121,7 +122,7 @@ If your organization restricts third-party actions, allowlist
 
 Root skill directories are canonical; `.github/skills/<skill-name>` entries
 are committed relative symlinks, and `.claude/skills` points at
-`.github/skills`. Edit the root only; never replace an alias with a copy. Git
+`.github/skills`. Edit skills at the root and keep every alias a symlink. Git
 preserves symlinks on Linux and macOS; on Windows, enable Developer Mode or
 configure Git to create symlinks before cloning.
 
