@@ -52,6 +52,11 @@ Current skills:
 * `git-commit/` - Conventional Commits standard for commit messages, with
   lite/full/ultra effort levels loaded on demand from `references/` and a
   push verb that commits at lite level and pushes.
+* `humanize/` - claim-preserving rewrites of AI-sounding prose based on
+  Wikipedia's "Signs of AI writing": invariants, a 35-pattern detection
+  index, and progressive-loading rules in the spine, with pattern groups
+  (content, language, style, chatbot, filler, rhetoric) and a false-positive
+  calibration guard loaded on demand from `references/`.
 * `pl-theorist/` - a PL theorist's discipline across the lifecycle via verbs
   (design/build/refactor/review/audit/test/teach/help), with per-language cost
   models (including Bash and GitHub Actions YAML) and verb files loaded on

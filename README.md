@@ -15,6 +15,7 @@ reference files and scripts).
 | [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place, with a bundled script providing backup, validation, and undo. |
 | [fact-check](fact-check/SKILL.md) | Decomposes a document into checkable claims, verifies each against retrieved sources with cited quotes, and applies corrections only after per-item approval. |
 | [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages at three effort levels; a push verb commits and pushes in one step. |
+| [humanize](humanize/SKILL.md) | Rewrites AI-sounding text so it reads like its writer, keeping every claim and inventing nothing; detects 35 patterns from Wikipedia's "Signs of AI writing" and loads only the pattern groups a text triggers. |
 | [pl-theorist](pl-theorist/SKILL.md) | Code design, review, and refactoring grounded in typed domain modeling and complexity analysis, with per-language cost models including Bash and GitHub Actions. |
 | [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
 | [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files with pypdf; strictly read-only on the documents. |
