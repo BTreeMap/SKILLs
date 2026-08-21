@@ -8,8 +8,10 @@ available later without re-reading.
 
 - Start with the anchor: the included paper most cited by the others; it
   fixes the field's vocabulary and baseline claims.
-- Read via the best available means: a PDF-reading tool on `pdf_url`, the
-  landing page's HTML text, or the abstract alone as the floor. After each
+- Read via the best available means: the read-pdf skill on `pdf_url` when
+  it is installed (its page markers become claim locations; any PDF-reading
+  tool works as fallback), the landing page's HTML text, or the abstract
+  alone as the floor. After each
   paper, set its `read_level` (`abstract` or `full-text`) with `update`.
   Invariant 5 makes this label the ceiling for how its claims appear in the
   report.

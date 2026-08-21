@@ -80,3 +80,6 @@ reported numbers with units, named papers doing named things.
   deliverable; tables carry structure.
 - Recency words ("recent", "current") always bind to the method section's
   as-of date.
+- When the humanize skill is installed alongside this one, sweep the
+  finished report with its detection index before delivery; the rules above
+  bind on their own when it is not.

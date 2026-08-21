@@ -295,6 +295,10 @@ language's cost model by analogy.
   hot paths.
 - A Bloom filter answers "possibly present." Never gate correctness-critical
   logic on a probabilistic membership test alone.
+- A validation step blocked by a missing toolchain is not a dead end: the
+  setup-env skill, when installed alongside this one, provisions per-project
+  toolchains in userspace; without it, name the unavailable check rather
+  than skipping it silently.
 
 ## Completion Checks
 
