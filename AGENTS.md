@@ -218,11 +218,11 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   the XDG base directory standard:
   * Durable, light state (backups, logs, resumable sessions) lives in the
     library's one state root under the XDG state directory:
-    `${XDG_STATE_HOME:-$HOME/.local/state}/btreemap-skills/`
-    (`%LOCALAPPDATA%\btreemap-skills\` on Windows). The `btreemap-skills`
+    `${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/`
+    (`%LOCALAPPDATA%\btm-skills\` on Windows). The `btm-skills`
     segment marks this library as the source of every file under it, and
     each script keeps all of its durable files inside its own skill's
-    subdirectory of that root, `btreemap-skills/<skill-name>/`, in
+    subdirectory of that root, `btm-skills/<skill-name>/`, in
     purpose-named subdirectories (`backups/`, `logs/`, `sessions/`).
   * Heavy or regenerable artifacts (downloads, toolchains, caches,
     extractions) live in temporary space. Any temp location serves; the

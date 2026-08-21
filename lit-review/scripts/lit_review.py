@@ -451,7 +451,7 @@ def state_root() -> Path:
         base = Path(
             os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
         )
-    return base / "btreemap-skills" / "lit-review"
+    return base / "btm-skills" / "lit-review"
 
 
 def sessions_root() -> Path:

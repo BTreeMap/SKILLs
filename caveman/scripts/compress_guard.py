@@ -607,7 +607,7 @@ def backup_base() -> Path:
         base = Path(
             os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
         )
-    return base / "btreemap-skills" / "caveman" / "backups"
+    return base / "btm-skills" / "caveman" / "backups"
 
 
 @dataclass(frozen=True, slots=True)
