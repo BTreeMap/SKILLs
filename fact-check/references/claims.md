@@ -20,7 +20,8 @@ checkable proposition each.
 ## What to skip
 
 Opinions, recommendations, tutorial instructions, architectural rationale,
-hedged speculation ("may", "could"), and self-referential document text.
+rhetoric, hedged speculation ("may", "could"), and self-referential document
+text.
 When a sentence mixes fact and opinion, extract only the factual proposition.
 
 ## Claim types and retrieval routing

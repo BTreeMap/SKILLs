@@ -1,7 +1,6 @@
 # Calibration: false positives and human details
 
-Load whenever any pattern is flagged, before rewriting. Two lists: evidence
-that proves nothing alone, and writing to leave intact.
+Two lists: evidence that proves nothing alone, and writing to leave intact.
 
 ## What not to flag
 

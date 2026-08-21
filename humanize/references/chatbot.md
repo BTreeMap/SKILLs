@@ -1,8 +1,6 @@
 # Chatbot patterns (§20-22)
 
-Conversation artifacts left in text that should stand on its own. Routing
-cues live in the detection index; this file owns the watch-lists, problems,
-and examples.
+Conversation artifacts left in text that should stand on its own.
 
 ### 20. Chatbot text left in the answer
 

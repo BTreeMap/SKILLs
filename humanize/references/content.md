@@ -1,8 +1,7 @@
 # Content patterns (§1-6)
 
 What the text claims: inflated importance, borrowed authority, promotional
-tone, vague sourcing, stock sections. Routing cues live in the detection
-index; this file owns the watch-lists, problems, and examples.
+tone, vague sourcing, stock sections.
 
 ### 1. Inflated claims about importance and legacy
 

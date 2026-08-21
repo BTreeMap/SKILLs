@@ -5,9 +5,9 @@ Applies on top of the core rules in SKILL.md.
 <full_directives>
   <body_constraints>
     <rule>Separate the subject line and the body with exactly one blank line.</rule>
-    <rule>Wrap all body lines at exactly 72 characters.</rule>
+    <rule>Wrap all body lines at 72 characters.</rule>
     <rule>Explain exactly what changed and the rationale behind the chosen solution.</rule>
-    <rule>Apply token-economical phrasing (Caveman formatting) to the body text, using dense syntactic structures and omitting conversational filler.</rule>
+    <rule>Apply token-economical phrasing (Caveman formatting) to the body text: dense syntax, no conversational filler.</rule>
   </body_constraints>
 
   <footer_constraints>
@@ -16,17 +16,17 @@ Applies on top of the core rules in SKILL.md.
   </footer_constraints>
 
   <scope_resolution_procedure>
-    <step>Run a command like `git log --pretty=format:'%s' -50` to inspect recent history.</step>
-    <step>Reuse an existing scope from the log if it aligns with the current changes.</step>
-    <step>Derive new scopes from the repository's top-level packages, crates, modules, or directories if no existing scope applies.</step>
+    <step>Inspect recent history, e.g. `git log --pretty=format:'%s' -50`.</step>
+    <step>Reuse an existing scope from the log when it fits the current changes.</step>
+    <step>When none applies, derive a new scope from the repository's top-level packages, crates, modules, or directories.</step>
     <step>Format new scopes as short, lowercase, single tokens using hyphens for multiple words.</step>
     <step>Omit the scope entirely for repository-wide changes.</step>
   </scope_resolution_procedure>
 
   <gotchas>
-    <item>The blank line between the subject and the body is structurally required for Git tooling compatibility.</item>
+    <item>Git tooling structurally requires the blank line between subject and body.</item>
     <item>Imperative mood is strict (use "Add" instead of "Added" or "Adding").</item>
-    <item>The body explains the "what" and "why"; rely entirely on the code diff to communicate the "how".</item>
+    <item>The body explains the "what" and "why"; rely entirely on the code diff for the "how".</item>
     <item>Failing to reuse scopes discovered via `git log` fragments the history with duplicate synonyms.</item>
     <item>Terminating the subject line with punctuation violates the standard.</item>
   </gotchas>
@@ -61,7 +61,7 @@ Resolves #142
   </example>
 
   <example type="invalid">
-    <context>Demonstrating common failure modes to avoid.</context>
+    <context>Common failure modes to avoid.</context>
     <raw_output>
 fixed the bug
 added a token refresh thing so users dont get logged out randomly anymore. also updated the ui to show a loading spinner while it happens

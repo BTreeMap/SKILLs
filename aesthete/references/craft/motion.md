@@ -43,10 +43,10 @@ does not come, remove the animation.
   cap the total: a long stagger across many items means the last item
   arrives after the user has already started reading the first.
 * Animate the parent or the child, not both in competing ways.
-* Shared-element continuity is the highest-value motion available: when the
-  same object persists across a state or route change, animate it rather
-  than crossfading two representations. This is the one case where motion
-  genuinely reduces cognitive load rather than merely decorating.
+* Shared-element continuity is the highest-value motion available, the one
+  case where motion genuinely reduces cognitive load rather than merely
+  decorating: when the same object persists across a state or route change,
+  animate it rather than crossfading two representations.
 * Show content the user is waiting for without an entry animation.
 
 ## Scroll-linked motion
@@ -93,8 +93,8 @@ attention. Honor it: replace movement with a fade or an instant change,
 disable parallax and scroll-hijacking entirely, stop infinite loops, and
 keep every transition of state legible without the animation.
 
-Reduced motion means less movement. It does not reduce function. Never gate
-content, state changes, or affordances behind an animation that the preference
+Reduced motion means less movement, never less function. Never gate
+content, state changes, or affordances behind an animation the preference
 disables. Check the preference at the point of use so a change mid-session
 takes effect.
 

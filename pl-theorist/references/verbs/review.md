@@ -1,8 +1,8 @@
 # Verb: review
 
 Read-only PL-lens review of a diff, PR, or file set. Produce ranked findings;
-change nothing. The complement of an over-engineering review: this lens hunts
-unsound domain modeling and unsound cost, not bloat.
+change nothing. This lens hunts unsound domain modeling and unsound cost, not
+bloat.
 
 ## Pipeline
 

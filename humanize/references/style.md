@@ -1,8 +1,7 @@
 # Style patterns (§14-19)
 
 Typography and formatting: dashes, bold, headings, emoji, quote marks. All
-mechanically checkable by searching the text. Routing cues live in the
-detection index; this file owns the rules, problems, and examples.
+mechanically checkable by searching the text.
 
 ### 14. Em and en dashes
 
@@ -18,9 +17,6 @@ The term is primarily promoted by Dutch institutions – not by the people thems
 <after>
 The term is primarily promoted by Dutch institutions, not by the people themselves. The changes, long overdue according to critics, will take effect immediately.
 </after>
-
-Before returning the rewrite, search for U+2014 and U+2013. Remove each one
-unless the writer's sample uses that mark.
 
 ### 15. Too much bold text
 

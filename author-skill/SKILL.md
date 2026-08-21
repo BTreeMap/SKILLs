@@ -16,21 +16,25 @@ license: MIT
     <rule>Store the skill in a kebab-case directory containing a file named exactly `SKILL.md`.</rule>
     <rule>Begin the file with YAML frontmatter restricted to Agent Skills spec fields (agentskills.io), in this order: `name`, `description`, then only as needed `license`, `compatibility`, `metadata`, `allowed-tools`. Never emit agent-specific extension fields such as `argument-hint` or `when_to_use`; record such hints as quoted string values under `metadata`.</rule>
     <rule>Set `name` equal to the directory name: 1-64 characters; lowercase letters, numbers, and hyphens; no leading, trailing, or consecutive hyphens. Name a task skill with an imperative verb phrase, the command a user would speak (e.g., `fact-check`, `read-pdf`, `git-commit`); name a persona or stance skill with a single noun (e.g., `caveman`, `ponytail`). Never append filler nouns like `-protocol`, `-helper`, or `-skills`.</rule>
-    <rule>Write `description` as a `>-` folded block scalar, 1-1024 characters, third person, in two movements: first a capability statement of what the skill does carrying its key search terms, then trigger conditions starting "Use when"; append a "Do not use for ..." exclusion when misfires are likely.</rule>
+    <rule>Write `description` as a `>-` folded block scalar, 1-1024 characters, third person, in two movements: first a capability statement carrying the skill's key search terms, then trigger conditions starting "Use when"; append a "Do not use for ..." exclusion when misfires are likely.</rule>
     <rule>Set `license: MIT` so a skill vendored out of this repository retains its terms.</rule>
     <rule>Add `compatibility` (max 500 characters) only when the skill requires specific runtimes, system packages, or network access; most skills omit it.</rule>
     <rule>Use Markdown `##` or `###` headings for internal structure.</rule>
-    <rule>Address bundled files by registered name, never by path. Declare every path exactly once, in a `## Registry` table that is the first `##` section of `SKILL.md` and maps each name to its path, so names are declared before the body uses them. A name is the basename without `.md`, written in backticks so it reads as an identifier rather than the ordinary word. Reference files cite siblings by name only and never link, since references stay one level deep from `SKILL.md`.</rule>
-    <rule>Define each topic in exactly one file. Where a value, threshold, or enumeration is restated in a second file, replace the copy with an attribution naming its owner, so the two can never disagree.</rule>
+    <rule>Address bundled files by registered name, never by path. Declare every path exactly once, in a `## Registry` table that is the first `##` section of `SKILL.md` and maps each name to its path, so names are declared before the body uses them. A name is the basename without `.md`, backticked so it reads as an identifier rather than the ordinary word. Reference files cite siblings by name only and never link: references stay one level deep from `SKILL.md`.</rule>
+    <rule>Define each topic in exactly one file. Where a value, threshold, or enumeration is restated in a second file, replace the copy with an attribution naming its owner, so the two can never disagree. Attribute only toward a file guaranteed to be in context when the copy is read (the spine, or a kernel co-loaded with it); a file the skill loads alone keeps its own copies.</rule>
     <rule>Wrap all examples, templates, and payloads strictly in XML tags to prevent instruction bleed.</rule>
   </skill_anatomy>
 
   <execution_constraints>
     <rule>Target this skill exclusively at agent-facing procedures.</rule>
     <rule>Extract only verified tool calls and successful commands from the execution history.</rule>
-    <rule>Parameterize all project-specific values (paths, hostnames, IDs) or provide instructions to derive them dynamically.</rule>
+    <rule>Parameterize all project-specific values (paths, hostnames, IDs) or instruct how to derive them dynamically.</rule>
     <rule>Express directives conditionally and explicitly (e.g., "If X, execute Y").</rule>
-    <rule>Enforce token-economical language in the generated skill, utilizing sentence fragments and eliminating conversational filler; `/caveman` defines that register in full.</rule>
+    <rule>Enforce token-economical language in the generated skill: sentence fragments, no conversational filler; `/caveman` defines that register in full.</rule>
+    <rule>Write every sentence to carry a rule, a condition, an input, or an example; delete narration about the document, restated headings, and repeated rationale. Keep rationale only where it changes a judgment call.</rule>
+    <rule>State each directive as the pattern to follow; a prohibition spells out the unwanted pattern and raises its salience. Reserve negation for hard boundaries where the banned form must be named to be recognized.</rule>
+    <rule>Exclude inflation vocabulary (comprehensive, seamless, robust, powerful, leverage, delve, cutting-edge) and wind-ups (in order to, it is important to note); sweep the finished draft with `/humanize` before finalizing.</rule>
+    <rule>Write for a follower model less capable than the author: leave no step implied and no assumption unstated. When brevity and sufficiency conflict, sufficiency wins.</rule>
     <rule>Never emit em-dash characters (U+2014); use a hyphen, a comma, a colon, or restructure the sentence.</rule>
   </execution_constraints>
 
@@ -66,9 +70,10 @@ license: MIT
     <item>Every step specifies exact tools, flags, and expected outputs.</item>
     <item>Examples and templates reside exclusively within XML blocks.</item>
     <item>Any bundled script hard-fails only on exact invariants; heuristic judgments surface as advisory signals, and no trust decision is silent.</item>
+    <item>Every sentence carries a rule, condition, input, or example; a `/humanize` sweep finds no inflation vocabulary, wind-ups, or filler.</item>
     <item>Gotchas section contains non-obvious traps.</item>
     <item>No placeholder text remains outside intentional templates.</item>
-    <item>Reproduction Test: The procedure relies exclusively on the document text, guaranteeing that a fresh agent can execute it without external memory or clarifying questions.</item>
+    <item>Reproduction Test: the document text alone lets a fresh agent execute the procedure without external memory or clarifying questions.</item>
   </validation_checklist>
 
   <output_contract>

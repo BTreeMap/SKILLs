@@ -29,18 +29,18 @@ Use only `pypdf`, resolved by `uv` from the bundled script's PEP 723 metadata. R
 
 ## Procedure
 
-1. Locate the requested PDF. Confirm the file exists before reading it.
-2. Run the bundled extractor. It reads the input PDF and writes plain text only; it never changes the PDF.
-3. Keep the `## PDF page N` markers in the extracted text. They are the evidence anchors for the analysis.
-4. Inspect the extracted page text before answering. For a specific question, begin with the relevant pages and expand to referenced pages when context is missing.
+1. Locate the requested PDF; confirm it exists before reading.
+2. Run the bundled extractor. It writes plain text only and never changes the PDF.
+3. Keep the `## PDF page N` markers in the extracted text; they are the evidence anchors.
+4. Inspect the extracted page text before answering. For a specific question, begin with the relevant pages; expand to referenced pages when context is missing.
 5. Report facts with their PDF page numbers. Label conclusions that combine multiple passages as inferences.
 6. State any extraction limitation that affects the answer, such as an image-only page or disrupted reading order.
 
 ## Extract with the Bundled Script
 
-The bundled script is registered as `extract_pdf`. It accepts one-based page selections, including open-ended ranges. By default, it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its PEP 723 metadata is the source of truth for the required dependency.
+The script, registered as `extract_pdf`, accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its PEP 723 metadata is the source of truth for the required dependency.
 
-Run the canonical bundled path rather than copying the script into document directories: uv caches script environments by script path. Pass each document path as an argument instead.
+Run the canonical bundled path and pass each document path as an argument; uv caches script environments by script path, so copying the script into document directories defeats the cache.
 
 <all_pages_command>
 uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf>

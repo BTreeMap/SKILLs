@@ -1,11 +1,10 @@
 # Caveman Compress Mode
 
 Rewrite a natural-language file (CLAUDE.md, notes, todos, preferences) in
-caveman style to cut its input-token cost. The agent compresses the prose;
-the bundled guard script deterministically handles everything else:
-classification, sensitive-file refusal, verified out-of-tree backup,
-structural validation, and atomic writes. The target file is never written
-until validation passes.
+caveman style to cut input-token cost. Agent compresses the prose; the
+bundled guard script deterministically handles the rest: classification,
+sensitive-file refusal, verified out-of-tree backup, structural validation,
+atomic writes. Target file is never written until validation passes.
 
 ## Procedure
 
@@ -23,8 +22,8 @@ uv run --script <skill-root>/scripts/compress_guard.py prepare <absolute-filepat
    evidence from the script's heuristics (content assessed as code, config,
    or inconclusive, with the observed ratios): weigh them yourself. If
    signals say code or config and the user did not explicitly name this
-   file for compression, stop and report instead of proceeding; if the user
-   explicitly asked, proceed: the verified backup makes it undoable.
+   file for compression, stop and report; if the user explicitly asked,
+   proceed: the verified backup makes it undoable.
 
 2. Compress. Read the BODY file and rewrite its prose per the rules below.
    Write the result to a scratch file. Do not touch fenced code, inline

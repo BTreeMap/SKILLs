@@ -25,10 +25,8 @@ holds, verify the rest, and report every divergence.
 
 ## Mapping a palette to roles
 
-A palette is a set of colors. A system needs a set of roles. The mapping is
-a decision, not a lookup, and it is made once and written down.
-
-Identify, in this order:
+A palette is colors; a system needs roles. The mapping is a decision, not a
+lookup, made once and written down. Identify, in this order:
 
 1. **Accent**: the most saturated color, or the one the source names as
    primary. Exactly one, regardless of how many the palette offers.
@@ -67,10 +65,10 @@ accent against its on-color at the sizes actually used, secondary and muted
 text against both the canvas and any tinted card, borders that identify a
 control, and both themes if two exist.
 
-Verify every accessibility claim against the current specification. Documents
-commonly cite
-superseded thresholds, or the wrong conformance level, and a claim of
-non-compliance can be as wrong as a claim of compliance.
+Verify every accessibility claim against the current specification.
+Documents commonly cite superseded thresholds or the wrong conformance
+level, and a claim of non-compliance can be as wrong as a claim of
+compliance.
 
 ## Resolving a conflict with the floor
 

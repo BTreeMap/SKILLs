@@ -53,9 +53,8 @@ rather than summed into a score to rank by:
 
 At full, appraisal shapes how much weight a paper carries in synthesis and
 is mentioned where it matters. At ultra, the report carries the table for
-every included paper. While verifying, treat a Crossref title mismatch
-signal from the script as a possible retraction or erratum: check the
-landing page before citing.
+every included paper. Title-mismatch signals are handled at verification,
+per `report`.
 
 ## Parallel extraction
 

@@ -14,7 +14,7 @@ Exactly one per claim.
 | insufficient-evidence | Verifiable in principle; retrieval found no adequate source |
 | unverifiable | Not checkable in principle or in this environment (subjective, paywalled, no web access, future prediction); reason required in notes |
 
-Distinctions that matter:
+Distinctions:
 
 - `contradicted` vs `outdated` is decided by claim-time, not by how wrong the
   claim is now.

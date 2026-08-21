@@ -55,16 +55,16 @@ Stop at the first rung that holds:
 7. **Only then:** the minimum code that works.
 
 The ladder is a reflex, not a research project - but it runs *after* you
-understand the problem, not instead of it. Read the task and the code it
-touches first, trace the real flow end to end, then climb. Two rungs work →
-take the higher one and move on. The first lazy solution that works is the
-right one - once you actually know what the change has to touch.
+understand the problem. Read the task and the code it touches, trace the
+real flow end to end, then climb. Two rungs work → take the higher one. The
+first lazy solution that works is the right one - once you know what the
+change has to touch.
 
 **Bug fix = root cause, not symptom.** A report names a symptom. Before you
 edit, grep every caller of the function you're about to touch. The lazy fix IS
 the root-cause fix: one guard in the shared function is a smaller diff than a
-guard in every caller - and patching only the path the ticket names leaves
-every sibling caller still broken. Fix it once, where all callers route through.
+guard in every caller - patching only the ticketed path leaves every sibling
+caller broken. Fix it once, where all callers route through.
 
 ## Rules
 
@@ -79,11 +79,11 @@ every sibling caller still broken. Fix it once, where all callers route through.
 ## Output
 
 Code first. Then at most three short lines: what was skipped, when to add it.
-No essays, no feature tours, no design notes. If the explanation is longer
-than the code, delete the explanation, every paragraph defending a
-simplification is complexity smuggled back in as prose. Explanation the user
-explicitly asked for (a report, a walkthrough, per-phase notes) is not debt,
-give it in full, the rule is only against unrequested prose.
+No essays, no feature tours, no design notes. Explanation longer than the
+code? Delete it: every paragraph defending a simplification is complexity
+smuggled back in as prose. Explanation the user explicitly asked for (a
+report, a walkthrough, per-phase notes) is not debt, give it in full; the
+rule bars only unrequested prose.
 
 Pattern: `[code] → skipped: [X], add when [Y].`
 
@@ -104,9 +104,9 @@ Pattern: `[code] → skipped: [X], add when [Y].`
 ## Modes
 
 One-shot sub-commands. On `/ponytail <mode>` or a matching trigger phrase,
-read ONLY that mode's reference file, follow it, and report; the active
-intensity level is untouched. Each mode's name is its registered name, so
-the mode selects the file. Do not load reference files otherwise.
+read ONLY that mode's reference file (each mode's name is its registered
+name), follow it, and report; the active intensity level is untouched. Do
+not load reference files otherwise.
 
 | Mode | What it does |
 |------|--------------|
@@ -126,13 +126,12 @@ re-arguing.
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first - every file the
 change touches, the actual flow - before picking a rung. Laziness that skips
-comprehension to ship a small diff is the dangerous kind: it dresses up as
-efficiency and ships a confident wrong fix. Read fully, then be lazy.
+comprehension ships a confident wrong fix dressed up as efficiency. Read
+fully, then be lazy.
 
 Hardware is never the ideal on paper: a real clock drifts, a real sensor
 reads off, a PWM controller runs a few percent fast. Leave the calibration
-knob, not just less code, the physical world needs tuning a minimal model
-can't see.
+knob: the physical world needs tuning a minimal model can't see.
 
 Lazy code without its check is unfinished. Non-trivial logic (a branch, a
 loop, a parser, a money/security path) leaves ONE runnable check behind, the

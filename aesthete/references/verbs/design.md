@@ -26,7 +26,7 @@ missing, produce them first; everything below depends on them.
    Prefer, in order: what the repository already uses; an official system
    when the domain expects one; a hand-composed system only when the brand
    expression is itself the product. Return to the spine and load
-   `systems.md` when this decision is live.
+   `systems` when this decision is live.
 
 4. **Set the token spine.** Fix the scales before composing: type scale and
    pairing, spacing scale, radius scale, one accent, neutral family, motion

@@ -1,8 +1,7 @@
 # Rhetoric patterns (§27-35)
 
 Discourse-level moves: fake depth, self-announcement, staged candor, straw
-objections, drafting residue. Routing cues live in the detection index; this
-file owns the watch-lists, problems, and examples.
+objections, drafting residue.
 
 ### 27. Pretending to reveal a deeper truth
 

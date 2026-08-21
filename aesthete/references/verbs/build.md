@@ -13,12 +13,12 @@ writing components.
 Build in this order. Each stage constrains the next, and reordering causes
 rework.
 
-1. **Inventory before authoring.** Search the repository for every component,
-   variant, hook, and token the screen needs before writing anything. List
-   what exists and will be reused, what exists and needs a new variant, and
-   what genuinely does not exist yet. Only the third category gets authored.
-   Inventory first so existing components are reused and the codebase does
-   not acquire its third Button.
+1. **Inventory before authoring.** Search the repository for every
+   component, variant, hook, and token the screen needs before writing
+   anything. List what exists and will be reused, what exists and needs a
+   new variant, and what genuinely does not exist yet. Only the third
+   category gets authored; this is what keeps the codebase from acquiring
+   its third Button.
 2. **Tokens before components.** Adopt the supplied or existing token set,
    or define one where none exists: type scale, spacing scale, radius scale,
    color tokens for every theme, motion curves, elevation, as named values

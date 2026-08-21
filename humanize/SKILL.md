@@ -46,7 +46,7 @@ Hold these in every mode. Each outranks any pattern fix.
    where the writer's voice calls for one; a factual claim is not. Fiction is
    exempt: invented detail is the task.
 3. **Match the voice.** Formal, casual, or technical to fit the text. When the
-   user supplies a writing sample of their own prior prose, read it before
+   user supplies a sample of their prior prose, read it before
    rewriting: note sentence length, word choice, paragraph openings,
    punctuation, repeated phrases, and transitions, then match those habits.
    Keep casual words casual and deliberate quirks intact. The sample outranks

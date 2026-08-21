@@ -1,8 +1,7 @@
 # Language and grammar patterns (§7-13)
 
 Word choice and sentence grammar: AI-favored vocabulary, dodged simple verbs,
-formulaic sentence shapes. Routing cues live in the detection index; this
-file owns the watch-lists, problems, and examples.
+formulaic sentence shapes.
 
 ### 7. Overused AI words
 

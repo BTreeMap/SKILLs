@@ -1,21 +1,20 @@
 # Tells: the catalogue of generated-looking output
 
 A tell is a pattern that appears far more often in generated interfaces than
-in considered ones. Each is banned as a **default reach**. Any of these is
-available when the brief genuinely calls for it and you can say why.
-
-These patterns look like design decisions that nobody actually made, and
-readers who see a lot of interfaces recognize them instantly.
+in considered ones, a design decision nobody actually made, and readers who
+see many interfaces recognize each instantly. Each is banned as a **default
+reach**. Any of these is available when the brief genuinely calls for it and
+you can say why.
 
 ## Typography and punctuation
 
 * **The em-dash character, U+2014, anywhere a user can see it.** Headings,
   labels, buttons, body copy, quotes, attribution, captions, alternative
-  text, empty states, error messages. This is the single highest-signal
-  marker of generated text. Replace with a period, a comma, a colon,
-  parentheses, or a restructured sentence. The en-dash U+2013 is likewise
-  banned as a separator; ranges take a plain hyphen. The rule is binary
-  because every proportional phrasing of it has been ignored in practice.
+  text, empty states, error messages. The single highest-signal marker of
+  generated text. Replace with a period, a comma, a colon, parentheses, or a
+  restructured sentence. The en-dash U+2013 is likewise banned as a
+  separator; ranges take a plain hyphen. The rule is binary because every
+  proportional phrasing of it has been ignored in practice.
 * **A word in a different family dropped into a heading** for visual
   interest. Emphasis stays within one family, using weight or italic.
 * **Headings hard-broken and part-italicized** to force a shape. The shape
@@ -68,7 +67,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
   marketing pages. Use a real capture, a generated image, a genuinely
   embedded component, or no preview.
 * **Invented precision**: percentages, multipliers, measurements, and
-  weights that imply measurement nobody performed. Real, explicitly labeled
+  weights implying measurement nobody performed. Real, explicitly labeled
   as illustrative, or absent.
 * **Placeholder people**: generic names, obviously synthetic avatars, and
   round-numbered statistics.
@@ -147,6 +146,5 @@ labels against section count, consecutive split layouts, marquees,
 occurrences of U+2014, distinct accent colors, distinct radius values. A
 counted violation is not a matter of opinion.
 
-When building, derive each decision from the design read. Most of these
-patterns disappear when each choice has a reason, because they substitute for
-decisions.
+When building, derive each decision from the design read. These patterns
+substitute for decisions, so most disappear when each choice has a reason.

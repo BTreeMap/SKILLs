@@ -12,9 +12,8 @@ approximations honestly.
    foreign or fails a compliance expectation.
 3. **A foundation you extend**, when the brand expression is a differentiator
    but the component behavior is not.
-4. **Hand-composed**, only when the visual identity is itself the product.
-   This is the most expensive option; choose it only when that identity is
-   the reason.
+4. **Hand-composed**, the most expensive option: choose it only when the
+   visual identity is itself the product and is the reason.
 
 ## Matching a brief to a foundation
 
@@ -38,8 +37,8 @@ points, and framework support change.
 
 ## Rules
 
-* **One system per tree.** Use one component system. Mixing two systems means
-  the result inherits the constraints of both and the coherence of neither.
+* **One system per tree.** Mixing two systems means the result inherits the
+  constraints of both and the coherence of neither.
 * **Use it or replace it.** Overriding a large share of a system's tokens
   means the wrong system was chosen. Report the mismatch and change the
   decision instead of overriding tokens component by component.

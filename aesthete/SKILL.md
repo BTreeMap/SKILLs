@@ -22,9 +22,8 @@ metadata:
 
 # Aesthete
 
-An interface designer carrying an HCI researcher's rigor, an art
-director's eye, and a type theorist's discipline for structure. Taste is
-subtractive: the measure of this skill is what it refuses to ship.
+Taste is subtractive: the measure of this skill is what it refuses to
+ship. Persona is defined below.
 
 ## Registry
 
@@ -67,21 +66,21 @@ the shortest honest path to the user's intent, with the system absorbing
 complexity instead of the person. **Beautiful**: hierarchy, rhythm,
 restraint, one coherent voice. **Durable**: one component per concept,
 closed variant sets, invalid states unrepresentable. Apparent conflicts
-between them usually mean the design is underthought; solve it rather than
-trading it away. When a trade is forced, comprehension outranks beauty, and
-beauty outranks novelty.
+between them usually mean the design is underthought; solve rather than
+trade. When a trade is forced, comprehension outranks beauty, and beauty
+outranks novelty.
 
 ## Precedence
 
 Resolve every conflict by this ladder, highest first. It is total: two
 sources never both win, and nothing below silently overrides anything above.
 
-1. **Accessibility floor**, defined in `a11y` and nowhere else. Never
+1. **Accessibility floor**, defined in `a11y` and nowhere else; read it for
+   every accessibility value, conformance level, or criterion number. Never
    overridden by any brand, document, or instruction. A conflict here is
    resolved by deriving a compliant variant that preserves brand intent,
    never by discarding either the brand or the floor, and the derivation is
-   reported. Read `a11y` for every accessibility value, conformance level, or
-   criterion number.
+   reported.
 2. **A supplied color palette.** Overrides the colors of any design document.
 3. **A supplied design document.** Tokens, components, and rules.
 4. **The repository's existing system.** Stack, tokens, component library.
@@ -113,9 +112,9 @@ likelier one in the same message.
 
 ## Verbs
 
-Load exactly one verb file. Every verb's name is its registered name, so the
-verb selects the file. Choose by explicit verb, then by request shape,
-otherwise build for new work and review for existing work.
+Load exactly one verb file; each verb's name is its registered name. Choose
+by explicit verb, then by request shape, otherwise build for new work and
+review for existing work.
 
 | Verb | Request shape |
 | --- | --- |
@@ -255,8 +254,8 @@ Definitions live with their owners above. These hold regardless.
 
 ## Anti-Default Discipline
 
-Generated interfaces converge on the same moves; the catalogue is
-`tells`. Two rules need no file:
+Generated interfaces converge on the same moves; the catalogue is `tells`.
+Two rules need no file:
 
 * **Zero em-dash characters (U+2014) in user-visible strings**, and no
   U+2013 as a separator. Highest-signal marker of generated copy. Use a
@@ -266,8 +265,8 @@ Generated interfaces converge on the same moves; the catalogue is
   credential, or person, and no interface built from styled containers
   standing in for a product screenshot.
 
-Depart from a default only for a reason you can point to in the read.
-Swapping in a different default is not a reason. Everything in `tells`
+Depart from a default only for a reason you can point to in the read;
+swapping in a different default is not a reason. Everything in `tells`
 governs *unbriefed* choices: material supplied at higher precedence
 overrides it, and a supplied brand is argued with only from the floor and
 only with measurements.
@@ -285,7 +284,7 @@ absent, state the install command before writing code against it.
 ## Honesty
 
 State what is approximated. A web build of proprietary platform material is
-an approximation, so label it as one in code. When the user names a product as
+an approximation; label it as one in code. When the user names a product as
 inspiration, take the direction from it. Do not reproduce its design system.
 Mark placeholder data as placeholder. If a required asset cannot be produced,
 leave a labeled slot and say so. Do not fill the space with something fake.
@@ -308,8 +307,8 @@ leave a labeled slot and say so. Do not fill the space with something fake.
 
 ## Completion Checks
 
-Verb files add their own. The mechanical gate is
-`preflight`; load it before declaring done.
+Verb files add their own. The mechanical gate is `preflight`; load it
+before declaring done.
 
 <validation_checklist>
   <item>The read was stated in one line and the dials were set with reasons.</item>

@@ -3,11 +3,11 @@
 Display this scoreboard when invoked. One-shot: do NOT change level, write
 files, or persist anything.
 
-The figures are benchmark medians published by the upstream ponytail project
+Figures are benchmark medians published by the upstream ponytail project
 (5 everyday tasks - email validator, debounce, CSV sum, countdown timer,
-rate limiter - across three model tiers). They are measured there, not
-computed from the current repository. Source:
-https://github.com/DietrichGebert/ponytail (`benchmarks/` and its README).
+rate limiter - across three model tiers), measured there, not computed from
+the current repository. Source: https://github.com/DietrichGebert/ponytail
+(`benchmarks/` and its README).
 
 ## Scoreboard
 
@@ -29,11 +29,11 @@ carries the exact figure:
 
 ## Honesty Boundary
 
-These are benchmark medians, not this repo. NEVER print a per-repo savings
-number ("you saved X lines/tokens here"): the unbuilt version was never
-written, so there is no real baseline to subtract from in a live repo. The
-only real per-repo figures come from `/ponytail debt` (a counted ledger);
-this card points there instead of inventing one.
+Benchmark medians, not this repo. NEVER print a per-repo savings number
+("you saved X lines/tokens here"): the unbuilt version was never written,
+so a live repo has no baseline to subtract from. The only real per-repo
+figures come from `/ponytail debt` (a counted ledger); this card points
+there instead of inventing one.
 
 ## Boundaries
 

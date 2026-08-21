@@ -15,8 +15,8 @@ Tags (when findings are mixed):
 - `nit:` style, naming, micro-optimization; author can ignore
 - `q:` genuine question, not a suggestion
 
-Plain-text tags are canonical (they cost fewer tokens); emoji markers are
-optional decoration only when the host renders them usefully.
+Plain-text tags canonical (fewer tokens); emoji markers optional decoration
+only when the host renders them usefully.
 
 Drop: "I noticed that...", "You might want to consider...", "This is just a
 suggestion" (use `nit:`), per-comment praise (say it once at the top),

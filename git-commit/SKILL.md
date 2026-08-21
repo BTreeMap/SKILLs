@@ -16,8 +16,8 @@ metadata:
 
 # Git Commit
 
-Draft and review commit messages that follow Conventional Commits, saying
-why over what, at the cheapest effort level that does the job.
+Draft and review Conventional Commits messages, saying why over what, at
+the cheapest effort level that does the job.
 
 ## Registry
 
@@ -26,10 +26,10 @@ why over what, at the cheapest effort level that does the job.
 | `full` | [references/full.md](references/full.md) |
 | `ultra` | [references/ultra.md](references/ultra.md) |
 
-Effort levels gate how much history is scanned and how much text is produced.
-Default: **full**. Switch per invocation: `/git-commit lite|full|ultra`.
-Each level's name is its registered name, so the level selects the file;
-**lite** loads none, and **ultra** loads `full` before its own.
+Effort levels gate history scanned and text produced. Default: **full**.
+Switch per invocation: `/git-commit lite|full|ultra`. Each level's name is
+its registered name, so the level selects the file; **lite** loads none,
+**ultra** loads `full` before its own.
 
 | Level | Behavior |
 |-------|----------|
@@ -58,7 +58,7 @@ level wins, so `full push` and `ultra push` draft at that level first. Run
   </commit_schema>
 
   <subject_constraints>
-    <rule>Limit the entire subject line to exactly 70 characters or fewer.</rule>
+    <rule>Limit the entire subject line to 70 characters or fewer.</rule>
     <rule>Select a lowercase type from the allowed list.</rule>
     <rule>Enclose the optional lowercase scope in parentheses.</rule>
     <rule>Write the subject description in the imperative mood (e.g., Add, Fix, Refactor).</rule>
@@ -77,11 +77,11 @@ level wins, so `full push` and `ultra push` draft at that level first. Run
   </lite_procedure>
 
   <exception_handling>
-    <rule>Retain bot-authored commits (e.g., Renovate, Dependabot) and platform-generated merge commits exactly as they are without formatting alterations.</rule>
+    <rule>Retain bot-authored commits (e.g., Renovate, Dependabot) and platform-generated merge commits exactly as they are; reformat nothing.</rule>
   </exception_handling>
 
   <output_contract>
     <rule>Output strictly the raw commit text or the executable `git commit -m` command.</rule>
-    <rule>Omit all conversational filler, preambles, formatting acknowledgments, and concluding remarks.</rule>
+    <rule>Omit conversational filler, preambles, formatting acknowledgments, and concluding remarks.</rule>
   </output_contract>
 </system_directives>

@@ -2,7 +2,7 @@
 
 All retrieval goes through the bundled script so every query lands in the
 log with its date, parameters, and counts. A search that bypasses the log
-does not exist for the purposes of the review.
+does not exist for the review.
 
 ## Source routing
 
@@ -14,9 +14,9 @@ does not exist for the purposes of the review.
 
 Minimum rounds: lite may stop after one productive source; full uses at
 least two; ultra uses all three. Other scholarly indexes (PubMed, Semantic
-Scholar) are welcome additions only when the harness already provides
-authenticated access to them; record such searches in the log by hand with
-the same fields the script writes.
+Scholar) join only when the harness already provides authenticated access;
+record such searches in the log by hand with the same fields the script
+writes.
 
 ## Query design
 

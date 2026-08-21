@@ -1,8 +1,8 @@
 # Craft: interaction
 
 Owns interaction states, latency budgets, error and destructive-action
-policy, keyboard access, focus, and continuity. The spine states these as
-obligations without definitions; the definitions are here.
+policy, keyboard access, focus, and continuity: the definitions behind the
+spine's obligations.
 
 ## Principles worth applying correctly
 

@@ -21,9 +21,9 @@ Without a verb: `build` for new work, `review` for existing work.
 | teach | Explain a design decision so the next one is self-served |
 | help | This card |
 
-One verb file per invocation, plus the surface profile,
-`interaction.md`, and `components.md`, which are mandatory.
-Multi-verb work runs as sequential invocations.
+One verb file per invocation, plus the mandatory surface profile,
+`interaction`, and `components`. Multi-verb work runs as sequential
+invocations.
 
 ## Surfaces
 

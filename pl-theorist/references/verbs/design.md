@@ -1,9 +1,9 @@
 # Verb: design
 
-Types-first domain modeling before code exists. The deliverable is a design,
-not an implementation: a domain model whose invalid states are already dead on
-paper, an effect boundary, and a complexity budget. Kill invalid states at the
-whiteboard, where deletion is free.
+Types-first domain modeling before code exists. Deliverable: a domain model
+whose invalid states are already dead on paper, an effect boundary, and a
+complexity budget - a design, not an implementation. Kill invalid states at
+the whiteboard, where deletion is free.
 
 ## Pipeline
 

@@ -1,9 +1,8 @@
 # Verb: refactor
 
 Behavior-preserving rewrite of existing code toward the kernel's target
-vocabulary. The default verb. The Core Law on preservation binds every edit:
-values, ordering, cardinality, error behavior, effect order, cancellation,
-disposal, evaluation timing, and externally visible identity all survive.
+vocabulary. The default verb. The kernel's preservation Core Law (values
+through externally visible identity) binds every edit.
 
 ## Pipeline
 

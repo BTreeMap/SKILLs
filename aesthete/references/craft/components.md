@@ -19,13 +19,11 @@ utility, a token. Look for the thing that is nearly right and extend it.
 Authoring a second Button, Input, Card, Modal, Select, or Table is the most
 damaging habit in generated frontends. Each duplicate forks behavior,
 fragments tokens, splits accessibility fixes across files, and multiplies
-the cost of every future change. It usually happens because nobody searched
-first.
+the cost of every future change.
 
-If the existing component is close but not sufficient, the correct move is
-to extend it with a new variant, not to copy it. If extending would require
-contorting it, say so explicitly and explain why a second component is the
-honest answer.
+When the existing component is close but not sufficient, extend it with a
+new variant. If extending would require contorting it, say so explicitly
+and explain why a second component is the honest answer.
 
 ## The two prices of duplication
 
@@ -37,9 +35,9 @@ wrong.
 **Duplicated composition is usually fine.** Two screens arranging the same
 primitives similarly are not yet an abstraction. Wait for the third
 occurrence, and for the shape to stop changing, before extracting. A wrong
-abstraction is more expensive than the duplication it replaced, because
-every future variation is paid as a parameter, and parameters accumulate
-into the god component described below.
+abstraction costs more than the duplication it replaced: every future
+variation is paid as a parameter, and parameters accumulate into the god
+component below.
 
 The distinguishing question: does this represent one concept the product
 genuinely has, or does it merely look similar today?
@@ -131,14 +129,13 @@ belongs at the pattern layer. Check this mechanically.
 | Patterns | Domain assemblies such as an entity table or a checkout form | Everything below, plus domain types |
 | Routes | Data access, layout, orchestration | Everything below |
 
-Imports point downward only. A primitive importing a pattern creates a cycle.
-Keep domain knowledge at the pattern layer and above it.
+Imports point downward only. A primitive importing a pattern creates a
+cycle. Keep domain knowledge at the pattern layer and above it.
 
 Effects belong at the top. Data access, mutation, storage, navigation,
 randomness, and time live in routes or thin container components.
-Everything below is a pure function of its inputs, which is what makes it
-testable, previewable in isolation, and reusable in a context nobody
-anticipated.
+Everything below is a pure function of its inputs, which makes it testable,
+previewable in isolation, and reusable in a context nobody anticipated.
 
 ## Derive, do not synchronize
 

@@ -10,9 +10,9 @@ docstring:
 
     model -> steps -> catalog -> plan -> render/effects -> cli
 
-Everything up to and including `plan` is pure: `envctl plan` prints exactly
-what `provision` would do, with no network and no filesystem writes, and
-that property is the test seam. `effects` is the only module that performs
+Everything through `plan` is pure: `envctl plan` prints exactly what
+`provision` would do, with no network and no filesystem writes; that
+property is the test seam. `effects` is the only module that performs
 I/O; `cli` only parses and reports.
 
 ## Laws

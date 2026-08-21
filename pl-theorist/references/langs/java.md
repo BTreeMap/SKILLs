@@ -70,8 +70,7 @@ final class Port {
 ]]></teaching_example>
 
 Taste: private construction establishes the invariant, and a sealed result makes
-expected failure explicit. This sample requires Java 17; use the configured
-release's closest closed representation rather than silently raising the target.
+expected failure explicit. The release constraint above applies.
 
 ## Cost Guard
 

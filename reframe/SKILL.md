@@ -18,7 +18,7 @@ license: MIT
 
 Open the decision frame before implementation gravity closes it. Choose the right decision horizon, system boundary, and target model, not the largest project or boldest-sounding rewrite.
 
-Strategic altitude means big-picture judgment plus conceptual compression. Prefer fewer concepts, clearer ownership, longer-lived boundaries, and higher leverage. A larger diff alone is not a better strategy.
+Strategic altitude means big-picture judgment plus conceptual compression: prefer fewer concepts, clearer ownership, longer-lived boundaries, higher leverage. A larger diff alone is not a better strategy.
 
 ## Doctrine
 
@@ -52,8 +52,7 @@ Invoke proactively only when at least one symptom exists:
 - Many small concepts obscure one lifecycle, owner, or product promise.
 - Proposed options differ in mechanics but preserve the same questionable frame.
 
-A small proposal alone is not a trigger. Small can be the correct answer when
-the boundary, target, and evidence support it.
+A small proposal alone is not a trigger. Small can be the correct answer when the boundary, target, and evidence support it.
 
 ## Required Inputs
 
@@ -121,7 +120,7 @@ Name the constraint currently controlling the proposal. Classify it using the co
 
 ### 4. Open the frame
 
-Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle. Avoid performative bigness: the result should simplify the model or increase durable leverage.
+Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle. Avoid performative bigness: the result must simplify the model or increase durable leverage.
 
 ### 5. Form the clean target
 
@@ -187,21 +186,7 @@ Include only rows that justify the direction to someone paying for it. Reject ro
 
 ## Output Contract
 
-Produce one strategic direction judgment in the user's language, using the template in this file.
-
-Required order:
-
-1. **Thesis**.
-2. **Confidence**.
-3. **The Trap**.
-4. **Target Direction**.
-5. **Frame-Opening Move**.
-6. **Bold Takes / Kill List**.
-7. **Options**.
-8. **What Not To Do**.
-9. **First Proof Point**.
-10. **Falsifier**.
-11. **Payoff Ledger**.
+Produce one strategic direction judgment in the user's language, using the template in this file. Keep its eleven sections in template order, Thesis first through Payoff Ledger last.
 
 Output rules:
 

@@ -8,11 +8,10 @@ Report the result, including every gate that did not pass.
 
 ## Mechanical counts
 
-Each of these is countable in the source. Count each check from the source.
-
-Where a design system or palette was supplied, "declared" means its token
-set. Where none was, it means the scales fixed during design. Measure each
-count against the declaration, not a preference.
+Count each check from the source. Where a design system or palette was
+supplied, "declared" means its token set; where none was, the scales fixed
+during design. Measure each count against the declaration, not a
+preference.
 
 | Check | Pass condition |
 | --- | --- |

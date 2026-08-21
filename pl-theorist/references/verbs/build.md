@@ -1,8 +1,7 @@
 # Verb: build
 
-Write new code functionally from the start. Where `refactor` recovers an
-algebra from imperative code, `build` never lets the imperative form exist:
-the domain model comes first, the pure core second, the shell last.
+Write new code functionally from the start; the imperative form never exists.
+Domain model first, pure core second, shell last.
 
 ## Pipeline
 
@@ -18,9 +17,9 @@ answer would.
 
 Run the `design` verb's state/transition discipline at whatever scale the task
 warrants - a full model for a new module, a single refined type for a small
-function. Sums for alternatives, products for simultaneous data, smart
-constructors at every untrusted entry. If the repository already owns a
-matching domain type, reuse it; never mint a parallel one.
+function. The kernel's sum/product/smart-constructor laws bind every untrusted
+entry. If the repository already owns a matching domain type, reuse it; never
+mint a parallel one.
 
 ### 3. Choose algebra and structures
 

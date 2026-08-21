@@ -1,8 +1,7 @@
 # Filler and hedging patterns (§23-26)
 
 Words that pad without informing: wind-ups, stacked qualifiers, empty
-endings, reflexive hyphens. Routing cues live in the detection index; this
-file owns the watch-lists, problems, and examples.
+endings, reflexive hyphens.
 
 ### 23. Filler phrases
 

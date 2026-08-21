@@ -4,11 +4,10 @@ Reach for the platform before a dependency. Native capability arrives with
 accessibility, keyboard behavior, and top-layer rendering already correct,
 without adding dependency code to the bundle.
 
-Browser support moves continuously and this file ages. Before relying on any
-capability below, verify its current baseline status and the project's
-stated support targets, and provide a graceful fallback when the feature is
-progressive rather than essential. Check the current status yourself; this
-file is a starting point rather than a substitute for checking.
+Browser support moves continuously and this file ages. Before relying on
+any capability below, verify its current baseline status yourself against
+the project's stated support targets, and provide a graceful fallback when
+the feature is progressive rather than essential.
 
 ## Choosing the layer
 
@@ -28,9 +27,9 @@ rebuild is small, while the accessibility and keyboard issues persist.
 
 **Overlays and layering.** The platform provides real top-layer rendering
 for dialogs and lightweight popovers, including backdrop styling, escape
-dismissal, focus handling, and light dismissal. It also provides anchored
-positioning that tethers an element to a reference without measurement code.
-Use these features before installing a positioning or modal dependency.
+dismissal, focus handling, and light dismissal, plus anchored positioning
+that tethers an element to a reference without measurement code. Use these
+before installing a positioning or modal dependency.
 
 **Transitions.** Same-document and cross-document view transitions animate
 between two states or two pages, including shared-element continuity,

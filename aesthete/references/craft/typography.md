@@ -5,10 +5,9 @@ and most of the reading effort. Get it right before touching color.
 
 ## The scale
 
-Fix one scale and use only its steps. A ratio near 1.2 suits dense product
-interfaces; near 1.333 suits marketing surfaces where display type does
-expressive work. Use a small set of scale steps consistently. Six to eight
-steps covers almost every interface.
+Fix one scale and use only its steps; six to eight steps covers almost
+every interface. A ratio near 1.2 suits dense product interfaces; near
+1.333 suits marketing surfaces where display type does expressive work.
 
 Set the scale in a relative unit so it honors the user's browser text size.
 Fixed pixel sizing for body text overrides an explicit accessibility
@@ -23,7 +22,7 @@ preference.
 * Line height and spacing scale should share a rhythm so text blocks align
   to the same grid as everything else.
 * Paragraph spacing separates; first-line indentation is for continuous
-  prose. Use either paragraph spacing or first-line indentation.
+  prose. Use exactly one of the two.
 * Tighten letter spacing slightly as size increases; loosen it for uppercase
   and for small text. Letterspace uppercase and small text only.
 

@@ -10,10 +10,10 @@ feat, fix, refactor, docs, style, perf, test, build, ci, chore, revert;
 imperative mood, first letter capitalized, no trailing period; aim for 50
 characters or fewer, hard cap 70.
 
-Body only when needed: skip entirely when the subject is self-explanatory.
-Add one only for a non-obvious why, breaking changes, migration notes, or
-linked issues. Wrap at 72 characters, bullets use `-`, issue references last
-(`Closes #42`, `Refs #17`).
+Body only for a non-obvious why, breaking changes, migration notes, or
+linked issues; skip entirely when the subject is self-explanatory. Wrap at
+72 characters, bullets use `-`, issue references last (`Closes #42`,
+`Refs #17`).
 
 Never include: "This commit does X", I/we/now/currently, restating the file
 name a scope already names, emoji (unless project convention), or AI

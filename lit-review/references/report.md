@@ -45,8 +45,8 @@ Bibliography with DOI or arXiv link per entry.
 
 1. Run the script's `verify` subcommand. Fix broken DOIs (usually a mangled
    key: re-search the paper), or remove the citation and its dependent
-   claims. A title-mismatch signal means checking the landing page for
-   errata or retraction before keeping the citation.
+   claims. A Crossref title-mismatch signal is a possible retraction or
+   erratum: check the landing page before keeping the citation.
 2. Walk each report citation back to its corpus record and read level; a
    full-text-sounding claim on an abstract-level record is rewritten or
    relabeled.

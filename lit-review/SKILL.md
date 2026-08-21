@@ -94,14 +94,13 @@ screen that leaves too few papers reopens search); log what reopened it.
 The script creates and owns a session directory: `protocol.json` (the agent
 fills `criteria`; the script gates on it), `papers.jsonl` (one record per
 deduplicated paper), `search_log.jsonl` (one entry per query or snowball).
-The agent keeps extraction records and decision files as its own files in
-the same directory. Pass a bare session name and the script keeps it under
-the library's XDG state root, where it survives across conversations; an
-explicit path overrides that. Downloaded PDFs and other heavy artifacts
-belong in the scratch directory, with only their extraction records in the
-session. The `clean` subcommand lists sessions with their sizes, and
-removes one session or `--all`, reporting the bytes freed; run it when the
-user asks to reclaim space or is done with a review.
+The agent keeps its own extraction records and decision files in the same
+directory. A bare session name lives under the library's XDG state root and
+survives across conversations; an explicit path overrides that. Downloaded
+PDFs and other heavy artifacts belong in the scratch directory, with only
+their extraction records in the session. The `clean` subcommand lists
+sessions with sizes and removes one session or `--all`, reporting bytes
+freed; run it when the user asks to reclaim space or is done with a review.
 
 Run the script with uv at its canonical bundled path; results are JSON on
 stdout, advisory `signal:` lines on stderr. Signals inform judgment and

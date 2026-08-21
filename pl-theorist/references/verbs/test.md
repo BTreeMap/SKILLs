@@ -1,8 +1,8 @@
 # Verb: test
 
 Derive tests from the code's algebra: state the laws the design relies on,
-then make each one checkable. A test suite through this lens is a proof
-sketch, not a pile of examples.
+then make each one checkable. The suite is a proof sketch, not a pile of
+examples.
 
 ## Pipeline
 

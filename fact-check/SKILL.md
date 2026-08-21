@@ -74,21 +74,16 @@ span with the corrected span using the available file-editing tool".
 ## Workflow
 
 1. **Inventory**: read the document. Decompose verifiable statements into
-   atomic claims by the rules in `claims`: one
-   checkable proposition each, decontextualized (pronouns and elided subjects
-   resolved), mapped to its exact source span, typed, capped at the sentence
-   level (never fragment below one proposition). Skip opinions,
-   recommendations, instructions, and rhetoric. Write the state file (below)
-   with the inventory and pinned constraints.
+   atomic claims per `claims` (decontextualization, span mapping, typing,
+   granularity cap, skip list). Write the state file (below) with the
+   inventory and pinned constraints.
 2. **Verify**: run the per-claim contract (below) for every claim via the
    selected orchestration branch. Route retrieval by claim type per
-   `claims`; apply the source tiers and
-   conflict rules defined in `evidence`.
-   Flush each verdict record to the state file as it completes.
-3. **Report**: render the evidence-first report per
-   the template in `report`. Include which branch ran and
-   approximate token cost.
-4. **Approve**: tiered approval as specified in `report`. Rejection is first-class:
+   `claims`; apply the source tiers and conflict rules in `evidence`. Flush
+   each verdict record to the state file as it completes.
+3. **Report**: render the evidence-first report per the template in
+   `report`. Include which branch ran and approximate token cost.
+4. **Approve**: tiered approval per `report`. Rejection is first-class:
    record rejected verdicts as `user-rejected` in the state file and leave
    the text untouched.
 5. **Edit**: re-read `constraints` from the state file. Apply only approved
@@ -124,9 +119,8 @@ document's timestamp (claim-time). Output: one verdict record.
 }
 </verdict_record>
 
-Verdict definitions, confidence rules, and the abstention threshold:
-are defined in `verdicts`. Confidence below the
-threshold forces `correction: null`.
+Verdict definitions, confidence rules, and the abstention threshold are in
+`verdicts`. Confidence below the threshold forces `correction: null`.
 
 Temporal discipline: distinguish claim-time (document timestamp),
 evidence-time (source publication date), verification-time (today).
@@ -175,19 +169,17 @@ values in its references are placeholders marked illustrative.
 
 ## Gotchas
 
-- Decomposition below one proposition degrades verification: verify "X
-  released Y in Z" as one claim, not three.
+- Fragmenting below one proposition degrades verification: granularity cap
+  in `claims`.
 - A fluent search-result summary is not evidence: cite the fetched page's own
   text, and record the URL actually retrieved, not the query.
 - Two pages carrying identical wording are one source (syndication), not two
   independent ones.
-- Computation-type claims (totals, percentages, deltas): recompute from the
-  document's own inputs first; search only for external inputs.
-- An aggregator disagreeing with the primary publisher is not `conflicting`:
-  the primary wins; note the aggregator in `notes`.
-- Do not let report fluency invite rubber-stamping: the report leads with
-  evidence and counter-evidence, and low-confidence items require
-  item-by-item approval, as specified in `report`.
+- Computation-type claims: recompute-first route in `claims`.
+- Primary publisher vs aggregator is never `conflicting`: rule in
+  `evidence`.
+- Do not let report fluency invite rubber-stamping: evidence-first layout and
+  approval tiers in `report`.
 
 ## Completion checks
 

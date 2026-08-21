@@ -27,10 +27,10 @@ metadata:
 
 # Setup Env
 
-One command provisions everything a project needs into one disposable root.
-Run it, source the activation script it prints, then build. Re-running is
-safe and is the correct repair action: every step checks its own
-postcondition and skips completed work.
+One command provisions everything a project needs into one disposable
+root: run it, source the printed activation script, build. Re-running is
+safe and is the repair action: every step checks its postcondition and
+skips completed work.
 
 ## Registry
 
@@ -47,10 +47,9 @@ postcondition and skips completed work.
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 
-`envctl` is the entry point; the other scripts are its modules, addressed
-here so maintainers can find each concern. Read `targets` before choosing
-tags for anything beyond the obvious; read `extending` only to add or change
-a recipe.
+`envctl` is the entry point; the other scripts are its modules. Read
+`targets` before choosing tags beyond the obvious; read `extending` only to
+add or change a recipe.
 
 ## Procedure
 
