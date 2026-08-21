@@ -57,6 +57,12 @@ Current skills:
   index, and progressive-loading rules in the spine, with pattern groups
   (content, language, style, chatbot, filler, rhetoric) and a false-positive
   calibration guard loaded on demand from `references/`.
+* `lit-review/` - staged literature reviews with a keyless search script over
+  OpenAlex, arXiv, and Crossref: criteria fixed before any search, logged
+  queries, alias deduplication, two-pass screening with reasoned exclusions,
+  snowballing, extraction records with appraisal, theme synthesis, and DOI
+  verification before delivery, with per-phase files loaded on demand from
+  `references/`.
 * `pl-theorist/` - a PL theorist's discipline across the lifecycle via verbs
   (design/build/refactor/review/audit/test/teach/help), with per-language cost
   models (including Bash and GitHub Actions YAML) and verb files loaded on
