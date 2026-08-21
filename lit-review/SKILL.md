@@ -124,10 +124,9 @@ Before the protocol phase, determine from actually available tools:
   supplies their own corpus (PDFs, BibTeX), skip the search phase, record
   provenance as user-supplied in the log's place, and run the remaining
   phases unchanged.
-- Full-text reading: use the read-pdf skill when it is installed alongside
-  this one (it ships in the same library and cites page numbers); otherwise
-  any PDF-reading tool, otherwise landing-page HTML. With none of these,
-  work at abstract level and disclose that limit in the report.
+- Full-text reading: read PDF full texts with the read-pdf skill. A paper
+  with no reachable PDF falls back to landing-page HTML, then to abstract
+  level, disclosed in the report.
 - Sub-agents: optional for parallel extraction only. A worker receives one
   included paper and returns one extraction record; workers never write
   session state. Results must not depend on which branch ran.

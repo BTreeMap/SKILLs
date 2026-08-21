@@ -141,13 +141,13 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   derive them from the consuming repository.
 * Keep each skill within context economy (~500 lines). Offload bulky reference
   material to sibling files the agent reads on demand.
-* When a step would use a capability another skill in this library provides
-  (PDF extraction, commit drafting, prose cleanup, environment provisioning),
-  name that skill: "the read-pdf skill, when installed alongside this one",
-  not "a PDF-reading tool". Every such reference is a preference with a
-  standalone fallback, never a load-bearing dependency: skills are vendored
-  individually, so the sibling may be absent, and its absence must not change
-  the skill's output contract.
+* When a step uses a capability another skill in this library provides (PDF
+  extraction, commit drafting, prose cleanup, environment provisioning),
+  command that skill by name: "read PDFs with the read-pdf skill", never "a
+  PDF-reading tool" and never "when installed". The library is consumed as a
+  set through the submodule, so siblings are present; write the dispatch as
+  an instruction. Fallbacks exist only for conditions of the environment (an
+  unreachable file, no network), never for a sibling's possible absence.
 * Write directives, not commentary about the document. A sentence that
   explains why a convention exists, restates what a table's own headings
   already say, or narrates the file's structure earns nothing and is paid
