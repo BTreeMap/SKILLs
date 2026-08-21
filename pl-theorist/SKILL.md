@@ -296,8 +296,8 @@ language's cost model by analogy.
 - A Bloom filter answers "possibly present." Never gate correctness-critical
   logic on a probabilistic membership test alone.
 - A validation step blocked by a missing toolchain is not a dead end:
-  provision the toolchain in userspace with the setup-env skill, or name
-  the unavailable check; never skip it silently.
+  provision the toolchain in userspace with `/setup-env`, or name the
+  unavailable check; never skip it silently.
 
 ## Completion Checks
 

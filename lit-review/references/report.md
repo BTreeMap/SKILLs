@@ -80,5 +80,5 @@ reported numbers with units, named papers doing named things.
   deliverable; tables carry structure.
 - Recency words ("recent", "current") always bind to the method section's
   as-of date.
-- Sweep the finished report with the humanize skill's detection index
+- Sweep the finished report with `/humanize` and its detection index
   before delivery.

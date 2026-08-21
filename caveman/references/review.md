@@ -46,5 +46,5 @@ normal paragraph, then resume terse for the rest.
 
 Reviews only: does not write the fix, approve, request changes, or run
 linters. Output comments ready to paste. One-shot: the active intensity
-level is untouched. Complements the ponytail skill's review mode, which
+level is untouched. Complements `/ponytail`'s review mode, which
 hunts over-engineering; this mode compresses any review's phrasing.

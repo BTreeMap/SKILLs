@@ -143,15 +143,22 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   material to sibling files the agent reads on demand.
 * When a step uses a capability another skill in this library provides (PDF
   extraction, commit drafting, prose cleanup, environment provisioning),
-  command that skill by name: "read PDFs with the read-pdf skill", never "a
-  PDF-reading tool" and never "when installed". The library is consumed as a
-  set through the submodule, so siblings are present; write the dispatch as
-  an instruction. Fallbacks exist only for conditions of the environment (an
-  unreachable file, no network), never for a sibling's possible absence.
+  command that skill in its slash form as an unconditional instruction:
+  "read PDFs with `/read-pdf`". The leading slash marks the name as a skill
+  invocation to the executing agent, and the imperative holds because the
+  library is consumed as a set through the submodule, so siblings are
+  present. A fallback chain responds to conditions of the environment (an
+  unreachable file, no network) and names the degraded path to take.
 * Write directives, not commentary about the document. A sentence that
   explains why a convention exists, restates what a table's own headings
   already say, or narrates the file's structure earns nothing and is paid
   for on every load. Keep rationale only where it changes a judgment call.
+* State each directive as the pattern to follow. A prohibition spells out
+  the unwanted pattern in full, which raises that pattern's salience for
+  the model reading it; the positive form spends the same tokens making the
+  right path more likely. Reserve negation for hard boundaries where the
+  banned form must be named to be recognized (secrets, em-dashes, spec
+  violations).
 * Bundled files are addressed by **registered name**, never by path, so a
   path cannot drift and two files cannot claim one name:
   * **One declaration site, declared before use.** Every skill that bundles

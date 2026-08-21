@@ -97,8 +97,8 @@ span with the corrected span using the available file-editing tool".
    the replacement introduced (report any such secondary edit as part of the
    correction, not silently).
 6. **Summarize**: claims checked, verdict counts, corrections applied,
-   rejected, abstained; branch and cost. Suggest the user commit via the
-   git-commit skill. Do not auto-invoke any other skill or tool as a
+   rejected, abstained; branch and cost. Suggest the user commit via
+   `/git-commit`. Do not auto-invoke any other skill or tool as a
    follow-up.
 
 ## Per-claim contract
