@@ -6,7 +6,7 @@ so verify savings for your tokenizer before adopting wenyan for economy;
 its primary value is extreme visual terseness for Chinese-reading users.
 
 | Level | What changes |
-|-------|--------------|
+| --- | --- |
 | **wenyan-lite** | Semi-classical. Drop filler and hedging, keep grammar structure, classical register. |
 | **wenyan-full** | Fully classical wenyan. Classical sentence patterns, verbs precede objects, subjects often omitted, classical particles (之/乃/為/其). |
 | **wenyan-ultra** | Extreme abbreviation while keeping the classical feel. Maximum compression. |

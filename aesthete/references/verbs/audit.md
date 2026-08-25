@@ -30,7 +30,7 @@ prioritized remediation plan, not a defect list. Change nothing.
 
 ## System inventory
 | Scale | Distinct values found | Should be | Worst offenders |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Accent | {n} | 1 | {locations} |
 | Radius | {n} | {n} | {locations} |
 | Spacing | {n} | {n} | {locations} |

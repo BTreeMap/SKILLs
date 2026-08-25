@@ -73,7 +73,7 @@ class CommandError(Exception):
     """Failure that ends the command with a clean message and exit code 1."""
 
 
-# --- pure core: domain model ------------------------------------------------
+# --- pure core: domain model ---
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,7 +211,7 @@ def paper_from_json(row: Mapping[str, Any]) -> Paper:
     return Paper(**data)
 
 
-# --- pure core: upstream record normalization -------------------------------
+# --- pure core: upstream record normalization ---
 
 
 def reconstruct_abstract(inverted: Mapping[str, Sequence[int]] | None) -> str | None:
@@ -310,7 +310,7 @@ def paper_from_crossref(item: Mapping[str, Any]) -> Paper:
     )
 
 
-# --- effect shell: HTTP -----------------------------------------------------
+# --- effect shell: HTTP ---
 
 
 def mailto() -> str | None:
@@ -417,7 +417,7 @@ def fetch_crossref(
     return [paper_from_crossref(item) for item in message.get("items") or []], total
 
 
-# --- effect shell: session state --------------------------------------------
+# --- effect shell: session state ---
 
 
 @dataclass(frozen=True, slots=True)
@@ -544,7 +544,7 @@ def signal(message: str) -> None:
     print(f"signal: {message}", file=sys.stderr)
 
 
-# --- subcommands ------------------------------------------------------------
+# --- subcommands ---
 
 
 def record_fetch(
@@ -895,7 +895,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0
 
 
-# --- CLI --------------------------------------------------------------------
+# --- CLI ---
 
 
 def add_common(parser: argparse.ArgumentParser) -> None:

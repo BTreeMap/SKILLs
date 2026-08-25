@@ -32,7 +32,7 @@ its registered name, so the level selects the file; **lite** loads none,
 **ultra** loads `full` before its own.
 
 | Level | Behavior |
-|-------|----------|
+| --- | --- |
 | **lite** | Subject line only; scope from staged paths; no history scan. Cheapest. |
 | **full** | Scoped subject plus wrapped body and footer; scope resolved from recent history. Default. |
 | **ultra** | Full, plus an atomicity and history-consistency audit before drafting. |

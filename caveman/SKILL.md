@@ -96,7 +96,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
 ## Intensity
 
 | Level | What changes |
-|-------|--------------|
+| --- | --- |
 | **lite** | No filler or hedging. Keep articles and full sentences. Professional but tight. |
 | **full** | Drop articles, fragments OK, short synonyms. Classic caveman. Default. |
 | **ultra** | Strip conjunctions when cause-then-effect stays unambiguous. One word when one word enough. State each fact once. Code symbols, function names, error strings: never touch. |
@@ -116,7 +116,7 @@ level untouched. Mode name is its registered name: mode selects file. Do
 not load reference files otherwise.
 
 | Mode | What it does |
-|------|--------------|
+| --- | --- |
 | commit | Terse Conventional Commits message: why over what, body only when needed. |
 | review | One-line review findings: location, tag, problem, fix. |
 | compress | Rewrite a prose file in caveman style in place, code untouched, backup kept. |
