@@ -1,8 +1,29 @@
-# Decompose: From Question to Leaves
+# Decompose: Probe First, Then Leaves
 
-Turn the question into leaves: sub-questions one retrieval act can settle.
 Register never changes the treatment; a shower thought and an
-academic-grade question decompose under the same rule.
+academic-grade question run under the same rule.
+
+## The probe
+
+Before any decomposition, the lead searches inline: two to four searches
+against the question as asked. Two outcomes:
+
+- Settled: the probe found sources that answer the question satisfiably
+  and nothing material stayed open. Register the question as its own
+  leaves (often one or two), add the probe's sources, close, sweep, and
+  draft. Search-type questions end here, in one round, at full rigor.
+- Open: material sub-questions remain. Keep the probe's sources (they
+  seed leaves), and decompose what stayed open. The probe's reading is
+  what makes the decomposition principled rather than guessed.
+
+Judge "satisfiably" against the question's own stakes: a canonical answer
+with a constitutive or attested source settles; a first page of blog
+consensus on a contested question does not.
+
+## From question to leaves
+
+Turn what the probe left open into leaves: sub-questions one retrieval
+act can settle.
 
 ## The deep-structure rule
 

@@ -17,6 +17,7 @@
       "skills": [
         "./aesthete",
         "./author-skill",
+        "./btm-research",
         "./caveman",
         "./fact-check",
         "./git-commit",
@@ -26,7 +27,6 @@
         "./ponytail",
         "./read-pdf",
         "./reframe",
-        "./research",
         "./setup-env"
       ]
     }

@@ -330,9 +330,9 @@ def leaf_view(state: LeafState) -> dict[str, Any]:
 def state_root() -> Path:
     if os.name == "nt":
         base = os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
-        return Path(base) / "btm-skills" / "research"
+        return Path(base) / "btm-skills" / "btm-research"
     base = os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
-    return Path(base) / "btm-skills" / "research"
+    return Path(base) / "btm-skills" / "btm-research"
 
 
 def session_dir(name: str) -> Path:

@@ -14,6 +14,7 @@ submodule.
 | --- | --- |
 | [aesthete](aesthete/SKILL.md) | Interface design and review: typography, color, spacing, motion, interaction states, and a dated WCAG 2.2 accessibility floor, applied through design, build, review, audit, redesign, and teach verbs. |
 | [author-skill](author-skill/SKILL.md) | Writes and reviews skills; the procedure every other skill in this repository was authored under. |
+| [btm-research](btm-research/SKILL.md) | Answers open questions, shower thought to academic grade, with the same investigative rigor: the lead probes first and stops early on trivial questions, a bundled ledger script tracks every leaf and source, narrowly-briefed workers gather in parallel, a rival sweep runs before every draft, and the answer's sections derive from ledger state. |
 | [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place, with a bundled script providing backup, validation, and undo. |
 | [fact-check](fact-check/SKILL.md) | Decomposes a document into checkable claims, verifies each against retrieved sources with cited quotes, and applies corrections only after per-item approval. |
 | [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages at three effort levels; a push verb commits and pushes in one step. |
@@ -23,7 +24,6 @@ submodule.
 | [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
 | [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files with pypdf; strictly read-only on the documents. |
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
-| [research](research/SKILL.md) | Answers open questions, shower thought to academic grade, with the same investigative rigor: a bundled ledger script tracks every leaf and source, search workers gather in parallel, a rival sweep runs before every draft, and the answer's sections derive from ledger state rather than a depth dial. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
 
 ## Installing

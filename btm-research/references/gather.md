@@ -1,24 +1,33 @@
 # Gather: Search Workers and Source Classing
 
-One round: fan out over open leaves, join, admit. The lead never reads a
-source page; page content lives and dies inside a worker, and only the
-compressed closure proposal crosses back. Sub-agents available and two or
-more independent open leaves: dispatch one worker per leaf (cap the batch
-near five). Otherwise run the same contract inline, one leaf at a time;
-the ledger records no worker identity, so both branches produce identical
-state. Multi-agent runs cost roughly 15x a chat turn; below two open
-leaves the dispatch never pays.
+One round: fan out over open leaves, join, admit. The comprehensive view
+lives in the lead alone; a worker answers one small, fast step. The lead
+never reads a source page during fan-out; page content lives and dies
+inside a worker, and only the compressed closure proposal crosses back.
+Sub-agents available and two or more independent open leaves: dispatch
+one worker per leaf (cap the batch near five). Otherwise run the same
+contract inline, one leaf at a time; the ledger records no worker
+identity, so both branches produce identical state. Multi-agent runs cost
+roughly 15x a chat turn; below two open leaves the dispatch never pays.
+Retrieval is mechanical work: when the harness offers model selection,
+dispatch workers on a cheap, fast model tier and keep the lead on the
+strong one; judgment concentrates at the join, not in the search.
 
 ## Worker contract
 
 A worker receives exactly four fields and returns one closure proposal.
 Cap each worker at three to five searches so the join stays bounded.
+Brief the scope bound explicitly: sibling workers hold neighboring
+leaves, so exploration beyond the assigned leaf duplicates their work.
 
 <worker_brief>
 objective: the leaf's question, verbatim, plus the session question for scope
 output: one closure proposal (schema below), nothing else
 tools: web search and fetch; scholarly corpora via /lit-review; PDFs via /read-pdf
-boundaries: this leaf only; note neighboring findings as spawn candidates, do not pursue them
+boundaries: this leaf only, three to five searches, then return; the lead
+  holds the whole picture and sibling workers hold the neighboring leaves,
+  so exploring past the leaf duplicates their work; note neighboring
+  findings as spawn candidates in one line each, pursue none of them
 </worker_brief>
 
 <closure_proposal>

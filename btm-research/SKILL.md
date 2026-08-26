@@ -1,17 +1,16 @@
 ---
-name: research
+name: btm-research
 description: >-
-  Answers open questions of any register, shower thought to academic grade,
-  with uniform investigative rigor: decomposes the question into retrievable
-  leaves, tracks every leaf and source in an append-only ledger owned by a
-  bundled script, fans search workers out over independent leaves, sweeps for
-  rival accounts, and derives the answer's presentation weight from ledger
-  state instead of a depth dial. Use when the user asks an open question that
-  needs a researched, sourced answer: a feasibility hunch, a causal-historical
-  why, a best-practices lookup, a procedural fix, a technical comparison. Do
-  not use for reviewing scholarly literature into a citation deliverable
-  (use lit-review) or for verifying claims in an existing document
-  (use fact-check).
+  Answers open questions, shower thought to academic grade, with uniform
+  investigative rigor: the lead agent probes first and stops early when a
+  question settles in one round, decomposes harder questions into retrievable
+  leaves tracked in a script-owned ledger, fans narrowly-briefed search
+  workers over independent leaves, sweeps for rival accounts, and derives
+  presentation from ledger state instead of a depth dial. Use when the user
+  asks an open question needing a researched, sourced answer: a feasibility
+  hunch, a causal-historical why, a best-practices lookup, a procedural fix.
+  Do not use for literature reviews with citation deliverables (use
+  lit-review) or verifying claims in an existing document (use fact-check).
 license: MIT
 ---
 
@@ -55,16 +54,21 @@ before continuing.
 
 ## The loop
 
-Frame once, gather-weigh one to three rounds, draft once. Each phase
-loads exactly the reference file of its name; the frame phase may consult
-`ladders` for worked patterns.
+Probe, then frame once, gather-weigh up to three rounds, draft once. Each
+phase loads exactly the reference file of its name; the probe and frame
+phases share `decompose`, which may consult `ladders` for worked patterns.
 
 | Phase | Work |
 | --- | --- |
-| decompose | Frame the question into 3-10 retrievable leaves by governing principle |
-| gather | Fan workers over open leaves (or run inline), class sources, admit closures |
+| probe | The lead searches inline first (2-4 searches); a question settled satisfiably here records its leaves and sources, sweeps, and goes straight to answer |
+| decompose | Frame what the probe left open into 3-10 retrievable leaves by governing principle |
+| gather | Fan narrowly-briefed workers over open leaves (or run inline), class sources, admit closures |
 | weigh | Checkpoint yield, make the leave-or-stay call, spawn or fold leaves, sweep rivals after the last round |
 | answer | Draft alone, in one pass, from the outline |
+
+The probe is what keeps search-type questions fast: one round, few
+sources, same invariants. The comprehensive view lives in the lead alone;
+workers answer small steps under explicit scope bounds per `gather`.
 
 Leaf states and their rendering destinations: `retrieved` feeds the
 answer and chain, `refuted` feeds the Rival account with its premise,

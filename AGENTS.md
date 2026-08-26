@@ -52,6 +52,14 @@ Current skills:
   catalogue, and a mechanical ship gate loaded on demand from `references/`.
 * `author-skill/` - how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
+* `btm-research/` - open-question research with uniform rigor across
+  registers: a lead-agent probe that answers trivial questions in one round,
+  decomposition to retrievable leaves by governing principle, an append-only
+  event ledger owned by a bundled script (transition invariants, derived
+  sections, per-round yield, a draft-time outline), narrowly-briefed
+  search-worker fan-out, a mandatory rival sweep, and presentation weight
+  derived from ledger state, with per-phase files loaded on demand from
+  `references/`.
 * `caveman/` - token-economical output formatting for coding workflows,
   with lite/full/ultra/wenyan levels and one-shot commit/review/compress/stats/
   help modes; the compress mode is guarded by a deterministic bundled script.
@@ -85,12 +93,6 @@ Current skills:
 * `read-pdf/` - text and metadata extraction from PDF files for analysis.
 * `reframe/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
-* `research/` - open-question research with uniform rigor across registers:
-  decomposition to retrievable leaves by governing principle, an append-only
-  event ledger owned by a bundled script (transition invariants, derived
-  sections, per-round yield, a draft-time outline), optional search-worker
-  fan-out, a mandatory rival sweep, and presentation weight derived from
-  ledger state, with per-phase files loaded on demand from `references/`.
 * `setup-env/` - isolated per-project dev environments provisioned entirely
   in userspace (uv is the only assumption): a typed target algebra of
   `family[:flavor][@version]` tags over a closed recipe catalog, micromamba
