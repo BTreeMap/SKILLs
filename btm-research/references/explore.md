@@ -27,8 +27,9 @@ are catalogued in `ladders`; they guide and never partition.
   workers surface (`"origin": "spawned"`), and let later evidence retire
   initial leaves without ceremony.
 
-Register leaves in bulk: `leaf <session> --file leaves.json`, an array of
-`{"id": "L1", "q": "...", "origin": "frame"}` objects.
+Register leaves as `leaves` entries in the round's `note` batch (schema
+in the spine): keywords, question, origin. The output echoes the minted
+identifiers; reference them by those.
 
 ## Bundled fan-out
 
@@ -79,18 +80,18 @@ inflated.
 ## Admitting a round
 
 The lead deduplicates proposal sources against the ledger, then admits
-with bulk forms: `source <session> --file sources.json`, then
-`close <session> --file closes.json`, then spawned leaves. A rejected
-event names its violated invariant and appends nothing: fix the payload,
-never the invariant. Candidates passed over stay out of the ledger and
-need no ceremony; close an existing leaf you deliberately stop pursuing
-as `unresolved` with reason `not_pursued` and the why.
+the whole round as one `note` batch: spawned leaves, sources, closes, and
+the checkpoint together (schema in the spine). A rejected batch names its
+violated invariant and appends nothing: fix the payload, never the
+invariant. Candidates passed over stay out of the ledger and need no
+ceremony; close an existing leaf you deliberately stop pursuing as
+`unresolved` with reason `not_pursued` and the why.
 
 ## Checkpoint and the leave-or-stay call
 
-Close each round with a checkpoint carrying the round's declared search
-count (sum of workers' `searches_spent`):
-`status <session> --checkpoint --searches <n> --label round-<k>`.
+Close each round with a `checkpoints` entry in the round's `note` batch,
+carrying the round's declared search count (sum of workers'
+`searches_spent`); the same output returns the updated yield table.
 
 The yield table compares new sources per search across rounds. Falling
 yield is the patch-leaving signal (Pirolli and Card's foraging model):

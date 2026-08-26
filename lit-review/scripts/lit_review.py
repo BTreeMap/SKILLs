@@ -17,6 +17,7 @@ block; failures print `error:` to stderr and exit 1.
 from __future__ import annotations
 
 import argparse
+import base64
 import difflib
 import hashlib
 import http.client
@@ -482,16 +483,58 @@ def sessions_root() -> Path:
     return state_root() / "sessions"
 
 
-def resolve_session(argument: str) -> Path:
-    """A bare name lives under the default sessions root; a path is itself."""
-    looks_like_path = (
+NON_SLUG = re.compile(r"[^a-z0-9]+")
+
+
+def is_pathlike(argument: str) -> bool:
+    return (
         os.sep in argument
         or (os.altsep is not None and os.altsep in argument)
         or argument.startswith(("~", "."))
     )
-    if looks_like_path:
+
+
+def mint_session(words: str) -> str:
+    """Slug plus 128-bit entropy suffix: uniqueness is the script's job."""
+    parts = [part for part in NON_SLUG.sub("-", words.lower()).split("-") if part]
+    if not parts:
+        raise CommandError("session keywords must contain letters or digits")
+    if not 2 <= len(parts) <= 3:  # noqa: PLR2004
+        signal(f"'{'-'.join(parts)}': two or three keywords resolve best")
+    entropy = base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
+    return "-".join([*parts, entropy])
+
+
+def resolve_session(argument: str) -> Path:
+    """A path is itself; anything else resolves by keyword subset.
+
+    Exact directory name wins; else the unique session whose id contains
+    every keyword of the argument; ambiguity is an error listing the
+    candidates; no match falls through so callers report a missing
+    session by its literal name.
+    """
+    if is_pathlike(argument):
         return Path(argument).expanduser()
-    return sessions_root() / argument
+    root = sessions_root()
+    existing = (
+        sorted(entry.name for entry in root.iterdir() if entry.is_dir())
+        if root.exists()
+        else []
+    )
+    if argument in existing:
+        return root / argument
+    keywords = [part for part in NON_SLUG.sub("-", argument.lower()).split("-") if part]
+    matches = [
+        name for name in existing if all(keyword in name for keyword in keywords)
+    ]
+    if len(matches) == 1:
+        signal(f"recovered session '{argument}' -> {matches[0]}; use the full id")
+        return root / matches[0]
+    if len(matches) > 1:
+        raise CommandError(
+            f"'{argument}' is ambiguous across sessions: {', '.join(matches)}"
+        )
+    return root / argument
 
 
 def tree_bytes(path: Path) -> int:
@@ -605,7 +648,10 @@ def record_fetch(
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    root = resolve_session(args.session)
+    if is_pathlike(args.session):
+        root = Path(args.session).expanduser()
+    else:
+        root = sessions_root() / mint_session(args.session)
     session = Session(root)
     if session.protocol_path.exists():
         raise CommandError(f"session already exists at {root}; refusing to overwrite")

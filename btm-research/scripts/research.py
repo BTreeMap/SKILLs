@@ -4,25 +4,38 @@
 # dependencies = []
 # ///
 
-"""Ledger engine for open-question research sessions.
+"""Scratchpad and verifier for open-question research sessions.
 
-The script owns the exact half of a research run: the append-only event
-ledger, its transition invariants, total replay, derived sections, source
-numbering, per-round yield, and the draft-time outline. The invoking agent
-owns every judgment call: decomposition, search, source classing, closure,
-and prose. Subcommands print one JSON document to stdout; advisory
-`signal:` lines go to stderr and never block; invariant violations print
-`error:` to stderr and exit 1 without appending the offending event.
+The script serves two purposes and few others. As the scratchpad, `note`
+admits one JSON batch of findings per round: leaves, sources, closes, the
+rival sweep, a checkpoint. As the verifier, `check` replays the ledger
+into a drafting scaffold: derived sections, numbered sources, violations,
+hedges. The invoking agent owns every judgment call; the script owns
+identity, memory, counting, and verification.
+
+Identifiers are minted here: the agent supplies two or three keywords,
+the script returns the full identifier (keyword slug plus a 128-bit
+entropy suffix) for the agent to use in later calls, and every output
+echoes the canonical identifier. A uniquely-resolving keyword subset
+recovers an identifier lost to context compression, signaled and
+re-echoed on use.
+
+Subcommands print one JSON document to stdout; advisory `signal:` lines
+go to stderr and never block; invariant violations print `error:` to
+stderr and exit 1 without appending anything.
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +48,8 @@ UNRESOLVED_REASONS = ("searched", "not_pursued")
 RETIRED_REASONS = ("folded", "immaterial")
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 MAX_EVENTS = 1000  # runaway backstop; a real run stays under ~100 events
+KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
+NON_SLUG = re.compile(r"[^a-z0-9]+")
 
 
 class CommandError(Exception):
@@ -231,6 +246,128 @@ def replay(events: list[dict[str, Any]]) -> Ledger:
     return ledger
 
 
+# --- pure core: identifiers ---
+
+
+def slugify(words: Iterable[str]) -> str:
+    parts = [NON_SLUG.sub("-", str(word).lower()).strip("-") for word in words]
+    cleaned = [part for part in parts if part]
+    _require(bool(cleaned), "identifier keywords must contain letters or digits")
+    return "-".join(cleaned)
+
+
+def suffix() -> str:
+    """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
+    return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
+
+
+def mint(words: Iterable[str]) -> str:
+    stem = slugify(words)
+    band = stem.count("-") + 1
+    if not KEYWORD_RANGE[0] <= band <= KEYWORD_RANGE[1]:
+        signal(f"'{stem}': two or three keywords resolve best")
+    return f"{stem}-{suffix()}"
+
+
+def resolve(ref: str, ids: Iterable[str], kind: str) -> str:
+    """Exact id, or the unique id containing every keyword of the ref."""
+    pool = list(ids)
+    if ref in pool:
+        return ref
+    keywords = [part for part in NON_SLUG.sub("-", ref.lower()).split("-") if part]
+    _require(bool(keywords), f"empty {kind} reference")
+    matches = [
+        candidate
+        for candidate in pool
+        if all(keyword in candidate for keyword in keywords)
+    ]
+    _require(bool(matches), f"no {kind} matches '{ref}'")
+    _require(
+        len(matches) == 1,
+        f"'{ref}' is ambiguous across {kind}s: {', '.join(sorted(matches))}",
+    )
+    signal(f"recovered {kind} '{ref}' -> {matches[0]}; use the full identifier")
+    return matches[0]
+
+
+# --- pure core: batch expansion (the note smart constructor, stage one) ---
+
+ALIAS_DETAIL = ("detail", "why", "tried", "into")
+
+
+def _detail_of(raw: dict[str, Any]) -> str:
+    return next((str(raw[key]) for key in ALIAS_DETAIL if raw.get(key)), "")
+
+
+def expand_batch(
+    ledger: Ledger, batch: dict[str, Any], minter: Callable[[Iterable[str]], str]
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, str]]]:
+    """Resolve keyword references and mint ids for one note batch.
+
+    Admission order inside a batch: leaves, sources, closes, sweep,
+    checkpoint, so later entries may reference ids minted earlier in the
+    same batch. Returns the expanded events and the minted-id maps.
+    """
+    minted: dict[str, dict[str, str]] = {"leaves": {}, "sources": {}}
+    leaf_ids = set(ledger.leaves)
+    source_ids = set(ledger.sources)
+    events: list[dict[str, Any]] = []
+    for entry in batch.get("leaves") or []:
+        full = minter(entry.get("kw") or [])
+        minted["leaves"][full.rsplit("-", 1)[0]] = full
+        leaf_ids.add(full)
+        events.append(
+            {
+                "e": "add_leaf",
+                "id": full,
+                "q": entry.get("q"),
+                "origin": entry.get("origin", "frame"),
+            }
+        )
+    for entry in batch.get("sources") or []:
+        full = minter(entry.get("kw") or [])
+        minted["sources"][full.rsplit("-", 1)[0]] = full
+        source_ids.add(full)
+        events.append(
+            {
+                "e": "add_source",
+                "id": full,
+                "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf"),
+                "cls": entry.get("cls"),
+                "title": entry.get("title"),
+                "url": entry.get("url", ""),
+            }
+        )
+    for entry in batch.get("closes") or []:
+        event: dict[str, Any] = {
+            "e": "close",
+            "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf"),
+            "state": entry.get("state"),
+        }
+        if entry.get("sources"):
+            event["sources"] = [
+                resolve(str(ref), source_ids, "source") for ref in entry["sources"]
+            ]
+        if entry.get("premise"):
+            event["premise"] = entry["premise"]
+        if entry.get("reason"):
+            event["reason"] = entry["reason"]
+            detail = _detail_of(entry)
+            if entry["reason"] == "folded":
+                detail = resolve(detail, leaf_ids, "leaf")
+            event["detail"] = detail
+        events.append(event)
+    for entry in batch.get("sweeps") or []:
+        events.append({"e": "sweep", **entry})
+    for entry in batch.get("checkpoints") or []:
+        events.append({"e": "checkpoint", **entry})
+    known = {"leaves", "sources", "closes", "sweeps", "checkpoints"}
+    unknown = set(batch) - known
+    _require(not unknown, f"unknown note keys: {', '.join(sorted(unknown))}")
+    _require(bool(events), "empty note: nothing to record")
+    return events, minted
+
+
 # --- pure core: derived views ---
 
 
@@ -324,6 +461,14 @@ def leaf_view(state: LeafState) -> dict[str, Any]:
             return {"state": "retired", "reason": reason, "detail": detail}
 
 
+def counts_of(ledger: Ledger) -> dict[str, int]:
+    tally: dict[str, int] = {}
+    for leaf in ledger.leaves.values():
+        key = leaf_view(leaf.state)["state"]
+        tally[key] = tally.get(key, 0) + 1
+    return tally
+
+
 # --- imperative shell ---
 
 
@@ -335,10 +480,21 @@ def state_root() -> Path:
     return Path(base) / "btm-skills" / "btm-research"
 
 
-def session_dir(name: str) -> Path:
-    if os.sep in name or name.startswith("."):
-        return Path(name)
-    return state_root() / "sessions" / name
+def sessions_root() -> Path:
+    return state_root() / "sessions"
+
+
+def session_ids() -> list[str]:
+    root = sessions_root()
+    if not root.exists():
+        return []
+    return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
+
+
+def session_dir(ref: str) -> Path:
+    if os.sep in ref or ref.startswith("."):
+        return Path(ref)
+    return sessions_root() / resolve(ref, session_ids(), "session")
 
 
 def ledger_path(directory: Path) -> Path:
@@ -348,7 +504,7 @@ def ledger_path(directory: Path) -> Path:
 def read_events(directory: Path) -> list[dict[str, Any]]:
     path = ledger_path(directory)
     if not path.exists():
-        raise CommandError(f"no session at {directory}; run init first")
+        raise CommandError(f"no session at {directory}; open with --question creates")
     lines = path.read_text(encoding="utf-8").splitlines()
     return [json.loads(line) for line in lines if line.strip()]
 
@@ -362,14 +518,11 @@ def append_events(directory: Path, admitted: list[dict[str, Any]]) -> None:
         handle.write(payload)
 
 
-def admit(directory: Path, batch: list[dict[str, Any]]) -> Ledger:
-    """Validate the whole batch against the replayed ledger, then append it."""
-    events = read_events(directory)
-    ledger = replay(events)
-    for raw in batch:
-        apply(ledger, raw)
-    append_events(directory, batch)
-    return ledger
+def read_meta(directory: Path) -> dict[str, Any]:
+    path = directory / "session.json"
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {}
 
 
 def emit(document: dict[str, Any]) -> None:
@@ -380,14 +533,42 @@ def signal(message: str) -> None:
     print(f"signal: {message}", file=sys.stderr)
 
 
-def load_batch(path: str, kind: str) -> list[dict[str, Any]]:
-    raw = json.loads(Path(path).read_text(encoding="utf-8"))
-    _require(isinstance(raw, list), f"--file must hold a JSON array of {kind} payloads")
-    return [{"e": kind, **entry} for entry in raw]
+def orient(directory: Path) -> dict[str, Any]:
+    """The re-orientation payload: everything a resumed agent needs first."""
+    events = read_events(directory)
+    ledger = replay(events)
+    return {
+        "session": directory.name,
+        "question": read_meta(directory).get("question"),
+        "focus": read_meta(directory).get("focus"),
+        "counts": counts_of(ledger),
+        "open": [
+            {"id": leaf_id, "q": leaf.question}
+            for leaf_id, leaf in ledger.leaves.items()
+            if isinstance(leaf.state, Open)
+        ],
+        "swept": ledger.swept,
+        "yield": yield_table(events),
+    }
 
 
-def cmd_init(args: argparse.Namespace) -> int:
-    directory = session_dir(args.session)
+def cmd_open(args: argparse.Namespace) -> int:
+    ref = args.ref
+    explicit = os.sep in ref or ref.startswith(".")
+    if not explicit:
+        try:
+            emit(orient(sessions_root() / resolve(ref, session_ids(), "session")))
+            return 0
+        except CommandError as exc:
+            if "ambiguous" in str(exc):
+                raise
+    if not args.question:
+        directory = Path(ref) if explicit else None
+        if directory and ledger_path(directory).exists():
+            emit(orient(directory))
+            return 0
+        raise CommandError(f"no session matches '{ref}'; pass --question to create one")
+    directory = Path(ref) if explicit else sessions_root() / mint(ref.split())
     _require(
         not ledger_path(directory).exists(), f"session already exists at {directory}"
     )
@@ -403,137 +584,38 @@ def cmd_init(args: argparse.Namespace) -> int:
         json.dump(meta, handle, indent=2, ensure_ascii=False)
     Path(handle.name).replace(directory / "session.json")
     ledger_path(directory).touch()
-    emit({"session": str(directory), **meta})
+    emit({"session": directory.name if not explicit else str(directory), **meta})
     return 0
 
 
-def read_meta(directory: Path) -> dict[str, Any]:
-    path = directory / "session.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
-
-
-def cmd_leaf(args: argparse.Namespace) -> int:
-    if args.file:
-        batch = load_batch(args.file, "add_leaf")
-    else:
-        _require(bool(args.id and args.question), "leaf requires --id and --question")
-        batch = [
-            {"e": "add_leaf", "id": args.id, "q": args.question, "origin": args.origin}
-        ]
-    ledger = admit(session_dir(args.session), batch)
-    emit({"added": len(batch), "leaves": len(ledger.leaves)})
-    return 0
-
-
-def cmd_source(args: argparse.Namespace) -> int:
-    if args.file:
-        batch = load_batch(args.file, "add_source")
-    else:
-        _require(
-            bool(args.id and args.leaf and args.cls and args.title),
-            "source requires --id, --leaf, --cls, and --title",
-        )
-        batch = [
-            {
-                "e": "add_source",
-                "id": args.id,
-                "leaf": args.leaf,
-                "cls": args.cls,
-                "title": args.title,
-                "url": args.url or "",
-            }
-        ]
-    ledger = admit(session_dir(args.session), batch)
-    emit({"added": len(batch), "sources": len(ledger.sources)})
-    return 0
-
-
-def cmd_close(args: argparse.Namespace) -> int:
-    if args.file:
-        batch = load_batch(args.file, "close")
-    else:
-        _require(bool(args.leaf and args.state), "close requires --leaf and --state")
-        raw: dict[str, Any] = {"e": "close", "leaf": args.leaf, "state": args.state}
-        if args.sources:
-            raw["sources"] = [s for s in args.sources.split(",") if s]
-        if args.premise:
-            raw["premise"] = args.premise
-        if args.reason:
-            raw["reason"] = args.reason
-        if args.into:
-            raw["detail"] = args.into
-        elif args.detail:
-            raw["detail"] = args.detail
-        batch = [raw]
-    ledger = admit(session_dir(args.session), batch)
-    open_left = sum(isinstance(lf.state, Open) for lf in ledger.leaves.values())
-    emit({"closed": len(batch), "open_left": open_left})
-    return 0
-
-
-def cmd_sweep(args: argparse.Namespace) -> int:
-    candidates = [c for c in (args.candidates or "").split(",") if c]
-    survivors = [s for s in (args.survivors or "").split(",") if s]
-    batch = [
-        {
-            "e": "sweep",
-            "checked": args.checked,
-            "candidates": candidates,
-            "survivors": survivors,
-        }
-    ]
-    admit(session_dir(args.session), batch)
-    if survivors:
-        signal(f"surviving rivals: {', '.join(survivors)}; the Rival section renders")
-    emit({"swept": True, "candidates": candidates, "survivors": survivors})
-    return 0
-
-
-def cmd_status(args: argparse.Namespace) -> int:
+def cmd_note(args: argparse.Namespace) -> int:
     directory = session_dir(args.session)
-    if args.checkpoint:
-        _require(args.searches is not None, "--checkpoint requires --searches <count>")
-        admit(
-            directory,
-            [{"e": "checkpoint", "label": args.label, "searches": args.searches}],
-        )
+    raw = sys.stdin.read() if args.file == "-" else Path(args.file).read_text("utf-8")
+    batch = json.loads(raw)
+    _require(isinstance(batch, dict), "note takes one JSON object")
     events = read_events(directory)
     ledger = replay(events)
-    counts: dict[str, int] = {}
-    for leaf in ledger.leaves.values():
-        key = leaf_view(leaf.state)["state"]
-        counts[key] = counts.get(key, 0) + 1
-    rows = yield_table(events)
-    last, prior = (rows[-1], rows[-2]) if len(rows) > 1 else (None, None)
-    if (
-        last is not None
-        and last["yield"] is not None
-        and prior["yield"]
-        and last["yield"] < prior["yield"]
-    ):
-        signal(
-            "yield fell against the previous round: weigh leaving this patch "
-            "(re-decompose, or stop)"
-        )
+    expanded, minted = expand_batch(ledger, batch, mint)
+    for event in expanded:
+        apply(ledger, event)
+    append_events(directory, expanded)
     emit(
         {
-            "question": read_meta(directory).get("question"),
-            "counts": counts,
+            "session": directory.name,
+            "minted": minted,
+            "counts": counts_of(ledger),
             "open": [
                 leaf_id
                 for leaf_id, leaf in ledger.leaves.items()
                 if isinstance(leaf.state, Open)
             ],
-            "rounds": len(rows),
-            "yield": rows,
+            "yield": yield_table(events + expanded),
         }
     )
     return 0
 
 
-def cmd_outline(args: argparse.Namespace) -> int:
+def cmd_check(args: argparse.Namespace) -> int:
     directory = session_dir(args.session)
     events = read_events(directory)
     ledger = replay(events)
@@ -550,10 +632,12 @@ def cmd_outline(args: argparse.Namespace) -> int:
     )
     emit(
         {
+            "session": directory.name,
             "question": read_meta(directory).get("question"),
             "sections": sections(ledger),
             "violations": found,
             "hedges": hedges(ledger),
+            "yield": yield_table(events),
             "sources": [
                 {
                     "marker": markers[source_id],
@@ -575,7 +659,7 @@ def cmd_outline(args: argparse.Namespace) -> int:
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
-    root = state_root() / "sessions"
+    root = sessions_root()
     if not args.session and not args.all:
         listing = (
             [
@@ -594,12 +678,10 @@ def cmd_clean(args: argparse.Namespace) -> int:
         emit({"sessions": listing})
         return 0
     targets = (
-        (
-            [d for d in root.iterdir() if d.is_dir()]
-            if args.all
-            else [session_dir(args.session)]
-        )
-        if root.exists() or args.session
+        [d for d in root.iterdir() if d.is_dir()]
+        if args.all and root.exists()
+        else [session_dir(args.session)]
+        if args.session
         else []
     )
     freed = 0
@@ -614,127 +696,171 @@ def cmd_clean(args: argparse.Namespace) -> int:
 
 
 def cmd_selftest(_args: argparse.Namespace) -> int:
-    """Law checks: admitted events replay totally; every rejection path rejects."""
+    """Law checks: minting, resolution, batch expansion, transitions, views."""
     checks = 0
 
-    def rejects(raws: list[dict[str, Any]], why: str) -> None:
+    def fixed_mint(words: Iterable[str]) -> str:
+        return slugify(words) + "-0123456789abcdefghijklmnop"[:32]
+
+    def rejects(thunk: Callable[[], Any], why: str) -> None:
         nonlocal checks
         try:
-            replay(raws)
+            thunk()
         except CommandError:
             checks += 1
             return
         raise AssertionError(f"expected rejection: {why}")
 
-    base = [
-        {"e": "add_leaf", "id": "L1", "q": "q1", "origin": "frame"},
-        {"e": "add_leaf", "id": "L2", "q": "q2", "origin": "spawned"},
-        {"e": "add_leaf", "id": "L3", "q": "q3", "origin": "frame"},
-        {
-            "e": "add_source",
-            "id": "S1",
-            "leaf": "L1",
-            "cls": "constitutive",
-            "title": "spec",
-        },
-        {
-            "e": "add_source",
-            "id": "S2",
-            "leaf": "L2",
-            "cls": "reported",
-            "title": "blog",
-        },
-        {"e": "close", "leaf": "L1", "state": "retrieved", "sources": ["S1"]},
-        {
-            "e": "close",
-            "leaf": "L2",
-            "state": "refuted",
-            "sources": ["S2"],
-            "premise": "assumed exact-length",
-        },
-        {"e": "checkpoint", "label": "round-1", "searches": 4},
-        {
-            "e": "sweep",
-            "checked": "rival accounts of q1",
-            "candidates": ["folk"],
-            "survivors": [],
-        },
-        {
-            "e": "close",
-            "leaf": "L3",
-            "state": "retired",
-            "reason": "folded",
-            "into": "L1",
-            "detail": "L1",
-        },
-    ]
-    ledger = replay(base)
-    assert sections(ledger) == ["answer", "rival", "sources"], sections(ledger)
-    assert violations(ledger) == [], violations(ledger)
-    assert yield_table(base) == [
+    suffix_len = 26
+    minted = mint(["mitm", "fingerprint"])
+    assert minted.startswith("mitm-fingerprint-")
+    assert len(minted.rsplit("-", 1)[1]) == suffix_len
+    assert minted.rsplit("-", 1)[1] == minted.rsplit("-", 1)[1].lower()
+    assert mint(["a b", "C/d"]).startswith("a-b-c-d-")
+    checks += 3
+
+    pool = ["tls-pin-abc123", "tls-cert-def456", "aws-east-ghi789"]
+    assert resolve("tls-pin-abc123", pool, "leaf") == "tls-pin-abc123"
+    assert resolve("pin", pool, "leaf") == "tls-pin-abc123"
+    assert resolve("aws east", pool, "leaf") == "aws-east-ghi789"
+    checks += 3
+    rejects(lambda: resolve("tls", pool, "leaf"), "ambiguous keyword")
+    rejects(lambda: resolve("quic", pool, "leaf"), "no match")
+
+    ledger = Ledger()
+    batch = {
+        "leaves": [
+            {"kw": ["rent", "length"], "q": "what does Rent guarantee"},
+            {"kw": ["pool", "clear"], "q": "clearArray semantics", "origin": "spawned"},
+            {"kw": ["memory", "pool"], "q": "when to prefer MemoryPool"},
+        ],
+        "sources": [
+            {
+                "kw": ["bcl", "rent"],
+                "leaf": "rent length",
+                "cls": "constitutive",
+                "title": "BCL source",
+            },
+            {
+                "kw": ["blog", "folk"],
+                "leaf": "clear",
+                "cls": "reported",
+                "title": "folk belief post",
+            },
+        ],
+        "closes": [
+            {"leaf": "rent length", "state": "retrieved", "sources": ["bcl"]},
+            {
+                "leaf": "pool clear",
+                "state": "refuted",
+                "sources": ["folk"],
+                "premise": "assumed exact-length",
+            },
+            {
+                "leaf": "memory",
+                "state": "retired",
+                "reason": "folded",
+                "into": "rent length",
+            },
+        ],
+        "sweeps": [
+            {"checked": "rival accounts", "candidates": ["folk"], "survivors": []}
+        ],
+        "checkpoints": [{"label": "round-1", "searches": 4}],
+    }
+    events, minted_map = expand_batch(ledger, batch, fixed_mint)
+    for event in events:
+        apply(ledger, event)
+    assert sorted(len(v) for v in minted_map.values()) == [2, 3]
+    assert sections(ledger) == ["answer", "rival", "sources"]
+    assert violations(ledger) == []
+    assert yield_table(events) == [
         {"label": "round-1", "searches": 4, "new_sources": 2, "yield": 0.5}
     ]
     assert stated(["reported"]) == "hedged" and stated(["attested"]) == "plain"
     assert stated(["measured"]) == "hedged"
     assert stated(["measured", "measured"]) == "plain"
-    checks += 5
+    checks += 7
 
     contrary = {
-        "e": "close",
-        "leaf": "L1",
-        "state": "refuted",
-        "sources": ["S1"],
-        "premise": "late contrary evidence",
+        "closes": [
+            {
+                "leaf": "rent length",
+                "state": "refuted",
+                "sources": ["bcl"],
+                "premise": "late contrary evidence",
+            }
+        ]
     }
-    broken = replay([*base, contrary])  # Retrieved -> Refuted is the one legal bend
-    assert any("fold broken" in line for line in violations(broken))
+    events2, _ = expand_batch(ledger, contrary, fixed_mint)
+    for event in events2:
+        apply(ledger, event)  # Retrieved -> Refuted is the one legal bend
+    assert any("fold broken" in line for line in violations(ledger))
     checks += 1
 
-    rejects([{"e": "add_leaf", "id": "L1", "q": "a"}] * 2, "duplicate leaf")
     rejects(
-        [
-            {
-                "e": "add_source",
-                "id": "S1",
-                "leaf": "L9",
-                "cls": "measured",
-                "title": "t",
-            }
-        ],
-        "unknown leaf",
-    )
-    rejects(
-        [*base, {"e": "close", "leaf": "L2", "state": "retrieved", "sources": ["S2"]}],
+        lambda: (
+            (
+                expand_batch(
+                    ledger,
+                    {
+                        "closes": [
+                            {
+                                "leaf": "pool clear",
+                                "state": "retrieved",
+                                "sources": ["folk"],
+                            }
+                        ]
+                    },
+                    fixed_mint,
+                )[0]
+                and None
+            )
+            or apply(
+                ledger,
+                expand_batch(
+                    ledger,
+                    {
+                        "closes": [
+                            {
+                                "leaf": "pool clear",
+                                "state": "retrieved",
+                                "sources": ["folk"],
+                            }
+                        ]
+                    },
+                    fixed_mint,
+                )[0][0],
+            )
+        ),
         "Refuted is terminal",
     )
+    rejects(lambda: expand_batch(ledger, {}, fixed_mint), "empty note")
     rejects(
-        [
-            *base,
-            {
-                "e": "close",
-                "leaf": "L1",
-                "state": "retired",
-                "reason": "immaterial",
-                "detail": "",
-            },
-        ],
-        "empty immaterial why",
+        lambda: expand_batch(
+            Ledger(), {"leaves": [{"kw": ["!!"], "q": "x"}]}, fixed_mint
+        ),
+        "unsluggable keywords",
     )
+    fresh = Ledger()
+    apply(fresh, {"e": "add_leaf", "id": "solo-x", "q": "q"})
     rejects(
-        [
-            {"e": "add_leaf", "id": "L1", "q": "a"},
+        lambda: apply(
+            fresh,
             {
                 "e": "close",
-                "leaf": "L1",
+                "leaf": "solo-x",
                 "state": "retired",
                 "reason": "folded",
-                "detail": "L1",
+                "detail": "solo-x",
             },
-        ],
+        ),
         "fold target not retrieved",
     )
     rejects(
-        [{"e": "sweep", "checked": "x", "candidates": [], "survivors": ["a"]}],
+        lambda: apply(
+            fresh, {"e": "sweep", "checked": "x", "candidates": [], "survivors": ["a"]}
+        ),
         "survivors outside candidates",
     )
     emit({"selftest": "ok", "checks": checks})
@@ -745,50 +871,24 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    def sub(name: str, func: Any) -> argparse.ArgumentParser:
-        command = commands.add_parser(name)
-        command.set_defaults(func=func)
-        if name not in ("clean", "selftest"):
-            command.add_argument("session")
-        return command
-
-    init = sub("init", cmd_init)
-    init.add_argument("--question", required=True)
-    init.add_argument("--focus", default=None)
-    leaf = sub("leaf", cmd_leaf)
-    leaf.add_argument("--id")
-    leaf.add_argument("--question")
-    leaf.add_argument("--origin", choices=ORIGINS, default="frame")
-    leaf.add_argument("--file")
-    source = sub("source", cmd_source)
-    source.add_argument("--id")
-    source.add_argument("--leaf")
-    source.add_argument("--cls", choices=SOURCE_CLASSES)
-    source.add_argument("--title")
-    source.add_argument("--url")
-    source.add_argument("--file")
-    close = sub("close", cmd_close)
-    close.add_argument("--leaf")
-    close.add_argument("--state", choices=CLOSE_STATES)
-    close.add_argument("--sources")
-    close.add_argument("--premise")
-    close.add_argument("--reason", choices=UNRESOLVED_REASONS + RETIRED_REASONS)
-    close.add_argument("--into")
-    close.add_argument("--detail")
-    close.add_argument("--file")
-    sweep = sub("sweep", cmd_sweep)
-    sweep.add_argument("--checked", required=True)
-    sweep.add_argument("--candidates")
-    sweep.add_argument("--survivors")
-    status = sub("status", cmd_status)
-    status.add_argument("--checkpoint", action="store_true")
-    status.add_argument("--searches", type=int)
-    status.add_argument("--label")
-    sub("outline", cmd_outline)
-    clean = sub("clean", cmd_clean)
+    opener = commands.add_parser("open")
+    opener.set_defaults(func=cmd_open)
+    opener.add_argument("ref", help="two or three keywords in one quoted argument")
+    opener.add_argument("--question")
+    opener.add_argument("--focus", default=None)
+    note = commands.add_parser("note")
+    note.set_defaults(func=cmd_note)
+    note.add_argument("session")
+    note.add_argument("file", help="JSON batch file, or - for stdin")
+    check = commands.add_parser("check")
+    check.set_defaults(func=cmd_check)
+    check.add_argument("session")
+    clean = commands.add_parser("clean")
+    clean.set_defaults(func=cmd_clean)
     clean.add_argument("session", nargs="?")
     clean.add_argument("--all", action="store_true")
-    sub("selftest", cmd_selftest)
+    selftest = commands.add_parser("selftest")
+    selftest.set_defaults(func=cmd_selftest)
 
     args = parser.parse_args(argv)
     try:

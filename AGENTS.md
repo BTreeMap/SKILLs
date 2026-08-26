@@ -215,6 +215,9 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     moves, every citation to it moves in the same change.
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use a
   hyphen, a comma, a colon, or restructure the sentence.
+* A convention change is total: the same change rewrites every statement,
+  example, and docstring of the old convention, so the repository shows one
+  convention at a time.
 * A bundled script and its invoking agent form a neuro-symbolic pair: the
   script is the symbolic half, the agent the neuro half. Give each half the
   work it is suited to:
@@ -242,6 +245,24 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     completely enough that the interface alone carries a run. Source
     reading belongs to user-instructed troubleshooting; each skill that
     bundles a script states this gate in one line beside its commands.
+  * Unique identifiers are minted by the script: the agent supplies two
+    or three keywords naming the thing, and the script returns the
+    identifier as the lowercase dash-joined keyword slug plus a 128-bit
+    entropy suffix,
+    `b32hexencode(os.urandom(16)).decode().rstrip("=").lower()`. Every
+    output echoes the canonical identifier, and the agent supplies that
+    full identifier in later calls. Keyword-subset resolution is the
+    recovery path for an identifier lost to context compression: a unique
+    subset resolves, the script signals the recovery and echoes the full
+    identifier again, and an ambiguous reference is an error listing the
+    candidates. The split: the model owns the semantics of the name, the
+    script owns its uniqueness. Identifiers with a natural key (a DOI, a
+    file path) keep that key.
+  * Command surfaces are uniform in shape, because each asymmetry is a
+    token spent re-reading help text: one record is a batch of one (one
+    JSON input carries one record or fifty), sibling record kinds share
+    one plural-array container schema, and every subcommand addresses its
+    subject the same way.
 * A script is frugal with the user's disk, and its state placement follows
   the XDG base directory standard:
   * Durable, light state (backups, logs, resumable sessions) lives in the
