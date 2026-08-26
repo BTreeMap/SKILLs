@@ -2,7 +2,7 @@
 
 Read-only PL-lens review of a diff, PR, or file set. Produce ranked findings;
 change nothing. This lens hunts unsound domain modeling and unsound cost, not
-bloat.
+bloat; route over-engineering findings to `/ponytail review`.
 
 ## Pipeline
 

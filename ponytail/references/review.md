@@ -36,8 +36,7 @@ Nothing to cut: say `Lean already. Ship.` and stop.
 ## Boundaries
 
 Scope: over-engineering and complexity only. Correctness bugs, security
-holes, and performance are explicitly out of scope - route them to a normal
-review pass, not this one. A single smoke test or `assert`-based self-check
-is the ponytail minimum, not bloat; never flag it for deletion. Lists
-findings, applies nothing. One-shot: the report ends the mode and the active
-intensity level is untouched.
+holes, and performance are explicitly out of scope - route them to
+`/pl-theorist review`, not this pass. A single smoke test or `assert`-based
+self-check is the ponytail minimum, not bloat; never flag it for deletion.
+Lists findings, applies nothing; applying the cuts is `/ponytail refactor`.

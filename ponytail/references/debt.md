@@ -1,7 +1,7 @@
 # Ponytail Debt Mode
 
 Every deliberate ponytail shortcut is marked with a `ponytail:` comment
-naming its ceiling and upgrade path. This mode collects them into one ledger
+naming its ceiling and upgrade path. This verb collects them into one ledger
 so a deferral can't quietly become permanent.
 
 ## Scan
@@ -38,5 +38,4 @@ Nothing found: `No ponytail: debt. Clean ledger.`
 ## Boundaries
 
 Reads and reports only, changes nothing. To persist the ledger, ask first;
-then write it to a file (e.g. `PONYTAIL-DEBT.md`). One-shot: the report ends
-the mode and the active intensity level is untouched.
+then write it to a file (e.g. `PONYTAIL-DEBT.md`).

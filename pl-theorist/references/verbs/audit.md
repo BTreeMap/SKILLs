@@ -2,7 +2,7 @@
 
 Whole-repository or module-level sweep through the PL lens, producing a ranked
 ledger of modeling and cost debt. `review` judges a diff; `audit` judges a
-codebase. Read-only.
+codebase. Read-only. Over-engineering and bloat route to `/ponytail audit`.
 
 ## Pipeline
 

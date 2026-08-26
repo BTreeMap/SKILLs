@@ -80,8 +80,8 @@ Current skills:
   models (including Bash and GitHub Actions YAML) and verb files loaded on
   demand from `references/`.
 * `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
-  diffs, with lite/full/ultra intensity levels and one-shot review/audit/debt/
-  gain/help modes loaded on demand from `references/`.
+  diffs, with lite/full/ultra levels and design/refactor/review/audit/test/
+  teach/debt/gain/help verbs loaded on demand from `references/`.
 * `read-pdf/` - text and metadata extraction from PDF files for analysis.
 * `reframe/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
@@ -267,6 +267,39 @@ unchanged in any spec-compliant agent and uploads without hard errors:
 * Edit skills **here**, in this repository. NEVER edit the vendored copy inside a
   downstream project's `.github/skills` submodule; those changes are discarded on
   the next submodule update.
+
+## Persona verb protocol
+
+A persona skill dispatches work through verbs. Every engineering persona
+implements the core eight, each through its own lens:
+
+| Verb | Contract |
+| --- | --- |
+| design | Plan before code exists |
+| build | Write new code |
+| refactor | Rewrite existing code, behavior preserved |
+| review | Findings on a diff or file set |
+| audit | Ranked ledger over a repository or module |
+| test | Derive checks from the lens's own laws |
+| teach | Explain a judgment, calibrated to audience |
+| help | Quick-reference card |
+
+Laws:
+
+* `build` and `refactor` apply changes; every other verb edits nothing.
+* Same verb, same contract in every persona; only the lens differs.
+* A read-only verb names what is outside its lens and routes it to the
+  sibling persona's same verb in slash form.
+* Dispatch precedence: explicit verb, then unambiguous request shape, then
+  the persona's declared default verb.
+* One verb file per invocation, registered under the verb's name.
+
+Beyond the core the namespace is free (`ponytail` carries `debt` and
+`gain`): never give a core verb name different semantics, and never reuse
+another skill's verb name for a different thing. Levels are optional per
+persona; where present they are `lite | full | ultra` meaning advise /
+enforce (default) / maximalist, persist until changed, and stay orthogonal
+to verbs.
 
 ## Commit conventions
 

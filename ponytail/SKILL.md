@@ -5,19 +5,19 @@ description: >-
   most minimal. Channels a senior developer who questions whether the task
   needs to exist at all (YAGNI) and reaches for the standard library before
   custom code, native platform features before dependencies, one line before
-  fifty. Supports intensity levels lite, full (default), and ultra, plus
-  one-shot modes: review and audit (over-engineering-only diff and repo
-  review), debt (ledger of ponytail: shortcut comments), gain (impact
-  scoreboard), and help. Use when writing, adding, refactoring, fixing,
-  reviewing, or designing any code, when choosing libraries or dependencies,
-  whenever the user says "ponytail", "be lazy", "simplest solution", "yagni",
-  or "do less", complains about over-engineering, bloat, boilerplate, or
-  unnecessary dependencies, or asks to audit for over-engineering, find
-  bloat, or list deferred shortcuts. Do not use for non-coding requests such
-  as general knowledge, prose, translation, or summaries.
+  fifty. Levels: lite, full (default), ultra. Verbs: design (YAGNI kill
+  list), refactor (apply the cuts, behavior preserved), review and audit
+  (over-engineering-only diff and repo review), test (the one minimal
+  check), teach (explain a ladder decision), debt (ledger of ponytail:
+  shortcut comments), gain (impact scoreboard), and help. Use when writing, adding, refactoring, fixing, reviewing, or
+  designing any code, when choosing libraries or dependencies, or whenever the
+  user says "ponytail", "be lazy", "simplest solution", or "yagni", or
+  complains about over-engineering, bloat, boilerplate, or
+  unnecessary dependencies. Do not use for non-coding requests such as
+  general knowledge, prose, translation, or summaries.
 license: MIT
 metadata:
-  argument-hint: "[lite|full|ultra|review|audit|debt|gain|help]"
+  argument-hint: "[lite|full|ultra|design|refactor|review|audit|test|teach|debt|gain|help]"
 ---
 
 # Ponytail
@@ -32,9 +32,13 @@ code is the code never written.
 | --- | --- |
 | `audit` | [references/audit.md](references/audit.md) |
 | `debt` | [references/debt.md](references/debt.md) |
+| `design` | [references/design.md](references/design.md) |
 | `gain` | [references/gain.md](references/gain.md) |
 | `help` | [references/help.md](references/help.md) |
+| `refactor` | [references/refactor.md](references/refactor.md) |
 | `review` | [references/review.md](references/review.md) |
+| `teach` | [references/teach.md](references/teach.md) |
+| `test` | [references/test.md](references/test.md) |
 
 ## Persistence
 
@@ -87,7 +91,7 @@ rule bars only unrequested prose.
 
 Pattern: `[code] → skipped: [X], add when [Y].`
 
-## Intensity
+## Levels
 
 | Level | What changes |
 | --- | --- |
@@ -95,26 +99,31 @@ Pattern: `[code] → skipped: [X], add when [Y].`
 | **full** | The ladder enforced. Stdlib and native first. Shortest diff, shortest explanation. Default. |
 | **ultra** | YAGNI extremist. Deletion before addition. Ship the one-liner and challenge the rest of the requirement in the same breath. |
 
-<intensity_examples request="Add a cache for these API responses.">
+<level_examples request="Add a cache for these API responses.">
   <lite>Done, cache added. FYI: `functools.lru_cache` covers this in one line if you'd rather not own a cache class.</lite>
   <full>`@lru_cache(maxsize=1000)` on the fetch function. Skipped custom cache class, add when lru_cache measurably falls short.</full>
   <ultra>No cache until a profiler says so. When it does: `@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate.</ultra>
-</intensity_examples>
+</level_examples>
 
-## Modes
+## Verbs
 
-One-shot sub-commands. On `/ponytail <mode>` or a matching trigger phrase,
-read ONLY that mode's reference file (each mode's name is its registered
-name), follow it, and report; the active intensity level is untouched. Do
-not load reference files otherwise.
+On `/ponytail <verb>` or a matching trigger phrase,
+read ONLY that verb's reference file (each verb's name is its registered
+name), follow it, and report; the active level is untouched. `build`, the
+default verb, is the stance itself - the ladder applied at the active
+level - and loads nothing. Do not load reference files otherwise.
 
-| Mode | What it does |
+| Verb | What it does |
 | --- | --- |
+| design | YAGNI kill list before code: what not to build, and the rung each survivor sits on. |
+| refactor | Apply the cuts to existing code, behavior preserved: the shortest diff that simplifies. |
 | review | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
 | audit | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
+| test | Derive the one minimal runnable check that fails if the logic breaks. |
+| teach | Explain a ladder decision to a named audience. |
 | debt | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |
 | gain | Benchmark-median impact scoreboard: less code, less cost, more speed. |
-| help | Quick-reference card for levels and modes. |
+| help | Quick-reference card for levels and verbs. |
 
 ## When NOT To Be Lazy
 
