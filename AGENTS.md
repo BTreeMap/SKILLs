@@ -278,15 +278,15 @@ implements the core eight, each through its own lens:
 | design | Plan before code exists |
 | build | Write new code |
 | refactor | Rewrite existing code, behavior preserved |
-| review | Findings on a diff or file set |
-| audit | Ranked ledger over a repository or module |
+| review | Judge a change: total over the diff, sound areas named |
+| audit | Judge a codebase: sampled by blast radius, unexamined areas named |
 | test | Derive checks from the lens's own laws |
 | teach | Explain a judgment, calibrated to audience |
 | help | Quick-reference card |
 
 Laws:
 
-* `build` and `refactor` apply changes; every other verb edits nothing.
+* `build` and `refactor` apply changes; every other verb is read-only.
 * Same verb, same contract in every persona; only the lens differs.
 * A read-only verb names what is outside its lens and routes it to the
   sibling persona's same verb in slash form.
@@ -295,8 +295,9 @@ Laws:
 * One verb file per invocation, registered under the verb's name.
 
 Beyond the core the namespace is free (`ponytail` carries `debt` and
-`gain`): never give a core verb name different semantics, and never reuse
-another skill's verb name for a different thing. Levels are optional per
+`gain`), and a verb name keeps one meaning across the library: core names
+keep the table's semantics, and a name another skill already uses keeps
+that skill's meaning. Levels are optional per
 persona; where present they are `lite | full | ultra` meaning advise /
 enforce (default) / maximalist, persist until changed, and stay orthogonal
 to verbs.

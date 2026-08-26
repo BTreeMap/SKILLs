@@ -1,4 +1,4 @@
-# Ponytail Debt Mode
+# Ponytail Debt Verb
 
 Every deliberate ponytail shortcut is marked with a `ponytail:` comment
 naming its ceiling and upgrade path. This verb collects them into one ledger

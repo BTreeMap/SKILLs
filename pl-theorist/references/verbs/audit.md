@@ -1,8 +1,9 @@
 # Verb: audit
 
-Whole-repository or module-level sweep through the PL lens, producing a ranked
-ledger of modeling and cost debt. `review` judges a diff; `audit` judges a
-codebase. Read-only. Over-engineering and bloat route to `/ponytail audit`.
+Judge a codebase: whole-repository or module-level sweep through the PL
+lens, producing a ranked ledger of modeling and cost debt. `review` is total
+over a diff and gates a decision; `audit` samples by blast radius and ranks
+a backlog. Read-only. Over-engineering and bloat route to `/ponytail audit`.
 
 ## Pipeline
 
@@ -29,7 +30,7 @@ repo-scale categories only an audit can see:
 | Capability sprawl | Scripts and workflows holding broader permissions or secrets than their effects require |
 
 Sample honestly: if scope forces sampling, choose by blast radius and name
-every area not examined.
+every unexamined area.
 
 ### 3. Rank
 
@@ -43,16 +44,16 @@ A ledger table, ranked:
 
 `| # | location | category | finding | suggested shape | effort (S/M/L) |`
 
-Then: at most five lines summarizing systemic themes, the single highest-value
-fix, and the areas not examined. No edits; fixing proceeds through `refactor`
-or `build` invocations per ledger row.
+Then: at most five lines summarizing systemic themes, the single
+highest-value fix, and the unexamined areas. Fixing proceeds through
+`refactor` or `build` invocations per ledger row.
 
 ## Completion Checks
 
 <verb_checklist>
-  <item>No file was modified.</item>
+  <item>The working tree is untouched.</item>
   <item>Hot paths and trust boundaries were examined before peripheral code.</item>
   <item>Both diff-scale and repo-scale categories were swept.</item>
   <item>Unexamined areas are named explicitly.</item>
-  <item>Ranking reflects severity times reach, not discovery order.</item>
+  <item>Ranking reflects severity times reach.</item>
 </verb_checklist>

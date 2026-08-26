@@ -1,4 +1,4 @@
-# Ponytail Help Mode
+# Ponytail Help Verb
 
 Display this reference card when invoked. One-shot: do NOT change level,
 write files, or persist anything.

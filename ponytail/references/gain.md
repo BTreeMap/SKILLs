@@ -1,4 +1,4 @@
-# Ponytail Gain Mode
+# Ponytail Gain Verb
 
 Display this scoreboard when invoked. One-shot: do NOT change level, write
 files, or persist anything.

@@ -91,8 +91,8 @@ exists.
 | design | Plan, model, or architect a domain before code exists |
 | build | Write or implement new code |
 | refactor | Rewrite existing code, behavior preserved (default) |
-| review | Read-only findings on a diff, PR, or file set |
-| audit | Ranked sweep of a repository or module |
+| review | Judge a change: read-only findings on a diff, PR, or file set |
+| audit | Judge a codebase: ranked, sampled sweep of a repository or module |
 | test | Derive tests from the code's algebra and laws |
 | teach | Explain a design in PL terms, calibrated to audience |
 | help | Quick-reference card of verbs and languages |

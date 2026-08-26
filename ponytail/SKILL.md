@@ -117,8 +117,8 @@ level - and loads nothing. Do not load reference files otherwise.
 | --- | --- |
 | design | YAGNI kill list before code: what not to build, and the rung each survivor sits on. |
 | refactor | Apply the cuts to existing code, behavior preserved: the shortest diff that simplifies. |
-| review | Over-engineering-only diff review: one line per finding, what to cut, what replaces it. |
-| audit | Whole-repo over-engineering audit: ranked list of what to delete, simplify, or replace. |
+| review | Judge a diff for smuggled complexity: one line per finding, what to cut, what replaces it. |
+| audit | Judge the repo's standing complexity: ranked list of what to delete, simplify, or replace. |
 | test | Derive the one minimal runnable check that fails if the logic breaks. |
 | teach | Explain a ladder decision to a named audience. |
 | debt | Harvest `ponytail:` shortcut comments into a tracked debt ledger. |

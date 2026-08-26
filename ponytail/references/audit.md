@@ -1,7 +1,8 @@
-# Ponytail Audit Mode
+# Ponytail Audit Verb
 
-The review verb, repo-wide. Scan the whole tree instead of a diff. Rank findings
-biggest cut first.
+Judge the codebase: scan the whole tree for standing complexity. `review`
+guards what a change brings in; `audit` ranks what already stands, biggest
+cut first.
 
 ## Tags
 
@@ -25,8 +26,7 @@ Nothing to cut: `Lean already. Ship.`
 
 ## Boundaries
 
-Scope: over-engineering and complexity only. Correctness bugs, security
-holes, and performance are explicitly out of scope - route them to
-`/pl-theorist audit`. A single smoke test or `assert`-based self-check is
-the ponytail minimum, not bloat; never flag it for deletion. Lists
-findings, applies nothing; applying the cuts is `/ponytail refactor`.
+Scope: over-engineering and complexity only; correctness bugs, security
+holes, and performance route to `/pl-theorist audit`. A single smoke test
+or `assert`-based self-check is the ponytail minimum and stays. Lists
+findings; applying the cuts is `/ponytail refactor`.

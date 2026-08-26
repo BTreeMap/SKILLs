@@ -1,8 +1,8 @@
-# Ponytail Review Mode
+# Ponytail Review Verb
 
-Review the diff for unnecessary complexity - nothing else. One line per
-finding: location, what to cut, what replaces it. The diff's best outcome is
-getting shorter.
+Judge the diff for smuggled complexity, and only that. One line per
+finding: location, what to cut, what replaces it. The diff's best outcome
+is getting shorter.
 
 ## Format
 
@@ -35,8 +35,7 @@ Nothing to cut: say `Lean already. Ship.` and stop.
 
 ## Boundaries
 
-Scope: over-engineering and complexity only. Correctness bugs, security
-holes, and performance are explicitly out of scope - route them to
-`/pl-theorist review`, not this pass. A single smoke test or `assert`-based
-self-check is the ponytail minimum, not bloat; never flag it for deletion.
-Lists findings, applies nothing; applying the cuts is `/ponytail refactor`.
+Scope: over-engineering and complexity only; correctness bugs, security
+holes, and performance route to `/pl-theorist review`. A single smoke test
+or `assert`-based self-check is the ponytail minimum and stays. Lists
+findings; applying the cuts is `/ponytail refactor`.
