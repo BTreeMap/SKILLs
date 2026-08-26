@@ -26,6 +26,7 @@ megabytes) the whole audit is bounded by reading the tree once.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -52,7 +53,17 @@ SPEC_FIELDS = (
 DESCRIPTION_LIMIT = 1024
 SKILL_SHEBANG = "#!/usr/bin/env -S uv run --script"
 PEP_723_OPEN = "# /// script"
-ALIAS_DIR = Path(".github/skills")
+# `skills/` is the vendor-neutral hub: one relative symlink per skill, pointing
+# back at the canonical root directory. Each vendor path is a single symlink to
+# that hub, so supporting another agent costs one link rather than one per
+# skill. Installers resolve skills through the manifest instead, which declares
+# the canonical paths.
+HUB = Path("skills")
+VENDOR_ALIASES = {
+    Path(".github/skills"): "../skills",
+    Path(".claude/skills"): "../skills",
+}
+MANIFEST = Path(".claude-plugin/marketplace.json")
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
 # Bound repairs in case future rules unlock one another.
@@ -83,7 +94,17 @@ class MakeSymlink:
         link.symlink_to(self.target)
 
 
-Repair = WriteText | MakeSymlink
+@dataclass(frozen=True, slots=True)
+class RemovePath:
+    path: Path
+
+    def apply(self, root: Path) -> None:
+        target = root / self.path
+        if target.is_symlink() or target.exists():
+            target.unlink()
+
+
+Repair = WriteText | MakeSymlink | RemovePath
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,22 +130,28 @@ class Repo:
     skills: frozenset[str]
     texts: Mapping[Path, str]  # repo-relative path to contents
     entry_points: frozenset[Path]  # bundled scripts invoked directly
-    aliases: Mapping[str, str | None]  # skill to discovery symlink target
+    aliases: Mapping[Path, str | None]  # alias path to its symlink target
+    vendors: Mapping[Path, str | None]  # vendor path to its symlink target
+    manifest: str | None  # the marketplace manifest, which is not a text file
 
 
 def snapshot(root: Path) -> Repo:
     """Parse a directory into the repository this program knows how to judge.
 
-    Every top-level directory not starting with a dot is a skill directory,
-    which AGENTS.md declares a reserved namespace, so the skill set is read
-    from the tree rather than from any list that could disagree with it.
+    Every top-level directory that is neither dotted nor the `skills/` alias
+    container is a skill directory, which AGENTS.md declares a reserved
+    namespace, so the skill set is read from the tree rather than from any
+    list that could disagree with it.
     """
     if not (root / "AGENTS.md").is_file():
         raise SystemExit(f"not a skills repository: {root}/AGENTS.md is missing")
     skills = frozenset(
         entry.name
         for entry in root.iterdir()
-        if entry.is_dir() and not entry.name.startswith(".")
+        if entry.is_dir()
+        and not entry.is_symlink()
+        and not entry.name.startswith(".")
+        and Path(entry.name) != HUB
     )
     texts: dict[Path, str] = {}
     packages: set[Path] = set()
@@ -139,15 +166,31 @@ def snapshot(root: Path) -> Repo:
             texts[relative] = path.read_text(encoding="utf-8", errors="replace")
             if name == "__init__.py":
                 packages.add(relative.parent)
+    hub = root / HUB
+    present = {e.name for e in hub.iterdir()} if hub.is_dir() else set()
     aliases = {
-        skill: (
-            os.readlink(root / ALIAS_DIR / skill)
-            if (root / ALIAS_DIR / skill).is_symlink()
-            else None
+        HUB / name: (
+            os.readlink(root / HUB / name) if (root / HUB / name).is_symlink() else None
         )
-        for skill in skills
+        for name in skills | present
     }
-    return Repo(skills, texts, _entry_points(texts, skills, packages), aliases)
+    vendors = {
+        path: (os.readlink(root / path) if (root / path).is_symlink() else None)
+        for path in VENDOR_ALIASES
+    }
+    manifest = (
+        (root / MANIFEST).read_text(encoding="utf-8")
+        if (root / MANIFEST).is_file()
+        else None
+    )
+    return Repo(
+        skills,
+        texts,
+        _entry_points(texts, skills, packages),
+        aliases,
+        vendors,
+        manifest,
+    )
 
 
 def _entry_points(
@@ -344,18 +387,52 @@ def rule_script_header(repo: Repo) -> Iterator[Finding]:
 
 
 def rule_alias(repo: Repo) -> Iterator[Finding]:
-    """The discovery alias is a pure function of the skill name, so a missing or
-    wrong one is repaired rather than reported."""
-    for skill in sorted(repo.skills):
-        target = f"../../{skill}"
-        if repo.aliases.get(skill) == target:
-            continue
-        yield Finding(
-            "alias",
-            str(ALIAS_DIR / skill),
-            f"discovery alias must be a symlink to {target}",
-            MakeSymlink(ALIAS_DIR / skill, target),
-        )
+    """Every alias is a pure function of the skill set, so a missing, wrong, or
+    orphaned one is repaired rather than reported."""
+    wanted = {HUB / skill: f"../{skill}" for skill in repo.skills}
+    for link, target in sorted(wanted.items()):
+        if repo.aliases.get(link) != target:
+            yield Finding(
+                "alias",
+                str(link),
+                f"discovery alias must be a symlink to {target}",
+                MakeSymlink(link, target),
+            )
+    for orphan in sorted(set(repo.aliases) - set(wanted)):
+        yield Finding("alias", str(orphan), "alias names no skill", RemovePath(orphan))
+    for path, target in sorted(VENDOR_ALIASES.items()):
+        if repo.vendors.get(path) != target:
+            yield Finding(
+                "alias",
+                str(path),
+                f"vendor alias must be a symlink to {target}",
+                MakeSymlink(path, target),
+            )
+
+
+def rule_manifest(repo: Repo) -> Iterator[Finding]:
+    """The marketplace entry declares every skill path, which is what makes
+    discovery declared rather than a fallback scan. That list is a function of
+    the skill set, so drift is repaired; a malformed manifest is not."""
+    if repo.manifest is None:
+        yield Finding("manifest", str(MANIFEST), "manifest is missing")
+        return
+    try:
+        doc = json.loads(repo.manifest)
+        entry = doc["plugins"][0]
+    except (json.JSONDecodeError, LookupError, TypeError) as error:
+        yield Finding("manifest", str(MANIFEST), f"unreadable manifest: {error}")
+        return
+    declared = [f"./{skill}" for skill in sorted(repo.skills)]
+    if entry.get("skills") == declared:
+        return
+    entry["skills"] = declared
+    yield Finding(
+        "manifest",
+        str(MANIFEST),
+        "declared skill paths do not match the skill set",
+        WriteText(MANIFEST, json.dumps(doc, indent=2) + "\n"),
+    )
 
 
 def rule_listings(repo: Repo) -> Iterator[Finding]:
@@ -390,6 +467,7 @@ RULES: tuple[Callable[[Repo], Iterator[Finding]], ...] = (
     rule_em_dash,
     rule_frontmatter,
     rule_listings,
+    rule_manifest,
     rule_script_header,
     rule_skill_layout,
 )

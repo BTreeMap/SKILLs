@@ -1,0 +1,33 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
+  "name": "btreemap",
+  "owner": {
+    "name": "BTreeMap",
+    "url": "https://github.com/BTreeMap"
+  },
+  "description": "Reusable, project-agnostic agent skills from the BTreeMap/SKILLs library.",
+  "plugins": [
+    {
+      "name": "btreemap-skills",
+      "source": "./",
+      "description": "A library of reusable, project-agnostic agent skills: each one a SKILL.md procedure an LLM coding agent loads and follows.",
+      "homepage": "https://github.com/BTreeMap/SKILLs#readme",
+      "repository": "https://github.com/BTreeMap/SKILLs",
+      "license": "MIT",
+      "skills": [
+        "./aesthete",
+        "./author-skill",
+        "./caveman",
+        "./fact-check",
+        "./git-commit",
+        "./humanize",
+        "./lit-review",
+        "./pl-theorist",
+        "./ponytail",
+        "./read-pdf",
+        "./reframe",
+        "./setup-env"
+      ]
+    }
+  ]
+}

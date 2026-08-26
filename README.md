@@ -1,10 +1,12 @@
 # SKILLs
 
 A library of reusable [agent skills](https://agentskills.io): each skill is a
-`SKILL.md` procedure an LLM coding agent loads and follows, consumed as a git
-submodule. Every skill is project-agnostic (no hardcoded paths, names, or
-services) and self-contained (one directory: `SKILL.md` plus optional
-reference files and scripts).
+`SKILL.md` procedure an LLM coding agent loads and follows. Every skill is
+project-agnostic (no hardcoded paths, names, or services) and self-contained
+(one directory: `SKILL.md` plus optional reference files and scripts).
+
+Install them with `npx skills`, as a Claude Code plugin, or as a git
+submodule.
 
 ## Available skills
 
@@ -23,9 +25,29 @@ reference files and scripts).
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
 
-## Installing in your repository
+## Installing
 
-Add the library as a submodule at `.github/skills` and alias it for Claude:
+### With a skills manager
+
+Install every skill, or pick individual ones, into whichever agents you use:
+
+```bash
+npx skills add BTreeMap/SKILLs --all
+npx skills add BTreeMap/SKILLs --skill fact-check --skill git-commit
+```
+
+### As a Claude Code plugin
+
+```bash
+claude plugin marketplace add BTreeMap/SKILLs
+claude plugin install btreemap-skills@btreemap
+```
+
+### As a git submodule
+
+Pins an exact commit and updates on your schedule, which is the route the
+bundled sync workflow below automates. Add the library at `.github/skills` and
+alias it for Claude:
 
 ```bash
 (
@@ -121,10 +143,21 @@ If your organization restricts third-party actions, allowlist
 
 ## Repository layout
 
-Root skill directories are canonical; `.github/skills/<skill-name>` entries
-are committed relative symlinks, and `.claude/skills` points at
-`.github/skills`. Edit skills at the root and keep every alias a symlink. Git
-preserves symlinks on Linux and macOS; on Windows, enable Developer Mode or
+```text
+<skill-name>/SKILL.md          canonical; one directory per skill
+skills/<skill-name>            vendor-neutral hub; one symlink per skill
+.github/skills -> ../skills    GitHub Copilot, and the submodule mount
+.claude/skills -> ../skills    Claude Code
+.claude-plugin/                plugin and marketplace manifests
+```
+
+Every vendor path is a single symlink to `skills/`, so supporting another agent
+costs one link rather than one per skill. Edit skills at the root and keep every
+alias a symlink. The CI gate writes and prunes the aliases, and regenerates the
+skill list inside `marketplace.json`, which is the address installers resolve
+each skill by.
+
+Git preserves symlinks on Linux and macOS; on Windows, enable Developer Mode or
 configure Git to create symlinks before cloning.
 
 ## Contributing

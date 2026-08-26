@@ -2,9 +2,10 @@
 
 This repository is a central, project-agnostic library of reusable agent skills.
 Each skill is a self-contained `SKILL.md` describing a procedure an LLM agent can
-load and execute. Downstream projects consume this repository as a git submodule
-mounted at `.github/skills`, so **every skill here MUST be neutral and reusable
-across unrelated projects**.
+load and execute. Downstream projects consume this repository as a git
+submodule mounted at `.github/skills`, as a Claude Code plugin, or through a
+skills manager such as `npx skills`, so **every skill here MUST be neutral and
+reusable across unrelated projects**.
 
 This file is the entry point. Load linked skills just in time - only when the task
 needs them - to keep context lean.
@@ -17,10 +18,21 @@ needs them - to keep context lean.
   user would speak (`fact-check`, `read-pdf`, `git-commit`); a persona or
   stance skill is a single noun (`caveman`, `ponytail`, `pl-theorist`). No
   filler nouns (`-protocol`, `-helper`, `-skills`), no gerunds.
-* Every top-level directory not starting with a dot IS a skill directory; that
-  namespace is reserved. Repository plumbing lives in dotted directories
-  (`.github`, `.claude`) or in single files at the root (e.g.
-  `sync-skills.example.yml`).
+* Every top-level directory that is neither dotted nor `skills/` IS a skill
+  directory; that namespace is reserved. Repository plumbing lives in dotted
+  directories (`.github`, `.claude`, `.claude-plugin`) or in single files at
+  the root (e.g. `sync-skills.example.yml`).
+* `skills/` is the vendor-neutral hub: one committed relative symlink per
+  skill, `skills/<skill-name>` to `../<skill-name>`. Every vendor path is a
+  single symlink to that hub, so supporting another agent costs one link rather
+  than one per skill. `.github/skills` serves GitHub Copilot and mirrors the
+  path downstream projects mount this repository at; `.claude/skills` serves
+  Claude Code.
+* `.claude-plugin/` carries the installer manifests: `marketplace.json` lists
+  every skill by its canonical root path, which is the address installers
+  resolve, and `plugin.json` declares the same root container to Claude Code.
+  The gate regenerates that list from the tree, so adding a skill never edits a
+  manifest by hand.
 * `LICENSE`: MIT.
 * There is no build system or dependency manifest. This repository is documentation
   that other agents read; treat correctness as an editorial property, not a compiled
@@ -96,7 +108,8 @@ uv run --script .github/scripts/repo_gate.py fix
 | Repaired automatically | Reported for a human |
 | --- | --- |
 | ruff's safe lint fixes and formatting (policy in `ruff.toml`) | Lint findings ruff cannot fix safely |
-| A missing or wrong `.github/skills/<name>` discovery alias | A skill directory with no `SKILL.md` |
+| A missing, wrong, or orphaned `skills/<name>` or vendor alias | A skill directory with no `SKILL.md` |
+| A `.claude-plugin/marketplace.json` skill list that has drifted | A missing or malformed plugin manifest |
 | Skill entries out of alphabetical order in this file and `README.md` | A skill missing from either list, or an entry naming no skill |
 | | Frontmatter that breaks the protocol below |
 | | An em-dash (U+2014), whose replacement is a judgment |
@@ -237,11 +250,10 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   `dependencies` (an empty list for stdlib-only scripts). Skills invoke them
   with `uv run --script` at the script's canonical bundled path, never with a
   host `python`/`python3`.
-* When adding or renaming a skill, commit its discovery alias in the same change:
-  `ln -s ../../<skill-name> .github/skills/<skill-name>`. The root directory is
-  canonical; `.claude/skills` is a single symlink to `.github/skills`, so the
-  alias surfaces there automatically. Update the skill lists in `AGENTS.md` and
-  `README.md` too.
+* When adding or renaming a skill, create it at `<skill-name>/SKILL.md` in the
+  repository root and update the skill lists in `AGENTS.md` and `README.md` in
+  the same change. The gate writes the alias symlink and the manifest entry, so
+  run it rather than hand-maintaining either.
 * Edit skills **here**, in this repository. NEVER edit the vendored copy inside a
   downstream project's `.github/skills` submodule; those changes are discarded on
   the next submodule update.
@@ -275,9 +287,9 @@ bumps its submodule pointer.
 
 For Claude discovery in a consuming repository, commit a relative parent-level
 alias from `.claude/skills` to `../.github/skills`. A submodule cannot create that
-entry in its parent repository. The root skill directories remain canonical; the
-repository's `.github/skills/<skill-name>` entries are relative symlink aliases,
-not copies.
+entry in its parent repository. The root skill directories remain canonical; this
+repository's `skills/` hub and its vendor aliases are relative symlinks, not
+copies.
 
 ## Boundaries
 

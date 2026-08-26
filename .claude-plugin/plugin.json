@@ -1,0 +1,22 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "btreemap-skills",
+  "displayName": "SKILLs",
+  "description": "A library of reusable, project-agnostic agent skills: each one a SKILL.md procedure an LLM coding agent loads and follows.",
+  "author": {
+    "name": "BTreeMap",
+    "url": "https://github.com/BTreeMap"
+  },
+  "homepage": "https://github.com/BTreeMap/SKILLs#readme",
+  "repository": "https://github.com/BTreeMap/SKILLs",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "skills",
+    "code-review",
+    "documentation",
+    "research",
+    "refactoring"
+  ],
+  "skills": "./"
+}
