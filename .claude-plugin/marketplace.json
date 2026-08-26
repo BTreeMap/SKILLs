@@ -26,6 +26,7 @@
         "./ponytail",
         "./read-pdf",
         "./reframe",
+        "./research",
         "./setup-env"
       ]
     }

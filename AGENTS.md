@@ -85,6 +85,12 @@ Current skills:
 * `read-pdf/` - text and metadata extraction from PDF files for analysis.
 * `reframe/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
+* `research/` - open-question research with uniform rigor across registers:
+  decomposition to retrievable leaves by governing principle, an append-only
+  event ledger owned by a bundled script (transition invariants, derived
+  sections, per-round yield, a draft-time outline), optional search-worker
+  fan-out, a mandatory rival sweep, and presentation weight derived from
+  ledger state, with per-phase files loaded on demand from `references/`.
 * `setup-env/` - isolated per-project dev environments provisioned entirely
   in userspace (uv is the only assumption): a typed target algebra of
   `family[:flavor][@version]` tags over a closed recipe catalog, micromamba
