@@ -33,7 +33,7 @@ presentation is derived from the ledger, never chosen.
 | `research` | [scripts/research.py](scripts/research.py) |
 | `weigh` | [references/weigh.md](references/weigh.md) |
 
-## Invariants (pinned)
+## Invariants
 
 Non-negotiable at every step and after any context compaction. If aware of
 a compaction event, re-open this SKILL.md and replay state via `status`

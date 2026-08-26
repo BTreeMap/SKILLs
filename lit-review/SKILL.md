@@ -40,7 +40,7 @@ owns criteria, screening, reading, and synthesis.
 | `search` | [references/search.md](references/search.md) |
 | `synthesize` | [references/synthesize.md](references/synthesize.md) |
 
-## Invariants (pinned)
+## Invariants
 
 Non-negotiable at every step and after any context compaction. If aware of a
 compaction event, re-open this SKILL.md and reload state via the script

@@ -35,7 +35,7 @@ evidence, report evidence-first, edit only what the user approves.
 
 `evaluation` is a maintainer protocol and is never loaded during a run.
 
-## Invariants (pinned)
+## Invariants
 
 Non-negotiable at every step, on every branch, after any context compaction.
 Copy into the state file under `constraints` at Step 1; re-read that key
