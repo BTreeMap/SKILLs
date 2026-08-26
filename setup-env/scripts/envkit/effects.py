@@ -71,12 +71,21 @@ def log(message: str) -> None:
 # --- Downloads and extraction ---
 
 
+def _user_agent() -> str:
+    """Request origin per the shared btm-skills convention."""
+    custom = os.environ.get("BTM_USER_AGENT")
+    if custom:
+        return custom
+    contact = os.environ.get("BTM_CONTACT") or "skills@oss.joefang.org"
+    return f"btm-skills/1.0 (setup-env; mailto:{contact})"
+
+
 def fetch(url: str, target: Path) -> None:
     if target.exists():
         return
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(target.name + ".partial")
-    request = urllib.request.Request(url, headers={"User-Agent": "envctl"})
+    request = urllib.request.Request(url, headers={"User-Agent": _user_agent()})
     with (
         urllib.request.urlopen(request, context=_SSL) as src,
         open(partial, "wb") as out,

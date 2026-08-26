@@ -41,7 +41,9 @@ OPENALEX_WORKS = "https://api.openalex.org/works"
 ARXIV_QUERY = "https://export.arxiv.org/api/query"
 CROSSREF_WORKS = "https://api.crossref.org/works"
 DOI_HOST = "doi.org"
-MAILTO_ENV = "LIT_REVIEW_MAILTO"
+USER_AGENT_ENV = "BTM_USER_AGENT"
+CONTACT_ENV = "BTM_CONTACT"
+DEFAULT_CONTACT = "skills@oss.joefang.org"
 TIMEOUT_SECONDS = 30
 DEFAULT_LIMIT = 25
 MAX_LIMIT = 100
@@ -313,14 +315,40 @@ def paper_from_crossref(item: Mapping[str, Any]) -> Paper:
 # --- effect shell: HTTP ---
 
 
-def mailto() -> str | None:
-    return os.environ.get(MAILTO_ENV) or None
+@dataclass(frozen=True, slots=True)
+class CustomAgent:
+    header: str
+
+
+@dataclass(frozen=True, slots=True)
+class Contact:
+    address: str
+
+
+def request_identity() -> CustomAgent | Contact:
+    custom = os.environ.get(USER_AGENT_ENV)
+    if custom:
+        return CustomAgent(custom)
+    return Contact(os.environ.get(CONTACT_ENV) or DEFAULT_CONTACT)
 
 
 def user_agent() -> str:
-    contact = mailto()
-    suffix = f" (mailto:{contact})" if contact else ""
-    return f"lit-review-skill/1.0{suffix}"
+    match request_identity():
+        case CustomAgent(header):
+            return header
+        case Contact(address):
+            return f"btm-skills/1.0 (lit-review; mailto:{address})"
+
+
+def polite_params() -> dict[str, str]:
+    """The `mailto` pool parameter OpenAlex and Crossref honor. Empty under a
+    User-Agent override: the override owns identity, so nothing else marks
+    the request."""
+    match request_identity():
+        case CustomAgent():
+            return {}
+        case Contact(address):
+            return {"mailto": address}
 
 
 def http_get(url: str, params: Mapping[str, str] | None = None) -> bytes:
@@ -367,9 +395,7 @@ def fetch_openalex(
         filters.append(f"to_publication_date:{to_year}-12-31")
     if filters:
         params["filter"] = ",".join(filters)
-    contact = mailto()
-    if contact:
-        params["mailto"] = contact
+    params |= polite_params()
     body = http_get_json(OPENALEX_WORKS, params)
     total = (body.get("meta") or {}).get("count") or 0
     return [paper_from_openalex(work) for work in body.get("results") or []], total
@@ -409,9 +435,7 @@ def fetch_crossref(
         filters.append(f"until-pub-date:{to_year}-12-31")
     if filters:
         params["filter"] = ",".join(filters)
-    contact = mailto()
-    if contact:
-        params["mailto"] = contact
+    params |= polite_params()
     message = http_get_json(CROSSREF_WORKS, params).get("message") or {}
     total = message.get("total-results") or 0
     return [paper_from_crossref(item) for item in message.get("items") or []], total
@@ -577,8 +601,6 @@ def record_fetch(
             f"{total} matches upstream but only {len(fetched)} fetched; "
             f"narrow the query or raise --limit (cap {MAX_LIMIT})"
         )
-    if not mailto():
-        signal(f"set {MAILTO_ENV} to join the polite request pools")
     emit({**entry, "corpus_size": len(papers)})
 
 

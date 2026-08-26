@@ -246,6 +246,15 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     script enforces at write time by trimming or one-step rotation.
   * Every script that writes state ships a `clean` verb that removes its
     state, one target or `--all`, and reports the bytes freed.
+* A script that talks to the network marks its request origin by one shared
+  convention, first defined wins: `BTM_USER_AGENT`, sent verbatim as the
+  User-Agent; else `BTM_CONTACT`, else the project contact
+  `skills@oss.joefang.org`, in the derived header
+  `btm-skills/1.0 (<skill-name>; mailto:<contact>)`. Only a contact-derived
+  identity may also disclose the contact through polite request pools (e.g.
+  the OpenAlex and Crossref `mailto` parameter); a verbatim override marks
+  the request with nothing else. The script alone reads the variables;
+  `SKILL.md` never mentions them.
 * Every bundled Python script starts with `#!/usr/bin/env -S uv run --script`
   and a PEP 723 `# /// script` block declaring `requires-python` and
   `dependencies` (an empty list for stdlib-only scripts). Skills invoke them

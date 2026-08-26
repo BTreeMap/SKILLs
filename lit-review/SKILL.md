@@ -117,9 +117,6 @@ uv run --script <skill-root>/scripts/lit_review.py verify <session>
 uv run --script <skill-root>/scripts/lit_review.py clean [<session> | --all]
 </script_commands>
 
-Set the `LIT_REVIEW_MAILTO` environment variable to a contact address when
-the user provides one; it joins the polite request pools and is optional.
-
 ## Environment probe
 
 Before the protocol phase, determine from actually available tools:

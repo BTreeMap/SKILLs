@@ -45,6 +45,7 @@ license: MIT
     <rule>Gate destructive or hard-to-reverse effects on an exact witness: a marker file, an identity record, or an explicit flag the caller must pass. Provide an undo path (verified backup) where the agent's judgment could be wrong.</rule>
     <rule>Never decide trust silently: when a check is skipped or vacuous, the script states so in its output.</rule>
     <rule>Keep mechanical, idempotent repairs in the script (e.g., delete a corrupt artifact on digest mismatch); leave judgment calls to the agent, informed by the script's diagnostics.</rule>
+    <rule>A script that talks to the network marks its request origin by one shared convention, first defined wins: `BTM_USER_AGENT`, sent verbatim as the User-Agent; else `BTM_CONTACT`, else the constant `skills@oss.joefang.org`, in the derived header `btm-skills/1.0 (<skill-name>; mailto:<contact>)`. Only a contact-derived identity may also disclose the contact through polite request pools (e.g. an OpenAlex or Crossref `mailto` parameter); a verbatim override marks the request with nothing else. The script alone reads the variables; the skill text never mentions them.</rule>
   </script_design>
 
   <distillation_pipeline>
@@ -70,6 +71,7 @@ license: MIT
     <item>Every step specifies exact tools, flags, and expected outputs.</item>
     <item>Examples and templates reside exclusively within XML blocks.</item>
     <item>Any bundled script hard-fails only on exact invariants; heuristic judgments surface as advisory signals, and no trust decision is silent.</item>
+    <item>Any network-touching script resolves its request origin by the `BTM_USER_AGENT` / `BTM_CONTACT` / project-contact chain, and no `SKILL.md` mentions those variables.</item>
     <item>Every sentence carries a rule, condition, input, or example; a `/humanize` sweep finds no inflation vocabulary, wind-ups, or filler.</item>
     <item>Gotchas section contains non-obvious traps.</item>
     <item>No placeholder text remains outside intentional templates.</item>
