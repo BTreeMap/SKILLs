@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
-  "name": "btreemap",
+  "name": "btm-skills",
   "owner": {
     "name": "BTreeMap",
     "url": "https://github.com/BTreeMap"
@@ -8,7 +8,7 @@
   "description": "Reusable, project-agnostic agent skills from the BTreeMap/SKILLs library.",
   "plugins": [
     {
-      "name": "btreemap-skills",
+      "name": "btm-skills",
       "source": "./",
       "description": "A library of reusable, project-agnostic agent skills: each one a SKILL.md procedure an LLM coding agent loads and follows.",
       "homepage": "https://github.com/BTreeMap/SKILLs#readme",

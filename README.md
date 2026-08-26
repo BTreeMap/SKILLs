@@ -40,7 +40,7 @@ npx skills add BTreeMap/SKILLs --skill fact-check --skill git-commit
 
 ```bash
 claude plugin marketplace add BTreeMap/SKILLs
-claude plugin install btreemap-skills@btreemap
+claude plugin install btm-skills@btm-skills
 ```
 
 ### As a git submodule

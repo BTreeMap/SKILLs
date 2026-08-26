@@ -108,10 +108,11 @@ uv run --script .github/scripts/repo_gate.py fix
 | Repaired automatically | Reported for a human |
 | --- | --- |
 | ruff's safe lint fixes and formatting (policy in `ruff.toml`) | Lint findings ruff cannot fix safely |
-| A missing, wrong, or orphaned `skills/<name>` or vendor alias | A skill directory with no `SKILL.md` |
-| A `.claude-plugin/marketplace.json` skill list that has drifted | A missing or malformed plugin manifest |
+| A missing, wrong, orphaned, or legacy-shaped hub or vendor alias | A skill directory with no `SKILL.md` |
+| Frontmatter `name`, `license`, or field-order drift | Frontmatter judgments: a missing or overlong description, non-spec fields |
+| Manifest `name` fields and the declared skill list | A missing or unreadable plugin manifest |
 | Skill entries out of alphabetical order in this file and `README.md` | A skill missing from either list, or an entry naming no skill |
-| | Frontmatter that breaks the protocol below |
+| | An alias path occupied by real content, which no repair may destroy |
 | | An em-dash (U+2014), whose replacement is a judgment |
 | | A bundled entry-point script without the uv shebang and a PEP 723 block |
 

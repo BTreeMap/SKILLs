@@ -14,10 +14,16 @@ every repair it is handed, and both modes fail only when a finding arrives
 without one, because that is precisely the case a human must judge. Adding a
 rule therefore never touches the driver.
 
-`snapshot` performs every read, so each rule is a pure function of an
-immutable value and no file is read twice. Repairs are total functions of the
-tree, so applying them changes nothing the second time: `fix` is idempotent,
-and a run whose repairs were already committed reports clean.
+`snapshot` performs every read and every parse, so each rule is a total
+function of an immutable value and no file is read twice. Filesystem and
+manifest states arrive as closed sums (`LinkState`, `ManifestState`) rather
+than booleans or sentinels, and a repair is constructed only against a state
+it can settle, so a repair that would fail is unrepresentable. Repairs are
+total functions of the tree, so applying them changes nothing the second
+time: `fix` is idempotent, and a run whose repairs were already committed
+reports clean. The driver applies at most one repair per path per round;
+anything deferred by that guard re-derives from the fresh snapshot of the
+next round, so two findings can never overwrite each other's work.
 
 Cost: one pass over the text files, O(bytes) time and space, plus O(k log k)
 to order k skill entries. At this repository's scale (order 100 files, a few
@@ -53,21 +59,33 @@ SPEC_FIELDS = (
 DESCRIPTION_LIMIT = 1024
 SKILL_SHEBANG = "#!/usr/bin/env -S uv run --script"
 PEP_723_OPEN = "# /// script"
+# The one abbreviation this repository publishes under: the marketplace name,
+# the plugin name, and (by convention documented in AGENTS.md) the XDG state
+# root that bundled scripts write beneath.
+BRAND = "btm-skills"
 # `skills/` is the vendor-neutral hub: one relative symlink per skill, pointing
 # back at the canonical root directory. Each vendor path is a single symlink to
 # that hub, so supporting another agent costs one link rather than one per
-# skill. Installers resolve skills through the manifest instead, which declares
+# skill. Installers resolve skills through the manifests instead, which declare
 # the canonical paths.
 HUB = Path("skills")
-VENDOR_ALIASES = {
-    Path(".github/skills"): "../skills",
-    Path(".claude/skills"): "../skills",
-}
-MANIFEST = Path(".claude-plugin/marketplace.json")
+VENDOR_LINKS = (Path(".claude/skills"), Path(".github/skills"))
+MARKETPLACE = Path(".claude-plugin/marketplace.json")
+PLUGIN_MANIFEST = Path(".claude-plugin/plugin.json")
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
 # Bound repairs in case future rules unlock one another.
 FIXPOINT_ROUNDS = 4
+
+
+def _relative_target(link: Path, dest: Path) -> str:
+    """The symlink target from `link` to `dest`, both repo-relative.
+
+    Pure path arithmetic, so an alias target can never disagree with the
+    location it is derived from.
+    """
+    return os.path.relpath(dest, link.parent)
+
 
 # --- Repairs ---
 
@@ -83,28 +101,57 @@ class WriteText:
 
 @dataclass(frozen=True, slots=True)
 class MakeSymlink:
+    """Constructed only against `Absent` or `Symlink` states; if the tree
+    moved since the snapshot and real content now stands here, leave it for
+    the next round's fresh audit rather than destroy it."""
+
     path: Path
     target: str
 
     def apply(self, root: Path) -> None:
         link = root / self.path
         link.parent.mkdir(parents=True, exist_ok=True)
-        if link.is_symlink() or link.exists():
+        if link.is_symlink():
             link.unlink()
+        elif link.exists():
+            return
         link.symlink_to(self.target)
 
 
 @dataclass(frozen=True, slots=True)
 class RemovePath:
+    """Removes a symlink. Anything else is real content, which no repair may
+    destroy, so it is left standing for the next audit to report."""
+
     path: Path
 
     def apply(self, root: Path) -> None:
         target = root / self.path
-        if target.is_symlink() or target.exists():
+        if target.is_symlink():
             target.unlink()
 
 
-Repair = WriteText | MakeSymlink | RemovePath
+@dataclass(frozen=True, slots=True)
+class RemoveLinkFarm:
+    """Removes a directory whose children are all symlinks (the legacy alias
+    layout). Rebuilding such a directory is pure derivation, so deleting it
+    loses nothing; a directory holding any real file is refused."""
+
+    path: Path
+
+    def apply(self, root: Path) -> None:
+        farm = root / self.path
+        if farm.is_symlink() or not farm.is_dir():
+            return
+        children = list(farm.iterdir())
+        if any(not child.is_symlink() for child in children):
+            return
+        for child in children:
+            child.unlink()
+        farm.rmdir()
+
+
+Repair = WriteText | MakeSymlink | RemovePath | RemoveLinkFarm
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,6 +170,65 @@ class Finding:
 
 
 @dataclass(frozen=True, slots=True)
+class Symlink:
+    target: str
+
+
+@dataclass(frozen=True, slots=True)
+class Absent:
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class LinkFarm:
+    """A real directory whose children are all symlinks: rebuildable by
+    derivation, so mechanically removable."""
+
+
+@dataclass(frozen=True, slots=True)
+class Occupied:
+    """A regular file, or a directory holding real content: work this program
+    cannot rebuild, so never mechanically removable."""
+
+
+LinkState = Symlink | Absent | LinkFarm | Occupied
+
+
+def _link_state(path: Path) -> LinkState:
+    if path.is_symlink():
+        return Symlink(os.readlink(path))
+    if path.is_dir():
+        only_links = all(child.is_symlink() for child in path.iterdir())
+        return LinkFarm() if only_links else Occupied()
+    return Occupied() if path.exists() else Absent()
+
+
+@dataclass(frozen=True, slots=True)
+class Parsed:
+    doc: dict  # shallowly immutable; rules copy before rewriting
+
+
+@dataclass(frozen=True, slots=True)
+class Unreadable:
+    reason: str
+
+
+ManifestState = Parsed | Unreadable | Absent
+
+
+def _manifest_state(path: Path) -> ManifestState:
+    if not path.is_file():
+        return Absent()
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return Unreadable(str(error))
+    if not isinstance(doc, dict):
+        return Unreadable("top level is not an object")
+    return Parsed(doc)
+
+
+@dataclass(frozen=True, slots=True)
 class Repo:
     """An immutable reading of the repository. Every rule below is a pure
     function of this value."""
@@ -130,18 +236,17 @@ class Repo:
     skills: frozenset[str]
     texts: Mapping[Path, str]  # repo-relative path to contents
     entry_points: frozenset[Path]  # bundled scripts invoked directly
-    aliases: Mapping[Path, str | None]  # alias path to its symlink target
-    vendors: Mapping[Path, str | None]  # vendor path to its symlink target
-    manifest: str | None  # the marketplace manifest, which is not a text file
+    links: Mapping[Path, LinkState]  # hub, its entries, and the vendor paths
+    manifests: Mapping[Path, ManifestState]
 
 
 def snapshot(root: Path) -> Repo:
     """Parse a directory into the repository this program knows how to judge.
 
-    Every top-level directory that is neither dotted nor the `skills/` alias
-    container is a skill directory, which AGENTS.md declares a reserved
-    namespace, so the skill set is read from the tree rather than from any
-    list that could disagree with it.
+    Every top-level directory that is neither dotted nor the `skills/` hub is
+    a skill directory, which AGENTS.md declares a reserved namespace, so the
+    skill set is read from the tree rather than from any list that could
+    disagree with it.
     """
     if not (root / "AGENTS.md").is_file():
         raise SystemExit(f"not a skills repository: {root}/AGENTS.md is missing")
@@ -151,7 +256,7 @@ def snapshot(root: Path) -> Repo:
         if entry.is_dir()
         and not entry.is_symlink()
         and not entry.name.startswith(".")
-        and Path(entry.name) != HUB
+        and entry.name != HUB.name
     )
     texts: dict[Path, str] = {}
     packages: set[Path] = set()
@@ -166,31 +271,21 @@ def snapshot(root: Path) -> Repo:
             texts[relative] = path.read_text(encoding="utf-8", errors="replace")
             if name == "__init__.py":
                 packages.add(relative.parent)
-    hub = root / HUB
-    present = {e.name for e in hub.iterdir()} if hub.is_dir() else set()
-    aliases = {
-        HUB / name: (
-            os.readlink(root / HUB / name) if (root / HUB / name).is_symlink() else None
-        )
-        for name in skills | present
+    links: dict[Path, LinkState] = {HUB: _link_state(root / HUB)}
+    for vendor in VENDOR_LINKS:
+        links[vendor] = _link_state(root / vendor)
+    # Hub entries exist only inside a real hub directory; through a symlinked
+    # hub they would describe some other tree, so they are not read.
+    if isinstance(links[HUB], LinkFarm | Occupied):
+        present = {entry.name for entry in (root / HUB).iterdir()}
+    else:
+        present = set()
+    for name in skills | present:
+        links[HUB / name] = _link_state(root / HUB / name)
+    manifests = {
+        path: _manifest_state(root / path) for path in (MARKETPLACE, PLUGIN_MANIFEST)
     }
-    vendors = {
-        path: (os.readlink(root / path) if (root / path).is_symlink() else None)
-        for path in VENDOR_ALIASES
-    }
-    manifest = (
-        (root / MANIFEST).read_text(encoding="utf-8")
-        if (root / MANIFEST).is_file()
-        else None
-    )
-    return Repo(
-        skills,
-        texts,
-        _entry_points(texts, skills, packages),
-        aliases,
-        vendors,
-        manifest,
-    )
+    return Repo(skills, texts, _entry_points(texts, skills, packages), links, manifests)
 
 
 def _entry_points(
@@ -322,6 +417,10 @@ def rule_skill_layout(repo: Repo) -> Iterator[Finding]:
 
 
 def rule_frontmatter(repo: Repo) -> Iterator[Finding]:
+    """Frontmatter facts split by who can settle them: `name`, `license`, and
+    field order are total functions of the skill and the spec, so drift is
+    repaired in one write per file; descriptions and non-spec fields need a
+    person."""
     for skill in sorted(repo.skills):
         document = Path(skill, "SKILL.md")
         text = repo.texts.get(document)
@@ -337,31 +436,30 @@ def rule_frontmatter(repo: Repo) -> Iterator[Finding]:
         except yaml.YAMLError as error:
             yield Finding("frontmatter", where, f"unparseable frontmatter: {error}")
             continue
-        yield from _frontmatter_findings(skill, where, fields)
+        if not isinstance(fields, dict):
+            yield Finding("frontmatter", where, "frontmatter is not a mapping")
+            continue
+        yield from _frontmatter_judgments(where, fields)
+        normalized = _canonical_header(skill, fields, header.group(1))
+        if normalized is not None:
+            new_header, reasons = normalized
+            repaired = f"---\n{new_header}\n---\n{text[header.end() :]}"
+            yield Finding(
+                "frontmatter",
+                where,
+                "; ".join(reasons),
+                WriteText(document, repaired),
+            )
 
 
-def _frontmatter_findings(skill: str, where: str, fields: dict) -> Iterator[Finding]:
-    present = list(fields)
-    unknown = [name for name in present if name not in SPEC_FIELDS]
+def _frontmatter_judgments(where: str, fields: dict) -> Iterator[Finding]:
+    unknown = [name for name in fields if name not in SPEC_FIELDS]
     if unknown:
         yield Finding(
             "frontmatter",
             where,
             f"non-spec fields {unknown}; record such hints under metadata",
         )
-    ranked = [SPEC_FIELDS.index(name) for name in present if name in SPEC_FIELDS]
-    if ranked != sorted(ranked):
-        yield Finding(
-            "frontmatter",
-            where,
-            f"fields out of canonical order: {present} against {list(SPEC_FIELDS)}",
-        )
-    if fields.get("name") != skill:
-        yield Finding(
-            "frontmatter", where, f"name {fields.get('name')!r} is not {skill!r}"
-        )
-    if fields.get("license") != "MIT":
-        yield Finding("frontmatter", where, "license must be MIT")
     description = fields.get("description") or ""
     if not description:
         yield Finding("frontmatter", where, "description is required")
@@ -371,6 +469,59 @@ def _frontmatter_findings(skill: str, where: str, fields: dict) -> Iterator[Find
             where,
             f"description is {len(description)} characters, over {DESCRIPTION_LIMIT}",
         )
+
+
+def _header_segments(header: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Split a frontmatter block into (top-level key, its exact lines) runs.
+
+    Editing at segment granularity preserves every untouched field byte for
+    byte, folded block scalars included, which a YAML re-dump would not.
+    """
+    segments: list[tuple[str, list[str]]] = []
+    for line in header.split("\n"):
+        if line[:1] not in ("", " ", "\t", "#") and ":" in line:
+            segments.append((line.split(":", 1)[0].strip(), [line]))
+        elif segments:
+            segments[-1][1].append(line)
+        else:
+            segments.append(("", [line]))  # leading non-field text, kept opaque
+    return tuple((key, tuple(body)) for key, body in segments)
+
+
+def _canonical_header(
+    skill: str, fields: dict, header: str
+) -> tuple[str, list[str]] | None:
+    """The header with `name`, `license`, and field order made canonical, or
+    `None` when it already is. A field whose value is right keeps its exact
+    original text; only wrong values are rewritten, so the repair diff is
+    minimal."""
+    segments = list(_header_segments(header))
+    reasons: list[str] = []
+
+    def force(key: str, line: str, why: str) -> None:
+        nonlocal segments
+        if any(k == key for k, _ in segments):
+            segments = [(k, (line,)) if k == key else (k, body) for k, body in segments]
+        else:
+            segments.append((key, (line,)))
+        reasons.append(why)
+
+    if fields.get("name") != skill:
+        force("name", f"name: {skill}", f"name set to {skill!r}")
+    if fields.get("license") != "MIT":
+        force("license", "license: MIT", "license set to MIT")
+    rank = {field: index for index, field in enumerate(SPEC_FIELDS)}
+    ordered = sorted(
+        segments,
+        key=lambda segment: -1 if segment[0] == "" else rank.get(segment[0], len(rank)),
+    )
+    if ordered != segments:
+        segments = ordered
+        reasons.append("fields reordered canonically")
+    if not reasons:
+        return None
+    text = "\n".join(line for _, body in segments for line in body)
+    return text, reasons
 
 
 def rule_script_header(repo: Repo) -> Iterator[Finding]:
@@ -387,52 +538,111 @@ def rule_script_header(repo: Repo) -> Iterator[Finding]:
 
 
 def rule_alias(repo: Repo) -> Iterator[Finding]:
-    """Every alias is a pure function of the skill set, so a missing, wrong, or
-    orphaned one is repaired rather than reported."""
-    wanted = {HUB / skill: f"../{skill}" for skill in repo.skills}
+    """Every alias is a pure function of the skill set, so a missing, wrong,
+    orphaned, or legacy-shaped one is repaired. Only real content blocks,
+    because deleting it would destroy work no derivation can rebuild."""
+    if isinstance(repo.links[HUB], Symlink):
+        yield Finding(
+            "alias",
+            str(HUB),
+            "hub must be a real directory, not a symlink",
+            RemovePath(HUB),
+        )
+        return  # entries are meaningless through a symlinked hub; next round
+    wanted = {
+        HUB / skill: _relative_target(HUB / skill, Path(skill)) for skill in repo.skills
+    }
+    wanted |= {vendor: _relative_target(vendor, HUB) for vendor in VENDOR_LINKS}
     for link, target in sorted(wanted.items()):
-        if repo.aliases.get(link) != target:
-            yield Finding(
-                "alias",
-                str(link),
-                f"discovery alias must be a symlink to {target}",
-                MakeSymlink(link, target),
-            )
-    for orphan in sorted(set(repo.aliases) - set(wanted)):
-        yield Finding("alias", str(orphan), "alias names no skill", RemovePath(orphan))
-    for path, target in sorted(VENDOR_ALIASES.items()):
-        if repo.vendors.get(path) != target:
-            yield Finding(
-                "alias",
-                str(path),
-                f"vendor alias must be a symlink to {target}",
-                MakeSymlink(path, target),
-            )
+        match repo.links.get(link, Absent()):
+            case Symlink(found) if found == target:
+                pass
+            case Symlink(_) | Absent():
+                yield Finding(
+                    "alias",
+                    str(link),
+                    f"discovery alias must be a symlink to {target}",
+                    MakeSymlink(link, target),
+                )
+            case LinkFarm():
+                yield Finding(
+                    "alias",
+                    str(link),
+                    "a directory of symlinks stands where the alias belongs",
+                    RemoveLinkFarm(link),
+                )
+            case Occupied():
+                yield Finding(
+                    "alias",
+                    str(link),
+                    "real content stands where the alias belongs; move it aside",
+                )
+    for orphan in sorted(set(repo.links) - set(wanted) - {HUB}):
+        match repo.links[orphan]:
+            case Absent():
+                pass
+            case Symlink(_):
+                yield Finding(
+                    "alias", str(orphan), "alias names no skill", RemovePath(orphan)
+                )
+            case LinkFarm():
+                yield Finding(
+                    "alias", str(orphan), "alias names no skill", RemoveLinkFarm(orphan)
+                )
+            case Occupied():
+                yield Finding(
+                    "alias",
+                    str(orphan),
+                    "names no skill yet holds real content; "
+                    "possibly a mislocated skill directory",
+                )
 
 
 def rule_manifest(repo: Repo) -> Iterator[Finding]:
-    """The marketplace entry declares every skill path, which is what makes
-    discovery declared rather than a fallback scan. That list is a function of
-    the skill set, so drift is repaired; a malformed manifest is not."""
-    if repo.manifest is None:
-        yield Finding("manifest", str(MANIFEST), "manifest is missing")
-        return
-    try:
-        doc = json.loads(repo.manifest)
-        entry = doc["plugins"][0]
-    except (json.JSONDecodeError, LookupError, TypeError) as error:
-        yield Finding("manifest", str(MANIFEST), f"unreadable manifest: {error}")
-        return
-    declared = [f"./{skill}" for skill in sorted(repo.skills)]
-    if entry.get("skills") == declared:
-        return
-    entry["skills"] = declared
-    yield Finding(
-        "manifest",
-        str(MANIFEST),
-        "declared skill paths do not match the skill set",
-        WriteText(MANIFEST, json.dumps(doc, indent=2) + "\n"),
-    )
+    """The manifests publish this repository under one brand and declare every
+    skill path, which is what makes discovery declared rather than a fallback
+    scan. Names and the skill list are functions of `BRAND` and the tree, so
+    drift is repaired; absent or unreadable content needs a person."""
+    for path in sorted(repo.manifests):
+        match repo.manifests[path]:
+            case Absent():
+                yield Finding("manifest", str(path), "manifest is missing")
+            case Unreadable(reason):
+                yield Finding("manifest", str(path), f"unreadable manifest: {reason}")
+            case Parsed(doc):
+                yield from _manifest_findings(path, doc, repo.skills)
+
+
+def _manifest_findings(
+    path: Path, doc: dict, skills: frozenset[str]
+) -> Iterator[Finding]:
+    canonical = json.loads(json.dumps(doc))  # independent copy; `doc` stays pure
+    reasons: list[str] = []
+    if canonical.get("name") != BRAND:
+        canonical["name"] = BRAND
+        reasons.append(f"name set to {BRAND!r}")
+    if path == MARKETPLACE:
+        plugins = canonical.get("plugins")
+        if not (isinstance(plugins, list) and plugins and isinstance(plugins[0], dict)):
+            yield Finding(
+                "manifest", str(path), "plugins[0] is not an object; restructure it"
+            )
+            return
+        entry = plugins[0]
+        if entry.get("name") != BRAND:
+            entry["name"] = BRAND
+            reasons.append(f"plugin name set to {BRAND!r}")
+        declared = [f"./{skill}" for skill in sorted(skills)]
+        if entry.get("skills") != declared:
+            entry["skills"] = declared
+            reasons.append("skill list regenerated from the tree")
+    if reasons:
+        yield Finding(
+            "manifest",
+            str(path),
+            "; ".join(reasons),
+            WriteText(path, json.dumps(canonical, indent=2) + "\n"),
+        )
 
 
 def rule_listings(repo: Repo) -> Iterator[Finding]:
@@ -489,7 +699,13 @@ def repair_to_fixpoint(root: Path) -> tuple[list[Finding], list[Finding]]:
         pending = [(f, f.repair) for f in findings if f.repair is not None]
         if not pending:
             break
+        # One writer per path per round: a repair deferred here re-derives
+        # from the next round's fresh snapshot, so no update is ever lost.
+        claimed: set[Path] = set()
         for finding, repair in pending:
+            if repair.path in claimed:
+                continue
+            claimed.add(repair.path)
             repair.apply(root)
             applied.append(finding)
         findings = audit(snapshot(root))
