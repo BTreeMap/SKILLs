@@ -777,12 +777,15 @@ def validate_decision(
 
 def cmd_update(args: argparse.Namespace) -> int:
     session = open_session(args.session)
+    raw = sys.stdin.read()
+    if not raw.strip():
+        raise CommandError("update reads the decisions JSON from stdin")
     try:
-        decisions = json.loads(Path(args.file).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as err:
-        raise CommandError(f"unreadable decisions file {args.file}: {err}") from err
+        decisions = json.loads(raw)
+    except json.JSONDecodeError as err:
+        raise CommandError(f"unreadable decisions JSON on stdin: {err}") from err
     if not isinstance(decisions, dict):
-        raise CommandError("decisions file must map paper keys to decision objects")
+        raise CommandError("decisions must map paper keys to decision objects")
     papers = load_papers(session)
     for key, decision in decisions.items():
         validate_decision(key, decision, papers)
@@ -969,7 +972,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
 def add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "session",
-        help="session name (kept under the XDG state root) or explicit directory",
+        help="session identifier (kept under the XDG state root) or directory",
     )
 
 
@@ -1011,13 +1014,12 @@ def build_parser() -> argparse.ArgumentParser:
     show.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     show.set_defaults(func=cmd_show)
 
-    update = commands.add_parser("update", help="apply screening decisions")
-    add_common(update)
-    update.add_argument(
-        "--file",
-        required=True,
-        help='JSON: {"<key>": {"status": ..., "reason": ..., "read_level": ...}}',
+    update = commands.add_parser(
+        "update",
+        help='apply screening decisions; stdin JSON: {"<key>": {"status": ...,'
+        ' "reason": ..., "read_level": ...}}',
     )
+    add_common(update)
     update.set_defaults(func=cmd_update)
 
     status = commands.add_parser("status", help="session counts and advisories")

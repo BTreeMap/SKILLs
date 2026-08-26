@@ -113,35 +113,41 @@ The script is a scratchpad and a verifier, and little else: `note` admits
 one JSON batch of findings per round, `check` replays the ledger into the
 drafting scaffold. The script mints every identifier: supply two or three
 keywords for a session, leaf, or source, and the output echoes the full
-identifier (keyword slug plus an entropy suffix). Supply that full
-identifier in later calls. When compaction cost you an identifier, a
-keyword subset that resolves uniquely recovers it and the output echoes
-the full identifier again; an ambiguous reference errors listing the
-candidates. Sessions live under the library's XDG state root and survive
-across conversations; an explicit path overrides.
+identifier (keyword slug plus an entropy suffix). Refer to leaves and
+sources by those full identifiers. When compaction cost you an
+identifier, a keyword subset that resolves uniquely recovers it and the
+output echoes the full identifier again; an ambiguous reference errors
+listing the candidates. Sessions live under the library's XDG state root
+and survive across conversations; an explicit path overrides.
 Results are JSON on stdout; advisory `signal:` lines on stderr inform
 judgment and never block; a rejected batch names its violated invariant,
 appends nothing, and exits 1. `clean` lists sessions with sizes and
 removes one or `--all`, reporting bytes freed.
 
 <script_commands>
-uv run --script <skill-root>/scripts/research.py open "<two or three keywords>" [--question "..."] [--focus "..."]
-uv run --script <skill-root>/scripts/research.py note <session-ref> <batch.json | ->
-uv run --script <skill-root>/scripts/research.py check <session-ref>
-uv run --script <skill-root>/scripts/research.py clean [<session-ref> | --all]
+R="uv run --script <skill-root>/scripts/research.py"
+$R open "<two or three keywords>" [--question "..."] [--focus "..."]
+S="<the session identifier the open output echoed>"
+$R note "$S" <<'EOF'
+{...batch...}
+EOF
+$R check "$S"
+$R clean ["$S" | --all]
 </script_commands>
 
-`open` with `--question` creates when nothing matches; on a match it
-re-orients: question, counts, open leaves, sweep flag, yield table. A
-note batch is one JSON object whose keys are all optional arrays,
-admitted in order so later entries may reference ids minted earlier in
-the same batch:
+Bind `R` and `S` once per shell, re-bind after a shell reset, and chain
+a round's calls in one invocation. `open` with `--question` creates
+when nothing matches; on a match it re-orients: question, counts, open
+leaves, sweep flag, yield table. A note batch is one JSON object whose
+keys are all optional arrays, admitted in order so later entries may
+reference ids minted earlier in the same batch. `detail` carries the
+close reason's text; `into` carries a fold target:
 
 <note_batch>
 {
   "leaves":      [{"kw": ["rent", "length"], "q": "...", "origin": "frame|spawned"}],
   "sources":     [{"kw": ["bcl", "rent"], "leaf": "<ref>", "cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}],
-  "closes":      [{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired", "sources": ["<ref>"], "premise": "...", "reason": "searched|not_pursued|folded|immaterial", "why": "...", "into": "<ref>"}],
+  "closes":      [{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired", "sources": ["<ref>"], "premise": "...", "reason": "searched|not_pursued|folded|immaterial", "detail": "...", "into": "<ref>"}],
   "sweeps":      [{"checked": "...", "candidates": ["..."], "survivors": ["..."]}],
   "checkpoints": [{"label": "round-1", "searches": 5}]
 }

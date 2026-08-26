@@ -261,8 +261,16 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   * Command surfaces are uniform in shape, because each asymmetry is a
     token spent re-reading help text: one record is a batch of one (one
     JSON input carries one record or fifty), sibling record kinds share
-    one plural-array container schema, and every subcommand addresses its
-    subject the same way.
+    one plural-array container schema, every subcommand addresses its
+    subject the same way, and each effect has exactly one spelling.
+  * Configuration travels as command-line parameters; JSON content
+    travels on stdin. Every call names its subject, because several
+    agents may share one state root and the script therefore holds no
+    ambient current-subject state. The skill keeps the identifier cheap
+    by instructing the agent to bind the command path and the session
+    identifier to shell variables, reused while the shell persists and
+    re-bound after a reset, and to chain a round's calls in one shell
+    invocation.
 * A script is frugal with the user's disk, and its state placement follows
   the XDG base directory standard:
   * Durable, light state (backups, logs, resumable sessions) lives in the

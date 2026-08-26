@@ -20,9 +20,12 @@ echoes the canonical identifier. A uniquely-resolving keyword subset
 recovers an identifier lost to context compression, signaled and
 re-echoed on use.
 
-Subcommands print one JSON document to stdout; advisory `signal:` lines
-go to stderr and never block; invariant violations print `error:` to
-stderr and exit 1 without appending anything.
+Configuration travels as command-line parameters; JSON content travels
+on stdin. Every call names its session: several agents may share one
+state root, so the script holds no ambient subject. Subcommands print
+one JSON document to stdout; advisory `signal:` lines go to stderr and
+never block; invariant violations print `error:` to stderr and exit 1
+without appending anything.
 """
 
 from __future__ import annotations
@@ -36,6 +39,7 @@ import shutil
 import sys
 import tempfile
 from collections.abc import Callable, Iterable
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -269,8 +273,15 @@ def mint(words: Iterable[str]) -> str:
     return f"{stem}-{suffix()}"
 
 
-def resolve(ref: str, ids: Iterable[str], kind: str) -> str:
-    """Exact id, or the unique id containing every keyword of the ref."""
+def resolve(
+    ref: str, ids: Iterable[str], kind: str, fresh: AbstractSet[str] = frozenset()
+) -> str:
+    """Exact id, or the unique id containing every keyword of the ref.
+
+    `fresh` holds ids minted in the current batch: a keyword reference to
+    one of those is the designed path (the full id is born in this very
+    call), so only a match outside `fresh` signals identifier recovery.
+    """
     pool = list(ids)
     if ref in pool:
         return ref
@@ -286,17 +297,18 @@ def resolve(ref: str, ids: Iterable[str], kind: str) -> str:
         len(matches) == 1,
         f"'{ref}' is ambiguous across {kind}s: {', '.join(sorted(matches))}",
     )
-    signal(f"recovered {kind} '{ref}' -> {matches[0]}; use the full identifier")
+    if matches[0] not in fresh:
+        signal(f"recovered {kind} '{ref}' -> {matches[0]}; use the full identifier")
     return matches[0]
 
 
 # --- pure core: batch expansion (the note smart constructor, stage one) ---
 
-ALIAS_DETAIL = ("detail", "why", "tried", "into")
-
 
 def _detail_of(raw: dict[str, Any]) -> str:
-    return next((str(raw[key]) for key in ALIAS_DETAIL if raw.get(key)), "")
+    """`into` carries a fold target ref; `detail` carries every other reason."""
+    key = "into" if raw.get("reason") == "folded" else "detail"
+    return str(raw.get(key) or "")
 
 
 def expand_batch(
@@ -309,12 +321,14 @@ def expand_batch(
     same batch. Returns the expanded events and the minted-id maps.
     """
     minted: dict[str, dict[str, str]] = {"leaves": {}, "sources": {}}
+    fresh: set[str] = set()
     leaf_ids = set(ledger.leaves)
     source_ids = set(ledger.sources)
     events: list[dict[str, Any]] = []
     for entry in batch.get("leaves") or []:
         full = minter(entry.get("kw") or [])
         minted["leaves"][full.rsplit("-", 1)[0]] = full
+        fresh.add(full)
         leaf_ids.add(full)
         events.append(
             {
@@ -327,12 +341,13 @@ def expand_batch(
     for entry in batch.get("sources") or []:
         full = minter(entry.get("kw") or [])
         minted["sources"][full.rsplit("-", 1)[0]] = full
+        fresh.add(full)
         source_ids.add(full)
         events.append(
             {
                 "e": "add_source",
                 "id": full,
-                "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf"),
+                "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf", fresh),
                 "cls": entry.get("cls"),
                 "title": entry.get("title"),
                 "url": entry.get("url", ""),
@@ -341,12 +356,13 @@ def expand_batch(
     for entry in batch.get("closes") or []:
         event: dict[str, Any] = {
             "e": "close",
-            "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf"),
+            "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf", fresh),
             "state": entry.get("state"),
         }
         if entry.get("sources"):
             event["sources"] = [
-                resolve(str(ref), source_ids, "source") for ref in entry["sources"]
+                resolve(str(ref), source_ids, "source", fresh)
+                for ref in entry["sources"]
             ]
         if entry.get("premise"):
             event["premise"] = entry["premise"]
@@ -354,7 +370,7 @@ def expand_batch(
             event["reason"] = entry["reason"]
             detail = _detail_of(entry)
             if entry["reason"] == "folded":
-                detail = resolve(detail, leaf_ids, "leaf")
+                detail = resolve(detail, leaf_ids, "leaf", fresh)
             event["detail"] = detail
         events.append(event)
     for entry in batch.get("sweeps") or []:
@@ -584,13 +600,14 @@ def cmd_open(args: argparse.Namespace) -> int:
         json.dump(meta, handle, indent=2, ensure_ascii=False)
     Path(handle.name).replace(directory / "session.json")
     ledger_path(directory).touch()
-    emit({"session": directory.name if not explicit else str(directory), **meta})
+    emit({"session": str(directory) if explicit else directory.name, **meta})
     return 0
 
 
 def cmd_note(args: argparse.Namespace) -> int:
     directory = session_dir(args.session)
-    raw = sys.stdin.read() if args.file == "-" else Path(args.file).read_text("utf-8")
+    raw = sys.stdin.read()
+    _require(bool(raw.strip()), "note reads the JSON batch from stdin")
     batch = json.loads(raw)
     _require(isinstance(batch, dict), "note takes one JSON object")
     events = read_events(directory)
@@ -878,11 +895,10 @@ def main(argv: list[str] | None = None) -> int:
     opener.add_argument("--focus", default=None)
     note = commands.add_parser("note")
     note.set_defaults(func=cmd_note)
-    note.add_argument("session")
-    note.add_argument("file", help="JSON batch file, or - for stdin")
+    note.add_argument("session", help="session identifier; batch JSON on stdin")
     check = commands.add_parser("check")
     check.set_defaults(func=cmd_check)
-    check.add_argument("session")
+    check.add_argument("session", help="session identifier")
     clean = commands.add_parser("clean")
     clean.set_defaults(func=cmd_clean)
     clean.add_argument("session", nargs="?")

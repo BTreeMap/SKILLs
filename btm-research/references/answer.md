@@ -16,7 +16,7 @@ premise.
 Drafting starts from the script, never from transcript memory:
 
 <answer_command>
-uv run --script <skill-root>/scripts/research.py check <session-ref>
+uv run --script <skill-root>/scripts/research.py check <session>
 </answer_command>
 
 The check holds the derived section set, the numbered source table the

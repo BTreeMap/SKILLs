@@ -95,13 +95,12 @@ The script creates and owns a session directory: `protocol.json` (the agent
 fills `criteria`; the script gates on it), `papers.jsonl` (one record per
 deduplicated paper), `search_log.jsonl` (one entry per query or snowball).
 The agent keeps its own extraction records and decision files in the same
-directory. `init` takes two or three keywords and mints the session
-identifier (keyword slug plus an entropy suffix), echoing it in the
-output; supply that full identifier in later calls. When compaction cost
-you the identifier, a keyword subset that resolves uniquely recovers it;
-an ambiguous reference errors listing candidates. Sessions live under
-the library's XDG state root and survive across conversations; an
-explicit path overrides that. Downloaded
+directory. `init` takes two or three keywords, mints the session
+identifier (keyword slug plus an entropy suffix), and echoes it. When
+compaction cost you the identifier, a keyword subset that resolves
+uniquely recovers it; an ambiguous reference errors listing candidates.
+Sessions live under the library's XDG state root and survive across
+conversations; an explicit path overrides that. Downloaded
 PDFs and other heavy artifacts belong in the scratch directory, with only
 their extraction records in the session. The `clean` subcommand lists
 sessions with sizes and removes one session or `--all`, reporting bytes
@@ -114,14 +113,18 @@ read its output; source reading belongs to user-instructed
 troubleshooting.
 
 <script_commands>
-uv run --script <skill-root>/scripts/lit_review.py init <session> --question "..." --level full
-uv run --script <skill-root>/scripts/lit_review.py search <session> --source openalex --query "..." --limit 25 --from-year 2020
-uv run --script <skill-root>/scripts/lit_review.py snowball <session> --seed <key> --direction backward
-uv run --script <skill-root>/scripts/lit_review.py show <session> --status candidate --limit 25
-uv run --script <skill-root>/scripts/lit_review.py update <session> --file decisions.json
-uv run --script <skill-root>/scripts/lit_review.py status <session>
-uv run --script <skill-root>/scripts/lit_review.py verify <session>
-uv run --script <skill-root>/scripts/lit_review.py clean [<session> | --all]
+R="uv run --script <skill-root>/scripts/lit_review.py"
+$R init "<two or three keywords>" --question "..." --level full
+S="<the session identifier the init output echoed>"
+$R search "$S" --source openalex --query "..." --limit 25 --from-year 2020
+$R snowball "$S" --seed <key> --direction backward
+$R show "$S" --status candidate --limit 25
+$R update "$S" <<'EOF'
+{"<key>": {"status": "included", "reason": "...", "read_level": "abstract"}}
+EOF
+$R status "$S"
+$R verify "$S"
+$R clean ["$S" | --all]
 </script_commands>
 
 ## Environment probe
