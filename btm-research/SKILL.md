@@ -2,10 +2,10 @@
 name: btm-research
 description: >-
   Answers open questions, shower thought to academic grade, with uniform
-  investigative rigor: the lead agent probes first and stops early when a
-  question settles in one round, decomposes harder questions into retrievable
-  leaves tracked in a script-owned ledger, fans narrowly-briefed search
-  workers over independent leaves, sweeps for rival accounts, and derives
+  investigative rigor: the lead agent runs the first round itself and stops
+  early when a question settles there, decomposes harder questions into
+  retrievable leaves tracked in a script-owned ledger, fans a few orthogonal
+  workers over bundles of related leaves, sweeps for rival accounts, and derives
   presentation from ledger state instead of a depth dial. Use when the user
   asks an open question needing a researched, sourced answer: a feasibility
   hunch, a causal-historical why, a best-practices lookup, a procedural fix.
@@ -60,15 +60,16 @@ phases share `decompose`, which may consult `ladders` for worked patterns.
 
 | Phase | Work |
 | --- | --- |
-| probe | The lead searches inline first (2-4 searches); a question settled satisfiably here records its leaves and sources, sweeps, and goes straight to answer |
+| probe | The lead runs the whole first gathering round itself, delegating none of it; a question settled satisfiably here records its leaves and sources, sweeps, and goes straight to answer |
 | decompose | Frame what the probe left open into 3-10 retrievable leaves by governing principle |
-| gather | Fan narrowly-briefed workers over open leaves (or run inline), class sources, admit closures |
+| gather | Partition open leaves into orthogonal bundles of related leaves; one worker per bundle, or inline |
 | weigh | Checkpoint yield, make the leave-or-stay call, spawn or fold leaves, sweep rivals after the last round |
 | answer | Draft alone, in one pass, from the outline |
 
 The probe is what keeps search-type questions fast: one round, few
-sources, same invariants. The comprehensive view lives in the lead alone;
-workers answer small steps under explicit scope bounds per `gather`.
+sources, same invariants. Delegation begins only when round one ends
+unsatisfied. The comprehensive view lives in the lead alone; a worker
+answers one bundle of small steps under the scope bounds in `gather`.
 
 Leaf states and their rendering destinations: `retrieved` feeds the
 answer and chain, `refuted` feeds the Rival account with its premise,
@@ -107,10 +108,10 @@ Determine from actually available tools, never from assumption:
 
 - Web search or fetch: required. Without it, say so and stop; an answer
   from parametric memory alone violates invariant 1.
-- Sub-agents: optional. Two or more independent open leaves and an agent
-  primitive select fan-out per `gather`; otherwise the identical contract
-  runs inline. The ledger records no worker identity, so both branches
-  produce the same state.
+- Sub-agents: optional, and never for round one. Two or more orthogonal
+  bundles and an agent primitive select fan-out per `gather`; otherwise
+  the identical contract runs inline. The ledger records no worker
+  identity, so both branches produce the same state.
 - Scholarly corpus leaves command `/lit-review`; PDF reading commands
   `/read-pdf`.
 

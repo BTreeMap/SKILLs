@@ -1,33 +1,51 @@
-# Gather: Search Workers and Source Classing
+# Gather: Bundled Workers and Source Classing
 
-One round: fan out over open leaves, join, admit. The comprehensive view
-lives in the lead alone; a worker answers one small, fast step. The lead
-never reads a source page during fan-out; page content lives and dies
-inside a worker, and only the compressed closure proposal crosses back.
-Sub-agents available and two or more independent open leaves: dispatch
-one worker per leaf (cap the batch near five). Otherwise run the same
-contract inline, one leaf at a time; the ledger records no worker
-identity, so both branches produce identical state. Multi-agent runs cost
-roughly 15x a chat turn; below two open leaves the dispatch never pays.
+Delegation is a round-two event. The lead always runs the first gathering
+round itself (the probe in `decompose`) and fans out only over what that
+round left open. The comprehensive view lives in the lead alone; a worker
+answers one bundle of small, fast steps and returns.
+
+Fan-out shape: partition the open leaves into bundles, putting leaves
+that share a work area (one corpus, one vocabulary, one governing
+principle) together and leaves that do not apart. One worker per bundle;
+one to three bundles is typical. The partition is the orthogonality
+guarantee: bundles are pairwise disjoint and jointly cover the open set,
+so no two workers can duplicate work and the join stays trivial. Each
+dispatch carries a fixed overhead regardless of bundle size (minutes of
+wall clock in some harnesses, roughly 15x chat cost in tokens), so worker
+count, not bundle size, is the cost driver: prefer fewer, fuller,
+orthogonal bundles over one worker per leaf. With a single bundle or no
+sub-agent primitive, run the same contract inline; the ledger records no
+worker identity, so both branches produce identical state.
+
+The lead never reads a source page during fan-out; page content lives and
+dies inside a worker, and only compressed closure proposals cross back.
 Retrieval is mechanical work: when the harness offers model selection,
 dispatch workers on a cheap, fast model tier and keep the lead on the
 strong one; judgment concentrates at the join, not in the search.
 
 ## Worker contract
 
-A worker receives exactly four fields and returns one closure proposal.
-Cap each worker at three to five searches so the join stays bounded.
-Brief the scope bound explicitly: sibling workers hold neighboring
-leaves, so exploration beyond the assigned leaf duplicates their work.
+A worker receives one bundle in exactly four fields and returns one
+closure proposal per assigned leaf, as an array. Cap searches at three
+per leaf and ten per worker so the join stays bounded. Brief two norms
+explicitly. Orthogonality: name what the other bundles own, so the
+worker recognizes its border when a search wanders toward it. Efficiency:
+a worker's job is to close its leaves fast and return, never to be
+thorough about adjacent questions; being comprehensive is the lead's
+task, and the lead can only be comprehensive from workers that come back
+quickly with tight proposals.
 
 <worker_brief>
-objective: the leaf's question, verbatim, plus the session question for scope
-output: one closure proposal (schema below), nothing else
+objective: the bundle's leaf questions, verbatim, plus the session question for scope
+output: one closure proposal per assigned leaf (schema below), as an array, nothing else
 tools: web search and fetch; scholarly corpora via /lit-review; PDFs via /read-pdf
-boundaries: this leaf only, three to five searches, then return; the lead
-  holds the whole picture and sibling workers hold the neighboring leaves,
-  so exploring past the leaf duplicates their work; note neighboring
-  findings as spawn candidates in one line each, pursue none of them
+boundaries: close these leaves efficiently and return; comprehensiveness
+  is the lead's job, not yours; at most three searches per leaf and ten
+  in total; the other bundles (named here, one line each) belong to other
+  workers, so exploring past this bundle duplicates their work; note
+  neighboring findings as spawn candidates in one line each, pursue none
+  of them
 </worker_brief>
 
 <closure_proposal>

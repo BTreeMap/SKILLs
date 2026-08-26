@@ -14,7 +14,7 @@ submodule.
 | --- | --- |
 | [aesthete](aesthete/SKILL.md) | Interface design and review: typography, color, spacing, motion, interaction states, and a dated WCAG 2.2 accessibility floor, applied through design, build, review, audit, redesign, and teach verbs. |
 | [author-skill](author-skill/SKILL.md) | Writes and reviews skills; the procedure every other skill in this repository was authored under. |
-| [btm-research](btm-research/SKILL.md) | Answers open questions, shower thought to academic grade, with the same investigative rigor: the lead probes first and stops early on trivial questions, a bundled ledger script tracks every leaf and source, narrowly-briefed workers gather in parallel, a rival sweep runs before every draft, and the answer's sections derive from ledger state. |
+| [btm-research](btm-research/SKILL.md) | Answers open questions, shower thought to academic grade, with the same investigative rigor: the lead runs the first round itself and stops early on trivial questions, a bundled ledger script tracks every leaf and source, a few orthogonal bundled workers gather what stays open, a rival sweep runs before every draft, and the answer's sections derive from ledger state. |
 | [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place, with a bundled script providing backup, validation, and undo. |
 | [fact-check](fact-check/SKILL.md) | Decomposes a document into checkable claims, verifies each against retrieved sources with cited quotes, and applies corrections only after per-item approval. |
 | [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages at three effort levels; a push verb commits and pushes in one step. |

@@ -53,11 +53,11 @@ Current skills:
 * `author-skill/` - how to distill a procedure into a reproducible skill (the
   meta-skill governing this repository).
 * `btm-research/` - open-question research with uniform rigor across
-  registers: a lead-agent probe that answers trivial questions in one round,
-  decomposition to retrievable leaves by governing principle, an append-only
-  event ledger owned by a bundled script (transition invariants, derived
-  sections, per-round yield, a draft-time outline), narrowly-briefed
-  search-worker fan-out, a mandatory rival sweep, and presentation weight
+  registers: a lead-run first round that answers trivial questions without
+  dispatch, decomposition to retrievable leaves by governing principle, an
+  append-only event ledger owned by a bundled script (transition invariants,
+  derived sections, per-round yield, a draft-time outline), fan-out over few
+  orthogonal leaf bundles, a mandatory rival sweep, and presentation weight
   derived from ledger state, with per-phase files loaded on demand from
   `references/`.
 * `caveman/` - token-economical output formatting for coding workflows,
