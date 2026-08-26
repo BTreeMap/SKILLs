@@ -3,7 +3,7 @@
 An open catalogue of question shapes and the leaf sets they tend to earn.
 Patterns guide; they never partition. A real question mixes shapes, and a
 shape missing here is an invitation to decompose from first principles
-under the deep-structure rule in `decompose`.
+under the deep-structure rule in `explore`.
 
 ## Procedural fix
 

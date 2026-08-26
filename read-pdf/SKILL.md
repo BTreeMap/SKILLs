@@ -40,7 +40,7 @@ Use only `pypdf`, resolved by `uv` from the bundled script's PEP 723 metadata. R
 
 The script, registered as `extract_pdf`, accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its PEP 723 metadata is the source of truth for the required dependency.
 
-Run the canonical bundled path and pass each document path as an argument; uv caches script environments by script path, so copying the script into document directories defeats the cache.
+Run the canonical bundled path and pass each document path as an argument; uv caches script environments by script path, so copying the script into document directories defeats the cache. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
 
 <all_pages_command>
 uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf>

@@ -236,6 +236,12 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     (for example, deleting a corrupt download on digest mismatch so a re-run
     can succeed); judgment calls belong to the agent, informed by the
     script's diagnostics.
+  * The command surface documented in the skill is the handoff point
+    between the halves: in production the agent invokes the interface and
+    reads its output, so document commands and output conventions
+    completely enough that the interface alone carries a run. Source
+    reading belongs to user-instructed troubleshooting; each skill that
+    bundles a script states this gate in one line beside its commands.
 * A script is frugal with the user's disk, and its state placement follows
   the XDG base directory standard:
   * Durable, light state (backups, logs, resumable sessions) lives in the

@@ -123,6 +123,10 @@ not load reference files otherwise.
 | stats | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
 | help | Quick-reference card for levels and modes. |
 
+The guard script's command surface, documented in `compress`, is the
+handoff point: invoke it and read its output; source reading belongs to
+user-instructed troubleshooting.
+
 ## Auto-Clarity
 
 Drop caveman when: security warnings; irreversible-action confirmations;

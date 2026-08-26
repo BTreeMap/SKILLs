@@ -1,4 +1,21 @@
-# Answer: Outline, Sections, and Markers
+# Answer: Sweep, Outline, Sections, and Markers
+
+## The rival sweep
+
+Once per run, after the last round (or straight after a settled probe)
+and before drafting, sweep for the strongest account that contradicts the
+emerging answer: the folk belief, the older explanation, the competing
+mechanism. Record it even when empty; the obligation is to look, never to
+find, and an empty sweep with its scope named is a legitimate outcome
+that renders as a confident absence rather than a forgotten check.
+
+<sweep_command>
+uv run --script <skill-root>/scripts/research.py sweep <session> --checked "what was examined" [--candidates a,b] [--survivors a]
+</sweep_command>
+
+Survivors render in the Rival section beside every `refuted` premise.
+
+## Outline first
 
 Drafting starts from the script, never from transcript memory:
 

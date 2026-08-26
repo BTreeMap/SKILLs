@@ -26,11 +26,10 @@ presentation is derived from the ledger, never chosen.
 | Name | Path |
 | --- | --- |
 | `answer` | [references/answer.md](references/answer.md) |
-| `decompose` | [references/decompose.md](references/decompose.md) |
-| `gather` | [references/gather.md](references/gather.md) |
+| `explore` | [references/explore.md](references/explore.md) |
 | `ladders` | [references/ladders.md](references/ladders.md) |
 | `research` | [scripts/research.py](scripts/research.py) |
-| `weigh` | [references/weigh.md](references/weigh.md) |
+| `worker` | [references/worker.md](references/worker.md) |
 
 ## Invariants
 
@@ -54,22 +53,53 @@ before continuing.
 
 ## The loop
 
-Probe, then frame once, gather-weigh up to three rounds, draft once. Each
-phase loads exactly the reference file of its name; the probe and frame
-phases share `decompose`, which may consult `ladders` for worked patterns.
+Probe, then explore for up to three rounds when needed, then answer.
+Disclosure is by stage, and each stage loads only what its path uses: the
+probe lives in this spine because every run probes, `explore` loads only
+when round one leaves material questions open, `answer` loads at draft
+time, and `ladders` (worked decomposition patterns) only on consult.
+`worker` is not lead instruction at all: it is the subagent system
+prompt, read only at dispatch time and handed to each worker verbatim.
 
-| Phase | Work |
-| --- | --- |
-| probe | The lead runs the whole first gathering round itself, delegating none of it; a question settled satisfiably here records its leaves and sources, sweeps, and goes straight to answer |
-| decompose | Frame what the probe left open into 3-10 retrievable leaves by governing principle |
-| gather | Partition open leaves into orthogonal bundles of related leaves; one worker per bundle, or inline |
-| weigh | Checkpoint yield, make the leave-or-stay call, spawn or fold leaves, sweep rivals after the last round |
-| answer | Draft alone, in one pass, from the outline |
+### Probe: the lead's own first round
 
-The probe is what keeps search-type questions fast: one round, few
-sources, same invariants. Delegation begins only when round one ends
-unsatisfied. The comprehensive view lives in the lead alone; a worker
-answers one bundle of small steps under the scope bounds in `gather`.
+The lead runs the entire first gathering round itself, inline, and
+delegates none of it: search the question as asked, follow what the
+results open, class and record sources as they land. Batch independent
+queries into one parallel tool-call block whenever the harness supports
+several tool calls per turn; search sequentially only when the next query
+depends on the previous result.
+
+Class every source relative to the question it answers: `constitutive`
+(the artifact itself: source code, RFC, spec; one suffices), `attested`
+(the owner speaking about it: maintainer post, vendor doc; one suffices),
+`measured` (an observation anyone made: benchmark, paper, postmortem;
+corroborate before stating plainly), `reported` (a secondary account:
+tutorial, journalism, aggregator; never blocks a close, earns hedged
+wording, and is itself constitutive evidence of what practitioners
+believe). Two outcomes:
+
+- Settled: the round answers the question satisfiably and nothing
+  material stays open. Register the question as its own leaves (often one
+  or two), add the sources, close, then load `answer`: sweep and draft.
+  Search-type questions end here, in one round, at full rigor, with zero
+  dispatch overhead.
+- Open: material sub-questions remain. Keep the round's sources (they
+  seed leaves) and load `explore`; the probe's reading is what makes the
+  decomposition and the bundle partition principled rather than guessed.
+
+Judge "satisfiably" against the question's own stakes: a canonical answer
+with a constitutive or attested source settles; a first page of blog
+consensus on a contested question does not.
+
+### Explore, then answer
+
+`explore` covers the whole loop: decompose what stayed open into 3-10
+leaves by governing principle, partition them into orthogonal bundles
+(one worker per bundle, or inline), admit each round, checkpoint yield,
+and make the leave-or-stay call. Delegation begins only here, never in
+round one; the comprehensive view lives in the lead alone. `answer`
+covers the exit: the rival sweep, the outline, and the one-pass draft.
 
 Leaf states and their rendering destinations: `retrieved` feeds the
 answer and chain, `refuted` feeds the Rival account with its premise,
@@ -100,7 +130,8 @@ uv run --script <skill-root>/scripts/research.py clean [<session> | --all]
 </script_commands>
 
 Bulk `--file` forms keep a typical run near 12 invocations; prefer them
-past two items.
+past two items. This command surface is the handoff point: invoke it and
+read its JSON; source reading belongs to user-instructed troubleshooting.
 
 ## Environment probe
 
@@ -109,7 +140,7 @@ Determine from actually available tools, never from assumption:
 - Web search or fetch: required. Without it, say so and stop; an answer
   from parametric memory alone violates invariant 1.
 - Sub-agents: optional, and never for round one. Two or more orthogonal
-  bundles and an agent primitive select fan-out per `gather`; otherwise
+  bundles and an agent primitive select fan-out per `explore`; otherwise
   the identical contract runs inline. The ledger records no worker
   identity, so both branches produce the same state.
 - Scholarly corpus leaves command `/lit-review`; PDF reading commands
@@ -118,7 +149,7 @@ Determine from actually available tools, never from assumption:
 ## Gotchas
 
 - Question-kind taxonomies are surface features. Decompose by governing
-  principle (rule in `decompose`); the register of the asking never
+  principle (rule in `explore`); the register of the asking never
   changes the treatment.
 - A sub-question needing another leaf's answer is a derived link, not a
   leaf: it appears at draft time as a `[~]` step, and keeps the fan-out

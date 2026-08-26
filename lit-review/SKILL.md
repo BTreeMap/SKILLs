@@ -104,7 +104,9 @@ freed; run it when the user asks to reclaim space or is done with a review.
 
 Run the script with uv at its canonical bundled path; results are JSON on
 stdout, advisory `signal:` lines on stderr. Signals inform judgment and
-never block.
+never block. This command surface is the handoff point: invoke it and
+read its output; source reading belongs to user-instructed
+troubleshooting.
 
 <script_commands>
 uv run --script <skill-root>/scripts/lit_review.py init <session> --question "..." --level full

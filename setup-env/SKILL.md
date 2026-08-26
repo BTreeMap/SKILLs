@@ -49,7 +49,9 @@ skips completed work.
 
 `envctl` is the entry point; the other scripts are its modules. Read
 `targets` before choosing tags beyond the obvious; read `extending` only to
-add or change a recipe.
+add or change a recipe. The `envctl` command surface is the handoff point:
+invoke it and read its output; source reading belongs to user-instructed
+troubleshooting.
 
 ## Procedure
 
