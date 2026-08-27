@@ -2,34 +2,26 @@
 
 ## The rival sweep
 
-Once per run, after the last round (or straight after a settled probe)
-and before drafting, sweep for the strongest account that contradicts the
-emerging answer: the folk belief, the older explanation, the competing
-mechanism. Record even an empty sweep as a `sweeps` entry in a `note`
-batch (schema in the spine): what was checked, the candidates considered,
-the survivors. An empty sweep with its scope named renders as a confident
-absence. Survivors render in the Rival section beside every `refuted`
-premise.
+After gathering, sweep once for the strongest contrary account: folk belief,
+older explanation, or competing mechanism. Record scope, candidates, and
+survivors as a `sweeps` entry. An empty scoped sweep establishes absence;
+survivors and `refuted` premises feed Rival.
 
 ## Check first
 
-Drafting starts from the script, never from transcript memory:
+Draft from script output:
 
 <answer_command>
 uv run --script <skill-root>/scripts/ponder.py check <session>
 </answer_command>
 
-The check holds the derived section set, the numbered source table the
-markers cite, every violation, and the hedge advisories. Resolve every
-violation before drafting: close open leaves, run the missed sweep,
-repair broken folds. The lead drafts alone, in one pass; parallel section
-writing produces disjoint reports.
+The check returns sections, numbered sources, violations, and hedge advisories.
+Resolve violations, then have the lead draft once.
 
 ## Sections
 
-Render exactly the sections the check derives, plus Boundary by your
-own judgment. Absent sections are conclusions: a missing Rival section
-says the sweep found nothing.
+Render the derived sections and add Boundary when the answer flips within
+scope. An absent Rival records an empty sweep.
 
 | Section | Carries |
 | --- | --- |
@@ -40,18 +32,15 @@ says the sweep found nothing.
 | Open | Each `unresolved` leaf with what was tried or why it was passed over |
 | Sources | The check's table: marker, class, title, url |
 
-These are Toulmin's claim, grounds, warrant, qualifier, and rebuttal
-under reader-friendly names. `Retired` leaves render nowhere.
+These names express Toulmin's claim, grounds, warrant, qualifier, and rebuttal.
+Omit `Retired` leaves.
 
 ## Marker discipline
 
-Markers bind to load-bearing claims only; connective prose stays bare.
+Bind markers to load-bearing claims; leave connective prose bare.
 
-- `[Sn]` after a claim a ledger source settles, using the check's
-  numbering. No record, no marker, no claim stated as retrieved.
-- `[~]` after a composition step: a conclusion derived from leaves rather
-  than retrieved from any one of them. This is the warrant made explicit,
-  the element arguments usually leave implied.
+- `[Sn]` marks a claim settled by its numbered ledger source.
+- `[~]` marks a conclusion composed from leaves.
 - Hedge every leaf the check lists under `hedges`, and name the class by
   stating the claim as attributed evidence: "benchmarks report [S4]",
   "practitioner accounts hold [S6]".
@@ -68,7 +57,7 @@ because <evidence> [S1].
 Below <threshold> the answer flips: <flipped claim> [S4].
 
 ## Open
-- <unresolved leaf question>: searched, <what was tried>, nothing usable.
+- <unresolved leaf question>: searched <what was tried>; status unresolved.
 
 ## Sources
 - S1 (constitutive): <title>, <url>
