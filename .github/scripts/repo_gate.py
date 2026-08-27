@@ -70,6 +70,11 @@ BRAND = "btm-skills"
 # the canonical paths.
 HUB = Path("skills")
 VENDOR_LINKS = (Path(".claude/skills"), Path(".github/skills"))
+# The shared kernel package consumer scripts declare as a uv path dependency
+# (`../.corekit`, resolved lexically). Each consumer skill carries a dotted
+# `.corekit` symlink to the repository kernel, so the dependency lands on the
+# same package through the canonical path, the hub, and every vendor path.
+KERNEL = Path(".corekit")
 MARKETPLACE = Path(".claude-plugin/marketplace.json")
 PLUGIN_MANIFEST = Path(".claude-plugin/plugin.json")
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
@@ -82,8 +87,10 @@ def _relative_target(link: Path, dest: Path) -> str:
     """The symlink target from `link` to `dest`, both repo-relative.
 
     Pure path arithmetic, so an alias target can never disagree with the
-    location it is derived from.
+    location it is derived from, and a link always names a destination
+    distinct from itself.
     """
+    assert link != dest, f"self-link: {link}"
     return os.path.relpath(dest, link.parent)
 
 
@@ -274,6 +281,9 @@ def snapshot(root: Path) -> Repo:
     links: dict[Path, LinkState] = {HUB: _link_state(root / HUB)}
     for vendor in VENDOR_LINKS:
         links[vendor] = _link_state(root / vendor)
+    for skill in skills:
+        kernel_link = Path(skill) / KERNEL.name
+        links[kernel_link] = _link_state(root / kernel_link)
     # Hub entries exist only inside a real hub directory; through a symlinked
     # hub they would describe some other tree, so they are not read.
     if isinstance(links[HUB], LinkFarm | Occupied):
@@ -537,10 +547,73 @@ def rule_script_header(repo: Repo) -> Iterator[Finding]:
             )
 
 
+KERNEL_SYMBOLS = re.compile(
+    r"^(?:def (?:keywords_of|slugify|band_signal|resolve|eliminate|mint|suffix|"
+    r"is_pathlike|tree_bytes|state_root)\(|"
+    r"class (?:Exact|Recovered|Ambiguous|NoMatch|CommandError)\b)",
+    re.MULTILINE,
+)
+
+
+def rule_kernel(repo: Repo) -> Iterator[Finding]:
+    """The kernel is defined once and wired by derivation. A consumer skill
+    (one whose entry point names btm-corekit) carries a dotted symlink to
+    the repository kernel, a pure function of consumer-ship, so it is
+    repaired; a consumer that redefines a kernel symbol has smuggled a copy
+    back in, and which parts moved is a judgment, so that has no repair."""
+    consumers = {
+        path.parts[0] for path in repo.entry_points if "btm-corekit" in repo.texts[path]
+    }
+    for skill in sorted(repo.skills):
+        link = Path(skill) / KERNEL.name
+        target = _relative_target(link, KERNEL)
+        match repo.links.get(link, Absent()), skill in consumers:
+            case (Symlink(found), True) if found == target:
+                pass
+            case (Symlink(_) | Absent(), True):
+                yield Finding(
+                    "kernel",
+                    str(link),
+                    f"consumer skill needs a kernel symlink to {target}",
+                    MakeSymlink(link, target),
+                )
+            case (Absent(), False):
+                pass
+            case (Symlink(_), False):
+                yield Finding(
+                    "kernel",
+                    str(link),
+                    "kernel symlink without a consumer script",
+                    RemovePath(link),
+                )
+            case (LinkFarm() | Occupied(), _):
+                yield Finding(
+                    "kernel",
+                    str(link),
+                    "real content stands where the kernel symlink belongs; "
+                    "move it aside",
+                )
+    for path in sorted(repo.entry_points):
+        text = repo.texts[path]
+        if "btm-corekit" not in text:
+            continue
+        for found in KERNEL_SYMBOLS.finditer(text):
+            yield Finding(
+                "kernel",
+                str(path),
+                f"kernel symbol redefined in a consumer: {found.group(0)}",
+            )
+
+
 def rule_alias(repo: Repo) -> Iterator[Finding]:
     """Every alias is a pure function of the skill set, so a missing, wrong,
     orphaned, or legacy-shaped one is repaired. Only real content blocks,
-    because deleting it would destroy work no derivation can rebuild."""
+    because deleting it would destroy work no derivation can rebuild.
+
+    Two standards bound the derivation: the hub aliases exactly the visible
+    top-level directories (the reserved skill namespace; dotted
+    infrastructure is wired by rule_kernel), and every alias targets a
+    destination distinct from itself (_relative_target asserts it)."""
     if isinstance(repo.links[HUB], Symlink):
         yield Finding(
             "alias",
@@ -577,7 +650,12 @@ def rule_alias(repo: Repo) -> Iterator[Finding]:
                     str(link),
                     "real content stands where the alias belongs; move it aside",
                 )
-    for orphan in sorted(set(repo.links) - set(wanted) - {HUB}):
+    # This rule owns the hub and the vendor paths; per-skill kernel links
+    # belong to rule_kernel.
+    managed = {
+        link for link in repo.links if link in VENDOR_LINKS or link.parts[0] == HUB.name
+    }
+    for orphan in sorted(managed - set(wanted) - {HUB}):
         match repo.links[orphan]:
             case Absent():
                 pass
@@ -676,6 +754,7 @@ RULES: tuple[Callable[[Repo], Iterator[Finding]], ...] = (
     rule_alias,
     rule_em_dash,
     rule_frontmatter,
+    rule_kernel,
     rule_listings,
     rule_manifest,
     rule_script_header,

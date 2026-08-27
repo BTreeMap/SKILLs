@@ -271,6 +271,20 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     identifier to shell variables, reused while the shell persists and
     re-bound after a reset, and to chain a round's calls in one shell
     invocation.
+  * Logic shared across bundled scripts lives once, in the `btm-corekit`
+    package under `.corekit/` (a uv package: `pyproject.toml`, uv_build,
+    src layout). A consumer script declares it in its PEP 723 block as
+    `dependencies = ["btm-corekit"]` with the editable uv source
+    `{ path = "../.corekit", editable = true }`, so uv owns resolution
+    and kernel edits are live immediately. That relative path resolves
+    through a dotted `.corekit` symlink the consumer skill carries to
+    the repository kernel (the gate derives it from the script's
+    dependency declaration), so the dependency lands on the same package
+    through the canonical path, the hub, and every vendor path. The
+    skill therefore runs from a full repository checkout (marketplace
+    install or clone); a skill copied out alone fails loudly at
+    environment build. The gate keeps the kernel single-defined: a
+    consumer that redefines a kernel symbol is a blocking finding.
 * A script is frugal with the user's disk, and its state placement follows
   the XDG base directory standard:
   * Durable, light state (backups, logs, resumable sessions) lives in the

@@ -1,7 +1,10 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["btm-corekit"]
+#
+# [tool.uv.sources]
+# btm-corekit = { path = "../.corekit", editable = true }
 # ///
 
 """Scratchpad and verifier for open-question research sessions.
@@ -13,7 +16,8 @@ into a drafting scaffold: derived sections, numbered sources, violations,
 hedges. The invoking agent owns every judgment call; the script owns
 identity, memory, counting, and verification.
 
-Identifiers are minted here: the agent supplies two or three keywords,
+Identifiers are minted here, by the repository's shared btm-corekit
+kernel: the agent supplies two or three keywords,
 the script returns the full identifier (keyword slug plus a 128-bit
 entropy suffix) for the agent to use in later calls, and every output
 echoes the canonical identifier. A uniquely-resolving keyword subset
@@ -31,10 +35,7 @@ without appending anything.
 from __future__ import annotations
 
 import argparse
-import base64
 import json
-import os
-import re
 import shutil
 import sys
 import tempfile
@@ -45,6 +46,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from btm_corekit import (
+    Ambiguous,
+    CommandError,
+    Exact,
+    NoMatch,
+    Recovered,
+    band_signal,
+    eliminate,
+    is_pathlike,
+    mint,
+    resolve,
+    slugify,
+    state_root,
+    tree_bytes,
+)
+
 SOURCE_CLASSES = ("constitutive", "attested", "measured", "reported")
 ORIGINS = ("frame", "spawned")
 CLOSE_STATES = ("retrieved", "refuted", "unresolved", "retired")
@@ -52,12 +69,6 @@ UNRESOLVED_REASONS = ("searched", "not_pursued")
 RETIRED_REASONS = ("folded", "immaterial")
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 MAX_EVENTS = 1000  # runaway backstop; a real run stays under ~100 events
-KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
-NON_SLUG = re.compile(r"[^a-z0-9]+")
-
-
-class CommandError(Exception):
-    """Failure that ends the command with a clean message and exit code 1."""
 
 
 # --- pure core: leaf states as a closed sum ---
@@ -250,71 +261,6 @@ def replay(events: list[dict[str, Any]]) -> Ledger:
     return ledger
 
 
-# --- pure core: identifiers ---
-
-
-def keywords_of(text: str) -> list[str]:
-    return [part for part in NON_SLUG.sub("-", text.lower()).split("-") if part]
-
-
-def slugify(words: Iterable[str]) -> str:
-    cleaned = [part for word in words for part in keywords_of(str(word))]
-    _require(bool(cleaned), "identifier keywords must contain letters or digits")
-    return "-".join(cleaned)
-
-
-def band_signal(stem: str) -> str | None:
-    """Advisory for a stem outside the keyword band; None inside it."""
-    low, high = KEYWORD_RANGE
-    if low <= stem.count("-") + 1 <= high:
-        return None
-    return f"'{stem}': two or three keywords resolve best"
-
-
-@dataclass(frozen=True, slots=True)
-class Exact:
-    id: str
-
-
-@dataclass(frozen=True, slots=True)
-class Recovered:
-    id: str
-
-
-@dataclass(frozen=True, slots=True)
-class Ambiguous:
-    candidates: tuple[str, ...]  # sorted
-
-
-@dataclass(frozen=True, slots=True)
-class NoMatch:
-    pass
-
-
-Resolution = Exact | Recovered | Ambiguous | NoMatch
-
-
-def resolve(ref: str, ids: Iterable[str]) -> Resolution:
-    """Total resolution: exact id, else the id containing every keyword.
-
-    O(ids x keywords); pools stay in the low hundreds.
-    """
-    pool = list(ids)
-    if ref in pool:
-        return Exact(ref)
-    keywords = keywords_of(ref)
-    matches = [
-        candidate
-        for candidate in pool
-        if keywords and all(keyword in candidate for keyword in keywords)
-    ]
-    if not matches:
-        return NoMatch()
-    if len(matches) > 1:
-        return Ambiguous(tuple(sorted(matches)))
-    return Recovered(matches[0])
-
-
 # --- pure core: batch expansion (the note smart constructor, stage one) ---
 
 
@@ -331,27 +277,15 @@ def _resolve_ref(
     fresh: AbstractSet[str],
     advisories: list[str],
 ) -> str:
-    """Eliminate a Resolution into an id, or raise the violated invariant.
+    """Resolve one reference, recording recovery for ids outside `fresh`.
 
     A keyword match inside `fresh` is the designed path (the full id is
     born in this very batch), so only a match outside it records recovery.
     """
-    match resolve(ref, ids):
-        case Exact(full):
-            return full
-        case Recovered(full):
-            if full not in fresh:
-                advisories.append(
-                    f"recovered {kind} '{ref}' -> {full}; use the full identifier"
-                )
-            return full
-        case Ambiguous(candidates):
-            raise CommandError(
-                f"'{ref}' is ambiguous across {kind}s: {', '.join(candidates)}"
-            )
-        case NoMatch():
-            raise CommandError(f"no {kind} matches '{ref}'")
-    raise AssertionError("unreachable: Resolution is a closed union")
+    full, note = eliminate(resolve(ref, ids), ref, kind)
+    if note and full not in fresh:
+        advisories.append(note)
+    return full
 
 
 def expand_batch(
@@ -546,25 +480,8 @@ def counts_of(ledger: Ledger) -> dict[str, int]:
 # --- imperative shell ---
 
 
-def suffix() -> str:
-    """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
-    return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
-
-
-def mint(words: Iterable[str]) -> str:
-    return f"{slugify(words)}-{suffix()}"
-
-
-def state_root() -> Path:
-    if os.name == "nt":
-        base = os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
-        return Path(base) / "btm-skills" / "btm-research"
-    base = os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
-    return Path(base) / "btm-skills" / "btm-research"
-
-
 def sessions_root() -> Path:
-    return state_root() / "sessions"
+    return state_root("btm-research") / "sessions"
 
 
 def session_ids() -> list[str]:
@@ -574,42 +491,23 @@ def session_ids() -> list[str]:
     return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
 
 
-def is_pathlike(argument: str) -> bool:
-    return (
-        os.sep in argument
-        or (os.altsep is not None and os.altsep in argument)
-        or argument.startswith(("~", "."))
-    )
-
-
 def resolved_session(ref: str) -> Path:
     """Eliminate a session Resolution at the shell, rendering its signal."""
-    match resolve(ref, session_ids()):
-        case Exact(sid):
-            return sessions_root() / sid
-        case Recovered(sid):
-            signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
-            return sessions_root() / sid
-        case Ambiguous(candidates):
-            raise CommandError(
-                f"'{ref}' is ambiguous across sessions: {', '.join(candidates)}"
-            )
-        case NoMatch():
-            raise CommandError(
-                f"no session matches '{ref}'; open with --question creates one"
-            )
-    raise AssertionError("unreachable: Resolution is a closed union")
+    full, note = eliminate(
+        resolve(ref, session_ids()),
+        ref,
+        "session",
+        hint="open with --question creates one",
+    )
+    if note:
+        signal(note)
+    return sessions_root() / full
 
 
 def session_dir(ref: str) -> Path:
     if is_pathlike(ref):
         return Path(ref).expanduser()
     return resolved_session(ref)
-
-
-def tree_bytes(path: Path) -> int:
-    """Total size of the regular files under a directory."""
-    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
 
 def ledger_path(directory: Path) -> Path:

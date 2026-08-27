@@ -1,7 +1,10 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["btm-corekit"]
+#
+# [tool.uv.sources]
+# btm-corekit = { path = "../.corekit", editable = true }
 # ///
 
 """Session engine for literature reviews over OpenAlex, arXiv, and Crossref.
@@ -17,7 +20,6 @@ block; failures print `error:` to stderr and exit 1.
 from __future__ import annotations
 
 import argparse
-import base64
 import difflib
 import hashlib
 import http.client
@@ -37,6 +39,17 @@ from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from btm_corekit import (
+    CommandError,
+    band_signal,
+    eliminate,
+    is_pathlike,
+    mint,
+    resolve,
+    state_root,
+    tree_bytes,
+)
 
 OPENALEX_WORKS = "https://api.openalex.org/works"
 ARXIV_QUERY = "https://export.arxiv.org/api/query"
@@ -71,10 +84,6 @@ ARXIV_ID = re.compile(r"(\d{4}\.\d{4,5})(?:v\d+)?$")
 JATS_TAG = re.compile(r"<[^>]+>")
 WHITESPACE = re.compile(r"\s+")
 NON_ALNUM = re.compile(r"[^a-z0-9]+")
-
-
-class CommandError(Exception):
-    """Failure that ends the command with a clean message and exit code 1."""
 
 
 # --- pure core: domain model ---
@@ -324,75 +333,6 @@ def paper_from_crossref(item: Mapping[str, Any]) -> Paper:
     )
 
 
-# --- pure core: identifiers ---
-
-NON_SLUG = re.compile(r"[^a-z0-9]+")
-KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
-
-
-def keywords_of(text: str) -> list[str]:
-    return [part for part in NON_SLUG.sub("-", text.lower()).split("-") if part]
-
-
-def slugify(words: Iterable[str]) -> str:
-    cleaned = [part for word in words for part in keywords_of(str(word))]
-    if not cleaned:
-        raise CommandError("identifier keywords must contain letters or digits")
-    return "-".join(cleaned)
-
-
-def band_signal(stem: str) -> str | None:
-    """Advisory for a stem outside the keyword band; None inside it."""
-    low, high = KEYWORD_RANGE
-    if low <= stem.count("-") + 1 <= high:
-        return None
-    return f"'{stem}': two or three keywords resolve best"
-
-
-@dataclass(frozen=True, slots=True)
-class Exact:
-    id: str
-
-
-@dataclass(frozen=True, slots=True)
-class Recovered:
-    id: str
-
-
-@dataclass(frozen=True, slots=True)
-class Ambiguous:
-    candidates: tuple[str, ...]  # sorted
-
-
-@dataclass(frozen=True, slots=True)
-class NoMatch:
-    pass
-
-
-Resolution = Exact | Recovered | Ambiguous | NoMatch
-
-
-def resolve(ref: str, ids: Iterable[str]) -> Resolution:
-    """Total resolution: exact id, else the id containing every keyword.
-
-    O(ids x keywords); pools stay in the low hundreds.
-    """
-    pool = list(ids)
-    if ref in pool:
-        return Exact(ref)
-    keywords = keywords_of(ref)
-    matches = [
-        candidate
-        for candidate in pool
-        if keywords and all(keyword in candidate for keyword in keywords)
-    ]
-    if not matches:
-        return NoMatch()
-    if len(matches) > 1:
-        return Ambiguous(tuple(sorted(matches)))
-    return Recovered(matches[0])
-
-
 # --- effect shell: HTTP ---
 
 
@@ -546,30 +486,8 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def state_root() -> Path:
-    """Durable-state home for this skill, per repository convention."""
-    if os.name == "nt":
-        base = Path(
-            os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
-        )
-    else:
-        base = Path(
-            os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local" / "state"))
-        )
-    return base / "btm-skills" / "lit-review"
-
-
 def sessions_root() -> Path:
-    return state_root() / "sessions"
-
-
-def suffix() -> str:
-    """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
-    return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
-
-
-def mint(words: Iterable[str]) -> str:
-    return f"{slugify(words)}-{suffix()}"
+    return state_root("lit-review") / "sessions"
 
 
 def session_ids() -> list[str]:
@@ -579,40 +497,20 @@ def session_ids() -> list[str]:
     return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
 
 
-def is_pathlike(argument: str) -> bool:
-    return (
-        os.sep in argument
-        or (os.altsep is not None and os.altsep in argument)
-        or argument.startswith(("~", "."))
-    )
-
-
 def resolved_session(ref: str) -> Path:
     """Eliminate a session Resolution at the shell, rendering its signal."""
-    match resolve(ref, session_ids()):
-        case Exact(sid):
-            return sessions_root() / sid
-        case Recovered(sid):
-            signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
-            return sessions_root() / sid
-        case Ambiguous(candidates):
-            raise CommandError(
-                f"'{ref}' is ambiguous across sessions: {', '.join(candidates)}"
-            )
-        case NoMatch():
-            raise CommandError(f"no session matches '{ref}'; run init first")
-    raise AssertionError("unreachable: Resolution is a closed union")
+    full, note = eliminate(
+        resolve(ref, session_ids()), ref, "session", hint="run init first"
+    )
+    if note:
+        signal(note)
+    return sessions_root() / full
 
 
 def session_path(argument: str) -> Path:
     if is_pathlike(argument):
         return Path(argument).expanduser()
     return resolved_session(argument)
-
-
-def tree_bytes(path: Path) -> int:
-    """Total size of the regular files under a directory."""
-    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
 
 def open_session(root: str) -> Session:

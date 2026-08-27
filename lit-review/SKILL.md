@@ -17,7 +17,9 @@ description: >-
 license: MIT
 compatibility: >-
   Requires uv for the bundled script and network access to api.openalex.org,
-  export.arxiv.org, api.crossref.org, and doi.org.
+  export.arxiv.org, api.crossref.org, and doi.org. Runs from a full SKILLs
+  repository checkout, since the bundled script depends on the repository's
+  .corekit kernel.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---

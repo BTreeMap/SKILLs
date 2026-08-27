@@ -12,6 +12,10 @@ description: >-
   Do not use for literature reviews with citation deliverables (use
   lit-review) or verifying claims in an existing document (use fact-check).
 license: MIT
+compatibility: >-
+  Requires uv and web search or fetch; runs from a full SKILLs repository
+  checkout, since the bundled script depends on the repository's .corekit
+  kernel.
 ---
 
 # Research
