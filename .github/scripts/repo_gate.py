@@ -553,6 +553,9 @@ KERNEL_SYMBOLS = re.compile(
     r"class (?:Exact|Recovered|Ambiguous|NoMatch|CommandError)\b)",
     re.MULTILINE,
 )
+# The witness of consumer-ship is the PEP 723 dependency declaration, so a
+# script that merely mentions the kernel in prose stays a non-consumer.
+KERNEL_DEPENDENCY = re.compile(r'^#\s*dependencies\s*=.*"btm-corekit"', re.MULTILINE)
 
 
 def rule_kernel(repo: Repo) -> Iterator[Finding]:
@@ -562,7 +565,9 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
     repaired; a consumer that redefines a kernel symbol has smuggled a copy
     back in, and which parts moved is a judgment, so that has no repair."""
     consumers = {
-        path.parts[0] for path in repo.entry_points if "btm-corekit" in repo.texts[path]
+        path.parts[0]
+        for path in repo.entry_points
+        if KERNEL_DEPENDENCY.search(repo.texts[path])
     }
     for skill in sorted(repo.skills):
         link = Path(skill) / KERNEL.name
@@ -595,7 +600,7 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
                 )
     for path in sorted(repo.entry_points):
         text = repo.texts[path]
-        if "btm-corekit" not in text:
+        if not KERNEL_DEPENDENCY.search(text):
             continue
         for found in KERNEL_SYMBOLS.finditer(text):
             yield Finding(

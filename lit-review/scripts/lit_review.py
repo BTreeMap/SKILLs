@@ -215,20 +215,36 @@ def absorb(
 
 
 PAPER_FIELDS = frozenset(f.name for f in fields(Paper))
+PAPER_DEFAULTS: dict[str, Any] = {
+    "year": None,
+    "authors": (),
+    "venue": None,
+    "doi": None,
+    "arxiv_id": None,
+    "openalex_id": None,
+    "cited_by_count": None,
+    "abstract": None,
+    "pdf_url": None,
+    "landing_url": None,
+    "found_by": (),
+    "status": "candidate",
+    "decision_reason": None,
+    "read_level": "none",
+}
 
 
 def paper_from_json(row: Mapping[str, Any]) -> Paper:
     """Parse boundary for state on disk; total: rejects corrupt records."""
-    if set(row) != PAPER_FIELDS:
-        unknown = sorted(set(row) - PAPER_FIELDS)
-        missing = sorted(PAPER_FIELDS - set(row))
+    unknown = sorted(set(row) - PAPER_FIELDS)
+    data = PAPER_DEFAULTS | dict(row)
+    missing = sorted(PAPER_FIELDS - set(data))
+    if unknown or missing:
         raise CommandError(
             f"corrupt paper record for key {row.get('key')!r}: "
             f"unknown fields {unknown}, missing fields {missing}"
         )
-    if row["status"] not in STATUSES or row["read_level"] not in READ_LEVELS:
+    if data["status"] not in STATUSES or data["read_level"] not in READ_LEVELS:
         raise CommandError(f"corrupt paper record for key {row.get('key')!r}")
-    data = dict(row)
     data["authors"] = tuple(data.get("authors") or ())
     data["found_by"] = tuple(data.get("found_by") or ())
     return Paper(**data)

@@ -111,6 +111,8 @@ def eliminate(
             raise CommandError(
                 f"'{ref}' is ambiguous across {kind}s: {', '.join(candidates)}"
             )
+        case NoMatch() if not keywords_of(ref):
+            raise CommandError(f"empty {kind} reference")
         case NoMatch():
             tail = f"; {hint}" if hint else ""
             raise CommandError(f"no {kind} matches '{ref}'{tail}")
