@@ -33,7 +33,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sequence
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -52,6 +52,7 @@ ID_BATCH_SIZE = 50
 COURTESY_PAUSE_SECONDS = 0.2
 TITLE_MATCH_FLOOR = 0.6
 ABSTRACT_SHOW_LIMIT = 1500
+AUTHOR_SHOW_LIMIT = 6
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400
 
@@ -204,9 +205,19 @@ def absorb(
     return result, new_count
 
 
+PAPER_FIELDS = frozenset(f.name for f in fields(Paper))
+
+
 def paper_from_json(row: Mapping[str, Any]) -> Paper:
-    """Parse boundary for state on disk; rejects corrupt records."""
-    if row.get("status") not in STATUSES or row.get("read_level") not in READ_LEVELS:
+    """Parse boundary for state on disk; total: rejects corrupt records."""
+    if set(row) != PAPER_FIELDS:
+        unknown = sorted(set(row) - PAPER_FIELDS)
+        missing = sorted(PAPER_FIELDS - set(row))
+        raise CommandError(
+            f"corrupt paper record for key {row.get('key')!r}: "
+            f"unknown fields {unknown}, missing fields {missing}"
+        )
+    if row["status"] not in STATUSES or row["read_level"] not in READ_LEVELS:
         raise CommandError(f"corrupt paper record for key {row.get('key')!r}")
     data = dict(row)
     data["authors"] = tuple(data.get("authors") or ())
@@ -311,6 +322,75 @@ def paper_from_crossref(item: Mapping[str, Any]) -> Paper:
         pdf_url=None,
         landing_url=item.get("URL"),
     )
+
+
+# --- pure core: identifiers ---
+
+NON_SLUG = re.compile(r"[^a-z0-9]+")
+KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
+
+
+def keywords_of(text: str) -> list[str]:
+    return [part for part in NON_SLUG.sub("-", text.lower()).split("-") if part]
+
+
+def slugify(words: Iterable[str]) -> str:
+    cleaned = [part for word in words for part in keywords_of(str(word))]
+    if not cleaned:
+        raise CommandError("identifier keywords must contain letters or digits")
+    return "-".join(cleaned)
+
+
+def band_signal(stem: str) -> str | None:
+    """Advisory for a stem outside the keyword band; None inside it."""
+    low, high = KEYWORD_RANGE
+    if low <= stem.count("-") + 1 <= high:
+        return None
+    return f"'{stem}': two or three keywords resolve best"
+
+
+@dataclass(frozen=True, slots=True)
+class Exact:
+    id: str
+
+
+@dataclass(frozen=True, slots=True)
+class Recovered:
+    id: str
+
+
+@dataclass(frozen=True, slots=True)
+class Ambiguous:
+    candidates: tuple[str, ...]  # sorted
+
+
+@dataclass(frozen=True, slots=True)
+class NoMatch:
+    pass
+
+
+Resolution = Exact | Recovered | Ambiguous | NoMatch
+
+
+def resolve(ref: str, ids: Iterable[str]) -> Resolution:
+    """Total resolution: exact id, else the id containing every keyword.
+
+    O(ids x keywords); pools stay in the low hundreds.
+    """
+    pool = list(ids)
+    if ref in pool:
+        return Exact(ref)
+    keywords = keywords_of(ref)
+    matches = [
+        candidate
+        for candidate in pool
+        if keywords and all(keyword in candidate for keyword in keywords)
+    ]
+    if not matches:
+        return NoMatch()
+    if len(matches) > 1:
+        return Ambiguous(tuple(sorted(matches)))
+    return Recovered(matches[0])
 
 
 # --- effect shell: HTTP ---
@@ -483,7 +563,20 @@ def sessions_root() -> Path:
     return state_root() / "sessions"
 
 
-NON_SLUG = re.compile(r"[^a-z0-9]+")
+def suffix() -> str:
+    """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
+    return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
+
+
+def mint(words: Iterable[str]) -> str:
+    return f"{slugify(words)}-{suffix()}"
+
+
+def session_ids() -> list[str]:
+    root = sessions_root()
+    if not root.exists():
+        return []
+    return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
 
 
 def is_pathlike(argument: str) -> bool:
@@ -494,47 +587,27 @@ def is_pathlike(argument: str) -> bool:
     )
 
 
-def mint_session(words: str) -> str:
-    """Slug plus 128-bit entropy suffix: uniqueness is the script's job."""
-    parts = [part for part in NON_SLUG.sub("-", words.lower()).split("-") if part]
-    if not parts:
-        raise CommandError("session keywords must contain letters or digits")
-    if not 2 <= len(parts) <= 3:  # noqa: PLR2004
-        signal(f"'{'-'.join(parts)}': two or three keywords resolve best")
-    entropy = base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
-    return "-".join([*parts, entropy])
+def resolved_session(ref: str) -> Path:
+    """Eliminate a session Resolution at the shell, rendering its signal."""
+    match resolve(ref, session_ids()):
+        case Exact(sid):
+            return sessions_root() / sid
+        case Recovered(sid):
+            signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
+            return sessions_root() / sid
+        case Ambiguous(candidates):
+            raise CommandError(
+                f"'{ref}' is ambiguous across sessions: {', '.join(candidates)}"
+            )
+        case NoMatch():
+            raise CommandError(f"no session matches '{ref}'; run init first")
+    raise AssertionError("unreachable: Resolution is a closed union")
 
 
-def resolve_session(argument: str) -> Path:
-    """A path is itself; anything else resolves by keyword subset.
-
-    Exact directory name wins; else the unique session whose id contains
-    every keyword of the argument; ambiguity is an error listing the
-    candidates; no match falls through so callers report a missing
-    session by its literal name.
-    """
+def session_path(argument: str) -> Path:
     if is_pathlike(argument):
         return Path(argument).expanduser()
-    root = sessions_root()
-    existing = (
-        sorted(entry.name for entry in root.iterdir() if entry.is_dir())
-        if root.exists()
-        else []
-    )
-    if argument in existing:
-        return root / argument
-    keywords = [part for part in NON_SLUG.sub("-", argument.lower()).split("-") if part]
-    matches = [
-        name for name in existing if all(keyword in name for keyword in keywords)
-    ]
-    if len(matches) == 1:
-        signal(f"recovered session '{argument}' -> {matches[0]}; use the full id")
-        return root / matches[0]
-    if len(matches) > 1:
-        raise CommandError(
-            f"'{argument}' is ambiguous across sessions: {', '.join(matches)}"
-        )
-    return root / argument
+    return resolved_session(argument)
 
 
 def tree_bytes(path: Path) -> int:
@@ -543,7 +616,7 @@ def tree_bytes(path: Path) -> int:
 
 
 def open_session(root: str) -> Session:
-    session = Session(resolve_session(root))
+    session = Session(session_path(root))
     if not session.protocol_path.is_file():
         raise CommandError(f"no session at {session.root}: run init first")
     return session
@@ -650,8 +723,12 @@ def record_fetch(
 def cmd_init(args: argparse.Namespace) -> int:
     if is_pathlike(args.session):
         root = Path(args.session).expanduser()
+        name = str(root)
     else:
-        root = sessions_root() / mint_session(args.session)
+        name = mint(args.session.split())
+        if advice := band_signal(name.rsplit("-", 1)[0]):
+            signal(advice)
+        root = sessions_root() / name
     session = Session(root)
     if session.protocol_path.exists():
         raise CommandError(f"session already exists at {root}; refusing to overwrite")
@@ -666,7 +743,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     atomic_write(session.protocol_path, json.dumps(protocol, indent=2) + "\n")
     session.papers_path.touch()
     session.log_path.touch()
-    emit({"session": str(root), "next": "fill criteria lists in protocol.json"})
+    emit({"session": name, "next": "fill criteria lists in protocol.json"})
     return 0
 
 
@@ -736,9 +813,8 @@ def cmd_snowball(args: argparse.Namespace) -> int:
         total = len(referenced)
         if not referenced:
             signal(
-                f"OpenAlex lists no references for {seed_key}; that is an "
-                "upstream metadata gap, not proof the paper cites nothing. "
-                "Try another seed or read the paper's own reference list"
+                f"OpenAlex lists no references for {seed_key}: upstream metadata "
+                "gap; snowball another seed or read the paper's own reference list"
             )
         fetched = fetch_openalex_by_ids(referenced[:limit])
     else:
@@ -808,28 +884,31 @@ def cmd_update(args: argparse.Namespace) -> int:
 
 def cmd_show(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    papers = [
+    matching = [
         paper for paper in load_papers(session).values() if paper.status == args.status
     ]
-    papers.sort(key=lambda paper: -(paper.cited_by_count or 0))
-    for paper in papers[: args.limit]:
-        authors = ", ".join(paper.authors[:6]) or "(authors unknown)"
-        if len(paper.authors) > 6:  # noqa: PLR2004  (display cutoff, same as slice)
-            authors += ", et al."
-        abstract = paper.abstract or "(no abstract fetched)"
-        if len(abstract) > ABSTRACT_SHOW_LIMIT:
+    matching.sort(key=lambda paper: -(paper.cited_by_count or 0))
+    shown = []
+    for paper in matching[: args.limit]:
+        abstract = paper.abstract
+        if abstract and len(abstract) > ABSTRACT_SHOW_LIMIT:
             abstract = abstract[:ABSTRACT_SHOW_LIMIT] + " [truncated]"
-        print(f"## {paper.key}")
-        print(f"{paper.title} ({paper.year or 'year unknown'})")
-        print(f"authors: {authors}")
-        print(f"venue: {paper.venue or 'unknown'}")
-        citations = paper.cited_by_count
-        print(f"citations: {citations if citations is not None else 'unknown'}")
-        print(f"read_level: {paper.read_level}")
-        print(f"abstract: {abstract}")
-        print()
-    if len(papers) > args.limit:
-        signal(f"{len(papers) - args.limit} more {args.status} papers not shown")
+        shown.append(
+            {
+                "key": paper.key,
+                "title": paper.title,
+                "year": paper.year,
+                "authors": list(paper.authors[:AUTHOR_SHOW_LIMIT]),
+                "author_count": len(paper.authors),
+                "venue": paper.venue,
+                "citations": paper.cited_by_count,
+                "read_level": paper.read_level,
+                "abstract": abstract,
+            }
+        )
+    if len(matching) > args.limit:
+        signal(f"{len(matching) - args.limit} more {args.status} papers not shown")
+    emit({"status": args.status, "total": len(matching), "papers": shown})
     return 0
 
 
@@ -929,11 +1008,11 @@ def cmd_clean(args: argparse.Namespace) -> int:
             {
                 "sessions_root": str(root),
                 "sessions": listing,
-                "next": "pass a session name or --all to remove and free space",
+                "next": "pass a session identifier or --all to remove and free space",
             }
         )
         return 0
-    target = resolve_session(args.session)
+    target = session_path(args.session)
     if not (target / "protocol.json").is_file():
         raise CommandError(
             f"{target} holds no session (protocol.json absent); refusing to remove"

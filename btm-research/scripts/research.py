@@ -253,53 +253,66 @@ def replay(events: list[dict[str, Any]]) -> Ledger:
 # --- pure core: identifiers ---
 
 
+def keywords_of(text: str) -> list[str]:
+    return [part for part in NON_SLUG.sub("-", text.lower()).split("-") if part]
+
+
 def slugify(words: Iterable[str]) -> str:
-    parts = [NON_SLUG.sub("-", str(word).lower()).strip("-") for word in words]
-    cleaned = [part for part in parts if part]
+    cleaned = [part for word in words for part in keywords_of(str(word))]
     _require(bool(cleaned), "identifier keywords must contain letters or digits")
     return "-".join(cleaned)
 
 
-def suffix() -> str:
-    """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
-    return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
+def band_signal(stem: str) -> str | None:
+    """Advisory for a stem outside the keyword band; None inside it."""
+    low, high = KEYWORD_RANGE
+    if low <= stem.count("-") + 1 <= high:
+        return None
+    return f"'{stem}': two or three keywords resolve best"
 
 
-def mint(words: Iterable[str]) -> str:
-    stem = slugify(words)
-    band = stem.count("-") + 1
-    if not KEYWORD_RANGE[0] <= band <= KEYWORD_RANGE[1]:
-        signal(f"'{stem}': two or three keywords resolve best")
-    return f"{stem}-{suffix()}"
+@dataclass(frozen=True, slots=True)
+class Exact:
+    id: str
 
 
-def resolve(
-    ref: str, ids: Iterable[str], kind: str, fresh: AbstractSet[str] = frozenset()
-) -> str:
-    """Exact id, or the unique id containing every keyword of the ref.
+@dataclass(frozen=True, slots=True)
+class Recovered:
+    id: str
 
-    `fresh` holds ids minted in the current batch: a keyword reference to
-    one of those is the designed path (the full id is born in this very
-    call), so only a match outside `fresh` signals identifier recovery.
+
+@dataclass(frozen=True, slots=True)
+class Ambiguous:
+    candidates: tuple[str, ...]  # sorted
+
+
+@dataclass(frozen=True, slots=True)
+class NoMatch:
+    pass
+
+
+Resolution = Exact | Recovered | Ambiguous | NoMatch
+
+
+def resolve(ref: str, ids: Iterable[str]) -> Resolution:
+    """Total resolution: exact id, else the id containing every keyword.
+
+    O(ids x keywords); pools stay in the low hundreds.
     """
     pool = list(ids)
     if ref in pool:
-        return ref
-    keywords = [part for part in NON_SLUG.sub("-", ref.lower()).split("-") if part]
-    _require(bool(keywords), f"empty {kind} reference")
+        return Exact(ref)
+    keywords = keywords_of(ref)
     matches = [
         candidate
         for candidate in pool
-        if all(keyword in candidate for keyword in keywords)
+        if keywords and all(keyword in candidate for keyword in keywords)
     ]
-    _require(bool(matches), f"no {kind} matches '{ref}'")
-    _require(
-        len(matches) == 1,
-        f"'{ref}' is ambiguous across {kind}s: {', '.join(sorted(matches))}",
-    )
-    if matches[0] not in fresh:
-        signal(f"recovered {kind} '{ref}' -> {matches[0]}; use the full identifier")
-    return matches[0]
+    if not matches:
+        return NoMatch()
+    if len(matches) > 1:
+        return Ambiguous(tuple(sorted(matches)))
+    return Recovered(matches[0])
 
 
 # --- pure core: batch expansion (the note smart constructor, stage one) ---
@@ -311,25 +324,72 @@ def _detail_of(raw: dict[str, Any]) -> str:
     return str(raw.get(key) or "")
 
 
+def _resolve_ref(
+    ref: str,
+    ids: AbstractSet[str],
+    kind: str,
+    fresh: AbstractSet[str],
+    advisories: list[str],
+) -> str:
+    """Eliminate a Resolution into an id, or raise the violated invariant.
+
+    A keyword match inside `fresh` is the designed path (the full id is
+    born in this very batch), so only a match outside it records recovery.
+    """
+    match resolve(ref, ids):
+        case Exact(full):
+            return full
+        case Recovered(full):
+            if full not in fresh:
+                advisories.append(
+                    f"recovered {kind} '{ref}' -> {full}; use the full identifier"
+                )
+            return full
+        case Ambiguous(candidates):
+            raise CommandError(
+                f"'{ref}' is ambiguous across {kind}s: {', '.join(candidates)}"
+            )
+        case NoMatch():
+            raise CommandError(f"no {kind} matches '{ref}'")
+    raise AssertionError("unreachable: Resolution is a closed union")
+
+
 def expand_batch(
     ledger: Ledger, batch: dict[str, Any], minter: Callable[[Iterable[str]], str]
-) -> tuple[list[dict[str, Any]], dict[str, dict[str, str]]]:
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, str]], list[str]]:
     """Resolve keyword references and mint ids for one note batch.
 
     Admission order inside a batch: leaves, sources, closes, sweep,
     checkpoint, so later entries may reference ids minted earlier in the
-    same batch. Returns the expanded events and the minted-id maps.
+    same batch. Returns the expanded events, the minted-id maps, and the
+    advisory signals for the shell to render.
     """
+    known = {"leaves", "sources", "closes", "sweeps", "checkpoints"}
+    unknown = set(batch) - known
+    _require(not unknown, f"unknown note keys: {', '.join(sorted(unknown))}")
     minted: dict[str, dict[str, str]] = {"leaves": {}, "sources": {}}
+    advisories: list[str] = []
     fresh: set[str] = set()
     leaf_ids = set(ledger.leaves)
     source_ids = set(ledger.sources)
     events: list[dict[str, Any]] = []
-    for entry in batch.get("leaves") or []:
+
+    def admit(kind: str, entry: dict[str, Any], into: set[str]) -> str:
         full = minter(entry.get("kw") or [])
-        minted["leaves"][full.rsplit("-", 1)[0]] = full
+        stem = full.rsplit("-", 1)[0]
+        _require(
+            stem not in minted[kind],
+            f"duplicate keywords in one batch: {stem}; vary one keyword",
+        )
+        minted[kind][stem] = full
+        if advice := band_signal(stem):
+            advisories.append(advice)
         fresh.add(full)
-        leaf_ids.add(full)
+        into.add(full)
+        return full
+
+    for entry in batch.get("leaves") or []:
+        full = admit("leaves", entry, leaf_ids)
         events.append(
             {
                 "e": "add_leaf",
@@ -339,15 +399,14 @@ def expand_batch(
             }
         )
     for entry in batch.get("sources") or []:
-        full = minter(entry.get("kw") or [])
-        minted["sources"][full.rsplit("-", 1)[0]] = full
-        fresh.add(full)
-        source_ids.add(full)
+        full = admit("sources", entry, source_ids)
         events.append(
             {
                 "e": "add_source",
                 "id": full,
-                "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf", fresh),
+                "leaf": _resolve_ref(
+                    str(entry.get("leaf") or ""), leaf_ids, "leaf", fresh, advisories
+                ),
                 "cls": entry.get("cls"),
                 "title": entry.get("title"),
                 "url": entry.get("url", ""),
@@ -356,12 +415,14 @@ def expand_batch(
     for entry in batch.get("closes") or []:
         event: dict[str, Any] = {
             "e": "close",
-            "leaf": resolve(str(entry.get("leaf") or ""), leaf_ids, "leaf", fresh),
+            "leaf": _resolve_ref(
+                str(entry.get("leaf") or ""), leaf_ids, "leaf", fresh, advisories
+            ),
             "state": entry.get("state"),
         }
         if entry.get("sources"):
             event["sources"] = [
-                resolve(str(ref), source_ids, "source", fresh)
+                _resolve_ref(str(ref), source_ids, "source", fresh, advisories)
                 for ref in entry["sources"]
             ]
         if entry.get("premise"):
@@ -370,18 +431,15 @@ def expand_batch(
             event["reason"] = entry["reason"]
             detail = _detail_of(entry)
             if entry["reason"] == "folded":
-                detail = resolve(detail, leaf_ids, "leaf", fresh)
+                detail = _resolve_ref(detail, leaf_ids, "leaf", fresh, advisories)
             event["detail"] = detail
         events.append(event)
     for entry in batch.get("sweeps") or []:
         events.append({"e": "sweep", **entry})
     for entry in batch.get("checkpoints") or []:
         events.append({"e": "checkpoint", **entry})
-    known = {"leaves", "sources", "closes", "sweeps", "checkpoints"}
-    unknown = set(batch) - known
-    _require(not unknown, f"unknown note keys: {', '.join(sorted(unknown))}")
     _require(bool(events), "empty note: nothing to record")
-    return events, minted
+    return events, minted, advisories
 
 
 # --- pure core: derived views ---
@@ -488,6 +546,15 @@ def counts_of(ledger: Ledger) -> dict[str, int]:
 # --- imperative shell ---
 
 
+def suffix() -> str:
+    """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
+    return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
+
+
+def mint(words: Iterable[str]) -> str:
+    return f"{slugify(words)}-{suffix()}"
+
+
 def state_root() -> Path:
     if os.name == "nt":
         base = os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
@@ -507,10 +574,42 @@ def session_ids() -> list[str]:
     return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
 
 
+def is_pathlike(argument: str) -> bool:
+    return (
+        os.sep in argument
+        or (os.altsep is not None and os.altsep in argument)
+        or argument.startswith(("~", "."))
+    )
+
+
+def resolved_session(ref: str) -> Path:
+    """Eliminate a session Resolution at the shell, rendering its signal."""
+    match resolve(ref, session_ids()):
+        case Exact(sid):
+            return sessions_root() / sid
+        case Recovered(sid):
+            signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
+            return sessions_root() / sid
+        case Ambiguous(candidates):
+            raise CommandError(
+                f"'{ref}' is ambiguous across sessions: {', '.join(candidates)}"
+            )
+        case NoMatch():
+            raise CommandError(
+                f"no session matches '{ref}'; open with --question creates one"
+            )
+    raise AssertionError("unreachable: Resolution is a closed union")
+
+
 def session_dir(ref: str) -> Path:
-    if os.sep in ref or ref.startswith("."):
-        return Path(ref)
-    return sessions_root() / resolve(ref, session_ids(), "session")
+    if is_pathlike(ref):
+        return Path(ref).expanduser()
+    return resolved_session(ref)
+
+
+def tree_bytes(path: Path) -> int:
+    """Total size of the regular files under a directory."""
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
 
 def ledger_path(directory: Path) -> Path:
@@ -568,26 +667,7 @@ def orient(directory: Path) -> dict[str, Any]:
     }
 
 
-def cmd_open(args: argparse.Namespace) -> int:
-    ref = args.ref
-    explicit = os.sep in ref or ref.startswith(".")
-    if not explicit:
-        try:
-            emit(orient(sessions_root() / resolve(ref, session_ids(), "session")))
-            return 0
-        except CommandError as exc:
-            if "ambiguous" in str(exc):
-                raise
-    if not args.question:
-        directory = Path(ref) if explicit else None
-        if directory and ledger_path(directory).exists():
-            emit(orient(directory))
-            return 0
-        raise CommandError(f"no session matches '{ref}'; pass --question to create one")
-    directory = Path(ref) if explicit else sessions_root() / mint(ref.split())
-    _require(
-        not ledger_path(directory).exists(), f"session already exists at {directory}"
-    )
+def create_session(directory: Path, name: str, args: argparse.Namespace) -> int:
     directory.mkdir(parents=True, exist_ok=True)
     meta = {
         "question": args.question,
@@ -600,7 +680,45 @@ def cmd_open(args: argparse.Namespace) -> int:
         json.dump(meta, handle, indent=2, ensure_ascii=False)
     Path(handle.name).replace(directory / "session.json")
     ledger_path(directory).touch()
-    emit({"session": str(directory) if explicit else directory.name, **meta})
+    emit({"session": name, **meta})
+    return 0
+
+
+def cmd_open(args: argparse.Namespace) -> int:
+    ref = args.ref
+    if is_pathlike(ref):
+        directory = Path(ref).expanduser()
+        if not args.question:
+            _require(
+                ledger_path(directory).exists(),
+                f"no session at {directory}; pass --question to create one",
+            )
+            emit(orient(directory))
+            return 0
+        _require(
+            not ledger_path(directory).exists(),
+            f"session already exists at {directory}",
+        )
+        return create_session(directory, str(directory), args)
+    match resolve(ref, session_ids()):
+        case Exact(sid):
+            emit(orient(sessions_root() / sid))
+        case Recovered(sid):
+            signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
+            emit(orient(sessions_root() / sid))
+        case Ambiguous(candidates):
+            raise CommandError(
+                f"'{ref}' is ambiguous across sessions: {', '.join(candidates)}"
+            )
+        case NoMatch():
+            _require(
+                bool(args.question),
+                f"no session matches '{ref}'; pass --question to create one",
+            )
+            full = mint(ref.split())
+            if advice := band_signal(full.rsplit("-", 1)[0]):
+                signal(advice)
+            return create_session(sessions_root() / full, full, args)
     return 0
 
 
@@ -612,10 +730,12 @@ def cmd_note(args: argparse.Namespace) -> int:
     _require(isinstance(batch, dict), "note takes one JSON object")
     events = read_events(directory)
     ledger = replay(events)
-    expanded, minted = expand_batch(ledger, batch, mint)
+    expanded, minted, advisories = expand_batch(ledger, batch, mint)
     for event in expanded:
         apply(ledger, event)
     append_events(directory, expanded)
+    for line in advisories:
+        signal(line)
     emit(
         {
             "session": directory.name,
@@ -643,10 +763,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     found = violations(ledger)
     for line in found:
         signal(line)
-    signal(
-        "boundary section is yours to judge: render it when the answer flips "
-        "somewhere inside the question's scope"
-    )
+    signal("Boundary section is yours: render it where the answer flips inside scope")
     emit(
         {
             "session": directory.name,
@@ -677,42 +794,46 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_clean(args: argparse.Namespace) -> int:
     root = sessions_root()
-    if not args.session and not args.all:
+    if args.all and args.session:
+        raise CommandError("pass a session or --all, one of the two")
+    if args.all:
+        if not root.is_dir():
+            emit({"removed": None, "bytes_freed": 0})
+            return 0
+        freed = tree_bytes(root)
+        shutil.rmtree(root)
+        emit({"removed": str(root), "bytes_freed": freed})
+        return 0
+    if args.session is None:
         listing = (
             [
-                {
-                    "session": entry.name,
-                    "bytes": sum(
-                        f.stat().st_size for f in entry.rglob("*") if f.is_file()
-                    ),
-                }
+                {"session": entry.name, "bytes": tree_bytes(entry)}
                 for entry in sorted(root.iterdir())
                 if entry.is_dir()
             ]
-            if root.exists()
+            if root.is_dir()
             else []
         )
-        emit({"sessions": listing})
+        emit(
+            {
+                "sessions_root": str(root),
+                "sessions": listing,
+                "next": "pass a session identifier or --all to remove and free space",
+            }
+        )
         return 0
-    targets = (
-        [d for d in root.iterdir() if d.is_dir()]
-        if args.all and root.exists()
-        else [session_dir(args.session)]
-        if args.session
-        else []
-    )
-    freed = 0
-    removed = []
-    for target in targets:
-        if target.exists():
-            freed += sum(f.stat().st_size for f in target.rglob("*") if f.is_file())
-            shutil.rmtree(target)
-            removed.append(str(target))
-    emit({"removed": removed, "bytes_freed": freed})
+    target = session_dir(args.session)
+    if not ledger_path(target).is_file():
+        raise CommandError(
+            f"{target} holds no session (ledger.jsonl absent); refusing to remove"
+        )
+    freed = tree_bytes(target)
+    shutil.rmtree(target)
+    emit({"removed": str(target), "bytes_freed": freed})
     return 0
 
 
-def cmd_selftest(_args: argparse.Namespace) -> int:
+def cmd_selftest(_args: argparse.Namespace) -> int:  # noqa: PLR0915  linear law list
     """Law checks: minting, resolution, batch expansion, transitions, views."""
     checks = 0
 
@@ -734,15 +855,17 @@ def cmd_selftest(_args: argparse.Namespace) -> int:
     assert len(minted.rsplit("-", 1)[1]) == suffix_len
     assert minted.rsplit("-", 1)[1] == minted.rsplit("-", 1)[1].lower()
     assert mint(["a b", "C/d"]).startswith("a-b-c-d-")
-    checks += 3
+    assert band_signal("solo") and band_signal("a-b-c-d")
+    assert band_signal("two-words") is None
+    checks += 5
 
     pool = ["tls-pin-abc123", "tls-cert-def456", "aws-east-ghi789"]
-    assert resolve("tls-pin-abc123", pool, "leaf") == "tls-pin-abc123"
-    assert resolve("pin", pool, "leaf") == "tls-pin-abc123"
-    assert resolve("aws east", pool, "leaf") == "aws-east-ghi789"
-    checks += 3
-    rejects(lambda: resolve("tls", pool, "leaf"), "ambiguous keyword")
-    rejects(lambda: resolve("quic", pool, "leaf"), "no match")
+    assert resolve("tls-pin-abc123", pool) == Exact("tls-pin-abc123")
+    assert resolve("pin", pool) == Recovered("tls-pin-abc123")
+    assert resolve("aws east", pool) == Recovered("aws-east-ghi789")
+    assert resolve("tls", pool) == Ambiguous(("tls-cert-def456", "tls-pin-abc123"))
+    assert resolve("quic", pool) == NoMatch()
+    checks += 5
 
     ledger = Ledger()
     batch = {
@@ -785,9 +908,10 @@ def cmd_selftest(_args: argparse.Namespace) -> int:
         ],
         "checkpoints": [{"label": "round-1", "searches": 4}],
     }
-    events, minted_map = expand_batch(ledger, batch, fixed_mint)
+    events, minted_map, advisories = expand_batch(ledger, batch, fixed_mint)
     for event in events:
         apply(ledger, event)
+    assert advisories == []  # intra-batch keyword refs are the designed path
     assert sorted(len(v) for v in minted_map.values()) == [2, 3]
     assert sections(ledger) == ["answer", "rival", "sources"]
     assert violations(ledger) == []
@@ -797,7 +921,16 @@ def cmd_selftest(_args: argparse.Namespace) -> int:
     assert stated(["reported"]) == "hedged" and stated(["attested"]) == "plain"
     assert stated(["measured"]) == "hedged"
     assert stated(["measured", "measured"]) == "plain"
-    checks += 7
+    checks += 8
+
+    recovery_batch = {
+        "sources": [
+            {"kw": ["extra", "doc"], "leaf": "rent", "cls": "reported", "title": "t"}
+        ]
+    }
+    _, _, recovery = expand_batch(ledger, recovery_batch, fixed_mint)
+    assert any(line.startswith("recovered leaf 'rent'") for line in recovery)
+    checks += 1
 
     contrary = {
         "closes": [
@@ -809,55 +942,36 @@ def cmd_selftest(_args: argparse.Namespace) -> int:
             }
         ]
     }
-    events2, _ = expand_batch(ledger, contrary, fixed_mint)
+    events2, _, _ = expand_batch(ledger, contrary, fixed_mint)
     for event in events2:
         apply(ledger, event)  # Retrieved -> Refuted is the one legal bend
     assert any("fold broken" in line for line in violations(ledger))
     checks += 1
 
-    rejects(
-        lambda: (
-            (
-                expand_batch(
-                    ledger,
-                    {
-                        "closes": [
-                            {
-                                "leaf": "pool clear",
-                                "state": "retrieved",
-                                "sources": ["folk"],
-                            }
-                        ]
-                    },
-                    fixed_mint,
-                )[0]
-                and None
-            )
-            or apply(
-                ledger,
-                expand_batch(
-                    ledger,
-                    {
-                        "closes": [
-                            {
-                                "leaf": "pool clear",
-                                "state": "retrieved",
-                                "sources": ["folk"],
-                            }
-                        ]
-                    },
-                    fixed_mint,
-                )[0][0],
-            )
-        ),
-        "Refuted is terminal",
-    )
+    def refute_terminal() -> None:
+        closes = {
+            "closes": [
+                {"leaf": "pool clear", "state": "retrieved", "sources": ["folk"]}
+            ]
+        }
+        for event in expand_batch(ledger, closes, fixed_mint)[0]:
+            apply(ledger, event)
+
+    rejects(refute_terminal, "Refuted is terminal")
     rejects(lambda: expand_batch(ledger, {}, fixed_mint), "empty note")
     rejects(
         lambda: expand_batch(
             Ledger(), {"leaves": [{"kw": ["!!"], "q": "x"}]}, fixed_mint
         ),
         "unsluggable keywords",
+    )
+    rejects(
+        lambda: expand_batch(
+            Ledger(),
+            {"leaves": [{"kw": ["a", "b"], "q": "x"}, {"kw": ["a", "b"], "q": "y"}]},
+            fixed_mint,
+        ),
+        "duplicate keywords in one batch",
     )
     fresh = Ledger()
     apply(fresh, {"e": "add_leaf", "id": "solo-x", "q": "q"})

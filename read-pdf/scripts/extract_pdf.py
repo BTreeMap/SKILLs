@@ -20,7 +20,7 @@ from contextlib import nullcontext
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import TextIO, TypeGuard
+from typing import TextIO
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -99,27 +99,13 @@ def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
         raise ValueError("The supplied password could not decrypt the PDF.")
 
 
-def format_metadata_field(
-    metadata: Mapping[str, object], field: tuple[str, str]
-) -> str | None:
-    """Format one populated metadata field, or return explicit absence."""
-    key, label = field
-    value = metadata.get(key)
-    return f"- {label}: {value}\n" if value else None
-
-
-def is_present(value: str | None) -> TypeGuard[str]:
-    """Narrow optional formatted output to text that should be emitted."""
-    return value is not None
-
-
 def format_metadata(metadata: Mapping[str, object]) -> str:
-    """Build the complete metadata section from available standard fields."""
-    lines = tuple(
-        filter(
-            is_present, map(partial(format_metadata_field, metadata), METADATA_FIELDS)
-        )
-    )
+    """Build the complete metadata section from populated standard fields."""
+    lines = [
+        f"- {label}: {value}\n"
+        for key, label in METADATA_FIELDS
+        if (value := metadata.get(key))
+    ]
     body = "".join(lines) or "- No standard document metadata found.\n"
     return f"## Document metadata\n\n{body}\n"
 

@@ -12,5 +12,3 @@ Layering, strictly one-directional:
 
 Everything above `effects` is pure and unit-testable without a network.
 """
-
-__version__ = "1.0.0"

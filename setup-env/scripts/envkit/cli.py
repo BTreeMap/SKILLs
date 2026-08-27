@@ -69,17 +69,18 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _resolve(args: argparse.Namespace) -> tuple[Spec, Layout]:
+def _resolve(
+    project: Path | None, root: Path | None, tags: list[str]
+) -> tuple[Spec, Layout]:
     host = detect_host()
-    project = (args.project or find_project(Path.cwd())).resolve()
-    targets = [catalog.resolve(parse_tag(t)) for t in getattr(args, "tags", [])]
-    spec = make_spec(targets, project) if targets else Spec((), project)
-    root = args.root or default_root(project, host)
-    return spec, Layout(root.resolve())
+    base = (project or find_project(Path.cwd())).resolve()
+    targets = [catalog.resolve(parse_tag(t)) for t in tags]
+    spec = make_spec(targets, base) if targets else Spec((), base)
+    return spec, Layout((root or default_root(base, host)).resolve())
 
 
-def _build_plan(args: argparse.Namespace) -> Plan:
-    spec, layout = _resolve(args)
+def _build_plan(project: Path | None, root: Path | None, tags: list[str]) -> Plan:
+    spec, layout = _resolve(project, root, tags)
     return make_plan(spec, detect_host(), layout)
 
 
@@ -94,7 +95,7 @@ def _describe_step(step) -> str:
 
 
 def cmd_plan(args: argparse.Namespace) -> int:
-    plan = _build_plan(args)
+    plan = _build_plan(args.project, args.root, args.tags)
     if args.json:
         print(
             json.dumps(
@@ -157,7 +158,7 @@ def cmd_provision(args: argparse.Namespace) -> int:
     # Defer effects: importing them builds an SSL context and needs certifi.
     from .effects import provision  # noqa: PLC0415
 
-    plan = _build_plan(args)
+    plan = _build_plan(args.project, args.root, args.tags)
     results = provision(plan)
     return _report(plan, results, args.json)
 
@@ -165,21 +166,18 @@ def cmd_provision(args: argparse.Namespace) -> int:
 def cmd_status(args: argparse.Namespace) -> int:
     from .effects import load_manifest, verify  # noqa: PLC0415
 
-    _, layout = _resolve(args)
+    _, layout = _resolve(args.project, args.root, [])
     manifest = load_manifest(layout)
     if not manifest:
         print(f"no environment at {layout.root}; run provision first")
         return 1
     tags = manifest.get("spec", [])
-    args2 = argparse.Namespace(
-        project=Path(manifest["project"]), root=layout.root, tags=tags
-    )
-    plan = _build_plan(args2)
+    plan = _build_plan(Path(manifest["project"]), layout.root, tags)
     return _report(plan, verify(plan), as_json=False)
 
 
 def cmd_destroy(args: argparse.Namespace) -> int:
-    _, layout = _resolve(args)
+    _, layout = _resolve(args.project, args.root, [])
     if not layout.manifest.exists():
         raise DenvError(
             f"refusing to delete {layout.root}: no manifest.json; "
@@ -191,12 +189,10 @@ def cmd_destroy(args: argparse.Namespace) -> int:
 
 
 def cmd_shim(args: argparse.Namespace) -> int:
-    from .effects import make_shim  # noqa: PLC0415
+    from .effects import ensure_dirs, make_shim  # noqa: PLC0415
 
-    _, layout = _resolve(args)
-    layout.root.mkdir(parents=True, exist_ok=True)
-    for sub in (layout.downloads, layout.home, layout.tmp, layout.shims):
-        sub.mkdir(parents=True, exist_ok=True)
+    _, layout = _resolve(args.project, args.root, [])
+    ensure_dirs(layout)
     wrapper = make_shim(
         layout, detect_host(), args.binary, CondaPlatform(args.platform)
     )

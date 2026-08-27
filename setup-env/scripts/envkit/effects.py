@@ -619,8 +619,7 @@ class ProbeResult:
     output: str
 
 
-def provision(plan: Plan) -> list[ProbeResult]:
-    layout = plan.layout
+def ensure_dirs(layout: Layout) -> None:
     for directory in (
         layout.root,
         layout.downloads,
@@ -628,10 +627,14 @@ def provision(plan: Plan) -> list[ProbeResult]:
         layout.tmp,
         layout.cache,
         layout.shims,
-        layout.tmp,
         layout.home / ".config",
     ):
         directory.mkdir(parents=True, exist_ok=True)
+
+
+def provision(plan: Plan) -> list[ProbeResult]:
+    layout = plan.layout
+    ensure_dirs(layout)
     ctx = Ctx(layout, plan.host, load_manifest(layout))
     ctx.manifest["project"] = str(plan.spec.project)
     ctx.manifest["spec"] = [str(t) for t in plan.spec.targets]

@@ -46,9 +46,8 @@ import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
-from functools import reduce
+from itertools import chain
 from pathlib import Path
-from typing import ClassVar
 
 MAX_FILE_SIZE = 500_000  # bytes; split larger prose files first
 
@@ -104,31 +103,14 @@ Admission = Plan | Refusal
 
 @dataclass(frozen=True, slots=True)
 class Verdict:
-    """Validation outcome. A monoid: EMPTY is the identity, `merge` is
-    associative, and `validate` is a fold of independent checks under it."""
+    """Validation outcome: independent checks concatenate their findings."""
 
     errors: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
-    EMPTY: ClassVar[Verdict]
-
     @property
     def is_valid(self) -> bool:
         return not self.errors
-
-    def merge(self, other: Verdict) -> Verdict:
-        return Verdict(self.errors + other.errors, self.warnings + other.warnings)
-
-    @staticmethod
-    def error(msg: str) -> Verdict:
-        return Verdict(errors=(msg,))
-
-    @staticmethod
-    def warning(msg: str) -> Verdict:
-        return Verdict(warnings=(msg,))
-
-
-Verdict.EMPTY = Verdict()
 
 
 # --- Classification ---
@@ -326,11 +308,6 @@ def assess(path: Path, text: str | None) -> Assessment:  # noqa: PLR0911
     )
 
 
-def classify(path: Path, text: str | None) -> FileKind:
-    """Projection of `assess` for callers that only need the kind."""
-    return assess(path, text).kind
-
-
 # --- Sensitivity refusal ---
 
 SENSITIVE_BASENAME_REGEX = re.compile(
@@ -514,54 +491,50 @@ def extract_inline_codes(text: str) -> Counter[str]:
 def _check_headings(original: str, compressed: str) -> Verdict:
     orig, comp = extract_headings(original), extract_headings(compressed)
     if orig != comp:
-        return Verdict.error(
-            f"Headings not preserved exactly: {len(orig)} vs {len(comp)}"
+        return Verdict(
+            errors=(f"Headings not preserved exactly: {len(orig)} vs {len(comp)}",)
         )
-    return Verdict.EMPTY
+    return Verdict()
 
 
 def _check_code_blocks(original: str, compressed: str) -> Verdict:
     orig_fences, orig_rest = partition_fences(original)
     comp_fences, comp_rest = partition_fences(compressed)
-    verdict = Verdict.EMPTY
+    errors = []
     if orig_fences != comp_fences:
-        verdict = verdict.merge(
-            Verdict.error("Fenced code blocks not preserved exactly (content, order)")
-        )
+        errors.append("Fenced code blocks not preserved exactly (content, order)")
     if partition_indented(orig_rest)[0] != partition_indented(comp_rest)[0]:
-        verdict = verdict.merge(
-            Verdict.error("Indented code blocks not preserved exactly (content, order)")
-        )
-    return verdict
+        errors.append("Indented code blocks not preserved exactly (content, order)")
+    return Verdict(errors=tuple(errors))
 
 
 def _check_urls(original: str, compressed: str) -> Verdict:
     orig, comp = extract_urls(original), extract_urls(compressed)
     if orig != comp:
-        return Verdict.error(
-            f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}"
+        return Verdict(
+            errors=(f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}",)
         )
-    return Verdict.EMPTY
+    return Verdict()
 
 
 def _check_inline_codes(original: str, compressed: str) -> Verdict:
     orig, comp = extract_inline_codes(original), extract_inline_codes(compressed)
     lost, added = orig - comp, comp - orig
-    verdict = Verdict.EMPTY
-    if lost:
-        verdict = verdict.merge(Verdict.error(f"Inline code lost: {sorted(lost)}"))
-    if added:
-        verdict = verdict.merge(Verdict.warning(f"Inline code added: {sorted(added)}"))
-    return verdict
+    return Verdict(
+        errors=(f"Inline code lost: {sorted(lost)}",) if lost else (),
+        warnings=(f"Inline code added: {sorted(added)}",) if added else (),
+    )
 
 
 def _check_paths(original: str, compressed: str) -> Verdict:
     orig, comp = extract_paths(original), extract_paths(compressed)
     if orig != comp:
-        return Verdict.warning(
-            f"Path mismatch: lost={set(orig - comp)}, added={set(comp - orig)}"
+        return Verdict(
+            warnings=(
+                f"Path mismatch: lost={set(orig - comp)}, added={set(comp - orig)}",
+            )
         )
-    return Verdict.EMPTY
+    return Verdict()
 
 
 def _check_bullets(original: str, compressed: str) -> Verdict:
@@ -569,8 +542,8 @@ def _check_bullets(original: str, compressed: str) -> Verdict:
     comp = len(BULLET_REGEX.findall(compressed))
     # Allow 15% bullet-count drift.
     if orig and abs(orig - comp) / orig > 0.15:  # noqa: PLR2004
-        return Verdict.warning(f"Bullet count drifted: {orig} -> {comp}")
-    return Verdict.EMPTY
+        return Verdict(warnings=(f"Bullet count drifted: {orig} -> {comp}",))
+    return Verdict()
 
 
 CHECKS = (
@@ -584,9 +557,11 @@ CHECKS = (
 
 
 def validate(original: str, compressed: str) -> Verdict:
-    """Fold the independent checks under the Verdict monoid."""
-    return reduce(
-        Verdict.merge, (check(original, compressed) for check in CHECKS), Verdict.EMPTY
+    """Concatenate the independent checks' findings, in CHECKS order."""
+    results = [check(original, compressed) for check in CHECKS]
+    return Verdict(
+        errors=tuple(chain.from_iterable(v.errors for v in results)),
+        warnings=tuple(chain.from_iterable(v.warnings for v in results)),
     )
 
 
@@ -713,17 +688,10 @@ def write_text_atomic(path: Path, text: str) -> None:
 # the agent weighs it against user intent; the backup keeps either call safe.
 KIND_GUIDANCE = {
     FileKind.CODE: (
-        "assessed as CODE: compressing source code is almost never intended;"
-        " stop and report unless the user explicitly asked for this exact file"
+        "assessed as CODE: compress only when the user named this exact file"
     ),
-    FileKind.CONFIG: (
-        "assessed as CONFIG/DATA: caveman compression rarely applies;"
-        " proceed only on explicit user intent"
-    ),
-    FileKind.UNKNOWN: (
-        "assessment inconclusive: read the file and judge whether it is"
-        " prose before compressing"
-    ),
+    FileKind.CONFIG: ("assessed as CONFIG/DATA: compress only on explicit user intent"),
+    FileKind.UNKNOWN: ("assessment inconclusive: read the file, judge prose yourself"),
 }
 
 
@@ -766,18 +734,14 @@ def print_signals(plan: Plan) -> None:
     for note in plan.notes:
         print(f"SIGNAL: {note}")
     if plan.notes:
-        print(
-            "Signals are advisory: weigh them against the user's actual request"
-            " before compressing (restore undoes everything)."
-        )
+        print("Signals advise; the user's request decides (restore undoes everything).")
 
 
 def print_format_warning(path: Path) -> None:
     if path.suffix.lower() in NON_MARKDOWN_PROSE_EXTENSIONS:
         print(
-            f"WARNING: structural validation assumes Markdown; {path.suffix}"
-            " headings and code blocks are NOT protected by the checks;"
-            " preserve structure manually and with extra care"
+            f"WARNING: checks assume Markdown; {path.suffix} headings and code"
+            " blocks are unprotected; preserve structure manually"
         )
 
 
@@ -945,10 +909,8 @@ def cmd_self_test() -> int:  # noqa: PLR0915  one linear list of invariant check
     for text in ("---\na: 1\n---\nBody\n", "No frontmatter", ""):
         assert "".join(split_frontmatter(text)) == text  # partition law
 
-    v1, v2, v3 = Verdict.error("a"), Verdict.warning("w"), Verdict.error("b")
-    assert v1.merge(Verdict.EMPTY) == v1 == Verdict.EMPTY.merge(v1)  # identity
-    assert v1.merge(v2).merge(v3) == v1.merge(v2.merge(v3))  # associativity
-    assert not v1.is_valid and v2.is_valid
+    assert Verdict().is_valid
+    assert not Verdict(errors=("a",)).is_valid and Verdict(warnings=("w",)).is_valid
 
     text = "prose\n```py\ncode\n```\ntail `x` and `x`\n~~~\nunclosed\n"
     blocks, prose = partition_fences(text)
@@ -981,25 +943,25 @@ def cmd_self_test() -> int:  # noqa: PLR0915  one linear list of invariant check
     bad = validate("# H\ntext https://a.example\n```\nc\n```\n", "# H\ntext\n")
     assert not bad.is_valid and len(bad.errors) == 2  # noqa: PLR2004  url + code block
 
-    assert classify(Path("Dockerfile"), None) is FileKind.CODE
-    assert classify(Path("CMakeLists.txt"), None) is FileKind.CODE
-    assert classify(Path("notes.md"), None) is FileKind.NATURAL_LANGUAGE
-    assert classify(Path("conf.yaml"), None) is FileKind.CONFIG
-    assert classify(Path("run"), "#!/bin/sh\necho hi\n") is FileKind.CODE
-    assert (
-        classify(Path("TODO"), "Buy milk.\nShip release.\n")
-        is FileKind.NATURAL_LANGUAGE
-    )
+    def kind(path: Path, text: str | None = None) -> FileKind:
+        return assess(path, text).kind
+
+    assert kind(Path("Dockerfile")) is FileKind.CODE
+    assert kind(Path("CMakeLists.txt")) is FileKind.CODE
+    assert kind(Path("notes.md")) is FileKind.NATURAL_LANGUAGE
+    assert kind(Path("conf.yaml")) is FileKind.CONFIG
+    assert kind(Path("run"), "#!/bin/sh\necho hi\n") is FileKind.CODE
+    assert kind(Path("TODO"), "Buy milk.\nShip release.\n") is FileKind.NATURAL_LANGUAGE
 
     # Classification fails closed and covers more of the language landscape.
     go = 'package main\n\nfunc main() {\n\tfmt.Println("hi")\n}\n'
-    assert classify(Path("main"), go) is FileKind.CODE
-    assert classify(Path("q"), "SELECT id\nFROM t;\n") is FileKind.CODE
-    assert classify(Path("a.cs"), None) is FileKind.CODE
-    assert classify(Path("data.csv"), None) is FileKind.CONFIG  # data, not code
-    assert classify(Path(".env.local"), "A=1\n") is FileKind.CONFIG
-    assert classify(Path("n"), "42") is FileKind.UNKNOWN  # bare JSON scalar
-    assert classify(Path("x"), "zx9\nq7\n") is FileKind.UNKNOWN  # no prose evidence
+    assert kind(Path("main"), go) is FileKind.CODE
+    assert kind(Path("q"), "SELECT id\nFROM t;\n") is FileKind.CODE
+    assert kind(Path("a.cs")) is FileKind.CODE
+    assert kind(Path("data.csv")) is FileKind.CONFIG  # data, not code
+    assert kind(Path(".env.local"), "A=1\n") is FileKind.CONFIG
+    assert kind(Path("n"), "42") is FileKind.UNKNOWN  # bare JSON scalar
+    assert kind(Path("x"), "zx9\nq7\n") is FileKind.UNKNOWN  # no prose evidence
 
     # Assessments are evidence, not verdicts: every non-prose guess carries
     # at least one signal, and a clean prose guess carries none.
@@ -1008,9 +970,6 @@ def cmd_self_test() -> int:  # noqa: PLR0915  one linear list of invariant check
     inconclusive = assess(Path("x"), "zx9\nq7\n")
     assert inconclusive.kind is FileKind.UNKNOWN
     assert any("code-like" in s for s in inconclusive.signals)  # ratios stated
-    for probe in (Path("a.py"), Path("conf.yaml"), Path("x")):
-        # classify is the projection of assess: they can never disagree.
-        assert classify(probe, "zx9\n") is assess(probe, "zx9\n").kind
 
     assert is_sensitive(Path("/home/u/.aws/config"))
     assert is_sensitive(Path("api-key.md"))
