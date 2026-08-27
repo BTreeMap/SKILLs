@@ -31,7 +31,7 @@ presentation is derived from the ledger, never chosen.
 | --- | --- |
 | `answer` | [references/answer.md](references/answer.md) |
 | `explore` | [references/explore.md](references/explore.md) |
-| `ladders` | [references/ladders.md](references/ladders.md) |
+| `framing` | [references/framing.md](references/framing.md) |
 | `ponder` | [scripts/ponder.py](scripts/ponder.py) |
 | `worker` | [references/worker.md](references/worker.md) |
 
@@ -59,9 +59,9 @@ before continuing.
 
 Probe, then explore for up to three rounds when needed, then answer.
 Disclosure is by stage, and each stage loads only what its path uses: the
-probe lives in this spine because every run probes, `explore` loads only
-when round one leaves material questions open, `answer` loads at draft
-time, and `ladders` (worked decomposition patterns) only on consult.
+probe lives in this spine because every run probes, `explore` and
+`framing` load together only when round one leaves material questions
+open, and `answer` loads at draft time.
 `worker` is not lead instruction at all: it is the subagent system
 prompt, read only at dispatch time and handed to each worker verbatim.
 

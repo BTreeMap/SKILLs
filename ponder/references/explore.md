@@ -6,15 +6,16 @@ admitting rounds, and deciding when to stop.
 
 ## From question to leaves
 
+Load `framing` before constructing leaves. Apply its moves to the question
+and the probe records; its ready-frame checks are the entrance condition
+for decomposition.
+
 Turn what the probe left open into leaves: sub-questions one retrieval
 act can settle. Decompose by governing principle, never by surface
-feature. "Can mirrors improve indoor 5G coverage" decomposes into
-specular reflection versus diffraction at wavelength scale, penetration
-loss per band, and reconfigurable-intelligent-surface prior art, never
-into "mirrors" and "5G" as topics. Surface-feature decomposition is the
-novice move (Chi, Feltovich and Glaser 1981); the principle names what a
-search can actually retrieve. Worked patterns for common question shapes
-are catalogued in `ladders`; they guide and never partition.
+feature. A leaf names a mechanism and a retrievable claim, not one noun
+from the query. Surface-feature decomposition is the novice move (Chi,
+Feltovich and Glaser 1981); the principle names what a search can actually
+retrieve.
 
 - A sub-question that needs another leaf's answer first is a derived
   link, not a leaf. Keep it out of the ledger; it appears at draft time
