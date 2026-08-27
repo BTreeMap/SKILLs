@@ -1,5 +1,5 @@
 ---
-name: btm-research
+name: ponder
 description: >-
   Answers open questions, shower thought to academic grade, with uniform
   investigative rigor: the lead agent runs the first round itself and stops
@@ -18,7 +18,7 @@ compatibility: >-
   kernel.
 ---
 
-# Research
+# Ponder
 
 Answer any open question from records. Decompose until every leaf is
 retrievable, answer leaves from sources, mark every composition step as
@@ -32,7 +32,7 @@ presentation is derived from the ledger, never chosen.
 | `answer` | [references/answer.md](references/answer.md) |
 | `explore` | [references/explore.md](references/explore.md) |
 | `ladders` | [references/ladders.md](references/ladders.md) |
-| `research` | [scripts/research.py](scripts/research.py) |
+| `ponder` | [scripts/ponder.py](scripts/ponder.py) |
 | `worker` | [references/worker.md](references/worker.md) |
 
 ## Invariants
@@ -129,7 +129,7 @@ appends nothing, and exits 1. `clean` lists sessions with sizes and
 removes one or `--all`, reporting bytes freed.
 
 <script_commands>
-R="uv run --script <skill-root>/scripts/research.py"
+R="uv run --script <skill-root>/scripts/ponder.py"
 $R open "<two or three keywords>" [--question "..."] [--focus "..."]
 S="<the session identifier the open output echoed>"
 $R note "$S" <<'EOF'

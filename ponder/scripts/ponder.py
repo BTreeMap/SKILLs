@@ -481,7 +481,7 @@ def counts_of(ledger: Ledger) -> dict[str, int]:
 
 
 def sessions_root() -> Path:
-    return state_root("btm-research") / "sessions"
+    return state_root("ponder") / "sessions"
 
 
 def session_ids() -> list[str]:
