@@ -27,7 +27,7 @@ page-cited evidence. Never creates, modifies, or otherwise writes a PDF.
 
 Read PDF content for analysis. Extract text, page numbers, and standard metadata. Preserve source-page provenance.
 
-Use only `pypdf`, resolved by `uv` from the bundled script's PEP 723 metadata. Run the script with `uv run --script`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
+Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the script with `uv run --script`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
 
 ## Procedure
 

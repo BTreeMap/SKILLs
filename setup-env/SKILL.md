@@ -18,11 +18,10 @@ description: >-
 license: MIT
 compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout: the
-  bundled entry point runs the workspace member that holds the provisioner.
-  Everything else is fetched. Linux and
-  macos on x86_64/arm64 are first class; windows x86_64 is best effort
-  (haskell, bash, c, cpp unavailable there). Roughly 1-6 GB under the
-  environment root, depending on targets.
+  bundled entry point runs the workspace member that holds the provisioner,
+  and everything else is fetched. Linux and macos on x86_64/arm64 are first
+  class; windows x86_64 is best effort (haskell, bash, c, cpp unavailable
+  there). Roughly 1-6 GB under the environment root, depending on targets.
 metadata:
   argument-hint: "[provision|plan|status|shim|destroy|list] [tags...]"
 ---
@@ -49,7 +48,7 @@ skips completed work.
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 
-`envctl` is the entry point; the other scripts are its modules. Read
+`envctl` is the entry point; the other names are the member's modules. Read
 `targets` before choosing tags beyond the obvious; read `extending` only to
 add or change a recipe. The `envctl` command surface is the handoff point:
 invoke it and read its output; source reading belongs to user-instructed
