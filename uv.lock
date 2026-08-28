@@ -4,6 +4,7 @@ requires-python = ">=3.11"
 
 [manifest]
 members = [
+    "btm-caveman",
     "btm-corekit",
     "btm-ponder",
     "btm-read-pdf",
@@ -11,6 +12,17 @@ members = [
 
 [manifest.dependency-groups]
 dev = [{ name = "pytest", specifier = ">=8" }]
+
+[[package]]
+name = "btm-caveman"
+version = "1.0.0"
+source = { editable = "caveman" }
+dependencies = [
+    { name = "btm-corekit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 
 [[package]]
 name = "btm-corekit"

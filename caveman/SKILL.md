@@ -13,7 +13,9 @@ description: >-
   /caveman-compress. Do not apply to code, comments, docs, or other
   persisted artifacts unless a mode says otherwise.
 license: MIT
-compatibility: Compress mode requires uv to run the bundled PEP 723 guard script
+compatibility: >-
+  Compress mode requires uv, and a full SKILLs repository checkout: the bundled
+  entry point runs the workspace member that holds the guard.
 metadata:
   argument-hint: "[lite|full|ultra|wenyan-lite|wenyan-full|wenyan-ultra|commit|review|compress|stats|help]"
 ---
