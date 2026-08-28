@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, emit, read_jsonl, signal
 from btm_lit_review.constants import (
     ABSTRACT_SHOW_LIMIT,
     AUTHOR_SHOW_LIMIT,
@@ -19,13 +19,11 @@ from btm_lit_review.constants import (
     STATUSES,
 )
 from btm_lit_review.paper import Paper, clean_text
-from btm_lit_review.report import emit, signal
 from btm_lit_review.session import (
     criteria_hash,
     load_papers,
     load_protocol,
     open_session,
-    read_log,
     save_papers,
 )
 
@@ -113,7 +111,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     protocol = load_protocol(session)
     papers = load_papers(session)
-    log = read_log(session)
+    log = read_jsonl(session.log_path)
     by_status = Counter(paper.status for paper in papers.values())
     by_read = Counter(
         paper.read_level for paper in papers.values() if paper.status == "included"

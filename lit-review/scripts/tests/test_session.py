@@ -10,12 +10,9 @@ from btm_corekit import CommandError
 from btm_lit_review.paper import candidate
 from btm_lit_review.session import (
     Session,
-    append_log,
-    atomic_write,
     criteria_hash,
     load_papers,
     load_protocol,
-    read_log,
     require_criteria,
     save_papers,
 )
@@ -86,26 +83,3 @@ class TestCorpusRoundTrip:
 
     def test_the_protocol_reads_back(self, session):
         assert load_protocol(session)["question"] == "q"
-
-
-class TestLog:
-    def test_entries_append_in_order(self, session):
-        append_log(session, {"query": "one"})
-        append_log(session, {"query": "two"})
-        assert [entry["query"] for entry in read_log(session)] == ["one", "two"]
-
-    def test_an_empty_log_reads_as_empty(self, session):
-        assert read_log(session) == []
-
-
-class TestAtomicWrite:
-    def test_the_file_is_replaced_whole(self, tmp_path):
-        path = tmp_path / "f.json"
-        path.write_text("before", encoding="utf-8")
-        atomic_write(path, "after")
-        assert path.read_text(encoding="utf-8") == "after"
-
-    def test_no_temporary_file_survives(self, tmp_path):
-        path = tmp_path / "f.json"
-        atomic_write(path, "text")
-        assert [p.name for p in tmp_path.iterdir()] == ["f.json"]

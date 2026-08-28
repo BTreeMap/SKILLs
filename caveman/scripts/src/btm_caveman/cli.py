@@ -18,10 +18,9 @@ from btm_caveman.store import (
     read_utf8,
     recorded_source,
     slot_for,
-    write_text_atomic,
 )
 from btm_caveman.validate import validate
-from btm_corekit import tree_bytes
+from btm_corekit import tree_bytes, write_atomic
 
 
 def print_signals(plan: Plan) -> None:
@@ -77,13 +76,13 @@ def cmd_prepare(path: Path) -> int:
                 return 1
             slot.directory.mkdir(parents=True, exist_ok=True)
             # Identity before content: a backup must never exist anonymously.
-            write_text_atomic(slot.meta_path, json.dumps({"source": str(plan.path)}))
-            write_text_atomic(slot.backup_path, plan.original)
+            write_atomic(slot.meta_path, json.dumps({"source": str(plan.path)}))
+            write_atomic(slot.backup_path, plan.original)
             if read_utf8(slot.backup_path) != plan.original:
                 slot.backup_path.unlink(missing_ok=True)
                 print("REFUSED: backup readback mismatch; aborting before any change")
                 return 1
-            write_text_atomic(slot.body_path, plan.body)
+            write_atomic(slot.body_path, plan.body)
             print(f"BACKUP: {slot.backup_path}")
             print(f"BODY:   {slot.body_path}")
             print_signals(plan)
@@ -133,7 +132,7 @@ def cmd_apply(path: Path, compressed_body_path: Path) -> int:  # noqa: PLR0911
             "(restore missing content from the backup; do not recompress) and re-apply."
         )
         return 3
-    write_text_atomic(path, candidate)
+    write_atomic(path, candidate)
     pct = round(100 * (len(original) - len(candidate)) / max(len(original), 1))
     print(f"APPLIED: {path}")
     print(f"CHARS: {len(original)} -> {len(candidate)} ({pct}% smaller)")
@@ -151,7 +150,7 @@ def cmd_restore(path: Path) -> int:
     if original is None:
         print(f"REFUSED: backup is not valid UTF-8: {slot.backup_path}")
         return 1
-    write_text_atomic(path, original)
+    write_atomic(path, original)
     print(f"RESTORED: {path} from {slot.backup_path}")
     return 0
 

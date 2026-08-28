@@ -81,11 +81,15 @@ name = "btm-setup-env"
 version = "1.0.0"
 source = { editable = "setup-env/scripts" }
 dependencies = [
+    { name = "btm-corekit" },
     { name = "certifi" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "certifi" }]
+requires-dist = [
+    { name = "btm-corekit", editable = ".corekit" },
+    { name = "certifi" },
+]
 
 [[package]]
 name = "certifi"

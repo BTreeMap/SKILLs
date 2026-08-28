@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 import btm_ponder
@@ -17,24 +15,24 @@ from btm_corekit import (
     NoMatch,
     Recovered,
     band_signal,
+    emit,
     is_pathlike,
     mint,
+    now_iso,
     resolve,
-    tree_bytes,
+    run_cli,
+    signal,
 )
 from btm_ponder.batch import expand_batch
 from btm_ponder.ledger import apply, replay
-from btm_ponder.report import emit, signal
 from btm_ponder.state import Open, require
 from btm_ponder.store import (
+    STORE,
     append_events,
     ledger_path,
     orient,
     read_events,
     read_meta,
-    session_dir,
-    session_ids,
-    sessions_root,
     write_meta,
 )
 from btm_ponder.views import (
@@ -51,7 +49,7 @@ def create_session(directory: Path, name: str, args: argparse.Namespace) -> int:
     meta = {
         "question": args.question,
         "focus": args.focus,
-        "created": datetime.now(UTC).isoformat(timespec="seconds"),
+        "created": now_iso(),
     }
     write_meta(directory, meta)
     emit({"session": name, **meta})
@@ -74,12 +72,12 @@ def cmd_open(args: argparse.Namespace) -> int:
             f"session already exists at {directory}",
         )
         return create_session(directory, str(directory), args)
-    match resolve(ref, session_ids()):
+    match resolve(ref, STORE.ids()):
         case Exact(sid):
-            emit(orient(sessions_root() / sid))
+            emit(orient(STORE.root() / sid))
         case Recovered(sid):
             signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
-            emit(orient(sessions_root() / sid))
+            emit(orient(STORE.root() / sid))
         case Ambiguous(candidates):
             raise CommandError(
                 f"'{ref}' is ambiguous across sessions: {', '.join(candidates)}"
@@ -92,12 +90,12 @@ def cmd_open(args: argparse.Namespace) -> int:
             full = mint(ref.split())
             if advice := band_signal(full.rsplit("-", 1)[0]):
                 signal(advice)
-            return create_session(sessions_root() / full, full, args)
+            return create_session(STORE.root() / full, full, args)
     return 0
 
 
 def cmd_note(args: argparse.Namespace) -> int:
-    directory = session_dir(args.session)
+    directory = STORE.dir_of(args.session)
     raw = sys.stdin.read()
     require(bool(raw.strip()), "note reads the JSON batch from stdin")
     batch = json.loads(raw)
@@ -127,7 +125,7 @@ def cmd_note(args: argparse.Namespace) -> int:
 
 
 def cmd_check(args: argparse.Namespace) -> int:
-    directory = session_dir(args.session)
+    directory = STORE.dir_of(args.session)
     events = read_events(directory)
     ledger = replay(events)
     markers = {
@@ -167,43 +165,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
-    root = sessions_root()
-    if args.all and args.session:
-        raise CommandError("pass a session or --all, one of the two")
-    if args.all:
-        if not root.is_dir():
-            emit({"removed": None, "bytes_freed": 0})
-            return 0
-        freed = tree_bytes(root)
-        shutil.rmtree(root)
-        emit({"removed": str(root), "bytes_freed": freed})
-        return 0
-    if args.session is None:
-        listing = (
-            [
-                {"session": entry.name, "bytes": tree_bytes(entry)}
-                for entry in sorted(root.iterdir())
-                if entry.is_dir()
-            ]
-            if root.is_dir()
-            else []
-        )
-        emit(
-            {
-                "sessions_root": str(root),
-                "sessions": listing,
-                "next": "pass a session identifier or --all to remove and free space",
-            }
-        )
-        return 0
-    target = session_dir(args.session)
-    if not ledger_path(target).is_file():
-        raise CommandError(
-            f"{target} holds no session (ledger.jsonl absent); refusing to remove"
-        )
-    freed = tree_bytes(target)
-    shutil.rmtree(target)
-    emit({"removed": str(target), "bytes_freed": freed})
+    emit(STORE.clean(args.session, args.all))
     return 0
 
 
@@ -230,9 +192,4 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    try:
-        return args.func(args)
-    except CommandError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
+    return run_cli(build_parser(), argv)

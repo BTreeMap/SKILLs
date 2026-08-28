@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 
 import btm_lit_review
-from btm_corekit import CommandError
+from btm_corekit import run_cli
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
@@ -92,12 +92,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    try:
-        return args.func(args)
-    except CommandError as err:
-        print(f"error: {err}", file=sys.stderr)
-        return 1
+    return run_cli(build_parser(), argv)
 
 
 if __name__ == "__main__":

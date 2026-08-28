@@ -12,8 +12,11 @@ from btm_repo_gate.snapshot import Absent, LinkFarm, Occupied, Repo, Symlink
 
 KERNEL_SYMBOLS = re.compile(
     r"^(?:def (?:keywords_of|slugify|band_signal|resolve|eliminate|mint|suffix|"
-    r"is_pathlike|tree_bytes|state_root)\(|"
-    r"class (?:Exact|Recovered|Ambiguous|NoMatch|CommandError)\b)",
+    r"is_pathlike|tree_bytes|state_root|emit|signal|now_iso|write_atomic|"
+    r"read_jsonl|append_jsonl|request_identity|user_agent|polite_params|"
+    r"run_cli)\(|"
+    r"class (?:Exact|Recovered|Ambiguous|NoMatch|CommandError|SessionStore|"
+    r"CustomAgent|Contact)\b)",
     re.MULTILINE,
 )
 # The witness of consumer-ship is a declared dependency in a member manifest,

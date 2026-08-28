@@ -6,6 +6,7 @@ import time
 import xml.etree.ElementTree as ET
 from collections.abc import Sequence
 
+from btm_corekit import polite_params
 from btm_lit_review.constants import (
     ARXIV_QUERY,
     ATOM,
@@ -15,7 +16,7 @@ from btm_lit_review.constants import (
     OPENALEX_WORKS,
     OPENSEARCH,
 )
-from btm_lit_review.http import http_get, http_get_json, polite_params
+from btm_lit_review.http import http_get, http_get_json
 from btm_lit_review.paper import Paper
 from btm_lit_review.upstream import (
     paper_from_arxiv,

@@ -1,27 +1,38 @@
 """btm-corekit: the shared symbolic kernel for SKILLs bundled scripts.
 
-Single definition of the identifier algebra (minting, keyword resolution,
-recovery) and session addressing. Consumer scripts declare this package as
-an editable uv path dependency on the repository's `.corekit` directory,
-so a skill runs from a full repository checkout (marketplace install or
-clone) and a script copied out alone fails loudly at environment build.
+Single definition of the identifier algebra, the stdout/stderr channel
+convention, atomic writes, JSONL containers, the request-identity chain,
+the session store, and the CLI error boundary. Consumers declare this
+package as a workspace dependency, so a skill runs from a full repository
+checkout and a script copied out alone fails loudly at environment build.
 
-Purity split: everything here is pure except `suffix`/`mint` (randomness)
-and `state_root`/`tree_bytes` (environment and filesystem reads). Signals
-are returned as values; consumers render them.
+Purity split: identifier functions are pure except `suffix`/`mint`
+(randomness); everything past the channels section reads or writes the
+environment, filesystem, or process streams.
 """
 
 from __future__ import annotations
 
+import argparse
 import base64
+import json
 import os
 import re
-from collections.abc import Iterable
+import shutil
+import stat
+import sys
+import tempfile
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
 NON_SLUG = re.compile(r"[^a-z0-9]+")
+USER_AGENT_ENV = "BTM_USER_AGENT"
+CONTACT_ENV = "BTM_CONTACT"
+DEFAULT_CONTACT = "skills@oss.joefang.org"
 
 
 class CommandError(Exception):
@@ -119,9 +130,6 @@ def eliminate(
     raise AssertionError("unreachable: Resolution is a closed union")
 
 
-# --- effects: randomness, environment, filesystem ---
-
-
 def suffix() -> str:
     """128 bits of entropy, base32hex, lowercase: uniqueness is the script's job."""
     return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
@@ -139,6 +147,27 @@ def is_pathlike(argument: str) -> bool:
     )
 
 
+# --- channels: one JSON document on stdout, advisories on stderr ---
+
+
+def emit(document: Mapping[str, Any]) -> None:
+    print(json.dumps(document, indent=2, ensure_ascii=False))
+
+
+def signal(message: str) -> None:
+    print(f"signal: {message}", file=sys.stderr)
+
+
+# --- clock ---
+
+
+def now_iso() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+# --- filesystem ---
+
+
 def state_root(skill: str) -> Path:
     """Durable-state home for one skill, per repository convention."""
     if os.name == "nt":
@@ -151,3 +180,165 @@ def state_root(skill: str) -> Path:
 def tree_bytes(path: Path) -> int:
     """Total size of the regular files under a directory."""
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
+def write_atomic(path: Path, text: str) -> None:
+    """Encode first, write a sibling temp file, fsync, then os.replace().
+
+    The destination only ever moves from one complete file to another;
+    permission bits survive the swap.
+    """
+    data = text.encode("utf-8")
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        if path.exists():
+            os.chmod(tmp_path, stat.S_IMODE(path.stat().st_mode))
+        os.replace(tmp_path, path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
+
+
+def append_jsonl(path: Path, records: Iterable[Mapping[str, Any]]) -> None:
+    """One record is a batch of one."""
+    payload = "".join(
+        json.dumps(record, ensure_ascii=False) + "\n" for record in records
+    )
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(payload)
+
+
+# --- request identity: BTM_USER_AGENT, else BTM_CONTACT, else the project contact ---
+
+
+@dataclass(frozen=True, slots=True)
+class CustomAgent:
+    header: str
+
+
+@dataclass(frozen=True, slots=True)
+class Contact:
+    address: str
+
+
+RequestIdentity = CustomAgent | Contact
+
+
+def request_identity() -> RequestIdentity:
+    custom = os.environ.get(USER_AGENT_ENV)
+    if custom:
+        return CustomAgent(custom)
+    return Contact(os.environ.get(CONTACT_ENV) or DEFAULT_CONTACT)
+
+
+def user_agent(skill: str) -> str:
+    match request_identity():
+        case CustomAgent(header):
+            return header
+        case Contact(address):
+            return f"btm-skills/1.0 ({skill}; mailto:{address})"
+
+
+def polite_params() -> dict[str, str]:
+    """The `mailto` pool parameter OpenAlex and Crossref honor. Empty under a
+    User-Agent override: the override owns identity, so nothing else marks
+    the request."""
+    match request_identity():
+        case CustomAgent():
+            return {}
+        case Contact(address):
+            return {"mailto": address}
+
+
+# --- session store: one layout for every session-keeping skill ---
+
+
+@dataclass(frozen=True, slots=True)
+class SessionStore:
+    """Sessions under the skill's state root; `marker` witnesses a session,
+    `hint` names the command that creates one."""
+
+    skill: str
+    marker: str
+    hint: str
+
+    def root(self) -> Path:
+        return state_root(self.skill) / "sessions"
+
+    def ids(self) -> list[str]:
+        root = self.root()
+        if not root.exists():
+            return []
+        return sorted(entry.name for entry in root.iterdir() if entry.is_dir())
+
+    def dir_of(self, ref: str) -> Path:
+        """A path argument stands as given; anything else resolves against
+        `ids()`, rendering the recovery signal."""
+        if is_pathlike(ref):
+            return Path(ref).expanduser()
+        full, note = eliminate(resolve(ref, self.ids()), ref, "session", hint=self.hint)
+        if note:
+            signal(note)
+        return self.root() / full
+
+    def clean(self, ref: str | None, remove_all: bool) -> dict[str, Any]:
+        """List sessions with sizes, or remove one session or the whole root,
+        reporting bytes freed. Removal demands the marker: never an arbitrary
+        tree."""
+        root = self.root()
+        if remove_all and ref:
+            raise CommandError("pass a session or --all, one of the two")
+        if remove_all:
+            if not root.is_dir():
+                return {"removed": None, "bytes_freed": 0}
+            freed = tree_bytes(root)
+            shutil.rmtree(root)
+            return {"removed": str(root), "bytes_freed": freed}
+        if ref is None:
+            listing = (
+                [
+                    {"session": entry.name, "bytes": tree_bytes(entry)}
+                    for entry in sorted(root.iterdir())
+                    if entry.is_dir()
+                ]
+                if root.is_dir()
+                else []
+            )
+            return {
+                "sessions_root": str(root),
+                "sessions": listing,
+                "next": "pass a session identifier or --all to remove and free space",
+            }
+        target = self.dir_of(ref)
+        if not (target / self.marker).is_file():
+            raise CommandError(
+                f"{target} holds no session ({self.marker} absent); refusing to remove"
+            )
+        freed = tree_bytes(target)
+        shutil.rmtree(target)
+        return {"removed": str(target), "bytes_freed": freed}
+
+
+# --- cli boundary ---
+
+
+def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) -> int:
+    """Dispatch to the parsed `func`, turning CommandError into exit 1."""
+    args = parser.parse_args(argv)
+    try:
+        return args.func(args)
+    except CommandError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 1

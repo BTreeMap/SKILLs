@@ -7,7 +7,7 @@ import difflib
 import time
 from typing import Any
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, emit, signal
 from btm_lit_review.constants import (
     COURTESY_PAUSE_SECONDS,
     CROSSREF_WORKS,
@@ -17,7 +17,6 @@ from btm_lit_review.constants import (
 )
 from btm_lit_review.http import doi_resolution_status, http_get_json
 from btm_lit_review.paper import Paper, clean_text, normalize_title
-from btm_lit_review.report import emit, signal
 from btm_lit_review.session import load_papers, open_session
 
 

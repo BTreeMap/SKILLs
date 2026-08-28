@@ -74,7 +74,7 @@ def _resolve(
 ) -> tuple[Spec, Layout]:
     host = detect_host()
     base = (project or find_project(Path.cwd())).resolve()
-    targets = [catalog.resolve(parse_tag(t)) for t in tags]
+    targets = [catalog.resolve_tag(parse_tag(t)) for t in tags]
     spec = make_spec(targets, base) if targets else Spec((), base)
     return spec, Layout((root or default_root(base, host)).resolve())
 

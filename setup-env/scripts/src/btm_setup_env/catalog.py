@@ -633,7 +633,7 @@ _ALIAS = {
 }
 
 
-def resolve(raw: RawTag) -> Target:
+def resolve_tag(raw: RawTag) -> Target:
     family = _ALIAS.get(raw.family, raw.family)
     key: RecipeKey = (family, raw.flavor)
     if family == "android" and raw.flavor == GENERIC:

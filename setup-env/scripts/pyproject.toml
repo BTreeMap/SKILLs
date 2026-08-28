@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Typed, userspace, per-project development environment provisioner"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["certifi"]
+dependencies = ["btm-corekit", "certifi"]
 
 [project.scripts]
 btm-setup-env = "btm_setup_env.cli:main"
@@ -12,3 +12,6 @@ btm-setup-env = "btm_setup_env.cli:main"
 [build-system]
 requires = ["uv_build>=0.12.6,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }

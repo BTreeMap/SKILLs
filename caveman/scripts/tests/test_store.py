@@ -13,8 +13,8 @@ from btm_caveman.store import (
     load_slot,
     read_utf8,
     slot_for,
-    write_text_atomic,
 )
+from btm_corekit import write_atomic
 
 SLOT_NAME_LIMIT = 81  # slug(64) + "-" + hex(16)
 
@@ -79,12 +79,12 @@ class TestFileIO:
     def test_atomic_write_replaces_the_whole_file(self, tmp_path):
         path = tmp_path / "a.md"
         path.write_text("before", encoding="utf-8")
-        write_text_atomic(path, "after")
+        write_atomic(path, "after")
         assert path.read_text(encoding="utf-8") == "after"
 
     def test_atomic_write_leaves_no_temporary_behind(self, tmp_path):
         path = tmp_path / "a.md"
-        write_text_atomic(path, "text")
+        write_atomic(path, "text")
         assert [p.name for p in tmp_path.iterdir()] == ["a.md"]
 
     def test_undecodable_bytes_read_as_none(self, tmp_path):

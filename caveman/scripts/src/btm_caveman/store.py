@@ -1,4 +1,4 @@
-"""Filesystem effects: identified backups and atomic writes."""
+"""Filesystem effects: identified backup slots."""
 
 from __future__ import annotations
 
@@ -6,8 +6,6 @@ import hashlib
 import json
 import os
 import re
-import stat
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -97,30 +95,6 @@ def read_utf8(path: Path) -> str | None:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return None
-
-
-def write_text_atomic(path: Path, text: str) -> None:
-    """Encode first, write a sibling temp file, fsync, then os.replace().
-
-    The destination only ever moves from one complete file to another;
-    permission bits survive the swap.
-    """
-    data = text.encode("utf-8")
-    fd, tmp_name = tempfile.mkstemp(
-        dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"
-    )
-    tmp_path = Path(tmp_name)
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
-            f.flush()
-            os.fsync(f.fileno())
-        if path.exists():
-            os.chmod(tmp_path, stat.S_IMODE(path.stat().st_mode))
-        os.replace(tmp_path, path)
-    except Exception:
-        tmp_path.unlink(missing_ok=True)
-        raise
 
 
 # Guidance the agent receives alongside a non-prose assessment. Advisory:

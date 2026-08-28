@@ -9,7 +9,18 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import CommandError, band_signal, is_pathlike, mint
+from btm_corekit import (
+    CommandError,
+    append_jsonl,
+    band_signal,
+    emit,
+    is_pathlike,
+    mint,
+    now_iso,
+    read_jsonl,
+    signal,
+    write_atomic,
+)
 from btm_lit_review.constants import MAX_LIMIT, OPENALEX_WORKS
 from btm_lit_review.http import http_get_json
 from btm_lit_review.paper import (
@@ -19,20 +30,15 @@ from btm_lit_review.paper import (
     normalize_doi,
     paper_aliases,
 )
-from btm_lit_review.report import emit, signal
 from btm_lit_review.session import (
+    STORE,
     Session,
-    append_log,
-    atomic_write,
     criteria_hash,
     load_papers,
     load_protocol,
-    now_iso,
     open_session,
-    read_log,
     require_criteria,
     save_papers,
-    sessions_root,
 )
 from btm_lit_review.sources import (
     fetch_arxiv,
@@ -51,7 +57,7 @@ def record_fetch(
     limit: int,
 ) -> None:
     """Shared tail of search and snowball: absorb, log, report."""
-    log_id = f"s{len(read_log(session)) + 1}"
+    log_id = f"s{len(read_jsonl(session.log_path)) + 1}"
     papers = load_papers(session)
     stamped = [replace(paper, found_by=(log_id,)) for paper in fetched]
     papers, new_count = absorb(papers, stamped)
@@ -67,7 +73,7 @@ def record_fetch(
             "truncated": truncated,
         }
     )
-    append_log(session, entry)
+    append_jsonl(session.log_path, [entry])
     if truncated:
         signal(
             f"{total} matches upstream but only {len(fetched)} fetched; "
@@ -84,7 +90,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         name = mint(args.session.split())
         if advice := band_signal(name.rsplit("-", 1)[0]):
             signal(advice)
-        root = sessions_root() / name
+        root = STORE.root() / name
     session = Session(root)
     if session.protocol_path.exists():
         raise CommandError(f"session already exists at {root}; refusing to overwrite")
@@ -96,7 +102,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         "created": now_iso(),
         "amendments": [],
     }
-    atomic_write(session.protocol_path, json.dumps(protocol, indent=2) + "\n")
+    write_atomic(session.protocol_path, json.dumps(protocol, indent=2) + "\n")
     session.papers_path.touch()
     session.log_path.touch()
     emit({"session": name, "next": "fill criteria lists in protocol.json"})
