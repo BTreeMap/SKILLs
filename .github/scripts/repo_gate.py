@@ -557,17 +557,35 @@ KERNEL_SYMBOLS = re.compile(
     r"class (?:Exact|Recovered|Ambiguous|NoMatch|CommandError)\b)",
     re.MULTILINE,
 )
-# The witness of consumer-ship is the PEP 723 dependency declaration, so a
-# script that merely mentions the kernel in prose stays a non-consumer.
+# The witness of consumer-ship is a declared dependency, so a file that merely
+# mentions the kernel in prose stays a non-consumer. A workspace member
+# declares it in its manifest; a PEP 723 script declares it in its header.
 KERNEL_DEPENDENCY = re.compile(r'^#\s*dependencies\s*=.*"btm-corekit"', re.MULTILINE)
+KERNEL_REQUIREMENT = re.compile(
+    r"^dependencies\s*=\s*\[[^\]]*\"btm-corekit\"", re.MULTILINE | re.DOTALL
+)
+
+
+def _kernel_consumers(repo: Repo) -> set[Path]:
+    """Directories whose Python may not redefine what they already depend on."""
+    roots: set[Path] = set()
+    for path, text in repo.texts.items():
+        if KERNEL.name in path.parts:
+            continue
+        if path.name == "pyproject.toml" and KERNEL_REQUIREMENT.search(text):
+            roots.add(path.parent)
+        elif path in repo.entry_points and KERNEL_DEPENDENCY.search(text):
+            roots.add(Path(path.parts[0]))
+    return roots
 
 
 def rule_kernel(repo: Repo) -> Iterator[Finding]:
-    """The kernel is defined once and wired by derivation. A consumer skill
-    (one whose entry point names btm-corekit) carries a dotted symlink to
-    the repository kernel, a pure function of consumer-ship, so it is
-    repaired; a consumer that redefines a kernel symbol has smuggled a copy
-    back in, and which parts moved is a judgment, so that has no repair."""
+    """The kernel is defined once and wired by derivation. A file that
+    redefines a kernel symbol has smuggled a copy back in, and which parts
+    moved is a judgment, so that has no repair. A PEP 723 consumer script
+    (one whose header names btm-corekit) still reaches the kernel through a
+    dotted symlink, a pure function of consumer-ship, so that is repaired; a
+    workspace member states the dependency in its manifest and needs none."""
     consumers = {
         path.parts[0]
         for path in repo.entry_points
@@ -602,11 +620,13 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
                     "real content stands where the kernel symlink belongs; "
                     "move it aside",
                 )
-    for path in sorted(repo.entry_points):
-        text = repo.texts[path]
-        if not KERNEL_DEPENDENCY.search(text):
+    # A member's modules are covered, not just its entry point, so moving a
+    # copy of the kernel one import deeper does not escape the check.
+    roots = _kernel_consumers(repo)
+    for path in sorted(repo.texts):
+        if path.suffix != ".py" or not any(root in path.parents for root in roots):
             continue
-        for found in KERNEL_SYMBOLS.finditer(text):
+        for found in KERNEL_SYMBOLS.finditer(repo.texts[path]):
             yield Finding(
                 "kernel",
                 str(path),

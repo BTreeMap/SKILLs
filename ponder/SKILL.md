@@ -13,9 +13,8 @@ description: >-
   lit-review) or verifying claims in an existing document (use fact-check).
 license: MIT
 compatibility: >-
-  Requires uv and web search or fetch; runs from a full SKILLs repository
-  checkout, since the bundled script depends on the repository's .corekit
-  kernel.
+  Requires uv and web search or fetch, and a full SKILLs repository checkout:
+  the bundled entry point runs the workspace member that holds the ledger.
 ---
 
 # Ponder

@@ -1,0 +1,17 @@
+[project]
+name = "btm-ponder"
+version = "1.0.0"
+description = "Scratchpad and verifier for open-question research sessions"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["btm-corekit"]
+
+[project.scripts]
+btm-ponder = "btm_ponder.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }

@@ -5,6 +5,7 @@ requires-python = ">=3.11"
 [manifest]
 members = [
     "btm-corekit",
+    "btm-ponder",
     "btm-read-pdf",
 ]
 
@@ -15,6 +16,17 @@ dev = [{ name = "pytest", specifier = ">=8" }]
 name = "btm-corekit"
 version = "1.0.0"
 source = { editable = ".corekit" }
+
+[[package]]
+name = "btm-ponder"
+version = "1.0.0"
+source = { editable = "ponder" }
+dependencies = [
+    { name = "btm-corekit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 
 [[package]]
 name = "btm-read-pdf"
