@@ -31,7 +31,7 @@ VERBS = ("provision", "plan", "status", "shim", "destroy", "list")
 
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="envctl",
+        prog="btm-setup-env",
         description="Provision an isolated, userspace, per-project dev "
         "environment. Tags: family[:flavor][@version], "
         "e.g. python@3.12 kotlin:android go:cgo.",
@@ -181,7 +181,7 @@ def cmd_destroy(args: argparse.Namespace) -> int:
     if not layout.manifest.exists():
         raise DenvError(
             f"refusing to delete {layout.root}: no manifest.json; "
-            "was this directory provisioned by envctl?"
+            "was this directory provisioned by btm-setup-env?"
         )
     shutil.rmtree(layout.root)
     print(f"removed {layout.root}")
@@ -231,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return handler(args)
     except DenvError as error:
-        print(f"envctl: error: {error}", file=sys.stderr)
+        print(f"btm-setup-env: error: {error}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         return 130

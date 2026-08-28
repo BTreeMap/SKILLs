@@ -29,7 +29,7 @@ def add_common(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="lit_review.py",
+        prog="btm-lit-review",
         description=btm_lit_review.__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

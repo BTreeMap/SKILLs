@@ -19,7 +19,7 @@ dev = [{ name = "pytest", specifier = ">=8" }]
 [[package]]
 name = "btm-caveman"
 version = "1.0.0"
-source = { editable = "caveman" }
+source = { editable = "caveman/scripts" }
 dependencies = [
     { name = "btm-corekit" },
 ]
@@ -35,7 +35,7 @@ source = { editable = ".corekit" }
 [[package]]
 name = "btm-lit-review"
 version = "1.0.0"
-source = { editable = "lit-review" }
+source = { editable = "lit-review/scripts" }
 dependencies = [
     { name = "btm-corekit" },
 ]
@@ -46,7 +46,7 @@ requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 [[package]]
 name = "btm-ponder"
 version = "1.0.0"
-source = { editable = "ponder" }
+source = { editable = "ponder/scripts" }
 dependencies = [
     { name = "btm-corekit" },
 ]
@@ -57,7 +57,7 @@ requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 [[package]]
 name = "btm-read-pdf"
 version = "1.0.0"
-source = { editable = "read-pdf" }
+source = { editable = "read-pdf/scripts" }
 dependencies = [
     { name = "pypdf" },
 ]
@@ -79,7 +79,7 @@ requires-dist = [{ name = "pyyaml", specifier = ">=6,<7" }]
 [[package]]
 name = "btm-setup-env"
 version = "1.0.0"
-source = { editable = "setup-env" }
+source = { editable = "setup-env/scripts" }
 dependencies = [
     { name = "certifi" },
 ]

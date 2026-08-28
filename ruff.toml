@@ -1,10 +1,9 @@
-# Lint and format gate for the Python scripts bundled with skills.
+# Lint and format gate for the Python bundled with skills.
 #
-# This repository is documentation, not a Python package: there is no
-# dependency manifest, so the configuration lives in ruff.toml rather than a
-# pyproject.toml that would imply one. Every bundled script is a PEP 723
-# `uv run --script` program, and ruff does not read `requires-python` from
-# inline script metadata, so the floor below is stated once here.
+# This repository is documentation first: the root pyproject.toml is a
+# workspace marker with no `[project]` table, and the members each declare
+# their own floor, so the shared lint policy lives here, stated once for the
+# whole tree.
 #
 #   ruff check --fix .
 #   ruff format .

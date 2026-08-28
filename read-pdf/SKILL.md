@@ -8,8 +8,8 @@ description: >-
   a PDF.
 license: MIT
 compatibility: >-
-  Requires uv, and a full SKILLs repository checkout: the bundled entry point
-  runs the workspace member that holds the extractor.
+  Requires uv, and a full SKILLs repository checkout: the extractor is a uv
+  workspace member under the skill's scripts/ directory.
 ---
 
 # Read PDF
@@ -17,17 +17,11 @@ compatibility: >-
 Extract text and metadata from PDFs with pypdf and answer questions with
 page-cited evidence. Never creates, modifies, or otherwise writes a PDF.
 
-## Registry
-
-| Name | Path |
-| --- | --- |
-| `extract_pdf` | [scripts/extract_pdf.py](scripts/extract_pdf.py) |
-
 ## Scope
 
 Read PDF content for analysis. Extract text, page numbers, and standard metadata. Preserve source-page provenance.
 
-Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the script with `uv run --script`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
+Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the extractor through its console command with `uv run --project`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
 
 ## Procedure
 
@@ -40,26 +34,27 @@ Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the
 
 ## Extract with the Bundled Script
 
-The script, registered as `extract_pdf`, accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its workspace manifest is the source of truth for the required dependency.
+The extractor's console command `btm-read-pdf` accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its workspace manifest is the source of truth for the required dependency.
 
-Run the canonical bundled path and pass each document path as an argument; the entry point resolves the member it belongs to, so copying the script elsewhere separates it from that member. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
+Bind the command once per shell and re-bind after a reset; the `realpath` is load-bearing, because uv resolves the project path lexically and an alias path such as `.claude/skills/read-pdf/` has no workspace root above it. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
 
 <all_pages_command>
-uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf>
+R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
+$R <document.pdf>
 </all_pages_command>
 
 <selected_pages_command>
-uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf> --pages 1-3,5,8- --output <extraction.txt>
+$R <document.pdf> --pages 1-3,5,8- --output <extraction.txt>
 </selected_pages_command>
 
 <text_only_command>
-uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf> --pages 4-6 --no-metadata
+$R <document.pdf> --pages 4-6 --no-metadata
 </text_only_command>
 
 For an encrypted PDF, do not ask the user to disclose or paste a password into chat. Instruct the user to set a local environment variable directly in their terminal, then pass only that variable's name to the script.
 
 <encrypted_pdf_command>
-uv run --script <skill-root>/scripts/extract_pdf.py <document.pdf> --password-env <PASSWORD_VARIABLE>
+$R <document.pdf> --password-env <PASSWORD_VARIABLE>
 </encrypted_pdf_command>
 
 Expected extraction shape:

@@ -192,9 +192,9 @@ def cmd_clean(target: Path | None) -> int:
 def main(argv: list[str]) -> int:  # noqa: PLR0911
     # One return per verb; returns are the command interface.
     usage = (
-        "Usage: compress_guard.py check|prepare|restore <file>\n"
-        "       compress_guard.py apply <file> <compressed-body-file>\n"
-        "       compress_guard.py clean <file> | clean --all"
+        "Usage: btm-caveman check|prepare|restore <file>\n"
+        "       btm-caveman apply <file> <compressed-body-file>\n"
+        "       btm-caveman clean <file> | clean --all"
     )
     match argv:
         case ["check", target]:

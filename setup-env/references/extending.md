@@ -10,7 +10,7 @@ docstring:
 
     model -> steps -> catalog -> plan -> render/effects -> cli
 
-Everything through `plan` is pure: `envctl plan` prints exactly what
+Everything through `plan` is pure: `btm-setup-env plan` prints exactly what
 `provision` would do, with no network and no filesystem writes; that
 property is the test seam. `effects` is the only module that performs
 I/O; `cli` only parses and reports.
@@ -72,15 +72,15 @@ when it appears to work:
 
 On at least one linux host, ideally both architectures:
 
-- `envctl plan <tag>`: steps and env look right, twice for determinism.
-- `envctl provision <tag>`: exit 0, probes ok; re-run completes in under a
+- `btm-setup-env plan <tag>`: steps and env look right, twice for determinism.
+- `btm-setup-env provision <tag>`: exit 0, probes ok; re-run completes in under a
   second changing nothing.
 - The falsifier from `SKILL.md`: an `env -i` shell sourcing activate.sh
   compiles and runs a hello program end to end (link steps included; a
   compiler that cannot link passes --version probes and still fails users).
-- `envctl provision` with the tag removed: the conda prefix reshapes to
+- `btm-setup-env provision` with the tag removed: the conda prefix reshapes to
   the smaller set.
-- `envctl destroy`, then a fresh provision from nothing.
+- `btm-setup-env destroy`, then a fresh provision from nothing.
 
 Record what was actually validated per platform in `targets` rather than
 claiming the untested.

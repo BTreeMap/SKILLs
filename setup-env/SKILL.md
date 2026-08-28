@@ -18,7 +18,7 @@ description: >-
 license: MIT
 compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout: the
-  bundled entry point runs the workspace member that holds the provisioner,
+  provisioner is a uv workspace member under the skill's scripts/ directory,
   and everything else is fetched. Linux and macos on x86_64/arm64 are first
   class; windows x86_64 is best effort (haskell, bash, c, cpp unavailable
   there). Roughly 1-6 GB under the environment root, depending on targets.
@@ -37,22 +37,21 @@ skips completed work.
 
 | Name | Path |
 | --- | --- |
-| `envctl` | [scripts/envctl.py](scripts/envctl.py) |
-| `cli` | [src/btm_setup_env/cli.py](src/btm_setup_env/cli.py) |
-| `model` | [src/btm_setup_env/model.py](src/btm_setup_env/model.py) |
-| `steps` | [src/btm_setup_env/steps.py](src/btm_setup_env/steps.py) |
-| `catalog` | [src/btm_setup_env/catalog.py](src/btm_setup_env/catalog.py) |
-| `plan` | [src/btm_setup_env/plan.py](src/btm_setup_env/plan.py) |
-| `render` | [src/btm_setup_env/render.py](src/btm_setup_env/render.py) |
-| `effects` | [src/btm_setup_env/effects.py](src/btm_setup_env/effects.py) |
+| `cli` | [scripts/src/btm_setup_env/cli.py](scripts/src/btm_setup_env/cli.py) |
+| `model` | [scripts/src/btm_setup_env/model.py](scripts/src/btm_setup_env/model.py) |
+| `steps` | [scripts/src/btm_setup_env/steps.py](scripts/src/btm_setup_env/steps.py) |
+| `catalog` | [scripts/src/btm_setup_env/catalog.py](scripts/src/btm_setup_env/catalog.py) |
+| `plan` | [scripts/src/btm_setup_env/plan.py](scripts/src/btm_setup_env/plan.py) |
+| `render` | [scripts/src/btm_setup_env/render.py](scripts/src/btm_setup_env/render.py) |
+| `effects` | [scripts/src/btm_setup_env/effects.py](scripts/src/btm_setup_env/effects.py) |
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 
-`envctl` is the entry point; the other names are the member's modules. Read
-`targets` before choosing tags beyond the obvious; read `extending` only to
-add or change a recipe. The `envctl` command surface is the handoff point:
-invoke it and read its output; source reading belongs to user-instructed
-troubleshooting.
+The console command `btm-setup-env` is the entry point; the registered
+module names are the member's internals. Read `targets` before choosing
+tags beyond the obvious; read `extending` only to add or change a recipe.
+The command surface is the handoff point: invoke it and read its output;
+source reading belongs to user-instructed troubleshooting.
 
 ## Procedure
 
@@ -63,7 +62,7 @@ picks what it builds for, version pins it. `list` prints every known tag.
 <setup_command>
 
 ```bash
-uv run --script <skill-dir>/scripts/envctl.py provision <tags> --project <project-root>
+env -u VIRTUAL_ENV uv run --project "$(realpath <skill-dir>/scripts)" btm-setup-env provision <tags> --project <project-root>
 ```
 
 </setup_command>
@@ -77,20 +76,20 @@ containing `.git`. The environment root is derived from the project path
 
 ```bash
 # A python + go + typescript monorepo, python pinned
-envctl.py provision python@3.12 go typescript
+btm-setup-env provision python@3.12 go typescript
 
 # Android work on any host, including arm64; API level as the version
-envctl.py provision kotlin:android@35
+btm-setup-env provision kotlin:android@35
 
 # Generic kotlin (JVM), or kotlin compiled to native binaries
-envctl.py provision kotlin
-envctl.py provision kotlin:native
+btm-setup-env provision kotlin
+btm-setup-env provision kotlin:native
 
 # Systems work: cgo needs a C toolchain, so it is a flavor
-envctl.py provision go:cgo rust cmake
+btm-setup-env provision go:cgo rust cmake
 
 # Preview the plan without executing anything
-envctl.py plan haskell csharp
+btm-setup-env plan haskell csharp
 ```
 
 </example_invocations>

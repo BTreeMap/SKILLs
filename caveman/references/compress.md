@@ -8,11 +8,13 @@ atomic writes. Target file is never written until validation passes.
 
 ## Procedure
 
-1. Prepare. Run the bundled script at its canonical path (uv caches script
-   environments by path; do not copy it elsewhere):
+1. Prepare. Bind the guard command once per shell (re-bind after a reset;
+   the `realpath` makes an alias path resolve into the workspace), then run
+   prepare:
 
 <prepare_command>
-uv run --script <skill-root>/scripts/compress_guard.py prepare <absolute-filepath>
+R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-caveman"
+$R prepare <absolute-filepath>
 </prepare_command>
 
    On REFUSED (sensitive name, empty, oversized, non-UTF-8, backup artifact,
@@ -32,7 +34,7 @@ uv run --script <skill-root>/scripts/compress_guard.py prepare <absolute-filepat
 3. Apply:
 
 <apply_command>
-uv run --script <skill-root>/scripts/compress_guard.py apply <absolute-filepath> <compressed-body-file>
+$R apply <absolute-filepath> <compressed-body-file>
 </apply_command>
 
    On pass it atomically writes the target and reports honest character
@@ -41,8 +43,7 @@ uv run --script <skill-root>/scripts/compress_guard.py apply <absolute-filepath>
    untouched sections) and re-apply. After two failed fix rounds, stop and
    report; the target file is still untouched.
 
-4. To undo a completed compression:
-   `uv run --script <skill-root>/scripts/compress_guard.py restore <filepath>`.
+4. To undo a completed compression: `$R restore <filepath>`.
 
 ## Cleanup
 
@@ -50,8 +51,8 @@ Only when the user EXPLICITLY asks to clear compression backups (never
 unprompted, never as routine tidying), run one of:
 
 <clean_commands>
-uv run --script <skill-root>/scripts/compress_guard.py clean <filepath>
-uv run --script <skill-root>/scripts/compress_guard.py clean --all
+$R clean <filepath>
+$R clean --all
 </clean_commands>
 
 The first removes one file's backup artifacts; the second removes every

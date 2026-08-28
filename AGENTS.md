@@ -117,7 +117,7 @@ Run the same fixers before pushing and the gate has nothing to do:
 ```bash
 ruff check --fix . && ruff format .
 uv run --all-packages pytest
-uv run --script .github/gate/scripts/repo_gate.py fix
+uv run --project .github/gate btm-repo-gate fix
 ```
 
 | Repaired automatically | Reported for a human |
@@ -129,7 +129,7 @@ uv run --script .github/gate/scripts/repo_gate.py fix
 | Skill entries out of alphabetical order in this file and `README.md` | A skill missing from either list, or an entry naming no skill |
 | | An alias path occupied by real content, which no repair may destroy |
 | | An em-dash (U+2014), whose replacement is a judgment |
-| | A bundled entry-point script without the uv shebang and a PEP 723 block |
+| | Skill Python outside its `scripts/` member, or a manifest off `scripts/pyproject.toml` |
 | | A workspace member whose Python redefines a kernel symbol |
 
 Rules live in `.github/gate/src/btm_repo_gate/rules/`, one function each. A rule returns
@@ -280,27 +280,31 @@ unchanged in any spec-compliant agent and uploads without hard errors:
     re-bound after a reset, and to chain a round's calls in one shell
     invocation.
   * Every skill that bundles Python is a member of the repository's uv
-    workspace, declared in the root `pyproject.toml`. A member holds its
-    own `pyproject.toml`, a `src/btm_<skill>/` package, and `tests/`; one
-    lock and one environment serve them all, so `uv lock --check` and
-    `uv run --all-packages pytest` cover the library in one command.
-    Logic shared across members lives once, in the `btm-corekit` package
-    under `.corekit/`, which a member declares as
-    `dependencies = ["btm-corekit"]` with the source
+    workspace, declared in the root `pyproject.toml`, and the member is
+    the skill's `scripts/` directory: `<skill>/scripts/pyproject.toml`, a
+    `scripts/src/btm_<skill>/` package, and `scripts/tests/`, so all
+    coding elements live inside `scripts/` and the skill directory itself
+    stays documentation. One lock and one environment serve every member,
+    so `uv lock --check` and `uv run --all-packages pytest` cover the
+    library in one command. Logic shared across members lives once, in
+    the `btm-corekit` package under `.corekit/`, which a member declares
+    as `dependencies = ["btm-corekit"]` with the source
     `btm-corekit = { workspace = true }`. Kernel edits are live
     immediately, with no copy and no pin. The gate keeps the kernel
-    single-defined: a member that redefines a kernel symbol is a blocking
-    finding.
-  * A skill's entry point stays at `<skill>/scripts/<name>.py`, so the
-    documented command never moves, and holds no domain logic. It is a
-    launcher: it resolves its own real path, then hands off to
-    `uv run --project <member>`. That resolution is load-bearing, because
-    uv reads workspace and path sources lexically, and an agent reaches a
-    skill through an alias directory such as `.claude/skills/<skill>/`,
-    where a relative source would escape the repository. The skill
-    therefore runs from a full repository checkout (marketplace install
-    or clone); a skill copied out alone fails loudly at environment
-    build.
+    single-defined and the layout canonical: a member that redefines a
+    kernel symbol, skill Python outside `scripts/`, or a manifest off
+    `<skill>/scripts/pyproject.toml` is a blocking finding.
+  * The member's `[project.scripts]` console command, named
+    `btm-<skill>`, is the one entry point, and skills document its
+    invocation as one binding reused for the whole shell:
+    `R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-<skill>"`.
+    The `realpath` is load-bearing: uv resolves the project path
+    lexically, and an agent reaches a skill through an alias directory
+    such as `.claude/skills/<skill>/`, whose lexical ancestors hold no
+    workspace root. `env -u VIRTUAL_ENV` keeps an ambient virtualenv out
+    of the resolution. The skill therefore runs from a full repository
+    checkout (marketplace install or clone); a skill copied out alone
+    fails loudly at environment build.
 * A script is frugal with the user's disk, and its state placement follows
   the XDG base directory standard:
   * Durable, light state (backups, logs, resumable sessions) lives in the
@@ -328,13 +332,11 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   the OpenAlex and Crossref `mailto` parameter); a verbatim override marks
   the request with nothing else. The script alone reads the variables;
   `SKILL.md` never mentions them.
-* Every bundled entry point starts with `#!/usr/bin/env -S uv run --script`
-  and a PEP 723 `# /// script` block declaring `requires-python`. The entry
-  point declares no dependencies and holds no domain logic: it resolves its
-  own real path and hands off to `uv run --project <member>`, and the member's
-  `pyproject.toml` is the single source of truth for what it needs. Skills
-  invoke entry points with `uv run --script` at the canonical bundled path,
-  never with a host `python`/`python3`.
+* All of a skill's Python, entry point included, lives inside its member:
+  the member's `pyproject.toml` is the single source of truth for what it
+  needs, and its console command is the only way in. Skills invoke that
+  command with `uv run --project` through the documented binding, never
+  with a host `python`/`python3` and never by module path.
 * When adding or renaming a skill, create it at `<skill-name>/SKILL.md` in the
   repository root and update the skill lists in `AGENTS.md` and `README.md` in
   the same change. The gate writes the alias symlink and the manifest entry, so

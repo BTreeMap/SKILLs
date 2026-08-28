@@ -22,8 +22,9 @@ SPEC_FIELDS = (
     "allowed-tools",
 )
 DESCRIPTION_LIMIT = 1024
-SKILL_SHEBANG = "#!/usr/bin/env -S uv run --script"
-PEP_723_OPEN = "# /// script"
+# A skill's Python is one workspace member rooted at this directory, so the
+# skill directory itself stays documentation.
+MEMBER_DIR = Path("scripts")
 # The one abbreviation this repository publishes under: the marketplace name,
 # the plugin name, and (by convention documented in AGENTS.md) the XDG state
 # root that bundled scripts write beneath.
@@ -35,10 +36,8 @@ BRAND = "btm-skills"
 # the canonical paths.
 HUB = Path("skills")
 VENDOR_LINKS = (Path(".claude/skills"), Path(".github/skills"))
-# The shared kernel package consumer scripts declare as a uv path dependency
-# (`../.corekit`, resolved lexically). Each consumer skill carries a dotted
-# `.corekit` symlink to the repository kernel, so the dependency lands on the
-# same package through the canonical path, the hub, and every vendor path.
+# The shared kernel package. A consumer member declares it in its manifest as
+# a workspace dependency, so nothing outside the manifests wires it.
 KERNEL = Path(".corekit")
 MARKETPLACE = Path(".claude-plugin/marketplace.json")
 PLUGIN_MANIFEST = Path(".claude-plugin/plugin.json")

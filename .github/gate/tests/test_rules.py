@@ -135,19 +135,55 @@ class TestRelativeTarget:
             _relative_target(Path("skills"), Path("skills"))
 
 
+def write_member(skill: Path, name: str, dependencies: str = "") -> Path:
+    """A conforming member: manifest and code under `<skill>/scripts/`."""
+    member = skill / "scripts"
+    member.mkdir(exist_ok=True)
+    (member / "pyproject.toml").write_text(
+        f'[project]\nname = "btm-{name}"\ndependencies = [{dependencies}]\n',
+        encoding="utf-8",
+    )
+    return member
+
+
 class TestKernel:
     def test_a_consumer_redefining_a_kernel_symbol_is_a_finding(self, repo):
-        member = repo / "alpha"
-        (member / "pyproject.toml").write_text(
-            '[project]\nname = "btm-alpha"\ndependencies = ["btm-corekit"]\n',
-            encoding="utf-8",
-        )
+        member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
         (member / "code.py").write_text("def mint(words):\n    return 1\n", "utf-8")
         assert "kernel" in rules_hit(repo)
 
     def test_a_non_consumer_may_define_the_same_name(self, repo):
         """A name collision outside a consumer is not a smuggled kernel copy."""
-        (repo / "alpha" / "code.py").write_text(
+        member = write_member(repo / "alpha", "alpha")
+        (member / "code.py").write_text(
             "def resolve(x):\n    return x\n", encoding="utf-8"
         )
         assert "kernel" not in rules_hit(repo)
+
+    def test_a_legacy_kernel_symlink_is_swept(self, repo):
+        (repo / "alpha" / ".corekit").symlink_to("../.corekit")
+        repair_to_fixpoint(repo)
+        assert not (repo / "alpha" / ".corekit").is_symlink()
+
+
+class TestMemberLayout:
+    def test_a_conforming_member_is_no_finding(self, repo):
+        member = write_member(repo / "alpha", "alpha")
+        (member / "code.py").write_text("VALUE = 1\n", encoding="utf-8")
+        assert "member-layout" not in rules_hit(repo)
+
+    def test_python_outside_the_member_is_a_finding(self, repo):
+        (repo / "alpha" / "loose.py").write_text("VALUE = 1\n", encoding="utf-8")
+        assert "member-layout" in rules_hit(repo)
+
+    def test_member_code_without_a_manifest_is_a_finding(self, repo):
+        member = repo / "alpha" / "scripts"
+        member.mkdir()
+        (member / "code.py").write_text("VALUE = 1\n", encoding="utf-8")
+        assert "member-layout" in rules_hit(repo)
+
+    def test_a_manifest_at_the_skill_root_is_a_finding(self, repo):
+        (repo / "alpha" / "pyproject.toml").write_text(
+            '[project]\nname = "btm-alpha"\n', encoding="utf-8"
+        )
+        assert "member-layout" in rules_hit(repo)

@@ -9,18 +9,37 @@
 #   uv run --all-packages pytest      every member's tests
 #   uv lock --check                   the lock matches the manifests
 #
-# A skill's entry point stays at `<skill>/scripts/<name>.py`. That file is a
-# launcher: it resolves its own real path before handing off to uv, because uv
-# resolves workspace and path sources lexically, and an agent reaches a skill
-# through `.claude/skills/<name>/`, where a relative path would escape the
-# repository.
+# A skill's Python lives entirely under `<skill>/scripts/`, which is the
+# member: manifest, `src/`, and `tests/` all sit inside it, so the skill
+# directory itself stays documentation. Commands run the member's console
+# script via `uv run --project`, and docs bind the project path through
+# `realpath` first, because uv resolves project paths lexically and an agent
+# reaches a skill through the alias `.claude/skills/<name>/`, where the
+# workspace root is not a lexical ancestor. Plumbing members (`.corekit`,
+# `.github/gate`) hold only code, so they are members at their own roots.
 
 [tool.uv.workspace]
-members = [".corekit", ".github/gate", "caveman", "lit-review", "ponder", "read-pdf", "setup-env"]
+members = [
+  ".corekit",
+  ".github/gate",
+  "caveman/scripts",
+  "lit-review/scripts",
+  "ponder/scripts",
+  "read-pdf/scripts",
+  "setup-env/scripts",
+]
 
 [dependency-groups]
 dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib --strict-markers"
-testpaths = [".corekit/tests", ".github/gate/tests", "caveman/tests", "lit-review/tests", "ponder/tests", "read-pdf/tests", "setup-env/tests"]
+testpaths = [
+  ".corekit/tests",
+  ".github/gate/tests",
+  "caveman/scripts/tests",
+  "lit-review/scripts/tests",
+  "ponder/scripts/tests",
+  "read-pdf/scripts/tests",
+  "setup-env/scripts/tests",
+]

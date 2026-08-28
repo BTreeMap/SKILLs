@@ -12,7 +12,7 @@ survivors and `refuted` premises feed Rival.
 Draft from script output:
 
 <answer_command>
-uv run --script <skill-root>/scripts/ponder.py check <session>
+env -u VIRTUAL_ENV uv run --project "$(realpath <skill-root>/scripts)" btm-ponder check <session>
 </answer_command>
 
 The check returns sections, numbered sources, violations, and hedge advisories.

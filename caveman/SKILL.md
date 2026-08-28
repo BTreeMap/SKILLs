@@ -14,8 +14,8 @@ description: >-
   persisted artifacts unless a mode says otherwise.
 license: MIT
 compatibility: >-
-  Compress mode requires uv, and a full SKILLs repository checkout: the bundled
-  entry point runs the workspace member that holds the guard.
+  Compress mode requires uv, and a full SKILLs repository checkout: the guard
+  is a uv workspace member under the skill's scripts/ directory.
 metadata:
   argument-hint: "[lite|full|ultra|wenyan-lite|wenyan-full|wenyan-ultra|commit|review|compress|stats|help]"
 ---
@@ -30,7 +30,6 @@ Respond terse like smart caveman. All technical substance stay. Only fluff die.
 | --- | --- |
 | `commit` | [references/commit.md](references/commit.md) |
 | `compress` | [references/compress.md](references/compress.md) |
-| `compress_guard` | [scripts/compress_guard.py](scripts/compress_guard.py) |
 | `help` | [references/help.md](references/help.md) |
 | `review` | [references/review.md](references/review.md) |
 | `stats` | [references/stats.md](references/stats.md) |

@@ -1,4 +1,4 @@
-"""SKILL.md headers: spec fields in canonical order, and script shebangs."""
+"""SKILL.md headers: spec fields in canonical order."""
 
 from __future__ import annotations
 
@@ -10,8 +10,6 @@ import yaml
 from btm_repo_gate.conventions import (
     DESCRIPTION_LIMIT,
     FRONTMATTER,
-    PEP_723_OPEN,
-    SKILL_SHEBANG,
     SPEC_FIELDS,
 )
 from btm_repo_gate.repairs import Finding, WriteText
@@ -135,16 +133,3 @@ def _canonical_header(
         return None
     text = "\n".join(line for _, body in segments for line in body)
     return text, reasons
-
-
-def rule_script_header(repo: Repo) -> Iterator[Finding]:
-    for path in sorted(repo.entry_points):
-        text = repo.texts[path]
-        if not text.startswith(SKILL_SHEBANG):
-            yield Finding(
-                "script-header", str(path), f"must start with {SKILL_SHEBANG}"
-            )
-        if PEP_723_OPEN not in text:
-            yield Finding(
-                "script-header", str(path), "needs a PEP 723 `# /// script` block"
-            )

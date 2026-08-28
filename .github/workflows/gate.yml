@@ -6,8 +6,8 @@
 # signal that a human must decide something.
 #
 # The rules themselves live in the repository, not in this file: ruff.toml
-# holds the lint and format policy, and `.github/gate/scripts/repo_gate.py` holds
-# the conventions from AGENTS.md. This file decides when they run and who is
+# holds the lint and format policy, and the `.github/gate` workspace member
+# holds the conventions from AGENTS.md. This file decides when they run and who is
 # allowed to write.
 #
 # Least privilege, following .github/workflows/sync-skills.yml:
@@ -76,7 +76,7 @@ jobs:
 
       - name: Apply every fixer
         # Fixers never fail this job: `ruff check --fix` exits nonzero when
-        # findings it cannot fix remain, and repo_gate does the same, but that
+        # findings it cannot fix remain, and the gate does the same, but that
         # verdict belongs to the assertion step below, after the repairs have
         # been collected. Only safe fixes are applied, because an unsafe fix can
         # change behavior and must not land unreviewed.
@@ -84,7 +84,7 @@ jobs:
           set -uo pipefail
           uvx "ruff@${RUFF_VERSION}" check --fix . || true
           uvx "ruff@${RUFF_VERSION}" format .
-          uv run --script .github/gate/scripts/repo_gate.py fix || true
+          uv run --project .github/gate btm-repo-gate fix || true
 
       - name: Collect the repairs
         id: collect
@@ -128,7 +128,7 @@ jobs:
           # instead of letting the platform truncate a repair into corruption.
           size=$(wc -c < "${entries}")
           if [ "${size}" -gt 524288 ]; then
-            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with 'ruff check --fix . && ruff format . && uv run --script .github/gate/scripts/repo_gate.py fix'"
+            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with 'ruff check --fix . && ruff format . && uv run --project .github/gate btm-repo-gate fix'"
             exit 1
           fi
 
@@ -161,7 +161,7 @@ jobs:
           uvx "ruff@${RUFF_VERSION}" check --output-format=github . || rc=1
           uv lock --check || rc=1
           uv run --all-packages pytest -q || rc=1
-          uv run --script .github/gate/scripts/repo_gate.py check || rc=1
+          uv run --project .github/gate btm-repo-gate check || rc=1
           exit "${rc}"
 
   commit:
@@ -185,7 +185,7 @@ jobs:
         run: |
           set -euo pipefail
           repo="repos/${GITHUB_REPOSITORY}"
-          message=$(printf 'style: Apply automated formatting and convention repairs\n\nProduced by .github/workflows/gate.yml from ruff and repo_gate.\n\n%s\n' \
+          message=$(printf 'style: Apply automated formatting and convention repairs\n\nProduced by .github/workflows/gate.yml from ruff and btm-repo-gate.\n\n%s\n' \
             "$(jq -r '.[] | "- \(.path)"' <<<"${ENTRIES}")")
 
           # tree -> commit -> ref are dependent effects, each consuming the

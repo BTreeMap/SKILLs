@@ -85,7 +85,6 @@ class Repo:
 
     skills: frozenset[str]
     texts: Mapping[Path, str]  # repo-relative path to contents
-    entry_points: frozenset[Path]  # bundled scripts invoked directly
     links: Mapping[Path, LinkState]  # hub, its entries, and the vendor paths
     manifests: Mapping[Path, ManifestState]
 
@@ -109,7 +108,6 @@ def snapshot(root: Path) -> Repo:
         and entry.name != HUB.name
     )
     texts: dict[Path, str] = {}
-    packages: set[Path] = set()
     for parent, dirnames, filenames in os.walk(root, followlinks=False):
         dirnames[:] = [name for name in dirnames if name not in PRUNED_DIRS]
         here = Path(parent)
@@ -119,8 +117,6 @@ def snapshot(root: Path) -> Repo:
                 continue
             relative = path.relative_to(root)
             texts[relative] = path.read_text(encoding="utf-8", errors="replace")
-            if name == "__init__.py":
-                packages.add(relative.parent)
     links: dict[Path, LinkState] = {HUB: _link_state(root / HUB)}
     for vendor in VENDOR_LINKS:
         links[vendor] = _link_state(root / vendor)
@@ -138,25 +134,4 @@ def snapshot(root: Path) -> Repo:
     manifests = {
         path: _manifest_state(root / path) for path in (MARKETPLACE, PLUGIN_MANIFEST)
     }
-    return Repo(skills, texts, _entry_points(texts, skills, packages), links, manifests)
-
-
-def _entry_points(
-    texts: Mapping[Path, str], skills: frozenset[str], packages: set[Path]
-) -> frozenset[Path]:
-    """The scripts a skill invokes, which is what the header convention governs.
-
-    A module inside a package directory is imported by an entry point rather
-    than run, so it takes neither a shebang nor its own dependency block. That
-    distinction is read from where `__init__.py` sits, not from a list here.
-    """
-
-    def is_entry_point(path: Path) -> bool:
-        # Match path shape directly; short paths fall through.
-        match path.parts:
-            case (skill, "scripts", *_) if skill in skills:
-                return path.suffix == ".py" and path.parent not in packages
-            case _:
-                return False
-
-    return frozenset(filter(is_entry_point, texts))
+    return Repo(skills, texts, links, manifests)

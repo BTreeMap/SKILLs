@@ -18,7 +18,7 @@ license: MIT
 compatibility: >-
   Requires uv, network access to api.openalex.org, export.arxiv.org,
   api.crossref.org, and doi.org, and a full SKILLs repository checkout: the
-  bundled entry point runs the workspace member that holds the session engine.
+  session engine is a uv workspace member under the skill's scripts/ directory.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---
@@ -34,7 +34,6 @@ owns criteria, screening, reading, and synthesis.
 | Name | Path |
 | --- | --- |
 | `extract` | [references/extract.md](references/extract.md) |
-| `lit_review` | [scripts/lit_review.py](scripts/lit_review.py) |
 | `protocol` | [references/protocol.md](references/protocol.md) |
 | `report` | [references/report.md](references/report.md) |
 | `screen` | [references/screen.md](references/screen.md) |
@@ -107,14 +106,18 @@ their extraction records in the session. The `clean` subcommand lists
 sessions with sizes and removes one session or `--all`, reporting bytes
 freed; run it when the user asks to reclaim space or is done with a review.
 
-Run the script with uv at its canonical bundled path; results are JSON on
-stdout, advisory `signal:` lines on stderr. Signals inform judgment and
-never block. This command surface is the handoff point: invoke it and
-read its output; source reading belongs to user-instructed
-troubleshooting.
+Run the engine through its console command, bound once per shell and
+re-bound after a reset. The `realpath` in the binding is load-bearing (uv
+resolves the project path lexically, and an alias path such as
+`.claude/skills/lit-review/` has no workspace root above it), and
+`env -u VIRTUAL_ENV` keeps an ambient virtualenv out of resolution.
+Results are JSON on stdout, advisory `signal:` lines on stderr. Signals
+inform judgment and never block. This command surface is the handoff
+point: invoke it and read its output; source reading belongs to
+user-instructed troubleshooting.
 
 <script_commands>
-R="uv run --script <skill-root>/scripts/lit_review.py"
+R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
 $R init "<two or three keywords>" --question "..." --level full
 S="<the session identifier the init output echoed>"
 $R search "$S" --source openalex --query "..." --limit 25 --from-year 2020

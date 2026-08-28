@@ -2,7 +2,7 @@
 
 The plan is a value: a deterministic, sorted, deduplicated tuple of steps
 plus the merged activation delta and the probe set. Planning performs no
-effects, so `envctl plan` can print exactly what `provision` would do, and
+effects, so `btm-setup-env plan` can print exactly what `provision` would do, and
 tests can assert on plans without a network.
 """
 

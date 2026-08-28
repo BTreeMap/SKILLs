@@ -50,7 +50,7 @@ def report(applied: Sequence[Finding], findings: Sequence[Finding]) -> int:
     blocking = len(findings) - mechanical
     if mechanical:
         print(
-            f"\n{mechanical} finding(s) are mechanical; run repo_gate.py fix.",
+            f"\n{mechanical} finding(s) are mechanical; run btm-repo-gate fix.",
             file=sys.stderr,
         )
     if blocking:
@@ -82,7 +82,7 @@ def main(argv: Sequence[str]) -> int:
         case "fix":
             return report(*repair_to_fixpoint(root))
         case _:
-            print("usage: repo_gate.py [check | fix]", file=sys.stderr)
+            print("usage: btm-repo-gate [check | fix]", file=sys.stderr)
             return 2
 
 

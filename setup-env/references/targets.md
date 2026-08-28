@@ -1,6 +1,6 @@
 # Targets
 
-The authoritative tag list lives in `catalog` and prints via `envctl list`;
+The authoritative tag list lives in `catalog` and prints via `btm-setup-env list`;
 this file adds the judgment calls the one-line summaries omit. Aliases:
 `js`/`node`, `ts`, `py`, `golang`, `c++`, `cs`/`dotnet`, `sh`/`shell`, and
 bare `android` for `java:android`.
@@ -27,7 +27,7 @@ bare `android` for `java:android`.
 
 ## Version Semantics
 
-`@version` is recipe-defined and documented per row in `envctl list`:
+`@version` is recipe-defined and documented per row in `btm-setup-env list`:
 conda-supplied targets take a conda version spec (`java@21`, `go@1.23`),
 `python` takes a uv interpreter spec, android flavors take an API level
 (`kotlin:android@35` installs `platforms;android-35` + matching

@@ -14,7 +14,8 @@ description: >-
 license: MIT
 compatibility: >-
   Requires uv and web search or fetch, and a full SKILLs repository checkout:
-  the bundled entry point runs the workspace member that holds the ledger.
+  the ledger engine is a uv workspace member under the skill's scripts/
+  directory.
 ---
 
 # Ponder
@@ -30,7 +31,6 @@ standard; let ledger state set the presentation.
 | `answer` | [references/answer.md](references/answer.md) |
 | `explore` | [references/explore.md](references/explore.md) |
 | `framing` | [references/framing.md](references/framing.md) |
-| `ponder` | [scripts/ponder.py](scripts/ponder.py) |
 | `worker` | [references/worker.md](references/worker.md) |
 
 ## Invariants
@@ -100,7 +100,7 @@ batch names its invariant, preserves the ledger, and exits 1. `clean` lists
 sizes and removes one session or `--all`, reporting bytes freed.
 
 <script_commands>
-R="uv run --script <skill-root>/scripts/ponder.py"
+R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
 $R open "<two or three keywords>" [--question "..."] [--focus "..."]
 S="<the session identifier the open output echoed>"
 $R note "$S" <<'EOF'

@@ -43,7 +43,11 @@ Bibliography with DOI or arXiv link per entry.
 
 ## Verification before delivery
 
-1. Run the script's `verify` subcommand. Fix broken DOIs (usually a mangled
+1. Run the script's `verify` subcommand. It emits one object: `checked`
+   (count of included papers), `broken_dois` (keys whose DOI failed to
+   resolve), and `results` (one record per paper: `key`, `title`,
+   `doi_resolves`, `doi_http_status`, `crossref_title_match`, or an
+   `identity` note for DOI-less records). Fix broken DOIs (usually a mangled
    key: re-search the paper), or remove the citation and its dependent
    claims. A Crossref title-mismatch signal is a possible retraction or
    erratum: check the landing page before keeping the citation.
