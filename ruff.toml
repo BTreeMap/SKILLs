@@ -47,10 +47,23 @@ select = [
 # and the rule keeps working everywhere else.
 ignore = []
 
+[lint.per-file-ignores]
+# A test states its expected value inline, where the literal is the assertion
+# itself. Naming it elsewhere moves the expectation away from the check.
+"**/tests/**" = ["PLR2004"]
+
 [lint.isort]
-# The bundled packages are imported by path (uv puts the script's directory on
-# sys.path), so name their roots rather than letting ruff guess from layout.
-known-first-party = ["envkit"]
+# Workspace members resolve as installed distributions, so name them rather
+# than letting ruff sort them with third-party packages.
+known-first-party = [
+  "btm_corekit",
+  "btm_ponder",
+  "btm_lit_review",
+  "btm_caveman",
+  "btm_read_pdf",
+  "btm_setup_env",
+  "btm_repo_gate",
+]
 
 [format]
 docstring-code-format = true

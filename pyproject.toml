@@ -1,0 +1,26 @@
+# uv workspace root for the Python bundled with this library.
+#
+# This file makes the repository a workspace, not a distributable: it carries
+# no `[project]` table, so nothing here is packaged or published. Each member
+# under `members` is its own uv package with its own manifest, `src/` layout,
+# and `tests/`. One lock and one environment serve them all, so a kernel edit
+# reaches every consumer without a copy, a pin, or a symlink.
+#
+#   uv run --all-packages pytest      every member's tests
+#   uv lock --check                   the lock matches the manifests
+#
+# A skill's entry point stays at `<skill>/scripts/<name>.py`. That file is a
+# launcher: it resolves its own real path before handing off to uv, because uv
+# resolves workspace and path sources lexically, and an agent reaches a skill
+# through `.claude/skills/<name>/`, where a relative path would escape the
+# repository.
+
+[tool.uv.workspace]
+members = [".corekit"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib --strict-markers"
+testpaths = [".corekit/tests"]

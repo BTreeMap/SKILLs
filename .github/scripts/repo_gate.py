@@ -47,7 +47,11 @@ import yaml
 # Escape required because this file is scanned for the forbidden character.
 EM_DASH = "\u2014"
 TEXT_SUFFIXES = frozenset({".md", ".py", ".toml", ".yml", ".yaml"})
-PRUNED_DIRS = frozenset({".git", "__pycache__", ".ruff_cache"})
+# Tool-managed trees hold third-party text this repository's conventions do not
+# govern, so the walk stops at each one rather than judging its contents.
+PRUNED_DIRS = frozenset(
+    {".git", "__pycache__", ".ruff_cache", ".venv", ".pytest_cache", ".mypy_cache"}
+)
 SPEC_FIELDS = (
     "name",
     "description",
