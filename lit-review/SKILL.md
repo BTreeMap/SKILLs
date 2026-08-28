@@ -16,10 +16,9 @@ description: >-
   or web research over non-scholarly sources.
 license: MIT
 compatibility: >-
-  Requires uv for the bundled script and network access to api.openalex.org,
-  export.arxiv.org, api.crossref.org, and doi.org. Runs from a full SKILLs
-  repository checkout, since the bundled script depends on the repository's
-  .corekit kernel.
+  Requires uv, network access to api.openalex.org, export.arxiv.org,
+  api.crossref.org, and doi.org, and a full SKILLs repository checkout: the
+  bundled entry point runs the workspace member that holds the session engine.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---

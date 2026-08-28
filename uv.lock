@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 members = [
     "btm-caveman",
     "btm-corekit",
+    "btm-lit-review",
     "btm-ponder",
     "btm-read-pdf",
 ]
@@ -28,6 +29,17 @@ requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 name = "btm-corekit"
 version = "1.0.0"
 source = { editable = ".corekit" }
+
+[[package]]
+name = "btm-lit-review"
+version = "1.0.0"
+source = { editable = "lit-review" }
+dependencies = [
+    { name = "btm-corekit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 
 [[package]]
 name = "btm-ponder"
