@@ -16,11 +16,11 @@
 # repository.
 
 [tool.uv.workspace]
-members = [".corekit"]
+members = [".corekit", "read-pdf"]
 
 [dependency-groups]
 dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib --strict-markers"
-testpaths = [".corekit/tests"]
+testpaths = [".corekit/tests", "read-pdf/tests"]
