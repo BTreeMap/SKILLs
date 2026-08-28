@@ -1,0 +1,14 @@
+[project]
+name = "btm-repo-gate"
+version = "1.0.0"
+description = "Repository convention gate: audit, repair to a fixpoint, report"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["pyyaml>=6,<7"]
+
+[project.scripts]
+btm-repo-gate = "btm_repo_gate.cli:entrypoint"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"

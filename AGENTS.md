@@ -109,7 +109,7 @@ Run the same fixers before pushing and the gate has nothing to do:
 
 ```bash
 ruff check --fix . && ruff format .
-uv run --script .github/scripts/repo_gate.py fix
+uv run --script .github/gate/scripts/repo_gate.py fix
 ```
 
 | Repaired automatically | Reported for a human |
@@ -123,7 +123,7 @@ uv run --script .github/scripts/repo_gate.py fix
 | | An em-dash (U+2014), whose replacement is a judgment |
 | | A bundled entry-point script without the uv shebang and a PEP 723 block |
 
-Rules live in `.github/scripts/repo_gate.py`, one function each. A rule returns
+Rules live in `.github/gate/scripts/repo_gate.py`, one function each. A rule returns
 findings, and a finding carries its repair or `None`; that field alone decides
 which column above it lands in, so adding a rule never touches the driver or
 the workflow. Never silence a ruff rule repository-wide: put a

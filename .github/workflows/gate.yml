@@ -6,7 +6,7 @@
 # signal that a human must decide something.
 #
 # The rules themselves live in the repository, not in this file: ruff.toml
-# holds the lint and format policy, and `.github/scripts/repo_gate.py` holds
+# holds the lint and format policy, and `.github/gate/scripts/repo_gate.py` holds
 # the conventions from AGENTS.md. This file decides when they run and who is
 # allowed to write.
 #
@@ -84,7 +84,7 @@ jobs:
           set -uo pipefail
           uvx "ruff@${RUFF_VERSION}" check --fix . || true
           uvx "ruff@${RUFF_VERSION}" format .
-          uv run --script .github/scripts/repo_gate.py fix || true
+          uv run --script .github/gate/scripts/repo_gate.py fix || true
 
       - name: Collect the repairs
         id: collect
@@ -128,7 +128,7 @@ jobs:
           # instead of letting the platform truncate a repair into corruption.
           size=$(wc -c < "${entries}")
           if [ "${size}" -gt 524288 ]; then
-            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with 'ruff check --fix . && ruff format . && uv run --script .github/scripts/repo_gate.py fix'"
+            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with 'ruff check --fix . && ruff format . && uv run --script .github/gate/scripts/repo_gate.py fix'"
             exit 1
           fi
 
@@ -150,13 +150,18 @@ jobs:
 
       - name: Assert what no fixer can settle
         # The sole judge, run against the repaired tree, so it reports only
-        # what a person must decide. Both checks run even if the first fails,
-        # because their findings are independent.
+        # what a person must decide. Every check runs even when an earlier one
+        # fails, because their findings are independent.
+        #
+        # `uv lock --check` fails when a manifest moved without the lock: no
+        # fixer relocks, because choosing versions is a person's call.
         run: |
           set -uo pipefail
           rc=0
           uvx "ruff@${RUFF_VERSION}" check --output-format=github . || rc=1
-          uv run --script .github/scripts/repo_gate.py check || rc=1
+          uv lock --check || rc=1
+          uv run --all-packages pytest -q || rc=1
+          uv run --script .github/gate/scripts/repo_gate.py check || rc=1
           exit "${rc}"
 
   commit:
