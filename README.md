@@ -25,6 +25,7 @@ submodule.
 | [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files with pypdf; strictly read-only on the documents. |
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
+| [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named methodological school, with recorded approach selection, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |
 
 ## Installing
 

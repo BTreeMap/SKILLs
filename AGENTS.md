@@ -100,6 +100,12 @@ Current skills:
   binaries, an idempotent typed Python planner/executor under `scripts/`,
   and per-target notes plus a maintainer extension protocol under
   `references/`.
+* `thematic-analysis/` - theme development from qualitative text under one
+  named school (reflexive, codebook, template, framework matrix, rapid,
+  hybrid), with corpus-sourced defaults for codebook size, agreement
+  sampling, and theme counts, an adaptation disclosure for feedback and
+  ticket data, and the cited evidence base loaded on demand from
+  `references/`.
 
 ## Automated gate
 

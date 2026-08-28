@@ -27,7 +27,8 @@
         "./ponytail",
         "./read-pdf",
         "./reframe",
-        "./setup-env"
+        "./setup-env",
+        "./thematic-analysis"
       ]
     }
   ]
