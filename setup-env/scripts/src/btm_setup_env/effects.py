@@ -24,12 +24,13 @@ import stat
 import subprocess
 import sys
 import tarfile
-import urllib.request
 import zipfile
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path, PurePosixPath
 
 import certifi
+import httpx
 
 from btm_corekit import user_agent
 
@@ -63,8 +64,6 @@ MICROMAMBA_RELEASES = (
     "https://github.com/mamba-org/micromamba-releases/releases/download"
 )
 
-_SSL = ssl.create_default_context(cafile=certifi.where())
-
 
 def log(message: str) -> None:
     print(f"btm-setup-env: {message}", file=sys.stderr)
@@ -73,19 +72,34 @@ def log(message: str) -> None:
 # --- Downloads and extraction ---
 
 
+@cache
+def _client() -> httpx.Client:
+    """Toolchain downloads run unbounded on read: archives are large and links
+    slow, and every fetch is resumable by re-run."""
+    return httpx.Client(
+        http2=True,
+        follow_redirects=True,
+        timeout=None,
+        verify=ssl.create_default_context(cafile=certifi.where()),
+        headers={"User-Agent": user_agent("setup-env")},
+    )
+
+
 def fetch(url: str, target: Path) -> None:
     if target.exists():
         return
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(target.name + ".partial")
-    request = urllib.request.Request(
-        url, headers={"User-Agent": user_agent("setup-env")}
-    )
-    with (
-        urllib.request.urlopen(request, context=_SSL) as src,
-        open(partial, "wb") as out,
-    ):
-        shutil.copyfileobj(src, out)
+    try:
+        with _client().stream("GET", url) as response:
+            response.raise_for_status()
+            with open(partial, "wb") as out:
+                for chunk in response.iter_bytes():
+                    out.write(chunk)
+    except httpx.HTTPStatusError as err:
+        raise DenvError(f"HTTP {err.response.status_code} fetching {url}") from err
+    except httpx.RequestError as err:
+        raise DenvError(f"cannot reach {url}: {err}") from err
     os.replace(partial, target)
 
 

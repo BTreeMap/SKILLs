@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Session engine for literature reviews over OpenAlex, arXiv, and Crossref"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["btm-corekit"]
+dependencies = ["btm-corekit", "httpx[brotli,http2,socks,zstd]>=0.28,<1"]
 
 [project.scripts]
 btm-lit-review = "btm_lit_review.cli:main"

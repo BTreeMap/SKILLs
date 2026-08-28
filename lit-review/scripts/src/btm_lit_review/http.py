@@ -1,34 +1,42 @@
-"""HTTP effects: retrieval and DOI resolution under the kernel's request identity."""
+"""HTTP effects over httpx, under the kernel's request identity.
+
+One pooled client per process; HTTP/2, SOCKS proxies, and brotli/zstd
+encodings come from the manifest's httpx extras and negotiate themselves.
+Commands are one-shot, so process exit closes the pool.
+"""
 
 from __future__ import annotations
 
-import http.client
 import json
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections.abc import Mapping
+from functools import cache
 from typing import Any
 
+import httpx
+
 from btm_corekit import CommandError, user_agent
-from btm_lit_review.constants import (
-    DOI_HOST,
-    TIMEOUT_SECONDS,
-)
+from btm_lit_review.constants import DOI_HOST, HTTP_BAD_REQUEST, TIMEOUT_SECONDS
+
+
+@cache
+def _client() -> httpx.Client:
+    return httpx.Client(
+        http2=True,
+        follow_redirects=True,
+        timeout=TIMEOUT_SECONDS,
+        headers={"User-Agent": user_agent("lit-review")},
+    )
 
 
 def http_get(url: str, params: Mapping[str, str] | None = None) -> bytes:
-    full = url + ("?" + urllib.parse.urlencode(params) if params else "")
-    request = urllib.request.Request(
-        full, headers={"User-Agent": user_agent("lit-review")}
-    )
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-            return response.read()
-    except urllib.error.HTTPError as err:
-        raise CommandError(f"HTTP {err.code} from {full}") from err
-    except (urllib.error.URLError, TimeoutError) as err:
-        raise CommandError(f"cannot reach {full}: {err}") from err
+        response = _client().get(url, params=params)
+    except httpx.RequestError as err:
+        raise CommandError(f"cannot reach {err.request.url}: {err}") from err
+    if response.status_code >= HTTP_BAD_REQUEST:
+        raise CommandError(f"HTTP {response.status_code} from {response.url}")
+    return response.content
 
 
 def http_get_json(url: str, params: Mapping[str, str] | None = None) -> Any:
@@ -40,15 +48,12 @@ def http_get_json(url: str, params: Mapping[str, str] | None = None) -> Any:
 
 
 def doi_resolution_status(doi: str) -> int:
-    """HEAD https://doi.org/<doi> without following the redirect."""
-    connection = http.client.HTTPSConnection(DOI_HOST, timeout=TIMEOUT_SECONDS)
+    """HEAD https://doi.org/<doi> without following the redirect.
+
+    `quote` keeps a `#` or `?` inside a DOI part of the path.
+    """
+    target = f"https://{DOI_HOST}/{urllib.parse.quote(doi)}"
     try:
-        path = "/" + urllib.parse.quote(doi)
-        connection.request(
-            "HEAD", path, headers={"User-Agent": user_agent("lit-review")}
-        )
-        return connection.getresponse().status
-    except OSError as err:
+        return _client().head(target, follow_redirects=False).status_code
+    except httpx.RequestError as err:
         raise CommandError(f"cannot reach {DOI_HOST}: {err}") from err
-    finally:
-        connection.close()
