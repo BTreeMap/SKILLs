@@ -17,7 +17,9 @@ description: >-
   system package administration, or deploying services.
 license: MIT
 compatibility: >-
-  uv on PATH plus network access; everything else is fetched. Linux and
+  uv on PATH, network access, and a full SKILLs repository checkout: the
+  bundled entry point runs the workspace member that holds the provisioner.
+  Everything else is fetched. Linux and
   macos on x86_64/arm64 are first class; windows x86_64 is best effort
   (haskell, bash, c, cpp unavailable there). Roughly 1-6 GB under the
   environment root, depending on targets.
@@ -37,13 +39,13 @@ skips completed work.
 | Name | Path |
 | --- | --- |
 | `envctl` | [scripts/envctl.py](scripts/envctl.py) |
-| `cli` | [scripts/envkit/cli.py](scripts/envkit/cli.py) |
-| `model` | [scripts/envkit/model.py](scripts/envkit/model.py) |
-| `steps` | [scripts/envkit/steps.py](scripts/envkit/steps.py) |
-| `catalog` | [scripts/envkit/catalog.py](scripts/envkit/catalog.py) |
-| `plan` | [scripts/envkit/plan.py](scripts/envkit/plan.py) |
-| `render` | [scripts/envkit/render.py](scripts/envkit/render.py) |
-| `effects` | [scripts/envkit/effects.py](scripts/envkit/effects.py) |
+| `cli` | [src/btm_setup_env/cli.py](src/btm_setup_env/cli.py) |
+| `model` | [src/btm_setup_env/model.py](src/btm_setup_env/model.py) |
+| `steps` | [src/btm_setup_env/steps.py](src/btm_setup_env/steps.py) |
+| `catalog` | [src/btm_setup_env/catalog.py](src/btm_setup_env/catalog.py) |
+| `plan` | [src/btm_setup_env/plan.py](src/btm_setup_env/plan.py) |
+| `render` | [src/btm_setup_env/render.py](src/btm_setup_env/render.py) |
+| `effects` | [src/btm_setup_env/effects.py](src/btm_setup_env/effects.py) |
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 

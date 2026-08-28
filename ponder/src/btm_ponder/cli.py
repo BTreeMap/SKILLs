@@ -6,7 +6,7 @@ import argparse
 import json
 import shutil
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import btm_ponder
@@ -51,7 +51,7 @@ def create_session(directory: Path, name: str, args: argparse.Namespace) -> int:
     meta = {
         "question": args.question,
         "focus": args.focus,
-        "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "created": datetime.now(UTC).isoformat(timespec="seconds"),
     }
     write_meta(directory, meta)
     emit({"session": name, **meta})

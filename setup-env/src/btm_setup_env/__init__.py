@@ -1,4 +1,4 @@
-"""envkit: a typed, userspace, per-project dev-environment provisioner.
+"""btm-setup-env: a typed, userspace, per-project dev-environment provisioner.
 
 Layering, strictly one-directional:
 

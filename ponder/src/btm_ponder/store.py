@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +58,7 @@ def read_events(directory: Path) -> list[dict[str, Any]]:
 
 
 def append_events(directory: Path, admitted: list[dict[str, Any]]) -> None:
-    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    stamp = datetime.now(UTC).isoformat(timespec="seconds")
     payload = "".join(
         json.dumps({"t": stamp, **raw}, ensure_ascii=False) + "\n" for raw in admitted
     )

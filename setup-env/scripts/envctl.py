@@ -1,18 +1,26 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["certifi"]
 # ///
-"""envctl: provision an isolated, userspace, per-project dev environment.
 
-Entry point only. The whole program lives in the envkit package beside this
-file; uv puts this script's directory on sys.path, so the import below is the
-single piece of wiring. certifi is the one dependency: it supplies TLS roots
-on hosts that ship none (a bare ubuntu:24.04 image), and uv can always fetch
-it because uv bundles its own roots.
+"""Launcher for the btm-setup-env workspace member.
+
+uv resolves workspace and path sources lexically, and an agent reaches this
+skill through an alias directory such as `.claude/skills/setup-env/`, where a
+relative path escapes the repository. Resolving this file first turns any
+alias path into the member's real location, so no alias-side symlink is
+needed. The program itself lives in `../src/btm_setup_env/`.
 """
 
-from envkit.cli import main
+import os
+import sys
+from pathlib import Path
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+environment = dict(os.environ)
+environment.pop("VIRTUAL_ENV", None)  # an ambient venv is not this member's
+member = Path(__file__).resolve().parent.parent
+os.execvpe(
+    "uv",
+    ["uv", "run", "--project", str(member), "btm-setup-env", *sys.argv[1:]],
+    environment,
+)

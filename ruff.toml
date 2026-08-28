@@ -13,11 +13,10 @@
 # than this would disagree with CI about a clean tree.
 required-version = ">=0.16"
 
-# The meet of the bundled scripts' declared floors (caveman declares >=3.10;
-# read-pdf and setup-env declare >=3.11). Keeping the lowest one means no rule
-# can rewrite a script into syntax its own header forbids. Raise this only
-# after every `requires-python` in the repository has risen past it.
-target-version = "py310"
+# Every workspace member declares requires-python >=3.11, so no rule can
+# rewrite a module into syntax its own manifest forbids. Raise this only after
+# every `requires-python` in the repository has risen past it.
+target-version = "py311"
 
 # Ruff's default. Measured against the existing scripts before adoption: only
 # three lines exceeded it, so the gate matches the prose width already in use
