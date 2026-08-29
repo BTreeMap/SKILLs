@@ -22,7 +22,7 @@ submodule.
 | [pl-theorist](pl-theorist/SKILL.md) | Code design, review, and refactoring grounded in typed domain modeling and complexity analysis, with per-language cost models including Bash and GitHub Actions. |
 | [ponder](ponder/SKILL.md) | Answers open questions, shower thought to academic grade, with the same investigative rigor: the lead runs the first round itself and stops early on trivial questions, a bundled ledger script tracks every leaf and source, a few orthogonal bundled workers gather what stays open, a rival sweep runs before every draft, and the answer's sections derive from ledger state. |
 | [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
-| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files with pypdf; strictly read-only on the documents. |
+| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files or URLs with pypdf; URL inputs download once into a capped temp cache, and the documents stay strictly read-only. |
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
 | [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named methodological school, with recorded approach selection, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |

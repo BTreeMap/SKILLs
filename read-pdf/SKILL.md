@@ -2,14 +2,16 @@
 name: read-pdf
 description: >-
   Reads PDFs with pypdf to extract text and metadata and answer questions
-  with page-cited evidence; never creates, modifies, merges, splits, renders,
-  OCRs, or otherwise writes PDF files. Use when the user asks to inspect,
-  summarize, search, quote, extract from, analyze, or answer questions about
-  a PDF.
+  with page-cited evidence; accepts a local file or an http(s) URL, fetching
+  URLs itself into a temp cache; never creates, modifies, merges, splits,
+  renders, OCRs, or otherwise writes PDF files. Use when the user asks to
+  inspect, summarize, search, quote, extract from, analyze, or answer
+  questions about a PDF, including one behind a link.
 license: MIT
 compatibility: >-
   Requires uv, and a full SKILLs repository checkout: the extractor is a uv
-  workspace member under the skill's scripts/ directory.
+  workspace member under the skill's scripts/ directory. Network access is
+  needed only for URL inputs.
 ---
 
 # Read PDF
@@ -23,9 +25,11 @@ Read PDF content for analysis. Extract text, page numbers, and standard metadata
 
 Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the extractor through its console command with `uv run --project`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
 
+Pass an http(s) URL directly as the document argument; the extractor downloads it itself. Downloading first with curl or another tool wastes a step: the command's own fetch caches, caps, and cites the URL as provenance.
+
 ## Procedure
 
-1. Locate the requested PDF; confirm it exists before reading.
+1. Locate the requested PDF: a file path (confirm it exists) or an http(s) URL (pass it as is).
 2. Run the bundled extractor. It writes plain text only and never changes the PDF.
 3. Keep the `## PDF page N` markers in the extracted text; they are the evidence anchors.
 4. Inspect the extracted page text before answering. For a specific question, begin with the relevant pages; expand to referenced pages when context is missing.
@@ -50,6 +54,16 @@ $R <document.pdf> --pages 1-3,5,8- --output <extraction.txt>
 <text_only_command>
 $R <document.pdf> --pages 4-6 --no-metadata
 </text_only_command>
+
+<url_command>
+$R https://<host>/<paper>.pdf --pages 1-3
+</url_command>
+
+A URL downloads once into a digest-keyed file under the system temp
+directory's `btm-read-pdf/`; a rerun reuses it and says so on stderr, and
+deleting that file forces a refetch. Downloads over 200 MB are refused
+(`--max-bytes` raises the cap), and a response without PDF magic bytes, such
+as a paywall's HTML page, is refused rather than cached.
 
 For an encrypted PDF, do not ask the user to disclose or paste a password into chat. Instruct the user to set a local environment variable directly in their terminal, then pass only that variable's name to the script.
 

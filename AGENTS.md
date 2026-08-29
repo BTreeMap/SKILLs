@@ -90,7 +90,8 @@ Current skills:
 * `ponytail/` - laziest-working-solution discipline: YAGNI, stdlib-first, minimal
   diffs, with lite/full/ultra levels and design/refactor/review/audit/test/
   teach/debt/gain/help verbs loaded on demand from `references/`.
-* `read-pdf/` - text and metadata extraction from PDF files for analysis.
+* `read-pdf/` - text and metadata extraction from PDF files or URLs for
+  analysis; URL inputs download once into a capped temp cache.
 * `reframe/` - bold, testable target-direction judgments that challenge
   incremental or legacy-bound framing.
 * `setup-env/` - isolated per-project dev environments provisioned entirely

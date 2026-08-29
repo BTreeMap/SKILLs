@@ -153,11 +153,17 @@ name = "btm-read-pdf"
 version = "1.0.0"
 source = { editable = "read-pdf/scripts" }
 dependencies = [
+    { name = "btm-corekit" },
+    { name = "httpx" },
     { name = "pypdf" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pypdf", specifier = ">=6,<7" }]
+requires-dist = [
+    { name = "btm-corekit", editable = ".corekit" },
+    { name = "httpx", specifier = ">=0.28,<1" },
+    { name = "pypdf", specifier = ">=6,<7" },
+]
 
 [[package]]
 name = "btm-repo-gate"

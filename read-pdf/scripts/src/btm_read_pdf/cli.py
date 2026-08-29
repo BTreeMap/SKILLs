@@ -13,6 +13,7 @@ from pypdf.errors import PdfReadError
 from btm_read_pdf.document import decrypt_if_needed, open_output
 from btm_read_pdf.pages import parse_page_specification
 from btm_read_pdf.render import write_extraction
+from btm_read_pdf.source import DEFAULT_MAX_BYTES, materialize, parse_source
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,7 +23,14 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument(
-        "input_pdf", type=Path, help="PDF file to read; it is never modified"
+        "input_pdf",
+        help="PDF file or http(s) URL to read; the document is never modified",
+    )
+    parser.add_argument(
+        "--max-bytes",
+        type=int,
+        default=DEFAULT_MAX_BYTES,
+        help="download size cap for URL inputs (default 200 MB)",
     )
     parser.add_argument(
         "--pages",
@@ -54,23 +62,23 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if not args.input_pdf.is_file():
-        raise ValueError(f"PDF file not found: {args.input_pdf}")
     if args.output and args.output.exists() and not args.overwrite:
         # Destroying existing bytes is decidable here; whether it is intended
-        # is the caller's judgment, so demand it explicitly.
+        # is the caller's judgment, so demand it explicitly. Refuse before
+        # materialize, so a doomed run downloads nothing.
         raise ValueError(
             f"output file already exists: {args.output}; pass --overwrite to replace it"
         )
+    local_path, display_name = materialize(parse_source(args.input_pdf), args.max_bytes)
 
-    reader = PdfReader(args.input_pdf, strict=False)
+    reader = PdfReader(local_path, strict=False)
     decrypt_if_needed(reader, args.password_env)
     page_numbers = parse_page_specification(args.pages, len(reader.pages))
 
     with open_output(args.output) as output:
         empty_pages = write_extraction(
             reader,
-            args.input_pdf.name,
+            display_name,
             page_numbers,
             include_metadata=not args.no_metadata,
             output=output,
