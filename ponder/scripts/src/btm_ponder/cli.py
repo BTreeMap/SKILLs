@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 import btm_ponder
@@ -23,9 +24,9 @@ from btm_corekit import (
     run_cli,
     signal,
 )
-from btm_ponder.batch import expand_batch
-from btm_ponder.ledger import apply, replay
-from btm_ponder.state import Open, require
+from btm_ponder.batch import BATCH_KEYS, SCHEMA, expand_batch
+from btm_ponder.ledger import replay
+from btm_ponder.state import MODES, Open, require
 from btm_ponder.store import (
     STORE,
     append_events,
@@ -36,9 +37,11 @@ from btm_ponder.store import (
     write_meta,
 )
 from btm_ponder.views import (
+    INFORMAL_DEMOTED,
     counts_of,
     hedges,
     leaf_view,
+    scaffold,
     sections,
     violations,
     yield_table,
@@ -49,6 +52,7 @@ def create_session(directory: Path, name: str, args: argparse.Namespace) -> int:
     meta = {
         "question": args.question,
         "focus": args.focus,
+        "mode": args.mode or "full",
         "created": now_iso(),
     }
     write_meta(directory, meta)
@@ -74,6 +78,8 @@ def cmd_open(args: argparse.Namespace) -> int:
         return create_session(directory, str(directory), args)
     match resolve(ref, STORE.ids()):
         case Exact(sid):
+            if args.mode:
+                signal("mode is set at creation; --mode ignored on resume")
             emit(orient(STORE.root() / sid))
         case Recovered(sid):
             signal(f"recovered session '{ref}' -> {sid}; use the full identifier")
@@ -96,31 +102,57 @@ def cmd_open(args: argparse.Namespace) -> int:
 
 def cmd_note(args: argparse.Namespace) -> int:
     directory = STORE.dir_of(args.session)
-    raw = sys.stdin.read()
-    require(bool(raw.strip()), "note reads the JSON batch from stdin")
-    batch = json.loads(raw)
+    raw = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
+    require(bool(raw.strip()), "note reads the JSON batch from stdin or --file")
+    try:
+        batch = json.loads(raw)
+    except json.JSONDecodeError as err:
+        emit(
+            {
+                "rejected": [
+                    {"where": "$", "fix": f"make the batch valid JSON: {err}"}
+                ],
+                "ledger": "unchanged",
+            }
+        )
+        return 1
     require(isinstance(batch, dict), "note takes one JSON object")
     events = read_events(directory)
     ledger = replay(events)
-    expanded, minted, advisories = expand_batch(ledger, batch, mint)
-    for event in expanded:
-        apply(ledger, event)
-    append_events(directory, expanded)
-    for line in advisories:
+    result = expand_batch(ledger, batch, mint)
+    for line in result.advisories:
         signal(line)
-    emit(
-        {
-            "session": directory.name,
-            "minted": minted,
-            "counts": counts_of(ledger),
-            "open": [
-                leaf_id
-                for leaf_id, leaf in ledger.leaves.items()
-                if isinstance(leaf.state, Open)
-            ],
-            "yield": yield_table(events + expanded),
+    if result.problems:
+        emit(
+            {
+                "rejected": [problem.view() for problem in result.problems],
+                "ledger": "unchanged",
+                "next": "apply every fix above to the batch, then resend; "
+                "--file makes the retry one edit",
+            }
+        )
+        return 1
+    append_events(directory, result.events)
+    document: dict = {
+        "session": directory.name,
+        "admitted": dict(Counter(event["e"] for event in result.events)),
+        "minted": result.minted,
+        "counts": counts_of(ledger),
+        "open": [
+            leaf_id
+            for leaf_id, leaf in ledger.leaves.items()
+            if isinstance(leaf.state, Open)
+        ],
+        "yield": yield_table(events + result.events),
+    }
+    if result.merged:
+        document["merged"] = result.merged
+    if args.full:
+        document["leaves"] = {
+            leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
+            for leaf_id, leaf in ledger.leaves.items()
         }
-    )
+    emit(document)
     return 0
 
 
@@ -128,37 +160,90 @@ def cmd_check(args: argparse.Namespace) -> int:
     directory = STORE.dir_of(args.session)
     events = read_events(directory)
     ledger = replay(events)
+    meta = read_meta(directory)
+    mode = meta.get("mode", "full")
     markers = {
         source_id: f"S{index}"
         for index, source_id in enumerate(ledger.source_order, start=1)
     }
     found = violations(ledger)
-    for line in found:
-        signal(line)
+    demoted = (
+        [line for line in found if line.startswith(INFORMAL_DEMOTED)]
+        if mode == "informal"
+        else []
+    )
+    blocking = [line for line in found if line not in demoted]
+    if blocking:
+        signal(f"{len(blocking)} violation(s); details in the JSON violations array")
     signal("Boundary section is yours: render it where the answer flips inside scope")
+    document: dict = {
+        "session": directory.name,
+        "mode": mode,
+        "question": meta.get("question"),
+        # Markers first: drafting reads this table before anything else.
+        "markers": {
+            markers[source_id]: {
+                "id": source_id,
+                "cls": ledger.sources[source_id].cls,
+                "title": ledger.sources[source_id].title,
+                "url": ledger.sources[source_id].url,
+            }
+            for source_id in ledger.source_order
+        },
+        "sections": sections(ledger),
+        "scaffold": scaffold(ledger, markers),
+        "violations": blocking,
+        "advisories": demoted,
+        "hedges": hedges(ledger),
+        "yield": yield_table(events),
+    }
+    if args.full:
+        document["leaves"] = {
+            leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
+            for leaf_id, leaf in ledger.leaves.items()
+        }
+    emit(document)
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    directory = STORE.dir_of(args.session)
+    events = read_events(directory)
+    ledger = replay(events)
+    attached = Counter(source.leaf for source in ledger.sources.values())
     emit(
         {
             "session": directory.name,
-            "question": read_meta(directory).get("question"),
-            "sections": sections(ledger),
-            "violations": found,
-            "hedges": hedges(ledger),
-            "yield": yield_table(events),
-            "sources": [
-                {
-                    "marker": markers[source_id],
-                    "id": source_id,
-                    "cls": ledger.sources[source_id].cls,
-                    "title": ledger.sources[source_id].title,
-                    "url": ledger.sources[source_id].url,
-                    "leaf": ledger.sources[source_id].leaf,
-                }
-                for source_id in ledger.source_order
-            ],
-            "leaves": {
-                leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
+            "mode": read_meta(directory).get("mode", "full"),
+            "counts": counts_of(ledger),
+            "sources": len(ledger.sources),
+            "swept": ledger.swept,
+            "open": [
+                {"id": leaf_id, "q": leaf.question, "sources": attached[leaf_id]}
                 for leaf_id, leaf in ledger.leaves.items()
-            },
+                if isinstance(leaf.state, Open)
+            ],
+            "last_checkpoint": next(
+                (
+                    event.get("label")
+                    for event in reversed(events)
+                    if event.get("e") == "checkpoint"
+                ),
+                None,
+            ),
+        }
+    )
+    return 0
+
+
+def cmd_schema(args: argparse.Namespace) -> int:
+    emit(
+        {
+            "note_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
+            "order": "leaves, sources, closes, sweeps, checkpoints; later entries "
+            "may reference ids minted earlier in the same batch",
+            "refs": "a ref is the kw slug, an explicit ref, or any unique keyword "
+            "subset; receipts echo every minted id",
         }
     )
     return 0
@@ -178,12 +263,30 @@ def build_parser() -> argparse.ArgumentParser:
     opener.add_argument("ref", help="two or three keywords in one quoted argument")
     opener.add_argument("--question")
     opener.add_argument("--focus", default=None)
+    opener.add_argument(
+        "--mode",
+        choices=MODES,
+        default=None,
+        help="informal demotes draft blockers to advisories (set at creation)",
+    )
     note = commands.add_parser("note")
     note.set_defaults(func=cmd_note)
     note.add_argument("session", help="session identifier; batch JSON on stdin")
+    note.add_argument(
+        "--file",
+        default=None,
+        help="read the batch from this file; retries cost one edit",
+    )
+    note.add_argument("--full", action="store_true", help="add the leaf dump")
     check = commands.add_parser("check")
     check.set_defaults(func=cmd_check)
     check.add_argument("session", help="session identifier")
+    check.add_argument("--full", action="store_true", help="add the leaf dump")
+    status = commands.add_parser("status")
+    status.set_defaults(func=cmd_status)
+    status.add_argument("session", help="session identifier")
+    schema = commands.add_parser("schema", help="print the note batch shape")
+    schema.set_defaults(func=cmd_schema)
     clean = commands.add_parser("clean")
     clean.set_defaults(func=cmd_clean)
     clean.add_argument("session", nargs="?")

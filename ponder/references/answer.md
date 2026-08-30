@@ -15,8 +15,11 @@ Draft from script output:
 env -u VIRTUAL_ENV uv run --project "$(realpath <skill-root>/scripts)" btm-ponder check <session>
 </answer_command>
 
-The check returns sections, numbered sources, violations, and hedge advisories.
-Resolve violations, then have the lead draft once.
+The check returns the marker table first (`S1` onward, with class, title,
+url), then the derived sections, a scaffold holding each close's stored
+premise and detail keyed by marker, violations, and hedge advisories.
+Resolve violations, then have the lead draft once, transforming the
+scaffold's rows rather than reconstructing them.
 
 ## Sections
 

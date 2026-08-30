@@ -9,6 +9,7 @@ from btm_corekit import CommandError
 SOURCE_CLASSES = ("constitutive", "attested", "measured", "reported")
 ORIGINS = ("frame", "spawned")
 CLOSE_STATES = ("retrieved", "refuted", "unresolved", "retired")
+MODES = ("full", "informal")  # informal demotes draft blockers to advisories
 UNRESOLVED_REASONS = ("searched", "not_pursued")
 RETIRED_REASONS = ("folded", "immaterial")
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
@@ -23,12 +24,15 @@ class Open:
 @dataclass(frozen=True, slots=True)
 class Retrieved:
     sources: tuple[str, ...]  # non-empty by construction
+    premise: str = ""  # the claim, one line; comes back in the check scaffold
+    detail: str = ""  # supporting note, likewise
 
 
 @dataclass(frozen=True, slots=True)
 class Refuted:
     sources: tuple[str, ...]  # non-empty by construction
     premise: str  # what the leaf assumed that evidence contradicts
+    detail: str = ""  # supporting note, likewise
 
 
 @dataclass(frozen=True, slots=True)

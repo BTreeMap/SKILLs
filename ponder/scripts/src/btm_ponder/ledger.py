@@ -34,11 +34,12 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
         require(bool(sources), f"{state} requires at least one source id")
         for sid in sources:
             require(sid in ledger.sources, f"unknown source id: {sid}")
-        if state == "retrieved":
-            return Retrieved(sources)
         premise = str(raw.get("premise") or "").strip()
+        detail = str(raw.get("detail") or "").strip()
+        if state == "retrieved":
+            return Retrieved(sources, premise, detail)
         require(bool(premise), "refuted requires the contradicted premise")
-        return Refuted(sources, premise)
+        return Refuted(sources, premise, detail)
     reason = raw.get("reason")
     detail = str(raw.get("detail") or "").strip()
     if state == "unresolved":

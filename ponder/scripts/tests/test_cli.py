@@ -103,7 +103,8 @@ class TestNoteAndCheck:
         assert code == 0
         assert document["sections"] == ["answer", "rival", "sources"]
         assert document["violations"] == []
-        assert document["sources"][0]["marker"] == "S1"
+        assert document["markers"]["S1"]["title"] == "BCL source"
+        assert document["scaffold"]["answer"][0]["markers"] == ["S1"]
 
     def test_check_on_an_unswept_session_reports_the_violation(
         self, capsys, monkeypatch
@@ -128,10 +129,84 @@ class TestNoteAndCheck:
     def test_a_rejected_batch_appends_nothing(self, capsys, monkeypatch):
         session = opened(capsys)
         bad = json.dumps({"leaves": [{"kw": ["a", "b"], "q": ""}]})
-        code, _, _ = run(["note", session], capsys, stdin=bad, monkeypatch=monkeypatch)
+        code, document, _ = run(
+            ["note", session], capsys, stdin=bad, monkeypatch=monkeypatch
+        )
         assert code == 1
+        assert document["ledger"] == "unchanged"
         _, document, _ = run(["open", session], capsys)
         assert document["counts"] == {}
+
+    def test_a_rejection_lists_every_problem_at_once(self, capsys, monkeypatch):
+        session = opened(capsys)
+        bad = json.dumps(
+            {
+                "leaves": [{"kw": ["a", "b"], "q": ""}],
+                "sweeps": [{"checked": "x", "candidates": ["c"], "survivors": [9]}],
+            }
+        )
+        code, document, _ = run(
+            ["note", session], capsys, stdin=bad, monkeypatch=monkeypatch
+        )
+        assert code == 1
+        wheres = {problem["where"] for problem in document["rejected"]}
+        assert {"leaves[0]", "sweeps[0].survivors[0]"} <= wheres
+
+    def test_note_reads_a_batch_file(self, capsys, tmp_path, monkeypatch):
+        session = opened(capsys)
+        batch_file = tmp_path / "batch.json"
+        batch_file.write_text(self.batch(), encoding="utf-8")
+        code, document, _ = run(["note", session, "--file", str(batch_file)], capsys)
+        assert code == 0
+        assert document["admitted"]["add_source"] == 1
+
+    def test_invalid_json_is_a_located_rejection(self, capsys, monkeypatch):
+        session = opened(capsys)
+        code, document, _ = run(
+            ["note", session], capsys, stdin="{nope", monkeypatch=monkeypatch
+        )
+        assert code == 1
+        assert "valid JSON" in document["rejected"][0]["fix"]
+
+
+class TestStatusAndSchema:
+    def test_status_reports_the_brief_view(self, capsys, monkeypatch):
+        session = opened(capsys)
+        batch = json.dumps(
+            {
+                "leaves": [{"kw": ["a", "b"], "q": "still open"}],
+                "sources": [
+                    {"kw": ["s", "one"], "leaf": "a b", "cls": "reported", "title": "t"}
+                ],
+            }
+        )
+        run(["note", session], capsys, stdin=batch, monkeypatch=monkeypatch)
+        code, document, _ = run(["status", session], capsys)
+        assert code == 0
+        assert document["open"] == [
+            {"id": document["open"][0]["id"], "q": "still open", "sources": 1}
+        ]
+        assert document["swept"] is False
+
+    def test_schema_prints_the_batch_shape(self, capsys):
+        code, document, _ = run(["schema"], capsys)
+        assert code == 0
+        assert "survivors" in document["note_batch"]["sweeps"]
+
+
+class TestInformalMode:
+    def test_informal_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
+        code, document, _ = run(
+            ["open", "loose idea", "--question", "q", "--mode", "informal"], capsys
+        )
+        session = document["session"]
+        batch = json.dumps({"leaves": [{"kw": ["a", "b"], "q": "q"}]})
+        run(["note", session], capsys, stdin=batch, monkeypatch=monkeypatch)
+        code, document, _ = run(["check", session], capsys)
+        assert code == 0
+        assert document["violations"] == []
+        assert any("open leaf" in line for line in document["advisories"])
+        assert any("no sweep" in line for line in document["advisories"])
 
 
 class TestClean:

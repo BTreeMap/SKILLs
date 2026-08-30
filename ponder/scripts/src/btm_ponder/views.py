@@ -38,14 +38,19 @@ def sections(ledger: Ledger) -> list[str]:
     return derived
 
 
+OPEN_LEAF = "open leaf blocks draft"
+NO_SWEEP = "no sweep recorded"
+INFORMAL_DEMOTED = (OPEN_LEAF, NO_SWEEP)  # advisories, not blockers, when informal
+
+
 def violations(ledger: Ledger) -> list[str]:
     found = [
-        f"open leaf blocks draft: {leaf_id} ({leaf.question})"
+        f"{OPEN_LEAF}: {leaf_id} ({leaf.question})"
         for leaf_id, leaf in ledger.leaves.items()
         if isinstance(leaf.state, Open)
     ]
     if not ledger.swept:
-        found.append("no sweep recorded: run the rival sweep before drafting")
+        found.append(f"{NO_SWEEP}: run the rival sweep before drafting")
     for leaf_id, leaf in ledger.leaves.items():
         if isinstance(leaf.state, Retired) and leaf.state.reason == "folded":
             target = ledger.leaves.get(leaf.state.detail)
@@ -96,14 +101,65 @@ def leaf_view(state: LeafState) -> dict[str, Any]:
     match state:
         case Open():
             return {"state": "open"}
-        case Retrieved(sources):
-            return {"state": "retrieved", "sources": list(sources)}
-        case Refuted(sources, premise):
-            return {"state": "refuted", "sources": list(sources), "premise": premise}
+        case Retrieved(sources, premise, detail):
+            view = {"state": "retrieved", "sources": list(sources)}
+            return view | _prose(premise, detail)
+        case Refuted(sources, premise, detail):
+            view = {"state": "refuted", "sources": list(sources), "premise": premise}
+            return view | _prose("", detail)
         case Unresolved(reason, detail):
             return {"state": "unresolved", "reason": reason, "detail": detail}
         case Retired(reason, detail):
             return {"state": "retired", "reason": reason, "detail": detail}
+
+
+def _prose(premise: str, detail: str) -> dict[str, str]:
+    fields = {}
+    if premise:
+        fields["premise"] = premise
+    if detail:
+        fields["detail"] = detail
+    return fields
+
+
+def scaffold(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, list[dict]]:
+    """The stored close prose keyed by marker, grouped into the derived sections."""
+    body: dict[str, list[dict]] = {"answer": [], "rival": [], "open": []}
+    for leaf_id, leaf in ledger.leaves.items():
+        match leaf.state:
+            case Retrieved(sources, premise, detail):
+                classes = [ledger.sources[sid].cls for sid in sources]
+                body["answer"].append(
+                    {
+                        "leaf": leaf_id,
+                        "q": leaf.question,
+                        "markers": [marker_of[sid] for sid in sources],
+                        "stated": stated(classes),
+                    }
+                    | _prose(premise, detail)
+                )
+            case Refuted(sources, premise, detail):
+                body["rival"].append(
+                    {
+                        "leaf": leaf_id,
+                        "q": leaf.question,
+                        "markers": [marker_of[sid] for sid in sources],
+                        "premise": premise,
+                    }
+                    | _prose("", detail)
+                )
+            case Unresolved(reason, detail):
+                body["open"].append(
+                    {
+                        "leaf": leaf_id,
+                        "q": leaf.question,
+                        "reason": reason,
+                        "detail": detail,
+                    }
+                )
+            case Open() | Retired():
+                pass
+    return {section: rows for section, rows in body.items() if rows}
 
 
 def counts_of(ledger: Ledger) -> dict[str, int]:
