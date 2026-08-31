@@ -83,7 +83,9 @@ def cite_check(
     unused = sorted(
         number
         for key, number in markers.items()
-        if key in papers and papers[key].status == "included" and number not in used
+        if (paper := papers.get(key))
+        and paper.status == "included"
+        and number not in used
     )
     at_risk = [view for view in findings if view["state"] == "at-risk"]
     return {

@@ -51,10 +51,18 @@ def pad_ids(directory: Path) -> set[str]:
     return {entry["j"] for entry in pad_entries(directory)}
 
 
+def _line_count(path: Path) -> int:
+    """Non-empty lines, matching read_jsonl's filter; no JSON parse needed."""
+    if not path.exists():
+        return 0
+    with path.open(encoding="utf-8") as handle:
+        return sum(1 for line in handle if line.strip())
+
+
 def jot(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
     """Append one entry; the receipt echoes the minted id."""
     directory.mkdir(parents=True, exist_ok=True)
-    count = len(pad_entries(directory)) + 1
+    count = _line_count(directory / SCRATCH) + 1
     record = {"j": f"j{count}", "t": now_iso(), "body": dict(body)}
     append_jsonl(directory / SCRATCH, [record])
     receipt: dict[str, Any] = {"jotted": record["j"], "entries": count}

@@ -14,7 +14,7 @@ import difflib
 import json
 import re
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -147,6 +147,7 @@ class _Admission:
     result: NoteResult = field(default_factory=NoteResult)
     aliases: dict[str, str] = field(init=False)
     counts: Counter[str] = field(init=False)
+    ids: defaultdict[str, set[str]] = field(init=False)
 
     def __post_init__(self) -> None:
         self.aliases = {
@@ -155,6 +156,9 @@ class _Admission:
             for alias in paper_aliases(paper)
         }
         self.counts = Counter(record["e"] for record in self.existing)
+        self.ids = defaultdict(set)
+        for record in self.existing:
+            self.ids[record["e"]].add(record["id"])
 
     def problem(self, where: str, fix: str, hint: str | None = None) -> None:
         self.result.problems.append(Diagnostic(where, fix, hint))
@@ -210,8 +214,7 @@ class _Admission:
                 )
                 clean = False
         if target := entry.get("supersedes"):
-            known = {r["id"] for r in self.existing if r["e"] == kind}
-            known.update(r["id"] for r in self.result.records if r["e"] == kind)
+            known = self.ids[kind]
             if target not in known:
                 self.problem(
                     f"{where}.supersedes",
@@ -227,6 +230,7 @@ class _Admission:
         record["e"] = kind
         self.counts[kind] += 1
         record["id"] = f"{ID_PREFIX[kind]}{self.counts[kind]}"
+        self.ids[kind].add(record["id"])
         record["t"] = now_iso()
         if entry.get("from"):
             record["from"] = list(entry["from"])

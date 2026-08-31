@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import heapq
 import json
 import re
 import sys
@@ -202,9 +203,8 @@ def cmd_show(args: argparse.Namespace) -> int:
         matching = [
             paper for paper in matching if pattern.search(field_text(paper, args.on))
         ]
-    matching.sort(key=SORTS[args.sort])
     total = len(matching)
-    matching = matching[: args.limit]
+    matching = heapq.nsmallest(args.limit, matching, key=SORTS[args.sort])
     if missing:
         signal(f"no corpus paper for: {', '.join(missing)}")
     if total > len(matching):

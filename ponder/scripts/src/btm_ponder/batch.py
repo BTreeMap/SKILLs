@@ -8,6 +8,7 @@ the ledger changes only when the problem list is empty.
 
 from __future__ import annotations
 
+import heapq
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
@@ -60,11 +61,12 @@ class NoteResult:
 def near_misses(ref: str, ids: Iterable[str]) -> list[str]:
     """Ids sharing keywords with a failed reference, best overlap first."""
     words = set(keywords_of(ref))
-    scored = sorted(
+    best = heapq.nsmallest(
+        3,
         ((len(words & set(keywords_of(candidate))), candidate) for candidate in ids),
         key=lambda pair: (-pair[0], pair[1]),
     )
-    return [candidate for overlap, candidate in scored if overlap > 0][:3]
+    return [candidate for overlap, candidate in best if overlap > 0]
 
 
 def _safe_slug(entry: dict[str, Any]) -> str | None:
