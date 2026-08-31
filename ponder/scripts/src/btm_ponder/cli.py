@@ -18,8 +18,11 @@ from btm_corekit import (
     band_signal,
     emit,
     is_pathlike,
+    jot,
     mint,
     now_iso,
+    pad_body,
+    recall,
     resolve,
     run_cli,
     signal,
@@ -244,7 +247,42 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "may reference ids minted earlier in the same batch",
             "refs": "a ref is the kw slug, an explicit ref, or any unique keyword "
             "subset; receipts echo every minted id",
+            "pad": "jot stores any JSON object unchecked; recall filters by "
+            '--kind/--match/--since/--limit; suggested body: {"kind": '
+            '"quote|hunch|open", ...}',
         }
+    )
+    return 0
+
+
+def session_dir(ref: str) -> Path:
+    directory = STORE.dir_of(ref)
+    require(
+        ledger_path(directory).exists(),
+        f"no session at {directory}; open with --question creates one",
+    )
+    return directory
+
+
+def cmd_jot(args: argparse.Namespace) -> int:
+    directory = session_dir(args.session)
+    body, advisory = pad_body(args.entry, args.text)
+    if advisory:
+        signal(advisory)
+    emit(jot(directory, body))
+    return 0
+
+
+def cmd_recall(args: argparse.Namespace) -> int:
+    directory = session_dir(args.session)
+    emit(
+        recall(
+            directory,
+            kind=args.kind,
+            match=args.match,
+            since=args.since,
+            limit=args.limit,
+        )
     )
     return 0
 
@@ -287,6 +325,18 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("session", help="session identifier")
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
+    jotter = commands.add_parser("jot", help="free note on the session pad")
+    jotter.set_defaults(func=cmd_jot)
+    jotter.add_argument("session")
+    jotter.add_argument("entry", help="a JSON object, or prose with --text")
+    jotter.add_argument("--text", action="store_true", help="store the entry as prose")
+    recaller = commands.add_parser("recall", help="filtered slice of the pad")
+    recaller.set_defaults(func=cmd_recall)
+    recaller.add_argument("session")
+    recaller.add_argument("--kind")
+    recaller.add_argument("--match")
+    recaller.add_argument("--since", help="entries after this pad id")
+    recaller.add_argument("--limit", type=int)
     clean = commands.add_parser("clean")
     clean.set_defaults(func=cmd_clean)
     clean.add_argument("session", nargs="?")

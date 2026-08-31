@@ -209,6 +209,30 @@ class TestInformalMode:
         assert any("no sweep" in line for line in document["advisories"])
 
 
+class TestPad:
+    def test_jot_and_recall_round_trip(self, capsys):
+        session = opened(capsys)
+        code, receipt, _ = run(["jot", session, '{"kind": "hunch", "n": 1}'], capsys)
+        assert code == 0
+        assert receipt["jotted"] == "j1"
+        code, view, _ = run(["recall", session, "--kind", "hunch"], capsys)
+        assert code == 0
+        assert view["entries"][0]["body"] == {"kind": "hunch", "n": 1}
+
+    def test_prose_is_stored_as_text_with_an_advisory(self, capsys):
+        session = opened(capsys)
+        code, _, err = run(["jot", session, "plain prose"], capsys)
+        assert code == 0
+        assert "not a JSON object" in err
+        _, view, _ = run(["recall", session], capsys)
+        assert view["entries"][0]["body"] == {"text": "plain prose"}
+
+    def test_jot_needs_an_existing_session(self, capsys):
+        code, _, err = run(["jot", "absent thing", "{}"], capsys)
+        assert code == 1
+        assert "no session" in err
+
+
 class TestClean:
     def test_bare_clean_lists_sessions_and_the_next_step(self, capsys):
         opened(capsys)

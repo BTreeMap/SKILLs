@@ -23,8 +23,9 @@ dates as the review's as-of point, and note truncated searches as ranked
 samples with their upstream totals.
 
 ## <Theme sections, one per theme>
-Synthesis prose citing records as [n]. Disagreements and single-paper
-claims labeled as the rules in synthesize require.
+Synthesis prose citing records as [n], using the numbers `brief` or
+`cite-check` assigned. Disagreements and single-paper claims labeled as
+the rules in synthesize require.
 
 [## Appraisal table]  (ultra: one row per included paper, six dimensions)
 
@@ -38,7 +39,8 @@ Corpus-relative gaps, phrased per synthesize.
 
 ## Included papers
 | [n] | title | authors | year | venue | read level | key |
-Bibliography with DOI or arXiv link per entry.
+Rows follow the script's marker table; bibliography with DOI or arXiv
+link per entry.
 </report_template>
 
 ## Verification before delivery
@@ -51,10 +53,16 @@ Bibliography with DOI or arXiv link per entry.
    key: re-search the paper), or remove the citation and its dependent
    claims. A Crossref title-mismatch signal is a possible retraction or
    erratum: check the landing page before keeping the citation.
-2. Walk each report citation back to its corpus record and read level; a
+2. Run `cite-check --draft <file>`. Marker numbers come from the script's
+   append-only assignment, so a late inclusion extends the table and
+   existing citations stand. Fix every problem it lists (markers never
+   assigned, citations of excluded or unread papers), resolve the at-risk
+   findings it echoes, and rerun until clean. Unused included papers are a
+   coverage question to settle deliberately.
+3. Walk each report citation back to its corpus record and read level; a
    full-text-sounding claim on an abstract-level record is rewritten or
    relabeled.
-3. Check the flow counts against `status` output; numbers in the report
+4. Check the flow counts against `status` output; numbers in the report
    must equal numbers in state.
 
 ## Prose rules

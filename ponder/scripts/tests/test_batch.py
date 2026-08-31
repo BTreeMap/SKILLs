@@ -55,8 +55,7 @@ FULL_BATCH = {
         },
         {
             "leaf": "memory",
-            "state": "retired",
-            "reason": "folded",
+            "state": "folded",
             "into": "rent length",
         },
     ],
@@ -90,8 +89,8 @@ class TestExpansion:
 
     def test_into_carries_the_fold_target(self, loaded):
         _, result = loaded
-        fold = next(e for e in result.events if e.get("reason") == "folded")
-        assert fold["detail"].startswith("rent-length-")
+        fold = next(e for e in result.events if e.get("state") == "folded")
+        assert fold["into"].startswith("rent-length-")
 
     def test_origin_passes_through(self, loaded):
         _, result = loaded

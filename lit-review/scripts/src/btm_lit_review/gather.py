@@ -105,7 +105,13 @@ def cmd_init(args: argparse.Namespace) -> int:
     write_atomic(session.protocol_path, json.dumps(protocol, indent=2) + "\n")
     session.papers_path.touch()
     session.log_path.touch()
-    emit({"session": name, "next": "fill criteria lists in protocol.json"})
+    emit(
+        {
+            "session": name,
+            "dir": str(root.resolve()),
+            "next": f"fill criteria lists in {session.protocol_path.resolve()}",
+        }
+    )
     return 0
 
 
@@ -120,6 +126,8 @@ def cmd_search(args: argparse.Namespace) -> int:
         if args.from_year or args.to_year:
             signal("arxiv source ignores year bounds; filter after fetching")
         fetched, total = fetch_arxiv(args.query, limit)
+        if total == 0 and ":" not in args.query:
+            signal('arXiv matched nothing; retry with field syntax: all:"<phrase>"')
     else:
         fetched, total = fetch_crossref(args.query, limit, args.from_year, args.to_year)
     entry = {

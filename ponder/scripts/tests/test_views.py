@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from btm_ponder.state import (
+    Folded,
     Leaf,
     Ledger,
     Open,
@@ -97,20 +98,18 @@ class TestViolations:
     def test_a_fold_onto_a_refuted_target_breaks(self):
         built = ledger_with(
             ("a", Leaf("q", "frame", Refuted(("s",), "p"))),
-            ("b", Leaf("q", "frame", Retired("folded", "a"))),
+            ("b", Leaf("q", "frame", Folded("a"))),
             swept=True,
         )
         assert any("fold broken" in line for line in violations(built))
 
     def test_a_fold_onto_a_missing_target_breaks(self):
-        built = ledger_with(
-            ("b", Leaf("q", "frame", Retired("folded", "ghost"))), swept=True
-        )
+        built = ledger_with(("b", Leaf("q", "frame", Folded("ghost"))), swept=True)
         assert any("fold broken" in line for line in violations(built))
 
-    def test_an_immaterial_retirement_never_breaks(self):
+    def test_a_retirement_never_breaks(self):
         built = ledger_with(
-            ("b", Leaf("q", "frame", Retired("immaterial", "changes nothing"))),
+            ("b", Leaf("q", "frame", Retired("changes nothing"))),
             swept=True,
         )
         assert violations(built) == []
@@ -180,7 +179,8 @@ class TestLeafView:
             (Retrieved(("s",)), "retrieved"),
             (Refuted(("s",), "p"), "refuted"),
             (Unresolved("searched", "d"), "unresolved"),
-            (Retired("folded", "a"), "retired"),
+            (Retired("why"), "retired"),
+            (Folded("a"), "folded"),
         ],
     )
     def test_every_variant_has_a_view(self, state, expected):

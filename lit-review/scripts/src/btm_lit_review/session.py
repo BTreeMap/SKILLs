@@ -38,6 +38,14 @@ class Session:
     def log_path(self) -> Path:
         return self.root / "search_log.jsonl"
 
+    @property
+    def notebook_path(self) -> Path:
+        return self.root / "notebook.jsonl"
+
+    @property
+    def citations_path(self) -> Path:
+        return self.root / "citations.json"
+
 
 def open_session(root: str) -> Session:
     session = Session(STORE.dir_of(root))

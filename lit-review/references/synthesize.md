@@ -31,6 +31,19 @@ an annotated bibliography, not a review.
   records (invariant 1); a sentence no record supports is deleted, not
   softened.
 
+## Findings and gaps as records
+
+Promote each theme conclusion into the notebook with `note`: a finding
+carries its claim, supporting keys, and the read level each citation
+needs; a gap carries the absence claimed, the null-search log ids proving
+it, and a watch regex over titles and abstracts. `brief` re-derives their
+verdicts against the live corpus: an excluded or under-read support flags
+the finding at-risk, and a later paper matching a gap's watch flags the
+gap challenged, which is exactly when a claim written earlier needs
+re-reading. Supersede a record when the field model moves; the chain
+keeps the history. Working hypotheses that are still forming stay on the
+pad as `map` or `open` entries until they earn support.
+
 ## Gaps
 
 A gap is an absence in this corpus, and the report phrases it that way:

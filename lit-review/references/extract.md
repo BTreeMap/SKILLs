@@ -21,20 +21,21 @@ available later without re-reading.
 
 ## Extraction record
 
-One record per paper, kept as a file in the session directory. Fill only
-what the source states; write "not reported" rather than inferring.
+One record per paper, jotted onto the session pad so coverage stays
+checkable: `status` and `brief` list included papers with no extraction
+entry. Fill only what the source states; write "not reported" rather than
+inferring. The body is free beyond `kind` and `key`: add per-paper
+hypothesis-directed questions whenever the argument needs them, and the
+jot advisory warns on a key the corpus lacks.
 
 <extraction_record>
-key: doi:10.1234/example.1
-read_level: full-text
-claims: the one to three findings the paper itself asserts, each with
-  location (section or page)
-method: design, dataset or sample, baselines compared against
-evidence: the numbers backing each claim, as reported, with units
-limitations: those the authors state; then those observed while reading,
-  labeled as the reviewer's
-relation: which corpus papers it builds on, contradicts, or replicates
-quote: at most one verbatim sentence worth citing exactly, with location
+$R jot "$S" '{"kind": "extraction", "key": "doi:10.1234/example.1",
+  "claims": "the one to three findings the paper itself asserts, each with location",
+  "method": "design, dataset or sample, baselines compared against",
+  "evidence": "the numbers backing each claim, as reported, with units",
+  "limitations": "those the authors state; then the reviewer's, labeled",
+  "relation": "which corpus papers it builds on, contradicts, or replicates",
+  "quote": "at most one verbatim sentence worth citing exactly, with location"}'
 </extraction_record>
 
 ## Quality appraisal
@@ -61,5 +62,5 @@ per `report`.
 With sub-agents available and more than roughly eight full-text papers, fan
 out: one worker per paper, input the record template plus the paper's corpus
 entry, output one extraction record. The orchestrator alone runs `update`
-and writes session files. Worker output follows the same template so the
-branch leaves no trace in the deliverable.
+and `jot`; workers never write session state. Worker output follows the
+same template so the branch leaves no trace in the deliverable.

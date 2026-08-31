@@ -107,6 +107,8 @@ S="<the session identifier the open output echoed>"
 $R schema
 $R note "$S" --file <round.json> && $R check "$S"
 $R status "$S"
+$R jot "$S" '{"kind": "quote", ...}' [--text]
+$R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
 $R clean ["$S" | --all]
 </script_commands>
 
@@ -124,17 +126,24 @@ which is the cheap import path for prior work. `--mode informal` demotes
 open-leaf and unswept violations to advisories; sourcing discipline is
 unchanged.
 
+The pad is free working memory beside the ledger: `jot` admits any JSON
+object (or prose with `--text`) and never rejects content; `recall` filters
+it back by kind, regex, id, or count. Park verbatim quotes, hunches, and
+open threads there while a round is hot, then pull them back at draft time;
+only ledger events face the gate.
+
 `note` admits optional arrays in schema order, allowing later entries to use
 IDs minted earlier in the batch. `premise` (the claim, one line) and `detail`
 (supporting note) are stored on any close and come back in the `check`
-scaffold; `into` carries a fold target; `survivors` are zero-based indexes
-into `candidates`:
+scaffold; a `folded` close names its target with `into`; `reason` belongs to
+`unresolved` closes; `retired` closes say in `detail` why the leaf changes
+nothing; `survivors` are zero-based indexes into `candidates`:
 
 <note_batch>
 {
   "leaves":      [{"kw": ["rent", "length"], "q": "...", "origin": "frame|spawned"}],
   "sources":     [{"kw": ["bcl", "rent"], "leaf": "<ref>", "cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}],
-  "closes":      [{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired", "sources": ["<ref>"], "premise": "...", "detail": "...", "reason": "searched|not_pursued|folded|immaterial", "into": "<ref>"}],
+  "closes":      [{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired|folded", "sources": ["<ref>"], "premise": "...", "detail": "...", "reason": "searched|not_pursued", "into": "<ref>"}],
   "sweeps":      [{"checked": "...", "candidates": ["..."], "survivors": [0]}],
   "checkpoints": [{"label": "round-1", "searches": 5}]
 }

@@ -6,6 +6,7 @@ from typing import Any
 
 from btm_ponder.state import (
     CHAIN_MIN_LINKS,
+    Folded,
     LeafState,
     Ledger,
     Open,
@@ -52,11 +53,11 @@ def violations(ledger: Ledger) -> list[str]:
     if not ledger.swept:
         found.append(f"{NO_SWEEP}: run the rival sweep before drafting")
     for leaf_id, leaf in ledger.leaves.items():
-        if isinstance(leaf.state, Retired) and leaf.state.reason == "folded":
-            target = ledger.leaves.get(leaf.state.detail)
+        if isinstance(leaf.state, Folded):
+            target = ledger.leaves.get(leaf.state.into)
             if target is None or not isinstance(target.state, Retrieved):
                 found.append(
-                    f"fold broken: {leaf_id} folded into {leaf.state.detail}, "
+                    f"fold broken: {leaf_id} folded into {leaf.state.into}, "
                     "which is no longer retrieved; reopen or re-close the fold"
                 )
     return found
@@ -109,8 +110,10 @@ def leaf_view(state: LeafState) -> dict[str, Any]:
             return view | _prose("", detail)
         case Unresolved(reason, detail):
             return {"state": "unresolved", "reason": reason, "detail": detail}
-        case Retired(reason, detail):
-            return {"state": "retired", "reason": reason, "detail": detail}
+        case Retired(detail):
+            return {"state": "retired", "detail": detail}
+        case Folded(into):
+            return {"state": "folded", "into": into}
 
 
 def _prose(premise: str, detail: str) -> dict[str, str]:
@@ -157,7 +160,7 @@ def scaffold(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, list[dict]]
                         "detail": detail,
                     }
                 )
-            case Open() | Retired():
+            case Open() | Retired() | Folded():
                 pass
     return {section: rows for section, rows in body.items() if rows}
 

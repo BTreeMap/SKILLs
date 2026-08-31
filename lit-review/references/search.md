@@ -25,9 +25,11 @@ writes.
   name one idea differently; missing a vocabulary misses its papers.
 - Run a pilot query per concept pair, skim the top results, refine terms,
   then run the real queries. Pilot queries are logged like any other.
-- Plain phrases work for all three sources. The arxiv source passes queries
-  containing `:` through unchanged, so field syntax such as
-  `cat:cs.CL AND all:"retrieval"` is available when needed.
+- Plain phrases work for openalex and crossref. arXiv ranks fielded
+  queries far better: wrap phrases as `all:"retrieval"` and combine with
+  operators, `cat:cs.CL AND all:"retrieval"`. The script passes queries
+  containing `:` through unchanged and signals when an unfielded query
+  matches nothing.
 - Year bounds: pass `--from-year` and `--to-year` for openalex and
   crossref; the arxiv source signals that it ignores them, so apply the
   window at screening.
@@ -56,4 +58,6 @@ Stop searching when the last round of queries and snowballing returns only
 papers the corpus already holds or papers screening rejects. Before
 stopping, check the misses list: one query per major synonym set has run,
 and each included paper's references were either snowballed or read. Record
-the stopping decision in the session notes; the report states it.
+the stopping decision with `jot`; the report states it. A query that
+returns zero results is evidence, worth citing later as a gap probe by its
+log id.

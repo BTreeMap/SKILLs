@@ -12,7 +12,7 @@ from __future__ import annotations
 from btm_corekit.channels import emit, signal
 from btm_corekit.cli import run_cli
 from btm_corekit.clock import now_iso
-from btm_corekit.errors import CommandError
+from btm_corekit.errors import CommandError, UpstreamError
 from btm_corekit.fsio import (
     append_jsonl,
     read_jsonl,
@@ -44,7 +44,9 @@ from btm_corekit.origin import (
     request_identity,
     user_agent,
 )
+from btm_corekit.pad import jot, pad_body, pad_entries, pad_ids, recall
 from btm_corekit.sessions import SessionStore
+from btm_corekit.verdicts import Diagnostic
 
 __all__ = [
     "KEYWORD_RANGE",
@@ -52,22 +54,29 @@ __all__ = [
     "CommandError",
     "Contact",
     "CustomAgent",
+    "Diagnostic",
     "Exact",
     "NoMatch",
     "Recovered",
     "RequestIdentity",
     "Resolution",
     "SessionStore",
+    "UpstreamError",
     "append_jsonl",
     "band_signal",
     "eliminate",
     "emit",
     "is_pathlike",
+    "jot",
     "keywords_of",
     "mint",
     "now_iso",
+    "pad_body",
+    "pad_entries",
+    "pad_ids",
     "polite_params",
     "read_jsonl",
+    "recall",
     "request_identity",
     "resolve",
     "run_cli",

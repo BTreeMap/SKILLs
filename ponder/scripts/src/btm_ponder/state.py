@@ -8,10 +8,9 @@ from btm_corekit import CommandError
 
 SOURCE_CLASSES = ("constitutive", "attested", "measured", "reported")
 ORIGINS = ("frame", "spawned")
-CLOSE_STATES = ("retrieved", "refuted", "unresolved", "retired")
+CLOSE_STATES = ("retrieved", "refuted", "unresolved", "retired", "folded")
 MODES = ("full", "informal")  # informal demotes draft blockers to advisories
 UNRESOLVED_REASONS = ("searched", "not_pursued")
-RETIRED_REASONS = ("folded", "immaterial")
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 MAX_EVENTS = 1000  # runaway backstop; a real run stays under ~100 events
 
@@ -43,11 +42,15 @@ class Unresolved:
 
 @dataclass(frozen=True, slots=True)
 class Retired:
-    reason: str  # one of RETIRED_REASONS
-    detail: str  # folded: the target leaf id; immaterial: why
+    detail: str  # why the leaf fails to change the conclusion
 
 
-LeafState = Open | Retrieved | Refuted | Unresolved | Retired
+@dataclass(frozen=True, slots=True)
+class Folded:
+    into: str  # the retrieved leaf that absorbed this one
+
+
+LeafState = Open | Retrieved | Refuted | Unresolved | Retired | Folded
 
 
 @dataclass(frozen=True, slots=True)

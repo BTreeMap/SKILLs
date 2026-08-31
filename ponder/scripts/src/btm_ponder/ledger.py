@@ -9,9 +9,9 @@ from btm_ponder.state import (
     CLOSE_STATES,
     MAX_EVENTS,
     ORIGINS,
-    RETIRED_REASONS,
     SOURCE_CLASSES,
     UNRESOLVED_REASONS,
+    Folded,
     Leaf,
     LeafState,
     Ledger,
@@ -28,6 +28,10 @@ from btm_ponder.state import (
 def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
     """Parse a close payload into a LeafState, or raise the violated invariant."""
     state = raw.get("state")
+    if state == "retired" and raw.get("reason") == "folded":
+        # Logs written before folded became its own state carry it this way.
+        state = "folded"
+        raw = {**raw, "into": raw.get("into") or raw.get("detail")}
     require(state in CLOSE_STATES, f"close state must be one of {CLOSE_STATES}")
     if state in ("retrieved", "refuted"):
         sources = tuple(raw.get("sources") or ())
@@ -40,30 +44,26 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
             return Retrieved(sources, premise, detail)
         require(bool(premise), "refuted requires the contradicted premise")
         return Refuted(sources, premise, detail)
-    reason = raw.get("reason")
+    if state == "folded":
+        into = str(raw.get("into") or "").strip()
+        target = ledger.leaves.get(into)
+        require(target is not None, f"fold target does not exist: {into}")
+        require(
+            isinstance(target.state, Retrieved),
+            f"fold target must be retrieved: {into}",
+        )
+        return Folded(into)
     detail = str(raw.get("detail") or "").strip()
     if state == "unresolved":
+        reason = raw.get("reason")
         require(
             reason in UNRESOLVED_REASONS,
             f"unresolved reason must be one of {UNRESOLVED_REASONS}",
         )
         require(bool(detail), "unresolved requires detail")
         return Unresolved(reason, detail)
-    require(
-        reason in RETIRED_REASONS, f"retired reason must be one of {RETIRED_REASONS}"
-    )
-    if reason == "folded":
-        target = ledger.leaves.get(detail)
-        require(target is not None, f"fold target does not exist: {detail}")
-        require(
-            isinstance(target.state, Retrieved),
-            f"fold target must be retrieved: {detail}",
-        )
-        return Retired(reason, detail)
-    require(
-        bool(detail), "immaterial detail must name the conclusion it fails to change"
-    )
-    return Retired(reason, detail)
+    require(bool(detail), "retired detail must name the conclusion it fails to change")
+    return Retired(detail)
 
 
 def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:

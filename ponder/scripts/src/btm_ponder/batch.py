@@ -15,6 +15,7 @@ from typing import Any
 from btm_corekit import (
     Ambiguous,
     CommandError,
+    Diagnostic,
     Exact,
     NoMatch,
     Recovered,
@@ -34,25 +35,13 @@ SCHEMA: dict[str, str] = {
     '"cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}',
     "closes": '{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired", '
     '"sources": ["<ref>"], "premise": "the claim, one line", '
-    '"detail": "supporting note", '
-    '"reason": "searched|not_pursued|folded|immaterial", "into": "<leaf ref>"}',
+    '"detail": "supporting note; retired: why immaterial", '
+    '"reason": "searched|not_pursued (unresolved only)", '
+    '"into": "<leaf ref> (folded only)"}',
     "sweeps": '{"checked": "...", "candidates": ["prose", "..."], '
     '"survivors": [0, 2]} (survivors are zero-based indexes into candidates)',
     "checkpoints": '{"label": "round-1", "searches": 5}',
 }
-
-
-@dataclass(frozen=True, slots=True)
-class Diagnostic:
-    """One corrective order: where to edit, what to do, and a hint."""
-
-    where: str
-    fix: str
-    hint: str | None = None
-
-    def view(self) -> dict[str, str]:
-        base = {"where": self.where, "fix": self.fix}
-        return base | ({"hint": self.hint} if self.hint else {})
 
 
 @dataclass(slots=True)
@@ -261,22 +250,16 @@ class _Expansion:
                 event["premise"] = entry["premise"]
             if entry.get("reason"):
                 event["reason"] = entry["reason"]
-                event["detail"] = self._close_detail(entry, where)
-                broken = broken or event["detail"] is None
-            elif entry.get("detail"):
+            if entry.get("detail"):
                 event["detail"] = entry["detail"]
+            if entry.get("state") == "folded" or entry.get("into"):
+                into = self.lookup(
+                    str(entry.get("into") or ""), self.leaf_ids, "leaf", f"{where}.into"
+                )
+                broken = broken or into is None
+                event["into"] = into
             if not broken:
                 self.staged.append((where, event))
-
-    def _close_detail(self, entry: dict[str, Any], where: str) -> str | None:
-        if entry["reason"] != "folded":
-            return str(entry.get("detail") or "")
-        return self.lookup(
-            str(entry.get("into") or entry.get("detail") or ""),
-            self.leaf_ids,
-            "leaf",
-            f"{where}.into",
-        )
 
     def take_sweeps(self, entries: list[dict[str, Any]]) -> None:
         for index, entry in enumerate(entries):

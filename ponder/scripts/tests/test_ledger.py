@@ -8,11 +8,11 @@ from btm_corekit import CommandError
 from btm_ponder.ledger import apply, replay
 from btm_ponder.state import (
     MAX_EVENTS,
+    Folded,
     Leaf,
     Ledger,
     Open,
     Refuted,
-    Retired,
     Retrieved,
     Unresolved,
 )
@@ -206,6 +206,24 @@ class TestFolds:
         apply(ledger, {"e": "add_leaf", "id": "leaf-b", "q": "second"})
         apply(
             ledger,
+            {"e": "close", "leaf": "leaf-b", "state": "folded", "into": "leaf-a"},
+        )
+        assert ledger.leaves["leaf-b"].state == Folded("leaf-a")
+
+    def test_legacy_retired_folded_events_still_replay(self):
+        ledger = seeded()
+        apply(
+            ledger,
+            {
+                "e": "close",
+                "leaf": "leaf-a",
+                "state": "retrieved",
+                "sources": ["src-a"],
+            },
+        )
+        apply(ledger, {"e": "add_leaf", "id": "leaf-b", "q": "second"})
+        apply(
+            ledger,
             {
                 "e": "close",
                 "leaf": "leaf-b",
@@ -214,7 +232,7 @@ class TestFolds:
                 "detail": "leaf-a",
             },
         )
-        assert ledger.leaves["leaf-b"].state == Retired("folded", "leaf-a")
+        assert ledger.leaves["leaf-b"].state == Folded("leaf-a")
 
     def test_fold_into_an_open_leaf_is_refused(self):
         ledger = seeded()
@@ -222,38 +240,21 @@ class TestFolds:
         with pytest.raises(CommandError, match="fold target must be retrieved"):
             apply(
                 ledger,
-                {
-                    "e": "close",
-                    "leaf": "leaf-b",
-                    "state": "retired",
-                    "reason": "folded",
-                    "detail": "leaf-a",
-                },
+                {"e": "close", "leaf": "leaf-b", "state": "folded", "into": "leaf-a"},
             )
 
     def test_fold_into_a_missing_leaf_is_refused(self):
         with pytest.raises(CommandError, match="fold target does not exist"):
             apply(
                 seeded(),
-                {
-                    "e": "close",
-                    "leaf": "leaf-a",
-                    "state": "retired",
-                    "reason": "folded",
-                    "detail": "ghost",
-                },
+                {"e": "close", "leaf": "leaf-a", "state": "folded", "into": "ghost"},
             )
 
-    def test_immaterial_requires_the_conclusion_it_leaves_standing(self):
-        with pytest.raises(CommandError, match="immaterial detail"):
+    def test_retired_requires_the_conclusion_it_leaves_standing(self):
+        with pytest.raises(CommandError, match="retired detail"):
             apply(
                 seeded(),
-                {
-                    "e": "close",
-                    "leaf": "leaf-a",
-                    "state": "retired",
-                    "reason": "immaterial",
-                },
+                {"e": "close", "leaf": "leaf-a", "state": "retired"},
             )
 
 

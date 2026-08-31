@@ -15,7 +15,7 @@ from typing import Any
 
 import httpx
 
-from btm_corekit import CommandError, user_agent
+from btm_corekit import UpstreamError, user_agent
 from btm_lit_review.constants import DOI_HOST, HTTP_BAD_REQUEST, TIMEOUT_SECONDS
 
 
@@ -33,9 +33,9 @@ def http_get(url: str, params: Mapping[str, str] | None = None) -> bytes:
     try:
         response = _client().get(url, params=params)
     except httpx.RequestError as err:
-        raise CommandError(f"cannot reach {err.request.url}: {err}") from err
+        raise UpstreamError(f"cannot reach {err.request.url}: {err}") from err
     if response.status_code >= HTTP_BAD_REQUEST:
-        raise CommandError(f"HTTP {response.status_code} from {response.url}")
+        raise UpstreamError(f"HTTP {response.status_code} from {response.url}")
     return response.content
 
 
@@ -44,7 +44,7 @@ def http_get_json(url: str, params: Mapping[str, str] | None = None) -> Any:
     try:
         return json.loads(payload)
     except json.JSONDecodeError as err:
-        raise CommandError(f"non-JSON response from {url}") from err
+        raise UpstreamError(f"non-JSON response from {url}") from err
 
 
 def doi_resolution_status(doi: str) -> int:
@@ -56,4 +56,4 @@ def doi_resolution_status(doi: str) -> int:
     try:
         return _client().head(target, follow_redirects=False).status_code
     except httpx.RequestError as err:
-        raise CommandError(f"cannot reach {DOI_HOST}: {err}") from err
+        raise UpstreamError(f"cannot reach {DOI_HOST}: {err}") from err

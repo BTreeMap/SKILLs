@@ -6,8 +6,10 @@ If the criteria feel wrong while screening, that is an amendment (owned by
 
 ## Pass 1: title and abstract
 
-Work from `show --status candidate`, most-cited first. For each paper decide
-include, exclude, or unsure from title, venue, year, and abstract alone.
+Work from `show --status candidate`, most-cited first; `--match` with
+`--on title|abstract` narrows by vocabulary, and `--fields` with
+`--format tsv` keeps long listings cheap. For each paper decide include,
+exclude, or unsure from title, venue, year, and abstract alone.
 
 - Judge against the criteria list, item by item, not against taste.
 - Unsure costs one full-text look later; wrongly excluded costs a missing
@@ -27,6 +29,17 @@ batch is valid.
                                   "reason": "editorial, not a study"}
 }
 </decisions_example>
+
+## Bulk rules
+
+A vocabulary cut over hundreds of candidates is one judgment, and the
+record should say so. `screen --on title --match "<regex>" --exclude
+--reason "..."` applies a case-insensitive regex to every candidate, marks
+each match with `rule:<id>`, and stores the rule with its matched keys in
+the notebook, so flow counts trace to the predicate that produced them.
+Decided papers stay untouched: make the individual judgments that must
+survive a broad cut before running it. `--include` exists for the mirror
+case, still bound by the criteria gate.
 
 ## Exclusion reasons
 
