@@ -1,0 +1,17 @@
+[project]
+name = "btm-peer-review"
+version = "1.0.0"
+description = "Session engine for adverse peer review: anchored objections, derived verdicts"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["btm-corekit"]
+
+[project.scripts]
+btm-peer-review = "btm_peer_review.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }

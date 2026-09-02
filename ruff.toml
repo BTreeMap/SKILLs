@@ -57,6 +57,7 @@ known-first-party = [
   "btm_corekit",
   "btm_ponder",
   "btm_lit_review",
+  "btm_peer_review",
   "btm_caveman",
   "btm_read_pdf",
   "btm_setup_env",

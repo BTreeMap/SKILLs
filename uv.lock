@@ -11,6 +11,7 @@ members = [
     "btm-caveman",
     "btm-corekit",
     "btm-lit-review",
+    "btm-peer-review",
     "btm-ponder",
     "btm-read-pdf",
     "btm-repo-gate",
@@ -136,6 +137,17 @@ requires-dist = [
     { name = "btm-corekit", editable = ".corekit" },
     { name = "httpx", extras = ["brotli", "http2", "socks", "zstd"], specifier = ">=0.28,<1" },
 ]
+
+[[package]]
+name = "btm-peer-review"
+version = "1.0.0"
+source = { editable = "peer-review/scripts" }
+dependencies = [
+    { name = "btm-corekit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
 
 [[package]]
 name = "btm-ponder"

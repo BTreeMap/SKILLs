@@ -59,6 +59,10 @@ Current skills:
   OpenAlex, arXiv, and Crossref: criteria before search, logged queries,
   deduplication, two-pass screening, snowballing, extraction, a gated
   notebook of findings and gaps, DOI and citation checks.
+* `peer-review/` - adverse, referenced paper review: verbatim claims,
+  signalling-question banks for design, analysis, limitations, and novelty,
+  a lit-review corpus for prior work, objections admitted only with a
+  resolved quote or a dated corpus key, and a derived recommendation.
 * `pl-theorist/` - a PL theorist's discipline via verbs
   (design/build/refactor/review/audit/test/teach/help) with per-language cost
   models, Bash and GitHub Actions YAML included.
