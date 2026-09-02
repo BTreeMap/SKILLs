@@ -1,8 +1,7 @@
 # Extract: Reading, Records, Appraisal
 
-Turn each included paper into one extraction record. The records, not the
-papers, are what synthesis reads; anything not captured here is not
-available later without re-reading.
+Turn each included paper into one extraction record. Synthesis reads the
+records; anything missing from them needs a re-read later.
 
 ## Reading order and depth
 
@@ -23,8 +22,8 @@ available later without re-reading.
 
 One record per paper, jotted onto the session pad so coverage stays
 checkable: `status` and `brief` list included papers with no extraction
-entry. Fill only what the source states; write "not reported" rather than
-inferring. The body is free beyond `kind` and `key`: add per-paper
+entry. Fill only what the source states; write "not reported" for the
+rest. The body is free beyond `kind` and `key`: add per-paper
 hypothesis-directed questions whenever the argument needs them, and the
 jot advisory warns on a key the corpus lacks.
 
@@ -40,8 +39,8 @@ $R jot "$S" '{"kind": "extraction", "key": "doi:10.1234/example.1",
 
 ## Quality appraisal
 
-Appraise while reading, one judgment per dimension, weighed together
-rather than summed into a score to rank by:
+Appraise while reading, one judgment per dimension, weighed together and
+never summed into one score:
 
 | Dimension | Question |
 | --- | --- |

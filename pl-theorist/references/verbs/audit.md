@@ -29,8 +29,8 @@ repo-scale categories only an audit can see:
 | Standard drift | The configured language standard rose (edition, target, `requires-python`) but the code still writes to the old one |
 | Capability sprawl | Scripts and workflows holding broader permissions or secrets than their effects require |
 
-Sample honestly: if scope forces sampling, choose by blast radius and name
-every unexamined area.
+When scope forces sampling, choose by blast radius and name every
+unexamined area.
 
 ### 3. Rank
 
@@ -44,8 +44,8 @@ A ledger table, ranked:
 
 `| # | location | category | finding | suggested shape | effort (S/M/L) |`
 
-Then: at most five lines summarizing systemic themes, the single
-highest-value fix, and the unexamined areas. Fixing proceeds through
+Then: at most five lines summarizing systemic themes, the highest-value
+fix, and the unexamined areas. Fixing proceeds through
 `refactor` or `build` invocations per ledger row.
 
 ## Completion Checks

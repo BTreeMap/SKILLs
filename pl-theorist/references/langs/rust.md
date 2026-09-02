@@ -37,7 +37,7 @@ syntax they permit, never beyond.
   (`Some(n) if n > limit => ...`) over an `if`/`else if` ladder re-testing the
   same scrutinee: the compiler's exhaustiveness check is the payoff, and
   guards keep each arm's condition adjacent to its binding.
-- Reach for the combinators the stdlib already names before writing manual
+- Use the combinators the stdlib already names before writing manual
   branches: `is_some_and`/`is_ok_and`, `inspect`, `map_or_else`,
   `unwrap_or_default`, the map `Entry` API (`entry(k).or_insert_with(...)`),
   `slice::partition_point` for binary search by predicate,

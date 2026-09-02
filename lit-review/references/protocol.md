@@ -1,12 +1,11 @@
 # Protocol: Question, Review Type, Criteria
 
-Everything the review will and will not cover is fixed here, before any
-search runs.
+The review's scope is fixed here, before any search runs.
 
 ## Clarify first
 
 Confirm four inputs. Ask only the ones whose answer would change the output,
-at most three; if the user says to just proceed, choose defaults and state
+at most three; if the user says proceed, choose defaults and state
 the assumptions at the top of the report.
 
 1. **Research question.** Specific and answerable. "How do X and Y compare
@@ -38,8 +37,7 @@ non-empty.
 - Exclusion: off-topic neighbors likely to pollute results, languages not
   read, publication forms not accepted (abstracts only, editorials).
 - A criterion an agent cannot check against a record ("high quality") does
-  not belong here; quality is appraised during extract, not screened by
-  slogan.
+  not belong here; quality is appraised during extract.
 
 <criteria_example>
 "criteria": {
@@ -58,8 +56,8 @@ non-empty.
 
 ## Amendments
 
-Changing criteria after searches ran is allowed and visible, never silent.
-Append to `amendments` in `protocol.json`: date, what changed, why. The
+Criteria may change after searches ran, visibly: append to `amendments` in
+`protocol.json` the date, what changed, and why. The
 script flags hash drift in `status`; an unexplained drift is an error to
 repair. Papers already screened under the old criteria are re-screened when
 the change could flip their decision.
@@ -68,5 +66,5 @@ the change could flip their decision.
 
 When the user names papers they already trust, record them first: search for
 each by title or DOI so it enters the corpus as a record, then mark it
-included with reason "user-supplied seed". Seeds are snowball anchors, not
-proof of the question's framing.
+included with reason "user-supplied seed". Seeds anchor snowballing and
+leave the framing untested.

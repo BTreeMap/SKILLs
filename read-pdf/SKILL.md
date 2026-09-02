@@ -23,9 +23,9 @@ page-cited evidence. Never creates, modifies, or otherwise writes a PDF.
 
 Read PDF content for analysis. Extract text, page numbers, and standard metadata. Preserve source-page provenance.
 
-Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the extractor through its console command with `uv run --project`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer. Do not create or modify any PDF file.
+Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the extractor through its console command with `uv run --project`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer.
 
-Pass an http(s) URL directly as the document argument; the extractor downloads it itself. Downloading first with curl or another tool wastes a step: the command's own fetch caches, caps, and cites the URL as provenance.
+Pass an http(s) URL directly as the document argument: the extractor's own fetch caches, caps, and cites the URL as provenance.
 
 ## Procedure
 
@@ -38,9 +38,9 @@ Pass an http(s) URL directly as the document argument; the extractor downloads i
 
 ## Extract with the Bundled Script
 
-The extractor's console command `btm-read-pdf` accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document). Its workspace manifest is the source of truth for the required dependency.
+The extractor's console command `btm-read-pdf` accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document).
 
-Bind the command once per shell and re-bind after a reset; the `realpath` is load-bearing, because uv resolves the project path lexically and an alias path such as `.claude/skills/read-pdf/` has no workspace root above it. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
+Bind the command once per shell and re-bind after a reset; the `realpath` is required, because uv resolves the project path lexically and an alias path such as `.claude/skills/read-pdf/` has no workspace root above it. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
 
 <all_pages_command>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
@@ -63,7 +63,7 @@ A URL downloads once into a digest-keyed file under the system temp
 directory's `btm-read-pdf/`; a rerun reuses it and says so on stderr, and
 deleting that file forces a refetch. Downloads over 200 MB are refused
 (`--max-bytes` raises the cap), and a response without PDF magic bytes, such
-as a paywall's HTML page, is refused rather than cached.
+as a paywall's HTML page, is refused and left uncached.
 
 For an encrypted PDF, do not ask the user to disclose or paste a password into chat. Instruct the user to set a local environment variable directly in their terminal, then pass only that variable's name to the script.
 
@@ -94,8 +94,8 @@ More extracted source text.
 ## Analyze the Extraction
 
 - **Summary or question answering:** Read all relevant sections. Retain qualifying language, dates, quantities, and exceptions. Cite every material claim with its PDF page number.
-- **Comparison:** Extract the corresponding sections from every document. Compare only like-for-like fields. Identify missing data instead of inferring it.
-- **Table-like content:** Treat text order as a transcription, not a validated table. Reconstruct a row or column only when labels and values remain unambiguous; otherwise describe the ambiguity and cite the page.
+- **Comparison:** Extract the corresponding sections from every document. Compare only like-for-like fields. Report missing data as missing.
+- **Table-like content:** Treat text order as a transcription. Reconstruct a row or column only when labels and values remain unambiguous; otherwise describe the ambiguity and cite the page.
 - **Long documents:** First identify title, headings, contents pages, and relevant terms. Extract the target pages with their surrounding pages. Expand the selection when cross-references, definitions, or footnotes change the interpretation.
 - **Exact quotations:** Copy from the extraction only after checking the page marker. Preserve wording, and identify the PDF page.
 
@@ -105,7 +105,7 @@ More extracted source text.
 - Multi-column layouts, tables, headers, footers, ligatures, and unusual fonts can scramble reading order. Do not silently repair ambiguous values.
 - If the script reports encryption, use `--password-env`. If it cannot decrypt with the supplied variable, report that access was unavailable.
 - If the reader cannot parse the document, report the read error and stop. Do not repair, rewrite, or substitute the PDF.
-- If the document has no standard metadata, omit metadata-based conclusions rather than inventing it.
+- If the document has no standard metadata, omit metadata-based conclusions.
 
 ## Completion Checks
 

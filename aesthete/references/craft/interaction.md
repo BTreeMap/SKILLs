@@ -6,7 +6,7 @@ spine's obligations.
 
 ## Principles worth applying correctly
 
-Cite these only where they genuinely apply.
+Cite these only where they apply.
 
 * **Targets**: acquisition difficulty rises as targets get smaller and
   farther away. Frequent actions get large, close targets. Screen edges and
@@ -46,7 +46,7 @@ Every data container ships six states. Treat these as six different screens.
 Independent boolean flags cannot express them: flags admit loading together
 with error, and cannot distinguish "none exist" from "none match the
 filter". Encode them as one closed set, so that omitting a state fails the
-build rather than rendering a blank region.
+build.
 
 <container_states>
   | { status: 'loading' }
@@ -98,8 +98,7 @@ after failure and reuse information the system already has.
   This is faster and safer than a confirmation, because confirmations are
   dismissed reflexively.
 * Irreversible: confirm, naming the exact object and the exact consequence,
-  with a verb on the confirming button rather than a bare affirmative. For
-  the genuinely catastrophic, require a deliberate act such as typing the
+  with a verb on the confirming button. For the catastrophic, require a deliberate act such as typing the
   name.
 * Place destructive actions away from frequent actions and away from the
   default focused control.
@@ -110,8 +109,7 @@ after failure and reuse information the system already has.
   reachable in a logical order matching the visual order.
 * Focus moves into a dialog on open, stays within it, and returns to the
   trigger on close. Escape closes anything dismissible.
-* Background content behind a modal is made inert, not merely visually
-  dimmed.
+* Background content behind a modal is made inert.
 * Keep the focused control fully clear of sticky headers, footers, and
   floating panels. `a11y` records which part of this is the floor and which
   is house practice above it.
@@ -121,7 +119,7 @@ after failure and reuse information the system already has.
 * Any drag interaction has a non-drag alternative, since dragging is
   unavailable to many users.
 * Replace any removed outline with a focus style at least as visible.
-  Suppressed focus is the single most common accessibility defect.
+  Suppressed focus is the most common accessibility defect.
 
 ## Continuity
 

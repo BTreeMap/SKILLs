@@ -2,7 +2,7 @@
 
 Run before declaring any interface done. Mechanical where a count is
 defined, judgment where it is not. A gate that cannot be honestly passed
-means the work is not finished, not that the gate is too strict.
+means the work is not finished.
 
 Report the result, including every gate that did not pass.
 
@@ -10,8 +10,7 @@ Report the result, including every gate that did not pass.
 
 Count each check from the source. Where a design system or palette was
 supplied, "declared" means its token set; where none was, the scales fixed
-during design. Measure each count against the declaration, not a
-preference.
+during design. Measure each count against the declaration.
 
 | Check | Pass condition |
 | --- | --- |
@@ -48,11 +47,11 @@ Skip only if nothing was supplied.
       colors, the document overrode this skill's defaults, and the
       accessibility floor overrode everything.
 - [ ] Every supplied token pairing actually used was measured for contrast,
-      not assumed, including secondary text on tinted surfaces.
+      including secondary text on tinted surfaces.
 - [ ] Every floor conflict was resolved by derivation and reported, with the
       brand preserved wherever the threshold allowed.
 - [ ] Accessibility claims made by the document were verified against the
-      specification rather than inherited.
+      specification.
 - [ ] Gaps the document left were derived from its own logic and reported.
 
 ## Direction
@@ -103,13 +102,13 @@ Skip only if nothing was supplied.
 
 - [ ] Hierarchy reads correctly in grayscale.
 - [ ] Between-group spacing clearly exceeds within-group spacing.
-- [ ] Cards enclose discrete objects the user acts on, not arbitrary text.
+- [ ] Cards enclose discrete objects the user acts on.
 - [ ] Narrow layouts were designed and verified, with stacking order
       matching DOM order.
 - [ ] Prevent shifts after paint by reserving space for every asynchronous
       element.
 - [ ] One theme holds across the surface, set once at the root.
-- [ ] Both themes were opened and reviewed, not just the one being built in.
+- [ ] Both themes were opened and reviewed.
 - [ ] Theme follows the system preference with no stored state, unless the
       user asked for a toggle.
 
@@ -143,7 +142,7 @@ Skip only if nothing was supplied.
       exhaustively, so omitting a state fails the build.
 - [ ] Each component varies along one axis; no prop switches which subtree
       renders and no prop exists for a single call site.
-- [ ] Call sites adjust position, not identity; new looks became variants.
+- [ ] Call sites adjust position only; new looks became variants.
 - [ ] No lookup runs inside a row loop; expensive construction is hoisted.
 - [ ] Interactivity is isolated to leaves; no continuous value is driven
       through render state.

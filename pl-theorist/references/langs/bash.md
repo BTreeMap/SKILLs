@@ -3,7 +3,7 @@
 ## Disclosed Constraints
 
 - The native collection is the stream of lines (or NUL-delimited records)
-  flowing through a pipe, not the array. Bash arrays are flat only: no
+  through a pipe. Bash arrays are flat only: no
   nesting, no structs; associative arrays require bash 4+ (macOS ships bash
   3.2 by default).
 - Process spawn dominates every other cost. Each command substitution `$()`
@@ -11,9 +11,9 @@
   quadratic-allocation disaster of shell. One `awk` pass beats a thousand
   forks.
 - Word splitting and glob expansion run after parameter expansion: every
-  unquoted expansion is an injection and corruption surface. Quoting is not
-  style; it is the parse boundary.
-- `set -e` is not a type system. It is suppressed for commands in `if`/`while`
+  unquoted expansion is an injection and corruption surface. Quoting is the
+  parse boundary.
+- `set -e` has gaps. It is suppressed for commands in `if`/`while`
   conditions, on the left of `&&`/`||`, and under `!`; and
   `local x=$(cmd)` masks `cmd`'s failure because `local`'s own status wins.
   Declare and assign on separate lines when the status matters.
@@ -25,7 +25,7 @@
 
 ## Preferred FP Shapes
 
-- Pipelines are point-free composition and the honest `map`/`filter`/`fold`
+- Pipelines are point-free composition and the native `map`/`filter`/`fold`
   vocabulary: `grep` filters, `sed`/`awk` map, `sort | uniq -c` and `awk`
   accumulators fold, `head -n1` after a filter is `find`/`first`, `comm` and
   `join` are set algebra on sorted streams.
@@ -33,7 +33,7 @@
   status; treat every global variable write as an effect. Declare function
   state `local`; declare constants `readonly`.
 - Start every script with `set -euo pipefail` and treat the remaining `set -e`
-  gaps as the profile's known unsoundness, not as safety.
+  gaps as known unsoundness.
 - Model absence as empty output plus a nonzero status, never as a sentinel
   string like `"null"` or `"none"`.
 - `case` is pattern matching over globs; prefer it to `if`/`elif` ladders that
@@ -49,7 +49,7 @@
 
 - One parse boundary at the top: validate arguments and environment with
   `${VAR:?}` and explicit checks, then treat them as trusted for the rest of
-  the script. Reject early; do not sprinkle re-validation.
+  the script. Reject early, once.
 - Resource bracket: `trap cleanup EXIT` plus `mktemp`/`mktemp -d` is the RAII
   of shell. One accumulating cleanup function; register it before acquiring
   the resource.
@@ -82,9 +82,8 @@ main() {
 main "$@"
 ]]></teaching_example>
 
-Taste: the filter and fold live in a single `awk` process instead of a
-`while read` loop forking `stat` per file: n lines through one process, not n
-processes. `${1:?}` makes the required argument total at the boundary; the
+Taste: one `awk` process runs the filter and fold, where a `while read` loop
+would fork `stat` per file: n lines through one process. `${1:?}` makes the required argument total at the boundary; the
 function is pure (stdin to stdout), so it composes and tests in isolation.
 `-printf` is a GNU extension; on BSD/macOS substitute `stat -f` per file or
 install findutils, and say which you assumed.
@@ -97,12 +96,10 @@ install findutils, and say which you assumed.
    substitution (`while read ... done < <(cmd)`) instead of piping into it.
 3. Fuse long `grep | sed | awk | cut` chains into one `awk` program when the
    stage count matters; keep the chain when clarity wins and n is small.
-4. Bound fan-out with `xargs -P`/capped background jobs; a full-throttle fork
-   bomb is not parallelism.
+4. Bound fan-out with `xargs -P`/capped background jobs.
 5. Escape threshold: nested data, error accumulation across items, real
-   arithmetic, or any structure beyond a flat stream means the honest fallback
-   is another language. Say so explicitly instead of simulating structs with
-   `eval`.
+   arithmetic, or any structure beyond a flat stream means the fallback is
+   another language. Say so; never simulate structs with `eval`.
 
 ## Validation Focus
 

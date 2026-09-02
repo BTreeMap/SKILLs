@@ -32,7 +32,7 @@
 
 - Python has no sealed algebraic data types. Approximate closed sums with
   dataclass variants plus a union and exhaustive type-checker-supported `match`;
-  treat runtime closure as a project convention, not a proof.
+  runtime closure is a project convention.
 - Use `T | None` for expected absence. Use an established project `Result` type
   for expected failures only when present; otherwise return a small tagged union
   or raise at the imperative boundary according to local convention.

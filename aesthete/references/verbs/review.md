@@ -8,11 +8,10 @@ verb for existing work. Change nothing.
 1. **Reconstruct the intended read.** Infer the surface, audience, and
    primary goal from the artifact itself. State it. Most findings are
    disagreements between the intended read and the built result, and naming
-   the read makes them arguable rather than assertive.
+   the read makes them arguable.
 2. **Walk the flow before the pixels.** Trace the user's path to the primary
    goal and count the friction budget as built. Interaction failures
-   outrank visual ones and are found by walking, not by reading style
-   declarations.
+   outrank visual ones and are found by walking the flow.
 3. **Pass in five sweeps**, in this order. Do not interleave; each sweep has
    a different attention mode.
    * **Logic**: does behavior follow from appearance, is state complete, are
@@ -51,13 +50,13 @@ Fix: {the specific change, not a principle}
 
 ## Rules
 
-* Every finding names a fix that is a change, not a restatement of the rule.
+* Every finding names a fix that is a concrete change.
 * Report the whole-surface failures the diff cannot show: the section that
   inverts theme, the second accent introduced three commits ago, the layout
   family used four times. Reviewing only the changed lines misses the
   failures that matter most.
 * Keep findings focused on the current design. Put a fundamentally different
-  direction in one top finding instead of rewriting every finding beneath it.
+  direction in one top finding only.
 * Say plainly when the work is good. A review that manufactures findings to
   appear thorough trains the reader to ignore reviews.
 * State what was not checked: interactions requiring a running application,
@@ -69,7 +68,7 @@ Fix: {the specific change, not a principle}
 <validation_checklist>
   <item>The intended read was reconstructed and stated before any finding.</item>
   <item>The flow was walked and the built friction budget counted.</item>
-  <item>All five sweeps ran in order and whole-surface consistency was checked, not just the diff.</item>
+  <item>All five sweeps ran in order and whole-surface consistency was checked beyond the diff.</item>
   <item>The repository was checked for an existing implementation of anything the diff re-implements.</item>
   <item>Every finding carries a concrete failure scenario and a specific fix.</item>
   <item>Findings are ranked by severity and preferences were dropped.</item>

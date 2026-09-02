@@ -3,7 +3,7 @@
 An interface is code that outlives the design that motivated it. Compose it
 so the second screen costs less than the first, and the tenth costs least of
 all. When every screen re-implements the same controls, the problem is the
-architecture, not the styling.
+architecture.
 
 Owns component boundaries, prop APIs, duplication policy, layering, and
 render cost. Apply the discipline a type theorist applies to a domain model:
@@ -29,8 +29,7 @@ and explain why a second component is the honest answer.
 
 **Duplicated primitives are always a defect.** A design system is the claim
 that these things are the same thing. Two Buttons falsify that claim. There
-is no threshold to wait for, no rule of three; the second one is already
-wrong.
+is no threshold to wait for; the second one is already wrong.
 
 **Duplicated composition is usually fine.** Two screens arranging the same
 primitives similarly are not yet an abstraction. Wait for the third
@@ -110,7 +109,7 @@ requiring six props at every call site has not chosen defaults.
 
 **When only one call site needs a prop, compose instead of adding it.**
 
-**Style escape hatches are for position, not identity.** Allowing a call
+**Style escape hatches are for position.** Allowing a call
 site to pass spacing or layout classes is reasonable. Allowing it to
 override color, radius, or type forks the design system at that call site.
 If a call site needs a different look, that look is a new variant inside the
@@ -168,7 +167,7 @@ Build the index once, then the loop is linear:
   animation as soon as the list is reordered, filtered, or prepended to.
 * Memoization is keyed on value semantics. A fresh object, array, or
   function literal passed as a prop defeats it on every render, so hoist or
-  memoize the value, not just the component.
+  memoize the value itself.
 * Hoist expensive construction out of the render path: parsers, formatters,
   collators, and regular expressions are built once, not per row.
 * Virtualize long lists past a threshold, but preserve find-in-page and
@@ -178,8 +177,7 @@ Build the index once, then the loop is linear:
 
 ## Naming
 
-Name by concept, not by appearance or location.
-Appearance names go stale the first time the design changes, and location
+Name by concept. Appearance names go stale the first time the design changes, and location
 names discourage the reuse the component exists for.
 
 <naming>

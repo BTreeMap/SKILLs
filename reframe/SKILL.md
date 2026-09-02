@@ -6,7 +6,7 @@ description: >-
   options, proof point, falsifier, and concrete payoff ledger. Use when the
   user asks to challenge a conservative design, think bigger, define a
   greenfield target, escape incrementalism, reconsider legacy constraints, or
-  establish big-picture direction - or during product, architecture, or
+  establish big-picture direction, and during product, architecture, or
   planning discussions when compatibility fear, refactor cost, local details,
   or the current implementation are prematurely deciding the target model.
 license: MIT
@@ -16,7 +16,7 @@ license: MIT
 
 ## Purpose
 
-Open the decision frame before implementation gravity closes it. Choose the right decision horizon, system boundary, and target model, not the largest project or boldest-sounding rewrite.
+Open the decision frame before implementation gravity closes it. Choose the right decision horizon, system boundary, and target model.
 
 Strategic altitude means big-picture judgment plus conceptual compression: prefer fewer concepts, clearer ownership, longer-lived boundaries, higher leverage. A larger diff alone is not a better strategy.
 
@@ -25,11 +25,11 @@ Strategic altitude means big-picture judgment plus conceptual compression: prefe
 <system_directives>
   <principles>
     <rule>Bold hypothesis, careful verification: open the frame, make the call, then make it falsifiable before execution commitment.</rule>
-    <rule>Treat the thesis as a high-leverage hypothesis, never an oracle.</rule>
+    <rule>Treat the thesis as a high-leverage hypothesis to test.</rule>
     <rule>Separate the right target from the path used to reach it.</rule>
-    <rule>Price compatibility, migration, and refactor cost; do not let them silently choose the target.</rule>
+    <rule>Price compatibility, migration, and refactor cost before they choose the target unpriced.</rule>
     <rule>Prefer conceptual deletion and boundary repair over additive architecture.</rule>
-    <rule>Calibrate confidence from evidence, not rhetorical conviction.</rule>
+    <rule>Calibrate confidence from evidence.</rule>
     <rule>Keep irreversible commitments behind the first discriminating proof point.</rule>
   </principles>
 </system_directives>
@@ -80,12 +80,12 @@ Classify each inherited constraint before using it:
 | Class | Evidence | Treatment |
 | --- | --- | --- |
 | Contract | Public API, persisted data, documented integration, user promise, compliance rule, deployment limit, explicit instruction | Preserve, migrate deliberately, or renegotiate openly |
-| Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; do not mislabel as target architecture |
+| Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; keep it out of the target architecture |
 | Migration cost | Internal callers, relearning, diff size, temporary dual operation | Estimate and stage if justified; call it compatibility only with evidence |
 | Inertia | Stale name, old package layout, partial implementation, document shape, "already built" | Remove from target reasoning |
 | Unknown | Asserted constraint without inspectable evidence | Name the assumption; seek the cheapest deciding evidence |
 
-Internal usage can create real work. It does not automatically create a contract.
+Internal usage creates work; a contract needs evidence.
 
 ## Frame-Opening Moves
 
@@ -95,10 +95,10 @@ Select the smallest set that exposes the hidden decision. Use at least one; name
 | --- | --- | --- |
 | End-state backcasting | If this were excellent at the chosen horizon, what would be true? | Backcast to the present and keep the architecture grounded |
 | Zero-legacy thought experiment | With no old callers or names, what model would we choose? | Restore only constraints proven real |
-| Kill the wrong concept | Which object, phase, section, or service encodes the wrong model? | Delete the concept, not merely its label |
+| Kill the wrong concept | Which object, phase, section, or service encodes the wrong model? | Delete the concept, label and all |
 | Ten-times stress | Which plausible 10x axis makes the model fail first? | Choose one relevant axis and scale only that axis |
 | Constraint inversion | If this constraint vanished, what would change? | Decide whether removal cost is worth paying |
-| Non-negotiable principles | Which two to four rules must the target never violate? | Use principles to decide, not decorate |
+| Non-negotiable principles | Which two to four rules must the target never violate? | Use principles to decide |
 | Boundary reset | Is responsibility split at the wrong system, lifecycle, or ownership boundary? | Move boundaries only when ownership becomes clearer |
 | Tasteful deletion | What can stop existing without reducing the intended outcome? | Name the lost behavior and affected stakeholder |
 
@@ -120,7 +120,7 @@ Name the constraint currently controlling the proposal. Classify it using the co
 
 ### 4. Open the frame
 
-Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle. Avoid performative bigness: the result must simplify the model or increase durable leverage.
+Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle. The result must simplify the model or increase durable leverage.
 
 ### 5. Form the clean target
 
@@ -152,7 +152,7 @@ Use the canonical options:
 - **Clean target**: move directly to the preferred end-state.
 - **Staged clean path**: preserve the same clean target; sequence reversible steps and retire temporary bridges explicitly.
 
-Compare target integrity, immediate price, permanent complexity, contract risk, and time to evidence. Recommend one. Choose Staged only when it preserves the clean target and has explicit retirement. If a path is incoherent, mark it non-viable instead of inventing balance.
+Compare target integrity, immediate price, permanent complexity, contract risk, and time to evidence. Recommend one. Choose Staged only when it preserves the clean target and has explicit retirement. If a path is incoherent, mark it non-viable.
 
 ### 8. Make the call
 
@@ -190,7 +190,7 @@ Produce one strategic direction judgment in the user's language, using the templ
 
 Output rules:
 
-- Lead with the call, not methodology or caveats.
+- Lead with the call; methodology and caveats follow.
 - Keep target model separate from migration path.
 - Give every compatibility mechanism a named contract, owner, and retirement condition.
 - Use code-level detail only when it changes the direction or verifies a claim.
@@ -204,28 +204,28 @@ Use another procedure when the primary decision is:
 - Whether the idea deserves investment at all: do, kill, or defer.
 - Detailed module boundaries, abstraction depth, or implementation-quality review.
 - Execution planning after the target is accepted: migration sequencing, rollout, observability, and rollback.
-- Writing the final product requirements document rather than challenging its frame.
+- Writing the final product requirements document.
 
 After the target is accepted, route it to an available feasibility or landing procedure. If none exists, state the unresolved landing questions.
 
 ## Gotchas
 
-- Optimize the model, not diff size.
+- Optimize the model; diff size is a price.
 - Preserve named public and data contracts.
-- Classify internal migration cost as migration cost, not a permanent contract.
+- Classify internal migration cost as migration cost.
 - Keep temporary bridge design out of the clean target.
 - Give every bridge an owner, removal trigger, and deadline or measurable gate.
 - Give every bold take a falsifier; testability matters more than provocation.
-- Make the proof point test the direction, not only implementation effort.
+- Make the proof point test the direction.
 - Give the three option rows distinct tradeoffs.
 - Tie each kill-list removal to the bad assumption it removes.
-- Tie the payoff ledger to concrete outcomes instead of generic cleanliness.
+- Tie the payoff ledger to concrete outcomes.
 
 ## Validation
 
 <validation_checklist>
   <directive>Silently verify before output.</directive>
-  <item>Trigger gate satisfied; the skill was not invoked merely to make a small task larger.</item>
+  <item>Trigger gate satisfied by a real frame problem.</item>
   <item>Decision, outcome, horizon, and boundary stated.</item>
   <item>Facts, instructions, and assumptions separated.</item>
   <item>Each inherited constraint classified and evidenced.</item>
@@ -237,7 +237,7 @@ After the target is accepted, route it to an available feasibility or landing pr
   <item>All three canonical paths compared or explicitly marked non-viable.</item>
   <item>Recommendation and confidence are explicit.</item>
   <item>Proof point distinguishes the thesis from alternatives.</item>
-  <item>Falsifier could genuinely overturn the thesis.</item>
+  <item>Falsifier could overturn the thesis.</item>
   <item>Every payoff row names price, specific payoff, visibility signal, and beneficiary.</item>
   <item>No generic benefit, default shim, fake certainty, or performative bigness remains.</item>
 </validation_checklist>

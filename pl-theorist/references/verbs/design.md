@@ -2,8 +2,8 @@
 
 Types-first domain modeling before code exists. Deliverable: a domain model
 whose invalid states are already dead on paper, an effect boundary, and a
-complexity budget - a design, not an implementation. Kill invalid states at
-the whiteboard, where deletion is free.
+complexity budget. Kill invalid states at the whiteboard, where deletion is
+free.
 
 ## Pipeline
 
@@ -25,8 +25,7 @@ only when the answer changes the model.
   the combinations that are meaningless; restructure until they are
   unrepresentable.
 - Make each transition a total function `State -> Event -> State` (or
-  `Result`); name the transitions that must be rejected, not just the ones
-  that succeed.
+  `Result`); name the rejected transitions alongside the successful ones.
 
 ### 3. Draw the effect boundary
 

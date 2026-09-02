@@ -25,8 +25,8 @@ holds, verify the rest, and report every divergence.
 
 ## Mapping a palette to roles
 
-A palette is colors; a system needs roles. The mapping is a decision, not a
-lookup, made once and written down. Identify, in this order:
+A palette is colors; a system needs roles. The mapping is a decision, made
+once and written down. Identify, in this order:
 
 1. **Accent**: the most saturated color, or the one the source names as
    primary. Exactly one, regardless of how many the palette offers.
@@ -40,9 +40,9 @@ lookup, made once and written down. Identify, in this order:
    obligate five roles.
 
 **A ramp is the role source.** When the palette arrives as stepped scales,
-select steps rather than inventing values: a light step for canvas, a mid
-step for borders and secondary text, a dark step for ink, and the accent's
-own mid and dark steps for rest and active states. Every value the interface
+select steps: a light step for canvas, a mid step for borders and
+secondary text, a dark step for ink, and the accent's own mid and dark steps
+for rest and active states. Every value the interface
 needs should already exist in the ramp.
 
 **Derive what is missing from the palette's own geometry.** Hover and active
@@ -56,8 +56,8 @@ the accent, or destructive actions stop reading as destructive.
 
 ## Verifying against the floor
 
-Compute the contrast ratio from the two composited values instead of trusting
-the document's claim. Thresholds and their exemptions are owned by `a11y`;
+Compute the contrast ratio from the two composited values; the document's
+claim is unverified. Thresholds and their exemptions are owned by `a11y`;
 apply them to every supplied pairing before adopting any of it.
 
 Check at minimum: every text role against every surface it sits on, the
@@ -96,7 +96,7 @@ color entirely, or by claiming the floor does not apply.
 
 Supplied documents govern appearance. Function still applies.
 
-* **Interaction states are function, not styling.** Treat unspecified hover,
+* **Interaction states are function.** Treat unspecified hover,
   focus, loading, or error states as gaps. Fill them in the system's own
   language and report them. A document can legitimately forbid a particular
   hover *treatment*; it cannot forbid focus visibility or an error state.

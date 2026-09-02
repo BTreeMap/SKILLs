@@ -9,8 +9,7 @@ atomic writes. Target file is never written until validation passes.
 ## Procedure
 
 1. Prepare. Bind the guard command once per shell (re-bind after a reset;
-   the `realpath` makes an alias path resolve into the workspace), then run
-   prepare:
+   `realpath` resolves an alias path into the workspace), then run prepare:
 
 <prepare_command>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-caveman"
@@ -21,11 +20,10 @@ $R prepare <absolute-filepath>
    existing backup), report the reason and stop: refusals are hard
    invariants. On success it prints BACKUP and BODY paths; frontmatter is
    already split off and preserved verbatim. SIGNAL lines are advisory
-   evidence from the script's heuristics (content assessed as code, config,
-   or inconclusive, with the observed ratios): weigh them yourself. If
-   signals say code or config and the user did not explicitly name this
-   file for compression, stop and report; if the user explicitly asked,
-   proceed: the verified backup makes it undoable.
+   heuristics (content assessed as code, config, or inconclusive, with the
+   observed ratios): weigh them yourself. Signals saying code or config stop
+   the run unless the user explicitly named this file; then proceed, since
+   the verified backup makes it undoable.
 
 2. Compress. Read the BODY file and rewrite its prose per the rules below.
    Write the result to a scratch file. Do not touch fenced code, inline
@@ -37,11 +35,11 @@ $R prepare <absolute-filepath>
 $R apply <absolute-filepath> <compressed-body-file>
 </apply_command>
 
-   On pass it atomically writes the target and reports honest character
-   savings. On ERROR output, fix ONLY the listed errors in the scratch file
-   by restoring the missing content from the backup (never recompress
-   untouched sections) and re-apply. After two failed fix rounds, stop and
-   report; the target file is still untouched.
+   On pass it atomically writes the target and reports character savings.
+   On ERROR output, fix ONLY the listed errors in the scratch file by
+   restoring the missing content from the backup (never recompress untouched
+   sections) and re-apply. After two failed fix rounds, stop and report; the
+   target file is still untouched.
 
 4. To undo a completed compression: `$R restore <filepath>`.
 
@@ -56,9 +54,8 @@ $R clean --all
 </clean_commands>
 
 The first removes one file's backup artifacts; the second removes every
-backup this tool ever made. A removed backup destroys the only undo (and
-the only restore path) for its compression, so confirm intent first when
-the request is ambiguous.
+backup this tool ever made. A removed backup destroys the only undo for its
+compression, so confirm intent first when the request is ambiguous.
 
 ## Compression Rules
 

@@ -7,7 +7,7 @@
   release and may be preview features.
 - Streams are lazy but may allocate pipelines, capture lambdas, box primitives,
   retain sources, and hide repeated work. Parallel streams use a shared execution
-  model and are not a free performance switch.
+  model and cost accordingly.
 - Java has no native general `Result`. `Optional` models return-value absence; it
   is usually poor taste for fields, parameters, serialization, or every local.
 - Exceptions, interruption, resource closure, synchronization, and encounter

@@ -11,7 +11,7 @@ the logic breaks.
    `demo()`/`__main__` self-check, or one small `test_*` file on the runner
    the repo already has. No new frameworks, no fixtures.
 3. One check per breakable behavior, exercising the real edge (empty
-   input, the boundary value, the failure path), not a mock parade.
+   input, the boundary value, the failure path).
 
 ## Output
 
@@ -22,4 +22,4 @@ run it.
 
 Law-derived suites (properties, invariants, per-variant coverage) route to
 `/pl-theorist test`. Never delete an existing passing test to satisfy
-minimalism: the floor is one check, not zero.
+minimalism: the floor is one check.

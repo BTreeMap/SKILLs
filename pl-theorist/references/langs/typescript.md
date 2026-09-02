@@ -47,10 +47,10 @@
 - Treat a component as a pure function from typed props and state to UI. Keep
   domain transitions independent of React and represent UI states/actions as
   `readonly` discriminated unions.
-- Prefer a pure reducer when transitions form a state machine. Events should name
-  domain facts (`submitted`, `succeeded`) rather than setter mechanics. Make both
+- Prefer a pure reducer when transitions form a state machine. Events name
+  domain facts (`submitted`, `succeeded`) over setter mechanics. Make both
   state and action matching exhaustive with a `never` proof.
-- Derive values during render instead of duplicating state. Use effects only for
+- Derive values during render; duplicate nothing into state. Use effects only for
   external synchronization; put effects caused solely by a user event in that
   event handler.
 - Keep dependency arrays truthful. Cleanup resources, propagate `AbortSignal`,
@@ -149,7 +149,7 @@ const foldResult = <T, E, R>(
 ): R => result.tag === "ok" ? onOk(result.value) : onError(result.error);
 ]]></teaching_example>
 
-Taste: the sole assertion sits behind validation, `Result` exposes expected
+Taste: the sole assertion is inside validation, `Result` exposes expected
 failure, and consumers eliminate both variants. Types disappear at runtime, so
 external input still requires parsing.
 
@@ -169,4 +169,4 @@ external input still requires parsing.
 
 Run typechecking and focused runtime tests. Test every union variant, invalid
 external input, exhaustive branches, and async rejection/cancellation behavior.
-Treat a passing typecheck as evidence of internal consistency, not input safety.
+A passing typecheck proves internal consistency only.

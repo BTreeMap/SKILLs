@@ -37,9 +37,9 @@ and identifiers. A face for an editorial surface needs a real italic and
 sufficient weight range. Verify the family actually ships the weights and
 the true italic being used before designing around them.
 
-**Serif discipline.** Serif is not a synonym for premium, creative, or
-considered, and reaching for it on that reasoning is the most common type
-misjudgment in generated design. Use a serif when the surface is editorial,
+**Serif discipline.** Reaching for a serif because it feels premium,
+creative, or considered is the most common type misjudgment in generated
+design. Use a serif when the surface is editorial,
 literary, or heritage, or when the brand specifies one. Be able to say why
 that particular serif suits that particular brand. Otherwise choose a display
 sans, the common default in contemporary brand work.
@@ -74,7 +74,7 @@ surface used a face, choose differently unless the brand requires it.
 * Serve variable fonts when a range of weights is in use; one variable file
   usually costs less than three static cuts.
 * Subset to the character sets actually needed.
-* Swap to a fallback rather than hiding text during load, and tune the
+* Swap to a fallback during load, and tune the
   fallback's metrics so the swap does not shift layout. Untuned font
   fallback is a top cause of layout instability.
 * Preload only the faces used above the fold.

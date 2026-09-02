@@ -86,8 +86,8 @@ reported numbers with units, named papers doing named things.
   sentence that announces what the next sentence will say.
 - Superlatives and firsts ("the first work to ...") only as a paper's own
   attributed claim; the corpus cannot prove priority.
-- Hedge once, precisely ("on the two benchmarks tested"), instead of
-  stacking qualifiers.
+- Hedge once, precisely ("on the two benchmarks tested"); one qualifier
+  per claim.
 - Sentence-case headings, no emoji, no bold-label bullet lists in the
   deliverable; tables carry structure.
 - Recency words ("recent", "current") always bind to the method section's

@@ -42,11 +42,11 @@ apply at every level.
 
 ## Push Verb
 
-`push` is a quick-ship action, not a level: stage as directed, commit, then
-push to the tracked remote, reporting the pushed range in one line. Without
-an explicit level, `push` implies **lite** (nothing extra loads); an explicit
-level wins, so `full push` and `ultra push` draft at that level first. Run
-`git push` ONLY when the user passed the push verb or asked to push.
+`push` is a quick-ship action: stage as directed, commit, then push to the
+tracked remote, reporting the pushed range in one line. Without an explicit
+level, `push` implies **lite** (nothing extra loads); an explicit level wins,
+so `full push` and `ultra push` draft at that level first. Run `git push`
+ONLY when the user passed the push verb or asked to push.
 
 <system_directives>
   <commit_schema>

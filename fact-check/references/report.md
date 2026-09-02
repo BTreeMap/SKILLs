@@ -3,8 +3,8 @@
 ## Evidence-first layout
 
 Per issue: source span, then evidence quotes (including counter-evidence),
-then verdict and proposed correction. Evidence before verdict, so the user
-judges the evidence rather than rubber-stamping a conclusion.
+then verdict and proposed correction. Evidence precedes verdict so the
+user judges the evidence itself.
 
 <report_template>
 ## Fact-Check Report

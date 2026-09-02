@@ -36,8 +36,8 @@
 - Visit every `variant` alternative with an overload set or exhaustive visitor.
   Avoid `get` when `get_if`, `visit`, or a proven state is total.
 - Keep constructors private when construction can fail. A successful object must
-  satisfy its invariant; do not create a temporarily invalid object and
-  "finish" it later.
+  satisfy its invariant; a temporarily invalid object "finished" later is a
+  defect.
 - Use RAII guards for memory, files, locks, and transactions. Never let a view,
   span, iterator, callback, or coroutine frame outlive its owner.
 - Distinguish independent scheduled work from dependent continuation chains.

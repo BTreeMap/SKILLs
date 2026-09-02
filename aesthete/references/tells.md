@@ -1,7 +1,7 @@
 # Tells: the catalogue of generated-looking output
 
 A tell is a pattern that appears far more often in generated interfaces than
-in considered ones, a design decision nobody actually made, and readers who
+in considered ones, a design decision nobody made, and readers who
 see many interfaces recognize each instantly. Each is banned as a **default
 reach**. Any of these is available when the brief genuinely calls for it and
 you can say why.
@@ -13,8 +13,7 @@ you can say why.
   text, empty states, error messages. The single highest-signal marker of
   generated text. Replace with a period, a comma, a colon, parentheses, or a
   restructured sentence. The en-dash U+2013 is likewise banned as a
-  separator; ranges take a plain hyphen. The rule is binary because every
-  proportional phrasing of it has been ignored in practice.
+  separator; ranges take a plain hyphen.
 * **A word in a different family dropped into a heading** for visual
   interest. Emphasis stays within one family, using weight or italic.
 * **Headings hard-broken and part-italicized** to force a shape. The shape
@@ -88,7 +87,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **Filler verbs** that mean nothing in context: elevate, unleash,
   seamless, revolutionize, next-generation, effortless.
 * **Performed modesty**: quietly-in-use-at, honest-by-design, and similar
-  constructions that claim a virtue rather than demonstrating one.
+  constructions that claim a virtue.
 * **Craftsman-poetic section labels** on ordinary content: field notes, from
   the bench, loose ends. Use the plain functional label or none.
 * **Micro-explanations under headings** editorializing about the section's
@@ -144,7 +143,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 When reviewing, count mechanically wherever a count is defined: section
 labels against section count, consecutive split layouts, marquees,
 occurrences of U+2014, distinct accent colors, distinct radius values. A
-counted violation is not a matter of opinion.
+count is not an opinion.
 
 When building, derive each decision from the design read. These patterns
 substitute for decisions, so most disappear when each choice has a reason.

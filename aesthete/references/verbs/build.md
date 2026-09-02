@@ -16,9 +16,8 @@ rework.
 1. **Inventory before authoring.** Search the repository for every
    component, variant, hook, and token the screen needs before writing
    anything. List what exists and will be reused, what exists and needs a
-   new variant, and what genuinely does not exist yet. Only the third
-   category gets authored; this is what keeps the codebase from acquiring
-   its third Button.
+   new variant, and what does not exist yet. Only the third category gets
+   authored.
 2. **Tokens before components.** Adopt the supplied or existing token set,
    or define one where none exists: type scale, spacing scale, radius scale,
    color tokens for every theme, motion curves, elevation, as named values
@@ -46,8 +45,7 @@ rework.
   importing it; if absent, state the install command first.
 * **Compose with the installed system.** When a design system is present,
   use its components and tokens. Overriding more than a small fraction of a
-  system's tokens means the wrong system was chosen; say so rather than
-  fighting it component by component.
+  system's tokens means the wrong system was chosen; say so.
 * **Isolate interactivity.** Interactive and animated pieces are leaf
   components with an explicit client boundary; structural layout stays
   static and server-rendered where the framework supports it.
@@ -59,18 +57,16 @@ rework.
   late-loading regions carry explicit dimensions so nothing shifts.
 * **One family per concern.** One icon set at one weight, one animation
   library per component tree, one styling strategy, one theming mechanism.
-* **One component per concept.** Extend an existing component with a variant
-  rather than copying it. If a copy is genuinely the honest answer, explain
-  the reason before creating it.
+* **One component per concept.** Extend an existing component with a
+  variant. If a copy is the honest answer, explain why before creating it.
 * **Close the variant sets.** Model variants and asynchronous states as one
-  closed set eliminated exhaustively, not as independent booleans with a
-  catch-all branch. Keep imports pointing downward through the layer ladder
+  closed set eliminated exhaustively. Keep imports pointing downward through the layer ladder
   `components` defines, with domain types no lower than the pattern
   layer.
 * **Semantics first.** Use the native element before the composed one: a
   real button, a real dialog, a real disclosure, a real label bound to its
-  input. Reach for a custom control only when the native one genuinely
-  cannot express the behavior, and then implement its full keyboard and
+  input. Reach for a custom control only when the native one cannot
+  express the behavior, and then implement its full keyboard and
   assistive contract.
 * **Clean up.** Every subscription, observer, timer, and animation context
   is torn down on unmount.

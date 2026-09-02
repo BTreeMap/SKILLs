@@ -1,9 +1,9 @@
 # Register patterns (§36-40)
 
 What survives a vocabulary scrub: flat rhythm, metaphor density, manufactured
-salience, compressed jargon, and reasoning that leaked into the answer. §36
-and §39 are structural; §38 and §40 are rhetorical; §37 is lexical, so
-density is the tell and one instance is English.
+salience, compressed jargon, leaked reasoning. §36 and §39 are structural,
+§38 and §40 rhetorical, §37 lexical: there density is the tell and one
+instance is English.
 
 ### 36. Uniform sentence rhythm
 

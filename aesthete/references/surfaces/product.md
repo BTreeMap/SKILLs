@@ -13,9 +13,9 @@ sees a thousand times has to stay under the latency budget like anything else.
 * **Familiarity beats invention.** Users spend most of their time in other
   applications. Place things where they are placed elsewhere; spend novelty
   budget on the domain-specific parts nobody else has solved.
-* **Density is a service, not a compromise.** Experts want more on screen.
-  Achieve density with alignment, tabular numerals, and hairlines rather
-  than with shrinking type below comfortable reading sizes.
+* **Density is a service.** Experts want more on screen. Achieve density
+  with alignment, tabular numerals, and hairlines; keep type at comfortable
+  reading sizes.
 * **Default to the safe, reversible, and common.** The most frequent action
   is one click away; the destructive one is not adjacent to it.
 * **State is visible.** At any moment the user can answer: where am I, what
@@ -31,8 +31,7 @@ sees a thousand times has to stay under the latency budget like anything else.
   is the cheapest possible confusion to avoid.
 * The URL encodes real state: the record, the tab, the filters, the page.
   Everything the user can reach should be linkable and survive a refresh.
-* Depth over three levels needs a different structure, not a third nested
-  menu.
+* Depth over three levels needs a different structure.
 
 ## Forms
 
@@ -41,13 +40,11 @@ sees a thousand times has to stay under the latency budget like anything else.
 * One column. Multi-column forms cause field skipping. Group related fields
   into sections with headings instead.
 * Ask for the minimum. Every field justifies itself against the primary
-  goal, and anything derivable is derived rather than requested.
+  goal, and anything derivable is derived.
 * Be liberal in what you accept. Parse phone numbers, dates, currency,
-  identifiers, and pasted values with spaces or separators instead of
-  rejecting them. Formatting is the system's job.
+  identifiers, and pasted values with spaces or separators. Formatting is the system's job.
 * Validate at the right moment: on blur for a completed field, on submit for
-  the whole, and after the user finishes typing rather than on every
-  keystroke. Once a field has errored, revalidate as they type so the error
+  the whole, and after the user finishes typing. Once a field has errored, revalidate as they type so the error
   clears live.
 * Errors sit adjacent to the field, name the problem and the fix, and move
   focus to the first failure. A summary at the top of a long form links to
@@ -81,7 +78,7 @@ sees a thousand times has to stay under the latency budget like anything else.
 ## Dashboards
 
 * State one question per view in the title before adding charts.
-* Rank by decision value, not by data availability. The number that changes
+* Rank by decision value. The number that changes
   behavior goes top-left in left-to-right reading orders.
 * Every metric carries its comparison. A number without a baseline, target,
   or trend cannot be acted on.
@@ -100,8 +97,7 @@ sees a thousand times has to stay under the latency budget like anything else.
 * Every dialog: focus moves in on open, is trapped while open, returns to
   the trigger on close, and escape closes.
 * Confirmation dialogs name the exact object and the exact consequence, and
-  the confirming button is a verb naming the action rather than a bare
-  affirmative.
+  the confirming button is a verb naming the action.
 * Progressive disclosure by frequency: common controls visible, advanced
   controls behind a labeled expansion, dangerous controls further still.
 

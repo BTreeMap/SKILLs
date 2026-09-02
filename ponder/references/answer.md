@@ -18,8 +18,8 @@ env -u VIRTUAL_ENV uv run --project "$(realpath <skill-root>/scripts)" btm-ponde
 The check returns the marker table first (`S1` onward, with class, title,
 url), then the derived sections, a scaffold holding each close's stored
 premise and detail keyed by marker, violations, and hedge advisories.
-Resolve violations, then have the lead draft once, transforming the
-scaffold's rows rather than reconstructing them.
+Resolve violations; then the lead drafts once by transforming the
+scaffold's rows.
 
 ## Sections
 
@@ -35,12 +35,12 @@ scope. An absent Rival records an empty sweep.
 | Open | Each `unresolved` leaf with what was tried or why it was passed over |
 | Sources | The check's table: marker, class, title, url |
 
-These names express Toulmin's claim, grounds, warrant, qualifier, and rebuttal.
 Omit `Retired` leaves.
 
 ## Marker discipline
 
-Bind markers to load-bearing claims; leave connective prose bare.
+Bind markers to the claims the answer depends on; leave connective prose
+bare.
 
 - `[Sn]` marks a claim settled by its numbered ledger source.
 - `[~]` marks a conclusion composed from leaves.

@@ -1,8 +1,7 @@
 # Verb: test
 
 Derive tests from the code's algebra: state the laws the design relies on,
-then make each one checkable. The suite is a proof sketch, not a pile of
-examples.
+then make each one checkable. The suite is a proof sketch.
 
 ## Pipeline
 
@@ -49,9 +48,8 @@ use them only where the repository already has a benchmark harness.
 
 ### 5. Run and report
 
-Run the new tests and the narrowest surrounding suite. A law test that fails
-is a finding about the code, not the test: report it, do not weaken the law to
-pass.
+Run the new tests and the narrowest surrounding suite. A failing law test is
+a finding about the code: report it and keep the law as written.
 
 ## Output Contract
 
@@ -69,5 +67,5 @@ Deliver the tests, then report:
   <item>Every sum variant and smart-constructor rejection path is exercised.</item>
   <item>Optimized structures are checked against a naive oracle or operation count.</item>
   <item>Tests use the repository's existing frameworks and conventions.</item>
-  <item>Failing law tests are reported as code findings, not weakened.</item>
+  <item>Failing law tests are reported as code findings and kept as written.</item>
 </verb_checklist>

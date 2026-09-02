@@ -16,16 +16,15 @@ Exactly one per claim.
 
 Distinctions:
 
-- `contradicted` vs `outdated` is decided by claim-time, not by how wrong the
-  claim is now.
-- `conflicting` is reserved for peer sources. A primary publisher beats an
-  aggregator: that is not a conflict.
+- `contradicted` vs `outdated` is decided by claim-time alone.
+- `conflicting` is reserved for peer sources; a primary publisher beating
+  an aggregator is no conflict.
 - `insufficient-evidence` (we could not find it) is never collapsed into
   `unverifiable` (nobody could).
 
 ## Confidence
 
-Derived from evidence agreement, not from verbal self-assessment.
+Derived from evidence agreement alone.
 
 | Band | Criteria |
 | --- | --- |
@@ -44,9 +43,8 @@ mirroring, or citing only the other.
   two-independent-source rule.
 - `conflicting` never yields a correction: present both sources and let the
   user decide; offer an as-of qualifier as the only safe edit.
-- When abstaining on a claim the user flagged as important, suggest
-  qualification language ("according to SOURCE as of DATE") instead of a
-  factual replacement.
+- When abstaining on a claim the user flagged as important, suggest only
+  qualification language ("according to SOURCE as of DATE").
 
 ## Correction text rules
 

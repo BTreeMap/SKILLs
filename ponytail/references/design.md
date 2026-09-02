@@ -1,6 +1,6 @@
 # Ponytail Design Verb
 
-Plan before code exists - by deciding what not to build. Read the
+Plan before code exists by deciding what not to build. Read the
 requirements, trace what the codebase already does, then run the ladder
 over the plan itself. Produces a plan; edits nothing.
 

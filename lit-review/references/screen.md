@@ -1,8 +1,8 @@
 # Screen: Two Passes, Reasons, Flow Counts
 
 Screening applies the protocol criteria to the corpus, exactly as written.
-If the criteria feel wrong while screening, that is an amendment (owned by
-`protocol`), not a silent bend.
+If the criteria feel wrong while screening, record an amendment (owned by
+`protocol`).
 
 ## Pass 1: title and abstract
 
@@ -11,7 +11,7 @@ Work from `show --status candidate`, most-cited first; `--match` with
 `--format tsv` keeps long listings cheap. For each paper decide include,
 exclude, or unsure from title, venue, year, and abstract alone.
 
-- Judge against the criteria list, item by item, not against taste.
+- Judge against the criteria list, item by item.
 - Unsure costs one full-text look later; wrongly excluded costs a missing
   paper forever. Keep unsure papers as candidates for pass 2.
 - A missing abstract is a data gap: check the landing page before deciding.
@@ -68,7 +68,7 @@ failed: reopen search before concluding the field is empty.
 
 After screening, check the included set for concentration: one author group,
 one venue, one year dominating is a signal to search the neglected
-directions. Then derive the flow from state, not memory: `status` gives
+directions. Then derive the flow from state: `status` gives
 per-status counts, the log gives per-search totals. The report template in
 `report` carries the counts block: identified, deduplicated, screened out at
 pass 1, screened out at pass 2, included.

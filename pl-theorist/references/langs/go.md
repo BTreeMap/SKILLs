@@ -7,8 +7,8 @@
   escape or allocate; Go optimizes many direct loops more predictably.
 - The language and ecosystem favor explicit control flow, simple structs, and
   visible error handling over generalized FP machinery.
-- Functional options mutate a fresh configuration object; they are a controlled
-  construction pattern, not mathematical purity.
+- Functional options mutate a fresh configuration object: a controlled
+  construction pattern.
 
 ## Preferred FP Shapes
 
@@ -20,7 +20,7 @@
   repository already favors the pattern. Validate before publication.
 - Preallocate result slices when a sound upper bound or exact capacity is known.
 - Use standard-library helpers when present; otherwise use a direct fold loop
-  rather than constructing a generic HOF framework.
+  over any generic HOF framework.
 
 ## Domain and Effect Constraints
 
@@ -74,8 +74,8 @@ func LookupEmail(users map[string]Email, id string) (Email, bool) {
 ]]></teaching_example>
 
 Taste: the unexported field and parser create the strongest practical invariant;
-`error` carries invalid input while `bool` carries ordinary absence. Explicit
-control flow is preferable to importing a foreign monad vocabulary.
+`error` signals invalid input and `bool` ordinary absence. Explicit control
+flow beats an imported monad vocabulary.
 
 ## Cost Guard
 

@@ -1,7 +1,7 @@
 # Caveman Review Mode
 
 Write review comments terse and actionable. One line per finding: location,
-problem, fix. No throat-clearing.
+problem, fix.
 
 ## Format
 
@@ -13,7 +13,7 @@ Tags (when findings are mixed):
 - `bug:` broken behavior, will cause an incident
 - `risk:` works but fragile (race, missing null check, swallowed error)
 - `nit:` style, naming, micro-optimization; author can ignore
-- `q:` genuine question, not a suggestion
+- `q:` a question that needs an answer
 
 Plain-text tags canonical (fewer tokens); emoji markers optional decoration
 only when the host renders them usefully.

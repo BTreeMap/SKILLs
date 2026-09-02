@@ -17,11 +17,11 @@ the feature is progressive rather than essential.
 2. **A platform API** for behavior: top-layer overlays, transitions between
    states or documents, scroll-linked progress, anchored positioning.
 3. **CSS** for anything visual or state-driven that CSS can express.
-4. **A dependency**, only when the above genuinely cannot express it, and
+4. **A dependency**, only when the above cannot express it, and
    only one per concern.
 
-Style a native control instead of rebuilding it. The styling gain from a
-rebuild is small, while the accessibility and keyboard issues persist.
+Style the native control; a rebuild gains little styling and keeps the
+accessibility and keyboard issues.
 
 ## Capabilities worth knowing
 
@@ -42,8 +42,7 @@ over observers for pure visual effects, and observers over event listeners
 in every case.
 
 **Responsive to context, not viewport.** Size and style queries let a
-component respond to its own container rather than the window, so one
-component works in a sidebar, a modal, and a full-width region without
+component respond to its own container, so one component works in a sidebar, a modal, and a full-width region without
 breakpoint duplication. Relative units tied to the container let type and
 spacing scale with context.
 
@@ -53,15 +52,15 @@ state plumbing through the component tree.
 
 **Color.** Perceptually uniform color spaces, color mixing, and single
 declarations that select per theme let a palette be derived from a small
-number of source values rather than hand-maintained per theme.
+number of source values.
 
 **Typography.** Line balancing for headings, orphan avoidance for body,
 trimming of font-metric whitespace for exact optical spacing, and control of
 digit forms are all native.
 
 **Form ergonomics.** Native validity states distinguish "invalid" from
-"invalid after the user has interacted", which is exactly the distinction
-that prevents validating a half-typed field. Fields can size to their
+"invalid after the user has interacted", the distinction that prevents
+validating a half-typed field. Fields can size to their
 content. The platform styles selection colors and control accents directly.
 
 **Rendering and inertness.** Content can be marked inert for interaction and
@@ -76,9 +75,8 @@ Match the repository. When choosing for greenfield work:
   interactivity as isolated leaves. Every interactive boundary adds client
   work for every user.
 * Handle asynchronous state with the framework's own mechanisms for pending
-  state, optimistic updates, and form submission rather than hand-rolled
-  loading flags. Hand-rolled flags are where the missing loading and error
-  states come from.
+  state, optimistic updates, and form submission; hand-rolled loading flags
+  are where missing loading and error states come from.
 * Stream what can be streamed. Showing a usable shell immediately beats
   showing nothing until everything resolves.
 * Add an animation library when the interaction genuinely needs
@@ -91,8 +89,7 @@ Match the repository. When choosing for greenfield work:
 
 One vendor's product thresholds, revisable by that vendor, carrying none of
 the regulatory weight of the accessibility floor. Never trade a criterion in
-`a11y` against one of these. Treat them as design constraints rather than a
-post-launch audit, and re-verify the values when they matter.
+`a11y` against one of these. Treat them as design constraints, and re-verify the values when they matter.
 
 * Largest contentful paint under 2.5 seconds. The hero image or heading is
   prioritized and not blocked by a font request or a client bundle.
@@ -114,5 +111,4 @@ visit.
 * Building a custom control to get custom styling, then shipping it without
   its keyboard and assistive contract.
 * Marking a whole page as interactive because one element in it is.
-* Treating performance targets as something to measure after design rather
-  than as constraints on design.
+* Treating performance targets as a post-launch audit.

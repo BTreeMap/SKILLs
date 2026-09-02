@@ -11,8 +11,7 @@
   part of the contract. `const` prevents mutation through one access path; it
   does not prove deep immutability.
 - Signed overflow is undefined, allocation can fail, and unchecked indexing,
-  null dereference, use-after-free, and data races are defects, not partial
-  functions to normalize.
+  null dereference, use-after-free, and data races are defects.
 
 ## Preferred FP Shapes
 
@@ -42,7 +41,7 @@
   Bound queues, threads, retries, and buffers; C supplies no structured
   concurrency automatically.
 - Keep I/O, volatile/device access, atomics, logging, and mutation outside pure
-  calculations. Do not reorder them using algebraic laws that do not apply.
+  calculations; algebraic laws never license reordering them.
 
 ## Teaching Example
 

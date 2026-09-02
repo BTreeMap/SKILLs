@@ -31,9 +31,9 @@ Sweep the scope once per category, citing file and line for each hit:
 ### 3. Verify before reporting
 
 Re-derive each candidate finding against the loaded profile's cost model and
-the repository's conventions. An imperative loop that is the honest backend
-is sound; a missing `Result` where the repository's error channel is
-exceptions is sound. Report only what survives.
+the repository's conventions. An imperative loop that is the right backend is
+sound; a missing `Result` where the repository's error channel is exceptions
+is sound. Report only what survives.
 
 ## Output Contract
 

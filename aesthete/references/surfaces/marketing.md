@@ -55,7 +55,7 @@ heading at a readable measure, or give the right column real content.
 
 ## Content density
 
-Marketing surfaces live on the first impression, not the full read.
+Marketing surfaces live on the first impression.
 
 * Per section: a heading under about eight words, a supporting paragraph
   under about twenty-five words, and one asset or one action. More requires
@@ -65,8 +65,7 @@ Marketing surfaces live on the first impression, not the full read.
   into a comparison of three to five highlights.
 * For lists past about five items, use a different component: grouped
   columns, a card grid, tabs, a disclosure, or a horizontally scrolling set.
-  Group rows or change the component instead of separating every row with a
-  hairline.
+    Group rows or change the component.
 * Quotes run at most three lines. A longer quote should become a case study.
   Attribution carries name and role, never a bare first name.
 
@@ -75,15 +74,14 @@ Marketing surfaces live on the first impression, not the full read.
 Re-read every visible string: headings, labels, buttons, body, captions,
 alternative text, footer, and error copy. Rewrite any string that is
 grammatically broken, has an unclear referent, depends on wordplay that does
-not survive a literal reading, or performs thoughtfulness rather than
-communicating. Choose plain, functional copy when clever wording is slightly
+not survive a literal reading, or performs thoughtfulness. Choose plain, functional copy when clever wording is slightly
 wrong.
 
 Use real numbers, label illustrative numbers explicitly, and omit numbers
 that have no basis. Domain readers detect invented precision immediately.
 
-Keep one register per page. Choose technical shorthand, editorial prose, or
-marketing punch instead of mixing them in one composition.
+Keep one register per page: technical shorthand, editorial prose, or
+marketing punch.
 
 ## Imagery
 
@@ -97,8 +95,8 @@ labels underneath: the mark is the credibility, and the label adds nothing.
 
 Never build a product screenshot out of styled containers. Use a real
 capture, a generated image, an actual embedded component, or editorial
-photography instead. This single pattern is the most recognizable marker of
-generated marketing pages.
+photography instead. This pattern is the most recognizable marker of generated
+marketing pages.
 
 ## Theme lock
 

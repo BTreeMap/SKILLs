@@ -1,7 +1,7 @@
 # Ultra Level: Atomicity and History-Consistency Audit
 
-Applies on top of SKILL.md and `full`. Run the audits below
-BEFORE drafting; they may change what gets committed, not just the message.
+Applies on top of SKILL.md and `full`. Run the audits below BEFORE
+drafting; they may change what gets committed as well as the message.
 
 <ultra_directives>
   <atomicity_audit>

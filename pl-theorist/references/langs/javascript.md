@@ -63,8 +63,8 @@
   context values.
 - Treat keys as semantic identity. Do not use array indexes for reorderable or
   stateful lists.
-- `useMemo`, `useCallback`, and `memo` are performance tools, not semantic tools.
-  Add them only for measured expensive work, required referential stability, or
+- `useMemo`, `useCallback`, and `memo` are performance tools only. Add them
+  only for measured expensive work, required referential stability, or
   a demonstrated render boundary; account for dependency and retention cost.
 - Encapsulate effect interpreters in narrowly named custom hooks, but keep domain
   transitions as ordinary pure functions that can be tested without React.

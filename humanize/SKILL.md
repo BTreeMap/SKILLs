@@ -19,12 +19,12 @@ license: MIT
 
 # Humanize: remove AI writing patterns
 
-Rewrite AI-sounding text so it reads like the writer, not a chatbot. §1-35
-come from Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
-§36-40 and the added cases inside older entries cover the tells that survive
-a vocabulary scrub in current model prose. The diagnosis is the same: LLMs
-tend toward the most statistically likely phrasing for the widest variety of
-cases. The cure is the specific over the generic.
+Rewrite AI-sounding text so it reads like its writer. §1-35 come from
+Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
+§36-40 and the added cases in older entries cover tells that survive a
+vocabulary scrub in current model prose. Shared diagnosis: LLMs pick the most
+statistically likely phrasing for the widest range of cases. Cure: the
+specific over the generic.
 
 ## Registry
 
@@ -50,30 +50,27 @@ Hold these in every mode. Each outranks any pattern fix.
    ask for it or write a simpler sentence. An opinion or reaction is allowed
    where the writer's voice calls for one; a factual claim is not. Fiction is
    exempt: invented detail is the task.
-3. **Match the voice.** Formal, casual, or technical to fit the text. When the
-   user supplies a sample of their prior prose, read it before
-   rewriting: note sentence length, word choice, paragraph openings,
-   punctuation, repeated phrases, and transitions, then match those habits.
-   Keep casual words casual and deliberate quirks intact. A personal style
-   file (a voice guide, a style document the user keeps, explicit voice
-   instructions) or a supplied sample outranks every pattern in this skill.
-   Load it before any owner file. Where it permits a construction a pattern
-   flags (an em-dash habit, personification of systems, candid asides,
-   placement verbs), keep the construction and resolve the conflict in the
-   writer's favor without asking. A sample full of em dashes keeps its
-   em-dash rate, so §14 in `style` is not a ban.
+3. **Match the voice.** Formal, casual, or technical to fit the text. Read
+   any supplied sample first: note sentence length, word choice, paragraph
+   openings, punctuation, repeated phrases, and transitions, then match
+   them. Keep casual words casual and deliberate quirks intact. A personal
+   style file (voice guide, style document, explicit voice instructions) or
+   sample outranks every pattern here: load it before any owner file, and
+   where it permits a construction a pattern flags (an em-dash habit,
+   personification of systems, candid asides, placement verbs), keep the
+   construction without asking. A sample full of em dashes keeps its rate,
+   so §14 in `style` is not a ban.
 4. **Personality only where it fits.** In blog posts, essays, opinion, and
    personal writing, keep the writer's opinions, uncertainty, mixed feelings,
    humor, asides, and uneven rhythm. Keep reference, technical, legal, and
    factual text neutral. Never invent facts to add warmth.
-5. **Preserve logical strength.** Removing a negation, a hedge, or a
+5. **Preserve logical strength.** Cutting a negation, a hedge, or a
    comparative can change what a sentence claims. After any such cut,
-   re-read the claim and check its modality: a criterion must stay a
-   criterion, evidence must stay evidence, a possibility must stay possible.
-   "Passes not when X but when Y" becomes "passes only when Y", never
-   "passes when Y"; "there is evidence that A and B pull apart" keeps
-   "evidence suggests", never becomes "A and B pull apart". Restore the lost
-   strength with only, can, may, suggests, or an equivalent.
+   re-read the claim: a criterion stays a criterion, evidence stays
+   evidence, a possibility stays possible. "Passes not when X but when Y"
+   becomes "passes only when Y", never "passes when Y"; "there is evidence
+   that A and B pull apart" keeps "evidence suggests". Restore lost strength
+   with only, can, may, suggests, or an equivalent.
    <modality_check>
    necessary became sufficient: restore "only", "requires", "unless"
    evidential became assertive: restore "suggests", "reports", "found"
@@ -86,7 +83,7 @@ Hold these in every mode. Each outranks any pattern fix.
 40 patterns. Ownership by contiguous range: §1-6 `content`, §7-13 `language`,
 §14-19 `style`, §20-22 `chatbot`, §23-26 `filler`, §27-35 `rhetoric`, §36-40
 `register`. Owner files hold the full watch-lists, problem statements, and
-before/after examples; the cues below are routing summaries only. Signal
+before/after examples; the cues below route only. Signal
 strength: structural and rhetorical entries are diagnostic alone or in pairs;
 lexical entries (§7, §37) count only in clusters or above the density the
 owner file states. Every entry occurs in human writing; a hit is a style
@@ -146,19 +143,19 @@ structural ones last.
 4. Otherwise load exactly the owner files of the hits, plus `calibration`,
    the guard against overcorrection. Never rewrite flagged text without
    `calibration`.
-5. §14-19 are mechanically checkable: a search for U+2014, U+2013, `**`,
-   heading case, emoji, curly quotes, ` -- `, and `---` lines settles
-   whether `style` loads. §36 is measurable: run the command in `register`
-   on prose longer than about 40 sentences, before and after the rewrite,
-   so a pass that removed twelve phrases and left the rhythm flat is caught.
+5. §14-19 are mechanically checkable: search for U+2014, U+2013, `**`,
+   heading case, emoji, curly quotes, ` -- `, and `---` lines. §36 is
+   measurable: run the command in `register` on prose over about 40
+   sentences, before and after the rewrite, so a pass that removed twelve
+   phrases and left the rhythm flat is caught.
 
 ## Rewrite process
 
 1. Mark each pattern instance from the scan. Confirm against the loaded owner
    files; drop the false positives `calibration` names.
 2. Draft. Read it aloud for rhythm, concrete detail, simple verbs, and the
-   right formality. State each point naturally rather than patching flagged
-   phrases one at a time; when a sentence stays awkward, rewrite the
+   right formality. State each point fresh; patching flagged phrases one at
+   a time leaves the shape. When a sentence stays awkward, rewrite the
    paragraph around its main point.
 3. Self-check three questions, treating a yes to any as an error to fix:
    - What still sounds AI-generated?

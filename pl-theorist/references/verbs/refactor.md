@@ -60,8 +60,8 @@ Start from the strongest defensible FP representation:
 - Native `map`, `filter`, `fold` vocabulary and native monadic operations.
 - One explicit effect boundary.
 
-Default collection teaching preference: expose the combinators rather than
-encoding the same idea in comprehension syntax. For a filter-transform shape,
+Default collection teaching preference: explicit combinators over
+comprehension syntax. For a filter-transform shape,
 prefer the target language's equivalent of the following when its profile
 permits it:
 
@@ -94,7 +94,7 @@ On failure, descend exactly one abstraction level while preserving the algebra:
 5. Immutable whole-program copying to mutation confined to a fresh local value.
 
 Stop descending once the guard passes. A disciplined loop is a valid backend
-for a functional design; externally visible partial mutation is not.
+for a functional design; externally visible partial mutation is a defect.
 
 ### 5. Implement narrowly
 
@@ -103,7 +103,7 @@ for a functional design; externally visible partial mutation is not.
 - Add no FP library merely to obtain familiar names.
 - Keep object/data layouts flat when wrappers add no semantic distinction.
 - Delete obsolete mutable helpers and flags made impossible by the new model.
-- Comment laws, invariants, and non-obvious cost decisions, not syntax.
+- Comments state laws, invariants, and non-obvious cost decisions.
 
 ### 6. Explain the design
 

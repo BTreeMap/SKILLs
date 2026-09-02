@@ -51,19 +51,19 @@ when it appears to work:
    encode a version in the name.
 2. Pick suppliers in order: conda-forge if it packages the tool well
    (verify with `micromamba search -c conda-forge --platform <each>` on
-   all five platforms, not just the host at hand); the publisher
+   all five platforms); the publisher
    otherwise, pinned by version and sha256 when the publisher offers no
    digest sidecar; never a curl-pipe-sh installer.
 3. Write the `Recipe` in `catalog`: requirements as existing step values
    when possible (a new step type in `steps` plus one executor in
-   `effects` only when genuinely new machinery is needed), env as an
+   `effects` only for new machinery), env as an
    `EnvDelta` of redirections under the root, at least one probe per
    user-visible tool. Reject unsupported hosts inside `requirements` with
    a message naming the alternative.
 4. Redirect every cache or config variable the tool honors (its HOME-dwelling
    dotdir is already covered by the HOME redirect). If the tool's wrapper
    scripts expect a variable a normal activation would set, export it in the
-   recipe rather than running foreign activation code; the CONDA_PREFIX and
+   recipe (never run foreign activation code); the CONDA_PREFIX and
    DOTNET_ROOT cases in `plan` and `catalog` are the precedents.
 5. Update `targets` (the per-target notes and footprint) and, when the
    change touches invariants, `SKILL.md`.
@@ -82,5 +82,5 @@ On at least one linux host, ideally both architectures:
   the smaller set.
 - `btm-setup-env destroy`, then a fresh provision from nothing.
 
-Record what was actually validated per platform in `targets` rather than
-claiming the untested.
+Record in `targets` what was validated per platform; claim nothing
+untested.

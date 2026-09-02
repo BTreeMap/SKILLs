@@ -1,8 +1,8 @@
 # GitHub Actions Cost Model
 
-Not a programming language: a typed-ish coordination layer over jobs. The FP
-vocabulary applies at the workflow/job/step level, and the effect discipline
-becomes privilege discipline.
+A typed-ish coordination layer over jobs. The FP vocabulary applies at the
+workflow/job/step level, and the effect discipline becomes privilege
+discipline.
 
 ## Disclosed Constraints
 
@@ -42,8 +42,8 @@ becomes privilege discipline.
   combinators. `workflow_call` inputs carry `type`, `required`, and
   `default` (composite action inputs are strings only); validate anything
   stronger in the first step: that is the smart-constructor boundary.
-- Boundedness is explicit: `timeout-minutes` on every job (the default is a
-  6-hour ceiling, which is not a bound but an outage amplifier), and a
+- Boundedness is explicit: `timeout-minutes` on every job (the 6-hour default
+  ceiling amplifies outages), and a
   `concurrency` group with `cancel-in-progress` for workflows where only the
   latest run matters.
 - Caching is memoization with a stated key law: the key names exactly the
@@ -59,7 +59,7 @@ becomes privilege discipline.
   setting; declare explicitly.
 - Untrusted context never crosses into a shell via `${{ }}`. Route it through
   `env:` and reference it as a quoted shell variable (`"$TITLE"`), so it
-  arrives as data, not code.
+  arrives as data.
 - Prefer OIDC federation over long-lived cloud secrets; scope secrets to
   `environment`s so only the jobs performing the deploy effect can read them.
 - Treat `pull_request_target`/`workflow_run` as elevated interpreters: never
@@ -99,8 +99,7 @@ jobs:
 Taste: the matrix maps a pure build over a declared domain in parallel with
 independent failures; `permissions` names the job's one effect; potentially
 attacker-influenced data enters the shell exactly once, quoted, as an
-environment variable; the logic lives in a ShellCheck-able script, not in
-YAML.
+environment variable; the logic is in a ShellCheck-able script.
 
 ## Cost Guard
 
@@ -115,7 +114,7 @@ YAML.
    to acceptable; measure hit rate before trusting the cache to be a win.
 5. Escape threshold: nontrivial logic in `run:` strings or `if:` expressions
    moves to a script file in the repository (testable, lintable, reviewable)
-   or a small composite action. YAML coordinates; it does not compute.
+   or a small composite action. YAML coordinates, scripts compute.
 
 ## Validation Focus
 
@@ -124,4 +123,4 @@ scanner such as `zizmor`. Grep the workflow set for missing `permissions`,
 missing `timeout-minutes`, unpinned third-party `uses:`, and `${{` inside
 `run:`. Exercise a `workflow_call` with an invalid input to prove the
 boundary rejects it. Where behavior must be seen to be trusted, trigger the
-workflow on a branch and read the run, rather than reasoning from YAML alone.
+workflow on a branch and read the run.

@@ -1,35 +1,34 @@
 # Synthesize: Themes, Disagreements, Gaps
 
 Synthesis reads the extraction records and produces the analytical middle of
-the report. Its unit is the theme, never the paper: a paragraph per paper is
-an annotated bibliography, not a review.
+the report. Its unit is the theme: a paragraph per paper makes an annotated
+bibliography.
 
 ## Build themes
 
 - Cluster the records' claims into three to six themes that answer parts of
-  the research question. A paper may appear in several themes; a theme with
-  one paper is a finding, not a theme.
+  the research question. A paper may appear in several themes; a theme
+  needs two papers, and one paper is a finding.
 - Within each theme, write what the papers collectively establish, where
   they diverge, and what the strongest evidence is, citing records by key.
-- Order themes by relevance to the question, not by chronology, unless the
-  question is historical.
+- Order themes by relevance to the question; chronology only for a
+  historical question.
 
 ## Rules of evidence
 
 - **Convergence needs independence.** State that the literature "agrees" or
   "establishes" only when two or more included papers from different author
   groups support it. One group's repeated result is that group's position.
-- **Disagreement is reported, not smoothed.** When records conflict, name
+- **Disagreement is reported.** When records conflict, name
   both sides, their evidence, and any visible cause (different datasets,
   metrics, definitions). Do not average conflicting numbers or pick the
   majority silently. If the corpus cannot resolve it, the report says so.
-- **Single-paper claims are labeled.** "One study reports ..." rather than
-  prose that lets a lone result read as consensus.
+- **Single-paper claims are labeled.** Write "One study reports ..." so a
+  lone result never reads as consensus.
 - **Weight follows appraisal.** A weakly appraised paper can be mentioned;
   it cannot anchor a theme's conclusion. Say why when weight differs.
 - **Every synthesis sentence is traceable.** Each claim maps to named
-  records (invariant 1); a sentence no record supports is deleted, not
-  softened.
+  records (invariant 1); a sentence no record supports is deleted.
 
 ## Findings and gaps as records
 
@@ -47,9 +46,9 @@ pad as `map` or `open` entries until they earn support.
 ## Gaps
 
 A gap is an absence in this corpus, and the report phrases it that way:
-"none of the N included papers evaluates X", not "no research exists on X".
-The difference is the review's own coverage limit, which the report's
-limitations section owns. Candidate gaps: populations or settings untested,
+"none of the N included papers evaluates X"; "no research exists on X"
+overclaims. The difference is the review's own coverage limit, which the
+report's limitations section owns. Candidate gaps: populations or settings untested,
 methods never compared head to head, results resting on one dataset, claims
 with only single-group support.
 

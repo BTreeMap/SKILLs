@@ -55,9 +55,9 @@ source reading belongs to user-instructed troubleshooting.
 
 ## Procedure
 
-Name the languages the project actually uses as tags, nothing more. The
-grammar is `family[:flavor][@version]`: family picks a toolchain, flavor
-picks what it builds for, version pins it. `list` prints every known tag.
+Name as tags only the languages the project uses. The grammar is
+`family[:flavor][@version]`: family picks a toolchain, flavor picks what it
+builds for, version pins it. `list` prints every known tag.
 
 <setup_command>
 
@@ -128,7 +128,7 @@ caller's HOME, dotfiles, or global toolchains; nothing writes outside the
 root and the project.
 
 Falsifier: run a build through `env -i` carrying only the activation
-script. A pass proves the environment does not lean on caller state.
+script. A pass proves independence from caller state.
 
 <isolation_check>
 
@@ -165,21 +165,21 @@ over those pipes.
   never call curl, git, tar, or unzip binaries.
 - Activation redirects HOME, so git identity and ssh keys are absent inside
   an activated shell. Build and test there; commit from a normal shell.
-- micromamba `create` replaces a prefix rather than adding to it. The
-  planner therefore merges all host packages into one create call; never
-  hand-install into `<root>/conda/host` with a second call.
+- micromamba `create` replaces a prefix. The planner therefore merges all
+  host packages into one create call; never hand-install into
+  `<root>/conda/host` with a second call.
 - Toolchains pinned by the project (gradlew, package.json, Cargo.toml)
   stay authoritative: the android recipes deliberately install no gradle
   and no kotlin, because a second copy on PATH only confuses diagnosis.
-- Emulated tools are slower than native ones; minutes instead of seconds
-  for a full Android resource pipeline. Correctness is unaffected.
+- Emulated tools run slower: minutes for a full Android resource pipeline
+  where native takes seconds. Correctness is unaffected.
 - The root is ephemeral by design (under the system temp dir unless
   `DENV_HOME` says otherwise). After a reboot, re-run provision.
 - Narrowing the tag set reshapes the conda prefix exactly but leaves stale
   publisher downloads under `<root>/tools`; run `destroy` and re-provision
   for a byte-exact minimal root.
 - Recipes were validated end to end on linux (both architectures); macos
-  and windows follow the same code paths but expect best-effort edges, and
-  re-running provision is always the repair action.
+  and windows follow the same code paths with best-effort edges, and
+  re-running provision is the repair action.
 - macos/arm64 Android builds need Rosetta 2 once:
   `softwareupdate --install-rosetta --agree-to-license`.

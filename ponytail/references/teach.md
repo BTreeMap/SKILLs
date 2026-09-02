@@ -11,7 +11,7 @@ themselves. The one verb where prose is the deliverable; still no essays.
    what each lower rung would have cost.
 3. Give the 3am test: what breaks, who gets paged, and what the reader
    debugs under each alternative.
-4. End with the trigger that reverses the decision - the same trigger a
+4. End with the trigger that reverses the decision, the one a
    `ponytail:` comment would carry.
 
 ## Output
@@ -20,6 +20,6 @@ Short paragraphs or a tight list, sized to the audience's question.
 
 ## Boundaries
 
-Teach the simplification, not the domain theory: type-level design
-rationale routes to `/pl-theorist teach`. No invented metrics; counted
+Teach the simplification; type-level design rationale routes to
+`/pl-theorist teach`. No invented metrics; counted
 figures come from `/ponytail debt`.

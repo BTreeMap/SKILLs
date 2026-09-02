@@ -5,12 +5,12 @@ the work; use borders and boxes only when those signals are insufficient.
 
 ## Space
 
-* One spacing scale, geometric rather than arbitrary, used for every gap,
+* One geometric spacing scale, used for every gap,
   padding, and margin. Keep the scale below nineteen distinct values.
 * Proximity is the strongest grouping signal available and costs nothing.
   Space between groups must clearly exceed space within a group. Most
   confusing layouts are uniform spacing applied to non-uniform content.
-* Space belongs to the container, not sprinkled onto children. Prefer gap on
+* Space belongs to the container. Prefer gap on
   a layout container over margins on items, so removing an item never leaves
   a hole.
 * Vertical rhythm is a cadence: section spacing, block spacing, and element
@@ -31,7 +31,7 @@ Reach in this order and stop at the first that works:
 
 A card combines rungs four through six. Use it only when the content is a
 discrete, self-contained object the user acts on as a unit. When the content
-is text, reach for space and alignment instead.
+is text, use space and alignment.
 
 ## Grid and structure
 
@@ -45,11 +45,11 @@ is text, reach for space and alignment instead.
   aligned.
 * Align every relevant element to a consistent edge. Correct compositions
   with four different left edges.
-* Use asymmetry for deliberate weighting and tension, not random offsets.
+* Use asymmetry for deliberate weighting and tension.
 
 ## Responsive behavior
 
-* Design the narrow view as a first-class layout, not as a degradation. On
+* Design the narrow view as a first-class layout. On
   most products it is the majority of use.
 * Prefer intrinsic sizing and content-driven wrapping over viewport
   breakpoints where the platform supports it. A component that responds to
@@ -65,7 +65,6 @@ is text, reach for space and alignment instead.
   interface changes do not cause jumps.
 * Touch targets meet the minimum size `a11y` defines, with spacing between
   adjacent targets, regardless of the visual size of the mark inside them.
-  The hit area is what must meet it, not the icon drawn inside.
 
 ## Layering
 
@@ -82,6 +81,6 @@ is text, reach for space and alignment instead.
 
 Prevent shifts after paint. Reserve dimensions for images, media,
 embeds, and any region that loads late. Skeletons match the real layout's
-dimensions, not an approximation. Insert notifications and banners in
+dimensions. Insert notifications and banners in
 reserved space or as overlays. Preserve the reader's position after reading
 begins.

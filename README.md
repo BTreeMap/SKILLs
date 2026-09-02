@@ -12,20 +12,20 @@ submodule.
 
 | Skill | Purpose |
 | --- | --- |
-| [aesthete](aesthete/SKILL.md) | Interface design and review: typography, color, spacing, motion, interaction states, and a dated WCAG 2.2 accessibility floor, applied through design, build, review, audit, redesign, and teach verbs. |
-| [author-skill](author-skill/SKILL.md) | Writes and reviews skills; the procedure every other skill in this repository was authored under. |
-| [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place, with a bundled script providing backup, validation, and undo. |
+| [aesthete](aesthete/SKILL.md) | Designs and reviews interfaces: typography, color, spacing, motion, interaction states, and a dated WCAG 2.2 accessibility floor, through design, build, review, audit, redesign, and teach verbs. |
+| [author-skill](author-skill/SKILL.md) | Writes and reviews skills; every skill here was authored under it. |
+| [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place with scripted backup, validation, and undo. |
 | [fact-check](fact-check/SKILL.md) | Decomposes a document into checkable claims, verifies each against retrieved sources with cited quotes, and applies corrections only after per-item approval. |
 | [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages at three effort levels; a push verb commits and pushes in one step. |
-| [humanize](humanize/SKILL.md) | Rewrites AI-sounding text so it reads like its writer, keeping every claim and inventing nothing; detects 35 patterns from Wikipedia's "Signs of AI writing" and loads only the pattern groups a text triggers. |
-| [lit-review](lit-review/SKILL.md) | Runs literature reviews as a staged pipeline: criteria fixed before any search, every query logged by a bundled keyless script over OpenAlex, arXiv, and Crossref, two-pass screening with reasoned exclusions, theme synthesis with named disagreements, and DOI verification before delivery. |
+| [humanize](humanize/SKILL.md) | Rewrites AI-sounding text in its writer's voice, keeping every claim: 40 patterns from Wikipedia's "Signs of AI writing" plus Claude-specific tells, loading only the groups a text triggers. |
+| [lit-review](lit-review/SKILL.md) | Runs literature reviews as a staged pipeline: criteria fixed before any search, every query logged by a keyless script over OpenAlex, arXiv, and Crossref, two-pass screening with reasons, findings and gaps re-checked as the corpus grows, and DOI verification before delivery. |
 | [pl-theorist](pl-theorist/SKILL.md) | Code design, review, and refactoring grounded in typed domain modeling and complexity analysis, with per-language cost models including Bash and GitHub Actions. |
-| [ponder](ponder/SKILL.md) | Answers open questions, shower thought to academic grade, with the same investigative rigor: the lead runs the first round itself and stops early on trivial questions, a bundled ledger script tracks every leaf and source, a few orthogonal bundled workers gather what stays open, a rival sweep runs before every draft, and the answer's sections derive from ledger state. |
+| [ponder](ponder/SKILL.md) | Answers open questions, shower thought to academic grade, with one investigative standard: the lead runs the first round itself, a scripted ledger tracks every leaf and source, workers cover what stays open, a rival sweep precedes every draft, and the answer's sections derive from ledger state. |
 | [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
-| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files or URLs with pypdf; URL inputs download once into a capped temp cache, and the documents stay strictly read-only. |
+| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files or URLs with pypdf; URLs download once into a capped temp cache, and no PDF is ever written. |
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
-| [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named methodological school, with recorded approach selection, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |
+| [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named school, with a recorded choice of approach, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |
 
 ## Installing
 
@@ -47,9 +47,9 @@ claude plugin install btm-skills@btm-skills
 
 ### As a git submodule
 
-Pins an exact commit and updates on your schedule, which is the route the
-bundled sync workflow below automates. Add the library at `.github/skills` and
-alias it for Claude:
+Pins an exact commit and updates on your schedule; the bundled sync workflow
+below automates the update. Add the library at `.github/skills` and alias it
+for Claude:
 
 ```bash
 (
@@ -153,11 +153,10 @@ skills/<skill-name>            vendor-neutral hub; one symlink per skill
 .claude-plugin/                plugin and marketplace manifests
 ```
 
-Every vendor path is a single symlink to `skills/`, so supporting another agent
-costs one link rather than one per skill. Edit skills at the root and keep every
-alias a symlink. The CI gate writes and prunes the aliases, and regenerates the
-skill list inside `marketplace.json`, which is the address installers resolve
-each skill by.
+Every vendor path is one symlink to `skills/`, so another agent costs one
+link. Edit skills at the root and keep every alias a symlink. The CI gate
+writes and prunes the aliases and regenerates the skill list in
+`marketplace.json`, the address installers resolve each skill by.
 
 Git preserves symlinks on Linux and macOS; on Windows, enable Developer Mode or
 configure Git to create symlinks before cloning.

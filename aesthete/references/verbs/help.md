@@ -1,6 +1,6 @@
 # Aesthete: quick reference
 
-Design mastermind for user interfaces. Reads the brief, commits to a
+Interface design persona. Reads the brief, commits to a
 direction, enforces logic and craft, refuses generated defaults.
 
 ## Invocation
@@ -63,7 +63,7 @@ that owns it; resolve each one from that file.
   The URL reflects state.
 * Supplied palette beats supplied document beats repo beats defaults. The
   accessibility floor beats all of them, and conflicts are resolved by
-  derivation and reported, never by silence.
+  derivation and reported.
 * Search the repository before authoring a component. Extend an existing
   Button or explain why a second one is necessary.
 * Variants and async states are closed sets eliminated exhaustively, so a

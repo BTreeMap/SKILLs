@@ -7,13 +7,13 @@ bare `android` for `java:android`.
 
 ## Per-Target Notes
 
-| Tag | Supplier | Worth knowing |
+| Tag | Supplier | Notes |
 | --- | --- | --- |
 | `python` | uv | Managed CPython plus a seeded venv; `UV_PYTHON_PREFERENCE=only-managed` keeps a host python from leaking in. uv itself is linked into the root so it survives activation. |
 | `javascript` | conda-forge | nodejs + npm; npm cache redirected. Global installs land in the prefix, which is writable and disposable. |
 | `typescript` | conda-forge | nodejs + the tsc compiler as a conda package; no npm involvement at provision time. |
 | `go` | conda-forge | `GOTOOLCHAIN=local` pins the running toolchain; GOPATH and build cache live under the root. |
-| `go:cgo` | conda-forge | Adds the C toolchain and exports `CGO_ENABLED=1` and `CC`. A flavor because it changes the toolchain, not the source. |
+| `go:cgo` | conda-forge | Adds the C toolchain and exports `CGO_ENABLED=1` and `CC`. A flavor because it changes the toolchain. |
 | `rust` | conda-forge | rustc + cargo + a C toolchain, because a rustc that cannot link is not a toolchain. `CARGO_HOME` under the root. |
 | `c`, `cpp` | conda-forge | `c-compiler`/`cxx-compiler` metapackages resolve to gcc on linux, clang on macos. `CC`/`CXX` point at fixed-name shims, so plans never mention a compiler triple. Not on windows (MSVC needs its own activation). |
 | `java` | conda-forge | A JDK; `JAVA_HOME` points inside the prefix at `lib/jvm`, never at the prefix itself. |

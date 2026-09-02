@@ -7,7 +7,7 @@
 - Strictness is semantic and operational. Forcing too little harms accumulation;
   forcing too much can destroy productivity or infinite-stream behavior.
 - List/stream fusion depends on exact producers, consumers, rewrite rules, and
-  optimization settings; it is not guaranteed by point-free syntax.
+  optimization settings; point-free syntax guarantees none of it.
 - Monad transformer stacks and generalized effects can improve composition while
   worsening inference, errors, allocation, and operational visibility.
 
@@ -21,8 +21,8 @@
   preserve shape, and `foldl'` for strict left accumulation.
 - Keep exported paths free of partial functions unless the type or constructor
   proves their preconditions.
-- Use the project's existing streaming and effect abstractions rather than adding
-  a competing transformer stack.
+- Use the project's existing streaming and effect abstractions over a competing
+  transformer stack.
 
 ## Domain and Effect Constraints
 

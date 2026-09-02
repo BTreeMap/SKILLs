@@ -24,7 +24,7 @@ already read.
 
 ## Tokens, not values
 
-Name by role, not appearance. A token called `surface-raised` survives
+Name by role. A token called `surface-raised` survives
 a theme change; one called `grey-100` becomes wrong when the theme inverts.
 Roles worth having: page and raised surfaces, primary, secondary, and
 disabled text, subtle and strong borders, the accent plus its hover, active,
@@ -32,9 +32,9 @@ and subtle variants, the semantic set, and a focus ring.
 
 Author in a perceptually uniform color space where the toolchain supports
 it, so that a lightness step means the same visual change at every hue.
-Derive hover and active states by adjusting lightness within the space
-rather than hand-picking unrelated values, and let the platform's color
-mixing do the derivation so the relationship survives a token change.
+Derive hover and active states by adjusting lightness within the space,
+and let the platform's color mixing do the derivation so the relationship
+survives a token change.
 
 ## Both themes, from the start
 
@@ -44,11 +44,10 @@ characteristic result where one mode is designed and the other is inverted.
 * Use near-black and near-white for large surfaces. Pure black kills depth
   and causes smearing on some displays; pure white glares.
 * Dark mode is not an inversion. Elevation reverses: raised surfaces get
-  lighter, not darker, and shadows do less work, so borders and surface
+  lighter, and shadows do less work, so borders and surface
   lightness carry elevation instead.
 * Saturated colors vibrate against dark backgrounds. Reduce saturation and
-  raise lightness for accents in dark mode rather than reusing the light
-  value.
+  raise lightness for accents in dark mode.
 * Hierarchy parity is the requirement: whatever draws the eye first in light
   draws it first in dark.
 * Select between theme values through the platform's own single-declaration
@@ -64,12 +63,12 @@ characteristic result where one mode is designed and the other is inverted.
 ## Contrast in practice
 
 Thresholds, exemptions, and their interpretation are the floor and are owned
-by `a11y`. Compute every ratio instead of estimating or accepting a supplied
-document's claim about it.
+by `a11y`. Compute every ratio; estimates and a supplied document's claims are
+unverified.
 
 * Style placeholder, helper, disabled-looking, and secondary text to read as
   secondary, then measure each against every surface it appears on, including
-  tinted cards, not only the page background.
+  tinted cards.
 * An accent that fails at body size often passes at display size, so decide
   where a brand color may carry text before committing it to a button.
 * Text over imagery needs a guaranteed backing: a scrim, a gradient, or a
@@ -77,16 +76,14 @@ document's claim about it.
   against the pixels behind the letters.
 * Color is never the only channel. Pair it with text, icon, weight, or
   position.
-* Keep forced-colors and high-contrast modes functional rather than
-  overriding the system keywords.
+* Keep forced-colors and high-contrast modes functional.
 
 ## Choosing a palette
 
 Let the brand, domain, and audience choose. When nothing constrains the
 choice, avoid the reflexive families of generated design: the purple-to-blue
 technology gradient, and the warm cream with brass and oxblood that appears
-on every artisan and premium consumer brief. Both are recognizable defaults
-rather than decisions, and they make distinct brands look identical.
+on every artisan and premium consumer brief. Both are defaults, and they make distinct brands look identical.
 
 Choose a direction that is coherent and unusual for the category: a saturated
 single hue against one neutral, a deep natural tone with a warm accent, sharp

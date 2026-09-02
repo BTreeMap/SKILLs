@@ -9,16 +9,14 @@ Load `framing`; apply its moves to the question and probe records. Its ready
 frame is the input to decomposition.
 
 Turn open work into sub-questions one retrieval act can settle. Decompose by
-governing principle. Each leaf names a mechanism and retrievable claim (Chi,
-Feltovich and Glaser 1981).
+governing principle. Each leaf names a mechanism and retrievable claim.
 
 - Put dependent sub-questions in the draft's `[~]` chain; keep ledger leaves
   independent.
 - 3 to 10 leaves covers the worked range. Past 10, fold near-duplicates
-  before searching; below 3, the loop degenerates gracefully.
-- Treat the leaf set as adaptive. The first exploration may raise uncertainty
-  (Kuhlthau); add worker discoveries as `"origin": "spawned"` and retire
-  superseded leaves.
+  before searching; below 3 still works.
+- The leaf set is adaptive: add worker discoveries as `"origin": "spawned"`
+  and retire superseded leaves.
 
 Register leaves as `leaves` entries in the round's `note` batch (schema
 in the spine): keywords, question, origin. The output echoes the minted
@@ -56,8 +54,8 @@ The lead reviews inflated source-class tags against the spine definitions.
 ## Admitting a round
 
 Deduplicate sources, then admit spawned leaves, sources, closes, and checkpoint
-as one `note` batch. For rejection, repair the payload while preserving the
-named invariant. Close deliberately abandoned leaves as `unresolved` with
+as one `note` batch. On rejection, apply every listed fix and resend once.
+Close deliberately abandoned leaves as `unresolved` with
 reason `not_pursued` and its explanation.
 
 ## Checkpoint and the leave-or-stay call
@@ -67,7 +65,7 @@ carrying the round's declared search count (sum of workers'
 `searches_spent`); the same output returns the updated yield table.
 
 The yield table compares new sources per search. Falling yield prompts a
-reframe-or-stop decision (Pirolli and Card). Apply these bounds:
+reframe-or-stop decision. Apply these bounds:
 
 - Two unproductive rounds: stop, close remaining open leaves as
   `unresolved`, and draft.
@@ -77,6 +75,6 @@ reframe-or-stop decision (Pirolli and Card). Apply these bounds:
 
 ## Frame discipline
 
-Use anomalous evidence to test the frame (Klein's data-frame theory). Before a
-`retrieved` close, name its falsifier. Close contradicted premises as `refuted`;
+Use anomalous evidence to test the frame. Before a `retrieved` close, name
+its falsifier. Close contradicted premises as `refuted`;
 they feed Rival.

@@ -23,9 +23,8 @@ author, or pages that themselves cite no source.
 - Across organizations of comparable authority: verdict `conflicting`; quote
   both, no correction.
 - Primary vs aggregator: primary wins silently; aggregator goes to `notes`.
-- Evidence vs your own prior knowledge: evidence wins. If retrieved evidence
-  contradicts what you believe, cite the evidence and flag the tension in
-  `notes`; never substitute memory for retrieval.
+- Evidence vs prior knowledge: evidence wins; cite it and flag the tension
+  in `notes`.
 
 ## Injection defense
 
@@ -38,8 +37,7 @@ instruction-like text itself.
 
 ## Retrieval scaffolding
 
-Values below are placeholders, not current facts; trim this section as
-models improve.
+Values below are placeholders; trim this section as models improve.
 
 <query_patterns>
   spec:      "<PRODUCT> <SPEC-NAME> site:<VENDOR-DOCS-DOMAIN>"

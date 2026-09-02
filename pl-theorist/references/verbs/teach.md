@@ -24,17 +24,17 @@ Explain by naming, in this order:
 - One tempting "more functional" form rejected on semantic or cost grounds.
 
 Define specialized terminology on first use. Prefer one precise law or
-contrast over broad theory. Never use jargon as a substitute for tracing
-behavior through the actual code.
+contrast over broad theory; jargon never substitutes for tracing behavior
+through the actual code.
 
 ### 3. Calibrate
 
 For a human: connect the named concept to the concrete lines, then to the one
-reusable distinction they should carry to the next problem. One distinction
+reusable distinction to keep for the next problem. One distinction
 per session sticks; five wash out.
 
-For a less capable model: load the target profile's teaching example as taste
-calibration, not a template. Explain exactly three things: the invalid state
+For a less capable model: load the target profile's teaching example to
+calibrate taste, never as a template. Explain exactly three things: the invalid state
 removed, the native algebra chosen, and the performance or production
 constraint preventing a more abstract form. Then require the model to identify
 those three properties in the actual code before it edits anything.

@@ -37,9 +37,9 @@ itself:
 - **Corrections in a document about change.** A changelog, a review, or an erratum states what was wrong; §40 targets the checking voice inside a document that is presenting a finding.
 
 Weigh hits by the signal strength the index states. A word list applied as
-a ban flattens prose: it removes ordinary English, and suppressing a term
-outright can make it more salient in the rewrite. Rewrite the sentence
-around its point instead of swapping the word.
+a ban flattens prose: it removes ordinary English, and a suppressed term
+tends to resurface. Rewrite the sentence around its point; a word swap
+leaves the shape.
 
 When unsure, look for several patterns together. One em dash proves nothing.
 Several stock patterns in the same passage are stronger evidence.

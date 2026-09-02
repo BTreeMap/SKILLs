@@ -33,7 +33,7 @@ Type each claim; the type selects the retrieval strategy.
 | spec | Technical capability, limit, or parameter of a product | Vendor's official documentation for the exact product and version |
 | version | Version identifier or "latest release" assertion | Package registry or the project's release page; registries beat blogs |
 | date | Release, publication, or event date | Primary announcement from the owning organization |
-| statistic | Measured or surveyed quantity | Original publisher of the measurement, not re-reporting |
+| statistic | Measured or surveyed quantity | The measurement's original publisher |
 | computation | Value derivable from other values in the document (totals, percentages, deltas) | RECOMPUTE from the document's own inputs; search only for missing external inputs |
 | quotation | Attributed verbatim quote | Locate the original text; verify wording and attribution |
 | other | Verifiable but untyped | Two-independent-source rule, strictest reading |

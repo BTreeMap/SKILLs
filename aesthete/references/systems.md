@@ -5,8 +5,7 @@ approximations honestly.
 
 ## Selection order
 
-1. **What the repository already uses.** Overwhelmingly the right answer.
-   Consistency with the existing tree beats any system's individual merit.
+1. **What the repository already uses.** Consistency with the existing tree beats any system's individual merit.
 2. **The system the domain expects or requires.** Some platforms and sectors
    effectively mandate one; using anything else creates a product that feels
    foreign or fails a compliance expectation.
@@ -41,7 +40,7 @@ points, and framework support change.
   constraints of both and the coherence of neither.
 * **Use it or replace it.** Overriding a large share of a system's tokens
   means the wrong system was chosen. Report the mismatch and change the
-  decision instead of overriding tokens component by component.
+  decision.
 * **Theme through the intended mechanism.** Every mature system has a
   theming layer. Set theme values through it; overrides break on upgrade.
 * **Set the theme once** at the application root.

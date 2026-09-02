@@ -15,13 +15,13 @@ only valid answers:
 * **Progress**: work is underway and this is how much remains.
 * **Narrative**: this sequence has an order the user should follow.
 
-Use a communication purpose, not visual appeal, to justify motion. Use an
-animation library only when it supplies a needed capability. If the sentence
+Justify motion by what it communicates. Use an animation library only when
+it supplies a needed capability. If the sentence
 does not come, remove the animation.
 
 ## Duration and curve
 
-* Small, local changes: fast enough to feel immediate rather than animated.
+* Small, local changes: fast enough to feel immediate.
   Hover and press feedback belongs at the short end.
 * Elements entering or leaving: moderate, and asymmetric. Exits run faster
   than entrances, because the user has already decided.
@@ -29,7 +29,7 @@ does not come, remove the animation.
   past roughly half a second in a product interface starts costing the user
   time on every repetition.
 * Distance scales duration, but sublinearly. A larger object crossing a
-  larger distance takes somewhat longer, not proportionally longer.
+  larger distance takes somewhat longer.
 * Use eased curves that decelerate into rest. Linear motion reads mechanical
   except for continuous ambient movement and progress indicators. Spring
   behavior suits direct manipulation, where the user's gesture should feel
@@ -44,9 +44,8 @@ does not come, remove the animation.
   arrives after the user has already started reading the first.
 * Animate the parent or the child, not both in competing ways.
 * Shared-element continuity is the highest-value motion available, the one
-  case where motion genuinely reduces cognitive load rather than merely
-  decorating: when the same object persists across a state or route change,
-  animate it rather than crossfading two representations.
+  case where motion reduces cognitive load: when the same object persists
+  across a state or route change, animate it.
 * Show content the user is waiting for without an entry animation.
 
 ## Scroll-linked motion
@@ -105,9 +104,9 @@ principle, with a solid, high-contrast fallback for any material effect.
 
 * Animate only compositor-friendly properties: transform and opacity.
   Animating geometry forces layout every frame.
-* Promote sparingly and only what actually animates; blanket promotion
+* Promote only what animates; blanket promotion
   consumes memory and can degrade what it was meant to help.
 * Keep grain, noise, and heavy filters on a fixed, non-interactive overlay
-  layer instead of a scrolling container where they repaint continuously.
+  layer; in a scrolling container they repaint continuously.
 * Lazy-load animation libraries and heavy scenes that are not needed for the
   first view, and tear down every observer, timeline, and context on unmount.

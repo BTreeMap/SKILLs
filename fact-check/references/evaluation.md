@@ -1,6 +1,6 @@
 # Maintainer Evaluation Protocol
 
-For maintainers of this skill, not for fact-check runs. Defines the
+Maintainer protocol; a fact-check run never loads it. Defines the
 measurements that keep the skill honest; populate results from real runs,
 never from reading docs.
 
@@ -14,7 +14,7 @@ per run:
 - claim recall: seeded errors found / seeded errors present
 - false-correction rate: corrections proposed against accurate claims
 - verdict accuracy per taxonomy category
-- abstention correctness: abstains where evidence is absent, not where it is easy
+- abstention correctness: abstains only where evidence is absent
 - cost and latency per claim
 
 Protocol: at least 5 repetitions per condition; compare against a no-skill
@@ -38,8 +38,8 @@ delta approaches zero, delete scaffolding (starting with
 20-30 prompts: true positives ("fact-check this", "are these specs still
 right"), hard negatives ("check this document" as proofreading, "verify this
 code works", "is this argument valid"), and paraphrases. Measure trigger
-precision and recall per harness; tune the description's "Use when" and
-"Do not use for" clauses, not the body, when triggers misfire.
+precision and recall per harness; when triggers misfire, tune the
+description's "Use when" and "Do not use for" clauses and leave the body.
 
 ## Support matrix
 
@@ -50,4 +50,4 @@ Populate per harness from benchmark runs:
 | <harness> | pass/fail | pass/fail | pass / n-a (name fallback) | pass/fail | pass/fail |
 
 A cell without a supporting run stays empty. Where a harness lacks a
-capability, name the fallback branch that ran, not "unsupported".
+capability, name the fallback branch that ran.

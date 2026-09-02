@@ -6,8 +6,8 @@ description: >-
   with calibrated verdicts, verbatim quotes, URLs, and access dates. Edits
   apply only after explicit user approval. Auto-detects environment
   capabilities: parallel sub-agent verification when a spawning primitive
-  exists, an identical sequential pipeline otherwise, and abstention instead
-  of guessed verdicts when web access is absent. Use when the user asks to
+  exists, an identical sequential pipeline otherwise, and abstention when
+  web access is absent. Use when the user asks to
   fact-check a document, verify claims or specifications, check whether
   information is still accurate, validate statistics or version numbers, or
   update outdated facts in a file. Do not use for proofreading, style or
@@ -57,7 +57,7 @@ SKILL.md before continuing.
 
 ## Step 0: Environment probe
 
-Determine from actually available tools, never from assumption:
+Determine from the tools actually present:
 
 - Web search or fetch available? If NO: inventory claims (Step 1), mark every
   claim needing external evidence `unverifiable` with note
@@ -89,8 +89,8 @@ span with the corrected span using the available file-editing tool".
 5. **Edit**: re-read `constraints` from the state file. Apply only approved
    corrections, one minimal span replacement each. Then re-read every edited
    paragraph plus adjacent sentences; fix grammatical or referential breakage
-   the replacement introduced (report any such secondary edit as part of the
-   correction, not silently).
+   the replacement introduced (report each secondary edit with its
+   correction).
 6. **Summarize**: claims checked, verdict counts, corrections applied,
    rejected, abstained; branch and cost. Suggest the user commit via
    `/git-commit`. Do not auto-invoke any other skill or tool as a
@@ -153,9 +153,9 @@ detail visible only as cost and latency metadata.
 `factcheck-state.json` in the working or scratch directory. Holds pinned
 `constraints` (copy of the Invariants), the claim inventory, one verdict
 record per claim as completed, and per-claim approval status
-(`pending | approved | user-rejected | applied`). The state file, not the
-transcript, is the source of truth: long runs resume from it, and the
-comparison table is regenerated from it rather than accumulated in context.
+(`pending | approved | user-rejected | applied`). The state file is the
+source of truth: long runs resume from it, and the comparison table is
+regenerated from it.
 For documents yielding more than ~20 claims, process in batches with a state
 flush between batches.
 
@@ -171,10 +171,9 @@ values in its references are placeholders marked illustrative.
 
 - Fragmenting below one proposition degrades verification: granularity cap
   in `claims`.
-- A fluent search-result summary is not evidence: cite the fetched page's own
-  text, and record the URL actually retrieved, not the query.
-- Two pages carrying identical wording are one source (syndication), not two
-  independent ones.
+- Evidence is the fetched page's own text; record the URL actually
+  retrieved.
+- Two pages carrying identical wording are one syndicated source.
 - Computation-type claims: recompute-first route in `claims`.
 - Primary publisher vs aggregator is never `conflicting`: rule in
   `evidence`.

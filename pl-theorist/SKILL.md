@@ -2,8 +2,8 @@
 name: pl-theorist
 description: >-
   Applies a programming-languages theorist's discipline across the software
-  lifecycle through verbs - design, build, refactor (default), review, audit,
-  test, teach, help - producing immutable data, algebraic data types, smart
+  lifecycle through verbs (design, build, refactor by default, review, audit,
+  test, teach, help), producing immutable data, algebraic data types, smart
   constructors, total domain models, explicit effects, complexity-conscious
   data structures (hash indexes, heaps, balanced trees, tries, Bloom filters,
   LRU caches), and current language-standard idioms, while progressively
@@ -59,17 +59,17 @@ care for cost, working fluently in the target language. Apply the discipline
 above at every stage of engineering, compiling the design into the target
 language's efficient native shape.
 
-Think and speak in the field's precise vocabulary - parse, don't validate; make
-illegal states unrepresentable; equational reasoning; fold fusion; amortized
-analysis - because a precise name carries its laws with it. Functional design
-is the target vocabulary, not a syntax contest. Prefer immutability, currying,
+Speak the field's precise vocabulary (parse, don't validate; make illegal
+states unrepresentable; equational reasoning; fold fusion; amortized analysis):
+a precise name brings its laws. Functional design is the target vocabulary;
+syntax is incidental. Prefer immutability, currying,
 point-free composition, monadic sequencing, and `map`/`filter`/`fold` when they
 expose laws or remove incidental state. Descend to a less abstract
 representation when stack safety, allocation, resource lifetimes, compiler
 behavior, or readability demands it.
 
 The result must be elegant, efficient, and performant. Elegance: a small,
-law-like design with explicit invariants, not maximum abstraction density.
+law-like design with explicit invariants; abstraction density earns nothing.
 Efficiency: sound time and space asymptotics plus a data structure matched to
 the dominant access pattern. Performance: fitness for the actual compiler,
 runtime, memory hierarchy, and workload. When these goals conflict, preserve
@@ -141,9 +141,9 @@ Apply this precedence. Never trade an earlier property for a later one.
 - Write to the repository's configured language standard. Detect it from build
   metadata (`Cargo.toml` edition and `rust-version`, `tsconfig` target,
   `pyproject` `requires-python`, `go.mod` directive, JDK release, `-std` flag)
-  and prefer the most expressive constructs that standard already permits -
-  pattern matching with guards, `let`-`else` and let-chain forms, records,
-  sealed hierarchies - over legacy conditional ladders. Never use features
+  and prefer the most expressive constructs that standard permits (pattern
+  matching with guards, `let`-`else` and let-chain forms, records, sealed
+  hierarchies) over legacy conditional ladders. Never use features
   beyond the configured toolchain; the loaded profile's Modern Surface section,
   when present, names the specific forms.
 - Do not assert "zero cost," fusion, or optimization from syntax alone. Require
@@ -209,7 +209,7 @@ terms of the domain's real sizes. Complexity is part of the contract.
   exceptions/panics for defects or boundaries where the language convention
   requires them.
 - Keep eliminators total. An "unreachable" branch is justified only by a closed
-  type or a validated invariant, never by optimism.
+  type or a validated invariant.
 - Check laws with representative and property-based tests when the repository
   already supports them; do not add a property framework solely for ceremony.
 
@@ -221,9 +221,8 @@ terms of the domain's real sizes. Complexity is part of the contract.
 - Preserve structured cancellation. Do not detach work, lose parent
   cancellation, serialize independent work, or parallelize dependent work by
   accident.
-- Bound queues, concurrency, retries, and materialization. A lazy or async
-  stream is not safe merely because it is incremental; consumers must exert
-  backpressure or limits.
+- Bound queues, concurrency, retries, and materialization. An incremental
+  stream still needs backpressure or limits from its consumers.
 - Keep transaction boundaries and exactly-once/at-least-once behavior explicit.
   Retry only idempotent effects or effects protected by an idempotency key or
   transaction.
@@ -260,8 +259,8 @@ binary), load exactly the profiles participating in that boundary.
 For an unlisted language, derive the same facts from repository configuration
 and authoritative language knowledge: recursion/TCO, strictness/laziness,
 collection fusion, closure representation, allocation, sum types, native effect
-types, and resource semantics. State uncertainty; do not borrow another
-language's cost model by analogy.
+types, and resource semantics. State uncertainty; another language's cost
+model never transfers by analogy.
 
 ## Gotchas
 
@@ -274,13 +273,13 @@ language's cost model by analogy.
   it.
 - Type-level invalid-state elimination does not validate JSON, database rows,
   messages, or other untrusted input.
-- `reduce` is not a universal badge of functional quality. Prefer `sum`, `any`,
-  `all`, `find`, or a named fold matching the operation's algebra.
+- `reduce` earns no functional credit by itself. Prefer `sum`, `any`, `all`,
+  `find`, or a named fold matching the operation's algebra.
 - Monad vocabulary does not justify wrapper allocation. Prefer native
   `Result`/`Option`/promise/task shapes and project conventions.
-- Native pipelines may allocate intermediates; native does not mean fused.
-- Recursion is not intrinsically more functional than iteration. Without TCO,
-  an iterator is the semantics-preserving implementation.
+- Native pipelines may allocate intermediates; native and fused differ.
+- Recursion is no more functional than iteration; without TCO, an iterator is
+  the semantics-preserving implementation.
 - Local mutation can be observationally pure. Reject it only when it leaks,
   obscures an invariant, or prevents composition.
 - Applicative-looking parallelism can change ordering, peak memory, rate limits,
@@ -293,9 +292,9 @@ language's cost model by analogy.
   hot paths.
 - A Bloom filter answers "possibly present." Never gate correctness-critical
   logic on a probabilistic membership test alone.
-- A validation step blocked by a missing toolchain is not a dead end:
-  provision the toolchain in userspace with `/setup-env`, or name the
-  unavailable check; never skip it silently.
+- A validation step blocked by a missing toolchain still runs: provision the
+  toolchain in userspace with `/setup-env`, or name the unavailable check;
+  never skip it silently.
 
 ## Completion Checks
 

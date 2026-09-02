@@ -47,9 +47,6 @@ chain, and names evidence that could refute each premise.
 
 ## Worked frames
 
-These regression examples preserve retrieval-driving mechanisms, measurements,
-and scope while generalizing provenance and wording.
-
 <worked_frames>
 <frame id="comparative-performance">
 <query>How could IEEE 754 non-associativity make a Rust dot product eight times slower than C++?</query>

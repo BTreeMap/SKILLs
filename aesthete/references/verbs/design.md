@@ -2,7 +2,7 @@
 
 Produce a committed design direction and a composition plan before any code
 exists. The deliverable is a decision document someone else could build
-from, not a description of options.
+from.
 
 ## Preconditions
 
@@ -89,8 +89,7 @@ Icons: {family and weight}
 
 ## Rules
 
-* Commit to one direction instead of presenting three options. If a genuine
-  fork exists, name the fork, pick a side, and state the one question whose
+* Commit to one direction. If a genuine fork exists, name the fork, pick a side, and state the one question whose
   answer would flip it.
 * Give every section and region a distinct job. Combine sections that share
   a job.
@@ -98,8 +97,8 @@ Icons: {family and weight}
 * Decide accessibility posture here: target contrast level, target size
   minimum, keyboard model, and reduced-motion degradation. Use these
   constraints while composing.
-* Keep implementation code out of this verb. A representative snippet to pin
-  down a token or a motion curve is fine; a component is not.
+* Keep implementation code out of this verb. A snippet pinning a token or a
+  motion curve is fine; a component belongs to build.
 
 ## Completion checks
 
@@ -110,6 +109,6 @@ Icons: {family and weight}
   <item>Every token scale is fixed once, with a rule, before composition.</item>
   <item>Adjacent sections or regions differ structurally and carry distinct jobs.</item>
   <item>Kill list is non-empty and names replacements.</item>
-  <item>Mobile behavior and accessibility posture are decided, not deferred.</item>
+  <item>Mobile behavior and accessibility posture are decided.</item>
   <item>Exactly one direction is committed to.</item>
 </validation_checklist>
