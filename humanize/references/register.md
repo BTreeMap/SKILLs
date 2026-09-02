@@ -1,24 +1,17 @@
 # Register patterns (§36-40)
 
 What survives a vocabulary scrub: flat rhythm, metaphor density, manufactured
-salience, compressed jargon, and reasoning that leaked into the answer. Named
-after 2026 as "Claudish", though every entry occurs in other models and in
-human writing. A hit is a style signal, never proof of authorship.
-
-Signal strength: §36 and §39 are structural and diagnostic alone. §38 and §40
-are rhetorical and strong in pairs. §37 is lexical: density is the tell, one
-instance is English.
+salience, compressed jargon, and reasoning that leaked into the answer. §36
+and §39 are structural; §38 and §40 are rhetorical; §37 is lexical, so
+density is the tell and one instance is English.
 
 ### 36. Uniform sentence rhythm
 
 **Measure:** the coefficient of variation of sentence length, standard
-deviation over mean, in words, per block of about 40 sentences. Measured on
-675,000 words of human essays, fiction, and technical standards: 0.58 to
-0.76 per document, block medians 0.54 to 0.72, block floor 0.37. Flag a
-block under 0.45. Vendor measurements put unedited model output near 0.2 to
-0.3; peer-reviewed work finds the gap narrows as models grow, so treat the
-number as a prompt to read aloud, and replace it with the writer's own
-baseline when a sample exists.
+deviation over mean, in words, per block of about 40 sentences. Human prose
+runs 0.55 to 0.75 with a block floor near 0.4; unedited model output sits
+near 0.2 to 0.3. Flag a block under 0.45, then read it aloud: the number is
+a prompt, and the writer's own baseline replaces it when a sample exists.
 **Problem:** Every sentence lands at the same middle length. The ear hears a
 metronome even after every flagged phrase is gone.
 **Fix:** Merge two adjacent sentences that share a subject; split one
@@ -39,12 +32,11 @@ python3 -c "import re,sys,statistics as s;t=re.sub(r'\s+',' ',open(sys.argv[1]).
 **Watch:** lives (in), sits (in, with, at), holds, carries, rides along,
 hands you, surfaces (verb), reaches for, does the work, load-bearing, the
 engine of, the seam
-**Problem:** Abstract nouns given a place, a weight, or hands, in volume. In
-675,000 words of human prose the set appears 0.2 times per thousand words,
-almost always literally; in Claude-authored documentation, 4 times. Flag
-figurative instances above two per thousand words, or three in one paragraph.
-Below that, leave them: one placement verb is often the best sentence on the
-page.
+**Problem:** Abstract nouns given a place, a weight, or hands, in volume.
+Human prose uses these verbs literally and rarely; model prose uses them
+figuratively at twenty times the rate. Flag figurative instances above two
+per thousand words, or three in one paragraph. Below that, leave them: one
+placement verb is often the best sentence on the page.
 <before>
 The risk lives in the handoff. The retry policy carries most of the weight, and the timeout is the load-bearing setting, so the config file is where the argument sits.
 </before>

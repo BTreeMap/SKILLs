@@ -20,17 +20,11 @@ license: MIT
 # Humanize: remove AI writing patterns
 
 Rewrite AI-sounding text so it reads like the writer, not a chatbot. §1-35
-come from Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing),
-maintained by WikiProject AI Cleanup. Its diagnosis: LLMs tend toward the most
-statistically likely phrasing for the widest variety of cases. The cure is the
-specific over the generic. §36-40 and the added cases inside older entries
-come from the 2026 observations of Claude prose ("Claudish"): the Economist
-comparison of 55,940 sentences across four models (July 2026), the Pew
-Research web sample (August 2026), the em dash suppression study across
-twelve models (arXiv 2603.27006), a cluster analysis of 461,000 pull request
-descriptions (August 2026), the CC0 claudisms banlist, and practitioner
-catalogues. Evidence in this field turns over within months; the owner files
-state which numbers were measured and on what.
+come from Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
+§36-40 and the added cases inside older entries cover the tells that survive
+a vocabulary scrub in current model prose. The diagnosis is the same: LLMs
+tend toward the most statistically likely phrasing for the widest variety of
+cases. The cure is the specific over the generic.
 
 ## Registry
 
@@ -96,7 +90,8 @@ before/after examples; the cues below are routing summaries only. Signal
 strength: structural and rhetorical entries are diagnostic alone or in pairs;
 lexical entries (§7, §37) count only in clusters or above the density the
 owner file states. Every entry occurs in human writing; a hit is a style
-signal, never proof of authorship.
+signal, never proof of authorship. Vocabulary tells drift by model and year;
+structural ones last.
 
 | § | Cue |
 | --- | --- |
