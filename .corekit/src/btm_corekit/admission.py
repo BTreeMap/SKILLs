@@ -37,14 +37,25 @@ def field_text(entry: Mapping[str, Any], key: str) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 
-def suggest(ref: str, pool: Iterable[str], limit: int = 3) -> list[str]:
+def suggest(
+    ref: str,
+    pool: Iterable[str],
+    limit: int = 3,
+    keywords: Mapping[str, set[str]] | None = None,
+) -> list[str]:
     """Closest ids to a failed reference: keyword overlap first, then edit
-    distance for keys that carry no keywords (DOIs, titles)."""
+    distance for keys that carry no keywords (DOIs, titles). `keywords` is a
+    precomputed id-to-keyword-set index; without it each call is O(pool x
+    words)."""
     ids = list(pool)
     words = set(keywords_of(ref))
+    index = keywords if keywords is not None else {}
     best = heapq.nsmallest(
         limit,
-        ((len(words & set(keywords_of(candidate))), candidate) for candidate in ids),
+        (
+            (len(words & index.get(candidate, set(keywords_of(candidate)))), candidate)
+            for candidate in ids
+        ),
         key=lambda pair: (-pair[0], pair[1]),
     )
     near = [candidate for overlap, candidate in best if overlap > 0]
@@ -60,6 +71,14 @@ class Pool:
     slugs: set[str] = field(default_factory=set)
     minted: dict[str, str] = field(default_factory=dict)  # stem -> full id
     fresh: set[str] = field(default_factory=set)  # ids minted in this batch
+    _keywords: dict[str, set[str]] = field(default_factory=dict)
+
+    def keywords(self) -> dict[str, set[str]]:
+        """Keyword sets per id, extended for ids added since the last call;
+        amortized O(1) per id across a batch."""
+        for candidate in self.ids[len(self._keywords) :]:
+            self._keywords[candidate] = set(keywords_of(candidate))
+        return self._keywords
 
 
 class Admission:
@@ -134,7 +153,7 @@ class Admission:
                     f"write one of: {', '.join(candidates)}",
                 )
             case NoMatch():
-                near = suggest(ref, pool.ids)
+                near = suggest(ref, pool.ids, keywords=pool.keywords())
                 self.fail(
                     where,
                     f"replace '{ref}': no {pool.label} matches it",

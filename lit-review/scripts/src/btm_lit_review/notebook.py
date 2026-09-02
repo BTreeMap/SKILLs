@@ -53,6 +53,7 @@ GAP_FIELDS = frozenset({"statement", "probes", "watch", "from", "supersedes"})
 ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r", "snapshot": "b"}
 LEVEL_RANK = {level: rank for rank, level in enumerate(READ_LEVELS)}
 LOG_ID = re.compile(r"s(\d+)")
+WATCH_MAX = 200  # a watch is a short alternation of words; brief scans it per paper
 
 
 def load_notebook(session: Session) -> list[dict[str, Any]]:
@@ -284,13 +285,25 @@ class _Admission(Admission):
                 )
             watch = entry.get("watch")
             if watch is not None:
-                try:
-                    re.compile(watch)
-                except re.error as err:
+                if not isinstance(watch, str) or len(watch) > WATCH_MAX:
                     self.fail(
-                        f"{where}.watch", f"fix the regex: {err}", hint=SCHEMA["gaps"]
+                        f"{where}.watch",
+                        f"keep the watch a string under {WATCH_MAX} characters",
+                        hint="a short alternation of the words a challenger would "
+                        "use in its title or abstract",
                     )
                     clean = False
+                    watch = None
+                else:
+                    try:
+                        re.compile(watch)
+                    except re.error as err:
+                        self.fail(
+                            f"{where}.watch",
+                            f"fix the regex: {err}",
+                            hint=SCHEMA["gaps"],
+                        )
+                        clean = False
             clean = self.take_links(entry, "gap", where) and clean
             if clean:
                 record: dict[str, Any] = {

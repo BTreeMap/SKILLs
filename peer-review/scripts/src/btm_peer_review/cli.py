@@ -139,14 +139,15 @@ def cmd_note(args: argparse.Namespace) -> int:
     if isinstance(batch, Diagnostic):
         emit(rejection([batch], "ledger"))
         return 1
-    ledger = replay(event_log(directory).read())
+    events = event_log(directory).read()
+    ledger = replay(events)
     context = Context(_paper(directory), corpus_of(meta), meta.year)
     result = expand_batch(ledger, batch, context, mint, pad_ids(directory))
     advise(result.advisories)
     if result.problems:
         emit(rejection(result.problems, "ledger"))
         return 1
-    event_log(directory).append(result.events)
+    event_log(directory).append(result.events, held=len(events))
     emit(
         {
             "session": directory.name,

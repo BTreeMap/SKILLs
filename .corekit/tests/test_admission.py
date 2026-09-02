@@ -59,6 +59,13 @@ class TestAdmission:
         assert gate.mint_id({"kw": []}, pool, "leaves[3]") is None
         assert "vary one keyword" in gate.problems[0].fix
 
+    def test_pool_keywords_extend_incrementally(self):
+        pool = Pool("leaf", ["rent-length-1"])
+        assert pool.keywords() == {"rent-length-1": {"rent", "length", "1"}}
+        pool.ids.append("bcl-2")
+        assert set(pool.keywords()) == {"rent-length-1", "bcl-2"}
+        assert suggest("bcl", pool.ids, keywords=pool.keywords()) == ["bcl-2"]
+
     def test_minting_without_a_minter_is_a_defect(self):
         with pytest.raises(CommandError):
             Admission().mint_id({"kw": ["a", "b"]}, Pool("x", []), "w")

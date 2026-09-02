@@ -43,10 +43,14 @@ class EventLog:
         with self.path.open(encoding="utf-8") as handle:
             return sum(1 for line in handle if line.strip())
 
-    def append(self, events: Iterable[Mapping[str, Any]]) -> None:
-        """Stamp each event with `t` and append; the cap counts the whole log."""
+    def append(
+        self, events: Iterable[Mapping[str, Any]], *, held: int | None = None
+    ) -> None:
+        """Stamp each event with `t` and append; the cap counts the whole log.
+        A caller that replayed the log passes its event count as `held`, so
+        the file is read once per command."""
         batch = list(events)
-        held = self.count()
+        held = self.count() if held is None else held
         if held + len(batch) > self.cap:
             raise CommandError(
                 f"ledger would exceed {self.cap} events ({held} held, "

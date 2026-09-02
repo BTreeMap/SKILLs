@@ -71,7 +71,7 @@ def cmd_note(args: argparse.Namespace) -> int:
     if result.problems:
         emit(rejection(result.problems, "ledger"))
         return 1
-    event_log(directory).append(result.events)
+    event_log(directory).append(result.events, held=len(events))
     document: dict = {
         "session": directory.name,
         "admitted": dict(Counter(event["e"] for event in result.events)),

@@ -28,3 +28,6 @@ class TestEventLog:
         with pytest.raises(CommandError, match="exceed 2"):
             log.append([{"e": "b"}, {"e": "c"}])
         assert log.count() == 1
+        log.append([{"e": "b"}], held=1)
+        with pytest.raises(CommandError, match="exceed 2"):
+            log.append([{"e": "c"}], held=2)

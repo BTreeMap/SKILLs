@@ -7,6 +7,7 @@ from dataclasses import replace
 import pytest
 
 from btm_lit_review.notebook import (
+    WATCH_MAX,
     expand_notes,
     finding_view,
     gap_view,
@@ -211,3 +212,10 @@ class TestSupersedeChains:
         ]
         assert next_id(records, "finding") == "f3"
         assert next_id(records, "rule") == "r1"
+
+
+def test_an_overlong_watch_is_refused():
+    batch = {"gaps": [{"statement": "s", "probes": [], "watch": "a" * (WATCH_MAX + 1)}]}
+    result = expand_notes(batch, {}, 0, set(), [])
+    assert result.records == []
+    assert result.problems[0].where == "gaps[0].watch"
