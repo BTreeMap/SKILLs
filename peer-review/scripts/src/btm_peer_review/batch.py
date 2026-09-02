@@ -6,23 +6,11 @@ ledger changes only when the problem list is empty.
 
 from __future__ import annotations
 
-import heapq
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
-from btm_corekit import (
-    Ambiguous,
-    CommandError,
-    Diagnostic,
-    Exact,
-    NoMatch,
-    Recovered,
-    band_signal,
-    keywords_of,
-    resolve,
-    slugify,
-)
+from btm_corekit import Admission, Diagnostic, Pool, field_text
 from btm_peer_review.constants import (
     BANKS,
     CLAIM_WORDS_MAX,
@@ -46,7 +34,8 @@ SCHEMA: dict[str, str] = {
     'what would resolve it", "claim": "<claim ref> (optional)", "where": '
     '"section or table (optional)", "anchors": ["verbatim quote from the '
     'paper"], "missing": "what the paper omits (replaces anchors)", '
-    '"prior": ["<corpus key>"] (required for novelty kinds)}',
+    '"prior": ["<corpus key>"] (required for novelty kinds), '
+    '"from": ["<pad id>"] (optional provenance)}',
     "walks": '{"bank": "claims|design|analysis|limitations|novelty", '
     '"note": "what the walk found or ruled out"}',
     "withdraws": '{"objection": "<objection ref>", "reason": "why it no longer holds"}',
@@ -66,16 +55,6 @@ class Context:
 
 
 @dataclass(slots=True)
-class Pool:
-    """One record kind's identifier space: existing ids plus this batch's."""
-
-    label: str
-    ids: list[str]
-    slugs: set[str] = field(default_factory=set)
-    minted: dict[str, str] = field(default_factory=dict)  # stem -> full id
-
-
-@dataclass(slots=True)
 class NoteResult:
     events: list[dict[str, Any]] = field(default_factory=list)
     minted: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -83,79 +62,21 @@ class NoteResult:
     problems: list[Diagnostic] = field(default_factory=list)
 
 
-def near_misses(ref: str, ids: Iterable[str]) -> list[str]:
-    words = set(keywords_of(ref))
-    best = heapq.nsmallest(
-        3,
-        ((len(words & set(keywords_of(candidate))), candidate) for candidate in ids),
-        key=lambda pair: (-pair[0], pair[1]),
-    )
-    return [candidate for overlap, candidate in best if overlap > 0]
-
-
-def _text(entry: dict[str, Any], key: str) -> str | None:
-    value = entry.get(key)
-    return value.strip() if isinstance(value, str) and value.strip() else None
-
-
-class _Admission:
+class _Admission(Admission):
     """One batch's resolution context; every phase runs, problems accumulate."""
 
     def __init__(
-        self, ledger: Ledger, context: Context, mint: Callable[[Iterable[str]], str]
+        self,
+        ledger: Ledger,
+        context: Context,
+        mint: Callable[[Iterable[str]], str],
+        pad: Iterable[str],
     ) -> None:
+        super().__init__(mint, pad)
         self.context = context
-        self.mint = mint
-        self.result = NoteResult()
+        self.events: list[dict[str, Any]] = []
         self.claims = Pool("claim", list(ledger.claim_order))
         self.objections = Pool("objection", list(ledger.objection_order))
-
-    def fail(self, where: str, fix: str, hint: str | None = None) -> None:
-        self.result.problems.append(Diagnostic(where, fix, hint))
-
-    def resolve_ref(self, ref: str, pool: Pool, where: str) -> str | None:
-        match resolve(ref, pool.ids):
-            case Exact(full) | Recovered(full):
-                return full
-            case Ambiguous(candidates):
-                self.fail(
-                    where,
-                    f"'{ref}' matches several {pool.label}s; use one full id",
-                    ", ".join(candidates),
-                )
-            case NoMatch():
-                near = near_misses(ref, pool.ids)
-                self.fail(
-                    where,
-                    f"no {pool.label} matches '{ref}'",
-                    f"did you mean {', '.join(near)}" if near else None,
-                )
-        return None
-
-    def mint_id(self, entry: dict[str, Any], pool: Pool, where: str) -> str | None:
-        kw = entry.get("kw")
-        if (
-            not isinstance(kw, list)
-            or not kw
-            or not all(isinstance(w, str) for w in kw)
-        ):
-            self.fail(where, 'add "kw": ["two", "words"]')
-            return None
-        try:
-            stem = slugify(kw)
-        except CommandError as err:
-            self.fail(where, str(err))
-            return None
-        if stem in pool.slugs:
-            self.fail(where, f"kw '{stem}' repeats within the batch; vary the words")
-            return None
-        if advice := band_signal(stem):
-            self.result.advisories.append(advice)
-        pool.slugs.add(stem)
-        full = self.mint(kw)
-        pool.ids.append(full)
-        pool.minted[stem] = full
-        return full
 
     def anchor(self, quote: str, where: str) -> Verbatim | Fuzzy | None:
         if self.context.paper is None:
@@ -176,9 +97,9 @@ class _Admission:
         return None
 
     def take_claims(self, entries: Any) -> None:
-        for index, entry in enumerate(_rows(entries, "claims", self)):
+        for index, entry in enumerate(self.rows(entries, "claims", SCHEMA)):
             where = f"claims[{index}]"
-            verbatim = _text(entry, "verbatim")
+            verbatim = field_text(entry, "verbatim")
             if verbatim is None:
                 self.fail(where, 'add "verbatim": the claim sentence as printed')
                 continue
@@ -191,27 +112,27 @@ class _Admission:
             full = self.mint_id(entry, self.claims, where)
             if hit is None or full is None:
                 continue
-            self.result.events.append(
+            self.events.append(
                 {"e": "claim", "id": full, "verbatim": verbatim, "page": hit.page}
             )
 
     def take_objections(self, entries: Any) -> None:
-        for index, entry in enumerate(_rows(entries, "objections", self)):
+        for index, entry in enumerate(self.rows(entries, "objections", SCHEMA)):
             where = f"objections[{index}]"
             ok = True
             kind = self.vocabulary(Kind, entry, "kind", f"{where}.kind", KIND_HINT)
             severity = self.vocabulary(
                 Severity, entry, "severity", f"{where}.severity", SEVERITY_HINT
             )
-            text = _text(entry, "text")
+            text = field_text(entry, "text")
             if text is None:
                 self.fail(f"{where}.text", "state the objection and what resolves it")
             claim = None
-            if (ref := _text(entry, "claim")) is not None:
+            if (ref := field_text(entry, "claim")) is not None:
                 claim = self.resolve_ref(ref, self.claims, f"{where}.claim")
                 ok = ok and claim is not None
             anchors = self.quotes(entry, where)
-            missing = _text(entry, "missing")
+            missing = field_text(entry, "missing")
             if anchors is None:
                 ok = False
             elif not anchors and missing is None:
@@ -219,6 +140,7 @@ class _Admission:
                     where, 'add "anchors": [quotes] or "missing": what the paper omits'
                 )
                 ok = False
+            links = self.links(entry, where)
             prior = entry.get("prior") or []
             if kind is not None and kind.bank is Bank.NOVELTY:
                 ok = self.take_prior(prior, where) and ok
@@ -230,9 +152,9 @@ class _Admission:
                 )
                 ok = False
             full = self.mint_id(entry, self.objections, where)
-            if not ok or None in (full, kind, severity, text):
+            if not ok or None in (full, kind, severity, text, links):
                 continue
-            self.result.events.append(
+            self.events.append(
                 {
                     "e": "objection",
                     "id": full,
@@ -240,10 +162,11 @@ class _Admission:
                     "severity": severity,
                     "text": text,
                     "claim": claim,
-                    "where": _text(entry, "where"),
+                    "where": field_text(entry, "where"),
                     "anchors": anchors,
                     "missing": missing if not anchors else None,
                     "prior": [str(p).strip() for p in prior],
+                    "from": list(links or ()),
                 }
             )
 
@@ -256,7 +179,7 @@ class _Admission:
         hint: str,
     ) -> E | None:
         try:
-            return cls(_text(entry, key))
+            return cls(field_text(entry, key))
         except ValueError:
             self.fail(where, f"use one of the {key} vocabulary", hint)
             return None
@@ -307,46 +230,35 @@ class _Admission:
                 self.fail(spot, f"'{key}' ({record.year}) postdates the paper ({year})")
                 ok = False
             elif record.year == year:
-                self.result.advisories.append(
+                self.advisories.append(
                     f"{spot}: '{key}' shares the paper's year; confirm it was "
                     "public first"
                 )
         return ok
 
     def take_walks(self, entries: Any) -> None:
-        for index, entry in enumerate(_rows(entries, "walks", self)):
+        for index, entry in enumerate(self.rows(entries, "walks", SCHEMA)):
             bank = self.vocabulary(
                 Bank, entry, "bank", f"walks[{index}].bank", BANK_HINT
             )
             if bank is None:
                 continue
-            self.result.events.append(
-                {"e": "walk", "bank": bank, "note": _text(entry, "note") or ""}
+            self.events.append(
+                {"e": "walk", "bank": bank, "note": field_text(entry, "note") or ""}
             )
 
     def take_withdraws(self, entries: Any) -> None:
-        for index, entry in enumerate(_rows(entries, "withdraws", self)):
+        for index, entry in enumerate(self.rows(entries, "withdraws", SCHEMA)):
             where = f"withdraws[{index}]"
-            ref = _text(entry, "objection")
-            reason = _text(entry, "reason")
+            ref = field_text(entry, "objection")
+            reason = field_text(entry, "reason")
             if ref is None or reason is None:
                 self.fail(where, 'add "objection": <ref> and "reason": why it fails')
                 continue
             full = self.resolve_ref(ref, self.objections, f"{where}.objection")
             if full is None:
                 continue
-            self.result.events.append(
-                {"e": "withdraw", "objection": full, "reason": reason}
-            )
-
-
-def _rows(entries: Any, key: str, admission: _Admission) -> list[dict[str, Any]]:
-    if entries is None:
-        return []
-    if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
-        admission.fail(key, f"{key} is a list of objects", SCHEMA[key])
-        return []
-    return entries
+            self.events.append({"e": "withdraw", "objection": full, "reason": reason})
 
 
 def expand_batch(
@@ -354,27 +266,25 @@ def expand_batch(
     batch: dict[str, Any],
     context: Context,
     mint: Callable[[Iterable[str]], str],
+    pad: Iterable[str] = (),
 ) -> NoteResult:
-    admission = _Admission(ledger, context, mint)
-    for key in batch:
-        if key not in BATCH_KEYS:
-            admission.fail(
-                key, f"unknown key; the batch keys are {', '.join(BATCH_KEYS)}"
-            )
+    admission = _Admission(ledger, context, mint, pad)
+    admission.keys(batch, BATCH_KEYS)
     admission.take_claims(batch.get("claims"))
     admission.take_objections(batch.get("objections"))
     admission.take_walks(batch.get("walks"))
     admission.take_withdraws(batch.get("withdraws"))
-    result = admission.result
-    result.minted = {
-        "claims": admission.claims.minted,
-        "objections": admission.objections.minted,
-    }
-    if not result.problems and not result.events:
-        admission.fail("$", "the batch admits nothing; add at least one entry")
-    if result.problems:
-        result.events.clear()
-        return result
+    if admission.clean and not admission.events:
+        admission.fail("$", "add at least one entry: the batch records nothing")
+    result = NoteResult(
+        events=[] if admission.problems else admission.events,
+        minted={
+            "claims": admission.claims.minted,
+            "objections": admission.objections.minted,
+        },
+        advisories=admission.advisories,
+        problems=admission.problems,
+    )
     for event in result.events:
         apply(ledger, event)
     return result

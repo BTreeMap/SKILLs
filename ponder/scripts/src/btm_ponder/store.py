@@ -2,72 +2,62 @@
 
 from __future__ import annotations
 
-import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import (
-    CommandError,
-    SessionStore,
-    append_jsonl,
-    now_iso,
-    read_jsonl,
-    write_atomic,
-)
+from btm_corekit import EventLog, SessionStore
 from btm_ponder.ledger import replay
 from btm_ponder.state import Open
 from btm_ponder.views import counts_of, yield_table
 
-STORE = SessionStore(
-    "ponder", marker="ledger.jsonl", hint="open with --question creates one"
-)
+STORE = SessionStore("ponder", marker="session.json", hint="run init first")
+LEDGER = "ledger.jsonl"
 
 
-def ledger_path(directory: Path) -> Path:
-    return directory / STORE.marker
+def event_log(directory: Path) -> EventLog:
+    return EventLog(directory / LEDGER, STORE.hint)
 
 
 def read_events(directory: Path) -> list[dict[str, Any]]:
-    path = ledger_path(directory)
-    if not path.exists():
-        raise CommandError(f"no session at {directory}; open with --question creates")
-    return read_jsonl(path)
-
-
-def append_events(directory: Path, admitted: list[dict[str, Any]]) -> None:
-    stamp = now_iso()
-    append_jsonl(ledger_path(directory), [{"t": stamp, **raw} for raw in admitted])
+    return event_log(directory).read()
 
 
 def read_meta(directory: Path) -> dict[str, Any]:
-    path = directory / "session.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
+    return STORE.read_meta(directory)
 
 
 def write_meta(directory: Path, meta: dict[str, Any]) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    write_atomic(
-        directory / "session.json", json.dumps(meta, indent=2, ensure_ascii=False)
-    )
-    ledger_path(directory).touch()
+    STORE.write_meta(directory, meta)
+    event_log(directory).touch()
 
 
 def orient(directory: Path) -> dict[str, Any]:
-    """The re-orientation payload: everything a resumed agent needs first."""
+    """The status payload: everything a resumed agent needs first."""
     events = read_events(directory)
     ledger = replay(events)
+    meta = read_meta(directory)
+    attached = Counter(source.leaf for source in ledger.sources.values())
     return {
         "session": directory.name,
-        "question": read_meta(directory).get("question"),
-        "focus": read_meta(directory).get("focus"),
+        "question": meta.get("question"),
+        "focus": meta.get("focus"),
+        "mode": meta.get("mode", "full"),
         "counts": counts_of(ledger),
+        "sources": len(ledger.sources),
+        "swept": ledger.swept,
         "open": [
-            {"id": leaf_id, "q": leaf.question}
+            {"id": leaf_id, "q": leaf.question, "sources": attached[leaf_id]}
             for leaf_id, leaf in ledger.leaves.items()
             if isinstance(leaf.state, Open)
         ],
-        "swept": ledger.swept,
+        "last_checkpoint": next(
+            (
+                event.get("label")
+                for event in reversed(events)
+                if event.get("e") == "checkpoint"
+            ),
+            None,
+        ),
         "yield": yield_table(events),
     }

@@ -6,16 +6,12 @@ import argparse
 import json
 from collections.abc import Mapping
 from dataclasses import replace
-from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
     CommandError,
     append_jsonl,
-    band_signal,
     emit,
-    is_pathlike,
-    mint,
     now_iso,
     read_jsonl,
     signal,
@@ -83,17 +79,9 @@ def record_fetch(
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    if is_pathlike(args.session):
-        root = Path(args.session).expanduser()
-        name = str(root)
-    else:
-        name = mint(args.session.split())
-        if advice := band_signal(name.rsplit("-", 1)[0]):
-            signal(advice)
-        root = STORE.root() / name
+    made = STORE.create(args.session)
+    root, name = made.directory, made.name
     session = Session(root)
-    if session.protocol_path.exists():
-        raise CommandError(f"session already exists at {root}; refusing to overwrite")
     root.mkdir(parents=True, exist_ok=True)
     protocol = {
         "question": args.question,

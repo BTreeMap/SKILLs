@@ -2,21 +2,20 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
     CommandError,
+    EventLog,
     SessionStore,
-    append_jsonl,
     now_iso,
+    parse_enum,
     read_jsonl,
-    write_atomic,
+    require,
 )
 from btm_peer_review.constants import DATE, Level
-from btm_peer_review.state import parse_enum, require
 
 STORE = SessionStore("peer-review", marker="session.json", hint="run init first")
 LIT_STORE = SessionStore(
@@ -26,12 +25,8 @@ LEDGER = "ledger.jsonl"
 PAPER = "paper.txt"
 
 
-def meta_path(directory: Path) -> Path:
-    return directory / STORE.marker
-
-
-def ledger_path(directory: Path) -> Path:
-    return directory / LEDGER
+def event_log(directory: Path) -> EventLog:
+    return EventLog(directory / LEDGER, STORE.hint)
 
 
 def paper_path(directory: Path) -> Path:
@@ -69,14 +64,8 @@ def new_meta(title: str, date: str, level: Level) -> Meta:
 
 
 def read_meta(directory: Path) -> Meta:
-    path = meta_path(directory)
-    if not path.is_file():
-        raise CommandError(f"no session at {directory}: run init first")
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as err:
-        raise CommandError(f"unreadable {path}: {err}") from err
-    require(isinstance(raw, dict), f"{path} must hold a JSON object")
+    path = STORE.meta_path(directory)
+    raw = STORE.read_meta(directory)
     level = parse_enum(Level, raw.get("level"), f"{path} level")
     title, date, created = raw.get("title"), raw.get("date"), raw.get("created")
     require(isinstance(title, str), f"{path} lacks a title")
@@ -89,29 +78,14 @@ def read_meta(directory: Path) -> Meta:
 
 
 def write_meta(directory: Path, meta: Meta) -> None:
-    directory.mkdir(parents=True, exist_ok=True)
-    write_atomic(
-        meta_path(directory), json.dumps(meta.view(), indent=2, ensure_ascii=False)
-    )
-    ledger_path(directory).touch()
+    STORE.write_meta(directory, meta.view())
+    event_log(directory).touch()
 
 
 def update_meta(directory: Path, meta: Meta, **changes: Any) -> Meta:
     updated = replace(meta, **changes)
     write_meta(directory, updated)
     return updated
-
-
-def read_events(directory: Path) -> list[dict[str, Any]]:
-    path = ledger_path(directory)
-    if not path.exists():
-        raise CommandError(f"no session at {directory}: run init first")
-    return read_jsonl(path)
-
-
-def append_events(directory: Path, admitted: list[dict[str, Any]]) -> None:
-    stamp = now_iso()
-    append_jsonl(ledger_path(directory), [{"t": stamp, **raw} for raw in admitted])
 
 
 @dataclass(frozen=True, slots=True)

@@ -28,39 +28,39 @@ def run(argv, capsys, stdin: str | None = None, monkeypatch=None):
 
 
 def opened(capsys) -> str:
-    code, document, _ = run(["open", "rent length", "--question", "q"], capsys)
+    code, document, _ = run(["init", "rent length", "--question", "q"], capsys)
     assert code == 0
     return document["session"]
 
 
 class TestOpen:
     def test_open_with_a_question_creates_and_echoes_the_session(self, capsys):
-        code, document, _ = run(["open", "rent length", "--question", "why"], capsys)
+        code, document, _ = run(["init", "rent length", "--question", "why"], capsys)
         assert code == 0
         assert document["session"].startswith("rent-length-")
         assert document["question"] == "why"
 
     def test_reopening_by_full_id_orients_without_a_signal(self, capsys):
         session = opened(capsys)
-        code, document, err = run(["open", session], capsys)
+        code, document, err = run(["status", session], capsys)
         assert code == 0
         assert document["counts"] == {}
         assert "recovered" not in err
 
     def test_a_keyword_subset_recovers_and_says_so(self, capsys):
         session = opened(capsys)
-        code, document, err = run(["open", "rent"], capsys)
+        code, document, err = run(["status", "rent"], capsys)
         assert code == 0
         assert document["session"] == session
         assert "recovered session" in err
 
     def test_opening_an_unknown_session_without_a_question_fails(self, capsys):
-        code, _, err = run(["open", "absent thing"], capsys)
+        code, _, err = run(["status", "absent thing"], capsys)
         assert code == 1
-        assert "pass --question to create one" in err
+        assert "run init first" in err
 
     def test_an_off_band_name_advises(self, capsys):
-        _, _, err = run(["open", "solo", "--question", "q"], capsys)
+        _, _, err = run(["init", "solo", "--question", "q"], capsys)
         assert "two or three keywords" in err
 
 
@@ -124,7 +124,7 @@ class TestNoteAndCheck:
             ["note", session], capsys, stdin="  ", monkeypatch=monkeypatch
         )
         assert code == 1
-        assert "reads the JSON batch from stdin" in err
+        assert "read from stdin or --file" in err
 
     def test_a_rejected_batch_appends_nothing(self, capsys, monkeypatch):
         session = opened(capsys)
@@ -133,8 +133,8 @@ class TestNoteAndCheck:
             ["note", session], capsys, stdin=bad, monkeypatch=monkeypatch
         )
         assert code == 1
-        assert document["ledger"] == "unchanged"
-        _, document, _ = run(["open", session], capsys)
+        assert document["unchanged"] == "ledger"
+        _, document, _ = run(["status", session], capsys)
         assert document["counts"] == {}
 
     def test_a_rejection_lists_every_problem_at_once(self, capsys, monkeypatch):
@@ -197,7 +197,7 @@ class TestStatusAndSchema:
 class TestInformalMode:
     def test_informal_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
         code, document, _ = run(
-            ["open", "loose idea", "--question", "q", "--mode", "informal"], capsys
+            ["init", "loose idea", "--question", "q", "--mode", "informal"], capsys
         )
         session = document["session"]
         batch = json.dumps({"leaves": [{"kw": ["a", "b"], "q": "q"}]})

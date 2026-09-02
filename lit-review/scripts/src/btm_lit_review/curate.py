@@ -4,15 +4,23 @@ from __future__ import annotations
 
 import argparse
 import heapq
-import json
 import re
-import sys
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
-from btm_corekit import CommandError, append_jsonl, emit, now_iso, read_jsonl, signal
+from btm_corekit import (
+    CommandError,
+    Diagnostic,
+    append_jsonl,
+    emit,
+    now_iso,
+    read_batch,
+    read_jsonl,
+    rejection,
+    signal,
+)
 from btm_lit_review.constants import (
     ABSTRACT_SHOW_LIMIT,
     AUTHOR_SHOW_LIMIT,
@@ -33,7 +41,7 @@ from btm_lit_review.session import (
 from btm_lit_review.views import unextracted
 
 
-def field_text(paper: Paper, on: str) -> str:
+def paper_field(paper: Paper, on: str) -> str:
     return str(getattr(paper, on) or "")
 
 
@@ -57,7 +65,7 @@ def cmd_screen(args: argparse.Namespace) -> int:
     matched = [
         key
         for key, paper in papers.items()
-        if paper.status == "candidate" and pattern.search(field_text(paper, args.on))
+        if paper.status == "candidate" and pattern.search(paper_field(paper, args.on))
     ]
     rule_id = next_id(load_notebook(session), "rule")
     # The rule lands first: a failure between the writes leaves an inert
@@ -116,15 +124,10 @@ def validate_decision(
 
 def cmd_update(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    raw = sys.stdin.read()
-    if not raw.strip():
-        raise CommandError("update reads the decisions JSON from stdin")
-    try:
-        decisions = json.loads(raw)
-    except json.JSONDecodeError as err:
-        raise CommandError(f"unreadable decisions JSON on stdin: {err}") from err
-    if not isinstance(decisions, dict):
-        raise CommandError("decisions must map paper keys to decision objects")
+    decisions = read_batch(None)
+    if isinstance(decisions, Diagnostic):
+        emit(rejection([decisions], "papers"))
+        return 1
     papers = load_papers(session)
     for key, decision in decisions.items():
         validate_decision(key, decision, papers)
@@ -201,7 +204,7 @@ def cmd_show(args: argparse.Namespace) -> int:
     if args.match:
         pattern = compile_match(args.match)
         matching = [
-            paper for paper in matching if pattern.search(field_text(paper, args.on))
+            paper for paper in matching if pattern.search(paper_field(paper, args.on))
         ]
     total = len(matching)
     matching = heapq.nsmallest(args.limit, matching, key=SORTS[args.sort])

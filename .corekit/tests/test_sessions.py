@@ -52,3 +52,26 @@ class TestSessionStore:
     def test_clean_all_with_a_session_is_refused(self, store):
         with pytest.raises(CommandError, match="one of the two"):
             store.clean("deep-sea-abc123", remove_all=True)
+
+
+class TestCreateAndMeta:
+    def test_create_mints_under_the_root_and_refuses_twice(self, store, capsys):
+        made = store.create("deep sea")
+        assert made.name.startswith("deep-sea-")
+        assert made.directory == store.root() / made.name
+        store.write_meta(made.directory, {"k": 1})
+        assert store.read_meta(made.directory) == {"k": 1}
+        with pytest.raises(CommandError, match="already exists"):
+            store.create(str(made.directory))
+
+    def test_a_path_stands_as_given_and_band_advises(self, store, tmp_path, capsys):
+        made = store.create(str(tmp_path / "here"))
+        assert made.directory == tmp_path / "here"
+        store.create("solo")
+        assert "two or three keywords" in capsys.readouterr().err
+
+    def test_directory_requires_the_marker(self, store):
+        make_session(store, "deep-sea-abc123")
+        assert store.directory("sea") == store.root() / "deep-sea-abc123"
+        with pytest.raises(CommandError, match="run init first"):
+            store.directory("absent")

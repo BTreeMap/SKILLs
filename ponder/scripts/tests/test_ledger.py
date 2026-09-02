@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError
+from btm_corekit import MAX_EVENTS, CommandError
 from btm_ponder.ledger import apply, replay
 from btm_ponder.state import (
-    MAX_EVENTS,
     Folded,
     Leaf,
     Ledger,

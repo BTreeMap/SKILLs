@@ -8,27 +8,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from enum import StrEnum
-from typing import Any, TypeVar
+from typing import Any
 
-from btm_corekit import CommandError
+from btm_corekit import parse_enum, require
 from btm_peer_review.constants import Bank, Kind, Severity
-
-
-def require(condition: bool, invariant: str) -> None:
-    if not condition:
-        raise CommandError(invariant)
-
-
-E = TypeVar("E", bound=StrEnum)
-
-
-def parse_enum(cls: type[E], raw: Any, what: str) -> E:
-    """Vocabulary boundary: a raw value becomes its member or a loud error."""
-    try:
-        return cls(raw)
-    except ValueError as err:
-        raise CommandError(f"{what} outside the vocabulary: {err}") from err
 
 
 @dataclass(frozen=True, slots=True)

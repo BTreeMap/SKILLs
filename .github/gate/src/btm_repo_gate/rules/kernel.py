@@ -14,9 +14,11 @@ KERNEL_SYMBOLS = re.compile(
     r"^(?:def (?:keywords_of|slugify|band_signal|resolve|eliminate|mint|suffix|"
     r"is_pathlike|tree_bytes|state_root|emit|signal|now_iso|write_atomic|"
     r"read_jsonl|append_jsonl|request_identity|user_agent|polite_params|"
-    r"run_cli|jot|recall|pad_body|pad_entries|pad_ids)\(|"
+    r"run_cli|jot|recall|pad_body|pad_entries|pad_ids|require|parse_enum|"
+    r"field_text|suggest|read_batch|rejection|advise|wire_pad|wire_clean)\(|"
     r"class (?:Exact|Recovered|Ambiguous|NoMatch|CommandError|UpstreamError|"
-    r"SessionStore|CustomAgent|Contact|Diagnostic)\b)",
+    r"SessionStore|CustomAgent|Contact|Diagnostic|Admission|Pool|EventLog|"
+    r"Created)\b)",
     re.MULTILINE,
 )
 # The witness of consumer-ship is a declared dependency in a member manifest,

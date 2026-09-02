@@ -3,22 +3,24 @@
 from __future__ import annotations
 
 import argparse
-import json
-import sys
 from collections import Counter
 from pathlib import Path
 
 import btm_peer_review
 from btm_corekit import (
-    band_signal,
+    PAD_SCHEMA,
+    REFS_SCHEMA,
+    Diagnostic,
+    advise,
     emit,
-    is_pathlike,
-    jot,
     mint,
-    pad_body,
-    recall,
+    pad_ids,
+    read_batch,
+    rejection,
     run_cli,
     signal,
+    wire_clean,
+    wire_pad,
     write_atomic,
 )
 from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, expand_batch
@@ -29,13 +31,11 @@ from btm_peer_review.store import (
     LIT_STORE,
     STORE,
     Meta,
-    append_events,
     corpus_of,
+    event_log,
     load_corpus,
-    meta_path,
     new_meta,
     paper_path,
-    read_events,
     read_meta,
     update_meta,
     write_meta,
@@ -54,20 +54,12 @@ from btm_peer_review.views import (
 
 def cmd_init(args: argparse.Namespace) -> int:
     meta = new_meta(args.title, args.date, Level(args.level))
-    if is_pathlike(args.ref):
-        directory = Path(args.ref).expanduser()
-        name = str(directory)
-    else:
-        name = mint(args.ref.split())
-        if advice := band_signal(name.rsplit("-", 1)[0]):
-            signal(advice)
-        directory = STORE.root() / name
-    require(not meta_path(directory).exists(), f"session already exists at {directory}")
-    write_meta(directory, meta)
+    made = STORE.create(args.ref)
+    write_meta(made.directory, meta)
     emit(
         {
-            "session": name,
-            "dir": str(directory),
+            "session": made.name,
+            "dir": str(made.directory),
             **meta.view(),
             "next": "ingest the paper text",
         }
@@ -76,7 +68,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def _session(ref: str) -> tuple[Path, Meta]:
-    directory = STORE.dir_of(ref)
+    directory = STORE.directory(ref)
     return directory, read_meta(directory)
 
 
@@ -141,45 +133,20 @@ def cmd_link(args: argparse.Namespace) -> int:
     return 0
 
 
-def _read_batch(args: argparse.Namespace) -> dict | None:
-    raw = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
-    require(bool(raw.strip()), "note reads the JSON batch from stdin or --file")
-    try:
-        batch = json.loads(raw)
-    except json.JSONDecodeError as err:
-        emit(
-            {
-                "rejected": [
-                    {"where": "$", "fix": f"make the batch valid JSON: {err}"}
-                ],
-                "ledger": "unchanged",
-            }
-        )
-        return None
-    require(isinstance(batch, dict), "note takes one JSON object")
-    return batch
-
-
 def cmd_note(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    batch = _read_batch(args)
-    if batch is None:
+    batch = read_batch(args.file)
+    if isinstance(batch, Diagnostic):
+        emit(rejection([batch], "ledger"))
         return 1
-    ledger = replay(read_events(directory))
+    ledger = replay(event_log(directory).read())
     context = Context(_paper(directory), corpus_of(meta), meta.year)
-    result = expand_batch(ledger, batch, context, mint)
-    for line in result.advisories:
-        signal(line)
+    result = expand_batch(ledger, batch, context, mint, pad_ids(directory))
+    advise(result.advisories)
     if result.problems:
-        emit(
-            {
-                "rejected": [problem.view() for problem in result.problems],
-                "ledger": "unchanged",
-                "next": "apply every fix above, then resend; --file makes it one edit",
-            }
-        )
+        emit(rejection(result.problems, "ledger"))
         return 1
-    append_events(directory, result.events)
+    event_log(directory).append(result.events)
     emit(
         {
             "session": directory.name,
@@ -194,7 +161,7 @@ def cmd_note(args: argparse.Namespace) -> int:
 
 
 def _derive(directory: Path, meta: Meta) -> dict:
-    ledger = replay(read_events(directory))
+    ledger = replay(event_log(directory).read())
     paper = _paper(directory)
     corpus = corpus_of(meta)
     objections = objection_views(ledger, paper, corpus, meta.year)
@@ -239,7 +206,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    ledger = replay(read_events(directory))
+    ledger = replay(event_log(directory).read())
     emit(
         {
             "session": directory.name,
@@ -281,40 +248,10 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "banks": {bank: list(kinds) for bank, kinds in BANKS.items()},
             "severities": list(Severity),
             "levels": list(Level),
-            "refs": "a ref is the kw slug, a full id, or any unique keyword subset",
-            "pad": "jot stores any JSON object unchecked; recall filters by "
-            '--kind/--match/--since/--limit; suggested body: {"kind": '
-            '"note|question|injection", ...}',
+            "refs": REFS_SCHEMA,
+            "pad": PAD_SCHEMA + "; suggested kinds: note, question, injection",
         }
     )
-    return 0
-
-
-def cmd_jot(args: argparse.Namespace) -> int:
-    directory, _ = _session(args.session)
-    body, advisory = pad_body(args.entry, args.text)
-    if advisory:
-        signal(advisory)
-    emit(jot(directory, body))
-    return 0
-
-
-def cmd_recall(args: argparse.Namespace) -> int:
-    directory, _ = _session(args.session)
-    emit(
-        recall(
-            directory,
-            kind=args.kind,
-            match=args.match,
-            since=args.since,
-            limit=args.limit,
-        )
-    )
-    return 0
-
-
-def cmd_clean(args: argparse.Namespace) -> int:
-    emit(STORE.clean(args.session, args.all))
     return 0
 
 
@@ -360,22 +297,8 @@ def build_parser() -> argparse.ArgumentParser:
     cite.add_argument("--draft", required=True)
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
-    jotter = commands.add_parser("jot", help="free note on the session pad")
-    jotter.set_defaults(func=cmd_jot)
-    jotter.add_argument("session")
-    jotter.add_argument("entry", help="a JSON object, or prose with --text")
-    jotter.add_argument("--text", action="store_true")
-    recaller = commands.add_parser("recall", help="filtered slice of the pad")
-    recaller.set_defaults(func=cmd_recall)
-    recaller.add_argument("session")
-    recaller.add_argument("--kind")
-    recaller.add_argument("--match")
-    recaller.add_argument("--since")
-    recaller.add_argument("--limit", type=int)
-    clean = commands.add_parser("clean")
-    clean.set_defaults(func=cmd_clean)
-    clean.add_argument("session", nargs="?")
-    clean.add_argument("--all", action="store_true")
+    wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_clean(commands, STORE)
     return parser
 
 

@@ -175,7 +175,7 @@ class TestNoteAndBrief:
         )
         assert code == 1
         assert len(document["rejected"]) == 3
-        assert document["notebook"] == "unchanged"
+        assert document["unchanged"] == "notebook"
         assert not session.notebook_path.exists()
 
     def test_brief_derives_verdicts_and_tracks_drift(self, session, tmp_path, capsys):
@@ -224,3 +224,15 @@ class TestSchema:
         assert {"paper", "note_batch", "pad", "search_log", "exit_codes"} <= set(
             document
         )
+
+
+class TestUpdateEnvelope:
+    def test_update_rejects_bad_json_in_the_shared_envelope(
+        self, session, capsys, monkeypatch
+    ):
+        code, document, _ = run(
+            ["update", str(session.root)], capsys, stdin="{", monkeypatch=monkeypatch
+        )
+        assert code == 1
+        assert document["unchanged"] == "papers"
+        assert document["rejected"][0]["where"] == "$"

@@ -4,15 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from btm_corekit import CommandError
-
 SOURCE_CLASSES = ("constitutive", "attested", "measured", "reported")
 ORIGINS = ("frame", "spawned")
 CLOSE_STATES = ("retrieved", "refuted", "unresolved", "retired", "folded")
 MODES = ("full", "informal")  # informal demotes draft blockers to advisories
 UNRESOLVED_REASONS = ("searched", "not_pursued")
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
-MAX_EVENTS = 1000  # runaway backstop; a real run stays under ~100 events
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,8 +74,3 @@ class Ledger:
     source_order: list[str] = field(default_factory=list)
     swept: bool = False
     events: int = 0
-
-
-def require(condition: bool, invariant: str) -> None:
-    if not condition:
-        raise CommandError(invariant)

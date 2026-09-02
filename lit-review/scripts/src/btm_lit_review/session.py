@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 from collections.abc import Mapping
@@ -13,7 +12,6 @@ from typing import Any
 from btm_corekit import (
     CommandError,
     SessionStore,
-    emit,
     read_jsonl,
     write_atomic,
 )
@@ -48,10 +46,7 @@ class Session:
 
 
 def open_session(root: str) -> Session:
-    session = Session(STORE.dir_of(root))
-    if not session.protocol_path.is_file():
-        raise CommandError(f"no session at {session.root}: run init first")
-    return session
+    return Session(STORE.directory(root))
 
 
 def load_protocol(session: Session) -> dict[str, Any]:
@@ -89,8 +84,3 @@ def load_papers(session: Session) -> dict[str, Paper]:
 def save_papers(session: Session, papers: Mapping[str, Paper]) -> None:
     lines = [json.dumps(asdict(paper), ensure_ascii=False) for paper in papers.values()]
     write_atomic(session.papers_path, "\n".join(lines) + ("\n" if lines else ""))
-
-
-def cmd_clean(args: argparse.Namespace) -> int:
-    emit(STORE.clean(args.session, args.all))
-    return 0

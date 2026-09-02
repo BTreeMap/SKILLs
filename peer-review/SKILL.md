@@ -111,7 +111,8 @@ Two write paths:
 - The gate judges. `note` admits one batch in schema order: `claims`
   (verbatim sentence, resolved to a page), `objections` (a `kind` from the
   banks, a `severity`, the text, an optional `claim` ref, `anchors` or
-  `missing`, and `prior` keys for novelty kinds), `walks` (a bank done),
+  `missing`, `prior` keys for novelty kinds, and optional `from` pad ids
+  checked to exist), `walks` (a bank done),
   `withdraws` (an objection a re-read defeated). A rejected batch returns
   every problem in one verdict with an imperative fix and a hint (closest
   page and coverage, did-you-mean, the bank vocabulary); the ledger stays

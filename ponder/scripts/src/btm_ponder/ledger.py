@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from btm_corekit import CommandError
+from btm_corekit import MAX_EVENTS, CommandError, require
 from btm_ponder.state import (
     CLOSE_STATES,
-    MAX_EVENTS,
     ORIGINS,
     SOURCE_CLASSES,
     UNRESOLVED_REASONS,
@@ -21,7 +20,6 @@ from btm_ponder.state import (
     Retrieved,
     Source,
     Unresolved,
-    require,
 )
 
 

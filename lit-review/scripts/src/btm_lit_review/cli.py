@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 
 import btm_lit_review
-from btm_corekit import run_cli
+from btm_corekit import run_cli, wire_clean, wire_pad
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
@@ -18,9 +18,14 @@ from btm_lit_review.curate import SORTS, cmd_screen, cmd_show, cmd_status, cmd_u
 from btm_lit_review.draft import cmd_cite_check
 from btm_lit_review.gather import cmd_init, cmd_search, cmd_snowball
 from btm_lit_review.notebook import cmd_note
-from btm_lit_review.session import cmd_clean
+from btm_lit_review.session import STORE
 from btm_lit_review.verify import cmd_verify
-from btm_lit_review.views import cmd_brief, cmd_jot, cmd_recall, cmd_schema
+from btm_lit_review.views import (
+    cmd_brief,
+    cmd_schema,
+    pad_directory,
+    recognize_extraction,
+)
 
 MATCH_FIELDS = ("title", "abstract", "venue")
 
@@ -102,25 +107,12 @@ def wire_notebook(commands: argparse._SubParsersAction) -> None:
     )
     note.set_defaults(func=cmd_note)
 
-    jotter = commands.add_parser("jot", help="free note on the session pad")
-    add_common(jotter)
-    jotter.add_argument("entry", help="a JSON object, or prose with --text")
-    jotter.add_argument("--text", action="store_true", help="store the entry as prose")
-    jotter.add_argument(
-        "--lore", action="store_true", help="write to the cross-session tool pad"
+    wire_pad(
+        commands,
+        pad_directory,
+        lore="use the cross-session tool pad",
+        on_jot=recognize_extraction,
     )
-    jotter.set_defaults(func=cmd_jot)
-
-    recaller = commands.add_parser("recall", help="filtered slice of the pad")
-    add_common(recaller)
-    recaller.add_argument("--kind")
-    recaller.add_argument("--match")
-    recaller.add_argument("--since", help="entries after this pad id")
-    recaller.add_argument("--limit", type=int)
-    recaller.add_argument(
-        "--lore", action="store_true", help="read the cross-session tool pad"
-    )
-    recaller.set_defaults(func=cmd_recall)
 
     brief = commands.add_parser(
         "brief", help="resume view: findings, gaps, drift, markers, pad tail"
@@ -158,12 +150,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(verify)
     verify.set_defaults(func=cmd_verify)
 
-    clean = commands.add_parser(
-        "clean", help="list sessions, or remove one (or --all) and free the space"
-    )
-    clean.add_argument("session", nargs="?", help="session name or directory")
-    clean.add_argument("--all", action="store_true")
-    clean.set_defaults(func=cmd_clean)
+    wire_clean(commands, STORE)
 
     return parser
 

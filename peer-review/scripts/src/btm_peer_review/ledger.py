@@ -5,14 +5,9 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from btm_peer_review.constants import MAX_EVENTS, Bank
-from btm_peer_review.state import (
-    Ledger,
-    claim_from_event,
-    objection_from_event,
-    parse_enum,
-    require,
-)
+from btm_corekit import MAX_EVENTS, parse_enum, require
+from btm_peer_review.constants import Bank
+from btm_peer_review.state import Ledger, claim_from_event, objection_from_event
 
 
 def _id(event: dict[str, Any], key: str) -> str:

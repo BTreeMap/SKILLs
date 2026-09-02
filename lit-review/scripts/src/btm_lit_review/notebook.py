@@ -10,25 +10,24 @@ from live corpus state, so a claim can never go stale silently.
 from __future__ import annotations
 
 import argparse
-import difflib
-import json
 import re
-import sys
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
-    CommandError,
+    Admission,
     Diagnostic,
+    advise,
     append_jsonl,
     emit,
     now_iso,
     pad_ids,
+    read_batch,
     read_jsonl,
-    signal,
+    rejection,
+    suggest,
 )
 from btm_lit_review.constants import READ_LEVELS
 from btm_lit_review.paper import (
@@ -136,32 +135,30 @@ class NoteResult:
     problems: list[Diagnostic] = field(default_factory=list)
 
 
-@dataclass(slots=True)
-class _Admission:
+class _Admission(Admission):
     """One batch working through validation; every method appends, none raises."""
 
-    papers: Mapping[str, Paper]
-    log_count: int
-    pad: set[str]
-    existing: list[dict[str, Any]]
-    result: NoteResult = field(default_factory=NoteResult)
-    aliases: dict[str, str] = field(init=False)
-    counts: Counter[str] = field(init=False)
-    ids: defaultdict[str, set[str]] = field(init=False)
-
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        papers: Mapping[str, Paper],
+        log_count: int,
+        pad: set[str],
+        existing: list[dict[str, Any]],
+    ) -> None:
+        super().__init__(pad=pad)
+        self.papers = papers
+        self.log_count = log_count
+        self.records: list[dict[str, Any]] = []
+        self.admitted: dict[str, list[str]] = {"findings": [], "gaps": []}
         self.aliases = {
             alias: key
-            for key, paper in self.papers.items()
+            for key, paper in papers.items()
             for alias in paper_aliases(paper)
         }
-        self.counts = Counter(record["e"] for record in self.existing)
-        self.ids = defaultdict(set)
-        for record in self.existing:
+        self.counts: Counter[str] = Counter(record["e"] for record in existing)
+        self.ids: defaultdict[str, set[str]] = defaultdict(set)
+        for record in existing:
             self.ids[record["e"]].add(record["id"])
-
-    def problem(self, where: str, fix: str, hint: str | None = None) -> None:
-        self.result.problems.append(Diagnostic(where, fix, hint))
 
     def resolve_key(self, token: str, where: str) -> str | None:
         """A paper key, or any alias a model plausibly writes: DOI, arXiv id,
@@ -176,10 +173,10 @@ class _Admission:
         )
         for candidate in candidates:
             if key := self.aliases.get(candidate):
-                self.result.advisories.append(f"{where}: resolved {token} -> {key}")
+                self.advisories.append(f"{where}: resolved {token} -> {key}")
                 return key
-        near = difflib.get_close_matches(token, self.papers, n=3, cutoff=0.5)
-        self.problem(
+        near = suggest(token, self.papers)
+        self.fail(
             where,
             f"replace '{token}': no corpus paper matches it",
             hint=f"did you mean: {', '.join(near)}"
@@ -188,35 +185,12 @@ class _Admission:
         )
         return None
 
-    def take_shape(self, entry: Any, allowed: frozenset[str], where: str) -> bool:
-        if not isinstance(entry, dict):
-            self.problem(where, "make this entry a JSON object")
-            return False
-        clean = True
-        for name in sorted(set(entry) - allowed):
-            self.problem(
-                where,
-                f"remove the unknown field '{name}'",
-                hint=f"gated fields: {', '.join(sorted(allowed))}; "
-                "free-form notes belong on the pad (jot)",
-            )
-            clean = False
-        return clean
-
     def take_links(self, entry: Mapping[str, Any], kind: str, where: str) -> bool:
-        clean = True
-        for j, pad_id in enumerate(entry.get("from") or []):
-            if pad_id not in self.pad:
-                self.problem(
-                    f"{where}.from[{j}]",
-                    f"replace '{pad_id}': no pad entry has this id",
-                    hint="recall lists pad ids",
-                )
-                clean = False
+        clean = self.links(entry, where) is not None
         if target := entry.get("supersedes"):
             known = self.ids[kind]
             if target not in known:
-                self.problem(
+                self.fail(
                     f"{where}.supersedes",
                     f"replace '{target}': no {kind} has this id",
                     hint=f"existing {kind} ids: {', '.join(sorted(known)) or 'none'}",
@@ -236,18 +210,16 @@ class _Admission:
             record["from"] = list(entry["from"])
         if entry.get("supersedes"):
             record["supersedes"] = entry["supersedes"]
-        self.result.records.append(record)
-        self.result.admitted[f"{kind}s"].append(record["id"])
+        self.records.append(record)
+        self.admitted[f"{kind}s"].append(record["id"])
 
-    def take_findings(self, entries: list[Any]) -> None:
-        for index, entry in enumerate(entries):
+    def take_findings(self, entries: Any) -> None:
+        for index, entry in enumerate(self.rows(entries, "findings", SCHEMA)):
             where = f"findings[{index}]"
-            clean = self.take_shape(entry, FINDING_FIELDS, where)
-            if not isinstance(entry, dict):
-                continue
+            clean = self.shape(entry, FINDING_FIELDS, where)
             claim = str(entry.get("claim") or "").strip()
             if not claim:
-                self.problem(where, "state the claim", hint=SCHEMA["findings"])
+                self.fail(where, "state the claim", hint=SCHEMA["findings"])
                 clean = False
             support = self._support(entry.get("support"), where)
             clean = clean and support is not None
@@ -257,7 +229,7 @@ class _Admission:
 
     def _support(self, raw: Any, where: str) -> list[dict[str, str]] | None:
         if not isinstance(raw, list) or not raw:
-            self.problem(
+            self.fail(
                 where,
                 "cite at least one supporting paper",
                 hint=SCHEMA["findings"],
@@ -277,7 +249,7 @@ class _Admission:
                 paper = self.papers[key]
                 needs = paper.read_level if paper.read_level != "none" else "abstract"
             elif needs not in ("abstract", "full-text"):
-                self.problem(
+                self.fail(
                     spot,
                     f"replace needs '{needs}'",
                     hint="needs is the honesty floor: abstract or full-text",
@@ -287,28 +259,26 @@ class _Admission:
             parsed.append({"key": key, "needs": needs})
         return parsed if clean else None
 
-    def take_gaps(self, entries: list[Any]) -> None:
-        for index, entry in enumerate(entries):
+    def take_gaps(self, entries: Any) -> None:
+        for index, entry in enumerate(self.rows(entries, "gaps", SCHEMA)):
             where = f"gaps[{index}]"
-            clean = self.take_shape(entry, GAP_FIELDS, where)
-            if not isinstance(entry, dict):
-                continue
+            clean = self.shape(entry, GAP_FIELDS, where)
             statement = str(entry.get("statement") or "").strip()
             if not statement:
-                self.problem(where, "state the absence claimed", hint=SCHEMA["gaps"])
+                self.fail(where, "state the absence claimed", hint=SCHEMA["gaps"])
                 clean = False
             probes = list(entry.get("probes") or [])
             for j, probe in enumerate(probes):
                 found = LOG_ID.fullmatch(str(probe))
                 if not found or not 1 <= int(found.group(1)) <= self.log_count:
-                    self.problem(
+                    self.fail(
                         f"{where}.probes[{j}]",
                         f"replace '{probe}': no search log entry has this id",
                         hint=f"the log holds s1..s{self.log_count}",
                     )
                     clean = False
             if not probes:
-                self.result.advisories.append(
+                self.advisories.append(
                     f"{where}: no probe evidence; run the null search and cite "
                     "its log id"
                 )
@@ -317,7 +287,7 @@ class _Admission:
                 try:
                     re.compile(watch)
                 except re.error as err:
-                    self.problem(
+                    self.fail(
                         f"{where}.watch", f"fix the regex: {err}", hint=SCHEMA["gaps"]
                     )
                     clean = False
@@ -342,54 +312,32 @@ def expand_notes(
 ) -> NoteResult:
     """Expand one note batch into records, collecting every problem."""
     admission = _Admission(papers, log_count, pad, existing)
-    for key in batch:
-        if key not in NOTE_KEYS:
-            admission.problem(
-                key,
-                f"remove or rename the unknown key '{key}'",
-                hint=f"valid keys: {', '.join(NOTE_KEYS)}",
-            )
-    admission.take_findings(batch.get("findings") or [])
-    admission.take_gaps(batch.get("gaps") or [])
-    if not admission.result.records and not admission.result.problems:
-        admission.problem("$", "add at least one entry: the batch records nothing")
-    return admission.result
+    admission.keys(batch, NOTE_KEYS)
+    admission.take_findings(batch.get("findings"))
+    admission.take_gaps(batch.get("gaps"))
+    if not admission.records and admission.clean:
+        admission.fail("$", "add at least one entry: the batch records nothing")
+    return NoteResult(
+        records=[] if admission.problems else admission.records,
+        admitted=admission.admitted,
+        advisories=admission.advisories,
+        problems=admission.problems,
+    )
 
 
 def cmd_note(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    raw = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
-    if not raw.strip():
-        raise CommandError("note reads the JSON batch from stdin or --file")
-    try:
-        batch = json.loads(raw)
-    except json.JSONDecodeError as err:
-        emit(
-            {
-                "rejected": [
-                    {"where": "$", "fix": f"make the batch valid JSON: {err}"}
-                ],
-                "notebook": "unchanged",
-            }
-        )
+    batch = read_batch(args.file)
+    if isinstance(batch, Diagnostic):
+        emit(rejection([batch], "notebook"))
         return 1
-    if not isinstance(batch, dict):
-        raise CommandError("note takes one JSON object")
     papers = load_papers(session)
     log_count = len(read_jsonl(session.log_path))
     records = load_notebook(session)
     result = expand_notes(batch, papers, log_count, pad_ids(session.root), records)
-    for line in result.advisories:
-        signal(line)
+    advise(result.advisories)
     if result.problems:
-        emit(
-            {
-                "rejected": [problem.view() for problem in result.problems],
-                "notebook": "unchanged",
-                "next": "apply every fix above to the batch, then resend; "
-                "--file makes the retry one edit",
-            }
-        )
+        emit(rejection(result.problems, "notebook"))
         return 1
     append_jsonl(session.notebook_path, result.records)
     everything = records + result.records

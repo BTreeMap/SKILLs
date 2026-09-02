@@ -6,8 +6,8 @@ from collections.abc import Iterable
 
 import pytest
 
-from btm_corekit import slugify
-from btm_ponder.batch import expand_batch, near_misses
+from btm_corekit import slugify, suggest
+from btm_ponder.batch import expand_batch
 from btm_ponder.state import Ledger, Retrieved
 
 
@@ -152,7 +152,7 @@ class TestRecovery:
 
     def test_near_misses_rank_by_keyword_overlap(self):
         ids = ["rds-assessment-abc", "rds-methods-def", "other-topic-ghi"]
-        assert near_misses("rds assessment", ids)[0] == "rds-assessment-abc"
+        assert suggest("rds assessment", ids)[0] == "rds-assessment-abc"
 
 
 class TestTotalRejection:

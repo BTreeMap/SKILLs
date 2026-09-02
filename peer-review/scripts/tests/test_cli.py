@@ -130,7 +130,7 @@ class TestFlow:
         code, document, _ = run(
             ["note", session, "--file", batch(tmp_path, payload)], capsys
         )
-        assert code == 1 and document["ledger"] == "unchanged"
+        assert code == 1 and document["unchanged"] == "ledger"
         code, document, _ = run(["status", session], capsys)
         assert code == 0 and document["objections"] == {}
 

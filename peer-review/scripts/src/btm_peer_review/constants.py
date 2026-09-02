@@ -137,7 +137,6 @@ ANCHOR_GRAM = 4
 ANCHOR_COVERAGE = 0.6  # fraction of the quote's n-grams found in the paper
 CLAIM_WORDS_MAX = 60  # a contribution claim is a sentence, not a paragraph
 ECHO_WARN = 0.5  # share of anchored objections sitting in the paper's Limitations
-MAX_EVENTS = 2000
 
 PAGE_MARKER = re.compile(r"^## PDF page (\d+)\s*$", re.MULTILINE)
 WHITESPACE = re.compile(r"\s+")

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import difflib
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -11,13 +10,12 @@ from typing import Any
 from btm_corekit import (
     append_jsonl,
     emit,
-    jot,
     now_iso,
-    pad_body,
     pad_entries,
     recall,
     signal,
     state_root,
+    suggest,
 )
 from btm_lit_review.constants import PAD_TAIL, READ_LEVELS, SOURCES, STATUSES
 from btm_lit_review.draft import marker_table, refresh_markers
@@ -30,7 +28,7 @@ from btm_lit_review.notebook import (
     next_id,
 )
 from btm_lit_review.paper import Paper
-from btm_lit_review.session import Session, load_papers, load_protocol, open_session
+from btm_lit_review.session import load_papers, load_protocol, open_session
 
 PAD_SCHEMA = (
     'jot stores any JSON object; {"kind": "extraction", "key": "<paper key>", ...} '
@@ -159,37 +157,15 @@ def pad_directory(args: argparse.Namespace) -> Path:
     return open_session(args.session).root
 
 
-def cmd_jot(args: argparse.Namespace) -> int:
-    session = None if args.lore else open_session(args.session)
-    body, advisory = pad_body(args.entry, args.text)
-    if advisory:
-        signal(advisory)
-    if session and body.get("kind") == "extraction":
-        _recognize_extraction(body, session)
-    emit(jot(lore_dir() if session is None else session.root, body))
-    return 0
-
-
-def _recognize_extraction(body: Mapping[str, Any], session: Session) -> None:
+def recognize_extraction(args: argparse.Namespace, body: Mapping[str, Any]) -> None:
     """Advisories only: the jot stands whatever these say."""
-    papers = load_papers(session)
+    if args.lore or body.get("kind") != "extraction":
+        return
+    papers = load_papers(open_session(args.session))
     key = str(body.get("key") or "")
     if key not in papers:
-        near = difflib.get_close_matches(key, papers, n=3, cutoff=0.5)
+        near = suggest(key, papers)
         hint = f"; did you mean: {', '.join(near)}" if near else ""
         signal(f"extraction key '{key}' is not a corpus paper{hint}")
     elif papers[key].read_level == "none":
         signal(f"{key} has read_level none; record the read level via update")
-
-
-def cmd_recall(args: argparse.Namespace) -> int:
-    emit(
-        recall(
-            pad_directory(args),
-            kind=args.kind,
-            match=args.match,
-            since=args.since,
-            limit=args.limit,
-        )
-    )
-    return 0
