@@ -24,6 +24,30 @@ itself:
 - **Correct, complex formatting.** Visual editors and templates produce clean output without any AI.
 - **Secondhand text.** Do not rewrite watched phrases inside quotations, titles, proper names, or examples where the phrase is discussed rather than used.
 
+- **A single placement verb.** "The risk sits in the handoff" is ordinary English. §37 in `register` counts density; flag only above its threshold, and never an instance the writer's own sample uses.
+- **Personification the writer chose.** Some writers personify systems as a signature move. A personal style file or sample that does so outranks §37 and the interiority case of §27; keep the voice and resolve the conflict in the writer's favor without asking.
+- **A superlative the text earns.** After four numbers, "the largest" is a fact. §38 targets a ranking the writer never made; a comparison the reader can check stays.
+- **First-person experience the writer has.** The first-person case of §5 targets invented observation doing a citation's job. Autobiography that the surrounding text supports stays.
+- **A count the reader must hold.** The count case of §28 targets decoration; a count that helps the reader track items across intervening text is navigation.
+- **Real terms of art and defined coinages.** Technical debt, scope creep, and a label the writer defines and then uses are vocabulary; the coined-label case of §32 targets an undefined label posing as one. A suffix match alone is weak: in 675,000 words of human prose, tax, debt, and trap appear literally at 0.08 per thousand words.
+- **Honest and honestly in dialogue or mid-sentence.** Quoted speech and a casual adverb stay. The honesty-qualifier case of §33 targets the writer marking their own claim as the honest one.
+- **Even rhythm in a list, a spec, or a table caption.** Enumerations and reference entries are uniform by design. §36 measures running prose, one block of about 40 sentences at a time, against the writer's own baseline when a sample exists.
+- **Jargon the audience shares.** A noun stack in a message between two engineers who share the context is compression that works. §39 targets the same register reaching a reader who lacks the context.
+- **A rule the format needs.** Front matter delimiters, a required thematic break, and a rule inside a template stay; §18 targets rules between sections that headings already separate.
+- **Claude-favored words in isolation.** Genuine, latent, settled, seam, and quietly are everyday words; in human prose they run 0.12 per thousand words. §7 counts them only in a cluster.
+- **Corrections in a document about change.** A changelog, a review, or an erratum states what was wrong; §40 targets the checking voice inside a document that is presenting a finding.
+
+Signal strength, for weighing a hit: structural entries (§9, §10, §16, §29,
+§36, §39) and rhetorical entries (§27, §28, §32, §33, §34, §35, §38, §40) are
+diagnostic alone or in pairs. Lexical entries (§7, §37) count only in
+clusters or above a density; a word list applied as a ban flattens prose and
+removes ordinary English. Every construction in the index occurs in human
+writing; the Claude-specific ones were named from human prose too. Two
+findings support restraint: naive term suppression degrades output and can
+make a forbidden term more salient (ReboundBench, 2025), and vocabulary
+tells drift by model and year, so a list from one season is stale by the
+next.
+
 When unsure, look for several patterns together. One em dash proves nothing.
 Several stock patterns in the same passage are stronger evidence.
 

@@ -2,10 +2,13 @@
 name: humanize
 description: >-
   Rewrites AI-sounding text so it reads like its writer without changing what
-  it says: detects 35 patterns from Wikipedia's "Signs of AI writing"
-  (inflated claims, sales language, vague sources, overused AI words,
-  formulaic rhetoric, chatbot artifacts, dash and formatting tells), preserves
-  every claim, invents no facts, and matches a supplied voice sample. Returns
+  it says: detects 40 patterns from Wikipedia's "Signs of AI writing" and the
+  Claude-specific tells named since (inflated claims, sales language, vague
+  sources, overused AI words, formulaic rhetoric, chatbot artifacts, dash and
+  formatting tells, flat rhythm, placement metaphors, manufactured salience,
+  compressed jargon, reasoning residue), preserves every claim and its
+  logical strength, invents no facts, and defers to a personal style file or
+  voice sample over every pattern. Returns
   a full rewrite for pasted text, edits prose in place for files, and emits
   bare text when embedded in another task. Use when asked to humanize, de-AI,
   or naturalize prose, edit text that sounds like a chatbot, or remove AI
@@ -16,11 +19,18 @@ license: MIT
 
 # Humanize: remove AI writing patterns
 
-Rewrite AI-sounding text so it reads like the writer, not a chatbot. Patterns
+Rewrite AI-sounding text so it reads like the writer, not a chatbot. §1-35
 come from Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing),
 maintained by WikiProject AI Cleanup. Its diagnosis: LLMs tend toward the most
 statistically likely phrasing for the widest variety of cases. The cure is the
-specific over the generic.
+specific over the generic. §36-40 and the added cases inside older entries
+come from the 2026 observations of Claude prose ("Claudish"): the Economist
+comparison of 55,940 sentences across four models (July 2026), the Pew
+Research web sample (August 2026), the em dash suppression study across
+twelve models (arXiv 2603.27006), a cluster analysis of 461,000 pull request
+descriptions (August 2026), the CC0 claudisms banlist, and practitioner
+catalogues. Evidence in this field turns over within months; the owner files
+state which numbers were measured and on what.
 
 ## Registry
 
@@ -31,6 +41,7 @@ specific over the generic.
 | `content` | [references/content.md](references/content.md) |
 | `filler` | [references/filler.md](references/filler.md) |
 | `language` | [references/language.md](references/language.md) |
+| `register` | [references/register.md](references/register.md) |
 | `rhetoric` | [references/rhetoric.md](references/rhetoric.md) |
 | `style` | [references/style.md](references/style.md) |
 
@@ -49,20 +60,43 @@ Hold these in every mode. Each outranks any pattern fix.
    user supplies a sample of their prior prose, read it before
    rewriting: note sentence length, word choice, paragraph openings,
    punctuation, repeated phrases, and transitions, then match those habits.
-   Keep casual words casual and deliberate quirks intact. The sample outranks
-   every pattern: a sample full of em dashes keeps its em-dash rate, so §14 in
-   `style` is not a ban.
+   Keep casual words casual and deliberate quirks intact. A personal style
+   file (a voice guide, a style document the user keeps, explicit voice
+   instructions) or a supplied sample outranks every pattern in this skill.
+   Load it before any owner file. Where it permits a construction a pattern
+   flags (an em-dash habit, personification of systems, candid asides,
+   placement verbs), keep the construction and resolve the conflict in the
+   writer's favor without asking. A sample full of em dashes keeps its
+   em-dash rate, so §14 in `style` is not a ban.
 4. **Personality only where it fits.** In blog posts, essays, opinion, and
    personal writing, keep the writer's opinions, uncertainty, mixed feelings,
    humor, asides, and uneven rhythm. Keep reference, technical, legal, and
    factual text neutral. Never invent facts to add warmth.
+5. **Preserve logical strength.** Removing a negation, a hedge, or a
+   comparative can change what a sentence claims. After any such cut,
+   re-read the claim and check its modality: a criterion must stay a
+   criterion, evidence must stay evidence, a possibility must stay possible.
+   "Passes not when X but when Y" becomes "passes only when Y", never
+   "passes when Y"; "there is evidence that A and B pull apart" keeps
+   "evidence suggests", never becomes "A and B pull apart". Restore the lost
+   strength with only, can, may, suggests, or an equivalent.
+   <modality_check>
+   necessary became sufficient: restore "only", "requires", "unless"
+   evidential became assertive: restore "suggests", "reports", "found"
+   possible became actual: restore "can", "may", "sometimes"
+   comparative became absolute: restore "more than", "than the alternative"
+   </modality_check>
 
 ## Detection index
 
-35 patterns. Ownership by contiguous range: §1-6 `content`, §7-13 `language`,
-§14-19 `style`, §20-22 `chatbot`, §23-26 `filler`, §27-35 `rhetoric`. Owner
-files hold the full watch-lists, problem statements, and before/after
-examples; the cues below are routing summaries only.
+40 patterns. Ownership by contiguous range: §1-6 `content`, §7-13 `language`,
+§14-19 `style`, §20-22 `chatbot`, §23-26 `filler`, §27-35 `rhetoric`, §36-40
+`register`. Owner files hold the full watch-lists, problem statements, and
+before/after examples; the cues below are routing summaries only. Signal
+strength: structural and rhetorical entries are diagnostic alone or in pairs;
+lexical entries (§7, §37) count only in clusters or above the density the
+owner file states. Every entry occurs in human writing; a hit is a style
+signal, never proof of authorship.
 
 | § | Cue |
 | --- | --- |
@@ -70,11 +104,11 @@ examples; the cues below are routing summaries only.
 | 2 | Media outlets or follower counts listed to prove importance |
 | 3 | Fact plus trailing -ing phrase adding fake depth (highlighting..., reflecting...) |
 | 4 | Ad-copy tone: vibrant, nestled, breathtaking, rich heritage |
-| 5 | Unnamed authorities: experts argue, observers cite, industry reports |
+| 5 | Unnamed authorities: experts argue, industry reports; first-person versions (most people I've talked to); borrowed consensus (famously, as we all know) |
 | 6 | Stock Challenges or Future Outlook section restating vague claims |
-| 7 | AI-favored vocabulary, especially clustered: delve, tapestry, testament, pivotal |
+| 7 | AI-favored vocabulary, clustered: delve, tapestry, testament, pivotal; Claude-era: genuine, latent, quietly, seam |
 | 8 | serves as, boasts, features dodging is, are, has |
-| 9 | Not X but Y frames; clipped negative endings (no guessing) |
+| 9 | Not X but Y frames; clipped negative endings (no guessing); staccato negation (No X. No Y. Just Z.) |
 | 10 | Ideas forced into triads |
 | 11 | Synonym cycling for one subject; repeated sentence openings |
 | 12 | from X to Y where X and Y form no real range |
@@ -83,7 +117,7 @@ examples; the cues below are routing summaries only.
 | 15 | Bold scattered without reason |
 | 16 | Lists where every item is a bold label plus colon |
 | 17 | Title Case In Headings |
-| 18 | Emoji as decoration on headings and bullets |
+| 18 | Emoji as decoration on headings and bullets; `---` rules between sections |
 | 19 | Curly quotes where the writer or format uses straight |
 | 20 | Chat frame left in: greetings, offers, hope this helps |
 | 21 | Knowledge-cutoff disclaimers; guessed gap-fill stated as fact |
@@ -92,27 +126,36 @@ examples; the cues below are routing summaries only.
 | 24 | Stacked qualifiers: could potentially possibly |
 | 25 | Generic upbeat send-off instead of a last fact |
 | 26 | Hyphenated pairs kept after the noun (the report is high-quality) |
-| 27 | Fake-depth framing: the real question, at its core |
-| 28 | Announcing the point instead of stating it: let's dive in |
-| 29 | First sentence restating its heading |
+| 27 | Fake-depth framing: the real question, at its core; manufactured interiority: worth sitting with, I keep coming back to |
+| 28 | Announcing the point instead of stating it: let's dive in; announcing the count: there are three things here |
+| 29 | First sentence restating its heading or the question asked |
 | 30 | Prose about the previous version outside a changelog |
 | 31 | Consecutive dramatic fragments as punchlines |
-| 32 | Aphorism templates: X is the Y of Z, the currency of |
-| 33 | Fake-candid openers: Honestly?, Look, Here's the thing |
+| 32 | Aphorism templates: X is the Y of Z, the currency of; invented compound labels: the specification vacuum |
+| 33 | Fake-candid openers: Honestly?, Look, Here's the thing; honesty qualifiers: the honest version, honest caveat |
 | 34 | Rebutting objections nobody raised: I'm not saying, to be clear |
 | 35 | Dismissing alternatives nobody would choose: one might be tempted |
+| 36 | Uniform sentence rhythm: length variation (SD/mean) under 0.45 per block |
+| 37 | Placement and weight verbs in volume: lives in, sits with, carries, load-bearing |
+| 38 | Manufactured salience: the one thing, the single most, if I had to pick one |
+| 39 | Compressed jargon: noun stacks, coined hyphen compounds, half-sentences |
+| 40 | Reasoning residue: the single most important correction, does not survive contact with |
 
 ## Progressive loading
 
-1. Scan the input against the index and collect suspected hits.
-2. Zero hits: return the text unchanged per output mode, state that no AI
+1. Load the personal style file or voice sample first when one exists
+   (invariant 3).
+2. Scan the input against the index and collect suspected hits.
+3. Zero hits: return the text unchanged per output mode, state that no AI
    patterns were found, and load nothing.
-3. Otherwise load exactly the owner files of the hits, plus `calibration`,
+4. Otherwise load exactly the owner files of the hits, plus `calibration`,
    the guard against overcorrection. Never rewrite flagged text without
    `calibration`.
-4. §14-19 are mechanically checkable: a search for U+2014, U+2013, `**`,
-   heading case, emoji, curly quotes, and ` -- ` settles whether `style`
-   loads.
+5. §14-19 are mechanically checkable: a search for U+2014, U+2013, `**`,
+   heading case, emoji, curly quotes, ` -- `, and `---` lines settles
+   whether `style` loads. §36 is measurable: run the command in `register`
+   on prose longer than about 40 sentences, before and after the rewrite,
+   so a pass that removed twelve phrases and left the rhythm flat is caught.
 
 ## Rewrite process
 
@@ -122,11 +165,14 @@ examples; the cues below are routing summaries only.
    right formality. State each point naturally rather than patching flagged
    phrases one at a time; when a sentence stays awkward, rewrite the
    paragraph around its main point.
-3. Self-check two questions, treating a yes to either as an error to fix:
+3. Self-check three questions, treating a yes to any as an error to fix:
    - What still sounds AI-generated?
    - Did the rewrite add or drop any fact, name, number, date, quote,
      citation, or ranking?
-4. Sweep the final text for U+2014 and U+2013 per §14 in `style`.
+   - Did removing a negation, hedge, or comparative strengthen a claim
+     (invariant 5)?
+4. Sweep the final text for U+2014 and U+2013 per §14 in `style`, and
+   re-measure §36 where it applied.
 
 ## Output modes
 

@@ -64,6 +64,19 @@ Researchers and conservationists study the Haolai River for its unusual characte
 Name a real source when the source text provides one. Otherwise remove the
 unsupported claim. Never invent a source.
 
+Two more faces of the same move. First person: the writer's own unverifiable
+experience doing a citation's job (most people I've talked to, everyone I've
+worked with, a lot of folks, in my experience teams tend to, I keep seeing).
+Borrowed consensus: famously, notoriously, as we all know, it is well known
+that, the classic example is. Either the fact is known, so state it, or it is
+not, so the appeal is the only evidence.
+<before case="first person and familiarity">
+Most people I've talked to have hit this bug. It is famously hard to reproduce, as anyone who has run a cluster knows.
+</before>
+<after>
+The bug is hard to reproduce. (Keep the first-person report only when the writer has that experience and the text shows it.)
+</after>
+
 ### 6. Formulaic challenges and outlook sections
 
 **Watch:** Despite its... faces several challenges..., Despite these challenges, Challenges and Legacy, Future Outlook

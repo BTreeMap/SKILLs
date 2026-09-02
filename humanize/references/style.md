@@ -50,9 +50,12 @@ The update improves the interface, speeds up load times through optimized algori
 ## Strategic negotiations and global partnerships
 </after>
 
-### 18. Emojis
+### 18. Emojis and decorative rules
 
-**Problem:** Emojis added to headings and list items as decoration.
+**Problem:** Emojis added to headings and list items as decoration, and
+horizontal rules (`---`) placed between sections where a heading or a
+paragraph break already separates them. A rule that a format needs (front
+matter, a required thematic break) stays.
 <before>
 🚀 **Launch Phase:** The product launches in Q3
 💡 **Key Insight:** Users prefer simplicity
@@ -60,6 +63,26 @@ The update improves the interface, speeds up load times through optimized algori
 </before>
 <after>
 The product launches in Q3. User research showed a preference for simplicity. Next step: schedule a follow-up meeting.
+</after>
+<before case="rules as dividers">
+## Setup
+
+Install the package.
+
+---
+
+## Usage
+
+Run the command.
+</before>
+<after>
+## Setup
+
+Install the package.
+
+## Usage
+
+Run the command.
 </after>
 
 ### 19. Curly quotation marks

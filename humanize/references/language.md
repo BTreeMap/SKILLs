@@ -5,8 +5,8 @@ formulaic sentence shapes.
 
 ### 7. Overused AI words
 
-**Watch:** Actually, additionally, align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, gate/gated/gating (figurative; preserve established technical usage), highlight (verb), interplay, intricate/intricacies, key (adjective), landscape (abstract noun), pivotal, quietly, showcase, tapestry (abstract noun), testament, underscore (verb), valuable, vibrant
-**Problem:** AI writing uses these words far more often than people do, especially in groups.
+**Watch:** Actually, additionally, align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, gate/gated/gating (figurative; preserve established technical usage), genuine/genuinely, highlight (verb), interplay, intricate/intricacies, key (adjective), landscape (abstract noun), latent, pivotal, quietly, seam (figurative), settled (figurative), showcase, tapestry (abstract noun), testament, underscore (verb), valuable, vibrant
+**Problem:** AI writing uses these words far more often than people do, especially in groups. Vocabulary drifts by model and by year: delve and tapestry faded after 2025 while genuine, latent, quietly, and seam rose in Claude output. Count a cluster, never a single word; placement metaphors such as load-bearing belong to §37 in `register`.
 <before>
 Additionally, a distinctive feature of Somali cuisine is the incorporation of camel meat. An enduring testament to Italian colonial influence is the widespread adoption of pasta in the local culinary landscape, showcasing how these dishes have integrated into the traditional diet.
 </before>
@@ -40,6 +40,17 @@ The options come from the selected item, no guessing.
 <after>
 The options come from the selected item without forcing the user to guess.
 </after>
+<before case="staccato negation">
+No config file. No daemon. No surprises. Just a binary.
+</before>
+<after>
+It ships as one binary and needs no config file or daemon.
+</after>
+
+The staccato form carries no "not just", so a scan for the phrase misses it.
+Watch for two or more sentences in a row that begin with No or Not a. Cutting
+the negated half can change what the sentence claims; apply invariant 5
+before the rewrite stands.
 
 ### 10. Forced groups of three
 
