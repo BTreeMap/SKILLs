@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-import re
 from functools import partial
 from itertools import chain
 
-PAGE_TOKEN = re.compile(r"^(?P<start>\d+)(?:-(?P<end>\d*)?)?$")
+
+def _digits(text: str) -> bool:
+    return bool(text) and text.isascii() and text.isdigit()
 
 
 def parse_page_token(page_count: int, token: str) -> range:
-    """Parse one validated page token into its selected one-based range."""
-    match = PAGE_TOKEN.fullmatch(token)
-    if not match:
+    """Parse one validated page token into its selected one-based range:
+    `N`, `N-M`, or `N-` (through the last page)."""
+    head, dash, tail = token.partition("-")
+    if not _digits(head) or (dash and tail and not _digits(tail)):
         raise ValueError(
             "Invalid page selection. Use one-based page numbers and ranges, "
             "for example: 1-3,5,8-."
         )
 
-    start = int(match.group("start"))
-    raw_end = match.group("end")
-    end = start if raw_end is None else page_count if raw_end == "" else int(raw_end)
+    start = int(head)
+    end = start if not dash else page_count if tail == "" else int(tail)
     if start < 1 or end < start or end > page_count:
         raise ValueError(
             f"Page selection {token!r} is outside the document's 1-{page_count} range."

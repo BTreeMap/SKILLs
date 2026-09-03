@@ -53,7 +53,17 @@ def suggest(
     best = heapq.nsmallest(
         limit,
         (
-            (len(words & index.get(candidate, set(keywords_of(candidate)))), candidate)
+            (
+                len(
+                    words
+                    & (
+                        index[candidate]
+                        if candidate in index
+                        else set(keywords_of(candidate))
+                    )
+                ),
+                candidate,
+            )
             for candidate in ids
         ),
         key=lambda pair: (-pair[0], pair[1]),

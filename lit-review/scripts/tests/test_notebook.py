@@ -8,11 +8,14 @@ import pytest
 
 from btm_lit_review.notebook import (
     WATCH_MAX,
+    arrivals_of,
     expand_notes,
     finding_view,
     gap_view,
     live,
     next_id,
+    watch_hits,
+    watch_terms,
 )
 from btm_lit_review.paper import candidate
 
@@ -77,7 +80,7 @@ class TestAdmission:
         result = expand(
             {
                 "findings": [{"claim": "", "support": ["doi:10.9/ghost"]}],
-                "gaps": [{"statement": "x", "probes": ["s9"], "watch": "["}],
+                "gaps": [{"statement": "x", "probes": ["s9"], "watch": " | "}],
                 "extra": [],
             },
             papers,
@@ -179,7 +182,7 @@ class TestDerivedVerdicts:
             "seen": 2,
             "watch": "gflownet",
         }
-        view = gap_view(gap, papers)
+        view = gap_view(gap, arrivals_of(papers))
         assert view["state"] == "challenged"
         assert view["hits"] == ["arxiv:2501.00001"]
 
@@ -192,7 +195,7 @@ class TestDerivedVerdicts:
             "seen": 3,
             "watch": "gflownet|bandit",
         }
-        assert gap_view(gap, papers)["state"] == "standing"
+        assert gap_view(gap, arrivals_of(papers))["state"] == "standing"
 
 
 class TestSupersedeChains:
@@ -219,3 +222,9 @@ def test_an_overlong_watch_is_refused():
     result = expand_notes(batch, {}, 0, set(), [])
     assert result.records == []
     assert result.problems[0].where == "gaps[0].watch"
+
+
+def test_a_watch_matches_its_words_literally():
+    terms = [term.casefold() for term in watch_terms("retrieval augmented | a+b")]
+    assert watch_hits(terms, "a retrieval augmented sampler".casefold())
+    assert watch_hits(terms, "uses a+b") and not watch_hits(terms, "uses aab")

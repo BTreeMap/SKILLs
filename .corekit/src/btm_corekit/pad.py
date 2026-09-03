@@ -17,11 +17,22 @@ from typing import Any
 from btm_corekit.clock import now_iso
 from btm_corekit.errors import CommandError
 from btm_corekit.fsio import append_jsonl, read_jsonl
+from btm_corekit.text import prefixed_number
 
 SCRATCH = "scratch.jsonl"
 PAD_SOFT_CAP = 500  # advisory line, never a refusal
+MATCH_MAX = 200  # an agent-authored pattern is a few words, never a program
 
-_ENTRY_ID = re.compile(r"j(\d+)")
+
+def compile_match(pattern: str) -> re.Pattern[str]:
+    """One compiled, case-insensitive pattern for every `--match`; the cap
+    bounds what a backtracking engine is handed."""
+    if len(pattern) > MATCH_MAX:
+        raise CommandError(f"--match is at most {MATCH_MAX} characters")
+    try:
+        return re.compile(pattern, re.IGNORECASE)
+    except re.error as err:
+        raise CommandError(f"unreadable --match pattern: {err}") from err
 
 
 def pad_entries(directory: Path) -> list[dict[str, Any]]:
@@ -89,9 +100,10 @@ def pad_body(raw: str, as_text: bool = False) -> tuple[dict[str, Any], str | Non
 
 
 def _entry_number(entry_id: str) -> int:
-    if match := _ENTRY_ID.fullmatch(entry_id):
-        return int(match.group(1))
-    raise CommandError(f"pad ids look like j12; got {entry_id!r}")
+    number = prefixed_number(entry_id, "j")
+    if number is None:
+        raise CommandError(f"pad ids look like j12; got {entry_id!r}")
+    return number
 
 
 def recall(
@@ -111,10 +123,7 @@ def recall(
     if kind is not None:
         entries = [e for e in entries if e["body"].get("kind") == kind]
     if match is not None:
-        try:
-            pattern = re.compile(match, re.IGNORECASE)
-        except re.error as err:
-            raise CommandError(f"unreadable --match pattern: {err}") from err
+        pattern = compile_match(match)
         entries = [
             e
             for e in entries

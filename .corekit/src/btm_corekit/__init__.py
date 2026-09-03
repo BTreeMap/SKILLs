@@ -56,8 +56,19 @@ from btm_corekit.origin import (
     request_identity,
     user_agent,
 )
-from btm_corekit.pad import jot, pad_body, pad_entries, pad_ids, recall
+from btm_corekit.pad import compile_match, jot, pad_body, pad_entries, pad_ids, recall
 from btm_corekit.sessions import Created, SessionStore
+from btm_corekit.text import (
+    ascii_words,
+    bracketed,
+    collapse_whitespace,
+    heading_words,
+    is_digits,
+    keep_table,
+    prefixed_number,
+    runs,
+    strip_tags,
+)
 from btm_corekit.verdicts import Diagnostic
 
 __all__ = [
@@ -83,12 +94,19 @@ __all__ = [
     "UpstreamError",
     "advise",
     "append_jsonl",
+    "ascii_words",
     "band_signal",
+    "bracketed",
+    "collapse_whitespace",
+    "compile_match",
     "eliminate",
     "emit",
     "field_text",
+    "heading_words",
+    "is_digits",
     "is_pathlike",
     "jot",
+    "keep_table",
     "keywords_of",
     "mint",
     "now_iso",
@@ -97,6 +115,7 @@ __all__ = [
     "pad_ids",
     "parse_enum",
     "polite_params",
+    "prefixed_number",
     "read_batch",
     "read_jsonl",
     "recall",
@@ -105,9 +124,11 @@ __all__ = [
     "require",
     "resolve",
     "run_cli",
+    "runs",
     "signal",
     "slugify",
     "state_root",
+    "strip_tags",
     "suffix",
     "suggest",
     "tree_bytes",

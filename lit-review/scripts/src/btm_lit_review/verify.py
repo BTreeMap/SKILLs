@@ -7,7 +7,7 @@ import difflib
 import time
 from typing import Any
 
-from btm_corekit import CommandError, emit, signal
+from btm_corekit import CommandError, UpstreamError, emit, signal
 from btm_lit_review.constants import (
     COURTESY_PAUSE_SECONDS,
     CROSSREF_WORKS,
@@ -21,7 +21,19 @@ from btm_lit_review.session import load_papers, open_session
 
 
 def verify_one(paper: Paper) -> dict[str, Any]:
+    """One row per paper; an unreachable registrar is recorded in the row, so
+    one bad moment upstream never discards the rows already collected."""
     result: dict[str, Any] = {"key": paper.key, "title": paper.title}
+    try:
+        _verify_into(result, paper)
+    except UpstreamError as err:
+        result["error"] = str(err)
+        signal(f"{paper.key}: {err}")
+    time.sleep(COURTESY_PAUSE_SECONDS)
+    return result
+
+
+def _verify_into(result: dict[str, Any], paper: Paper) -> None:
     if paper.doi:
         status = doi_resolution_status(paper.doi)
         result["doi_resolves"] = status in REDIRECT_STATUSES or status == HTTP_OK
@@ -53,14 +65,16 @@ def verify_one(paper: Paper) -> dict[str, Any]:
     else:
         result["doi_resolves"] = None
         result["identity"] = "title-only record; verify against the source by hand"
-    time.sleep(COURTESY_PAUSE_SECONDS)
-    return result
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
     session = open_session(args.session)
+    papers = load_papers(session)
+    wanted = set(args.keys.split(",")) if args.keys else None
     included = [
-        paper for paper in load_papers(session).values() if paper.status == "included"
+        paper
+        for key, paper in papers.items()
+        if paper.status == "included" and (wanted is None or key in wanted)
     ]
     if not included:
         raise CommandError("no included papers to verify; screen the corpus first")
@@ -73,6 +87,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         {
             "checked": len(results),
             "broken_dois": broken,
+            "errors": [r["key"] for r in results if "error" in r],
             "results": results,
         }
     )

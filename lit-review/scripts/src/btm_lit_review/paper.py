@@ -6,14 +6,8 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, fields, replace
 from typing import Any
 
-from btm_corekit import CommandError
-from btm_lit_review.constants import (
-    ARXIV_ID,
-    NON_ALNUM,
-    READ_LEVELS,
-    STATUSES,
-    WHITESPACE,
-)
+from btm_corekit import CommandError, ascii_words, collapse_whitespace, is_digits
+from btm_lit_review.constants import READ_LEVELS, STATUSES
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,8 +35,7 @@ class Paper:
 def clean_text(raw: object) -> str | None:
     if not isinstance(raw, str):
         return None
-    collapsed = WHITESPACE.sub(" ", raw).strip()
-    return collapsed or None
+    return collapse_whitespace(raw) or None
 
 
 def normalize_doi(raw: object) -> str | None:
@@ -55,14 +48,28 @@ def normalize_doi(raw: object) -> str | None:
 
 
 def normalize_arxiv_id(raw: object) -> str | None:
+    """The `YYMM.NNNNN` (or `YYMM.NNNN`) id ending the text, an optional
+    `vN` suffix dropped, whatever precedes it (a URL, `arXiv:`)."""
     if not isinstance(raw, str):
         return None
-    match = ARXIV_ID.search(raw.strip())
-    return match.group(1) if match else None
+    text = raw.strip()
+    head, v, version = text.rpartition("v")
+    if v and is_digits(version):
+        text = head
+    for width in (5, 4):
+        tail = text[-(5 + width) :]
+        if (
+            len(tail) == 5 + width
+            and is_digits(tail[:4])
+            and tail[4] == "."
+            and is_digits(tail[5:])
+        ):
+            return tail
+    return None
 
 
 def normalize_title(title: str) -> str:
-    return NON_ALNUM.sub(" ", title.lower()).strip()
+    return " ".join(ascii_words(title))
 
 
 def paper_key(doi: str | None, arxiv_id: str | None, title: str) -> str:

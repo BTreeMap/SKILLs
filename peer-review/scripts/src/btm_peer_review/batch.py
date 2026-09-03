@@ -12,6 +12,7 @@ from typing import Any, TypeVar
 
 from btm_corekit import Admission, Diagnostic, Pool, field_text
 from btm_peer_review.constants import (
+    ANCHOR_CHARS_MAX,
     BANKS,
     CLAIM_WORDS_MAX,
     Bank,
@@ -21,7 +22,7 @@ from btm_peer_review.constants import (
 from btm_peer_review.ledger import apply
 from btm_peer_review.state import Ledger
 from btm_peer_review.store import Corpus
-from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim, tokens
+from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim
 
 E = TypeVar("E")
 
@@ -82,14 +83,21 @@ class _Admission(Admission):
         if self.context.paper is None:
             self.fail(where, "ingest the paper text before quoting it")
             return None
+        if len(quote) > ANCHOR_CHARS_MAX:
+            self.fail(
+                where,
+                f"shorten the quote to {ANCHOR_CHARS_MAX} characters or fewer",
+                "an anchor is the sentence that carries the problem",
+            )
+            return None
         match self.context.paper.resolve(quote):
             case Verbatim() | Fuzzy() as hit:
                 return hit
-            case Unresolved(best, coverage):
+            case Unresolved(best, similarity):
                 hint = (
-                    f"closest page {best} at coverage {coverage}"
+                    f"closest page {best} at similarity {similarity}"
                     if best is not None
-                    else "no page shares four consecutive words with it"
+                    else "no span of the paper resembles it"
                 )
                 self.fail(
                     where, "quote the paper verbatim; this text is not in it", hint
@@ -103,7 +111,7 @@ class _Admission(Admission):
             if verbatim is None:
                 self.fail(where, 'add "verbatim": the claim sentence as printed')
                 continue
-            if len(tokens(verbatim.lower())) > CLAIM_WORDS_MAX:
+            if len(verbatim.split()) > CLAIM_WORDS_MAX:
                 self.fail(
                     where, f"shorten verbatim to {CLAIM_WORDS_MAX} words or fewer"
                 )

@@ -10,11 +10,12 @@ from __future__ import annotations
 import hashlib
 import os
 import platform as _platform
-import re
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+
+from btm_corekit import ascii_words
 
 
 class DenvError(Exception):
@@ -159,11 +160,16 @@ def emulation(host: Host, needed: CondaPlatform) -> Emulation:
 # Family selects toolchain; flavor selects target (default "generic"); version
 # pins it. Catalog keys use (family, flavor); version is recipe data.
 
-_TAG_RE = re.compile(
-    r"^(?P<family>[a-z][a-z0-9+]*)"
-    r"(?::(?P<flavor>[a-z][a-z0-9-]*))?"
-    r"(?:@(?P<version>[A-Za-z0-9][A-Za-z0-9._-]*))?$"
-)
+TAG_FIRST = frozenset("abcdefghijklmnopqrstuvwxyz")
+FAMILY_CHARS = TAG_FIRST | frozenset("0123456789+")
+FLAVOR_CHARS = TAG_FIRST | frozenset("0123456789-")
+VERSION_FIRST = frozenset("abcdefghijklmnopqrstuvwxyz0123456789")
+VERSION_CHARS = VERSION_FIRST | frozenset("._-")
+
+
+def _word(text: str, first: frozenset[str], rest: frozenset[str]) -> bool:
+    return bool(text) and text[0] in first and all(c in rest for c in text[1:])
+
 
 GENERIC = "generic"
 
@@ -193,13 +199,21 @@ class RawTag:
 
 
 def parse_tag(text: str) -> RawTag:
-    m = _TAG_RE.match(text.strip().lower())
-    if m is None:
+    """`family[:flavor][@version]` by two partitions; each part is checked
+    against its character class, so the parse is one pass and total."""
+    head, at, version = text.strip().lower().partition("@")
+    family, colon, flavor = head.partition(":")
+    valid = (
+        _word(family, TAG_FIRST, FAMILY_CHARS)
+        and (not colon or _word(flavor, TAG_FIRST, FLAVOR_CHARS))
+        and (not at or _word(version, VERSION_FIRST, VERSION_CHARS))
+    )
+    if not valid:
         raise DenvError(
             f"malformed tag {text!r}; expected family[:flavor][@version], "
             "e.g. python@3.12, kotlin:android, go:cgo"
         )
-    return RawTag(m["family"], m["flavor"] or GENERIC, m["version"])
+    return RawTag(family, flavor if colon else GENERIC, version if at else None)
 
 
 # --- Spec ---
@@ -332,7 +346,7 @@ def default_root(project: Path, host: Host) -> Path:
     if override := os.environ.get("DENV_ROOT"):
         return Path(override)
     digest = hashlib.sha256(str(project.resolve()).encode()).hexdigest()[:8]
-    slug = re.sub(r"[^a-z0-9]+", "-", project.name.lower()).strip("-") or "project"
+    slug = "-".join(ascii_words(project.name)) or "project"
     user = f"-{os.getuid()}" if hasattr(os, "getuid") else ""
     base = os.environ.get("DENV_HOME") or str(
         Path(tempfile.gettempdir()) / f"denv{user}"
@@ -368,8 +382,7 @@ def merge_deltas(deltas: list[EnvDelta]) -> EnvDelta:
                     f"recipes disagree on ${name}: {vars_[name]!r} vs {value!r}"
                 )
             vars_[name] = value
-        for entry in delta.path:
-            if entry not in path:
-                path.append(entry)
+        path.extend(delta.path)
         unset |= delta.unset
-    return EnvDelta(tuple(sorted(vars_.items())), tuple(path), frozenset(unset))
+    ordered = tuple(dict.fromkeys(path))  # first occurrence wins, O(n)
+    return EnvDelta(tuple(sorted(vars_.items())), ordered, frozenset(unset))

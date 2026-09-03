@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,8 +37,7 @@ def _readme_listing(text: str) -> Listing | None:
         while end < len(lines) and lines[end].startswith("| ["):
             end += 1
         entries = tuple(
-            (_first_group(r"\[([^\]]+)\]", lines[row]), (lines[row],))
-            for row in range(start, end)
+            (_between(lines[row], "[", "]"), (lines[row],)) for row in range(start, end)
         )
         return Listing(tuple(lines[:start]), entries, tuple(lines[end:]))
     return None
@@ -61,7 +59,7 @@ def _agents_listing(text: str) -> Listing | None:
     while row < len(lines):
         line = lines[row]
         if line.startswith("* "):
-            name = _first_group(r"`([^`]+)`", line).rstrip("/")
+            name = _between(line, "`", "`").rstrip("/")
             entries.append((name, [line]))
         elif entries and line.startswith("  ") and line.strip():
             entries[-1][1].append(line)
@@ -72,9 +70,11 @@ def _agents_listing(text: str) -> Listing | None:
     return Listing(tuple(lines[:start]), frozen, tuple(lines[row:]))
 
 
-def _first_group(pattern: str, line: str) -> str:
-    match = re.search(pattern, line)
-    return match.group(1) if match else line
+def _between(line: str, opener: str, closer: str) -> str:
+    """Text inside the first non-empty `opener ... closer` pair, else the line."""
+    start = line.find(opener)
+    end = line.find(closer, start + 1) if start != -1 else -1
+    return line[start + 1 : end] if end > start + 1 else line
 
 
 # Pair each document with its extractor; do not infer one from another.

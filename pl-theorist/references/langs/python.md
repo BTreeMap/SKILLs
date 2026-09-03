@@ -2,6 +2,18 @@
 
 ## Disclosed Constraints
 
+- A Python-level loop costs roughly 50 to 100 ns per iteration, while `str`
+  methods, `bytes.translate`, and `re` run in C at 1 to 5 ns per character.
+  Linear complexity is necessary, not sufficient: a per-character `for` loop
+  is the wrong backend even at O(n). Scan with `find`, `split`, `partition`,
+  `translate`, or a compiled pattern, and keep Python iteration proportional
+  to the tokens produced, never the characters read.
+- A backtracking engine is linear on an unambiguous pattern and exponential
+  on an ambiguous one. Nested or adjacent quantifiers over overlapping
+  classes (`(a+)+`, `[\w.]+@`) and `\s*` under `re.MULTILINE` are the
+  blow-up shapes; one character class with one quantifier is safe. Untrusted
+  or agent-supplied patterns need a length cap regardless, since `re` has no
+  timeout.
 - No tail-call optimization. Unbounded structural recursion consumes one frame
   per element.
 - Slicing, concatenation, eager intermediates, and transient wrappers increase

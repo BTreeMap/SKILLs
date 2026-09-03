@@ -17,8 +17,9 @@ description: >-
 license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout: the engine is a uv
-  workspace member under the skill's scripts/ directory. The novelty bank
-  needs lit-review's network access.
+  workspace member under the skill's scripts/ directory, and uv resolves its
+  rapidfuzz dependency on first run. The novelty bank needs lit-review's
+  network access.
 metadata:
   argument-hint: "[lite|full|ultra] <paper path or URL>"
 ---
@@ -115,7 +116,7 @@ Two write paths:
   checked to exist), `walks` (a bank done),
   `withdraws` (an objection a re-read defeated). A rejected batch returns
   every problem in one verdict with an imperative fix and a hint (closest
-  page and coverage, did-you-mean, the bank vocabulary); the ledger stays
+  page and similarity, did-you-mean, the bank vocabulary); the ledger stays
   unchanged, so apply all fixes and resend once. Write batches to a file and
   pass `--file`.
 
@@ -124,7 +125,7 @@ Two write paths:
 corpus date test, `withdrawn`), each claim's verdict (`contested` by a
 grounded fatal or major objection, `questioned`, `standing`), the echo
 ratio, the recommendation by severity rule (fatal: reject; major: major
-revision; minor: minor revision; else no objection stands), coverage
+revision; minor: minor revision; else no objection stands), bank coverage
 (unwalked banks for the level, corpus linked, pages) with a confidence band,
 and the report scaffold. `cite-check --draft` requires every `[On]` and
 `[Cn]` in the draft to resolve to a grounded record and every grounded fatal
@@ -185,9 +186,12 @@ Before ingest, determine from available tools:
 
 ## Gotchas
 
-- A quote that fails to resolve usually crosses a page break, a hyphenated
-  line end, or a figure caption. Shorten it to the run of words on one page;
-  the hint names the closest page and its coverage.
+- An anchor resolves as a verbatim substring of the normalized page text,
+  or as the best-matching span at 0.85 similarity or better. A quote that
+  fails usually crosses a page break, a hyphenated line end, or a figure
+  caption; the hint names the closest page and the similarity it reached.
+  Quotes run from 12 to 1000 characters: below that a short string resembles
+  any paper, and above it the quote is a section, not an anchor.
 - An objection with `missing` needs a `where` (the table or section that
   should hold the absent item), or the report cannot place it.
 - The Limitations heading detection is a regex over headings; when `ingest`

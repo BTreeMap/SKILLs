@@ -36,17 +36,18 @@ class TestResolve:
         found = paper_text.resolve(quote)
         assert isinstance(found, Fuzzy)
         assert found.page == 2
-        assert 0.6 <= found.coverage < 1.0
+        assert 0.85 <= found.similarity < 1.0
 
     def test_invented_text_is_unresolved_with_the_closest_page(self, paper_text):
         found = paper_text.resolve(
             "We report the median over five seeds with error bars"
         )
         assert isinstance(found, Unresolved)
-        assert found.coverage < 0.6
+        assert found.similarity < 0.85
 
-    def test_short_absent_text_has_no_page(self, paper_text):
+    def test_text_too_short_to_align_resolves_verbatim_or_not_at_all(self, paper_text):
         assert paper_text.resolve("zebra") == Unresolved(None, 0.0)
+        assert isinstance(paper_text.resolve("English only"), Verbatim)
 
 
 class TestSections:

@@ -4,10 +4,10 @@ the ledger, the live paper text, and the linked corpus. Nothing here is stored.
 
 from __future__ import annotations
 
-import re
 from collections import Counter
 from typing import Any
 
+from btm_corekit import bracketed, is_digits
 from btm_peer_review.constants import (
     ECHO_WARN,
     LEVEL_BANKS,
@@ -23,7 +23,6 @@ from btm_peer_review.state import Ledger, Missing, Objection
 from btm_peer_review.store import Corpus
 from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim
 
-MARKER = re.compile(r"\[([CO]\d+)\]")
 DECISIVE = frozenset({Severity.FATAL, Severity.MAJOR})
 
 
@@ -262,7 +261,11 @@ def cite_check(
     cited. O(draft + ledger)."""
     known_claims = {c["marker"] for c in claims}
     by_marker = {v["marker"]: v for v in objections}
-    used = set(MARKER.findall(text))
+    used = {
+        content
+        for content in bracketed(text)
+        if content[:1] in ("C", "O") and is_digits(content[1:])
+    }
     problems = []
     for marker in sorted(used):
         if marker in known_claims:

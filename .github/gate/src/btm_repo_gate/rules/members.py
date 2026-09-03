@@ -14,14 +14,18 @@ def rule_member_layout(repo: Repo) -> Iterator[Finding]:
     """The member holds manifest, `src/`, and `tests/`, so the skill directory
     itself stays documentation. Moving code or a manifest is a judgment about
     imports and history, so every finding here is reported, never repaired."""
+    # One pass buckets every Python file by its skill; the per-skill loop then
+    # reads its own bucket instead of rescanning the whole tree.
+    python_by_skill: dict[str, list[Path]] = {}
+    for path in sorted(repo.texts):
+        if path.suffix == ".py" and path.parts:
+            python_by_skill.setdefault(path.parts[0], []).append(path)
     for skill in sorted(repo.skills):
         root = Path(skill)
         member = root / MEMBER_DIR
         manifest = member / "pyproject.toml"
         member_has_code = False
-        for path in sorted(repo.texts):
-            if path.suffix != ".py" or root not in path.parents:
-                continue
+        for path in python_by_skill.get(skill, []):
             if member in path.parents:
                 member_has_code = True
             else:

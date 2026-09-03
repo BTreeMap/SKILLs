@@ -16,7 +16,12 @@ from typing import Any
 import httpx
 
 from btm_corekit import UpstreamError, user_agent
-from btm_lit_review.constants import DOI_HOST, HTTP_BAD_REQUEST, TIMEOUT_SECONDS
+from btm_lit_review.constants import (
+    DOI_HOST,
+    HTTP_BAD_REQUEST,
+    RESPONSE_CAP_BYTES,
+    TIMEOUT_SECONDS,
+)
 
 
 @cache
@@ -30,13 +35,25 @@ def _client() -> httpx.Client:
 
 
 def http_get(url: str, params: Mapping[str, str] | None = None) -> bytes:
+    """The body, streamed under a byte cap so a slow drip cannot grow without
+    bound inside the per-read timeout."""
+    chunks: list[bytes] = []
+    size = 0
     try:
-        response = _client().get(url, params=params)
+        with _client().stream("GET", url, params=params) as response:
+            if response.status_code >= HTTP_BAD_REQUEST:
+                raise UpstreamError(f"HTTP {response.status_code} from {response.url}")
+            for chunk in response.iter_bytes():
+                size += len(chunk)
+                if size > RESPONSE_CAP_BYTES:
+                    raise UpstreamError(
+                        f"response from {response.url} exceeds "
+                        f"{RESPONSE_CAP_BYTES} bytes"
+                    )
+                chunks.append(chunk)
     except httpx.RequestError as err:
         raise UpstreamError(f"cannot reach {err.request.url}: {err}") from err
-    if response.status_code >= HTTP_BAD_REQUEST:
-        raise UpstreamError(f"HTTP {response.status_code} from {response.url}")
-    return response.content
+    return b"".join(chunks)
 
 
 def http_get_json(url: str, params: Mapping[str, str] | None = None) -> Any:

@@ -16,7 +16,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import shlex
 import shutil
 import ssl
@@ -69,17 +68,20 @@ def log(message: str) -> None:
     print(f"btm-setup-env: {message}", file=sys.stderr)
 
 
+DIGITS_AND_DOT = frozenset("0123456789.")
+
 # --- Downloads and extraction ---
 
 
 @cache
 def _client() -> httpx.Client:
-    """Toolchain downloads run unbounded on read: archives are large and links
-    slow, and every fetch is resumable by re-run."""
+    """Reads run unbounded: archives are large, links slow, and every fetch
+    is resumable by re-run. Connect, write, and pool waits are bounded, so a
+    dead peer fails instead of hanging."""
     return httpx.Client(
         http2=True,
         follow_redirects=True,
-        timeout=None,
+        timeout=httpx.Timeout(None, connect=30.0, write=30.0, pool=30.0),
         verify=ssl.create_default_context(cafile=certifi.where()),
         headers={"User-Agent": user_agent("setup-env")},
     )
@@ -104,7 +106,8 @@ def fetch(url: str, target: Path) -> None:
 
 
 def verify_sha256(path: Path, expected: str) -> None:
-    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    with path.open("rb") as handle:
+        actual = hashlib.file_digest(handle, "sha256").hexdigest()
     if actual != expected:
         # Deleting the artifact is the mechanical repair: a cached corrupt
         # download would otherwise fail every re-run forever, since fetch()
@@ -157,20 +160,31 @@ def _extract_tar(archive: Path, dest: Path, strip: int) -> None:
             tf.extractall(dest, members=members)
 
 
+INSTALL_TIMEOUT = 3600.0  # seconds; an installer past this is stuck on a lock or prompt
+
+
 def run_logged(
-    what: str, cmd: list[str], env: dict[str, str], stdin_text: str | None = None
+    what: str,
+    cmd: list[str],
+    env: dict[str, str],
+    stdin_text: str | None = None,
+    timeout: float = INSTALL_TIMEOUT,
 ) -> None:
     """Run quietly; on failure surface the tail, which is where build tools
     put the sentence worth reading."""
-    result = subprocess.run(
-        cmd,
-        env=env,
-        input=stdin_text,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,  # Surface the output tail as DenvError.
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            env=env,
+            input=stdin_text,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,  # Surface the output tail as DenvError.
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as err:
+        raise DenvError(f"{what} produced no exit within {timeout:.0f}s") from err
     if result.returncode != 0:
         tail = "\n".join((result.stdout or "").splitlines()[-40:])
         raise DenvError(f"{what} failed (exit {result.returncode}):\n{tail}")
@@ -390,6 +404,7 @@ def do_android_sdk(ctx: Ctx, step: AndroidSdk) -> None:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,  # The install reports license refusal.
+        timeout=600,
     )
     log("installing SDK packages: " + " ".join(packages))
     run_logged("sdkmanager --install", [str(sdkmanager), "--install", *packages], env)
@@ -440,13 +455,17 @@ def do_compiler_shims(ctx: Ctx, step: CompilerShims) -> None:
     CC/CXX a plan-time value and let configure scripts find them."""
     bin_dir = ctx.layout.conda_host / "bin"
     ctx.layout.shims.mkdir(parents=True, exist_ok=True)
+    # One directory listing serves every compiler; conda bins hold thousands.
+    names = (
+        sorted(entry.name for entry in bin_dir.iterdir()) if bin_dir.is_dir() else []
+    )
     for shim_name, suffixes in _COMPILERS:
         real = next(
             (
-                p
+                bin_dir / name
                 for suffix in suffixes
-                for p in sorted(bin_dir.glob(f"*{suffix}"))
-                if p.name.endswith(suffix)
+                for name in names
+                if name.endswith(suffix)
             ),
             None,
         )
@@ -482,8 +501,45 @@ def _agp_version(project: Path) -> str | None:
         text = catalog.read_text()
     except OSError:
         return None
-    m = re.search(r'^agp\s*=\s*"([^"]+)"', text, re.MULTILINE)
-    return m.group(1) if m else None
+    return _toml_string(text, "agp")
+
+
+def _toml_string(text: str, key: str) -> str | None:
+    """The quoted value of a top-level `key = "..."` line; one pass over lines."""
+    for line in text.split("\n"):
+        head, sep, value = line.partition("=")
+        if sep and head.strip() == key:
+            value = value.lstrip()
+            close = value.find('"', 1) if value.startswith('"') else -1
+            return value[1:close] if close > 1 else None
+    return None
+
+
+def _tag_contents(text: str, tag: str) -> list[str]:
+    """Contents of every `<tag>...</tag>` span, non-empty; one pass."""
+    opener, closer = f"<{tag}>", f"</{tag}>"
+    found: list[str] = []
+    position = 0
+    while (start := text.find(opener, position)) != -1:
+        end = text.find(closer, start + len(opener))
+        if end == -1:
+            break
+        if end > start + len(opener):
+            found.append(text[start + len(opener) : end])
+        position = end + len(closer)
+    return found
+
+
+def _stable_aapt2(version: str) -> bool:
+    """`<digits and dots>-<digits>`: a released build, no qualifier."""
+    head, dash, build = version.partition("-")
+    return (
+        bool(dash)
+        and bool(head)
+        and set(head) <= DIGITS_AND_DOT
+        and build.isascii()
+        and build.isdigit()
+    )
 
 
 def _aapt2_version(ctx: Ctx) -> str:
@@ -492,12 +548,12 @@ def _aapt2_version(ctx: Ctx) -> str:
     metadata = ctx.layout.downloads / "aapt2-maven-metadata.xml"
     metadata.unlink(missing_ok=True)
     fetch(f"{GOOGLE_MAVEN}/com/android/tools/build/aapt2/maven-metadata.xml", metadata)
-    versions = re.findall(r"<version>([^<]+)</version>", metadata.read_text())
+    versions = _tag_contents(metadata.read_text(), "version")
     agp = _agp_version(Path(ctx.manifest.get("project", ".")))
     matching = [v for v in versions if v.startswith(f"{agp}-")] if agp else []
     if agp and not matching:
         raise DenvError(f"Google publishes no aapt2 for AGP {agp}")
-    stable = [v for v in versions if re.fullmatch(r"[\d.]+-\d+", v)]
+    stable = [v for v in versions if _stable_aapt2(v)]
     chosen = (matching or stable)[-1:]
     if not chosen:
         raise DenvError("no usable aapt2 version in Google's maven metadata")

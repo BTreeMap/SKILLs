@@ -6,7 +6,8 @@ import xml.etree.ElementTree as ET
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from btm_lit_review.constants import ARXIV_NS, ATOM, JATS_TAG
+from btm_corekit import strip_tags
+from btm_lit_review.constants import ARXIV_NS, ATOM
 from btm_lit_review.paper import (
     Paper,
     candidate,
@@ -96,7 +97,7 @@ def paper_from_crossref(item: Mapping[str, Any]) -> Paper:
     )
     issued = (item.get("issued") or {}).get("date-parts") or [[None]]
     abstract_raw = item.get("abstract")
-    abstract = clean_text(JATS_TAG.sub(" ", abstract_raw)) if abstract_raw else None
+    abstract = clean_text(strip_tags(abstract_raw, " ")) if abstract_raw else None
     return candidate(
         title=clean_text(" ".join(item.get("title") or [])) or "(untitled)",
         year=issued[0][0] if issued[0] else None,

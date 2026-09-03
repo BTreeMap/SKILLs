@@ -148,6 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = commands.add_parser("verify", help="check DOIs of included papers")
     add_common(verify)
+    verify.add_argument("--keys", help="comma-separated keys; default every included")
     verify.set_defaults(func=cmd_verify)
 
     wire_clean(commands, STORE)

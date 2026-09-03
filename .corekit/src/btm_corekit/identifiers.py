@@ -7,18 +7,17 @@ from __future__ import annotations
 
 import base64
 import os
-import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
 from btm_corekit.errors import CommandError
+from btm_corekit.text import ascii_words
 
 KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
-NON_SLUG = re.compile(r"[^a-z0-9]+")
 
 
 def keywords_of(text: str) -> list[str]:
-    return [part for part in NON_SLUG.sub("-", text.lower()).split("-") if part]
+    return ascii_words(text)
 
 
 def slugify(words: Iterable[str]) -> str:

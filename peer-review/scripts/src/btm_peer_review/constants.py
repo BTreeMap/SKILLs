@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from enum import StrEnum
 
 
@@ -132,24 +131,25 @@ class Band(StrEnum):
     HIGH = "high"
 
 
-# Anchor resolution: a quote resolves exactly, or by word n-gram coverage.
-ANCHOR_GRAM = 4
-ANCHOR_COVERAGE = 0.6  # fraction of the quote's n-grams found in the paper
+# Anchor resolution: a quote resolves exactly, or by best-substring similarity.
+# Alignment costs O(len(quote) x len(paper) / 64) inside rapidfuzz, so the
+# quote is capped: an anchor is a sentence, never a section.
+ANCHOR_SIMILARITY = 0.85  # normalized indel similarity that admits an anchor
+ANCHOR_HINT_FLOOR = 0.5  # below this the rejection names no page at all
+ANCHOR_CHARS_MAX = 1000
+# Below this a similarity score is noise: any short string resembles some
+# span of a long paper, so a shorter quote resolves verbatim or not at all.
+ANCHOR_CHARS_MIN = 12
 CLAIM_WORDS_MAX = 60  # a contribution claim is a sentence, not a paragraph
 ECHO_WARN = 0.5  # share of anchored objections sitting in the paper's Limitations
 
-PAGE_MARKER = re.compile(r"^## PDF page (\d+)\s*$", re.MULTILINE)
-WHITESPACE = re.compile(r"\s+")
-NON_WORD = re.compile(r"[^a-z0-9]+")
-EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
-HEADING_NUMBER = r"(?:\d+(?:\.\d+)*\.?\s+)?"
-LIMITATIONS_HEADING = re.compile(
-    rf"^\s*{HEADING_NUMBER}limitations?(?:\s+and\s+future\s+work)?\s*$",
-    re.IGNORECASE | re.MULTILINE,
+PAGE_MARKER = "## PDF page "  # read-pdf's marker line, followed by the number
+LIMITATIONS_HEADINGS = frozenset(
+    {("limitation",), ("limitations",), ("limitations", "and", "future", "work")}
 )
-SECTION_END = re.compile(
-    rf"^\s*{HEADING_NUMBER}(?:references|bibliography|acknowledg\w*|appendix|"
-    r"ethics statement|broader impacts?|conclusions?)\b.*$",
-    re.IGNORECASE | re.MULTILINE,
+SECTION_END_FIRST_WORDS = frozenset(
+    {"references", "bibliography", "appendix", "conclusion", "conclusions"}
 )
-DATE = re.compile(r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$")
+SECTION_END_PAIRS = frozenset(
+    {("ethics", "statement"), ("broader", "impact"), ("broader", "impacts")}
+)

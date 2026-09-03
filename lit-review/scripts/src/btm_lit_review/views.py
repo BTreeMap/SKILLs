@@ -3,32 +3,32 @@
 from __future__ import annotations
 
 import argparse
+import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
-    append_jsonl,
     emit,
     now_iso,
     pad_entries,
-    recall,
     signal,
     state_root,
     suggest,
+    write_atomic,
 )
 from btm_lit_review.constants import PAD_TAIL, READ_LEVELS, SOURCES, STATUSES
 from btm_lit_review.draft import marker_table, refresh_markers
 from btm_lit_review.notebook import (
     SCHEMA,
+    arrivals_of,
     finding_view,
     gap_view,
     live,
     load_notebook,
-    next_id,
 )
 from btm_lit_review.paper import Paper
-from btm_lit_review.session import load_papers, load_protocol, open_session
+from btm_lit_review.session import Session, load_papers, load_protocol, open_session
 
 PAD_SCHEMA = (
     'jot stores any JSON object; {"kind": "extraction", "key": "<paper key>", ...} '
@@ -41,17 +41,19 @@ def lore_dir() -> Path:
     return state_root("lit-review") / "lore"
 
 
-def extraction_keys(directory: Path) -> set[str]:
+def extraction_keys(entries: list[dict[str, Any]]) -> set[str]:
     return {
         entry["body"].get("key")
-        for entry in pad_entries(directory)
+        for entry in entries
         if entry["body"].get("kind") == "extraction"
     }
 
 
-def unextracted(directory: Path, papers: Mapping[str, Paper]) -> list[str]:
-    """Included papers with no extraction entry on the pad."""
-    covered = extraction_keys(directory)
+def unextracted_in(
+    entries: list[dict[str, Any]], papers: Mapping[str, Paper]
+) -> list[str]:
+    """Included papers with no extraction entry among the pad entries."""
+    covered = extraction_keys(entries)
     return [
         key
         for key, paper in papers.items()
@@ -59,13 +61,22 @@ def unextracted(directory: Path, papers: Mapping[str, Paper]) -> list[str]:
     ]
 
 
-def drift(records: list[dict[str, Any]], papers: Mapping[str, Paper]) -> dict[str, Any]:
+def unextracted(directory: Path, papers: Mapping[str, Paper]) -> list[str]:
+    return unextracted_in(pad_entries(directory), papers)
+
+
+def load_snapshot(session: Session) -> dict[str, Any] | None:
+    """The previous brief's corpus statuses; one file, replaced per brief, so
+    the notebook never grows by the corpus size on every resume."""
+    path = session.snapshot_path
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def drift(last: dict[str, Any] | None, papers: Mapping[str, Paper]) -> dict[str, Any]:
     """Corpus movement since the last brief; empty on a first run."""
     current = {key: paper.status for key, paper in papers.items()}
-    snapshots = [record for record in records if record["e"] == "snapshot"]
-    if not snapshots:
+    if last is None:
         return {"since": None}
-    last = snapshots[-1]
     changed = [
         {"key": key, "from": before, "to": current[key]}
         for key, before in last["papers"].items()
@@ -86,7 +97,8 @@ def cmd_brief(args: argparse.Namespace) -> int:
     findings = [
         finding_view(record, papers) for record in live(records, "finding").values()
     ]
-    gaps = [gap_view(record, papers) for record in live(records, "gap").values()]
+    arrivals = arrivals_of(papers)
+    gaps = [gap_view(record, arrivals) for record in live(records, "gap").values()]
     challenged = [gap["id"] for gap in gaps if gap["state"] == "challenged"]
     at_risk = [finding["id"] for finding in findings if finding["state"] == "at-risk"]
     if at_risk:
@@ -94,11 +106,13 @@ def cmd_brief(args: argparse.Namespace) -> int:
     if challenged:
         signal(f"challenged gaps: {', '.join(challenged)}; re-affirm or supersede")
     markers = refresh_markers(session, papers)
+    entries = pad_entries(session.root)
+    last = load_snapshot(session)
     document = {
         "session": session.root.name,
         "question": protocol.get("question"),
         "level": protocol.get("level"),
-        "drift": drift(records, papers),
+        "drift": drift(last, papers),
         "findings": findings,
         "gaps": gaps,
         "rules": [
@@ -112,18 +126,19 @@ def cmd_brief(args: argparse.Namespace) -> int:
             if record["e"] == "rule"
         ],
         "markers": marker_table(markers, papers),
-        "unextracted": unextracted(session.root, papers),
-        "pad_tail": recall(session.root, limit=PAD_TAIL)["entries"],
+        "unextracted": unextracted_in(entries, papers),
+        "pad_tail": entries[-PAD_TAIL:],
         "lore": [entry["body"] for entry in pad_entries(lore_dir())],
     }
     emit(document)
+    count = (last or {}).get("n", 0) + 1
     snapshot = {
-        "e": "snapshot",
-        "id": next_id(records, "snapshot"),
+        "id": f"b{count}",
+        "n": count,
         "t": now_iso(),
         "papers": {key: paper.status for key, paper in papers.items()},
     }
-    append_jsonl(session.notebook_path, [snapshot])
+    write_atomic(session.snapshot_path, json.dumps(snapshot) + "\n")
     return 0
 
 

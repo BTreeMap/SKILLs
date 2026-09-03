@@ -10,18 +10,20 @@ from btm_corekit import (
     CommandError,
     EventLog,
     SessionStore,
+    is_digits,
     now_iso,
     parse_enum,
     read_jsonl,
     require,
 )
-from btm_peer_review.constants import DATE, Level
+from btm_peer_review.constants import Level
 
 STORE = SessionStore("peer-review", marker="session.json", hint="run init first")
 LIT_STORE = SessionStore(
     "lit-review", marker="protocol.json", hint="run lit-review init first"
 )
 LEDGER = "ledger.jsonl"
+DATE_WIDTHS = (4, 2, 2)  # YYYY, MM, DD
 PAPER = "paper.txt"
 
 
@@ -34,9 +36,18 @@ def paper_path(directory: Path) -> Path:
 
 
 def year_of(date: str) -> int:
-    match = DATE.fullmatch(date)
-    require(match is not None, "date is YYYY, YYYY-MM, or YYYY-MM-DD")
-    return int(match.group(1))
+    """YYYY, YYYY-MM, or YYYY-MM-DD; the year, or the invariant it broke."""
+    parts = date.split("-")
+    widths = DATE_WIDTHS[: len(parts)]
+    require(
+        1 <= len(parts) <= len(DATE_WIDTHS)
+        and all(
+            is_digits(part) and len(part) == width
+            for part, width in zip(parts, widths, strict=True)
+        ),
+        "date is YYYY, YYYY-MM, or YYYY-MM-DD",
+    )
+    return int(parts[0])
 
 
 @dataclass(frozen=True, slots=True)

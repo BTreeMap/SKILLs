@@ -1,29 +1,34 @@
 """The paper as searchable text: page index, anchor resolution, section spans.
 
-One index per process, O(N) in the paper's length; every anchor lookup is
-then O(len(quote)). Positions live in normalized coordinates, so a quote
-copied from a PDF with odd whitespace, curly quotes, or ligatures still
-resolves.
+Opening a paper normalizes each page in C and records where it begins, so
+construction touches no character from Python. A verbatim anchor then costs
+one `str.find`; a corrupted one costs one bit-parallel alignment inside
+rapidfuzz. Positions live in normalized coordinates, so a quote copied from
+a PDF with odd whitespace, curly quotes, or ligatures still resolves.
 """
 
 from __future__ import annotations
 
 from bisect import bisect_right
-from collections import Counter
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from btm_corekit import CommandError
+from rapidfuzz import fuzz
+
+from btm_corekit import CommandError, collapse_whitespace, heading_words
 from btm_peer_review.constants import (
-    ANCHOR_COVERAGE,
-    ANCHOR_GRAM,
-    EMAIL,
-    LIMITATIONS_HEADING,
-    NON_WORD,
+    ANCHOR_CHARS_MIN,
+    ANCHOR_HINT_FLOOR,
+    ANCHOR_SIMILARITY,
+    LIMITATIONS_HEADINGS,
     PAGE_MARKER,
-    SECTION_END,
-    WHITESPACE,
+    SECTION_END_FIRST_WORDS,
+    SECTION_END_PAIRS,
 )
+
+_MAIL_LOCAL = frozenset("._+-")
+_MAIL_LABEL = frozenset("-_")
 
 _TRANSLATE = str.maketrans(
     {
@@ -42,23 +47,59 @@ _TRANSLATE = str.maketrans(
 
 
 def normalize(text: str) -> str:
-    return WHITESPACE.sub(" ", text.translate(_TRANSLATE).lower()).strip()
+    return collapse_whitespace(text.translate(_TRANSLATE).lower())
 
 
-def tokens(normalized: str) -> list[str]:
-    return [w for w in NON_WORD.split(normalized) if w]
+def page_marker(line: str) -> int | None:
+    """The page number of a `## PDF page N` line, else None."""
+    rest = line.removeprefix(PAGE_MARKER).strip()
+    return int(rest) if line.startswith(PAGE_MARKER) and rest.isdigit() else None
 
 
 def parse_pages(raw: str) -> list[tuple[int, str]]:
-    """`## PDF page N` markers split the extraction; none means one page."""
-    markers = list(PAGE_MARKER.finditer(raw))
-    if not markers:
+    """`## PDF page N` lines split the extraction; none means one page.
+    One pass over the lines."""
+    pages: list[tuple[int, list[str]]] = []
+    for line in raw.split("\n"):
+        number = page_marker(line)
+        if number is not None:
+            pages.append((number, []))
+        elif pages:
+            pages[-1][1].append(line)
+    if not pages:
         return [(1, raw)]
-    pages = []
-    for index, match in enumerate(markers):
-        end = markers[index + 1].start() if index + 1 < len(markers) else len(raw)
-        pages.append((int(match.group(1)), raw[match.end() : end]))
-    return pages
+    return [(number, "\n".join(lines)) for number, lines in pages]
+
+
+def has_email(text: str) -> bool:
+    """Whether an `x@label.tld` token occurs: one scan around each `@`."""
+    at = text.find("@")
+    while at != -1:
+        if at > 0 and (text[at - 1].isalnum() or text[at - 1] in _MAIL_LOCAL):
+            end = at + 1
+            while end < len(text) and (text[end].isalnum() or text[end] in _MAIL_LABEL):
+                end += 1
+            if end > at + 1 and text[end : end + 1] == "." and text[end + 1 : end + 2]:
+                after = text[end + 1]
+                if after.isalnum() or after == "_":
+                    return True
+        at = text.find("@", at + 1)
+    return False
+
+
+def is_limitations_heading(line: str) -> bool:
+    return tuple(heading_words(line)) in LIMITATIONS_HEADINGS
+
+
+def is_section_end(line: str) -> bool:
+    words = heading_words(line)
+    if not words:
+        return False
+    return (
+        words[0] in SECTION_END_FIRST_WORDS
+        or words[0].startswith("acknowledg")
+        or tuple(words[:2]) in SECTION_END_PAIRS
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,13 +112,13 @@ class Verbatim:
 class Fuzzy:
     page: int
     offset: int
-    coverage: float  # share of the quote's n-grams found, above the floor
+    similarity: float  # best-substring similarity, at or above the floor
 
 
 @dataclass(frozen=True, slots=True)
 class Unresolved:
     best_page: int | None
-    coverage: float
+    similarity: float
 
 
 Anchoring = Verbatim | Fuzzy | Unresolved
@@ -94,16 +135,12 @@ class Span:
         return self.start <= offset < self.end
 
 
-def _grams(toks: list[str]) -> list[tuple[str, ...]]:
-    return [
-        tuple(toks[i : i + ANCHOR_GRAM]) for i in range(len(toks) - ANCHOR_GRAM + 1)
-    ]
-
-
 class PaperText:
-    """Immutable after construction; the index is the whole cost."""
+    """Immutable after construction: the normalized text and where its pages
+    begin. Construction is one C-level normalization per page, so opening a
+    30-page paper costs milliseconds and no per-word Python iteration."""
 
-    __slots__ = ("_index", "_starts", "full", "limitations", "numbers", "pages")
+    __slots__ = ("_starts", "full", "limitations", "numbers", "pages")
 
     def __init__(self, pages: list[tuple[int, str]]) -> None:
         self.pages = tuple(pages)
@@ -115,19 +152,6 @@ class PaperText:
             self._starts.append(offset)
             offset += len(chunk) + 1
         self.full = "\n".join(normalized)
-        # gram -> (page index, normalized offset of its first word); first wins
-        self._index: dict[tuple[str, ...], tuple[int, int]] = {}
-        for page_index, chunk in enumerate(normalized):
-            base = self._starts[page_index]
-            toks = tokens(chunk)
-            starts = []
-            position = 0
-            for word in toks:
-                position = chunk.find(word, position)
-                starts.append(base + position)
-                position += len(word)
-            for i, gram in enumerate(_grams(toks)):
-                self._index.setdefault(gram, (page_index, starts[i]))
         self.limitations = self._limitations_span()
 
     @classmethod
@@ -140,48 +164,57 @@ class PaperText:
         return self.numbers[bisect_right(self._starts, offset) - 1]
 
     def resolve(self, quote: str) -> Anchoring:
-        """Verbatim substring first; else n-gram coverage over the whole paper."""
+        """Verbatim substring first, which is one C-level scan; else the best
+        matching span by normalized indel similarity, which rapidfuzz finds
+        with bit-parallel alignment and reports with its position."""
         needle = normalize(quote)
         if not needle:
             return Unresolved(None, 0.0)
         position = self.full.find(needle)
         if position >= 0:
             return Verbatim(self.page_at(position), position)
-        grams = _grams(tokens(needle))
-        if not grams:
+        if len(needle) < ANCHOR_CHARS_MIN:
             return Unresolved(None, 0.0)
-        hits = [self._index[gram] for gram in grams if gram in self._index]
-        coverage = round(len(hits) / len(grams), 2)
-        if not hits:
-            return Unresolved(None, coverage)
-        page_index = Counter(page for page, _ in hits).most_common(1)[0][0]
-        offset = min(off for page, off in hits if page == page_index)
-        page = self.numbers[page_index]
-        if coverage >= ANCHOR_COVERAGE:
-            return Fuzzy(page, offset, coverage)
-        return Unresolved(page, coverage)
+        best = fuzz.partial_ratio_alignment(
+            needle, self.full, score_cutoff=ANCHOR_HINT_FLOOR * 100
+        )
+        if best is None:
+            return Unresolved(None, 0.0)
+        similarity = round(best.score / 100, 2)
+        page = self.page_at(best.dest_start)
+        if similarity >= ANCHOR_SIMILARITY:
+            return Fuzzy(page, best.dest_start, similarity)
+        return Unresolved(page, similarity)
 
     def in_limitations(self, offset: int) -> bool:
         return self.limitations is not None and self.limitations.holds(offset)
 
     def author_block(self) -> bool:
         """Advisory: an email on the first page means the author block is in."""
-        return bool(self.pages) and EMAIL.search(self.pages[0][1]) is not None
+        return bool(self.pages) and has_email(self.pages[0][1])
+
+    def _lines(self) -> Iterator[tuple[int, int, int, str]]:
+        """(page index, raw start, raw end, line) for every line, in order."""
+        for page_index, (_, raw) in enumerate(self.pages):
+            offset = 0
+            for line in raw.split("\n"):
+                yield page_index, offset, offset + len(line), line
+                offset += len(line) + 1
+
+    def _at(self, page_index: int, raw_offset: int) -> int:
+        """Normalized coordinate of a raw offset within a page."""
+        return self._starts[page_index] + len(
+            normalize(self.pages[page_index][1][:raw_offset])
+        )
 
     def _limitations_span(self) -> Span | None:
-        for page_index, (_, raw) in enumerate(self.pages):
-            heading = LIMITATIONS_HEADING.search(raw)
-            if heading is None:
-                continue
-            start = self._starts[page_index] + len(normalize(raw[: heading.end()]))
-            for later_index in range(page_index, len(self.pages)):
-                later_raw = self.pages[later_index][1]
-                search_from = heading.end() if later_index == page_index else 0
-                closing = SECTION_END.search(later_raw, search_from)
-                if closing is not None:
-                    end = self._starts[later_index] + len(
-                        normalize(later_raw[: closing.start()])
-                    )
-                    return Span(start, end)
-            return Span(start, len(self.full))
-        return None
+        """One pass over the lines: the first Limitations heading opens the
+        span; the next section-ending heading closes it."""
+        start: int | None = None
+        for page_index, begin, end, line in self._lines():
+            if start is None:
+                if is_limitations_heading(line):
+                    start = self._at(page_index, end)
+            elif is_section_end(line):
+                return Span(start, self._at(page_index, begin))
+        return None if start is None else Span(start, len(self.full))

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import heapq
-import re
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import replace
@@ -14,6 +13,7 @@ from btm_corekit import (
     CommandError,
     Diagnostic,
     append_jsonl,
+    compile_match,
     emit,
     now_iso,
     read_batch,
@@ -43,13 +43,6 @@ from btm_lit_review.views import unextracted
 
 def paper_field(paper: Paper, on: str) -> str:
     return str(getattr(paper, on) or "")
-
-
-def compile_match(pattern: str) -> re.Pattern[str]:
-    try:
-        return re.compile(pattern, re.IGNORECASE)
-    except re.error as err:
-        raise CommandError(f"unreadable --match pattern: {err}") from err
 
 
 def cmd_screen(args: argparse.Namespace) -> int:

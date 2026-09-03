@@ -10,9 +10,8 @@ from live corpus state, so a claim can never go stale silently.
 from __future__ import annotations
 
 import argparse
-import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -22,8 +21,10 @@ from btm_corekit import (
     advise,
     append_jsonl,
     emit,
+    keywords_of,
     now_iso,
     pad_ids,
+    prefixed_number,
     read_batch,
     read_jsonl,
     rejection,
@@ -45,15 +46,37 @@ SCHEMA: dict[str, str] = {
     '"needs": "abstract|full-text"}], "from": ["<pad id>"], '
     '"supersedes": "<finding id>"}',
     "gaps": '{"statement": "the absence claimed", "probes": ["<search log id>"], '
-    '"watch": "<regex over title+abstract>", "from": ["<pad id>"], '
-    '"supersedes": "<gap id>"}',
+    '"watch": "word|phrase|... matched literally in title+abstract", '
+    '"from": ["<pad id>"], "supersedes": "<gap id>"}',
 }
 FINDING_FIELDS = frozenset({"claim", "support", "from", "supersedes"})
 GAP_FIELDS = frozenset({"statement", "probes", "watch", "from", "supersedes"})
-ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r", "snapshot": "b"}
+ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r"}
 LEVEL_RANK = {level: rank for rank, level in enumerate(READ_LEVELS)}
-LOG_ID = re.compile(r"s(\d+)")
-WATCH_MAX = 200  # a watch is a short alternation of words; brief scans it per paper
+WATCH_MAX = 200  # a watch is a few words; brief scans it per paper
+
+
+def watch_terms(watch: str) -> list[str]:
+    """The literal terms of a watch: `|`-separated, trimmed, non-empty."""
+    return [term.strip() for term in watch.split("|") if term.strip()]
+
+
+def watch_hits(terms: Sequence[str], folded: str) -> bool:
+    """Substring test per term against an already-folded haystack: each `in`
+    is one C-level two-way search, and neither side is folded per call."""
+    return any(term in folded for term in terms)
+
+
+def arrivals_of(papers: Mapping[str, Paper]) -> dict[str, tuple[int, str]]:
+    """Per paper, the log round it arrived in and the folded text a watch
+    reads; folded once per brief and shared by every gap view."""
+    return {
+        key: (
+            first_log_number(paper),
+            f"{paper.title} {paper.abstract or ''}".casefold(),
+        )
+        for key, paper in papers.items()
+    }
 
 
 def load_notebook(session: Session) -> list[dict[str, Any]]:
@@ -80,8 +103,8 @@ def live(records: list[dict[str, Any]], kind: str) -> dict[str, dict[str, Any]]:
 def first_log_number(paper: Paper) -> int:
     """The search-log round that first brought the paper in; 0 when unknown."""
     for stamp in paper.found_by[:1]:
-        if found := LOG_ID.fullmatch(stamp):
-            return int(found.group(1))
+        if (number := prefixed_number(stamp, "s")) is not None:
+            return number
     return 0
 
 
@@ -106,16 +129,17 @@ def finding_view(record: Mapping[str, Any], papers: Mapping[str, Paper]) -> dict
     return view | ({"issues": issues} if issues else {})
 
 
-def gap_view(record: Mapping[str, Any], papers: Mapping[str, Paper]) -> dict:
+def gap_view(
+    record: Mapping[str, Any], arrivals: Mapping[str, tuple[int, str]]
+) -> dict:
     """A gap is challenged by papers that arrived after it and match its watch."""
     hits = []
     if record.get("watch"):
-        pattern = re.compile(record["watch"], re.IGNORECASE)
+        terms = [term.casefold() for term in watch_terms(record["watch"])]
         hits = [
             key
-            for key, paper in papers.items()
-            if first_log_number(paper) > record["seen"]
-            and pattern.search(f"{paper.title} {paper.abstract or ''}")
+            for key, (arrived, folded) in arrivals.items()
+            if arrived > record["seen"] and watch_hits(terms, folded)
         ]
     view = {
         "id": record["id"],
@@ -156,10 +180,17 @@ class _Admission(Admission):
             for key, paper in papers.items()
             for alias in paper_aliases(paper)
         }
+        self._key_words: dict[str, set[str]] = {}
         self.counts: Counter[str] = Counter(record["e"] for record in existing)
         self.ids: defaultdict[str, set[str]] = defaultdict(set)
         for record in existing:
             self.ids[record["e"]].add(record["id"])
+
+    def key_words(self) -> dict[str, set[str]]:
+        """Keyword sets per corpus key, built on the first failed token."""
+        if not self._key_words:
+            self._key_words = {key: set(keywords_of(key)) for key in self.papers}
+        return self._key_words
 
     def resolve_key(self, token: str, where: str) -> str | None:
         """A paper key, or any alias a model plausibly writes: DOI, arXiv id,
@@ -176,7 +207,7 @@ class _Admission(Admission):
             if key := self.aliases.get(candidate):
                 self.advisories.append(f"{where}: resolved {token} -> {key}")
                 return key
-        near = suggest(token, self.papers)
+        near = suggest(token, self.papers, keywords=self.key_words())
         self.fail(
             where,
             f"replace '{token}': no corpus paper matches it",
@@ -270,8 +301,8 @@ class _Admission(Admission):
                 clean = False
             probes = list(entry.get("probes") or [])
             for j, probe in enumerate(probes):
-                found = LOG_ID.fullmatch(str(probe))
-                if not found or not 1 <= int(found.group(1)) <= self.log_count:
+                number = prefixed_number(str(probe), "s")
+                if number is None or not 1 <= number <= self.log_count:
                     self.fail(
                         f"{where}.probes[{j}]",
                         f"replace '{probe}': no search log entry has this id",
@@ -284,26 +315,19 @@ class _Admission(Admission):
                     "its log id"
                 )
             watch = entry.get("watch")
-            if watch is not None:
-                if not isinstance(watch, str) or len(watch) > WATCH_MAX:
-                    self.fail(
-                        f"{where}.watch",
-                        f"keep the watch a string under {WATCH_MAX} characters",
-                        hint="a short alternation of the words a challenger would "
-                        "use in its title or abstract",
-                    )
-                    clean = False
-                    watch = None
-                else:
-                    try:
-                        re.compile(watch)
-                    except re.error as err:
-                        self.fail(
-                            f"{where}.watch",
-                            f"fix the regex: {err}",
-                            hint=SCHEMA["gaps"],
-                        )
-                        clean = False
+            if watch is not None and (
+                not isinstance(watch, str)
+                or len(watch) > WATCH_MAX
+                or not watch_terms(watch)
+            ):
+                self.fail(
+                    f"{where}.watch",
+                    f"write the watch as words separated by |, under {WATCH_MAX} "
+                    "characters",
+                    hint="the words a challenger would use in its title or abstract",
+                )
+                clean = False
+                watch = None
             clean = self.take_links(entry, "gap", where) and clean
             if clean:
                 record: dict[str, Any] = {

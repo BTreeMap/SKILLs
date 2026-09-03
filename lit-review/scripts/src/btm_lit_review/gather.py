@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import urllib.parse
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
@@ -147,7 +148,7 @@ def resolve_openalex_id(papers: Mapping[str, Paper], token: str) -> tuple[str, s
     if paper.openalex_id:
         return key, paper.openalex_id
     if paper.doi:
-        work = http_get_json(f"{OPENALEX_WORKS}/doi:{paper.doi}")
+        work = http_get_json(f"{OPENALEX_WORKS}/doi:{urllib.parse.quote(paper.doi)}")
         openalex_id = str(work.get("id") or "").rsplit("/", 1)[-1]
         if openalex_id:
             return key, openalex_id

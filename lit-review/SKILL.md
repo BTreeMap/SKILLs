@@ -95,7 +95,8 @@ screen that leaves too few papers reopens search); log what reopened it.
 The script owns a session directory: `protocol.json` (the agent fills
 `criteria`; the script gates on it), `papers.jsonl` (one record per
 deduplicated paper), `search_log.jsonl` (one entry per query or snowball),
-`notebook.jsonl` (findings, gaps, screening rules, brief snapshots),
+`notebook.jsonl` (findings, gaps, screening rules), `snapshot.json` (the
+last brief's corpus statuses),
 `citations.json` (marker numbers), and `scratch.jsonl` (the pad). `init`
 takes two or three keywords, mints the session identifier, and echoes it
 with the directory path. A keyword subset recovers a lost identifier;
@@ -114,7 +115,7 @@ Two write paths carry different contracts:
 - The gate is what the script later judges. `update` and `screen` move
   paper statuses; `note` admits findings (claim plus supporting keys plus
   the read level each citation needs) and gaps (the absence claimed, the
-  null-search log ids proving it, a watch regex). A rejected batch returns
+  null-search log ids proving it, a watch of words). A rejected batch returns
   every problem in one verdict, each an imperative fix with a hint, and a
   DOI or arXiv id resolves as a key; the file stays unchanged, so apply
   all fixes and resend once. Write batches to a file and pass `--file`: a
@@ -122,7 +123,7 @@ Two write paths carry different contracts:
 
 `brief` is the resume view and the belief check: findings and gaps come
 back with verdicts derived from the live corpus (a finding whose support
-was excluded or under-read is at-risk; a gap whose watch regex matches a
+was excluded or under-read is at-risk; a gap whose watch words match a
 later paper is challenged), plus corpus drift since the previous brief,
 the citation marker table, unextracted papers, the pad tail, and lore.
 Run it after compaction and before drafting. `cite-check --draft` checks

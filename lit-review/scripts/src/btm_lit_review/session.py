@@ -44,6 +44,10 @@ class Session:
     def citations_path(self) -> Path:
         return self.root / "citations.json"
 
+    @property
+    def snapshot_path(self) -> Path:
+        return self.root / "snapshot.json"
+
 
 def open_session(root: str) -> Session:
     return Session(STORE.directory(root))

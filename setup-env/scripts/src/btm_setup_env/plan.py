@@ -101,10 +101,7 @@ def make_plan(spec: Spec, host: Host, layout: Layout) -> Plan:
         )
     env = merge_deltas(deltas)
 
-    probes: list[tuple[str, ...]] = []
-    for recipe, _ in recipes:
-        for probe in recipe.probes:
-            if probe not in probes:
-                probes.append(probe)
+    # First occurrence wins, order kept: dict.fromkeys is the O(n) dedupe.
+    probes = dict.fromkeys(probe for recipe, _ in recipes for probe in recipe.probes)
 
     return Plan(spec, host, layout, steps, env, tuple(probes))

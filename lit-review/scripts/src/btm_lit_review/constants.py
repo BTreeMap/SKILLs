@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import re
-
 OPENALEX_WORKS = "https://api.openalex.org/works"
 ARXIV_QUERY = "https://export.arxiv.org/api/query"
 CROSSREF_WORKS = "https://api.crossref.org/works"
 DOI_HOST = "doi.org"
 TIMEOUT_SECONDS = 30
+RESPONSE_CAP_BYTES = (
+    16 * 1024 * 1024
+)  # an index page is kilobytes; a cap bounds a stall
 DEFAULT_LIMIT = 25
 MAX_LIMIT = 100
 ID_BATCH_SIZE = 50
@@ -30,8 +31,3 @@ SOURCES = ("openalex", "arxiv", "crossref")
 DIRECTIONS = ("backward", "forward")
 DECISION_FIELDS = frozenset({"status", "reason", "read_level"})
 REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
-
-ARXIV_ID = re.compile(r"(\d{4}\.\d{4,5})(?:v\d+)?$")
-JATS_TAG = re.compile(r"<[^>]+>")
-WHITESPACE = re.compile(r"\s+")
-NON_ALNUM = re.compile(r"[^a-z0-9]+")

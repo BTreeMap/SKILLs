@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, jot, pad_entries, pad_ids, recall
+from btm_corekit import CommandError, compile_match, jot, pad_entries, pad_ids, recall
 
 
 class TestJot:
@@ -69,3 +69,11 @@ class TestRedirectAppends:
         (tmp_path / "scratch.jsonl").write_text("{broken\n")
         with pytest.raises(CommandError, match="not JSON"):
             pad_entries(tmp_path)
+
+
+def test_compile_match_caps_length_and_reports_bad_patterns():
+    assert compile_match("Ab").search("cab")
+    with pytest.raises(CommandError, match="at most"):
+        compile_match("a" * 201)
+    with pytest.raises(CommandError, match="unreadable"):
+        compile_match("[")

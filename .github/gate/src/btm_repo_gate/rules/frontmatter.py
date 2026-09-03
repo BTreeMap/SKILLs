@@ -9,8 +9,8 @@ import yaml
 
 from btm_repo_gate.conventions import (
     DESCRIPTION_LIMIT,
-    FRONTMATTER,
     SPEC_FIELDS,
+    split_frontmatter,
 )
 from btm_repo_gate.repairs import Finding, WriteText
 from btm_repo_gate.snapshot import Repo
@@ -38,12 +38,12 @@ def rule_frontmatter(repo: Repo) -> Iterator[Finding]:
         if text is None:
             continue  # rule_skill_layout owns the missing-file case
         where = str(document)
-        header = FRONTMATTER.match(text)
+        header = split_frontmatter(text)
         if header is None:
             yield Finding("frontmatter", where, "no YAML frontmatter")
             continue
         try:
-            fields = yaml.safe_load(header.group(1)) or {}
+            fields = yaml.safe_load(header[0]) or {}
         except yaml.YAMLError as error:
             yield Finding("frontmatter", where, f"unparseable frontmatter: {error}")
             continue
@@ -51,10 +51,10 @@ def rule_frontmatter(repo: Repo) -> Iterator[Finding]:
             yield Finding("frontmatter", where, "frontmatter is not a mapping")
             continue
         yield from _frontmatter_judgments(where, fields)
-        normalized = _canonical_header(skill, fields, header.group(1))
+        normalized = _canonical_header(skill, fields, header[0])
         if normalized is not None:
             new_header, reasons = normalized
-            repaired = f"---\n{new_header}\n---\n{text[header.end() :]}"
+            repaired = f"---\n{new_header}\n---\n{text[header[1] :]}"
             yield Finding(
                 "frontmatter",
                 where,

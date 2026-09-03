@@ -9,17 +9,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import CommandError, emit, signal, write_atomic
+from btm_corekit import CommandError, bracketed, emit, is_digits, signal, write_atomic
 from btm_lit_review.notebook import finding_view, live, load_notebook
 from btm_lit_review.paper import Paper
 from btm_lit_review.session import Session, load_papers, open_session
-
-MARKER = re.compile(r"\[(\d+)\]")
 
 
 def load_markers(session: Session) -> dict[str, int]:
@@ -69,7 +66,7 @@ def cite_check(
 ) -> dict[str, Any]:
     """Pure verdict over a draft; O(draft + markers + findings)."""
     by_number = {number: key for key, number in markers.items()}
-    used = {int(number) for number in MARKER.findall(text)}
+    used = {int(content) for content in bracketed(text) if is_digits(content)}
     problems = []
     for number in sorted(used):
         key = by_number.get(number)

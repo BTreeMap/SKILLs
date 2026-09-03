@@ -5,7 +5,7 @@ from __future__ import annotations
 from itertools import chain
 
 from btm_caveman.markdown import (
-    BULLET_REGEX,
+    count_bullets,
     extract_headings,
     extract_inline_codes,
     extract_paths,
@@ -66,8 +66,8 @@ def _check_paths(original: str, compressed: str) -> Verdict:
 
 
 def _check_bullets(original: str, compressed: str) -> Verdict:
-    orig = len(BULLET_REGEX.findall(original))
-    comp = len(BULLET_REGEX.findall(compressed))
+    orig = count_bullets(original)
+    comp = count_bullets(compressed)
     # Allow 15% bullet-count drift.
     if orig and abs(orig - comp) / orig > 0.15:  # noqa: PLR2004
         return Verdict(warnings=(f"Bullet count drifted: {orig} -> {comp}",))
