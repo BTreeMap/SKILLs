@@ -118,7 +118,14 @@ Two write paths:
   every problem in one verdict with an imperative fix and a hint (closest
   page and similarity, did-you-mean, the bank vocabulary); the ledger stays
   unchanged, so apply all fixes and resend once. Write batches to a file and
-  pass `--file`.
+  pass `--file`. Every JSON-carrying command reads the same three ways: an
+  inline argument where one is offered, `--file`, or stdin; giving both an
+  inline argument and `--file` is refused rather than silently resolved.
+
+`status` carries `next`, the cheapest legal action derived from live ledger
+state (ingest, claims, the banks still unwalked, then check and draft). It is
+advisory rather than a gate: revisiting a bank is normal, and the script only
+supplies arithmetic the agent would otherwise redo by hand.
 
 `check` derives from live state: each objection's standing (`grounded`,
 `unanchored` after a re-ingest, `undated` when its prior work fails the
@@ -151,6 +158,7 @@ $R note "$S" --file <round.json> && $R check "$S"
 $R link "$S" --corpus <lit-review session id or path>
 $R status "$S"
 $R jot "$S" '{"kind": "note", ...}' [--text]
+$R jot "$S" --file <entry.json>
 $R recall "$S" [--kind note] [--match <regex>] [--since j9] [--limit 20]
 $R cite-check "$S" --draft review.md
 $R clean ["$S" | --all]

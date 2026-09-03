@@ -8,7 +8,7 @@ from typing import Any
 
 from btm_corekit import EventLog, SessionStore
 from btm_ponder.ledger import replay
-from btm_ponder.state import Open
+from btm_ponder.state import Ledger, Open
 from btm_ponder.views import counts_of, yield_table
 
 STORE = SessionStore("ponder", marker="session.json", hint="run init first")
@@ -32,12 +32,31 @@ def write_meta(directory: Path, meta: dict[str, Any]) -> None:
     event_log(directory).touch()
 
 
+def next_step(ledger: Ledger, open_leaves: int) -> str:
+    """The cheapest legal next action, derived from live ledger state.
+
+    Advisory only: how many rounds a question deserves is judgment. What the
+    script owes is the arithmetic over leaves, sources, and the sweep."""
+    if not ledger.leaves:
+        return "register the frame leaves for this question"
+    if open_leaves:
+        return f"close {open_leaves} open leaves: add sources, then a close each"
+    if not ledger.swept:
+        return "run the rival sweep, then note it"
+    return "draft from check output"
+
+
 def orient(directory: Path) -> dict[str, Any]:
     """The status payload: everything a resumed agent needs first."""
     events = read_events(directory)
     ledger = replay(events)
     meta = read_meta(directory)
     attached = Counter(source.leaf for source in ledger.sources.values())
+    open_leaves = [
+        {"id": leaf_id, "q": leaf.question, "sources": attached[leaf_id]}
+        for leaf_id, leaf in ledger.leaves.items()
+        if isinstance(leaf.state, Open)
+    ]
     return {
         "session": directory.name,
         "question": meta.get("question"),
@@ -46,11 +65,7 @@ def orient(directory: Path) -> dict[str, Any]:
         "counts": counts_of(ledger),
         "sources": len(ledger.sources),
         "swept": ledger.swept,
-        "open": [
-            {"id": leaf_id, "q": leaf.question, "sources": attached[leaf_id]}
-            for leaf_id, leaf in ledger.leaves.items()
-            if isinstance(leaf.state, Open)
-        ],
+        "open": open_leaves,
         "last_checkpoint": next(
             (
                 event.get("label")
@@ -60,4 +75,5 @@ def orient(directory: Path) -> dict[str, Any]:
             None,
         ),
         "yield": yield_table(events),
+        "next": next_step(ledger, len(open_leaves)),
     }

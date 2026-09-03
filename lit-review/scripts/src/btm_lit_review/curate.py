@@ -12,8 +12,10 @@ from typing import Any
 from btm_corekit import (
     CommandError,
     Diagnostic,
+    Item,
     append_jsonl,
     compile_match,
+    digest,
     emit,
     now_iso,
     read_batch,
@@ -117,7 +119,7 @@ def validate_decision(
 
 def cmd_update(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    decisions = read_batch(None)
+    decisions = read_batch(args.file)
     if isinstance(decisions, Diagnostic):
         emit(rejection([decisions], "papers"))
         return 1
@@ -184,6 +186,43 @@ def cell(value: Any) -> str:
     return str(value).replace("\t", " ").replace("\n", " ")
 
 
+def cmd_digest(args: argparse.Namespace) -> int:
+    """The screening entry point: what kinds of candidate are in the corpus,
+    with the rule that selects each kind.
+
+    `show` costs the reader one row per candidate, which is the wrong price
+    for a judgment whose real arity is the number of kinds. This projects the
+    partition instead, so a few hundred candidates become a few dozen labels
+    and each verdict is one `screen --match` away."""
+    session = open_session(args.session)
+    papers = load_papers(session)
+    undecided = [paper for paper in papers.values() if paper.status == args.status]
+    result = digest(
+        [
+            Item(
+                key=paper.key,
+                text=paper_field(paper, args.on),
+                rank=float(paper.cited_by_count or 0),
+            )
+            for paper in undecided
+        ],
+        cap=args.clusters,
+    )
+    view = result.view()
+    view["status"] = args.status
+    view["next"] = (
+        "judge each label, then cut or keep a whole cluster with "
+        "screen --match '<rule>' --exclude --reason '...'"
+    )
+    if result.residue_total > len(result.residue):
+        signal(
+            f"{result.residue_total - len(result.residue)} more unclustered "
+            "candidates not shown; raise --clusters or screen the residue by hand"
+        )
+    emit(view)
+    return 0
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
@@ -221,6 +260,53 @@ def cmd_show(args: argparse.Namespace) -> int:
     return 0
 
 
+# The band each level's shortlist is meant to land in. Leaving it is a
+# judgment call, not an error, so the advisory names the band and the count
+# and stops there: the agent decides whether to tighten criteria or disclose.
+LEVEL_BANDS = {"lite": (5, 10), "full": (10, 25), "ultra": (10, 40)}
+
+
+def next_step(
+    criteria_ready: bool,
+    searches: int,
+    undecided: int,
+    included: int,
+    unextracted: list[str],
+) -> str:
+    """The cheapest legal next action, derived from live counts.
+
+    Advisory, never a gate: which step is actually worth taking is the
+    agent's call, and a session can legitimately revisit any phase. What the
+    script owes is the arithmetic the agent would otherwise redo by hand."""
+    if not criteria_ready:
+        return "fill criteria.include and criteria.exclude in protocol.json"
+    if not searches:
+        return "run the first search"
+    if undecided:
+        return f"screen {undecided} undecided: digest, then screen --match per cluster"
+    if not included:
+        return "nothing is included yet; widen the search or revisit exclusions"
+    if unextracted:
+        return f"extract {len(unextracted)} included papers, then jot one record each"
+    return "note findings and gaps, then brief"
+
+
+def band_advisory(level: str, included: int) -> str | None:
+    band = LEVEL_BANDS.get(level or "")
+    if band is None or not included:
+        return None
+    low, high = band
+    span = f"the {level} band of {low} to {high}"
+    if included < low:
+        return f"{included} included is below {span}; search coverage may have failed"
+    if included > high:
+        return (
+            f"{included} included is above {span}; tighten criteria or disclose "
+            "the deviation in the report"
+        )
+    return None
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     protocol = load_protocol(session)
@@ -238,18 +324,26 @@ def cmd_status(args: argparse.Namespace) -> int:
             "protocol.json amendments"
         )
     criteria = protocol.get("criteria") or {}
+    ready = bool(criteria.get("include")) and bool(criteria.get("exclude"))
+    pending = unextracted(session.root, papers)
+    undecided = by_status.get("candidate", 0)
+    included = by_status.get("included", 0)
+    level = protocol.get("level") or ""
+    band = band_advisory(level, included)
+    if band:
+        signal(band)
     emit(
         {
             "question": protocol.get("question"),
-            "level": protocol.get("level"),
-            "criteria_ready": bool(criteria.get("include"))
-            and bool(criteria.get("exclude")),
+            "level": level,
+            "criteria_ready": ready,
             "criteria_hash": current_hash,
             "searches": len(log),
             "papers": dict(by_status),
             "included_read_levels": dict(by_read),
-            "undecided": by_status.get("candidate", 0),
-            "unextracted": unextracted(session.root, papers),
+            "undecided": undecided,
+            "unextracted": pending,
+            "next": next_step(ready, len(log), undecided, included, pending),
         }
     )
     return 0

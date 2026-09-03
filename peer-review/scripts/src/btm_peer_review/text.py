@@ -16,7 +16,12 @@ from pathlib import Path
 
 from rapidfuzz import fuzz
 
-from btm_corekit import CommandError, collapse_whitespace, heading_words
+from btm_corekit import (
+    CommandError,
+    collapse_whitespace,
+    heading_words,
+    is_digits,
+)
 from btm_peer_review.constants import (
     ANCHOR_CHARS_MIN,
     ANCHOR_HINT_FLOOR,
@@ -51,9 +56,13 @@ def normalize(text: str) -> str:
 
 
 def page_marker(line: str) -> int | None:
-    """The page number of a `## PDF page N` line, else None."""
+    """The page number of a `## PDF page N` line, else None.
+
+    `is_digits` rather than `str.isdigit`: the latter admits superscripts and
+    other non-decimal digits that `int` then refuses, so a page marker carrying
+    one would raise out of an otherwise total parse."""
     rest = line.removeprefix(PAGE_MARKER).strip()
-    return int(rest) if line.startswith(PAGE_MARKER) and rest.isdigit() else None
+    return int(rest) if line.startswith(PAGE_MARKER) and is_digits(rest) else None
 
 
 def parse_pages(raw: str) -> list[tuple[int, str]]:

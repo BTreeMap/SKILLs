@@ -5,16 +5,14 @@ from __future__ import annotations
 from functools import partial
 from itertools import chain
 
-
-def _digits(text: str) -> bool:
-    return bool(text) and text.isascii() and text.isdigit()
+from btm_corekit import is_digits
 
 
 def parse_page_token(page_count: int, token: str) -> range:
     """Parse one validated page token into its selected one-based range:
     `N`, `N-M`, or `N-` (through the last page)."""
     head, dash, tail = token.partition("-")
-    if not _digits(head) or (dash and tail and not _digits(tail)):
+    if not is_digits(head) or (dash and tail and not is_digits(tail)):
         raise ValueError(
             "Invalid page selection. Use one-based page numbers and ranges, "
             "for example: 1-3,5,8-."

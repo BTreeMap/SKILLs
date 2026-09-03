@@ -8,13 +8,21 @@ from collections.abc import Sequence
 
 import btm_lit_review
 from btm_corekit import run_cli, wire_clean, wire_pad
+from btm_corekit.digest import CLUSTER_CAP
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
     SOURCES,
     STATUSES,
 )
-from btm_lit_review.curate import SORTS, cmd_screen, cmd_show, cmd_status, cmd_update
+from btm_lit_review.curate import (
+    SORTS,
+    cmd_digest,
+    cmd_screen,
+    cmd_show,
+    cmd_status,
+    cmd_update,
+)
 from btm_lit_review.draft import cmd_cite_check
 from btm_lit_review.gather import cmd_init, cmd_search, cmd_snowball
 from btm_lit_review.notebook import cmd_note
@@ -76,6 +84,18 @@ def wire_curate(commands: argparse._SubParsersAction) -> None:
     screen.add_argument("--reason", required=True)
     screen.set_defaults(func=cmd_screen)
 
+    digester = commands.add_parser(
+        "digest",
+        help="what kinds of candidate are undecided, and the rule selecting each",
+    )
+    add_common(digester)
+    digester.add_argument("--status", choices=STATUSES, default="candidate")
+    digester.add_argument("--on", choices=MATCH_FIELDS, default="title")
+    digester.add_argument(
+        "--clusters", type=int, default=CLUSTER_CAP, help="how many kinds to return"
+    )
+    digester.set_defaults(func=cmd_digest)
+
     show = commands.add_parser("show", help="project the corpus for screening")
     add_common(show)
     show.add_argument("--status", choices=STATUSES, default="candidate")
@@ -90,10 +110,15 @@ def wire_curate(commands: argparse._SubParsersAction) -> None:
 
     update = commands.add_parser(
         "update",
-        help='apply screening decisions; stdin JSON: {"<key>": {"status": ...,'
-        ' "reason": ..., "read_level": ...}}',
+        help='apply screening decisions; JSON on stdin or --file: {"<key>": '
+        '{"status": ..., "reason": ..., "read_level": ...}}',
     )
     add_common(update)
+    update.add_argument(
+        "--file",
+        default=None,
+        help="read the decisions from this file; retries cost one edit",
+    )
     update.set_defaults(func=cmd_update)
 
 

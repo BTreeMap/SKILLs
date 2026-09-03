@@ -6,7 +6,12 @@ If the criteria feel wrong while screening, record an amendment (owned by
 
 ## Pass 1: title and abstract
 
-Work from `show --status candidate`, most-cited first; `--match` with
+Start from `digest`, which returns the kinds of candidate in the corpus
+rather than the rows: one label, one count, one selecting rule, and two
+exemplars each. Judge the labels, cut or keep whole kinds with the rule the
+digest hands you, then re-run `digest` on what remains, since the labels are
+relative to the undecided set. Drop to `show --status candidate` for the
+residue and for records you need in full; most-cited first; `--match` with
 `--on title|abstract` narrows by vocabulary, and `--fields` with
 `--format tsv` keeps long listings cheap. For each paper decide include,
 exclude, or unsure from title, venue, year, and abstract alone.

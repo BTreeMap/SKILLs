@@ -57,8 +57,9 @@ WATCH_MAX = 200  # a watch is a few words; brief scans it per paper
 
 
 def watch_terms(watch: str) -> list[str]:
-    """The literal terms of a watch: `|`-separated, trimmed, non-empty."""
-    return [term.strip() for term in watch.split("|") if term.strip()]
+    """The literal terms of a watch: `|`-separated, trimmed, non-empty, and
+    casefolded here so `watch_hits` can never be handed unfolded terms."""
+    return [folded for term in watch.split("|") if (folded := term.strip().casefold())]
 
 
 def watch_hits(terms: Sequence[str], folded: str) -> bool:
@@ -135,7 +136,7 @@ def gap_view(
     """A gap is challenged by papers that arrived after it and match its watch."""
     hits = []
     if record.get("watch"):
-        terms = [term.casefold() for term in watch_terms(record["watch"])]
+        terms = watch_terms(record["watch"])
         hits = [
             key
             for key, (arrived, folded) in arrivals.items()

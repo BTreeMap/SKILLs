@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from btm_corekit import strip_tags
+from btm_corekit import is_digits, strip_tags
 from btm_lit_review.constants import ARXIV_NS, ATOM
 from btm_lit_review.paper import (
     Paper,
@@ -69,7 +69,7 @@ def paper_from_arxiv(entry: ET.Element) -> Paper:
     published = text("published") or ""
     return candidate(
         title=text("title") or "(untitled)",
-        year=int(published[:4]) if published[:4].isdigit() else None,
+        year=int(published[:4]) if is_digits(published[:4]) else None,
         authors=tuple(
             clean_text(node.text) or ""
             for node in entry.findall(f"{ATOM}author/{ATOM}name")

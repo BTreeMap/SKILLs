@@ -8,6 +8,7 @@ from btm_corekit import (
     ascii_words,
     bracketed,
     collapse_whitespace,
+    digit_run,
     heading_words,
     is_digits,
     keep_table,
@@ -66,3 +67,28 @@ def test_heading_words_drops_a_section_number():
     ]
     assert heading_words("  3.2 Results") == ["results"]
     assert heading_words("42") == [] and heading_words("") == []
+
+
+def test_heading_words_keeps_equality_against_short_vocabularies():
+    """A line longer than the cap comes back longer than the cap, so it can
+    never equal a vocabulary tuple that the truncation would have created."""
+    vocabulary = {("limitations", "and", "future", "work")}
+    assert tuple(heading_words("Limitations and Future Work")) in vocabulary
+    longer = tuple(heading_words("Limitations and Future Work Sections"))
+    assert longer not in vocabulary
+    long_line = "the " * 400 + "end"
+    assert len(heading_words(long_line)) > 4
+
+
+def test_heading_words_ignores_non_decimal_digits():
+    """`str.isdigit` admits a superscript; the section-number test must not."""
+    assert heading_words("\u00b2 Results") == ["\u00b2", "results"]
+
+
+def test_digit_run_counts_leading_ascii_digits_up_to_the_cap():
+    assert digit_run("12) rest", 9) == 2
+    assert digit_run("rest", 9) == 0
+    assert digit_run("\u00b2 rest", 9) == 0  # non-ASCII digits are not digits here
+    # A run longer than the cap reports cap + 1, never a true length, and the
+    # scan touches cap + 1 characters however long the run is.
+    assert digit_run("9" * 1_000_000, 9) == 10

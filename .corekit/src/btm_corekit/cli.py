@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 from collections.abc import Callable, Iterable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +19,8 @@ from btm_corekit.verdicts import Diagnostic
 
 REJECT_NEXT = "apply every fix above, then resend; --file makes the retry one edit"
 PAD_SCHEMA = (
-    "jot stores any JSON object unchecked; recall filters by "
+    "jot takes the entry inline, from --file, or on stdin, and stores any "
+    "JSON object unchecked; recall filters by "
     '--kind/--match/--since/--limit; suggested body: {"kind": "...", ...}'
 )
 REFS_SCHEMA = "a ref is the kw slug, a full id, or any unique keyword subset"
@@ -37,12 +39,78 @@ def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) 
         return 1
 
 
-def read_batch(file: str | None) -> dict[str, Any] | Diagnostic:
-    """One JSON object from --file or stdin; unparsable JSON is a located
-    rejection, so the caller emits it in the same envelope as any other."""
-    raw = Path(file).read_text(encoding="utf-8") if file else sys.stdin.read()
+@dataclass(frozen=True, slots=True)
+class Inline:
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class FromFile:
+    path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class FromStdin:
+    pass
+
+
+Source = Inline | FromFile | FromStdin
+
+
+def sole_source(inline: str | None, file: str | None) -> Source:
+    """Exactly one place a payload comes from, parsed out of the two optional
+    arguments argparse can hand over. The name is the law: supplying both an
+    inline argument and `--file` is a rejection, where the earlier
+    two-nullable shape resolved it silently and dropped the file."""
+    match (inline, file):
+        case (None, None):
+            return FromStdin()
+        case (None, path):
+            return FromFile(Path(path))
+        case (text, None):
+            return Inline(text)
+        case _:
+            raise CommandError(
+                "the payload came from an inline argument and --file; give one"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class Payload:
+    """What one subcommand calls its JSON and which spellings it accepts.
+    Declared beside the parser that wires them rather than derived from
+    whichever source happened to be used, so an empty-payload rejection can
+    never advertise a spelling the subcommand does not have."""
+
+    what: str
+    spellings: str
+
+
+BATCH = Payload("the batch", "stdin or --file")
+ENTRY = Payload("the entry", "an inline argument, --file, or stdin")
+
+
+def read_payload(source: Source, kind: Payload) -> str:
+    """Total over the three variants; empty from the chosen source rejects."""
+    match source:
+        case Inline(text):
+            raw = text
+        case FromFile(path):
+            raw = path.read_text(encoding="utf-8")
+        case FromStdin():
+            raw = sys.stdin.read()
     if not raw.strip():
-        raise CommandError("the batch is read from stdin or --file; both are empty")
+        raise CommandError(f"{kind.what} is read from {kind.spellings}; all are empty")
+    return raw
+
+
+def read_batch(
+    file: str | None, inline: str | None = None
+) -> dict[str, Any] | Diagnostic:
+    """One JSON object from the batch's sole source; unparsable JSON is a
+    located rejection, so the caller emits it in the same envelope as any
+    other."""
+    raw = read_payload(sole_source(inline, file), BATCH)
     try:
         batch = json.loads(raw)
     except json.JSONDecodeError as err:
@@ -82,7 +150,9 @@ def wire_pad(
 
     def cmd_jot(args: argparse.Namespace) -> int:
         directory = directory_of(args)
-        body, advisory = pad_body(args.entry, args.text)
+        body, advisory = pad_body(
+            read_payload(sole_source(args.entry, args.file), ENTRY), args.text
+        )
         if advisory:
             signal(advisory)
         if on_jot is not None:
@@ -105,7 +175,15 @@ def wire_pad(
     jotter = commands.add_parser("jot", help="free note on the session pad")
     jotter.set_defaults(func=cmd_jot)
     jotter.add_argument("session", help="session identifier or directory")
-    jotter.add_argument("entry", help="a JSON object, or prose with --text")
+    jotter.add_argument(
+        "entry",
+        nargs="?",
+        default=None,
+        help="a JSON object, or prose with --text; omit to read --file or stdin",
+    )
+    jotter.add_argument(
+        "--file", default=None, help="read the entry from this file instead"
+    )
     jotter.add_argument("--text", action="store_true", help="store the entry as prose")
     recaller = commands.add_parser("recall", help="filtered slice of the pad")
     recaller.set_defaults(func=cmd_recall)

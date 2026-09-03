@@ -108,6 +108,7 @@ $R schema
 $R note "$S" --file <round.json> && $R check "$S"
 $R status "$S"
 $R jot "$S" '{"kind": "quote", ...}' [--text]
+$R jot "$S" --file <entry.json>
 $R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
 $R clean ["$S" | --all]
 </script_commands>
@@ -115,7 +116,9 @@ $R clean ["$S" | --all]
 Bind `R` and `S` per shell; chain a round's calls with `&&` so a rejected
 note stops the chain. Write each round's batch to a file and pass `--file`:
 a rejection then costs one edit. `schema` prints the batch shape whenever a
-field name is in doubt; `status` is the cheap mid-session view. A rejected
+field name is in doubt; `status` is the cheap mid-session view and carries
+`next`, the cheapest legal action derived from live state, advisory rather
+than a gate. A rejected
 `note` returns every problem in one verdict, each an imperative fix with its
 location and a hint (did-you-mean, valid vocabulary, or the schema
 fragment); the ledger stays unchanged, so apply all fixes and resend once.

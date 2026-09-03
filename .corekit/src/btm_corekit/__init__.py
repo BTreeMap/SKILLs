@@ -22,6 +22,7 @@ from btm_corekit.cli import (
     wire_pad,
 )
 from btm_corekit.clock import now_iso
+from btm_corekit.digest import Cluster, Digest, Item, digest
 from btm_corekit.errors import CommandError, UpstreamError
 from btm_corekit.eventlog import MAX_EVENTS, EventLog
 from btm_corekit.fsio import (
@@ -62,6 +63,7 @@ from btm_corekit.text import (
     ascii_words,
     bracketed,
     collapse_whitespace,
+    digit_run,
     heading_words,
     is_digits,
     keep_table,
@@ -78,13 +80,16 @@ __all__ = [
     "REFS_SCHEMA",
     "Admission",
     "Ambiguous",
+    "Cluster",
     "CommandError",
     "Contact",
     "Created",
     "CustomAgent",
     "Diagnostic",
+    "Digest",
     "EventLog",
     "Exact",
+    "Item",
     "NoMatch",
     "Pool",
     "Recovered",
@@ -99,6 +104,8 @@ __all__ = [
     "bracketed",
     "collapse_whitespace",
     "compile_match",
+    "digest",
+    "digit_run",
     "eliminate",
     "emit",
     "field_text",

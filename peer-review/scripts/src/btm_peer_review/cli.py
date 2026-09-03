@@ -24,9 +24,9 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, expand_batch
-from btm_peer_review.constants import BANKS, Level, Severity, Standing
+from btm_peer_review.constants import BANKS, LEVEL_BANKS, Level, Severity, Standing
 from btm_peer_review.ledger import replay
-from btm_peer_review.state import require
+from btm_peer_review.state import Ledger, require
 from btm_peer_review.store import (
     LIT_STORE,
     STORE,
@@ -205,6 +205,24 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def next_step(meta: Meta, ledger: Ledger) -> str:
+    """The cheapest legal next action, derived from live ledger state.
+
+    Advisory only: a review can legitimately revisit any bank, and whether a
+    walk is done is judgment. What the script owes is the arithmetic over
+    banks, claims, and standings that the agent would otherwise redo."""
+    if not meta.pages:
+        return "ingest the paper text"
+    if not ledger.claim_order:
+        return "note the contribution claims verbatim"
+    unwalked = sorted(set(LEVEL_BANKS[meta.level]) - set(ledger.walks))
+    if unwalked:
+        return f"walk the remaining banks: {' '.join(unwalked)}"
+    if not ledger.objections:
+        return "no objection stands; check, then draft the recommendation"
+    return "check, then draft from the scaffold and cite-check it"
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
     ledger = replay(event_log(directory).read())
@@ -219,6 +237,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             "objections": Counter(o.severity for o in ledger.objections.values()),
             "withdrawn": len(ledger.withdrawn),
             "walked": sorted(ledger.walks),
+            "next": next_step(meta, ledger),
         }
     )
     return 0

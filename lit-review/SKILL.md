@@ -119,7 +119,23 @@ Two write paths carry different contracts:
   batch returns every problem in one verdict, each an imperative fix with a
   hint, and a DOI or arXiv id resolves as a key; the file stays unchanged,
   so apply all fixes and resend once. Write batches to a file and pass `--file`: a
-  retry then costs one edit.
+  retry then costs one edit. Every JSON-carrying command reads the same
+  three ways: an inline argument where one is offered, `--file`, or stdin.
+  Passing both an inline argument and `--file` is refused rather than
+  silently resolved.
+
+`digest` is the screening entry point, and the cheapest one. It partitions
+the undecided candidates by their most distinguishing shared term and returns
+one label, one count, one selecting rule, and two exemplars per kind, so a few
+hundred candidates become a few dozen judgments. Accepting or rejecting a kind
+is then one `screen --match "<rule>"`. Re-run `digest` after each cut: the
+labels are relative to what is still undecided, so new kinds surface as the
+big ones leave. `show` remains for reading specific records by key.
+
+Every command's envelope carries `next`, the cheapest legal action derived
+from live counts. It is advisory, never a gate: revisiting an earlier phase is
+normal, and the script only supplies arithmetic the agent would otherwise redo.
+`status` also signals when the included count leaves the level's band.
 
 `brief` is the resume view and the belief check: findings and gaps come
 back with verdicts derived from the live corpus (a finding whose support
@@ -152,12 +168,12 @@ S="<the session identifier the init output echoed>"
 $R schema
 $R search "$S" --source openalex --query "..." --limit 25 --from-year 2020
 $R snowball "$S" --seed <key> --direction backward
+$R digest "$S" [--status candidate] [--on title] [--clusters 20]
 $R screen "$S" --on title --match "<regex>" --exclude --reason "..."
 $R show "$S" [--status candidate | --keys k1,k2] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv]
-$R update "$S" <<'EOF'
-{"<key>": {"status": "included", "reason": "...", "read_level": "abstract"}}
-EOF
+$R update "$S" --file <decisions.json>
 $R jot "$S" '{"kind": "extraction", "key": "<key>", ...}' [--text] [--lore]
+$R jot "$S" --file <record.json>
 $R recall "$S" [--kind extraction] [--match <regex>] [--since j9] [--limit 20] [--lore]
 $R note "$S" --file <round.json>
 $R brief "$S"

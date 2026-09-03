@@ -98,10 +98,31 @@ def strip_tags(text: str, fill: str = "") -> str:
     return fill.join(pieces)
 
 
-def heading_words(line: str) -> list[str]:
+ASCII_DIGITS = "0123456789"
+HEADING_WORDS = 4  # the longest heading any caller's closed vocabulary holds
+
+
+def digit_run(text: str, limit: int) -> int:
+    """Length of the leading ASCII digit run, counted no further than
+    `limit + 1`. The cap is what keeps the scan proportional to what a caller
+    can accept rather than to the line: an ordered-list marker admits nine
+    digits, so a line of a million digits is rejected after ten comparisons.
+    A return of `limit + 1` means "longer than the limit", never a true length.
+    `str.lstrip` runs the scan in C and leaves non-ASCII digits alone."""
+    head = text[: limit + 1]
+    return len(head) - len(head.lstrip(ASCII_DIGITS))
+
+
+def heading_words(line: str, limit: int = HEADING_WORDS) -> list[str]:
     """Words of a heading line after an optional `1.2.` section number,
-    lowercased; empty when the line is blank or a bare number."""
-    parts = line.split()
-    if parts and parts[0].rstrip(".").replace(".", "").isdigit():
+    lowercased; empty when the line is blank or a bare number.
+
+    The law that makes the cap safe: the list is longer than `limit` exactly
+    when the line holds more than `limit` words, because the final element
+    carries the rest of the line unsplit. Tuple equality against any closed
+    vocabulary of at most `limit` words is therefore unchanged, while the work
+    stays proportional to `limit` rather than to the words on the line."""
+    parts = line.split(maxsplit=limit + 1)
+    if parts and is_digits(parts[0].replace(".", "")):
         parts = parts[1:]
     return [part.lower() for part in parts]

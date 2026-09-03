@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from btm_caveman.model import Assessment, FileKind
-from btm_corekit import keep_table, runs
+from btm_corekit import digit_run, keep_table, runs
 
 COMPRESSIBLE_EXTENSIONS = frozenset(
     {".md", ".txt", ".markdown", ".rst", ".typ", ".typst", ".tex"}
@@ -223,7 +223,7 @@ def prose_marker_length(line: str) -> int:
     elif rest[:1] in "-*+>":
         marker = 1
     else:
-        digits = _digit_run(rest)
+        digits = digit_run(rest, MAX_ORDERED_DIGITS)
         ordered = (
             1 <= digits <= MAX_ORDERED_DIGITS and rest[digits : digits + 1] in ".)"
         )
@@ -234,13 +234,6 @@ def prose_marker_length(line: str) -> int:
     while blank < len(rest) and rest[blank] in " \t":
         blank += 1
     return indent + blank
-
-
-def _digit_run(text: str) -> int:
-    end = 0
-    while end < len(text) and text[end].isascii() and text[end].isdigit():
-        end += 1
-    return end
 
 
 def _has_code_chars(text: str) -> bool:

@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Iterator
 from functools import lru_cache
 
-from btm_corekit import keep_table, runs
+from btm_corekit import digit_run, keep_table, runs
 
 FENCE_CHARS = frozenset("`~")
 BULLET_CHARS = frozenset("-*+")
@@ -73,9 +73,7 @@ def is_list_item(line: str) -> bool:
         return False
     if rest[:1] in BULLET_CHARS:
         return rest[1:2] in (" ", "\t")
-    digits = 0
-    while digits < len(rest) and rest[digits].isascii() and rest[digits].isdigit():
-        digits += 1
+    digits = digit_run(rest, MAX_ORDERED_DIGITS)
     return (
         1 <= digits <= MAX_ORDERED_DIGITS
         and rest[digits : digits + 1] in (".", ")")

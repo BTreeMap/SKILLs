@@ -18,6 +18,15 @@ from btm_corekit import (
     wire_clean,
     wire_pad,
 )
+from btm_corekit.cli import (
+    BATCH,
+    ENTRY,
+    FromFile,
+    FromStdin,
+    Inline,
+    read_payload,
+    sole_source,
+)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -83,3 +92,35 @@ class TestBatchAndWiring:
         assert json.loads(capsys.readouterr().out)["shown"] == 1
         assert run_cli(parser, ["clean", made.name]) == 0
         assert json.loads(capsys.readouterr().out)["bytes_freed"] > 0
+
+
+class TestPayloadSource:
+    """One decoder, three spellings, and the ambiguous case is a rejection
+    rather than a silently dropped file."""
+
+    def test_stdin_is_the_default_source(self):
+        assert sole_source(None, None) == FromStdin()
+
+    def test_a_file_argument_names_a_path(self, tmp_path):
+        assert sole_source(None, str(tmp_path / "x.json")) == FromFile(
+            tmp_path / "x.json"
+        )
+
+    def test_an_inline_argument_carries_its_text(self):
+        assert sole_source('{"a": 1}', None) == Inline('{"a": 1}')
+
+    def test_both_spellings_at_once_is_refused(self):
+        with pytest.raises(CommandError, match="give one"):
+            sole_source('{"a": 1}', "some.json")
+
+    def test_reading_is_total_over_the_three_variants(self, tmp_path):
+        path = tmp_path / "b.json"
+        path.write_text('{"b": 2}')
+        assert read_payload(Inline("x"), BATCH) == "x"
+        assert read_payload(FromFile(path), BATCH) == '{"b": 2}'
+
+    def test_an_empty_payload_names_only_the_offered_spellings(self):
+        with pytest.raises(CommandError, match="stdin or --file"):
+            read_payload(Inline("   "), BATCH)
+        with pytest.raises(CommandError, match="an inline argument"):
+            read_payload(Inline("   "), ENTRY)

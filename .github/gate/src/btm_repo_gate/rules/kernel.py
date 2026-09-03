@@ -41,6 +41,8 @@ KERNEL_FUNCTIONS = frozenset(
         "field_text",
         "suggest",
         "read_batch",
+        "read_payload",
+        "sole_source",
         "rejection",
         "advise",
         "wire_pad",
@@ -49,6 +51,8 @@ KERNEL_FUNCTIONS = frozenset(
         "ascii_words",
         "bracketed",
         "collapse_whitespace",
+        "digest",
+        "digit_run",
         "heading_words",
         "is_digits",
         "prefixed_number",
@@ -73,6 +77,13 @@ KERNEL_CLASSES = frozenset(
         "Pool",
         "EventLog",
         "Created",
+        "Cluster",
+        "Digest",
+        "Item",
+        "Inline",
+        "FromFile",
+        "FromStdin",
+        "Payload",
     }
 )
 WORD_CHARS = frozenset(
