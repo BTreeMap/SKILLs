@@ -186,17 +186,15 @@ Before ingest, determine from available tools:
 
 ## Gotchas
 
-- An anchor resolves as a verbatim substring of the normalized page text,
-  or as the best-matching span at 0.85 similarity or better. A quote that
-  fails usually crosses a page break, a hyphenated line end, or a figure
-  caption; the hint names the closest page and the similarity it reached.
-  Quotes run from 12 to 1000 characters: below that a short string resembles
-  any paper, and above it the quote is a section, not an anchor.
+- An anchor resolves as a verbatim substring of the normalized page text, or
+  as the best-matching span at 0.85 similarity or better. A failed quote
+  usually crosses a page break, a hyphenated line end, or a figure caption;
+  the hint names the closest page and the similarity it reached. Quotes run 12
+  to 1000 characters: shorter resembles any paper, longer is a section.
 - An objection with `missing` needs a `where` (the table or section that
   should hold the absent item), or the report cannot place it.
-- The Limitations heading detection is a regex over headings; when `ingest`
-  signals no heading, the echo ratio stays unavailable and the floor in
-  invariant 4 is judged by hand.
+- Limitations detection matches a closed heading list; when `ingest` signals
+  none, the echo ratio is unavailable and invariant 4's floor is judged by hand.
 - Re-ingesting a revised version keeps the ledger and re-derives every
   standing; expect `unanchored` objections and withdraw or re-anchor them.
 - A prior key sharing the paper's year passes with an advisory; confirm the

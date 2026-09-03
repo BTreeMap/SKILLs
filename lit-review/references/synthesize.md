@@ -35,8 +35,8 @@ bibliography.
 Promote each theme conclusion into the notebook with `note`: a finding
 carries its claim, supporting keys, and the read level each citation
 needs; a gap carries the absence claimed, the null-search log ids proving
-it, and a watch: the words a challenger would use in its title or
-abstract, separated by `|` and matched literally. `brief` re-derives their
+it, and a watch: `|`-separated words a challenger would use in a title or
+abstract, matched literally. `brief` re-derives their
 verdicts against the live corpus: an excluded or under-read support flags
 the finding at-risk, and a later paper matching a gap's watch flags the
 gap challenged, which is exactly when a claim written earlier needs

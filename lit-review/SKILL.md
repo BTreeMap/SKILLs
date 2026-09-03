@@ -115,10 +115,10 @@ Two write paths carry different contracts:
 - The gate is what the script later judges. `update` and `screen` move
   paper statuses; `note` admits findings (claim plus supporting keys plus
   the read level each citation needs) and gaps (the absence claimed, the
-  null-search log ids proving it, a watch of words). A rejected batch returns
-  every problem in one verdict, each an imperative fix with a hint, and a
-  DOI or arXiv id resolves as a key; the file stays unchanged, so apply
-  all fixes and resend once. Write batches to a file and pass `--file`: a
+  null-search log ids proving it, a watch of literal words). A rejected
+  batch returns every problem in one verdict, each an imperative fix with a
+  hint, and a DOI or arXiv id resolves as a key; the file stays unchanged,
+  so apply all fixes and resend once. Write batches to a file and pass `--file`: a
   retry then costs one edit.
 
 `brief` is the resume view and the belief check: findings and gaps come
