@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
+
 OPENALEX_WORKS = "https://api.openalex.org/works"
 ARXIV_QUERY = "https://export.arxiv.org/api/query"
 CROSSREF_WORKS = "https://api.crossref.org/works"
@@ -25,8 +27,30 @@ ATOM = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 OPENSEARCH = "{http://a9.com/-/spec/opensearch/1.1/}"
 
-STATUSES = ("candidate", "included", "excluded")
-READ_LEVELS = ("none", "abstract", "full-text")
+
+class Status(StrEnum):
+    """Where a paper stands in screening. `EXCLUDED` implies a reason; the
+    Paper decoder is the one place that holds the implication."""
+
+    CANDIDATE = "candidate"
+    INCLUDED = "included"
+    EXCLUDED = "excluded"
+
+
+class ReadLevel(StrEnum):
+    """How deeply a paper was read. Ordered by `READ_RANK`, which is the
+    order itself rather than an IntEnum, so the value on disk stays a name."""
+
+    NONE = "none"
+    ABSTRACT = "abstract"
+    FULL_TEXT = "full-text"
+
+
+READ_RANK = {level: rank for rank, level in enumerate(ReadLevel)}
+# The argparse and validation surfaces read the vocabulary off the type, so a
+# variant can never be added in one place and forgotten in the other.
+STATUSES = tuple(Status)
+READ_LEVELS = tuple(ReadLevel)
 SOURCES = ("openalex", "arxiv", "crossref")
 DIRECTIONS = ("backward", "forward")
 DECISION_FIELDS = frozenset({"status", "reason", "read_level"})

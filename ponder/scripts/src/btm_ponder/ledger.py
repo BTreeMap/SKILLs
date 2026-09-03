@@ -4,23 +4,38 @@ from __future__ import annotations
 
 from typing import Any
 
-from btm_corekit import MAX_EVENTS, CommandError, require
+from btm_corekit import MAX_EVENTS, CommandError, parse_enum, require
 from btm_ponder.state import (
     CLOSE_STATES,
-    ORIGINS,
-    SOURCE_CLASSES,
     UNRESOLVED_REASONS,
     Folded,
     Leaf,
     LeafState,
     Ledger,
     Open,
+    Origin,
     Refuted,
     Retired,
     Retrieved,
     Source,
+    SourceClass,
+    Sweep,
     Unresolved,
 )
+
+
+def _sweep(raw: dict[str, Any]) -> Sweep:
+    """Parse a sweep payload into the record the draft cites, rather than
+    validating it and keeping one bit."""
+    checked = str(raw.get("checked") or "").strip()
+    require(bool(checked), "sweep requires what was checked")
+    candidates = tuple(raw.get("candidates") or ())
+    survivors = tuple(raw.get("survivors") or ())
+    require(
+        set(survivors) <= set(candidates),
+        "sweep survivors must be a subset of candidates",
+    )
+    return Sweep(checked, candidates, survivors)
 
 
 def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
@@ -56,7 +71,7 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
         reason = raw.get("reason")
         require(
             reason in UNRESOLVED_REASONS,
-            f"unresolved reason must be one of {UNRESOLVED_REASONS}",
+            f"unresolved reason must be one of {tuple(UNRESOLVED_REASONS)}",
         )
         require(bool(detail), "unresolved requires detail")
         return Unresolved(reason, detail)
@@ -96,7 +111,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             question = str(raw.get("q") or "").strip()
             require(bool(question), "add_leaf requires a question")
             origin = raw.get("origin", "frame")
-            require(origin in ORIGINS, f"origin must be one of {ORIGINS}")
+            origin = parse_enum(Origin, origin, "leaf origin")
             ledger.leaves[leaf_id] = Leaf(question, origin, Open())
         case "add_source":
             source_id = str(raw.get("id") or "").strip()
@@ -107,7 +122,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             leaf_id = raw.get("leaf")
             require(leaf_id in ledger.leaves, f"unknown leaf id: {leaf_id}")
             cls = raw.get("cls")
-            require(cls in SOURCE_CLASSES, f"cls must be one of {SOURCE_CLASSES}")
+            cls = parse_enum(SourceClass, cls, "source cls")
             title = str(raw.get("title") or "").strip()
             require(bool(title), "add_source requires a title")
             ledger.sources[source_id] = Source(
@@ -117,15 +132,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
         case "close":
             _apply_close(ledger, raw)
         case "sweep":
-            checked = str(raw.get("checked") or "").strip()
-            require(bool(checked), "sweep requires what was checked")
-            candidates = list(raw.get("candidates") or [])
-            survivors = list(raw.get("survivors") or [])
-            require(
-                set(survivors) <= set(candidates),
-                "sweep survivors must be a subset of candidates",
-            )
-            ledger.swept = True
+            ledger.sweeps.append(_sweep(raw))
         case "checkpoint":
             searches = raw.get("searches")
             require(

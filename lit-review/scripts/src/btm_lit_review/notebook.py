@@ -30,7 +30,7 @@ from btm_corekit import (
     rejection,
     suggest,
 )
-from btm_lit_review.constants import READ_LEVELS
+from btm_lit_review.constants import READ_RANK
 from btm_lit_review.paper import (
     Paper,
     normalize_arxiv_id,
@@ -52,7 +52,6 @@ SCHEMA: dict[str, str] = {
 FINDING_FIELDS = frozenset({"claim", "support", "from", "supersedes"})
 GAP_FIELDS = frozenset({"statement", "probes", "watch", "from", "supersedes"})
 ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r"}
-LEVEL_RANK = {level: rank for rank, level in enumerate(READ_LEVELS)}
 WATCH_MAX = 200  # a watch is a few words; brief scans it per paper
 
 
@@ -117,7 +116,7 @@ def finding_view(record: Mapping[str, Any], papers: Mapping[str, Paper]) -> dict
             issues.append(f"{support['key']} left the corpus")
         elif paper.status != "included":
             issues.append(f"{support['key']} is {paper.status}")
-        elif LEVEL_RANK[paper.read_level] < LEVEL_RANK[support["needs"]]:
+        elif READ_RANK[paper.read_level] < READ_RANK[support["needs"]]:
             issues.append(
                 f"{support['key']} read at {paper.read_level}, needs {support['needs']}"
             )

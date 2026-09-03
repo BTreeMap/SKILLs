@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from btm_corekit import CommandError, bracketed, emit, is_digits, signal, write_atomic
+from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.notebook import finding_view, live, load_notebook
 from btm_lit_review.paper import Paper
 from btm_lit_review.session import Session, load_papers, open_session
@@ -31,7 +32,7 @@ def assign_markers(
     assigned = dict(markers)
     taken = max(assigned.values(), default=0)
     for key, paper in papers.items():
-        if paper.status == "included" and key not in assigned:
+        if paper.status is Status.INCLUDED and key not in assigned:
             taken += 1
             assigned[key] = taken
     return assigned
@@ -73,15 +74,15 @@ def cite_check(
         paper = papers.get(key) if key else None
         if paper is None:
             problems.append(f"[{number}] was never assigned; cite an assigned marker")
-        elif paper.status != "included":
+        elif paper.status is not Status.INCLUDED:
             problems.append(f"[{number}] cites {key}, which is {paper.status}")
-        elif paper.read_level == "none":
+        elif paper.read_level is ReadLevel.NONE:
             problems.append(f"[{number}] cites {key}, which is unread")
     unused = sorted(
         number
         for key, number in markers.items()
         if (paper := papers.get(key))
-        and paper.status == "included"
+        and paper.status is Status.INCLUDED
         and number not in used
     )
     at_risk = [view for view in findings if view["state"] == "at-risk"]

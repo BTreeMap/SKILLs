@@ -6,6 +6,7 @@ from typing import Any
 
 from btm_ponder.state import (
     CHAIN_MIN_LINKS,
+    SETTLING,
     Folded,
     LeafState,
     Ledger,
@@ -13,16 +14,21 @@ from btm_ponder.state import (
     Refuted,
     Retired,
     Retrieved,
+    SourceClass,
+    Sweep,
     Unresolved,
 )
 
+CORROBORATION = 2  # two measured sources carry a claim one cannot
 
-def stated(classes: list[str]) -> str:
-    """How the renderer may voice a claim: advisory, never a close gate."""
-    if any(cls in ("constitutive", "attested") for cls in classes):
+
+def stated(classes: list[SourceClass]) -> str:
+    """How the renderer may voice a claim: advisory, never a close gate.
+    A settling class speaks plainly alone; measured evidence needs a second."""
+    if any(cls in SETTLING for cls in classes):
         return "plain"
-    measured = sum(1 for cls in classes if cls == "measured")
-    return "plain" if measured >= 2 else "hedged"  # noqa: PLR2004
+    measured = sum(1 for cls in classes if cls is SourceClass.MEASURED)
+    return "plain" if measured >= CORROBORATION else "hedged"
 
 
 def sections(ledger: Ledger) -> list[str]:
@@ -125,6 +131,18 @@ def _prose(premise: str, detail: str) -> dict[str, str]:
     return fields
 
 
+def _sweep_row(sweep: Sweep) -> dict[str, Any]:
+    """What a sweep contributes to the Rival section: the survivors, and the
+    set difference the section reports as eliminated. Hashing the survivors
+    keeps it O(candidates) rather than a scan per candidate."""
+    survived = frozenset(sweep.survivors)
+    return {
+        "checked": sweep.checked,
+        "survivors": list(sweep.survivors),
+        "eliminated": [name for name in sweep.candidates if name not in survived],
+    }
+
+
 def scaffold(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, list[dict]]:
     """The stored close prose keyed by marker, grouped into the derived sections."""
     body: dict[str, list[dict]] = {"answer": [], "rival": [], "open": []}
@@ -162,6 +180,7 @@ def scaffold(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, list[dict]]
                 )
             case Open() | Retired() | Folded():
                 pass
+    body["sweeps"] = [_sweep_row(sweep) for sweep in ledger.sweeps]
     return {section: rows for section, rows in body.items() if rows}
 
 

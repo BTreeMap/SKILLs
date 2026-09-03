@@ -7,6 +7,7 @@ from dataclasses import asdict, replace
 import pytest
 
 from btm_corekit import CommandError
+from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.paper import (
     absorb,
     candidate,
@@ -94,7 +95,9 @@ class TestMerge:
 
     def test_a_decision_already_taken_never_moves(self):
         existing = paper(doi="10.1/a")
-        decided = replace(existing, status="included", read_level="full-text")
+        decided = replace(
+            existing, status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT
+        )
         merged = merge_papers(decided, paper(doi="10.1/a", venue="J"))
         assert merged.status == "included"
         assert merged.read_level == "full-text"
@@ -137,13 +140,33 @@ class TestParseBoundary:
             paper_from_json(row)
 
     def test_a_status_outside_the_vocabulary_is_refused(self):
+        """The rejection names the field, the key, and the offending value."""
         row = self.valid_row()
         row["status"] = "maybe"
-        with pytest.raises(CommandError, match="corrupt paper record"):
+        with pytest.raises(CommandError, match=r"status of .* not a valid Status"):
             paper_from_json(row)
 
     def test_a_read_level_outside_the_vocabulary_is_refused(self):
         row = self.valid_row()
         row["read_level"] = "skimmed"
-        with pytest.raises(CommandError, match="corrupt paper record"):
+        with pytest.raises(
+            CommandError, match=r"read_level of .* not a valid ReadLevel"
+        ):
             paper_from_json(row)
+
+    def test_an_exclusion_without_a_reason_is_refused(self):
+        """The write paths already hold this; so must the read path, or a
+        hand-edited corpus breaks the report's flow counts in silence."""
+        row = self.valid_row()
+        row["status"] = "excluded"
+        row["decision_reason"] = None
+        with pytest.raises(CommandError, match="excluded with no reason"):
+            paper_from_json(row)
+
+    def test_a_reasoned_exclusion_parses_into_the_closed_vocabulary(self):
+        row = self.valid_row()
+        row["status"] = "excluded"
+        row["decision_reason"] = "off topic"
+        paper = paper_from_json(row)
+        assert paper.status is Status.EXCLUDED
+        assert paper.read_level is ReadLevel.NONE

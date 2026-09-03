@@ -6,11 +6,12 @@ from dataclasses import replace
 
 import pytest
 
+from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.draft import assign_markers, cite_check, marker_table
 from btm_lit_review.paper import candidate
 
 
-def paper(title, doi, status="included", read_level="abstract"):
+def paper(title, doi, status=Status.INCLUDED, read_level=ReadLevel.ABSTRACT):
     built = candidate(
         title=title,
         year=2024,
@@ -31,7 +32,7 @@ def paper(title, doi, status="included", read_level="abstract"):
 def papers():
     one = paper("First", "10.1/a")
     two = paper("Second", "10.1/b")
-    out = paper("Cut", "10.1/c", status="excluded")
+    out = paper("Cut", "10.1/c", status=Status.EXCLUDED)
     return {p.key: p for p in (one, two, out)}
 
 
@@ -45,7 +46,7 @@ class TestAssignMarkers:
 
     def test_a_late_inclusion_extends_the_map(self, papers):
         first = assign_markers({}, papers)
-        papers["doi:10.1/c"] = replace(papers["doi:10.1/c"], status="included")
+        papers["doi:10.1/c"] = replace(papers["doi:10.1/c"], status=Status.INCLUDED)
         assert assign_markers(first, papers)["doi:10.1/c"] == 3
 
 
@@ -57,7 +58,7 @@ class TestCiteCheck:
         assert report["unused_included"] == []
 
     def test_every_problem_class_is_named(self, papers):
-        papers["doi:10.1/b"] = replace(papers["doi:10.1/b"], read_level="none")
+        papers["doi:10.1/b"] = replace(papers["doi:10.1/b"], read_level=ReadLevel.NONE)
         markers = assign_markers({}, papers) | {"doi:10.1/c": 3}
         report = cite_check("[1] [2] [3] [9]", markers, papers, [])
         assert any("unread" in p for p in report["problems"])

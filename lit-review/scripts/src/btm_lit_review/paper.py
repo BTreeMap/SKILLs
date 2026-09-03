@@ -6,8 +6,15 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, fields, replace
 from typing import Any
 
-from btm_corekit import CommandError, ascii_words, collapse_whitespace, is_digits
-from btm_lit_review.constants import READ_LEVELS, STATUSES
+from btm_corekit import (
+    CommandError,
+    ascii_words,
+    collapse_whitespace,
+    is_digits,
+    parse_enum,
+    require,
+)
+from btm_lit_review.constants import ReadLevel, Status
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,9 +34,9 @@ class Paper:
     pdf_url: str | None
     landing_url: str | None
     found_by: tuple[str, ...]
-    status: str
+    status: Status
     decision_reason: str | None
-    read_level: str
+    read_level: ReadLevel
 
 
 def clean_text(raw: object) -> str | None:
@@ -96,28 +103,20 @@ def candidate(**bibliographic: Any) -> Paper:
     return Paper(
         key=paper_key(doi, arxiv_id, title),
         found_by=(),
-        status="candidate",
+        status=Status.CANDIDATE,
         decision_reason=None,
-        read_level="none",
+        read_level=ReadLevel.NONE,
         **bibliographic,
     )
 
 
 def merge_papers(existing: Paper, incoming: Paper) -> Paper:
     """Bibliographic fields fill gaps; agent-owned decisions never move."""
-    updates: dict[str, Any] = {}
-    for name in (
-        "year",
-        "venue",
-        "doi",
-        "arxiv_id",
-        "openalex_id",
-        "abstract",
-        "pdf_url",
-        "landing_url",
-    ):
-        if getattr(existing, name) is None:
-            updates[name] = getattr(incoming, name)
+    updates: dict[str, Any] = {
+        name: getattr(incoming, name)
+        for name in GAP_FILLABLE
+        if getattr(existing, name) is None
+    }
     counts = (existing.cited_by_count, incoming.cited_by_count)
     known_counts = [count for count in counts if count is not None]
     updates["cited_by_count"] = max(known_counts) if known_counts else None
@@ -149,6 +148,15 @@ def absorb(
 
 
 PAPER_FIELDS = frozenset(f.name for f in fields(Paper))
+IDENTITY_FIELDS = frozenset({"key", "title"})
+DECISION_FIELDS = frozenset({"status", "decision_reason", "read_level"})
+COUNTED_FIELDS = frozenset({"cited_by_count", "found_by", "authors"})
+# Derived rather than listed, so a field added to Paper cannot be silently
+# left out of a merge: everything that is not identity, an agent decision, or
+# separately folded is a bibliographic gap an incoming record may fill.
+GAP_FILLABLE = tuple(
+    sorted(PAPER_FIELDS - IDENTITY_FIELDS - DECISION_FIELDS - COUNTED_FIELDS)
+)
 PAPER_DEFAULTS: dict[str, Any] = {
     "year": None,
     "authors": (),
@@ -161,9 +169,9 @@ PAPER_DEFAULTS: dict[str, Any] = {
     "pdf_url": None,
     "landing_url": None,
     "found_by": (),
-    "status": "candidate",
+    "status": Status.CANDIDATE,
     "decision_reason": None,
-    "read_level": "none",
+    "read_level": ReadLevel.NONE,
 }
 
 
@@ -177,8 +185,18 @@ def paper_from_json(row: Mapping[str, Any]) -> Paper:
             f"corrupt paper record for key {row.get('key')!r}: "
             f"unknown fields {unknown}, missing fields {missing}"
         )
-    if data["status"] not in STATUSES or data["read_level"] not in READ_LEVELS:
-        raise CommandError(f"corrupt paper record for key {row.get('key')!r}")
+    key = row.get("key")
+    data["status"] = parse_enum(Status, data["status"], f"status of {key!r}")
+    data["read_level"] = parse_enum(
+        ReadLevel, data["read_level"], f"read_level of {key!r}"
+    )
+    # The one implication the vocabularies cannot carry: an exclusion without
+    # a reason breaks the flow counts, and the write paths already refuse it,
+    # so the read path must too or a hand-edited corpus degrades in silence.
+    require(
+        data["status"] is not Status.EXCLUDED or bool(data["decision_reason"]),
+        f"paper {key!r} is excluded with no reason; every exclusion carries one",
+    )
     data["authors"] = tuple(data.get("authors") or ())
     data["found_by"] = tuple(data.get("found_by") or ())
     return Paper(**data)

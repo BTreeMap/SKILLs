@@ -13,6 +13,7 @@ from btm_ponder.state import (
     Open,
     Refuted,
     Retrieved,
+    Sweep,
     Unresolved,
 )
 
@@ -98,7 +99,7 @@ class TestAddSource:
             )
 
     def test_class_outside_the_set_is_refused(self):
-        with pytest.raises(CommandError, match="cls must be one of"):
+        with pytest.raises(CommandError, match="not a valid SourceClass"):
             apply(
                 seeded(),
                 {
@@ -315,7 +316,7 @@ class TestTransitionLegality:
 
 
 class TestSweepAndCheckpoint:
-    def test_sweep_sets_the_swept_flag(self):
+    def test_a_sweep_is_kept_with_its_candidates_and_survivors(self):
         ledger = Ledger()
         apply(
             ledger,
@@ -370,3 +371,36 @@ class TestReplay:
         ledger.events = MAX_EVENTS
         with pytest.raises(CommandError, match="event cap reached"):
             apply(ledger, {"e": "add_leaf", "id": "a", "q": "q"})
+
+
+class TestSweepRecord:
+    """A sweep is kept, not reduced to a bit: the Rival section is written
+    from its survivors, so the ledger has to still hold them."""
+
+    def test_a_sweep_keeps_what_it_checked_and_what_survived(self):
+        ledger = Ledger()
+        apply(
+            ledger,
+            {
+                "e": "sweep",
+                "checked": "rival accounts",
+                "candidates": ["alt one", "alt two"],
+                "survivors": ["alt two"],
+            },
+        )
+        [sweep] = ledger.sweeps
+        assert sweep.checked == "rival accounts"
+        assert sweep.survivors == ("alt two",)
+        assert sweep.candidates == ("alt one", "alt two")
+
+    def test_swept_is_derived_from_the_records_it_holds(self):
+        ledger = Ledger()
+        assert ledger.swept is False
+        ledger.sweeps.append(Sweep("x", ("a",), ()))
+        assert ledger.swept is True
+
+    def test_an_empty_sweep_is_still_a_sweep(self):
+        """Finding no rival is a valid result the draft may cite."""
+        ledger = Ledger()
+        apply(ledger, {"e": "sweep", "checked": "x", "candidates": [], "survivors": []})
+        assert ledger.swept is True

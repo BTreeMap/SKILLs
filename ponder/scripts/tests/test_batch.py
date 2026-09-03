@@ -187,7 +187,9 @@ class TestTotalRejection:
         batch = {"leaves": [{"kw": ["a", "b"], "q": "x", "origin": "invented"}]}
         result = expand_batch(Ledger(), batch, fixed_mint)
         [problem] = result.problems
-        assert "origin must be one of" in problem.fix
+        # parse_enum supplies the kernel-wide phrasing; the hint keeps the
+        # schema fragment, which is where the vocabulary is spelled out.
+        assert "not a valid Origin" in problem.fix
         assert "frame|spawned" in problem.hint
 
     def test_empty_batch_is_a_problem_not_a_crash(self):

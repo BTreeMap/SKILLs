@@ -18,6 +18,7 @@ from btm_corekit import (
     digest,
     emit,
     now_iso,
+    parse_enum,
     read_batch,
     read_jsonl,
     rejection,
@@ -27,8 +28,8 @@ from btm_lit_review.constants import (
     ABSTRACT_SHOW_LIMIT,
     AUTHOR_SHOW_LIMIT,
     DECISION_FIELDS,
-    READ_LEVELS,
-    STATUSES,
+    ReadLevel,
+    Status,
 )
 from btm_lit_review.notebook import load_notebook, next_id
 from btm_lit_review.paper import PAPER_FIELDS, Paper, clean_text
@@ -60,7 +61,8 @@ def cmd_screen(args: argparse.Namespace) -> int:
     matched = [
         key
         for key, paper in papers.items()
-        if paper.status == "candidate" and pattern.search(paper_field(paper, args.on))
+        if paper.status is Status.CANDIDATE
+        and pattern.search(paper_field(paper, args.on))
     ]
     rule_id = next_id(load_notebook(session), "rule")
     # The rule lands first: a failure between the writes leaves an inert
@@ -92,29 +94,41 @@ def cmd_screen(args: argparse.Namespace) -> int:
             "matched": len(matched),
             "sample": matched[:5],
             "candidates_left": sum(
-                paper.status == "candidate" for paper in papers.values()
+                paper.status is Status.CANDIDATE for paper in papers.values()
             ),
         }
     )
     return 0
 
 
-def validate_decision(
+def parse_decision(
     key: str, decision: Mapping[str, Any], papers: Mapping[str, Paper]
-) -> None:
+) -> dict[str, Any]:
+    """One screening decision becomes the field updates `replace` applies.
+
+    Parsing rather than validating: the vocabularies and the
+    exclusion-needs-a-reason implication are settled once, here, and what
+    comes back is already inside the Paper domain. Only the keys the caller
+    sent appear, so omitting a field keeps it and sending it null clears it."""
     if key not in papers:
         raise CommandError(f"decision names unknown paper key {key!r}")
     unknown = set(decision) - DECISION_FIELDS
     if unknown:
         raise CommandError(f"decision for {key} has unknown fields {sorted(unknown)}")
-    status = decision.get("status")
-    if status is not None and status not in STATUSES:
-        raise CommandError(f"decision for {key} has invalid status {status!r}")
-    if status == "excluded" and not clean_text(decision.get("reason")):
+    updates: dict[str, Any] = {}
+    if "status" in decision:
+        updates["status"] = parse_enum(
+            Status, decision["status"], f"status of decision for {key}"
+        )
+    if "reason" in decision:
+        updates["decision_reason"] = clean_text(decision["reason"])
+    if "read_level" in decision:
+        updates["read_level"] = parse_enum(
+            ReadLevel, decision["read_level"], f"read_level of decision for {key}"
+        )
+    if updates.get("status") is Status.EXCLUDED and not updates.get("decision_reason"):
         raise CommandError(f"exclusion of {key} needs a non-empty reason")
-    read_level = decision.get("read_level")
-    if read_level is not None and read_level not in READ_LEVELS:
-        raise CommandError(f"decision for {key} has invalid read_level {read_level!r}")
+    return updates
 
 
 def cmd_update(args: argparse.Namespace) -> int:
@@ -124,19 +138,18 @@ def cmd_update(args: argparse.Namespace) -> int:
         emit(rejection([decisions], "papers"))
         return 1
     papers = load_papers(session)
-    for key, decision in decisions.items():
-        validate_decision(key, decision, papers)
+    # Parse every decision before applying any, so a rejected batch leaves the
+    # corpus exactly as it was rather than half updated.
+    parsed = {
+        key: parse_decision(key, decision, papers)
+        for key, decision in decisions.items()
+    }
     changed = Counter()
-    for key, decision in decisions.items():
-        updates: dict[str, Any] = {}
-        if "status" in decision:
-            updates["status"] = decision["status"]
-            changed[decision["status"]] += 1
-        if "reason" in decision:
-            updates["decision_reason"] = clean_text(decision["reason"])
-        if "read_level" in decision:
-            updates["read_level"] = decision["read_level"]
-            changed[f"read:{decision['read_level']}"] += 1
+    for key, updates in parsed.items():
+        if (status := updates.get("status")) is not None:
+            changed[status] += 1
+        if (level := updates.get("read_level")) is not None:
+            changed[f"read:{level}"] += 1
         papers[key] = replace(papers[key], **updates)
     save_papers(session, papers)
     emit({"applied": len(decisions), "changes": dict(changed)})

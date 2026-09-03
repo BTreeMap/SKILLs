@@ -6,6 +6,7 @@ from dataclasses import replace
 
 import pytest
 
+from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.notebook import (
     WATCH_MAX,
     arrivals_of,
@@ -49,9 +50,11 @@ def papers():
         landing_url=None,
     )
     bandit = replace(
-        bandit, status="included", read_level="full-text", found_by=("s1",)
+        bandit, status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT, found_by=("s1",)
     )
-    flow = replace(flow, status="included", read_level="abstract", found_by=("s3",))
+    flow = replace(
+        flow, status=Status.INCLUDED, read_level=ReadLevel.ABSTRACT, found_by=("s3",)
+    )
     return {bandit.key: bandit, flow.key: flow}
 
 
@@ -159,7 +162,7 @@ class TestDerivedVerdicts:
     def test_at_risk_when_support_is_excluded(self, papers):
         papers = dict(papers)
         papers["doi:10.1/bandit"] = replace(
-            papers["doi:10.1/bandit"], status="excluded"
+            papers["doi:10.1/bandit"], status=Status.EXCLUDED
         )
         view = finding_view(self.finding(), papers)
         assert view["state"] == "at-risk"
@@ -168,7 +171,7 @@ class TestDerivedVerdicts:
     def test_at_risk_when_read_below_the_floor(self, papers):
         papers = dict(papers)
         papers["doi:10.1/bandit"] = replace(
-            papers["doi:10.1/bandit"], read_level="abstract"
+            papers["doi:10.1/bandit"], read_level=ReadLevel.ABSTRACT
         )
         view = finding_view(self.finding(), papers)
         assert "needs full-text" in view["issues"][0]

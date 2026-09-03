@@ -8,6 +8,7 @@ from dataclasses import replace
 import pytest
 
 from btm_lit_review.cli import main
+from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.paper import candidate
 from btm_lit_review.session import Session, load_papers, save_papers
 
@@ -62,8 +63,8 @@ def session(tmp_path, capsys):
             "GFlowNet sampler",
             "10.1/b",
             abstract="sampler",
-            status="included",
-            read_level="full-text",
+            status=Status.INCLUDED,
+            read_level=ReadLevel.FULL_TEXT,
             found_by=("s2",),
         ),
         paper("Cooking blog", "10.1/c"),

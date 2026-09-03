@@ -13,6 +13,8 @@ from btm_ponder.state import (
     Retired,
     Retrieved,
     Source,
+    SourceClass,
+    Sweep,
     Unresolved,
 )
 from btm_ponder.views import (
@@ -25,9 +27,11 @@ from btm_ponder.views import (
     yield_table,
 )
 
+A_SWEEP = Sweep("rival accounts", ("a", "b"), ("a",))
+
 
 def ledger_with(*leaves: tuple[str, Leaf], swept: bool = False, **sources) -> Ledger:
-    built = Ledger(leaves=dict(leaves), swept=swept)
+    built = Ledger(leaves=dict(leaves), sweeps=[A_SWEEP] if swept else [])
     for sid, cls in sources.items():
         built.sources[sid] = Source("leaf", cls, "title", "")
         built.source_order.append(sid)
@@ -40,13 +44,13 @@ class TestStated:
         assert stated([cls]) == "plain"
 
     def test_one_measured_source_stays_hedged(self):
-        assert stated(["measured"]) == "hedged"
+        assert stated([SourceClass.MEASURED]) == "hedged"
 
     def test_two_measured_sources_corroborate(self):
-        assert stated(["measured", "measured"]) == "plain"
+        assert stated([SourceClass.MEASURED, SourceClass.MEASURED]) == "plain"
 
     def test_reported_alone_stays_hedged(self):
-        assert stated(["reported"]) == "hedged"
+        assert stated([SourceClass.REPORTED]) == "hedged"
 
     def test_no_sources_stay_hedged(self):
         assert stated([]) == "hedged"
@@ -57,7 +61,7 @@ class TestSections:
         assert sections(Ledger()) == ["answer", "sources"]
 
     def test_a_sweep_alone_earns_a_rival_section(self):
-        assert "rival" in sections(Ledger(swept=True))
+        assert "rival" in sections(Ledger(sweeps=[A_SWEEP]))
 
     def test_a_refuted_leaf_earns_a_rival_section(self):
         built = ledger_with(("a", Leaf("q", "frame", Refuted(("s",), "p"))))
