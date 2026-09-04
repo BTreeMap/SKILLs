@@ -18,16 +18,13 @@ from typing import Any
 from btm_corekit import (
     Admission,
     Diagnostic,
-    advise,
     append_jsonl,
-    emit,
+    gated,
     keywords_of,
     now_iso,
     pad_ids,
     prefixed_number,
-    read_batch,
     read_jsonl,
-    rejection,
     suggest,
 )
 from btm_lit_review.constants import READ_RANK
@@ -366,25 +363,20 @@ def expand_notes(
 
 def cmd_note(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    batch = read_batch(args.file)
-    if isinstance(batch, Diagnostic):
-        emit(rejection([batch], "notebook"))
-        return 1
     papers = load_papers(session)
     log_count = len(read_jsonl(session.log_path))
     records = load_notebook(session)
-    result = expand_notes(batch, papers, log_count, pad_ids(session.root), records)
-    advise(result.advisories)
-    if result.problems:
-        emit(rejection(result.problems, "notebook"))
-        return 1
-    append_jsonl(session.notebook_path, result.records)
-    everything = records + result.records
-    emit(
-        {
+
+    def expand(batch: dict[str, Any]) -> NoteResult:
+        return expand_notes(batch, papers, log_count, pad_ids(session.root), records)
+
+    def commit(result: NoteResult) -> dict[str, Any]:
+        append_jsonl(session.notebook_path, result.records)
+        everything = records + result.records
+        return {
             "admitted": result.admitted,
             "findings": len(live(everything, "finding")),
             "gaps": len(live(everything, "gap")),
         }
-    )
-    return 0
+
+    return gated(args.file, "notebook", expand, commit)

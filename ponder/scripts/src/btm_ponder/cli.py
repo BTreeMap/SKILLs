@@ -10,20 +10,17 @@ import btm_ponder
 from btm_corekit import (
     PAD_SCHEMA,
     REFS_SCHEMA,
-    Diagnostic,
-    advise,
     emit,
+    gated,
     mint,
     now_iso,
     pad_ids,
-    read_batch,
-    rejection,
     run_cli,
     signal,
     wire_clean,
     wire_pad,
 )
-from btm_ponder.batch import BATCH_KEYS, SCHEMA, expand_batch
+from btm_ponder.batch import BATCH_KEYS, SCHEMA, NoteResult, expand_batch
 from btm_ponder.ledger import replay
 from btm_ponder.state import MODES, Open
 from btm_ponder.store import (
@@ -61,39 +58,36 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_note(args: argparse.Namespace) -> int:
     directory = STORE.directory(args.session)
-    batch = read_batch(args.file)
-    if isinstance(batch, Diagnostic):
-        emit(rejection([batch], "ledger"))
-        return 1
     events = read_events(directory)
     ledger = replay(events)
-    result = expand_batch(ledger, batch, mint, pad_ids(directory))
-    advise(result.advisories)
-    if result.problems:
-        emit(rejection(result.problems, "ledger"))
-        return 1
-    event_log(directory).append(result.events, held=len(events))
-    document: dict[str, Any] = {
-        "session": directory.name,
-        "admitted": dict(Counter(event["e"] for event in result.events)),
-        "minted": result.minted,
-        "counts": counts_of(ledger),
-        "open": [
-            leaf_id
-            for leaf_id, leaf in ledger.leaves.items()
-            if isinstance(leaf.state, Open)
-        ],
-        "yield": yield_table(events + result.events),
-    }
-    if result.merged:
-        document["merged"] = result.merged
-    if args.full:
-        document["leaves"] = {
-            leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
-            for leaf_id, leaf in ledger.leaves.items()
+
+    def expand(batch: dict[str, Any]) -> NoteResult:
+        return expand_batch(ledger, batch, mint, pad_ids(directory))
+
+    def commit(result: NoteResult) -> dict[str, Any]:
+        event_log(directory).append(result.events, held=len(events))
+        document: dict[str, Any] = {
+            "session": directory.name,
+            "admitted": dict(Counter(event["e"] for event in result.events)),
+            "minted": result.minted,
+            "counts": counts_of(ledger),
+            "open": [
+                leaf_id
+                for leaf_id, leaf in ledger.leaves.items()
+                if isinstance(leaf.state, Open)
+            ],
+            "yield": yield_table(events + result.events),
         }
-    emit(document)
-    return 0
+        if result.merged:
+            document["merged"] = result.merged
+        if args.full:
+            document["leaves"] = {
+                leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
+                for leaf_id, leaf in ledger.leaves.items()
+            }
+        return document
+
+    return gated(args.file, "ledger", expand, commit)
 
 
 def cmd_check(args: argparse.Namespace) -> int:

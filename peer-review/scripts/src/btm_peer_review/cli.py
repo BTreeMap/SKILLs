@@ -11,13 +11,10 @@ import btm_peer_review
 from btm_corekit import (
     PAD_SCHEMA,
     REFS_SCHEMA,
-    Diagnostic,
-    advise,
     emit,
+    gated,
     mint,
     pad_ids,
-    read_batch,
-    rejection,
     require,
     run_cli,
     signal,
@@ -25,7 +22,7 @@ from btm_corekit import (
     wire_pad,
     write_atomic,
 )
-from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, expand_batch
+from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, NoteResult, expand_batch
 from btm_peer_review.constants import BANKS, LEVEL_BANKS, Level, Severity, Standing
 from btm_peer_review.ledger import replay
 from btm_peer_review.state import Ledger
@@ -137,21 +134,16 @@ def cmd_link(args: argparse.Namespace) -> int:
 
 def cmd_note(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    batch = read_batch(args.file)
-    if isinstance(batch, Diagnostic):
-        emit(rejection([batch], "ledger"))
-        return 1
     events = event_log(directory).read()
     ledger = replay(events)
     context = Context(_paper(directory), corpus_of(meta), meta.year)
-    result = expand_batch(ledger, batch, context, mint, pad_ids(directory))
-    advise(result.advisories)
-    if result.problems:
-        emit(rejection(result.problems, "ledger"))
-        return 1
-    event_log(directory).append(result.events, held=len(events))
-    emit(
-        {
+
+    def expand(batch: dict[str, Any]) -> NoteResult:
+        return expand_batch(ledger, batch, context, mint, pad_ids(directory))
+
+    def commit(result: NoteResult) -> dict[str, Any]:
+        event_log(directory).append(result.events, held=len(events))
+        return {
             "session": directory.name,
             "admitted": dict(Counter(event["e"] for event in result.events)),
             "minted": result.minted,
@@ -159,8 +151,8 @@ def cmd_note(args: argparse.Namespace) -> int:
             "objections": len(ledger.objection_order),
             "walked": sorted(ledger.walks),
         }
-    )
-    return 0
+
+    return gated(args.file, "ledger", expand, commit)
 
 
 def _derive(directory: Path, meta: Meta) -> dict[str, Any]:

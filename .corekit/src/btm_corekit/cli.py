@@ -9,7 +9,7 @@ import sys
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, Protocol, TypeAlias
 
 from btm_corekit.channels import emit, signal
 from btm_corekit.errors import CommandError, UpstreamError
@@ -119,6 +119,39 @@ def read_batch(
     if not isinstance(batch, dict):
         raise CommandError("the batch is one JSON object")
     return batch
+
+
+class Outcome(Protocol):
+    """What any batch expansion returns. Structural, so a member's own result
+    record satisfies it without inheriting anything."""
+
+    advisories: list[str]
+    problems: list[Diagnostic]
+
+
+def gated(
+    file: str | None,
+    store: str,
+    expand: Callable[[dict[str, Any]], Outcome],
+    commit: Callable[[Any], dict[str, Any]],
+) -> int:
+    """The gate protocol, defined once.
+
+    Parse the batch, run the member's expansion, surface advisories, refuse
+    with every problem in one verdict, and commit only when none remain. Each
+    member had its own copy; a copy that drifts makes the contract differ
+    between skills, which is the one thing an agent cannot discover."""
+    batch = read_batch(file)
+    if isinstance(batch, Diagnostic):
+        emit(rejection([batch], store))
+        return 1
+    result = expand(batch)
+    advise(result.advisories)
+    if result.problems:
+        emit(rejection(result.problems, store))
+        return 1
+    emit(commit(result))
+    return 0
 
 
 def rejection(problems: Iterable[Diagnostic], store: str) -> dict[str, Any]:
