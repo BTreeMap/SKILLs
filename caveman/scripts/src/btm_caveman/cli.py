@@ -50,7 +50,6 @@ def cmd_check(path: Path) -> int:
             print_signals(plan)
             print_format_warning(plan.path)
             return 0
-    raise AssertionError("unreachable: Admission is a closed union")
 
 
 def cmd_prepare(path: Path) -> int:
@@ -92,7 +91,6 @@ def cmd_prepare(path: Path) -> int:
                 "apply <file> <compressed-body>"
             )
             return 0
-    raise AssertionError("unreachable: Admission is a closed union")
 
 
 def cmd_apply(path: Path, compressed_body_path: Path) -> int:  # noqa: PLR0911

@@ -68,7 +68,7 @@ class Reviewed(Model):
 
 def cmd_init(args: argparse.Namespace) -> int:
     paper = content(Reviewed, args.file, "the paper")
-    meta = new_meta(paper.title, args.date, Level(args.level))
+    meta = new_meta(paper.title, args.date, args.level)
     made = STORE.create(args.ref)
     write_meta(made.directory, meta)
     emit(
@@ -316,7 +316,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument(
         "--date", required=True, help="YYYY[-MM[-DD]] of the version reviewed"
     )
-    init.add_argument("--level", choices=list(Level), default=Level.FULL)
+    init.add_argument("--level", type=Level, choices=list(Level), default=Level.FULL)
     ingest = commands.add_parser("ingest", help="store the paper's extracted text")
     ingest.set_defaults(func=cmd_ingest)
     ingest.add_argument("session")

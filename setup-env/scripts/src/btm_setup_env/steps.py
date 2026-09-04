@@ -12,9 +12,17 @@ this module stays pure data.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 
 from .model import CondaPlatform
+
+
+class ArchiveKind(StrEnum):
+    """How a fetched artifact is materialized."""
+
+    ZIP = "zip"
+    TAR = "tar"
+    BIN = "bin"
 
 
 class Stage(IntEnum):
@@ -48,14 +56,14 @@ class UvVenv:
 
 @dataclass(frozen=True, slots=True)
 class Fetch:
-    """Download-and-materialize from a publisher. kind decides handling:
-    'zip' and 'tar' extract into dest (strip leading path components),
-    'bin' installs the file itself, executable."""
+    """Download-and-materialize from a publisher. An archive extracts into
+    dest with `strip` leading components dropped; a binary installs itself,
+    executable."""
 
     name: str
     url: str
     sha256: str | None  # None means no stable publisher digest
-    kind: str  # zip, tar, or bin
+    kind: ArchiveKind
     dest_rel: str
     strip: int = 0
 

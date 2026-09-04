@@ -24,11 +24,10 @@ import subprocess
 import sys
 import tarfile
 import zipfile
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, assert_never
 
 import certifi
 import httpx
@@ -51,11 +50,13 @@ from .render import realize, render_ps1, render_sh
 from .steps import (
     Aapt2Shim,
     AndroidSdk,
+    ArchiveKind,
     BindGradleProject,
     CompilerShims,
     CondaEnv,
     Fetch,
     GhcupToolchain,
+    Step,
     UvShim,
     UvVenv,
 )
@@ -351,9 +352,10 @@ def do_uv_venv(ctx: Ctx, step: UvVenv) -> None:
 
 def do_fetch(ctx: Ctx, step: Fetch) -> None:
     dest = ctx.layout.root / step.dest_rel
-    if step.kind == "bin" and dest.exists():
+    if step.kind is ArchiveKind.BIN and dest.exists():
         return
-    if step.kind in ("zip", "tar") and dest.is_dir() and any(dest.iterdir()):
+    archives = (ArchiveKind.ZIP, ArchiveKind.TAR)
+    if step.kind in archives and dest.is_dir() and any(dest.iterdir()):
         return
     archive = ctx.layout.downloads / PurePosixPath(step.url).name
     log(f"fetching {step.name}")
@@ -367,7 +369,7 @@ def do_fetch(ctx: Ctx, step: Fetch) -> None:
             f"{step.name}: fetched WITHOUT digest verification"
             " (no pinned publisher digest for this version)"
         )
-    if step.kind == "bin":
+    if step.kind is ArchiveKind.BIN:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(archive, dest)
         dest.chmod(0o755)
@@ -376,7 +378,8 @@ def do_fetch(ctx: Ctx, step: Fetch) -> None:
     if partial.exists():
         shutil.rmtree(partial)
     partial.mkdir(parents=True)
-    (_extract_zip if step.kind == "zip" else _extract_tar)(archive, partial, step.strip)
+    extract = _extract_zip if step.kind is ArchiveKind.ZIP else _extract_tar
+    extract(archive, partial, step.strip)
     if dest.exists():
         shutil.rmtree(dest)
     os.replace(partial, dest)
@@ -680,17 +683,30 @@ def do_bind_gradle(ctx: Ctx, step: BindGradleProject) -> None:
 # --- Orchestration ---
 
 
-_EXECUTORS: dict[type, Callable[[Ctx, Any], None]] = {
-    CondaEnv: conda_create,
-    UvVenv: do_uv_venv,
-    Fetch: do_fetch,
-    GhcupToolchain: do_ghcup,
-    AndroidSdk: do_android_sdk,
-    Aapt2Shim: do_aapt2_shim,
-    CompilerShims: do_compiler_shims,
-    UvShim: do_uv_shim,
-    BindGradleProject: do_bind_gradle,
-}
+def execute(ctx: Ctx, step: Step) -> None:
+    """Exhaustive over the closed sum, so a new variant is a type error here
+    rather than a KeyError partway through a provision."""
+    match step:
+        case CondaEnv():
+            conda_create(ctx, step)
+        case UvVenv():
+            do_uv_venv(ctx, step)
+        case Fetch():
+            do_fetch(ctx, step)
+        case GhcupToolchain():
+            do_ghcup(ctx, step)
+        case AndroidSdk():
+            do_android_sdk(ctx, step)
+        case Aapt2Shim():
+            do_aapt2_shim(ctx, step)
+        case CompilerShims():
+            do_compiler_shims(ctx, step)
+        case UvShim():
+            do_uv_shim(ctx, step)
+        case BindGradleProject():
+            do_bind_gradle(ctx, step)
+        case _:
+            assert_never(step)
 
 
 @dataclass(frozen=True, slots=True)
@@ -721,7 +737,7 @@ def provision(plan: Plan) -> list[ProbeResult]:
     ctx.manifest["spec"] = [str(t) for t in plan.spec.targets]
     ctx.manifest["host"] = str(plan.host)
     for step in plan.steps:
-        _EXECUTORS[type(step)](ctx, step)
+        execute(ctx, step)
     write_activation(plan)
     ctx.save_manifest()
     return verify(plan)

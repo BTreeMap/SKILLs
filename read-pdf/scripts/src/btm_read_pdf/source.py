@@ -72,7 +72,6 @@ def materialize(
             else:
                 _fetch(url, target, max_bytes, transport)
             return target, url
-    raise AssertionError("unreachable: Source is a closed union")
 
 
 def _status_failure(status: int, url: str) -> CommandError:

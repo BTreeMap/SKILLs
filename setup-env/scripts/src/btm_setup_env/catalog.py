@@ -41,6 +41,7 @@ from .model import (
 from .steps import (
     Aapt2Shim,
     AndroidSdk,
+    ArchiveKind,
     BindGradleProject,
     CompilerShims,
     CondaEnv,
@@ -88,10 +89,10 @@ GHCUP_SHA256 = {
 
 KOTLIN_NATIVE_VERSION = "2.2.20"
 KOTLIN_NATIVE_SLUG = {
-    CondaPlatform.LINUX_64: ("linux-x86_64", "tar"),
-    CondaPlatform.OSX_64: ("macos-x86_64", "tar"),
-    CondaPlatform.OSX_ARM64: ("macos-aarch64", "tar"),
-    CondaPlatform.WIN_64: ("windows-x86_64", "zip"),
+    CondaPlatform.LINUX_64: ("linux-x86_64", ArchiveKind.TAR),
+    CondaPlatform.OSX_64: ("macos-x86_64", ArchiveKind.TAR),
+    CondaPlatform.OSX_ARM64: ("macos-aarch64", ArchiveKind.TAR),
+    CondaPlatform.WIN_64: ("windows-x86_64", ArchiveKind.ZIP),
 }
 # Publisher digests for exactly KOTLIN_NATIVE_VERSION, from the GitHub
 # release's .sha256 assets. A user-pinned other version fetches unverified,
@@ -418,7 +419,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
                 "android-cmdline-tools",
                 url,
                 ANDROID_TOOLS_SHA256[host.os],
-                "zip",
+                ArchiveKind.ZIP,
                 "android-sdk/cmdline-tools/latest",
                 strip=1,
             ),
@@ -469,7 +470,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
             )
         name, kind = slug
         version = v or KOTLIN_NATIVE_VERSION
-        ext = "tar.gz" if kind == "tar" else "zip"
+        ext = "tar.gz" if kind is ArchiveKind.TAR else "zip"
         url = (
             "https://github.com/JetBrains/kotlin/releases/download/"
             f"v{version}/kotlin-native-prebuilt-{name}-{version}.{ext}"
@@ -546,7 +547,13 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         # Keep all dependencies inside the prefix.
         return (
             host_conda("curl", "gmp", "ncurses", "c-compiler", "make", "tar", "xz"),
-            Fetch("ghcup", url, GHCUP_SHA256[triple], "bin", "tools/haskell/bin/ghcup"),
+            Fetch(
+                "ghcup",
+                url,
+                GHCUP_SHA256[triple],
+                ArchiveKind.BIN,
+                "tools/haskell/bin/ghcup",
+            ),
             GhcupToolchain(ghc=v or "recommended"),
             CompilerShims(),
         )

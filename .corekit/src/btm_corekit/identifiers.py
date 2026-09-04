@@ -107,7 +107,6 @@ def eliminate(
         case NoMatch():
             tail = f"; {hint}" if hint else ""
             raise CommandError(f"no {kind} matches '{ref}'{tail}")
-    raise AssertionError("unreachable: Resolution is a closed union")
 
 
 def suffix() -> str:
