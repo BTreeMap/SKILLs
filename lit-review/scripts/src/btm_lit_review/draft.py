@@ -15,7 +15,12 @@ from typing import Any
 
 from btm_corekit import CommandError, bracketed, emit, is_digits, signal, write_atomic
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.notebook import finding_view, live, load_notebook
+from btm_lit_review.notebook import (
+    FindingRecord,
+    finding_view,
+    live,
+    load_notebook,
+)
 from btm_lit_review.paper import Paper
 from btm_lit_review.session import Session, load_papers, open_session
 
@@ -103,7 +108,7 @@ def cmd_cite_check(args: argparse.Namespace) -> int:
     markers = refresh_markers(session, papers)
     findings = [
         finding_view(record, papers)
-        for record in live(load_notebook(session), "finding").values()
+        for record in live(load_notebook(session), FindingRecord).values()
     ]
     report = cite_check(path.read_text(encoding="utf-8"), markers, papers, findings)
     report["markers"] = marker_table(markers, papers)

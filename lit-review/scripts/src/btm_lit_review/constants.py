@@ -30,6 +30,14 @@ ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 OPENSEARCH = "{http://a9.com/-/spec/opensearch/1.1/}"
 
 
+class Level(StrEnum):
+    """How much rigor the review runs at; the bands read off it."""
+
+    LITE = "lite"
+    FULL = "full"
+    ULTRA = "ultra"
+
+
 class Status(StrEnum):
     """Where a paper stands in screening. `EXCLUDED` implies a reason; the
     Paper decoder is the one place that holds the implication."""
@@ -51,6 +59,7 @@ class ReadLevel(StrEnum):
 READ_RANK = {level: rank for rank, level in enumerate(ReadLevel)}
 # The argparse and validation surfaces read the vocabulary off the type, so a
 # variant can never be added in one place and forgotten in the other.
+LEVELS = tuple(Level)
 STATUSES = tuple(Status)
 READ_LEVELS = tuple(ReadLevel)
 SOURCES = ("openalex", "arxiv", "crossref")

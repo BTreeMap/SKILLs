@@ -41,7 +41,8 @@ SCHEMA: dict[str, str] = {
     '"origin": "frame|spawned"}',
     "sources": '{"kw": ["two", "words"] or "ref": "explicit-name", "leaf": "<ref>", '
     '"cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}',
-    "closes": '{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired|folded", '
+    "closes": '{"leaf": "<ref>", '
+    '"state": "retrieved|refuted|unresolved|retired|folded", '
     '"sources": ["<ref>"], "premise": "the claim, one line", '
     '"detail": "supporting note; retired: why immaterial", '
     '"reason": "searched|not_pursued (unresolved only)", '

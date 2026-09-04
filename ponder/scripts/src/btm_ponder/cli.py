@@ -16,6 +16,7 @@ from btm_corekit import (
     Parser,
     View,
     content,
+    dump,
     emit,
     gated,
     mint,
@@ -29,9 +30,10 @@ from btm_corekit import (
 )
 from btm_ponder.batch import BATCH_KEYS, SCHEMA, NoteResult, expand_batch
 from btm_ponder.ledger import replay
-from btm_ponder.state import MODES, Open
+from btm_ponder.state import MODES, Mode, Open
 from btm_ponder.store import (
     STORE,
+    SessionMeta,
     event_log,
     orient,
     read_events,
@@ -62,14 +64,14 @@ class Framing(Model):
 def cmd_init(args: argparse.Namespace) -> int:
     framing = content(Framing, args.file, "the framing")  # before the mkdir:
     made = STORE.create(args.ref)  # a refused framing leaves no empty session
-    meta = {
-        "question": framing.question,
-        "focus": framing.focus,
-        "mode": args.mode,
-        "created": now_iso(),
-    }
+    meta = SessionMeta(
+        question=framing.question,
+        focus=framing.focus,
+        mode=args.mode,
+        created=now_iso(),
+    )
     write_meta(made.directory, meta)
-    emit({"session": made.name, "dir": str(made.directory), **meta})
+    emit({"session": made.name, "dir": str(made.directory), **dump(meta)})
     return 0
 
 
@@ -115,7 +117,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     events = read_events(directory)
     ledger = replay(events)
     meta = read_meta(directory)
-    mode = meta.get("mode", "full")
+    mode = meta.mode
     markers = {
         source_id: f"S{index}"
         for index, source_id in enumerate(ledger.source_order, start=1)
@@ -123,7 +125,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     found = violations(ledger)
     demoted = (
         [line for line in found if line.startswith(INFORMAL_DEMOTED)]
-        if mode == "informal"
+        if mode is Mode.INFORMAL
         else []
     )
     blocking = [line for line in found if line not in demoted]
@@ -133,7 +135,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     document: dict[str, JSON] = {
         "session": directory.name,
         "mode": mode,
-        "question": meta.get("question"),
+        "question": meta.question,
         "sections": sections(ledger),
         # Scaffold before markers: a draft is written from the scaffold and
         # only consults the marker table to render its Sources section, so the

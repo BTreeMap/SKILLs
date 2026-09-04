@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import shutil
-from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from pydantic import BaseModel
 
 from btm_corekit.channels import signal
 from btm_corekit.errors import CommandError
@@ -19,6 +20,7 @@ from btm_corekit.identifiers import (
     mint,
     resolve,
 )
+from btm_corekit.models import M, dump, parse_model
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,24 +84,22 @@ class SessionStore:
     def meta_path(self, directory: Path) -> Path:
         return directory / self.marker
 
-    def read_meta(self, directory: Path) -> dict[str, Any]:
-        """The marker file as a JSON object; members parse it further."""
+    def read_meta(self, directory: Path, model: type[M]) -> M:
+        """The marker file, decoded into the record the member declares."""
         path = self.meta_path(directory)
         if not path.is_file():
             raise CommandError(f"no session at {directory}: {self.hint}")
         try:
-            meta = json.loads(path.read_text(encoding="utf-8"))
+            raw = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as err:
             raise CommandError(f"unreadable {path}: {err}") from err
-        if not isinstance(meta, dict):
-            raise CommandError(f"{path} must hold a JSON object")
-        return meta
+        return parse_model(model, raw, str(path))
 
-    def write_meta(self, directory: Path, meta: Mapping[str, Any]) -> None:
+    def write_meta(self, directory: Path, meta: BaseModel) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         write_atomic(
             self.meta_path(directory),
-            json.dumps(dict(meta), indent=2, ensure_ascii=False) + "\n",
+            json.dumps(dump(meta), indent=2, ensure_ascii=False) + "\n",
         )
 
     def clean(self, ref: str | None, remove_all: bool) -> dict[str, Any]:

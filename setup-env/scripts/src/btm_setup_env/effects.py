@@ -27,12 +27,21 @@ import zipfile
 from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path, PurePosixPath
-from typing import Any, assert_never
+from typing import assert_never
 
 import certifi
 import httpx
+from pydantic import ConfigDict
+from pydantic import Field as PydanticField
 
-from btm_corekit import CommandError, UpstreamError, user_agent
+from btm_corekit import (
+    CommandError,
+    Model,
+    UpstreamError,
+    dump,
+    parse_model,
+    user_agent,
+)
 
 from .catalog import GOOGLE_MAVEN, conda_bin_dirs, jvm_home, qemu_steps
 from .model import (
@@ -208,11 +217,26 @@ def run_logged(
 # --- Context ---
 
 
+class Manifest(Model):
+    """What a provisioned root records about itself. One reading, so status
+    and the executors cannot disagree about which project it belongs to. This
+    tool is the only writer and an older one may have written it, so a field
+    it does not know is ignored rather than fatal."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    project: str = ""
+    spec: tuple[str, ...] = ()
+    host: str = ""
+    conda: dict[str, tuple[str, ...]] = PydanticField(default_factory=dict)
+    uv_python: str | None = None
+
+
 @dataclass
 class Ctx:
     layout: Layout
     host: Host
-    manifest: dict[str, Any] = field(default_factory=dict)
+    manifest: Manifest = field(default_factory=Manifest)
 
     @property
     def mamba(self) -> Path:
@@ -230,19 +254,28 @@ class Ctx:
         env.update(extra)
         return env
 
+    def record(self, **changes: object) -> None:
+        self.manifest = self.manifest.with_(**changes)
+
     def save_manifest(self) -> None:
         path = self.layout.manifest
         partial = path.with_name(path.name + ".partial")
-        partial.write_text(json.dumps(self.manifest, indent=2, sort_keys=True))
+        partial.write_text(json.dumps(dump(self.manifest), indent=2, sort_keys=True))
         os.replace(partial, path)
 
 
-def load_manifest(layout: Layout) -> dict[str, Any]:
+def load_manifest(layout: Layout) -> Manifest:
+    """A root with no manifest was never provisioned. A manifest that will not
+    parse is not the same thing, so it says so rather than reading as absent
+    and provoking a full reinstall."""
     try:
-        loaded: dict[str, Any] = json.loads(layout.manifest.read_text())
-        return loaded
-    except (OSError, ValueError):
-        return {}
+        raw = layout.manifest.read_text()
+    except OSError:
+        return Manifest()
+    try:
+        return parse_model(Manifest, json.loads(raw), str(layout.manifest))
+    except ValueError as err:
+        raise DenvError(f"unreadable {layout.manifest}: {err}") from err
 
 
 # --- micromamba ---
@@ -274,8 +307,8 @@ def ensure_micromamba(ctx: Ctx) -> None:
 
 def conda_create(ctx: Ctx, step: CondaEnv) -> None:
     prefix = ctx.layout.root / step.prefix_rel
-    recorded = ctx.manifest.setdefault("conda", {}).get(step.prefix_rel)
-    if recorded == list(step.packages) and (prefix / "conda-meta").is_dir():
+    recorded = ctx.manifest.conda.get(step.prefix_rel)
+    if recorded == step.packages and (prefix / "conda-meta").is_dir():
         return
     ensure_micromamba(ctx)
     assert step.platform is not None  # Planner resolves None to host platform.
@@ -298,7 +331,7 @@ def conda_create(ctx: Ctx, step: CondaEnv) -> None:
         ],
         ctx.tool_env(),
     )
-    ctx.manifest["conda"][step.prefix_rel] = list(step.packages)
+    ctx.record(conda={**ctx.manifest.conda, step.prefix_rel: step.packages})
     ctx.save_manifest()
 
 
@@ -319,7 +352,7 @@ def do_uv_venv(ctx: Ctx, step: UvVenv) -> None:
     python = layout.venv / (
         "Scripts/python.exe" if host.os is OS.WINDOWS else "bin/python"
     )
-    if python.exists() and ctx.manifest.get("uv_python") == step.version:
+    if python.exists() and ctx.manifest.uv_python == step.version:
         return
     uv = _uv(ctx)
     env = ctx.tool_env(
@@ -346,7 +379,7 @@ def do_uv_venv(ctx: Ctx, step: UvVenv) -> None:
         ],
         env,
     )
-    ctx.manifest["uv_python"] = step.version
+    ctx.record(uv_python=step.version)
     ctx.save_manifest()
 
 
@@ -568,7 +601,7 @@ def _aapt2_version(ctx: Ctx) -> str:
     metadata.unlink(missing_ok=True)
     fetch(f"{GOOGLE_MAVEN}/com/android/tools/build/aapt2/maven-metadata.xml", metadata)
     versions = _tag_contents(metadata.read_text(), "version")
-    agp = _agp_version(Path(ctx.manifest.get("project", ".")))
+    agp = _agp_version(Path(ctx.manifest.project or "."))
     matching = [v for v in versions if v.startswith(f"{agp}-")] if agp else []
     if agp and not matching:
         raise DenvError(f"Google publishes no aapt2 for AGP {agp}")
@@ -659,7 +692,7 @@ def do_bind_gradle(ctx: Ctx, step: BindGradleProject) -> None:
     """local.properties overrides the SDK env vars, so a stale one is the
     first thing to mislead a build; rewrite its sdk.dir on every run while
     preserving any other keys the project put there."""
-    project = Path(ctx.manifest.get("project", "."))
+    project = Path(ctx.manifest.project or ".")
     gradle_markers = (
         "settings.gradle",
         "settings.gradle.kts",
@@ -733,9 +766,11 @@ def provision(plan: Plan) -> list[ProbeResult]:
     layout = plan.layout
     ensure_dirs(layout)
     ctx = Ctx(layout, plan.host, load_manifest(layout))
-    ctx.manifest["project"] = str(plan.spec.project)
-    ctx.manifest["spec"] = [str(t) for t in plan.spec.targets]
-    ctx.manifest["host"] = str(plan.host)
+    ctx.record(
+        project=str(plan.spec.project),
+        spec=tuple(str(target) for target in plan.spec.targets),
+        host=str(plan.host),
+    )
     for step in plan.steps:
         execute(ctx, step)
     write_activation(plan)
@@ -809,7 +844,7 @@ def make_shim(
     ctx = Ctx(layout, host, load_manifest(layout))
     host_step, foreign_step = qemu_steps(emu)
     # Merge existing packages; a second create would replace the prefix.
-    existing = set(ctx.manifest.get("conda", {}).get("conda/host", []))
+    existing = set(ctx.manifest.conda.get("conda/host", ()))
     merged = tuple(sorted(existing | set(host_step.packages)))
     conda_create(ctx, CondaEnv("conda/host", host.conda_platform, merged))
     conda_create(ctx, foreign_step)

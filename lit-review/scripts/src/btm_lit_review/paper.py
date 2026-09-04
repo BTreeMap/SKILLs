@@ -115,18 +115,39 @@ def paper_aliases(paper: Paper) -> Iterator[str]:
     yield f"title:{normalize_title(paper.title)}"
 
 
-def candidate(**bibliographic: Any) -> Paper:
-    """Smart constructor: derive the key, start unscreened."""
-    doi = bibliographic.get("doi")
-    arxiv_id = bibliographic.get("arxiv_id")
-    title = bibliographic["title"]
+def candidate(  # noqa: PLR0913 - the arity is the record, one parameter per field
+    *,
+    title: str,
+    year: int | None = None,
+    authors: tuple[str, ...] = (),
+    venue: str | None = None,
+    doi: str | None = None,
+    arxiv_id: str | None = None,
+    openalex_id: str | None = None,
+    cited_by_count: int | None = None,
+    abstract: str | None = None,
+    pdf_url: str | None = None,
+    landing_url: str | None = None,
+) -> Paper:
+    """Smart constructor: derive the key, start unscreened. Every field is
+    named, so a normalizer that drops one is a type error here."""
     return Paper(
         key=paper_key(doi, arxiv_id, title),
+        title=title,
+        year=year,
+        authors=authors,
+        venue=venue,
+        doi=doi,
+        arxiv_id=arxiv_id,
+        openalex_id=openalex_id,
+        cited_by_count=cited_by_count,
+        abstract=abstract,
+        pdf_url=pdf_url,
+        landing_url=landing_url,
         found_by=(),
         status=Status.CANDIDATE,
         decision_reason=None,
         read_level=ReadLevel.NONE,
-        **bibliographic,
     )
 
 

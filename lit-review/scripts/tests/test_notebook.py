@@ -7,6 +7,8 @@ import pytest
 from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.notebook import (
     WATCH_MAX,
+    FindingRecord,
+    GapRecord,
     arrivals_of,
     expand_notes,
     finding_view,
@@ -147,12 +149,12 @@ class TestAdmission:
 
 class TestDerivedVerdicts:
     def finding(self, needs="full-text"):
-        return {
-            "e": "finding",
-            "id": "f1",
-            "claim": "c",
-            "support": [{"key": "doi:10.1/bandit", "needs": needs}],
-        }
+        return FindingRecord(
+            e="finding",
+            id="f1",
+            claim="c",
+            support=[{"key": "doi:10.1/bandit", "needs": needs}],
+        )
 
     def test_supported_while_the_corpus_agrees(self, papers):
         assert finding_view(self.finding(), papers)["state"] == "supported"
@@ -175,45 +177,40 @@ class TestDerivedVerdicts:
         assert "needs full-text" in view["issues"][0]
 
     def test_a_gap_is_challenged_by_a_later_watch_hit(self, papers):
-        gap = {
-            "e": "gap",
-            "id": "g1",
-            "statement": "s",
-            "probes": [],
-            "seen": 2,
-            "watch": "gflownet",
-        }
+        gap = GapRecord(e="gap", id="g1", statement="s", seen=2, watch="gflownet")
         view = gap_view(gap, arrivals_of(papers))
         assert view["state"] == "challenged"
         assert view["hits"] == ["arxiv:2501.00001"]
 
     def test_papers_seen_before_the_gap_never_challenge_it(self, papers):
-        gap = {
-            "e": "gap",
-            "id": "g1",
-            "statement": "s",
-            "probes": [],
-            "seen": 3,
-            "watch": "gflownet|bandit",
-        }
+        gap = GapRecord(
+            e="gap", id="g1", statement="s", seen=3, watch="gflownet|bandit"
+        )
         assert gap_view(gap, arrivals_of(papers))["state"] == "standing"
+
+
+def found(ident, supersedes=None):
+    return FindingRecord(
+        e="finding",
+        id=ident,
+        claim="c",
+        support=[{"key": "k", "needs": "abstract"}],
+        supersedes=supersedes,
+    )
 
 
 class TestSupersedeChains:
     def test_live_keeps_the_latest_of_a_chain(self):
         records = [
-            {"e": "finding", "id": "f1"},
-            {"e": "finding", "id": "f2", "supersedes": "f1"},
-            {"e": "gap", "id": "g1"},
+            found("f1"),
+            found("f2", supersedes="f1"),
+            GapRecord(e="gap", id="g1", statement="s"),
         ]
-        assert set(live(records, "finding")) == {"f2"}
-        assert set(live(records, "gap")) == {"g1"}
+        assert set(live(records, FindingRecord)) == {"f2"}
+        assert set(live(records, GapRecord)) == {"g1"}
 
     def test_ids_count_every_record_ever_minted(self):
-        records = [
-            {"e": "finding", "id": "f1"},
-            {"e": "finding", "id": "f2", "supersedes": "f1"},
-        ]
+        records = [found("f1"), found("f2", supersedes="f1")]
         assert next_id(records, "finding") == "f3"
         assert next_id(records, "rule") == "r1"
 

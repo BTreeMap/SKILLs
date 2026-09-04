@@ -16,10 +16,13 @@ from btm_corekit import (
     NonEmpty,
     Parser,
     content,
+    dump,
     emit,
     gated,
     mint,
+    now_iso,
     pad_ids,
+    parse_model,
     require,
     run_cli,
     signal,
@@ -38,7 +41,6 @@ from btm_peer_review.store import (
     corpus_of,
     event_log,
     load_corpus,
-    new_meta,
     paper_path,
     read_meta,
     update_meta,
@@ -68,14 +70,23 @@ class Reviewed(Model):
 
 def cmd_init(args: argparse.Namespace) -> int:
     paper = content(Reviewed, args.file, "the paper")
-    meta = new_meta(paper.title, args.date, args.level)
+    meta = parse_model(
+        Meta,
+        {
+            "title": paper.title,
+            "date": args.date,
+            "level": args.level,
+            "created": now_iso(),
+        },
+        "the session",
+    )
     made = STORE.create(args.ref)
     write_meta(made.directory, meta)
     emit(
         {
             "session": made.name,
             "dir": str(made.directory),
-            **meta.view(),
+            **dump(meta),
             "next": "ingest the paper text",
         }
     )

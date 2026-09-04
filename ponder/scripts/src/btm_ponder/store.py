@@ -6,13 +6,22 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import EventLog, SessionStore
+from btm_corekit import EventLog, Model, NonEmpty, SessionStore
 from btm_ponder.ledger import replay
-from btm_ponder.state import Ledger, Open
+from btm_ponder.state import Ledger, Mode, Open
 from btm_ponder.views import counts_of, yield_table
 
 STORE = SessionStore("ponder", marker="session.json", hint="run init first")
 LEDGER = "ledger.jsonl"
+
+
+class SessionMeta(Model):
+    """What one session is about, fixed at init."""
+
+    question: NonEmpty
+    focus: str | None = None
+    mode: Mode = Mode.FULL
+    created: str = ""
 
 
 def event_log(directory: Path) -> EventLog:
@@ -23,11 +32,11 @@ def read_events(directory: Path) -> list[dict[str, Any]]:
     return event_log(directory).read()
 
 
-def read_meta(directory: Path) -> dict[str, Any]:
-    return STORE.read_meta(directory)
+def read_meta(directory: Path) -> SessionMeta:
+    return STORE.read_meta(directory, SessionMeta)
 
 
-def write_meta(directory: Path, meta: dict[str, Any]) -> None:
+def write_meta(directory: Path, meta: SessionMeta) -> None:
     STORE.write_meta(directory, meta)
     event_log(directory).touch()
 
@@ -59,9 +68,9 @@ def orient(directory: Path) -> dict[str, Any]:
     ]
     return {
         "session": directory.name,
-        "question": meta.get("question"),
-        "focus": meta.get("focus"),
-        "mode": meta.get("mode", "full"),
+        "question": meta.question,
+        "focus": meta.focus,
+        "mode": meta.mode,
         "counts": counts_of(ledger),
         "sources": len(ledger.sources),
         "swept": ledger.swept,

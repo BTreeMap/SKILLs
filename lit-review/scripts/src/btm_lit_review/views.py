@@ -21,6 +21,9 @@ from btm_lit_review.constants import PAD_TAIL, READ_LEVELS, SOURCES, STATUSES
 from btm_lit_review.draft import marker_table, refresh_markers
 from btm_lit_review.notebook import (
     SCHEMA,
+    FindingRecord,
+    GapRecord,
+    RuleRecord,
     arrivals_of,
     finding_view,
     gap_view,
@@ -95,10 +98,10 @@ def cmd_brief(args: argparse.Namespace) -> int:
     papers = load_papers(session)
     records = load_notebook(session)
     findings = [
-        finding_view(record, papers) for record in live(records, "finding").values()
+        finding_view(record, papers) for record in live(records, FindingRecord).values()
     ]
     arrivals = arrivals_of(papers)
-    gaps = [gap_view(record, arrivals) for record in live(records, "gap").values()]
+    gaps = [gap_view(record, arrivals) for record in live(records, GapRecord).values()]
     challenged = [str(gap["id"]) for gap in gaps if gap["state"] == "challenged"]
     at_risk = [
         str(finding["id"]) for finding in findings if finding["state"] == "at-risk"
@@ -112,20 +115,20 @@ def cmd_brief(args: argparse.Namespace) -> int:
     last = load_snapshot(session)
     document = {
         "session": session.root.name,
-        "question": protocol.get("question"),
-        "level": protocol.get("level"),
+        "question": protocol.question,
+        "level": protocol.level,
         "drift": drift(last, papers),
         "findings": findings,
         "gaps": gaps,
         "rules": [
             {
-                "id": record["id"],
-                "action": record["action"],
-                "pattern": record["pattern"],
-                "matched": len(record["matched"]),
+                "id": record.id,
+                "action": record.action,
+                "pattern": record.pattern,
+                "matched": len(record.matched),
             }
             for record in records
-            if record["e"] == "rule"
+            if isinstance(record, RuleRecord)
         ],
         "markers": marker_table(markers, papers),
         "unextracted": unextracted_in(entries, papers),

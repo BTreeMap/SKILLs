@@ -14,6 +14,7 @@ from btm_corekit import (
     NonEmpty,
     append_jsonl,
     content,
+    dump,
     emit,
     now_iso,
     read_jsonl,
@@ -31,6 +32,7 @@ from btm_lit_review.paper import (
 )
 from btm_lit_review.session import (
     STORE,
+    Protocol,
     Session,
     criteria_hash,
     load_papers,
@@ -100,14 +102,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     root, name = made.directory, made.name
     session = Session(root)
     root.mkdir(parents=True, exist_ok=True)
-    protocol = {
-        "question": framing.question,
-        "level": args.level,
-        "criteria": {"include": [], "exclude": []},
-        "created": now_iso(),
-        "amendments": [],
-    }
-    write_atomic(session.protocol_path, json.dumps(protocol, indent=2) + "\n")
+    protocol = Protocol(question=framing.question, level=args.level, created=now_iso())
+    write_atomic(session.protocol_path, json.dumps(dump(protocol), indent=2) + "\n")
     session.papers_path.touch()
     session.log_path.touch()
     emit(

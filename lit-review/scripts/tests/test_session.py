@@ -9,6 +9,8 @@ import pytest
 from btm_corekit import CommandError
 from btm_lit_review.paper import candidate
 from btm_lit_review.session import (
+    Criteria,
+    Protocol,
     Session,
     criteria_hash,
     load_papers,
@@ -30,28 +32,32 @@ def session(tmp_path):
     return Session(root=root)
 
 
+def framed(**criteria) -> Protocol:
+    return Protocol(question="q", criteria=Criteria(**criteria))
+
+
 class TestCriteriaGate:
     def test_empty_criteria_are_refused(self):
         with pytest.raises(CommandError):
-            require_criteria({"criteria": {}})
+            require_criteria(framed())
 
     def test_an_empty_exclude_list_is_refused(self):
         """Both lists must be filled: criteria precede search."""
         with pytest.raises(CommandError):
-            require_criteria({"criteria": {"include": ["about X"], "exclude": []}})
+            require_criteria(framed(include=["about X"]))
 
     def test_both_lists_filled_pass(self):
-        require_criteria({"criteria": {"include": ["about X"], "exclude": ["not X"]}})
+        require_criteria(framed(include=["about X"], exclude=["not X"]))
 
     def test_the_hash_is_stable_for_equal_criteria(self):
-        one = {"criteria": {"include": ["a"], "exclude": ["b"]}}
-        two = {"criteria": {"include": ["a"], "exclude": ["b"]}}
+        one = framed(include=["a"], exclude=["b"])
+        two = framed(include=["a"], exclude=["b"])
         assert criteria_hash(one) == criteria_hash(two)
 
     def test_the_hash_moves_when_criteria_change(self):
-        one = {"criteria": {"include": ["a"]}}
-        two = {"criteria": {"include": ["a", "c"]}}
-        assert criteria_hash(one) != criteria_hash(two)
+        assert criteria_hash(framed(include=["a"])) != criteria_hash(
+            framed(include=["a", "c"])
+        )
 
 
 class TestCorpusRoundTrip:
@@ -82,4 +88,4 @@ class TestCorpusRoundTrip:
             load_papers(session)
 
     def test_the_protocol_reads_back(self, session):
-        assert load_protocol(session)["question"] == "q"
+        assert load_protocol(session).question == "q"

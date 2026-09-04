@@ -177,11 +177,10 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     _, layout = _resolve(args.project, args.root, [])
     manifest = load_manifest(layout)
-    if not manifest:
+    if not manifest.project:
         print(f"no environment at {layout.root}; run provision first")
         return 1
-    tags = manifest.get("spec", [])
-    plan = _build_plan(Path(manifest["project"]), layout.root, tags)
+    plan = _build_plan(Path(manifest.project), layout.root, list(manifest.spec))
     return _report(plan, verify(plan), as_json=False)
 
 

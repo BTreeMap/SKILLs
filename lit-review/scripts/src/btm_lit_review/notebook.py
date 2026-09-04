@@ -13,7 +13,7 @@ import argparse
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, TypeVar
 
 from pydantic import (
     AfterValidator,
@@ -21,25 +21,29 @@ from pydantic import (
     ConfigDict,
     Field,
     StringConstraints,
+    TypeAdapter,
 )
 
 from btm_corekit import (
     JSON,
     Admission,
+    Count,
     Diagnostic,
     Model,
     NonEmpty,
     append_jsonl,
+    dump,
     gated,
     keywords_of,
     now_iso,
     pad_ids,
+    parse_with,
     prefixed_number,
     read_jsonl,
     salvage,
     suggest,
 )
-from btm_lit_review.constants import READ_RANK, ReadLevel
+from btm_lit_review.constants import READ_RANK, ReadLevel, Status
 from btm_lit_review.paper import (
     Paper,
     normalize_arxiv_id,
@@ -59,6 +63,8 @@ SCHEMA: dict[str, str] = {
 }
 ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r"}
 WATCH_MAX = 200  # a watch is a few words; brief scans it per paper
+
+S = TypeVar("S", bound="Superseding")
 
 
 def _has_terms(watch: str) -> str:
@@ -113,6 +119,54 @@ class GapEntry(Linked):
     watch: Watch | None = None
 
 
+class Recorded(Model):
+    """What the notebook stamps on every record it admits."""
+
+    id: str
+    t: str = ""
+
+
+class Superseding(Recorded):
+    """A record a later one may replace, carrying where it came from."""
+
+    from_: tuple[str, ...] = Field(default=(), alias="from")
+    supersedes: str | None = None
+
+
+class SupportRow(Model):
+    key: NonEmpty
+    needs: ReadLevel
+
+
+class FindingRecord(Superseding):
+    e: Literal["finding"]
+    claim: NonEmpty
+    support: tuple[SupportRow, ...] = Field(min_length=1)
+
+
+class GapRecord(Superseding):
+    e: Literal["gap"]
+    statement: NonEmpty
+    probes: tuple[str, ...] = ()
+    seen: Count = 0
+    watch: str | None = None
+
+
+class RuleRecord(Recorded):
+    e: Literal["rule"]
+    on: str
+    pattern: str
+    action: Status
+    reason: str
+    matched: tuple[str, ...] = ()
+
+
+NotebookRecord = FindingRecord | GapRecord | RuleRecord
+RECORD: TypeAdapter[list[NotebookRecord]] = TypeAdapter(
+    list[Annotated[NotebookRecord, Field(discriminator="e")]]
+)
+
+
 Rows = tuple[Mapping[str, Any], ...]
 
 
@@ -153,24 +207,27 @@ def arrivals_of(papers: Mapping[str, Paper]) -> dict[str, tuple[int, str]]:
     }
 
 
-def load_notebook(session: Session) -> list[dict[str, Any]]:
+def load_notebook(session: Session) -> list[NotebookRecord]:
+    """The notebook as records; a hand-edited line is a located rejection."""
     path = session.notebook_path
-    return read_jsonl(path) if path.exists() else []
+    if not path.exists():
+        return []
+    return parse_with(RECORD, read_jsonl(path), str(path))
 
 
-def next_id(records: list[dict[str, Any]], kind: str) -> str:
-    count = sum(1 for record in records if record["e"] == kind)
+def next_id(records: Sequence[NotebookRecord], kind: str) -> str:
+    count = sum(1 for record in records if record.e == kind)
     return f"{ID_PREFIX[kind]}{count + 1}"
 
 
-def live(records: list[dict[str, Any]], kind: str) -> dict[str, dict[str, Any]]:
+def live(records: Sequence[NotebookRecord], kind: type[S]) -> dict[str, S]:
     """Latest-wins fold of the supersede chains; ids are never reused."""
-    alive: dict[str, dict[str, Any]] = {}
+    alive: dict[str, S] = {}
     for record in records:
-        if record["e"] != kind:
+        if not isinstance(record, kind):
             continue
-        alive[record["id"]] = record
-        alive.pop(record.get("supersedes") or "", None)
+        alive[record.id] = record
+        alive.pop(record.supersedes or "", None)
     return alive
 
 
@@ -182,45 +239,43 @@ def first_log_number(paper: Paper) -> int:
     return 0
 
 
-def finding_view(
-    record: Mapping[str, Any], papers: Mapping[str, Paper]
-) -> dict[str, JSON]:
+def finding_view(record: FindingRecord, papers: Mapping[str, Paper]) -> dict[str, JSON]:
     issues = []
-    for support in record["support"]:
-        paper = papers.get(support["key"])
+    for support in record.support:
+        paper = papers.get(support.key)
         if paper is None:
-            issues.append(f"{support['key']} left the corpus")
-        elif paper.status != "included":
-            issues.append(f"{support['key']} is {paper.status}")
-        elif READ_RANK[paper.read_level] < READ_RANK[support["needs"]]:
+            issues.append(f"{support.key} left the corpus")
+        elif paper.status is not Status.INCLUDED:
+            issues.append(f"{support.key} is {paper.status}")
+        elif READ_RANK[paper.read_level] < READ_RANK[support.needs]:
             issues.append(
-                f"{support['key']} read at {paper.read_level}, needs {support['needs']}"
+                f"{support.key} read at {paper.read_level}, needs {support.needs}"
             )
-    view = {
-        "id": record["id"],
-        "claim": record["claim"],
-        "support": record["support"],
+    view: dict[str, JSON] = {
+        "id": record.id,
+        "claim": record.claim,
+        "support": [dump(row) for row in record.support],
         "state": "supported" if not issues else "at-risk",
     }
     return view | ({"issues": issues} if issues else {})
 
 
 def gap_view(
-    record: Mapping[str, Any], arrivals: Mapping[str, tuple[int, str]]
+    record: GapRecord, arrivals: Mapping[str, tuple[int, str]]
 ) -> dict[str, JSON]:
     """A gap is challenged by papers that arrived after it and match its watch."""
-    hits = []
-    if record.get("watch"):
-        terms = watch_terms(record["watch"])
+    hits: list[str] = []
+    if record.watch:
+        terms = watch_terms(record.watch)
         hits = [
             key
             for key, (arrived, folded) in arrivals.items()
-            if arrived > record["seen"] and watch_hits(terms, folded)
+            if arrived > record.seen and watch_hits(terms, folded)
         ]
-    view = {
-        "id": record["id"],
-        "statement": record["statement"],
-        "probes": record["probes"],
+    view: dict[str, JSON] = {
+        "id": record.id,
+        "statement": record.statement,
+        "probes": list(record.probes),
         "state": "standing" if not hits else "challenged",
     }
     return view | ({"hits": hits} if hits else {})
@@ -244,7 +299,7 @@ class _Admission(Admission):
         papers: Mapping[str, Paper],
         log_count: int,
         pad: set[str],
-        existing: list[dict[str, Any]],
+        existing: Sequence[NotebookRecord],
     ) -> None:
         super().__init__(pad=pad)
         self.papers = papers
@@ -257,10 +312,10 @@ class _Admission(Admission):
             for alias in paper_aliases(paper)
         }
         self._key_words: dict[str, set[str]] = {}
-        self.counts: Counter[str] = Counter(record["e"] for record in existing)
+        self.counts: Counter[str] = Counter(record.e for record in existing)
         self.ids: defaultdict[str, set[str]] = defaultdict(set)
         for record in existing:
-            self.ids[record["e"]].add(record["id"])
+            self.ids[record.e].add(record.id)
 
     def key_words(self) -> dict[str, set[str]]:
         """Keyword sets per corpus key, built on the first failed token."""
@@ -306,18 +361,22 @@ class _Admission(Admission):
                 clean = False
         return clean
 
-    def admit(self, kind: str, record: dict[str, Any], entry: Linked) -> None:
-        record["e"] = kind
+    def admit(self, kind: str, fields: dict[str, Any], entry: Linked) -> None:
+        """Stamp the record and hold it; the batch commits or none of it does."""
         self.counts[kind] += 1
-        record["id"] = f"{ID_PREFIX[kind]}{self.counts[kind]}"
-        self.ids[kind].add(record["id"])
-        record["t"] = now_iso()
-        if entry.from_:
-            record["from"] = list(entry.from_)
+        minted = f"{ID_PREFIX[kind]}{self.counts[kind]}"
+        self.ids[kind].add(minted)
+        record = {
+            "e": kind,
+            "id": minted,
+            "t": now_iso(),
+            **fields,
+            "from": list(entry.from_),
+        }
         if entry.supersedes:
             record["supersedes"] = entry.supersedes
         self.records.append(record)
-        self.admitted[f"{kind}s"].append(record["id"])
+        self.admitted[f"{kind}s"].append(minted)
 
     def take_findings(self, rows: Rows) -> None:
         for index, row in enumerate(rows):
@@ -398,7 +457,7 @@ def expand_notes(
     papers: Mapping[str, Paper],
     log_count: int,
     pad: set[str],
-    existing: list[dict[str, Any]],
+    existing: Sequence[NotebookRecord],
 ) -> NoteResult:
     """Expand one note batch into records, collecting every problem."""
     admission = _Admission(papers, log_count, pad, existing)
@@ -428,11 +487,11 @@ def cmd_note(args: argparse.Namespace) -> int:
 
     def commit(result: NoteResult) -> dict[str, JSON]:
         append_jsonl(session.notebook_path, result.records)
-        everything = records + result.records
+        everything = records + parse_with(RECORD, result.records, "notebook")
         return {
             "admitted": result.admitted,
-            "findings": len(live(everything, "finding")),
-            "gaps": len(live(everything, "gap")),
+            "findings": len(live(everything, FindingRecord)),
+            "gaps": len(live(everything, GapRecord)),
         }
 
     return gated(args.file, "notebook", expand, commit)

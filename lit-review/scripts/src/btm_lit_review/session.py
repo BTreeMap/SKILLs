@@ -11,14 +11,40 @@ from typing import Any
 
 from btm_corekit import (
     CommandError,
+    Model,
+    NonEmpty,
     SessionStore,
     dump,
+    parse_model,
     read_jsonl,
     write_atomic,
 )
+from btm_lit_review.constants import Level
 from btm_lit_review.paper import Paper, paper_from_json
 
 STORE = SessionStore("lit-review", marker="protocol.json", hint="run init first")
+
+
+class Criteria(Model):
+    """What a paper must show to be included, and what cuts it. Both lists
+    stand before the first query; the script refuses to search without them."""
+
+    include: tuple[NonEmpty, ...] = ()
+    exclude: tuple[NonEmpty, ...] = ()
+
+
+class Protocol(Model):
+    """The review's frame, written at init and edited by hand thereafter."""
+
+    question: NonEmpty
+    level: Level = Level.FULL
+    criteria: Criteria = Criteria()
+    created: str = ""
+    amendments: tuple[Any, ...] = ()  # free-form: the agent states each change
+
+    @property
+    def ready(self) -> bool:
+        return bool(self.criteria.include and self.criteria.exclude)
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,24 +80,21 @@ def open_session(root: str) -> Session:
     return Session(STORE.directory(root))
 
 
-def load_protocol(session: Session) -> dict[str, Any]:
+def load_protocol(session: Session) -> Protocol:
     try:
-        protocol = json.loads(session.protocol_path.read_text(encoding="utf-8"))
+        raw = json.loads(session.protocol_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as err:
         raise CommandError(f"unreadable protocol.json: {err}") from err
-    if not isinstance(protocol, dict):
-        raise CommandError("protocol.json must hold a JSON object")
-    return protocol
+    return parse_model(Protocol, raw, "protocol.json")
 
 
-def criteria_hash(protocol: Mapping[str, Any]) -> str:
-    canonical = json.dumps(protocol.get("criteria"), sort_keys=True)
+def criteria_hash(protocol: Protocol) -> str:
+    canonical = json.dumps(dump(protocol.criteria), sort_keys=True)
     return hashlib.sha256(canonical.encode()).hexdigest()[:12]
 
 
-def require_criteria(protocol: Mapping[str, Any]) -> None:
-    criteria = protocol.get("criteria") or {}
-    if not criteria.get("include") or not criteria.get("exclude"):
+def require_criteria(protocol: Protocol) -> None:
+    if not protocol.ready:
         raise CommandError(
             "protocol.json has empty inclusion or exclusion criteria; "
             "fill both lists before searching (criteria precede search)"

@@ -36,6 +36,10 @@ from btm_corekit.cli import (
 )
 
 
+class Marker(Model):
+    k: int = 0
+
+
 def parser() -> argparse.ArgumentParser:
     built = Parser()
     sub = built.add_subparsers(required=True)
@@ -88,7 +92,7 @@ class TestBatchAndWiring:
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
         store = SessionStore("beta", marker="meta.json", hint="run init first")
         made = store.create("one two")
-        store.write_meta(made.directory, {})
+        store.write_meta(made.directory, Marker())
         parser = Parser()
         commands = parser.add_subparsers(dest="command", required=True)
         wire_pad(commands, lambda args: store.directory(args.session))

@@ -12,8 +12,10 @@ from btm_corekit.digest import CLUSTER_CAP
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
+    LEVELS,
     SOURCES,
     STATUSES,
+    Level,
 )
 from btm_lit_review.curate import (
     SORTS,
@@ -61,7 +63,7 @@ def wire_gather(commands: Commands) -> None:
     )
     add_common(init)
     add_content(init, '{"question": "the research question"}')
-    init.add_argument("--level", choices=("lite", "full", "ultra"), default="full")
+    init.add_argument("--level", type=Level, choices=LEVELS, default=Level.FULL)
     init.set_defaults(func=cmd_init)
 
     search = commands.add_parser(

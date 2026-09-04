@@ -87,12 +87,6 @@ from btm_corekit.origin import (
     user_agent,
 )
 from btm_corekit.pad import compile_match, jot, pad_body, pad_entries, pad_ids, recall
-from btm_corekit.reading import (
-    read_count,
-    read_opt_text,
-    read_text,
-    read_texts,
-)
 from btm_corekit.sessions import Created, SessionStore
 from btm_corekit.text import (
     ascii_words,
@@ -186,11 +180,7 @@ __all__ = [
     "polite_params",
     "prefixed_number",
     "read_batch",
-    "read_count",
     "read_jsonl",
-    "read_opt_text",
-    "read_text",
-    "read_texts",
     "recall",
     "refuse",
     "rejection",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, SessionStore
+from btm_corekit import CommandError, Model, SessionStore
 
 
 @pytest.fixture
@@ -54,13 +54,17 @@ class TestSessionStore:
             store.clean("deep-sea-abc123", remove_all=True)
 
 
+class Marker(Model):
+    k: int = 0
+
+
 class TestCreateAndMeta:
     def test_create_mints_under_the_root_and_refuses_twice(self, store, capsys):
         made = store.create("deep sea")
         assert made.name.startswith("deep-sea-")
         assert made.directory == store.root() / made.name
-        store.write_meta(made.directory, {"k": 1})
-        assert store.read_meta(made.directory) == {"k": 1}
+        store.write_meta(made.directory, Marker(k=1))
+        assert store.read_meta(made.directory, Marker).k == 1
         with pytest.raises(CommandError, match="already exists"):
             store.create(str(made.directory))
 

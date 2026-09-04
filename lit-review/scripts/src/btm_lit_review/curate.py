@@ -32,6 +32,7 @@ from btm_corekit import (
 from btm_lit_review.constants import (
     ABSTRACT_SHOW_LIMIT,
     AUTHOR_SHOW_LIMIT,
+    Level,
     ReadLevel,
     Status,
 )
@@ -302,7 +303,11 @@ def cmd_show(args: argparse.Namespace) -> int:
 # The band each level's shortlist is meant to land in. Leaving it is a
 # judgment call, not an error, so the advisory names the band and the count
 # and stops there: the agent decides whether to tighten criteria or disclose.
-LEVEL_BANDS = {"lite": (5, 10), "full": (10, 25), "ultra": (10, 40)}
+LEVEL_BANDS = {
+    Level.LITE: (5, 10),
+    Level.FULL: (10, 25),
+    Level.ULTRA: (10, 40),
+}
 
 
 def next_step(
@@ -330,8 +335,8 @@ def next_step(
     return "note findings and gaps, then brief"
 
 
-def band_advisory(level: str, included: int) -> str | None:
-    band = LEVEL_BANDS.get(level or "")
+def band_advisory(level: Level, included: int) -> str | None:
+    band = LEVEL_BANDS.get(level)
     if band is None or not included:
         return None
     low, high = band
@@ -362,27 +367,24 @@ def cmd_status(args: argparse.Namespace) -> int:
             "criteria changed after searches ran; record the change in "
             "protocol.json amendments"
         )
-    criteria = protocol.get("criteria") or {}
-    ready = bool(criteria.get("include")) and bool(criteria.get("exclude"))
     pending = unextracted(session.root, papers)
     undecided = by_status.get(Status.CANDIDATE, 0)
     included = by_status.get(Status.INCLUDED, 0)
-    level = protocol.get("level") or ""
-    band = band_advisory(level, included)
+    band = band_advisory(protocol.level, included)
     if band:
         signal(band)
     emit(
         {
-            "question": protocol.get("question"),
-            "level": level,
-            "criteria_ready": ready,
+            "question": protocol.question,
+            "level": protocol.level,
+            "criteria_ready": protocol.ready,
             "criteria_hash": current_hash,
             "searches": len(log),
             "papers": {status.value: n for status, n in by_status.items()},
             "included_read_levels": {level.value: n for level, n in by_read.items()},
             "undecided": undecided,
             "unextracted": pending,
-            "next": next_step(ready, len(log), undecided, included, pending),
+            "next": next_step(protocol.ready, len(log), undecided, included, pending),
         }
     )
     return 0
