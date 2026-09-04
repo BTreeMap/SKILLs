@@ -64,6 +64,16 @@ class TestResolve:
             ("rent-length-aaa", "rent-width-bbb")
         )
 
+    def test_a_keyword_never_matches_inside_a_longer_word(self):
+        assert resolve("rent", ["current-events-aaa"]) == NoMatch()
+
+    def test_a_keyword_never_matches_the_entropy_suffix(self):
+        """The suffix is 26 random base32hex characters, so a one-letter
+        keyword lands in better than half of any pool by chance, and in a
+        different half on every run. Comparing whole keywords keeps recovery
+        deterministic; a substring test made it a coin flip."""
+        assert resolve("src b", ["src-a-jl2r20q2l6e9056tl6ckd4hcb4"]) == NoMatch()
+
     def test_unknown_keyword_matches_nothing(self):
         assert resolve("absent", self.IDS) == NoMatch()
 

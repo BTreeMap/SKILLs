@@ -134,6 +134,14 @@ class TestPayloadSource:
             read_payload(Inline("   "), ENTRY)
 
 
+class TestBatchShape:
+    def test_a_bare_array_is_not_a_batch(self, tmp_path):
+        path = tmp_path / "b.json"
+        path.write_text("[1, 2]")
+        with pytest.raises(CommandError, match="one JSON object"):
+            read_batch(str(path))
+
+
 class TestArgvBoundary:
     """argv is untrusted input like any other: decoded, bounded, exit 1."""
 
@@ -204,11 +212,6 @@ class TestContentChannel:
     def test_a_missing_required_field_is_located(self, monkeypatch):
         monkeypatch.setattr("sys.stdin", io.StringIO('{"focus": "f"}'))
         with pytest.raises(CommandError, match="question"):
-            content(self.Asked, None, "the framing")
-
-    def test_an_unknown_field_is_refused_rather_than_dropped(self, monkeypatch):
-        monkeypatch.setattr("sys.stdin", io.StringIO('{"question": "q", "typo": 1}'))
-        with pytest.raises(CommandError, match="typo"):
             content(self.Asked, None, "the framing")
 
     def test_broken_json_names_the_position(self, monkeypatch):

@@ -66,6 +66,16 @@ class TestRefusals:
         assert main([str(blank_pdf), "--output", str(out), "--overwrite"]) == 0
         assert "prior" not in out.read_text(encoding="utf-8")
 
+    def test_a_corrupt_document_is_a_clean_refusal_not_a_traceback(
+        self, tmp_path, capsys
+    ):
+        """pypdf's own error joins the exit contract at the one boundary that
+        knows it means an unreadable file rather than an unreachable server."""
+        broken = tmp_path / "not-really.pdf"
+        broken.write_bytes(b"%PDF-1.7\nthis is not a pdf body")
+        assert main([str(broken)]) == 1
+        assert "error:" in capsys.readouterr().err
+
     def test_out_of_range_page_is_rejected(self, blank_pdf, capsys):
         assert main([str(blank_pdf), "--pages", "9"]) == 1
         assert "outside the document" in capsys.readouterr().err

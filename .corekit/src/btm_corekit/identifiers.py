@@ -59,18 +59,24 @@ Resolution = Exact | Recovered | Ambiguous | NoMatch
 
 
 def resolve(ref: str, ids: Iterable[str]) -> Resolution:
-    """Total resolution: exact id, else the id containing every keyword.
+    """Total resolution: exact id, else the id whose keywords are a superset.
 
-    O(ids x keywords); pools stay in the low hundreds.
+    Both sides are parsed into keyword sets, the way `suggest` already indexes
+    them. A substring test over the raw identifier instead lets a keyword match
+    inside a longer word, and inside the 26 random base32hex characters of the
+    suffix, where a single letter lands better than half the time and the
+    collision is not reproducible between runs.
+
+    O(ids x characters); pools stay in the low hundreds.
     """
     pool = list(ids)
     if ref in pool:
         return Exact(ref)
-    keywords = keywords_of(ref)
+    wanted = frozenset(keywords_of(ref))
     matches = [
         candidate
         for candidate in pool
-        if keywords and all(keyword in candidate for keyword in keywords)
+        if wanted and wanted <= frozenset(keywords_of(candidate))
     ]
     if not matches:
         return NoMatch()

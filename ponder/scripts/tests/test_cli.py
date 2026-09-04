@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+from typing import ClassVar
 
 import pytest
 
@@ -367,14 +368,6 @@ class TestViewChain:
         assert contained(plan, draft)
         assert contained(draft, full)
 
-    def test_scaffold_rows_grow_the_same_way(self, capsys):
-        session = self.noted(capsys)
-
-        def row(view: str) -> set[str]:
-            return set(self.viewed(capsys, session, view)["scaffold"]["answer"][0])
-
-        assert row("plan") < row("draft") <= row("full")
-
     def test_plan_withholds_the_prose_it_was_handed(self, capsys):
         """premise and detail are the agent's own words; echoing them back
         into the window that wrote them is the cost this level removes."""
@@ -426,6 +419,38 @@ class TestViewChain:
         assert "minted" not in receipt
         assert receipt["counts"] == {"retrieved": 1}
 
+    def test_a_note_receipt_dumps_records_at_full(self, capsys):
+        """The level that replaced `--full`, which shipped with no test at
+        all: nothing in the suite broke when the flag was removed."""
+        session = opened(capsys)
+        _, receipt, _ = run(
+            ["note", session, "--view", "full"], capsys, stdin=self.batch()
+        )
+        dumped = next(iter(receipt["leaves"].values()))
+        assert dumped["question"] == "what does Rent guarantee"
+
+    def test_a_repeated_url_is_reported_as_merged(self, capsys):
+        """The documented cheap import path for prior work, previously
+        exercised only below the command surface."""
+        session = opened(capsys)
+        run(["note", session], capsys, stdin=self.batch())
+        again = json.dumps(
+            {
+                "leaves": [{"kw": ["second", "leaf"], "q": "another"}],
+                "sources": [
+                    {
+                        "kw": ["same", "doc"],
+                        "leaf": "second leaf",
+                        "cls": "reported",
+                        "title": "re-imported",
+                        "url": "https://example.org/bcl",
+                    }
+                ],
+            }
+        )
+        _, receipt, _ = run(["note", session], capsys, stdin=again)
+        assert list(receipt["merged"]) == ["same-doc"]
+
     def test_a_note_receipt_carries_minted_ids_by_default(self, capsys):
         session = opened(capsys)
         _, receipt, _ = run(["note", session], capsys, stdin=self.batch())
@@ -435,4 +460,138 @@ class TestViewChain:
         session = opened(capsys)
         code, _, err = run(["check", session, "--view", "everything"], capsys)
         assert code == 1
-        assert "invalid choice" in err or "invalid View value" in err
+        assert "argument --view: invalid View value: 'everything'" in err
+
+
+class TestProseWithheldUniformly:
+    """One rule across every scaffold row kind, checked against all four.
+
+    A row carries its identity and its derivation at every level, and the
+    agent's own findings only from `draft`. Before this was uniform, `rival`
+    leaked its premise and `open` leaked its detail at `plan`, so the same
+    field sat at two different levels depending on how a leaf closed."""
+
+    IDENTITY: ClassVar = frozenset({"leaf", "q", "checked"})
+    DERIVED: ClassVar = frozenset({"markers", "stated", "reason"})
+    FINDINGS: ClassVar = frozenset({"premise", "detail", "survivors", "eliminated"})
+
+    def batch(self) -> str:
+        return json.dumps(
+            {
+                "leaves": [
+                    {"kw": ["kept", "one"], "q": "the retrieved leaf"},
+                    {"kw": ["dead", "two"], "q": "the refuted leaf"},
+                    {"kw": ["open", "three"], "q": "the unresolved leaf"},
+                ],
+                "sources": [
+                    {
+                        "kw": ["src", "a"],
+                        "leaf": "kept one",
+                        "cls": "constitutive",
+                        "title": "spec",
+                    },
+                    {
+                        "kw": ["src", "b"],
+                        "leaf": "dead two",
+                        "cls": "reported",
+                        "title": "blog",
+                    },
+                ],
+                "closes": [
+                    {
+                        "leaf": "kept one",
+                        "state": "retrieved",
+                        "sources": ["src a"],
+                        "premise": "RETRIEVED PREMISE",
+                        "detail": "RETRIEVED DETAIL",
+                    },
+                    {
+                        "leaf": "dead two",
+                        "state": "refuted",
+                        "sources": ["src b"],
+                        "premise": "REFUTED PREMISE",
+                        "detail": "REFUTED DETAIL",
+                    },
+                    {
+                        "leaf": "open three",
+                        "state": "unresolved",
+                        "reason": "searched",
+                        "detail": "UNRESOLVED DETAIL",
+                    },
+                ],
+                "sweeps": [
+                    {
+                        "checked": "SWEEP SUBJECT",
+                        "candidates": ["SURVIVING RIVAL", "ELIMINATED RIVAL"],
+                        "survivors": [0],
+                    }
+                ],
+            }
+        )
+
+    def scaffold(self, capsys, view: str) -> dict:
+        session = opened(capsys)
+        run(["note", session], capsys, stdin=self.batch())
+        code, document, _ = run(["check", session, "--view", view], capsys)
+        assert code == 0
+        return document["scaffold"]
+
+    def test_every_row_kind_is_present_to_judge(self, capsys):
+        assert set(self.scaffold(capsys, "draft")) == {
+            "answer",
+            "rival",
+            "open",
+            "sweeps",
+        }
+
+    def test_plan_withholds_a_finding_from_every_row_kind(self, capsys):
+        for section, rows in self.scaffold(capsys, "plan").items():
+            leaked = self.FINDINGS & set(rows[0])
+            assert not leaked, f"{section} leaks {leaked} at plan"
+
+    def test_plan_keeps_identity_and_derivation_in_every_row_kind(self, capsys):
+        for section, rows in self.scaffold(capsys, "plan").items():
+            keys = set(rows[0])
+            assert keys & self.IDENTITY, f"{section} has no identity at plan"
+            assert not keys - (self.IDENTITY | self.DERIVED), f"{section} has extras"
+
+    def test_no_authored_string_survives_into_plan(self, capsys):
+        """The blunt check the field lists could still get wrong: none of the
+        prose written into the batch appears anywhere in the plan document."""
+        session = opened(capsys)
+        run(["note", session], capsys, stdin=self.batch())
+        _, document, _ = run(["check", session, "--view", "plan"], capsys)
+        rendered = json.dumps(document)
+        for authored in (
+            "RETRIEVED PREMISE",
+            "RETRIEVED DETAIL",
+            "REFUTED PREMISE",
+            "REFUTED DETAIL",
+            "UNRESOLVED DETAIL",
+            "SURVIVING RIVAL",
+            "ELIMINATED RIVAL",
+        ):
+            assert authored not in rendered, f"plan leaks {authored}"
+
+    def test_draft_restores_every_withheld_finding(self, capsys):
+        session = opened(capsys)
+        run(["note", session], capsys, stdin=self.batch())
+        _, document, _ = run(["check", session], capsys)
+        rendered = json.dumps(document)
+        for authored in (
+            "RETRIEVED PREMISE",
+            "REFUTED PREMISE",
+            "UNRESOLVED DETAIL",
+            "SURVIVING RIVAL",
+            "ELIMINATED RIVAL",
+        ):
+            assert authored in rendered, f"draft lost {authored}"
+
+    def test_a_sweep_keeps_its_subject_and_drops_its_candidates(self, capsys):
+        plan = self.scaffold(capsys, "plan")["sweeps"][0]
+        assert plan == {"checked": "SWEEP SUBJECT"}
+
+    def test_the_sweep_set_difference_is_derived_at_draft(self, capsys):
+        draft = self.scaffold(capsys, "draft")["sweeps"][0]
+        assert draft["survivors"] == ["SURVIVING RIVAL"]
+        assert draft["eliminated"] == ["ELIMINATED RIVAL"]
