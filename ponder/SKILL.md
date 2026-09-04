@@ -97,7 +97,7 @@ slug-plus-entropy identifier. Use full identifiers. A unique keyword subset
 recovers a lost ID; ambiguity lists candidates. Pass a directory path in
 place of an identifier to put a session somewhere specific.
 
-Commands emit JSON on stdout. Advisory `signal:` lines use stderr. Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument. `clean`
+Commands emit JSON on stdout. Advisory `signal:` lines use stderr. Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. An option that takes a literal also takes `@path`, which reads the file, or `-`, which reads stdin; `@@` starts a literal `@`. A parameter that is only ever a path keeps its bare spelling. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument. `clean`
 lists sizes and removes one session or `--all`, reporting bytes freed.
 
 <commands>

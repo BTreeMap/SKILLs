@@ -7,7 +7,14 @@ import sys
 from collections.abc import Sequence
 
 import btm_lit_review
-from btm_corekit import Commands, Parser, run_cli, wire_clean, wire_pad
+from btm_corekit import (
+    Commands,
+    Parser,
+    run_cli,
+    text_source,
+    wire_clean,
+    wire_pad,
+)
 from btm_corekit.digest import CLUSTER_CAP
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
@@ -80,7 +87,9 @@ def wire_gather(commands: Commands) -> None:
         "snowball", help="follow citations of a corpus paper via OpenAlex"
     )
     add_common(snowball)
-    snowball.add_argument("--seed", required=True, help="paper key, DOI, or arXiv id")
+    snowball.add_argument(
+        "--seed", type=text_source, required=True, help="paper key, DOI, or arXiv id"
+    )
     snowball.add_argument("--direction", choices=DIRECTIONS, required=True)
     snowball.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     snowball.set_defaults(func=cmd_snowball)
@@ -114,10 +123,14 @@ def wire_curate(commands: Commands) -> None:
     show = commands.add_parser("show", help="project the corpus for screening")
     add_common(show)
     show.add_argument("--status", choices=STATUSES, default="candidate")
-    show.add_argument("--keys", help="comma-separated keys; overrides --status")
-    show.add_argument("--match", help="case-insensitive regex filter")
+    show.add_argument(
+        "--keys", type=text_source, help="comma-separated keys; overrides --status"
+    )
+    show.add_argument("--match", type=text_source, help="case-insensitive regex")
     show.add_argument("--on", choices=MATCH_FIELDS, default="title")
-    show.add_argument("--fields", help="comma-separated paper fields to project")
+    show.add_argument(
+        "--fields", type=text_source, help="comma-separated paper fields"
+    )
     show.add_argument("--sort", choices=tuple(SORTS), default="citations")
     show.add_argument("--format", choices=("json", "tsv"), default="json")
     show.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
@@ -188,7 +201,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = commands.add_parser("verify", help="check DOIs of included papers")
     add_common(verify)
-    verify.add_argument("--keys", help="comma-separated keys; default every included")
+    verify.add_argument(
+        "--keys", type=text_source, help="comma-separated keys; default every included"
+    )
     verify.set_defaults(func=cmd_verify)
 
     wire_clean(commands, STORE)

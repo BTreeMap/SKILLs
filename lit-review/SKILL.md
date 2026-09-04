@@ -146,6 +146,8 @@ every `[n]` in the draft against assigned markers; numbers are
 append-only, so a late inclusion extends the table and existing citations
 stand.
 
+An option that takes a literal also takes `@path`, which reads the file, or `-`, which reads stdin; `@@` starts a literal `@`. A parameter that is only ever a path keeps its bare spelling.
+
 Exit codes: 0 done (stderr `signal:` lines are advisory and never block);
 1 fix the input and resend; 2 upstream failed, retry. Downloaded PDFs and
 other heavy artifacts belong in the scratch directory. `clean` lists

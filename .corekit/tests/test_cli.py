@@ -20,6 +20,7 @@ from btm_corekit import (
     read_batch,
     rejection,
     run_cli,
+    text_source,
     wire_clean,
     wire_pad,
 )
@@ -232,3 +233,26 @@ class TestContentChannel:
         monkeypatch.setattr("sys.stdin", io.StringIO("   "))
         with pytest.raises(CommandError, match="stdin or --file"):
             content(self.Asked, None, "the framing")
+
+
+class TestTextSource:
+    def test_a_literal_is_itself(self):
+        assert text_source("title:.*bandit") == "title:.*bandit"
+
+    def test_an_at_reads_the_file(self, tmp_path):
+        """A regex or a query carries characters the shell rewrites; a path
+        never does."""
+        pattern = tmp_path / "p.txt"
+        pattern.write_text('all:"combinatorial bandit"', encoding="utf-8")
+        assert text_source(f"@{pattern}") == 'all:"combinatorial bandit"'
+
+    def test_a_dash_reads_stdin(self, monkeypatch):
+        monkeypatch.setattr("sys.stdin", io.StringIO("from stdin"))
+        assert text_source("-") == "from stdin"
+
+    def test_a_doubled_at_starts_a_literal(self):
+        assert text_source("@@handle") == "@handle"
+
+    def test_a_missing_file_names_itself(self, tmp_path):
+        with pytest.raises(CommandError, match="cannot read"):
+            text_source(f"@{tmp_path / 'absent'}")

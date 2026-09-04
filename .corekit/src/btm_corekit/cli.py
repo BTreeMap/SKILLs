@@ -79,6 +79,30 @@ def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) 
     return dispatch(parsed)
 
 
+AT = "@"
+STDIN = "-"
+
+
+def text_source(raw: str) -> str:
+    """A free-form value written inline, as `@path`, or as `-` for stdin.
+
+    `@` marks a path only where a literal is also possible, so a parameter
+    that takes nothing but a path keeps its bare spelling. `@@` starts a
+    literal that begins with `@`.
+    """
+    if raw == STDIN:
+        return sys.stdin.read()
+    if raw.startswith(AT * 2):
+        return raw[1:]
+    if not raw.startswith(AT):
+        return raw
+    path = Path(raw[1:]).expanduser()
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as err:
+        raise CommandError(f"cannot read {path}: {err}") from err
+
+
 @dataclass(frozen=True, slots=True)
 class Inline:
     text: str
@@ -308,7 +332,7 @@ def wire_pad(
     recaller.set_defaults(func=cmd_recall)
     recaller.add_argument("session", help="session identifier or directory")
     recaller.add_argument("--kind")
-    recaller.add_argument("--match")
+    recaller.add_argument("--match", type=text_source)
     recaller.add_argument("--since", help="entries after this pad id")
     recaller.add_argument("--limit", type=int)
     if lore is not None:

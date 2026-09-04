@@ -26,6 +26,7 @@ from btm_corekit import (
     require,
     run_cli,
     signal,
+    text_source,
     wire_clean,
     wire_pad,
     write_atomic,
@@ -336,7 +337,12 @@ def build_parser() -> argparse.ArgumentParser:
     link = commands.add_parser("link", help="attach a lit-review corpus as prior work")
     link.set_defaults(func=cmd_link)
     link.add_argument("session")
-    link.add_argument("--corpus", required=True, help="lit-review session id or path")
+    link.add_argument(
+        "--corpus",
+        type=text_source,
+        required=True,
+        help="lit-review session id or path",
+    )
     note = commands.add_parser("note", help="admit one JSON batch")
     note.set_defaults(func=cmd_note)
     note.add_argument("session")

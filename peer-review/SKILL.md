@@ -132,6 +132,8 @@ and the report scaffold. `cite-check --draft` requires every `[On]` and
 `[Cn]` in the draft to resolve to a grounded record and every grounded fatal
 or major objection to appear.
 
+An option that takes a literal also takes `@path`, which reads the file, or `-`, which reads stdin; `@@` starts a literal `@`. A parameter that is only ever a path keeps its bare spelling.
+
 Exit codes: 0 done (stderr `signal:` lines are advisory); 1 fix the input
 and resend. `clean` lists sessions with sizes and removes one or
 `--all`, reporting bytes freed.
