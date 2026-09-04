@@ -117,21 +117,22 @@ Step = (
     | BindGradleProject
 )
 
-_STAGE: dict[type, Stage] = {
-    CondaEnv: Stage.TOOLCHAIN,
-    UvVenv: Stage.TOOLCHAIN,
-    Fetch: Stage.FETCH,
-    GhcupToolchain: Stage.ASSEMBLE,
-    AndroidSdk: Stage.ASSEMBLE,
-    Aapt2Shim: Stage.SHIM,
-    CompilerShims: Stage.SHIM,
-    UvShim: Stage.SHIM,
-    BindGradleProject: Stage.BIND,
-}
-
 
 def stage_of(step: Step) -> Stage:
-    return _STAGE[type(step)]
+    """Exhaustive over the closed sum, so a new variant is a type error here
+    rather than a KeyError at sort time. The dict this replaces was keyed by
+    type: it type-checked everywhere and failed only once a plan was built."""
+    match step:
+        case CondaEnv() | UvVenv():
+            return Stage.TOOLCHAIN
+        case Fetch():
+            return Stage.FETCH
+        case Aapt2Shim() | CompilerShims() | UvShim():
+            return Stage.SHIM
+        case GhcupToolchain() | AndroidSdk():
+            return Stage.ASSEMBLE
+        case BindGradleProject():
+            return Stage.BIND
 
 
 def sort_key(step: Step) -> tuple[int, str, str]:

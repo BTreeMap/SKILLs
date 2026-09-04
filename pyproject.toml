@@ -34,7 +34,12 @@ members = [
 dev = ["pytest>=8", "mypy>=1.11"]
 
 [tool.pytest.ini_options]
-addopts = "--import-mode=importlib --strict-markers"
+# The gate stays deterministic: network tests are opt-in with `-m network`,
+# which overrides this default because pytest takes the last -m it is given.
+addopts = "--import-mode=importlib --strict-markers -m 'not network'"
+markers = [
+  "network: reaches a real server; excluded from the default run",
+]
 testpaths = [
   ".corekit/tests",
   ".github/gate/tests",

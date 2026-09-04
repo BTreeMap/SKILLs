@@ -17,6 +17,7 @@ from btm_setup_env.model import (
     QemuUser,
     RawTag,
     Rosetta,
+    Target,
     Unsupported,
     emulation,
     make_spec,
@@ -49,6 +50,27 @@ class TestTagGrammar:
 
 
 class TestSpecLaw:
+    def test_two_versions_of_one_toolchain_are_refused(self):
+        """The spec law: one recipe key, one version, so a version conflict is
+        unrepresentable downstream rather than resolved by ordering."""
+        with pytest.raises(DenvError, match="one toolchain, one version"):
+            make_spec(
+                [
+                    Target(("python", GENERIC), "3.12"),
+                    Target(("python", GENERIC), None),
+                ],
+                Path("/proj"),
+            )
+
+    def test_the_same_tag_twice_is_one_target(self):
+        """Deduplication rather than refusal: repeating a tag asks for nothing
+        contradictory, so it is not the caller's mistake to fix."""
+        spec = make_spec(
+            [Target(("go", GENERIC), "1.22"), Target(("go", GENERIC), "1.22")],
+            Path("/proj"),
+        )
+        assert len(spec.targets) == 1
+
     def test_an_empty_target_list_is_refused(self):
         with pytest.raises(DenvError, match="no targets given"):
             make_spec([], Path("/p"))
