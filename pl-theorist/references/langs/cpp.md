@@ -48,7 +48,7 @@
 
 ## Teaching Example
 
-<teaching-example language="cpp">
+<example for="teaching" language="cpp">
 <![CDATA[
 #include <cstdint>
 #include <variant>
@@ -70,7 +70,7 @@ private:
     explicit Port(std::uint16_t value) : value_(value) {}
     std::uint16_t value_;
 };
-]]></teaching-example>
+]]></example>
 
 Taste: private construction makes invalid ports unrepresentable; `variant`
 provides a C++17 result without dependencies. If C++23 `std::expected` is already

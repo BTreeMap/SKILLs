@@ -51,7 +51,7 @@ appears, compose instead of adding a prop.
 adding a flag that switches structure internally. A component whose props
 control which subtree renders is several components sharing a name.
 
-<god-component>
+<example for="god-component">
 Symptom: a props list that has grown to cover every call site.
 
   <Card
@@ -71,7 +71,7 @@ Fix by composition: a Card that renders what it is given.
 
 The axes that remain as props are the ones that are genuinely one axis:
 a closed `variant`, a closed `size`.
-</god-component>
+</example>
 
 ## Prop APIs that exclude the invalid
 
@@ -79,13 +79,13 @@ a closed `variant`, a closed `size`.
 Independent flags multiply into combinations that have no meaning, and each
 one is a state someone will eventually pass.
 
-<variant-modeling>
+<directives for="variants">
 Admits nonsense (primary and danger simultaneously, large and small):
   { primary?: bool; secondary?: bool; danger?: bool; large?: bool; small?: bool }
 
 Closed and total:
   { variant: 'primary' | 'secondary' | 'danger'; size: 'sm' | 'md' | 'lg' }
-</variant-modeling>
+</directives>
 
 **Model asynchronous collections as one closed set.** `interaction`
 defines the container states and their canonical union; encode that union
@@ -93,10 +93,10 @@ rather than a bag of flags. A design rule about which states must exist then
 becomes a build error when one is missing, instead of a review finding
 somebody has to catch.
 
-<flag-bag>
+<example for="flag-bag">
 Admits contradictions, and no exhaustiveness check can be performed on it:
   { loading: bool; error?: Error; items?: Item[] }
-</flag-bag>
+</example>
 
 **Eliminate exhaustively.** Handle every case of a closed set with no
 catch-all branch, so that adding a variant fails the build at every site
@@ -151,7 +151,7 @@ in the URL in the URL.
 
 Treat a lookup inside a loop as a nested loop.
 
-<render-cost>
+<directives for="render-cost">
 Quadratic in the number of rows, re-run on every render:
   rows.map(row => {
     const owner = users.find(u => u.id === row.ownerId)   // O(n) per row
@@ -161,7 +161,7 @@ Quadratic in the number of rows, re-run on every render:
 Build the index once, then the loop is linear:
   const byId = new Map(users.map(u => [u.id, u]))
   rows.map(row => { const owner = byId.get(row.ownerId) ... })
-</render-cost>
+</directives>
 
 * Keys come from stable identity. An array index as a key corrupts state and
   animation as soon as the list is reordered, filtered, or prepended to.
@@ -180,13 +180,13 @@ Build the index once, then the loop is linear:
 Name by concept. Appearance names go stale the first time the design changes, and location
 names discourage the reuse the component exists for.
 
-<naming>
+<directives for="naming">
 Stale on redesign, or discourages reuse:
   BlueButton, SmallCard, HomepageHero, SettingsPageTable, NewModal2
 
 Names the concept:
   Button, Card, Hero, DataTable, ConfirmDialog
-</naming>
+</directives>
 
 One concept, one name, one spelling, used in the code, the design files, and
 the conversation. Divergent vocabulary between design and code is how two

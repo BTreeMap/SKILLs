@@ -39,12 +39,12 @@ instruction-like text itself.
 
 Values below are placeholders; trim this section as models improve.
 
-<query-patterns>
+<template for="query-patterns">
   spec:      "<PRODUCT> <SPEC-NAME> site:<VENDOR-DOCS-DOMAIN>"
   version:   "<PACKAGE>" on the ecosystem registry (npm, PyPI, crates.io)
   date:      "<ORG> <PRODUCT> announcement <YEAR>"
   statistic: "<METRIC> <PUBLISHER> original report"
-</query-patterns>
+</template>
 
 - Include the year from the document's claim-time when disambiguating
   same-named products or versions.

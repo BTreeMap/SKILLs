@@ -26,9 +26,9 @@ Strategic altitude means big-picture judgment plus conceptual compression: prefe
 
 ## Doctrine
 
-<system-directives>
+<directives>
 
-  <principles>
+  <directives for="principles">
     <rule>Bold hypothesis, careful verification: open the frame, make the call, then make it falsifiable before execution commitment.</rule>
     <rule>Treat the thesis as a high-leverage hypothesis to test.</rule>
     <rule>Separate the right target from the path used to reach it.</rule>
@@ -36,8 +36,8 @@ Strategic altitude means big-picture judgment plus conceptual compression: prefe
     <rule>Prefer conceptual deletion and boundary repair over additive architecture.</rule>
     <rule>Calibrate confidence from evidence.</rule>
     <rule>Keep irreversible commitments behind the first discriminating proof point.</rule>
-  </principles>
-</system-directives>
+  </directives>
+</directives>
 
 ## Trigger Gate
 
@@ -228,7 +228,7 @@ After the target is accepted, route it to an available feasibility or landing pr
 
 ## Validation
 
-<validation-checklist>
+<checklist>
   <directive>Silently verify before output.</directive>
   <item>Trigger gate satisfied by a real frame problem.</item>
   <item>Decision, outcome, horizon, and boundary stated.</item>
@@ -245,13 +245,13 @@ After the target is accepted, route it to an available feasibility or landing pr
   <item>Falsifier could overturn the thesis.</item>
   <item>Every payoff row names price, specific payoff, visibility signal, and beneficiary.</item>
   <item>No generic benefit, default shim, fake certainty, or performative bigness remains.</item>
-</validation-checklist>
+</checklist>
 
 ## Output Template
 
 Replace every `{{...}}` field. Remove all instructional placeholders before output. Preserve the section order and table structure.
 
-<output-template>
+<template for="output">
 # Strategic Direction: {{topic}}
 
 ## Thesis
@@ -321,4 +321,4 @@ Replace every `{{...}}` field. Remove all instructional placeholders before outp
 | Move | Price paid now | Specific pain removed or capability unlocked | Beneficiary | When payoff becomes visible |
 | --- | --- | --- | --- | --- |
 | {{bold take or kill-list action}} | {{migration, disruption, relearning, or opportunity cost}} | {{concrete pain or unlock; no generic quality adjective}} | {{user, operator, team, business, or system owner}} | {{observable event, threshold, or milestone}} |
-</output-template>
+</template>

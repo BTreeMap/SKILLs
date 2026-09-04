@@ -48,10 +48,10 @@ to the `refactor` verb per finding.
 
 ## Completion Checks
 
-<verb-checklist>
+<checklist for="verb">
   <item>The working tree is untouched.</item>
   <item>Every category was swept over the full scope or the skipped remainder is named.</item>
   <item>Every finding survived the cost-model and convention check.</item>
   <item>Findings are ranked by severity with file:line anchors.</item>
   <item>Sound areas are named so silence is meaningful.</item>
-</verb-checklist>
+</checklist>

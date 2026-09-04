@@ -39,7 +39,7 @@ non-empty.
 - A criterion an agent cannot check against a record ("high quality") does
   not belong here; quality is appraised during extract.
 
-<criteria-example>
+<example for="criteria">
 "criteria": {
   "include": [
     "evaluates retrieval-augmented generation for factual accuracy",
@@ -52,7 +52,7 @@ non-empty.
     "not available in English"
   ]
 }
-</criteria-example>
+</example>
 
 ## Amendments
 

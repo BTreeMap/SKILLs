@@ -46,9 +46,9 @@ level, `push` implies **lite** (nothing extra loads); an explicit level wins,
 so `full push` and `ultra push` draft at that level first. Run `git push`
 ONLY when the user passed the push verb or asked to push.
 
-<system-directives>
+<directives>
 
-  <commit-schema>
+  <template for="commit">
 <type>(<scope>): <subject>
 <BLANK LINE>
 
@@ -56,33 +56,33 @@ ONLY when the user passed the push verb or asked to push.
 <BLANK LINE>
 
 <footer>
-  </commit-schema>
+  </template>
 
-  <subject-constraints>
+  <directives for="subject">
     <rule>Limit the entire subject line to 70 characters or fewer.</rule>
     <rule>Select a lowercase type from the allowed list.</rule>
     <rule>Enclose the optional lowercase scope in parentheses.</rule>
     <rule>Write the subject description in the imperative mood (e.g., Add, Fix, Refactor).</rule>
     <rule>Capitalize the first letter of the subject description.</rule>
     <rule>Terminate the subject line without a period.</rule>
-  </subject-constraints>
+  </directives>
 
-  <allowed-types>
+  <directives for="types">
     feat, fix, refactor, docs, style, perf, test, build, ci, chore, revert
-  </allowed-types>
+  </directives>
 
-  <lite-procedure>
+  <procedure for="lite">
     <rule>Derive the scope from the staged file paths: the single top-level directory, package, or module touched. Omit the scope when changes span several.</rule>
     <rule>Reuse a scope visible in `git log --oneline -10`; run no wider history scan.</rule>
     <rule>Output the subject line only. Add a body and footer solely for a breaking change, which always requires `BREAKING CHANGE: ` plus the migration path.</rule>
-  </lite-procedure>
+  </procedure>
 
-  <exception-handling>
+  <directives for="exceptions">
     <rule>Retain bot-authored commits (e.g., Renovate, Dependabot) and platform-generated merge commits exactly as they are; reformat nothing.</rule>
-  </exception-handling>
+  </directives>
 
-  <output-contract>
+  <directives for="output">
     <rule>Output strictly the raw commit text or the executable `git commit -m` command.</rule>
     <rule>Omit conversational filler, preambles, formatting acknowledgments, and concluding remarks.</rule>
-  </output-contract>
-</system-directives>
+  </directives>
+</directives>

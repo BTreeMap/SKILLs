@@ -42,11 +42,11 @@ verb for existing work. Change nothing.
 
 ## Finding format
 
-<finding-format>
+<template for="finding">
 **{severity}** {location}: {one-sentence defect}
 Fails when: {concrete input, state, or viewport, and what the user sees}
 Fix: {the specific change, not a principle}
-</finding-format>
+</template>
 
 ## Rules
 
@@ -65,7 +65,7 @@ Fix: {the specific change, not a principle}
 
 ## Completion checks
 
-<validation-checklist>
+<checklist>
   <item>The intended read was reconstructed and stated before any finding.</item>
   <item>The flow was walked and the built friction budget counted.</item>
   <item>All five sweeps ran in order and whole-surface consistency was checked beyond the diff.</item>
@@ -73,4 +73,4 @@ Fix: {the specific change, not a principle}
   <item>Every finding carries a concrete failure scenario and a specific fix.</item>
   <item>Findings are ranked by severity and preferences were dropped.</item>
   <item>Coverage limits are stated and nothing was modified.</item>
-</validation-checklist>
+</checklist>

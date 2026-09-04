@@ -65,9 +65,9 @@ comprehension syntax. For a filter-transform shape,
 prefer the target language's equivalent of the following when its profile
 permits it:
 
-<canonical-filter-map>
+<template for="filter-map">
 results = map(process, filter(lambda x: x > 5, data))
-</canonical-filter-map>
+</template>
 
 This preference yields to a clearer named predicate, a fused native operator,
 required eager collection type, or a measured single-pass constraint.
@@ -136,11 +136,11 @@ explanation, cost-model caveat.
 
 ## Completion Checks
 
-<verb-checklist>
+<checklist for="verb">
   <item>Observable contract and effect order remain intact.</item>
   <item>Imperative control flow was classified before transformation.</item>
   <item>Cost signals were scanned alongside the algebra; complexity regressions are impossible and improvements are stated or flagged.</item>
   <item>Any fallback descended only as far as the cost model required.</item>
   <item>Point-free and curried forms remain easier to reason about than alternatives.</item>
   <item>Relevant automated checks pass or unavailable checks are named.</item>
-</verb-checklist>
+</checklist>

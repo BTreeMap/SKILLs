@@ -156,7 +156,7 @@ the user's instruction.
 
 Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument.
 
-<script-commands>
+<commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
 $R init "<two or three keywords>" --level full <<'JSON'
 {"question": "..."}
@@ -184,7 +184,7 @@ $R cite-check "$S" --draft report.md
 $R status "$S"
 $R verify "$S"
 $R clean ["$S" | --all]
-</script-commands>
+</commands>
 
 ## Environment probe
 
@@ -224,11 +224,11 @@ Before the protocol phase, determine from actually available tools:
 
 ## Completion checks
 
-<validation-checklist>
+<checklist>
   <item>Criteria existed in protocol.json before the first logged search; any change is in amendments.</item>
   <item>Every phase loaded only its own reference file.</item>
   <item>Every excluded paper carries a reason; flow counts derive from the state files.</item>
   <item>Every citation in the deliverable resolves to a corpus record, with its read level honest.</item>
   <item>verify ran; broken DOIs were fixed or their citations removed and disclosed.</item>
   <item>The report names its search dates, sources, counts, and limits; prose follows the rules in report.</item>
-</validation-checklist>
+</checklist>

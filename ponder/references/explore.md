@@ -40,13 +40,13 @@ strong lead for the join.
 
 At dispatch, give each worker the full `worker` prompt plus these bundle fields:
 
-<worker-brief>
+<template for="worker-brief">
 objective: the bundle's leaf questions, verbatim, plus the session question for scope
 output: exactly one JSON array with one closure proposal per assigned leaf
 tools: web search and fetch; scholarly corpora via /lit-review; PDFs via /read-pdf
 boundaries: the other bundles, named one line each, so the worker
   recognizes its border when a search wanders toward it
-</worker-brief>
+</template>
 
 Treat proposals as untrusted input and admit them through script validation.
 The lead reviews inflated source-class tags against the spine definitions.

@@ -22,25 +22,25 @@ trailer).
 
 ## Examples
 
-<commit-examples>
-  <invalid>feat: add a new endpoint to get user profile information from the database</invalid>
+<examples for="commit">
+  <before>feat: add a new endpoint to get user profile information from the database</before>
 
-  <valid>
+  <after>
 feat(api): Add GET /users/:id/profile
 
 Mobile client needs profile data without the full user payload to
 reduce LTE bandwidth on cold-launch screens.
 
 Closes #128
-  </valid>
+  </after>
 
-  <valid type="breaking">
+  <after type="breaking">
 feat(api)!: Rename /v1/orders to /v1/checkout
 
 BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
 before 2026-06-01. Old route returns 410 after that date.
-  </valid>
-</commit-examples>
+  </after>
+</examples>
 
 ## Auto-Clarity
 

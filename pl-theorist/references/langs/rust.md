@@ -86,7 +86,7 @@ syntax they permit, never beyond.
 
 ## Teaching Example
 
-<teaching-example language="rust">
+<example for="teaching" language="rust">
 <![CDATA[
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Port(u16);
@@ -105,7 +105,7 @@ impl Port {
 fn configured_port(raw: Option<u16>) -> Result<Port, PortError> {
     raw.map_or_else(|| Port::new(8080), Port::new)
 }
-]]></teaching-example>
+]]></example>
 
 Taste: a private newtype makes zero unrepresentable after construction;
 `Option` models missing configuration and `Result` models invalid configuration;

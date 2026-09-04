@@ -9,9 +9,9 @@ so deferrals stay visible.
 Grep the repository for comment markers, skipping `.git`, vendored
 dependencies (e.g. `node_modules`), and build output:
 
-<scan-command>
+<commands for="scan">
 grep -rnE '(#|//) ?ponytail:' .
-</scan-command>
+</commands>
 
 Add other comment prefixes if the stack uses them. Each hit is one ledger
 row; the comment prefix keeps prose that merely mentions the convention out
@@ -21,9 +21,9 @@ of the ledger.
 
 One row per marker, grouped by file:
 
-<ledger-row>
+<template for="ledger-row">
 <file>:<line>, <what was simplified>. ceiling: <the limit named>. upgrade: <the trigger to revisit>.
-</ledger-row>
+</template>
 
 The convention is `ponytail: <ceiling>, <upgrade path>`, so pull the ceiling
 and the trigger straight from the comment. For an owner per row, add

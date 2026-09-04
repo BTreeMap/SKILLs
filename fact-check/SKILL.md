@@ -98,7 +98,7 @@ span with the corrected span using the available file-editing tool".
 Identical on every branch. Input: one decontextualized claim, its type, the
 document's timestamp (claim-time). Output: one verdict record.
 
-<verdict-record>
+<template for="verdict">
 {
   "id": "c-07",
   "claim": "decontextualized atomic claim text",
@@ -114,7 +114,7 @@ document's timestamp (claim-time). Output: one verdict record.
   "correction": "replacement span text, or null",
   "notes": "conflicts, suspected injection, temporal caveats"
 }
-</verdict-record>
+</template>
 
 Verdict definitions, confidence rules, and the abstention threshold are in
 `verdicts`. Confidence below the threshold forces `correction: null`.
@@ -179,11 +179,11 @@ values in its references are placeholders marked illustrative.
 
 ## Completion checks
 
-<validation-checklist>
+<checklist>
   <item>Step 0 probe ran; the branch chosen matches actual capabilities and claim count; no verdict was produced without retrieval.</item>
   <item>Every claim in the inventory has exactly one verdict record conforming to the contract, flushed to the state file.</item>
   <item>Every correction cites two independent sources with verbatim quotes, URLs, and access dates.</item>
   <item>Constraints were re-read from the state file before every edit; only user-approved corrections were applied.</item>
   <item>Edited paragraphs re-read for coherence; secondary edits reported.</item>
   <item>Final summary names verdict counts, branch, and cost; no follow-up tool or skill was auto-invoked.</item>
-</validation-checklist>
+</checklist>

@@ -157,7 +157,7 @@ Skip only if nothing was supplied.
 
 State the outcome in this shape:
 
-<preflight-report>
+<template for="preflight">
 Preflight: {passed | failed}
 Counts: {any count that is not at its pass value}
 Unresolved: {gates that could not be honestly ticked, and why}
@@ -165,7 +165,7 @@ Assets required: {labeled slots still needing real content}
 Friction budget: {n} steps to {primary goal}
 Not verified: {anything requiring a running application, real data, or
 assistive technology testing}
-</preflight-report>
+</template>
 
 An honest failure report is a successful preflight. Claiming a pass that was
 not verified is the only way to fail this gate outright.

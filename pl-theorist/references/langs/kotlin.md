@@ -47,7 +47,7 @@
 
 ## Teaching Example
 
-<teaching-example language="kotlin">
+<example for="teaching" language="kotlin">
 <![CDATA[
 @JvmInline
 value class Port private constructor(val value: Int) {
@@ -67,7 +67,7 @@ fun describe(result: PortResult): String = when (result) {
     is PortResult.Valid -> "port ${result.port.value}"
     is PortResult.Invalid -> result.reason
 }
-]]></teaching-example>
+]]></example>
 
 Taste: private value-class construction refines the integer, the sealed result
 names expected failure, and exhaustive `when` eliminates both states. Check

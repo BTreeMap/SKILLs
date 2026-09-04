@@ -64,7 +64,7 @@
 
 ## Teaching Example
 
-<teaching-example language="python">
+<example for="teaching" language="python">
 <![CDATA[
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
@@ -95,7 +95,7 @@ def email_value(email: Email) -> str:
 
 def valid_emails(raw_values: Iterable[str]) -> Iterator[str]:
     return map(email_value, filter(is_email, map(Email.parse, raw_values)))
-]]></teaching-example>
+]]></example>
 
 Taste: untrusted strings cross one smart-constructor boundary; absence is
 explicit; the result streams. Named functions preserve type narrowing and domain

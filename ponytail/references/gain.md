@@ -13,7 +13,7 @@ rate limiter; three model tiers), measured there. Source: https://github.com/Die
 Render plain ASCII bars. The bar length shows the measured range; the label
 carries the exact figure:
 
-<scoreboard>
+<template for="scoreboard">
   ponytail gain                     benchmark median · 5 tasks · 3 models
 
   Lines of code   no-skill  ████████████████████  100%
@@ -24,7 +24,7 @@ carries the exact figure:
 
   This repo:  /ponytail debt   (shortcuts you deferred)
               /ponytail audit  (what's still cuttable)
-</scoreboard>
+</template>
 
 ## Honesty Boundary
 

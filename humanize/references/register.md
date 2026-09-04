@@ -26,9 +26,9 @@ The validator runs before the request reaches the handler. It checks each field 
 The validator checks every field against the schema before the request reaches the handler, then reports the invalid ones. The caller decides whether to retry.
 </after>
 
-<measure-command>
+<commands for="measure">
 python3 -c "import re,sys,statistics as s;t=re.sub(r'\s+',' ',open(sys.argv[1]).read());n=[len(x.split()) for x in re.split(r'(?<=[.!?])\s+(?=[A-Z\"(])',t) if 3<=len(x.split())<=120];print([round(s.pstdev(b)/s.mean(b),2) for b in (n[i:i+40] for i in range(0,len(n)-39,40))])" <file>
-</measure-command>
+</commands>
 
 ### 37. Placement and weight verbs
 

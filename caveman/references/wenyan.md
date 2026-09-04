@@ -17,8 +17,8 @@ Rules:
 - Technical terms, code, API names, and error strings stay verbatim in any level.
 - All core rules (negation preservation, exact numbers, auto-clarity) still apply.
 
-<wenyan-examples request="Why does my React component re-render?">
-  <wenyan-lite>組件頻重繪，以每繪新生對象參照故。以 useMemo 包之。</wenyan-lite>
-  <wenyan-full>每繪新生對象參照，故重繪；以 useMemo 包之則免。</wenyan-full>
-  <wenyan-ultra>新參照則重繪。useMemo 包之。</wenyan-ultra>
-</wenyan-examples>
+<examples for="wenyan" request="Why does my React component re-render?">
+  <variant name="wenyan-lite">組件頻重繪，以每繪新生對象參照故。以 useMemo 包之。</variant>
+  <variant name="wenyan-full">每繪新生對象參照，故重繪；以 useMemo 包之則免。</variant>
+  <variant name="wenyan-ultra">新參照則重繪。useMemo 包之。</variant>
+</examples>

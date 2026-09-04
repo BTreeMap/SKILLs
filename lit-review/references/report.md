@@ -7,7 +7,7 @@ and the session state. Assemble, verify, then deliver.
 
 Sections in order; drop bracketed ones where the level says so.
 
-<report-template>
+<template for="report">
 # Literature review: <question>
 
 ## Summary
@@ -41,7 +41,7 @@ Corpus-relative gaps, phrased per synthesize.
 | [n] | title | authors | year | venue | read level | key |
 Rows follow the script's marker table; bibliography with DOI or arXiv
 link per entry.
-</report-template>
+</template>
 
 ## Verification before delivery
 
@@ -73,14 +73,14 @@ reported numbers with units, named papers doing named things.
 - Banned vocabulary, in the report and in every intermediate note. If one
   appears in a quoted source title, it stays inside the quotation marks:
 
-  <banned-words>
+  <directives for="banned-words">
   delve, tapestry, landscape (figurative), pivotal, crucial, seminal,
   groundbreaking, cutting-edge, state-of-the-art (unless a paper claims it,
   attributed), rapidly evolving, burgeoning, holistic, robust (outside a
   statistics term), comprehensive, seamless, leverage (verb), showcase,
   underscore, highlight (verb), testament, interplay, myriad, plethora,
   paradigm shift, in the realm of, it is important to note
-  </banned-words>
+  </directives>
 
 - No "not X but Y" framing, no forced triads, no rhetorical questions, no
   sentence that announces what the next sentence will say.

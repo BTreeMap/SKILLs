@@ -69,7 +69,7 @@
 - Encapsulate effect interpreters in narrowly named custom hooks, but keep domain
   transitions as ordinary pure functions that can be tested without React.
 
-<react-teaching-example language="javascript">
+<example for="teaching" framework="react" language="javascript">
 <![CDATA[
 const initialState = Object.freeze({ tag: "idle" });
 
@@ -119,7 +119,7 @@ function useSearch(query) {
   }, [query]);
   return state;
 }
-]]></react-teaching-example>
+]]></example>
 
 React taste: one tag defines each valid UI state; the reducer is a pure state
 transition; request identity rejects stale effects; rendering eliminates every
@@ -127,7 +127,7 @@ known variant. JavaScript still needs runtime defensive branches.
 
 ## Teaching Example
 
-<teaching-example language="javascript">
+<example for="teaching" language="javascript">
 <![CDATA[
 const ok = value => Object.freeze({ tag: "ok", value });
 const failure = message => Object.freeze({ tag: "error", message });
@@ -146,7 +146,7 @@ const describe = result => {
     default: throw new TypeError("unknown result variant");
   }
 };
-]]></teaching-example>
+]]></example>
 
 Taste: factories admit only valid ports, the tagged result makes failure data,
 and flat stable objects suit the engine. Runtime JavaScript cannot prove that no

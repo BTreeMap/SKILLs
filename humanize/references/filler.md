@@ -7,14 +7,14 @@ endings, reflexive hyphens.
 
 Replace the wind-up with the direct form:
 
-<swaps>
+<template for="swaps">
 "In order to achieve this goal" → "To achieve this"
 "Due to the fact that it was raining" → "Because it was raining"
 "At this point in time" → "Now"
 "In the event that you need help" → "If you need help"
 "The system has the ability to process" → "The system can process"
 "It is important to note that the data shows" → "The data shows"
-</swaps>
+</template>
 
 ### 24. Too many qualifiers
 

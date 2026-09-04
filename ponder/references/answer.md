@@ -11,9 +11,9 @@ survivors and `refuted` premises feed Rival.
 
 Draft from script output:
 
-<answer-command>
+<commands for="answer">
 env -u VIRTUAL_ENV uv run --project "$(realpath <skill-root>/scripts)" btm-ponder check <session>
-</answer-command>
+</commands>
 
 The check returns the marker table first (`S1` onward, with class, title,
 url), then the derived sections, a scaffold holding each close's stored
@@ -48,7 +48,7 @@ bare.
   stating the claim as attributed evidence: "benchmarks report [S4]",
   "practitioner accounts hold [S6]".
 
-<answer-template>
+<template for="answer">
 ## Answer
 <claim, plainly> [S1]. <derived conclusion> [~].
 
@@ -65,4 +65,4 @@ Below <threshold> the answer flips: <flipped claim> [S4].
 ## Sources
 - S1 (constitutive): <title>, <url>
 - S3 (reported): <title>, <url>
-</answer-template>
+</template>

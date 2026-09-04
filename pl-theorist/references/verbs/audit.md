@@ -50,10 +50,10 @@ fix, and the unexamined areas. Fixing proceeds through
 
 ## Completion Checks
 
-<verb-checklist>
+<checklist for="verb">
   <item>The working tree is untouched.</item>
   <item>Hot paths and trust boundaries were examined before peripheral code.</item>
   <item>Both diff-scale and repo-scale categories were swept.</item>
   <item>Unexamined areas are named explicitly.</item>
   <item>Ranking reflects severity times reach.</item>
-</verb-checklist>
+</checklist>

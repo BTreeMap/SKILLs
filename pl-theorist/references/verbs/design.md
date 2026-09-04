@@ -63,11 +63,11 @@ No implementation code beyond type sketches unless the user asks to proceed to
 
 ## Completion Checks
 
-<verb-checklist>
+<checklist for="verb">
   <item>Every meaningless field combination is either unrepresentable or explicitly justified.</item>
   <item>Every transition is total or returns an explicit rejection.</item>
   <item>Untrusted data enters through named smart-constructor boundaries only.</item>
   <item>The dominant operations carry stated bounds and structures.</item>
   <item>The effect boundary names idempotency, retries, transactions, and required capabilities.</item>
   <item>One rejected alternative is documented with its killing constraint.</item>
-</verb-checklist>
+</checklist>

@@ -50,7 +50,7 @@ This sample requires Java 17. On an earlier configured release, use private
 constructors plus the project's visitor/result representation; do not raise the
 language target merely to copy the syntax.
 
-<teaching-example language="java">
+<example for="teaching" language="java">
 <![CDATA[
 sealed interface PortResult permits ValidPort, InvalidPort {}
 record ValidPort(Port value) implements PortResult {}
@@ -68,7 +68,7 @@ final class Port {
 
     int value() { return value; }
 }
-]]></teaching-example>
+]]></example>
 
 Taste: private construction establishes the invariant, and a sealed result makes
 expected failure explicit. The release constraint above applies.

@@ -48,14 +48,14 @@ with error, and cannot distinguish "none exist" from "none match the
 filter". Encode them as one closed set, so that omitting a state fails the
 build.
 
-<container-states>
+<directives for="container-states">
   | { status: 'loading' }
   | { status: 'error'; error: LoadError; retry: () => void }
   | { status: 'empty' }                                  // none exist yet
   | { status: 'filtered'; clearFilter: () => void }      // none match
   | { status: 'partial'; items: Item[]; loadMore: () => void }
   | { status: 'ready'; items: Item[] }
-</container-states>
+</directives>
 
 `empty` and `filtered` are the pair most often collapsed into one, and they
 need different copy and different actions.

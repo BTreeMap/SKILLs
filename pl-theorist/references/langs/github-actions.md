@@ -68,7 +68,7 @@ discipline.
 
 ## Teaching Example
 
-<teaching-example language="yaml">
+<example for="teaching" language="yaml">
 <![CDATA[
 on:
   workflow_call:
@@ -95,7 +95,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}            # data crosses as env, not splice
         run: ./ci/build.sh "$TARGET"
-]]></teaching-example>
+]]></example>
 
 Taste: the matrix maps a pure build over a declared domain in parallel with
 independent failures; `permissions` names the job's one effect; potentially

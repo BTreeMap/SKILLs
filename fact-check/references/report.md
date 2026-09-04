@@ -6,7 +6,7 @@ Per issue: source span, then evidence quotes (including counter-evidence),
 then verdict and proposed correction. Evidence precedes verdict so the
 user judges the evidence itself.
 
-<report-template>
+<template for="report">
 ## Fact-Check Report
 
 Checked N claims from <FILE> (claim-time: <DATE-OR-UNKNOWN>).
@@ -34,7 +34,7 @@ c-01, c-03, c-05 (one line each: claim, top source)
 
 ### Unverifiable / insufficient evidence
 c-09: <CLAIM> (<REASON>)
-</report-template>
+</template>
 
 All values above are illustrative placeholders; never copy concrete names,
 numbers, or URLs from this template into a real report.

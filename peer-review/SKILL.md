@@ -142,7 +142,7 @@ Read the source only when troubleshooting on the user's instruction.
 
 Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument.
 
-<script-commands>
+<commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
 $R init "<two or three keywords>" --date 2026-03 [--level full] <<'JSON'
 {"title": "..."}
@@ -160,9 +160,9 @@ $R jot "$S" --file <entry.json>
 $R recall "$S" [--kind note] [--match <regex>] [--since j9] [--limit 20]
 $R cite-check "$S" --draft review.md
 $R clean ["$S" | --all]
-</script-commands>
+</commands>
 
-<note-batch>
+<template for="note-batch">
 {
   "claims":     [{"kw": ["first", "combine"], "verbatim": "Our method is the first to combine X with Y."}],
   "objections": [{"kw": ["best", "run"], "kind": "selective", "severity": "major",
@@ -176,7 +176,7 @@ $R clean ["$S" | --all]
   "walks":      [{"bank": "design", "note": "seeds, baselines, splits checked"}],
   "withdraws":  [{"objection": "best run", "reason": "Appendix B reports the mean"}]
 }
-</note-batch>
+</template>
 
 ## Environment probe
 
@@ -210,7 +210,7 @@ Before ingest, determine from available tools:
 
 ## Completion checks
 
-<validation-checklist>
+<checklist>
   <item>Claims were noted before related work or discussion was read; each resolves to a page.</item>
   <item>Every bank the level requires has a walk entry; check reports no unwalked bank.</item>
   <item>Every objection in the review is grounded in check output; withdrawn and unanchored records are absent from it.</item>
@@ -218,4 +218,4 @@ Before ingest, determine from available tools:
   <item>The echo ratio was read; objections outside the authors' Limitations carry the review's weight.</item>
   <item>The recommendation and confidence are those check derived; cite-check passed on the final draft.</item>
   <item>The review names no author or affiliation and follows the template in report.</item>
-</validation-checklist>
+</checklist>

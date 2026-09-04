@@ -47,10 +47,10 @@ the artifact; no essays. Code snippets only from the real artifact.
 
 ## Completion Checks
 
-<verb-checklist>
+<checklist for="verb">
   <item>Every named concept is anchored to specific lines of the real artifact.</item>
   <item>Terminology is defined on first use.</item>
   <item>Exactly one reusable distinction is called out for the learner to keep.</item>
   <item>A rejected more-abstract form is shown with its killing constraint.</item>
   <item>A model audience was made to restate the three properties before editing.</item>
-</verb-checklist>
+</checklist>
