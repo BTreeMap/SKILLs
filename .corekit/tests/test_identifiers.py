@@ -136,3 +136,13 @@ class TestMinting:
     def test_minted_identifier_resolves_exactly(self):
         minted = mint(["rent", "length"])
         assert resolve(minted, [minted]) == Exact(minted)
+
+
+class TestSharedIndex:
+    def test_a_supplied_index_changes_no_verdict(self):
+        """resolve and suggest need the same keyword sets; the pool builds
+        them once and both read them."""
+        ids = ["rent-length-1", "rent-width-2"]
+        index = {name: set(keywords_of(name)) for name in ids}
+        for ref in ("rent-length-1", "width", "rent", "zzz", ""):
+            assert resolve(ref, ids) == resolve(ref, ids, index)

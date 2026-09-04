@@ -32,6 +32,7 @@ from btm_corekit import (
     Model,
     NonEmpty,
     append_jsonl,
+    count_lines,
     dump,
     gated,
     keywords_of,
@@ -479,7 +480,7 @@ def expand_notes(
 def cmd_note(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
-    log_count = len(read_jsonl(session.log_path))
+    log_count = count_lines(session.log_path)
     records = load_notebook(session)
 
     def expand(batch: dict[str, Any]) -> NoteResult:

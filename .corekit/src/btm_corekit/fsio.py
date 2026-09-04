@@ -54,6 +54,14 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in lines if line.strip()]
 
 
+def count_lines(path: Path) -> int:
+    """Records a JSONL file holds, counted without decoding one."""
+    if not path.exists():
+        return 0
+    with path.open(encoding="utf-8") as handle:
+        return sum(1 for line in handle if line.strip())
+
+
 def append_jsonl(path: Path, records: Iterable[Mapping[str, Any]]) -> None:
     """One record is a batch of one."""
     payload = "".join(

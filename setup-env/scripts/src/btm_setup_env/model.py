@@ -168,7 +168,8 @@ VERSION_CHARS = VERSION_FIRST | frozenset("._-")
 
 
 def _word(text: str, first: frozenset[str], rest: frozenset[str]) -> bool:
-    return bool(text) and text[0] in first and all(c in rest for c in text[1:])
+    """Set containment rather than a per-character loop, both C-level."""
+    return bool(text) and text[0] in first and set(text[1:]) <= rest
 
 
 GENERIC = "generic"

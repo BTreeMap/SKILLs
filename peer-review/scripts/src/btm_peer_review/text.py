@@ -9,6 +9,7 @@ a PDF with odd whitespace, curly quotes, or ligatures still resolves.
 
 from __future__ import annotations
 
+import re
 from bisect import bisect_right
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -31,9 +32,6 @@ from btm_peer_review.constants import (
     SECTION_END_FIRST_WORDS,
     SECTION_END_PAIRS,
 )
-
-_MAIL_LOCAL = frozenset("._+-")
-_MAIL_LABEL = frozenset("-_")
 
 _TRANSLATE = str.maketrans(
     {
@@ -80,20 +78,14 @@ def parse_pages(raw: str) -> list[tuple[int, str]]:
     return [(number, "\n".join(lines)) for number, lines in pages]
 
 
+EMAIL = re.compile(r"[\w.+\-]@[\w\-]+\.\w")
+"""`x@label.t`, the shortest thing that reads as an address. One quantifier
+over one class, so the engine stays linear and runs in C."""
+
+
 def has_email(text: str) -> bool:
-    """Whether an `x@label.tld` token occurs: one scan around each `@`."""
-    at = text.find("@")
-    while at != -1:
-        if at > 0 and (text[at - 1].isalnum() or text[at - 1] in _MAIL_LOCAL):
-            end = at + 1
-            while end < len(text) and (text[end].isalnum() or text[end] in _MAIL_LABEL):
-                end += 1
-            if end > at + 1 and text[end : end + 1] == "." and text[end + 1 : end + 2]:
-                after = text[end + 1]
-                if after.isalnum() or after == "_":
-                    return True
-        at = text.find("@", at + 1)
-    return False
+    """Whether an `x@label.tld` token occurs."""
+    return EMAIL.search(text) is not None
 
 
 def is_limitations_heading(line: str) -> bool:

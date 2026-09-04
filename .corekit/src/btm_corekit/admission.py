@@ -180,7 +180,9 @@ class Admission:
                 )
 
     def resolve_ref(self, ref: str, pool: Pool, where: str) -> str | None:
-        match resolve(ref, pool.ids):
+        # The pool's index serves both the match and the did-you-mean, so a
+        # batch tokenizes its ids once rather than once per reference.
+        match resolve(ref, pool.ids, pool.keywords()):
             case Exact(full):
                 return full
             case Recovered(full):

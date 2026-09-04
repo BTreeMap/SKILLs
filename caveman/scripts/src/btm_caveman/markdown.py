@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Iterator
 from functools import lru_cache
@@ -215,22 +216,13 @@ def _trim_trailing_punctuation(match: str) -> str:
     return match.rstrip(".,;:!?")
 
 
+URL = re.compile(r"https?://[^\s)]*")
+"""One quantifier over one class: the engine stays linear and runs in C."""
+
+
 def _urls(text: str) -> Iterator[str]:
-    """Every `http(s)://` run up to whitespace or `)`; one pass, since each
-    `http` is located once and the scan resumes past the run it closed."""
-    position = 0
-    while (start := text.find("http", position)) != -1:
-        scheme_end = start + 4
-        if text.startswith("s", scheme_end):
-            scheme_end += 1
-        if not text.startswith("://", scheme_end):
-            position = scheme_end
-            continue
-        end = scheme_end + 3
-        while end < len(text) and not text[end].isspace() and text[end] != ")":
-            end += 1
-        yield text[start:end]
-        position = end
+    """Every `http(s)://` run up to whitespace or `)`."""
+    return (found.group() for found in URL.finditer(text))
 
 
 PATH_TABLE = keep_table(

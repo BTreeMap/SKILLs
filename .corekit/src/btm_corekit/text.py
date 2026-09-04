@@ -15,6 +15,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 ASCII_LOWER_ALNUM = "abcdefghijklmnopqrstuvwxyz0123456789"
+ASCII_WORD = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 SPACE = 32
 
 

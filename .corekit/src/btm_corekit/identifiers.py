@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import base64
 import os
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 from btm_corekit.errors import CommandError
@@ -58,25 +58,30 @@ class NoMatch:
 Resolution = Exact | Recovered | Ambiguous | NoMatch
 
 
-def resolve(ref: str, ids: Iterable[str]) -> Resolution:
+def resolve(
+    ref: str, ids: Iterable[str], keywords: Mapping[str, set[str]] | None = None
+) -> Resolution:
     """Total resolution: exact id, else the id whose keywords are a superset.
 
-    Both sides are parsed into keyword sets, the way `suggest` already indexes
-    them. A substring test over the raw identifier instead lets a keyword match
-    inside a longer word, and inside the 26 random base32hex characters of the
-    suffix, where a single letter lands better than half the time and the
-    collision is not reproducible between runs.
+    Both sides are parsed into keyword sets. A substring test over the raw
+    identifier instead lets a keyword match inside a longer word, and inside
+    the 26 random base32hex characters of the suffix, where a single letter
+    lands better than half the time.
 
-    O(ids x characters); pools stay in the low hundreds.
+    `keywords` is the caller's own id-to-keyword index, shared with `suggest`;
+    without it each call re-tokenizes the pool at O(ids x characters).
     """
     pool = list(ids)
     if ref in pool:
         return Exact(ref)
     wanted = frozenset(keywords_of(ref))
+    if not wanted:
+        return NoMatch()
+    index = keywords or {}
     matches = [
         candidate
         for candidate in pool
-        if wanted and wanted <= frozenset(keywords_of(candidate))
+        if wanted <= (index.get(candidate) or frozenset(keywords_of(candidate)))
     ]
     if not matches:
         return NoMatch()

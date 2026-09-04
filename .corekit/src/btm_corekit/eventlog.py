@@ -14,7 +14,7 @@ from typing import Any
 
 from btm_corekit.clock import now_iso
 from btm_corekit.errors import CommandError
-from btm_corekit.fsio import append_jsonl, read_jsonl
+from btm_corekit.fsio import append_jsonl, count_lines, read_jsonl
 
 MAX_EVENTS = 2000  # runaway backstop; a real session stays well under it
 
@@ -38,10 +38,7 @@ class EventLog:
         return read_jsonl(self.path)
 
     def count(self) -> int:
-        if not self.exists():
-            return 0
-        with self.path.open(encoding="utf-8") as handle:
-            return sum(1 for line in handle if line.strip())
+        return count_lines(self.path)
 
     def append(
         self, events: Iterable[Mapping[str, Any]], *, held: int | None = None

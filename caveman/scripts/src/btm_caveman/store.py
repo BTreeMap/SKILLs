@@ -5,15 +5,15 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from btm_caveman.model import Refusal
 from btm_corekit import state_root
 
-SAFE_NAME_CHARS = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
-)
+UNSAFE_NAME = re.compile(r"[^A-Za-z0-9._-]")
+"""Everything a directory component may not carry, replaced in one C pass."""
 
 
 def backup_base() -> Path:
@@ -56,9 +56,7 @@ def slot_for(target: Path) -> BackupSlot:
     file's backup. The component is ASCII, <= 81 bytes, and separator-free.
     """
     digest = hashlib.sha256(os.fsencode(target)).hexdigest()[:16]
-    slug = (
-        "".join(c if c in SAFE_NAME_CHARS else "_" for c in target.name[:64]) or "file"
-    )
+    slug = UNSAFE_NAME.sub("_", target.name[:64]) or "file"
     return BackupSlot(directory=backup_base() / f"{slug}-{digest}", source=target)
 
 

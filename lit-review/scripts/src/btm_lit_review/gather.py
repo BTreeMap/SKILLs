@@ -14,10 +14,10 @@ from btm_corekit import (
     NonEmpty,
     append_jsonl,
     content,
+    count_lines,
     dump,
     emit,
     now_iso,
-    read_jsonl,
     signal,
     write_atomic,
 )
@@ -58,7 +58,7 @@ def record_fetch(
     limit: int,
 ) -> None:
     """Shared tail of search and snowball: absorb, log, report."""
-    log_id = f"s{len(read_jsonl(session.log_path)) + 1}"
+    log_id = f"s{count_lines(session.log_path) + 1}"
     papers = load_papers(session)
     stamped = [paper.with_(found_by=(log_id,)) for paper in fetched]
     papers, new_count = absorb(papers, stamped)

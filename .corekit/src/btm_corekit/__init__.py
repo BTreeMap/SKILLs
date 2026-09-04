@@ -35,6 +35,7 @@ from btm_corekit.errors import CommandError, UpstreamError
 from btm_corekit.eventlog import MAX_EVENTS, EventLog
 from btm_corekit.fsio import (
     append_jsonl,
+    count_lines,
     read_jsonl,
     state_root,
     tree_bytes,
@@ -89,6 +90,7 @@ from btm_corekit.origin import (
 from btm_corekit.pad import compile_match, jot, pad_body, pad_entries, pad_ids, recall
 from btm_corekit.sessions import Created, SessionStore
 from btm_corekit.text import (
+    ASCII_WORD,
     ascii_words,
     bracketed,
     collapse_whitespace,
@@ -103,6 +105,7 @@ from btm_corekit.text import (
 from btm_corekit.verdicts import Diagnostic
 
 __all__ = [
+    "ASCII_WORD",
     "JSON",
     "KEYWORD_RANGE",
     "MAX_EVENTS",
@@ -153,6 +156,7 @@ __all__ = [
     "collapse_whitespace",
     "compile_match",
     "content",
+    "count_lines",
     "demand",
     "diagnostics",
     "digest",

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from btm_caveman.model import Assessment, FileKind
-from btm_corekit import digit_run, keep_table, runs
+from btm_corekit import ASCII_WORD, digit_run, keep_table, runs
 
 COMPRESSIBLE_EXTENSIONS = frozenset(
     {".md", ".txt", ".markdown", ".rst", ".typ", ".typst", ".tex"}
@@ -71,9 +71,8 @@ KNOWN_CODE_FILENAMES = frozenset(
         "cmakelists.txt",
     }
 )
-WORD_CHARS = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-)
+WORD_CHARS = frozenset(ASCII_WORD)
+NAME_CHARS = WORD_CHARS | frozenset("'")
 DECLARATION_PREFIXES = (
     "import ",
     "require(",
@@ -151,10 +150,7 @@ def _type_signature(s: str) -> bool:
     head, sep, _ = s.partition("::")
     name = head.strip()
     return (
-        bool(sep)
-        and bool(name)
-        and name[0] in WORD_CHARS
-        and all(c in WORD_CHARS or c == "'" for c in name)
+        bool(sep) and bool(name) and name[0] in WORD_CHARS and set(name) <= NAME_CHARS
     )
 
 
@@ -268,7 +264,7 @@ def _looks_like_yaml_key(stripped: str) -> bool:
         bool(sep)
         and bool(key)
         and key[0] in WORD_CHARS
-        and all(c in WORD_CHARS or c.isspace() for c in key)
+        and set("".join(key.split())) <= WORD_CHARS
         and rest[:1].isspace()
     )
 
