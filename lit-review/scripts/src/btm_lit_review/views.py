@@ -99,8 +99,10 @@ def cmd_brief(args: argparse.Namespace) -> int:
     ]
     arrivals = arrivals_of(papers)
     gaps = [gap_view(record, arrivals) for record in live(records, "gap").values()]
-    challenged = [gap["id"] for gap in gaps if gap["state"] == "challenged"]
-    at_risk = [finding["id"] for finding in findings if finding["state"] == "at-risk"]
+    challenged = [str(gap["id"]) for gap in gaps if gap["state"] == "challenged"]
+    at_risk = [
+        str(finding["id"]) for finding in findings if finding["state"] == "at-risk"
+    ]
     if at_risk:
         signal(f"at-risk findings: {', '.join(at_risk)}; re-affirm or supersede")
     if challenged:

@@ -42,7 +42,9 @@ from btm_peer_review.store import (
 )
 from btm_peer_review.text import PaperText, parse_pages
 from btm_peer_review.views import (
+    ClaimView,
     Coverage,
+    ObjectionView,
     cite_check,
     claim_views,
     coverage,
@@ -168,8 +170,8 @@ class Review(TypedDict):
     coverage: Coverage
     recommendation: dict[str, JSON]
     echo: dict[str, JSON]
-    claims: list[dict[str, JSON]]
-    objections: list[dict[str, JSON]]
+    claims: list[ClaimView]
+    objections: list[ObjectionView]
     scaffold: dict[str, JSON]
 
 

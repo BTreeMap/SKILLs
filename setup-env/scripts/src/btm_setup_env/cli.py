@@ -53,13 +53,19 @@ def _parser() -> argparse.ArgumentParser:
             help="environment root (default: derived, per-project)",
         )
 
-    for verb in ("provision", "plan"):
-        sp = sub.add_parser(verb)
+    for verb, summary in (
+        ("provision", "install the toolchains these tags name"),
+        ("plan", "show what provision would install, and install nothing"),
+    ):
+        sp = sub.add_parser(verb, help=summary)
         sp.add_argument("tags", nargs="+", metavar="TAG")
         sp.add_argument("--json", action="store_true")
         common(sp)
-    for verb in ("status", "destroy"):
-        common(sub.add_parser(verb))
+    for verb, summary in (
+        ("status", "report what is installed and whether each probe passes"),
+        ("destroy", "remove the environment root for this project"),
+    ):
+        common(sub.add_parser(verb, help=summary))
     shim = sub.add_parser("shim", help="wrap a foreign-architecture binary to run here")
     shim.add_argument("binary", type=Path)
     shim.add_argument(

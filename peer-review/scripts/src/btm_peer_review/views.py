@@ -5,15 +5,16 @@ the ledger, the live paper text, and the linked corpus. Nothing here is stored.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
-from btm_corekit import bracketed, is_digits
+from btm_corekit import JSON, bracketed, is_digits
 from btm_peer_review.constants import (
     ECHO_WARN,
     LEVEL_BANKS,
     Band,
     Bank,
     ClaimVerdict,
+    Kind,
     Level,
     Recommendation,
     Severity,
@@ -26,6 +27,41 @@ from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim
 DECISIVE = frozenset({Severity.FATAL, Severity.MAJOR})
 
 
+class AnchorView(TypedDict):
+    quote: str
+    page: int | None
+    mode: str
+
+
+class ObjectionView(TypedDict):
+    """One objection as every downstream view reads it. Five functions index
+    this by key, so the keys are the contract between them."""
+
+    marker: str
+    id: str
+    kind: Kind
+    bank: Bank
+    severity: Severity
+    standing: Standing
+    claim: str | None
+    where: str | None
+    text: str
+    anchors: list[AnchorView]
+    missing: str | None
+    prior: list[dict[str, JSON]]
+    in_limitations: bool
+    withdrawn: str | None
+
+
+class ClaimView(TypedDict):
+    marker: str
+    id: str
+    verbatim: str
+    page: int | None
+    verdict: ClaimVerdict
+    objections: list[str]
+
+
 def markers(ledger: Ledger) -> tuple[dict[str, str], dict[str, str]]:
     claims = {cid: f"C{i}" for i, cid in enumerate(ledger.claim_order, start=1)}
     objections = {oid: f"O{i}" for i, oid in enumerate(ledger.objection_order, start=1)}
@@ -34,11 +70,11 @@ def markers(ledger: Ledger) -> tuple[dict[str, str], dict[str, str]]:
 
 def _anchor_views(
     objection: Objection, paper: PaperText | None
-) -> tuple[list[dict[str, Any]], bool, bool]:
+) -> tuple[list[AnchorView], bool, bool]:
     """Anchor rows, whether all resolve, whether any sits in Limitations."""
     if isinstance(objection.evidence, Missing):
         return [], True, False
-    rows: list[dict[str, Any]] = []
+    rows: list[AnchorView] = []
     grounded = True
     echoed = False
     for quote in objection.evidence.anchors:
@@ -61,7 +97,7 @@ def _anchor_views(
 
 def _prior_views(
     objection: Objection, corpus: Corpus | None, year: int
-) -> tuple[list[dict[str, Any]], bool]:
+) -> tuple[list[dict[str, JSON]], bool]:
     """Prior rows and whether every key resolves to a record dated at or
     before the paper; an objection without prior keys is dated by construction."""
     rows: list[dict[str, Any]] = []
@@ -96,53 +132,53 @@ def _standing(withdrawn: bool, anchored: bool, dated: bool) -> Standing:
 
 def objection_views(
     ledger: Ledger, paper: PaperText | None, corpus: Corpus | None, year: int
-) -> list[dict[str, Any]]:
+) -> list[ObjectionView]:
     claim_markers, objection_markers = markers(ledger)
-    views = []
+    views: list[ObjectionView] = []
     for oid in ledger.objection_order:
         objection = ledger.objections[oid]
         anchors, anchored, echoed = _anchor_views(objection, paper)
         prior, dated = _prior_views(objection, corpus, year)
         views.append(
-            {
-                "marker": objection_markers[oid],
-                "id": oid,
-                "kind": objection.kind,
-                "bank": objection.kind.bank,
-                "severity": objection.severity,
-                "standing": _standing(oid in ledger.withdrawn, anchored, dated),
-                "claim": claim_markers[objection.claim] if objection.claim else None,
-                "where": objection.where,
-                "text": objection.text,
-                "anchors": anchors,
-                "missing": (
+            ObjectionView(
+                marker=objection_markers[oid],
+                id=oid,
+                kind=objection.kind,
+                bank=objection.kind.bank,
+                severity=objection.severity,
+                standing=_standing(oid in ledger.withdrawn, anchored, dated),
+                claim=claim_markers[objection.claim] if objection.claim else None,
+                where=objection.where,
+                text=objection.text,
+                anchors=anchors,
+                missing=(
                     objection.evidence.what
                     if isinstance(objection.evidence, Missing)
                     else None
                 ),
-                "prior": prior,
-                "in_limitations": echoed,
-                "withdrawn": ledger.withdrawn.get(oid),
-            }
+                prior=prior,
+                in_limitations=echoed,
+                withdrawn=ledger.withdrawn.get(oid),
+            )
         )
     return views
 
 
-def _claim_verdict(hits: list[dict[str, Any]]) -> ClaimVerdict:
+def _claim_verdict(hits: list[ObjectionView]) -> ClaimVerdict:
     if any(v["severity"] in DECISIVE for v in hits):
         return ClaimVerdict.CONTESTED
     return ClaimVerdict.QUESTIONED if hits else ClaimVerdict.STANDING
 
 
 def claim_views(
-    ledger: Ledger, paper: PaperText | None, objections: list[dict[str, Any]]
-) -> list[dict[str, Any]]:
+    ledger: Ledger, paper: PaperText | None, objections: list[ObjectionView]
+) -> list[ClaimView]:
     claim_markers, _ = markers(ledger)
-    against: dict[str, list[dict[str, Any]]] = {m: [] for m in claim_markers.values()}
+    against: dict[str, list[ObjectionView]] = {m: [] for m in claim_markers.values()}
     for view in objections:
         if view["claim"] and view["standing"] is Standing.GROUNDED:
             against[view["claim"]].append(view)
-    views = []
+    views: list[ClaimView] = []
     for cid in ledger.claim_order:
         claim = ledger.claims[cid]
         marker = claim_markers[cid]
@@ -155,21 +191,21 @@ def claim_views(
                 case Unresolved():
                     page = None
         views.append(
-            {
-                "marker": marker,
-                "id": cid,
-                "verbatim": claim.verbatim,
-                "page": page,
-                "verdict": _claim_verdict(hits),
-                "objections": [v["marker"] for v in hits],
-            }
+            ClaimView(
+                marker=marker,
+                id=cid,
+                verbatim=claim.verbatim,
+                page=page,
+                verdict=_claim_verdict(hits),
+                objections=[v["marker"] for v in hits],
+            )
         )
     return views
 
 
 def echo_ratio(
-    objections: list[dict[str, Any]], paper: PaperText | None
-) -> dict[str, Any]:
+    objections: list[ObjectionView], paper: PaperText | None
+) -> dict[str, JSON]:
     """Share of grounded, quoted objections whose anchor sits in the paper's
     own Limitations section: the author-echo measure."""
     if paper is None or paper.limitations is None:
@@ -189,7 +225,7 @@ def echo_ratio(
     }
 
 
-def recommendation(objections: list[dict[str, Any]]) -> dict[str, Any]:
+def recommendation(objections: list[ObjectionView]) -> dict[str, JSON]:
     """Severity rule over grounded objections; no free score."""
     counts = Counter(
         v["severity"] for v in objections if v["standing"] is Standing.GROUNDED
@@ -242,8 +278,8 @@ def coverage(
 
 
 def scaffold(
-    claims: list[dict[str, Any]], objections: list[dict[str, Any]]
-) -> dict[str, Any]:
+    claims: list[ClaimView], objections: list[ObjectionView]
+) -> dict[str, JSON]:
     """The report's sections, derived: grounded objections by severity, the
     rest listed where the draft must disclose or drop them."""
     grounded = [v for v in objections if v["standing"] is Standing.GROUNDED]
@@ -265,9 +301,17 @@ def scaffold(
     }
 
 
+class Citations(TypedDict):
+    """`recommendation` is spliced in by the command after the pure check."""
+
+    markers: int
+    problems: list[str]
+    recommendation: NotRequired[dict[str, JSON]]
+
+
 def cite_check(
-    text: str, claims: list[dict[str, Any]], objections: list[dict[str, Any]]
-) -> dict[str, Any]:
+    text: str, claims: list[ClaimView], objections: list[ObjectionView]
+) -> Citations:
     """Pure verdict over a draft: every marker resolves to a grounded
     objection or a claim, and every grounded fatal or major objection is
     cited. O(draft + ledger)."""
