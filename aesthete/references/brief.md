@@ -111,7 +111,7 @@ Supplied documents govern appearance. Function still applies.
 
 Emit before building.
 
-<supplied_material_report>
+<supplied-material-report>
 ## Adopted
 {tokens and rules taken as given}
 
@@ -130,4 +130,4 @@ Resolution: {which derivation, and the resulting value}
 
 ## Unresolved
 {what the document must decide}
-</supplied_material_report>
+</supplied-material-report>

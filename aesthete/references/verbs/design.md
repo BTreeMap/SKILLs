@@ -49,7 +49,7 @@ missing, produce them first; everything below depends on them.
 
 ## Deliverable
 
-<design_deliverable>
+<design-deliverable>
 ## Design read
 {one line}
 
@@ -85,7 +85,7 @@ Icons: {family and weight}
 
 ## Risks
 {decision}: wrong if {falsifier}; fallback is {alternative}
-</design_deliverable>
+</design-deliverable>
 
 ## Rules
 
@@ -102,7 +102,7 @@ Icons: {family and weight}
 
 ## Completion checks
 
-<validation_checklist>
+<validation-checklist>
   <item>Primary goal is one sentence and the surface optimizes for it.</item>
   <item>Friction budget is counted, itemized, and reduced where possible.</item>
   <item>Foundation choice names the repository's existing stack or a stated reason to depart from it.</item>
@@ -111,4 +111,4 @@ Icons: {family and weight}
   <item>Kill list is non-empty and names replacements.</item>
   <item>Mobile behavior and accessibility posture are decided.</item>
   <item>Exactly one direction is committed to.</item>
-</validation_checklist>
+</validation-checklist>

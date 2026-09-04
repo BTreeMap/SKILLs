@@ -23,7 +23,7 @@ prioritized remediation plan. Change nothing.
 
 ## Deliverable
 
-<audit_deliverable>
+<audit-deliverable>
 ## Scope
 {surfaces audited}; excluded: {what and why}
 
@@ -53,7 +53,7 @@ Leverage: {why this rank}
 
 ## Not fixed by this plan
 {structural problems requiring a redesign decision}
-</audit_deliverable>
+</audit-deliverable>
 
 ## Rules
 
@@ -74,7 +74,7 @@ Leverage: {why this rank}
 
 ## Completion checks
 
-<validation_checklist>
+<validation-checklist>
   <item>Scope and exclusions are stated explicitly.</item>
   <item>The implicit system was extracted from code with distinct-value counts per scale.</item>
   <item>Findings are clustered by cause, with instance counts.</item>
@@ -82,4 +82,4 @@ Leverage: {why this rank}
   <item>Deliberate documented deviations were excluded from findings.</item>
   <item>The plan is split into now, next, and later, and names what it does not fix.</item>
   <item>Accessibility failures are clustered separately with the criterion each violates.</item>
-</validation_checklist>
+</validation-checklist>

@@ -27,7 +27,7 @@ rest. The body is free beyond `kind` and `key`: add per-paper
 hypothesis-directed questions whenever the argument needs them, and the
 jot advisory warns on a key the corpus lacks.
 
-<extraction_record>
+<extraction-record>
 $R jot "$S" <<'JSON'
 {"kind": "extraction", "key": "doi:10.1234/example.1",
  "claims": "the one to three findings the paper itself asserts, each with location",
@@ -37,7 +37,7 @@ $R jot "$S" <<'JSON'
  "relation": "which corpus papers it builds on, contradicts, or replicates",
  "quote": "at most one verbatim sentence worth citing exactly, with location"}
 JSON
-</extraction_record>
+</extraction-record>
 
 ## Quality appraisal
 

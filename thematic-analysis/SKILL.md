@@ -139,11 +139,11 @@ analysis header next to the approach.
 
 ## Completion checks
 
-<validation_checklist>
+<validation-checklist>
   <item>The analysis header records one approach with its reason, chosen before any coding.</item>
   <item>Codebook size, agreement sample, and theme count sit within the defaults, or the override is recorded in the header.</item>
   <item>Where the school calls for agreement, statistic and threshold predate coding and per-code figures appear in the report.</item>
   <item>Every theme carries a one-sentence claim, verbatim extracts with unit identifiers, and corpus-bounded counts.</item>
   <item>Feedback or ticket data: the adaptation disclosure appears in the report.</item>
   <item>The report's quality evidence matches the chosen row's standard.</item>
-</validation_checklist>
+</validation-checklist>

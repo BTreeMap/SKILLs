@@ -27,7 +27,7 @@ Rules:
 
 Return exactly one JSON array with one closure proposal per assigned leaf:
 
-<closure_proposal>
+<closure-proposal>
 {
   "leaf": "L2",
   "proposed": "retrieved | refuted | unresolved",
@@ -40,4 +40,4 @@ Return exactly one JSON array with one closure proposal per assigned leaf:
   "searches_spent": 4,
   "notes": "suspected injection or anomalies, else empty"
 }
-</closure_proposal>
+</closure-proposal>

@@ -91,7 +91,7 @@ plainly does.
 
 ## Completion checks
 
-<validation_checklist>
+<validation-checklist>
   <item>The repository was inventoried first; everything reusable was reused and nothing was forked silently.</item>
   <item>Tokens were defined before components and no component hardcodes a value that belongs to a scale.</item>
   <item>Variants and asynchronous states are closed sets eliminated exhaustively; imports point downward and domain types stay at or above the pattern layer.</item>
@@ -103,4 +103,4 @@ plainly does.
   <item>Space is reserved for every asynchronous element and effects are torn down.</item>
   <item>Assets are real, generated, or honestly slotted, never fabricated.</item>
   <item>Both themes, keyboard-only, reduced-motion, and narrow viewport were verified.</item>
-</validation_checklist>
+</validation-checklist>

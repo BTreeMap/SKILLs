@@ -11,10 +11,10 @@ atomic writes. Target file is never written until validation passes.
 1. Prepare. Bind the guard command once per shell (re-bind after a reset;
    `realpath` is required), then run prepare:
 
-<prepare_command>
+<prepare-command>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-caveman"
 $R prepare <absolute-filepath>
-</prepare_command>
+</prepare-command>
 
    On REFUSED (sensitive name, empty, oversized, non-UTF-8, backup artifact,
    existing backup), report the reason and stop: refusals are hard
@@ -31,9 +31,9 @@ $R prepare <absolute-filepath>
 
 3. Apply:
 
-<apply_command>
+<apply-command>
 $R apply <absolute-filepath> <compressed-body-file>
-</apply_command>
+</apply-command>
 
    On pass it atomically writes the target and reports character savings.
    On ERROR output, fix ONLY the listed errors in the scratch file by
@@ -48,10 +48,10 @@ $R apply <absolute-filepath> <compressed-body-file>
 Only when the user EXPLICITLY asks to clear compression backups (never
 unprompted, never as routine tidying), run one of:
 
-<clean_commands>
+<clean-commands>
 $R clean <filepath>
 $R clean --all
-</clean_commands>
+</clean-commands>
 
 The first removes one file's backup artifacts; the second removes every
 backup this tool ever made. A removed backup destroys the only undo for its

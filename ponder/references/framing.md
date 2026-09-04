@@ -47,7 +47,8 @@ chain, and names evidence that could refute each premise.
 
 ## Worked frames
 
-<worked_frames>
+<worked-frames>
+
 <frame id="comparative-performance">
 <query>How could IEEE 754 non-associativity make a Rust dot product eight times slower than C++?</query>
 <moves>audit-premise, bind-scope, split-modes, name-mechanisms, route-evidence</moves>
@@ -221,7 +222,7 @@ chain, and names evidence that could refute each premise.
 <moves>bind-scope, split-modes, route-evidence, compile-leaves</moves>
 <leaves>Give each vendor independent leaves; separate shared threads from workspace sharing, link sharing, export; bind plan tier, admin policy, regional rollout; hedge staged availability.</leaves>
 </frame>
-</worked_frames>
+</worked-frames>
 
 ## Completion checks
 

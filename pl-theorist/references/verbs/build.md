@@ -59,10 +59,10 @@ Deliver the code, then report briefly:
 
 ## Completion Checks
 
-<verb_checklist>
+<verb-checklist>
   <item>Domain types existed before the function bodies that use them.</item>
   <item>Existing repository types and helpers were reused over parallel inventions.</item>
   <item>The pure core performs no I/O, clock, or randomness access.</item>
   <item>Stated bounds preceded the implementation and the code achieves them.</item>
   <item>Tests cover every variant and rejection path and shipped with the code.</item>
-</verb_checklist>
+</verb-checklist>

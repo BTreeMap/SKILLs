@@ -299,7 +299,7 @@ model never transfers by analogy.
 
 Every verb file appends its own checks to these kernel checks.
 
-<validation_checklist>
+<validation-checklist>
   <item>Exactly one verb file and only the participating language profiles were loaded.</item>
   <item>Invalid states are unrepresentable where the type system permits it, and untrusted input crosses one smart-constructor boundary.</item>
   <item>Sum variants are closed and eliminated exhaustively where supported; remaining partiality is explicit.</item>
@@ -310,4 +310,4 @@ Every verb file appends its own checks to these kernel checks.
   <item>The code uses the repository's configured language standard, preferring its modern constructs where they clarify.</item>
   <item>Resources, cancellation, boundedness, retries, and transactions remain correct.</item>
   <item>Claims of performance or fusion are evidenced or marked unmeasured.</item>
-</validation_checklist>
+</validation-checklist>

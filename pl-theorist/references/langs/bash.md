@@ -63,7 +63,8 @@
 
 ## Teaching Example
 
-<teaching_example language="bash"><![CDATA[
+<teaching-example language="bash">
+<![CDATA[
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -80,7 +81,7 @@ main() {
 }
 
 main "$@"
-]]></teaching_example>
+]]></teaching-example>
 
 Taste: one `awk` process runs the filter and fold, where a `while read` loop
 would fork `stat` per file: n lines through one process. `${1:?}` makes the required argument total at the boundary; the

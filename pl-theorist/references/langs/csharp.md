@@ -43,7 +43,8 @@
 
 ## Teaching Example
 
-<teaching_example language="csharp"><![CDATA[
+<teaching-example language="csharp">
+<![CDATA[
 using System;
 
 public sealed record Email
@@ -75,7 +76,7 @@ public static class PaymentDescriptions
     _ => throw new ArgumentOutOfRangeException(nameof(state))
   };
 }
-]]></teaching_example>
+]]></teaching-example>
 
 Taste: construction validates `Email`, and the record hierarchy prevents
 contradictory payment fields. The fallback arm is still required defensively;

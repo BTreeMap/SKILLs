@@ -28,12 +28,12 @@ from the problem.
 
 ## Examples
 
-<review_examples>
+<review-examples>
   <invalid>I noticed that on line 42 you're not checking if the user object is null before accessing the email property. This could potentially cause a crash. You might want to add a null check here.</invalid>
   <valid>L42: bug: user can be null after .find(). Add guard before .email.</valid>
   <valid>L88-140: nit: 50-line fn does 4 things. Extract validate/normalize/persist.</valid>
   <valid>L23: risk: no retry on 429. Wrap in withBackoff(3).</valid>
-</review_examples>
+</review-examples>
 
 ## Auto-Clarity
 

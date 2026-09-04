@@ -62,10 +62,10 @@ Deliver the tests, then report:
 
 ## Completion Checks
 
-<verb_checklist>
+<verb-checklist>
   <item>Each law the implementation relies on has a named test or a stated reason it cannot have one.</item>
   <item>Every sum variant and smart-constructor rejection path is exercised.</item>
   <item>Optimized structures are checked against a naive oracle or operation count.</item>
   <item>Tests use the repository's existing frameworks and conventions.</item>
   <item>Failing law tests are reported as code findings and kept as written.</item>
-</verb_checklist>
+</verb-checklist>

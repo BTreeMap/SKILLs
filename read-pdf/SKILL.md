@@ -45,22 +45,22 @@ The extractor's console command `btm-read-pdf` accepts one-based page selections
 
 Bind the command once per shell and re-bind after a reset; the `realpath` is required, because uv resolves the project path lexically and an alias path such as `.claude/skills/read-pdf/` has no workspace root above it. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
 
-<all_pages_command>
+<all-pages-command>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
 $R <document.pdf>
-</all_pages_command>
+</all-pages-command>
 
-<selected_pages_command>
+<selected-pages-command>
 $R <document.pdf> --pages 1-3,5,8- --output <extraction.txt>
-</selected_pages_command>
+</selected-pages-command>
 
-<text_only_command>
+<text-only-command>
 $R <document.pdf> --pages 4-6 --no-metadata
-</text_only_command>
+</text-only-command>
 
-<url_command>
+<url-command>
 $R https://<host>/<paper>.pdf --pages 1-3
-</url_command>
+</url-command>
 
 A URL downloads once into a digest-keyed file under the system temp
 directory's `btm-read-pdf/`; a rerun reuses it and says so on stderr, and
@@ -70,13 +70,13 @@ as a paywall's HTML page, is refused and left uncached.
 
 For an encrypted PDF, do not ask the user to disclose or paste a password into chat. Instruct the user to set a local environment variable directly in their terminal, then pass only that variable's name to the script.
 
-<encrypted_pdf_command>
+<encrypted-pdf-command>
 $R <document.pdf> --password-env <PASSWORD_VARIABLE>
-</encrypted_pdf_command>
+</encrypted-pdf-command>
 
 Expected extraction shape:
 
-<extraction_shape>
+<extraction-shape>
 # Extracted from document.pdf
 
 Selected PDF pages: 2, 3
@@ -92,7 +92,7 @@ Extracted source text.
 ## PDF page 3
 
 More extracted source text.
-</extraction_shape>
+</extraction-shape>
 
 ## Analyze the Extraction
 

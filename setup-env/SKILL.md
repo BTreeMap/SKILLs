@@ -58,20 +58,20 @@ Name as tags only the languages the project uses. The grammar is
 `family[:flavor][@version]`: family picks a toolchain, flavor picks what it
 builds for, version pins it. `list` prints every known tag.
 
-<setup_command>
+<setup-command>
 
 ```bash
 env -u VIRTUAL_ENV uv run --project "$(realpath <skill-dir>/scripts)" btm-setup-env provision <tags> --project <project-root>
 ```
 
-</setup_command>
+</setup-command>
 
 `--project` defaults to the nearest ancestor of the working directory
 containing `.git`. The environment root is derived from the project path
 (override the base with `DENV_HOME`, or the exact root with `DENV_ROOT` or
 `--root`). Pass `--json` for machine-readable output.
 
-<example_invocations>
+<example-invocations>
 
 ```bash
 # A python + go + typescript monorepo, python pinned
@@ -91,7 +91,7 @@ btm-setup-env provision go:cgo rust cmake
 btm-setup-env plan haskell csharp
 ```
 
-</example_invocations>
+</example-invocations>
 
 Expected: `Environment ready under <root>`, one `ok` probe line per
 toolchain, exit 0. Then activate and work; every command is identical on
@@ -129,13 +129,13 @@ root and the project.
 Falsifier: run a build through `env -i` carrying only the activation
 script. A pass proves independence from caller state.
 
-<isolation_check>
+<isolation-check>
 
 ```bash
 env -i /bin/sh -c '. <root>/activate.sh && cd <project> && <build-command>'
 ```
 
-</isolation_check>
+</isolation-check>
 
 ## The Architecture Fact
 

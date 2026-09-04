@@ -90,10 +90,10 @@ reporting.
 
 State this in one line before producing anything:
 
-<design_read_template>
+<design-read-template>
 Reading this as: {surface} for {audience}, optimizing for {primary goal},
 with a {aesthetic family} language, built on {system or stack}.
-</design_read_template>
+</design-read-template>
 
 Infer from these signals, in descending authority: quiet constraints
 (regulated, safety-critical, accessibility-critical); the surface and its
@@ -303,7 +303,7 @@ leave a labeled slot and say so. Do not fill the space with something fake.
 Verb files add their own. The mechanical gate is `preflight`; load it
 before declaring done.
 
-<validation_checklist>
+<validation-checklist>
   <item>The read was stated in one line and the dials were set with reasons.</item>
   <item>Precedence was applied in order, and every conflict it resolved was reported.</item>
   <item>Exactly one verb file, one surface profile, the mandatory craft references, and only the on-demand references the work touched were loaded.</item>
@@ -313,4 +313,4 @@ before declaring done.
   <item>Zero U+2014 in user-visible strings, and nothing fabricated.</item>
   <item>Stack and tokens were derived from the repository or supplied material.</item>
   <item>The friction budget to the primary goal was counted and reported.</item>
-</validation_checklist>
+</validation-checklist>

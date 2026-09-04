@@ -100,7 +100,7 @@ place of an identifier to put a session somewhere specific.
 Commands emit JSON on stdout. Advisory `signal:` lines use stderr. Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument. `clean`
 lists sizes and removes one session or `--all`, reporting bytes freed.
 
-<script_commands>
+<script-commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
 $R init "<two or three keywords>" [--mode informal] <<'JSON'
 {"question": "...", "focus": "..."}
@@ -117,7 +117,7 @@ JSON
 $R jot "$S" --file <entry.json>
 $R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
 $R clean ["$S" | --all]
-</script_commands>
+</script-commands>
 
 Bind `R` and `S` per shell; chain a round's calls with `&&` so a rejected
 note stops the chain. Write each round's batch to a file and pass `--file`:
@@ -153,7 +153,7 @@ scaffold; a `folded` close names its target with `into`; `reason` belongs to
 nothing; `from` lists the pad ids a close drew on, each checked to exist;
 `survivors` are zero-based indexes into `candidates`:
 
-<note_batch>
+<note-batch>
 {
   "leaves":      [{"kw": ["rent", "length"], "q": "...", "origin": "frame|spawned"}],
   "sources":     [{"kw": ["bcl", "rent"], "leaf": "<ref>", "cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}],
@@ -161,7 +161,7 @@ nothing; `from` lists the pad ids a close drew on, each checked to exist;
   "sweeps":      [{"checked": "...", "candidates": ["..."], "survivors": [0]}],
   "checkpoints": [{"label": "round-1", "searches": 5}]
 }
-</note_batch>
+</note-batch>
 
 Use one `note` per round. Invoke this interface from the skill; inspect source
 only for user-requested troubleshooting.
@@ -192,10 +192,10 @@ Determine capabilities from available tools:
 
 ## Completion checks
 
-<validation_checklist>
+<validation-checklist>
   <item>Every leaf reached a terminal state or is disclosed in the Open section; the draft began from check output.</item>
   <item>Every load-bearing claim carries a marker that resolves in the Sources section; compositions carry a derived marker.</item>
   <item>The sweep event exists in the ledger; the Rival section matches its survivors and the refuted premises.</item>
   <item>Hedge advisories from the check are honored in the prose, naming the source class.</item>
   <item>Presentation sections match the check derivation.</item>
-</validation_checklist>
+</validation-checklist>

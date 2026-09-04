@@ -25,7 +25,7 @@ Write decisions to a JSON file and apply them with `update`. The script
 rejects an exclusion without a reason and applies nothing until the whole
 batch is valid.
 
-<decisions_example>
+<decisions-example>
 {
   "doi:10.1234/example.1": {"status": "included"},
   "arxiv:2401.00001": {"status": "excluded",
@@ -33,7 +33,7 @@ batch is valid.
   "title:some borderline paper": {"status": "excluded",
                                   "reason": "editorial, not a study"}
 }
-</decisions_example>
+</decisions-example>
 
 ## Bulk rules
 

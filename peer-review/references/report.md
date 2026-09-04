@@ -7,7 +7,7 @@ unanchored, and undated records stay out.
 
 ## Template
 
-<review_template>
+<review-template>
 # Review: <title>
 
 Version reviewed: <date>. Level: <level>. Reading: <pages> pages of
@@ -46,7 +46,7 @@ banks>; corpus <linked or none>; echo ratio <r>).
 
 This review was produced by an agent following the peer-review skill;
 every quoted anchor and prior-work key was verified by its script.
-</review_template>
+</review-template>
 
 ## Rules
 

@@ -79,7 +79,7 @@ depend on them:
 
 ## Completion checks
 
-<validation_checklist>
+<validation-checklist>
   <item>Mode was detected and stated before any change.</item>
   <item>The audit was completed and recorded, including current dials and discoverability baseline.</item>
   <item>Brand tokens were extracted and honored ahead of any default.</item>
@@ -88,4 +88,4 @@ depend on them:
   <item>Nothing on the never-change-silently list was modified without approval.</item>
   <item>No accessibility behavior regressed.</item>
   <item>Changes are reported per lever with before and after.</item>
-</validation_checklist>
+</validation-checklist>

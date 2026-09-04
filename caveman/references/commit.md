@@ -22,8 +22,9 @@ trailer).
 
 ## Examples
 
-<commit_examples>
+<commit-examples>
   <invalid>feat: add a new endpoint to get user profile information from the database</invalid>
+
   <valid>
 feat(api): Add GET /users/:id/profile
 
@@ -32,13 +33,14 @@ reduce LTE bandwidth on cold-launch screens.
 
 Closes #128
   </valid>
+
   <valid type="breaking">
 feat(api)!: Rename /v1/orders to /v1/checkout
 
 BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
 before 2026-06-01. Old route returns 410 after that date.
   </valid>
-</commit_examples>
+</commit-examples>
 
 ## Auto-Clarity
 

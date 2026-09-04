@@ -66,7 +66,8 @@
   cancellation. Keep the reducer, smart constructors, and selectors framework-
   free and directly testable.
 
-<react_teaching_example language="typescript"><![CDATA[
+<react-teaching-example language="typescript">
+<![CDATA[
 type SearchState =
   | { readonly tag: "idle" }
   | { readonly tag: "loading"; readonly requestId: string }
@@ -122,7 +123,7 @@ const useSearch = (query: string): SearchState => {
   }, [query]);
   return state;
 };
-]]></react_teaching_example>
+]]></react-teaching-example>
 
 React taste: discriminated unions remove contradictory loading/data/error fields;
 the pure reducer encodes legal transitions and stale-response rejection; rendering
@@ -130,7 +131,8 @@ is total. Effects belong in a bounded, abortable handler or hook around this cor
 
 ## Teaching Example
 
-<teaching_example language="typescript"><![CDATA[
+<teaching-example language="typescript">
+<![CDATA[
 declare const portBrand: unique symbol;
 type Port = number & { readonly [portBrand]: true };
 type Result<T, E> =
@@ -147,7 +149,7 @@ const foldResult = <T, E, R>(
   onOk: (value: T) => R,
   onError: (error: E) => R,
 ): R => result.tag === "ok" ? onOk(result.value) : onError(result.error);
-]]></teaching_example>
+]]></teaching-example>
 
 Taste: the sole assertion is inside validation, `Result` exposes expected
 failure, and consumers eliminate both variants. Types disappear at runtime, so
