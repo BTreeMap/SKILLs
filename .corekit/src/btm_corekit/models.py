@@ -8,8 +8,8 @@ linear-time `regex`, so `(a+)+` rejects a 41-char adversarial input in
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Annotated, Any, NoReturn, Self
+from collections.abc import Mapping, Sequence
+from typing import Annotated, Any, NoReturn, Self, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -20,7 +20,10 @@ from pydantic import (
 )
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
+from btm_corekit.errors import CommandError
 from btm_corekit.verdicts import Diagnostic
+
+M = TypeVar("M", bound=BaseModel)
 
 HINT = "hint"  # a Diagnostic's hint rides in the pydantic error context
 
@@ -94,6 +97,17 @@ def _loc_of(where: str) -> tuple[str | int, ...]:
         return ()
     parts = where.replace("[", ".").replace("]", "").split(".")
     return tuple(int(part) if part.isdigit() else part for part in parts)
+
+
+def parse_model(model: type[M], data: Mapping[str, Any], what: str) -> M:
+    """Decode into the model, or raise every located problem as one
+    `CommandError`. The replay boundary reports a corrupt record through the
+    command channel; an escaping `ValidationError` would be a traceback."""
+    try:
+        return model.model_validate(data)
+    except ValidationError as err:
+        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
+        raise CommandError(f"{what}: {problems}") from err
 
 
 def refuse(title: str, problems: Sequence[Diagnostic]) -> NoReturn:

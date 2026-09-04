@@ -38,6 +38,7 @@ KERNEL_FUNCTIONS = frozenset(
         "pad_ids",
         "require",
         "parse_enum",
+        "parse_model",
         "field_text",
         "suggest",
         "read_batch",

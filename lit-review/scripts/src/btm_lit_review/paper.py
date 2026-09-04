@@ -5,17 +5,16 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator, ValidationError, model_validator
+from pydantic import BeforeValidator, model_validator
 
 from btm_corekit import (
     ArxivId,
-    CommandError,
     Doi,
     Model,
     ascii_words,
     collapse_whitespace,
-    diagnostics,
     is_digits,
+    parse_model,
 )
 from btm_lit_review.constants import ReadLevel, Status
 
@@ -180,10 +179,4 @@ GAP_FILLABLE = tuple(
 
 def paper_from_json(row: Mapping[str, Any]) -> Paper:
     """Parse boundary for state on disk; total, and located on the field."""
-    try:
-        return Paper.model_validate(row)
-    except ValidationError as err:
-        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
-        raise CommandError(
-            f"corrupt paper record for key {row.get('key')!r}: {problems}"
-        ) from err
+    return parse_model(Paper, row, f"corrupt paper record for key {row.get('key')!r}")

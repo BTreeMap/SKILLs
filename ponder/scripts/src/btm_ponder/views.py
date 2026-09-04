@@ -108,17 +108,17 @@ def leaf_view(state: LeafState) -> dict[str, Any]:
     match state:
         case Open():
             return {"state": "open"}
-        case Retrieved(sources, premise, detail):
+        case Retrieved(sources=sources, premise=premise, detail=detail):
             view = {"state": "retrieved", "sources": list(sources)}
             return view | _prose(premise, detail)
-        case Refuted(sources, premise, detail):
+        case Refuted(sources=sources, premise=premise, detail=detail):
             view = {"state": "refuted", "sources": list(sources), "premise": premise}
             return view | _prose("", detail)
-        case Unresolved(reason, detail):
+        case Unresolved(reason=reason, detail=detail):
             return {"state": "unresolved", "reason": reason, "detail": detail}
-        case Retired(detail):
+        case Retired(detail=detail):
             return {"state": "retired", "detail": detail}
-        case Folded(into):
+        case Folded(into=into):
             return {"state": "folded", "into": into}
 
 
@@ -150,7 +150,7 @@ def scaffold(
     body: dict[str, list[dict[str, Any]]] = {"answer": [], "rival": [], "open": []}
     for leaf_id, leaf in ledger.leaves.items():
         match leaf.state:
-            case Retrieved(sources, premise, detail):
+            case Retrieved(sources=sources, premise=premise, detail=detail):
                 classes = [ledger.sources[sid].cls for sid in sources]
                 body["answer"].append(
                     {
@@ -161,7 +161,7 @@ def scaffold(
                     }
                     | _prose(premise, detail)
                 )
-            case Refuted(sources, premise, detail):
+            case Refuted(sources=sources, premise=premise, detail=detail):
                 body["rival"].append(
                     {
                         "leaf": leaf_id,
@@ -171,7 +171,7 @@ def scaffold(
                     }
                     | _prose("", detail)
                 )
-            case Unresolved(reason, detail):
+            case Unresolved(reason=reason, detail=detail):
                 body["open"].append(
                     {
                         "leaf": leaf_id,

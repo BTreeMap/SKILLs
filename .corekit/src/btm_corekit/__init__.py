@@ -61,6 +61,7 @@ from btm_corekit.models import (
     Slug,
     diagnostics,
     dump,
+    parse_model,
     refuse,
 )
 from btm_corekit.origin import (
@@ -153,6 +154,7 @@ __all__ = [
     "pad_entries",
     "pad_ids",
     "parse_enum",
+    "parse_model",
     "polite_params",
     "prefixed_number",
     "read_batch",

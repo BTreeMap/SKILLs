@@ -39,7 +39,9 @@ class TestAddLeaf:
     def test_admitted_leaf_starts_open(self):
         ledger = Ledger()
         apply(ledger, {"e": "add_leaf", "id": "leaf-a", "q": "question"})
-        assert ledger.leaves["leaf-a"] == Leaf("question", "frame", Open())
+        assert ledger.leaves["leaf-a"] == Leaf(
+            question="question", origin="frame", state=Open()
+        )
 
     def test_origin_defaults_to_frame(self):
         ledger = Ledger()
@@ -128,7 +130,7 @@ class TestCloses:
                 "sources": ["src-a"],
             },
         )
-        assert ledger.leaves["leaf-a"].state == Retrieved(("src-a",))
+        assert ledger.leaves["leaf-a"].state == Retrieved(sources=("src-a",))
 
     def test_retrieved_without_a_source_is_refused(self):
         with pytest.raises(CommandError, match="requires at least one source"):
@@ -171,7 +173,7 @@ class TestCloses:
             },
         )
         assert ledger.leaves["leaf-a"].state == Unresolved(
-            "searched", "no source found"
+            reason="searched", detail="no source found"
         )
 
     def test_close_on_unknown_leaf_is_refused(self):
@@ -208,7 +210,7 @@ class TestFolds:
             ledger,
             {"e": "close", "leaf": "leaf-b", "state": "folded", "into": "leaf-a"},
         )
-        assert ledger.leaves["leaf-b"].state == Folded("leaf-a")
+        assert ledger.leaves["leaf-b"].state == Folded(into="leaf-a")
 
     def test_legacy_retired_folded_events_still_replay(self):
         ledger = seeded()
@@ -232,7 +234,7 @@ class TestFolds:
                 "detail": "leaf-a",
             },
         )
-        assert ledger.leaves["leaf-b"].state == Folded("leaf-a")
+        assert ledger.leaves["leaf-b"].state == Folded(into="leaf-a")
 
     def test_fold_into_an_open_leaf_is_refused(self):
         ledger = seeded()
@@ -332,7 +334,10 @@ class TestSweepAndCheckpoint:
             )
 
     def test_sweep_requires_what_was_checked(self):
-        with pytest.raises(CommandError, match="sweep requires"):
+        # The model holds it now, so the rejection names the field.
+        with pytest.raises(
+            CommandError, match="checked: Value should have at least 1 item"
+        ):
             apply(Ledger(), {"e": "sweep", "checked": "  "})
 
     def test_checkpoint_requires_a_non_negative_count(self):
@@ -396,7 +401,7 @@ class TestSweepRecord:
     def test_swept_is_derived_from_the_records_it_holds(self):
         ledger = Ledger()
         assert ledger.swept is False
-        ledger.sweeps.append(Sweep("x", ("a",), ()))
+        ledger.sweeps.append(Sweep(checked="x", candidates=("a",), survivors=()))
         assert ledger.swept is True
 
     def test_an_empty_sweep_is_still_a_sweep(self):

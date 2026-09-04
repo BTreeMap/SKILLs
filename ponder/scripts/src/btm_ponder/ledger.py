@@ -9,6 +9,7 @@ from btm_corekit import (
     CommandError,
     demand,
     parse_enum,
+    parse_model,
     read_text,
     require,
 )
@@ -32,17 +33,16 @@ from btm_ponder.state import (
 
 
 def _sweep(raw: dict[str, Any]) -> Sweep:
-    """Parse a sweep payload into the record the draft cites, rather than
-    validating it and keeping one bit."""
-    checked = str(raw.get("checked") or "").strip()
-    require(bool(checked), "sweep requires what was checked")
-    candidates = tuple(raw.get("candidates") or ())
-    survivors = tuple(raw.get("survivors") or ())
-    require(
-        set(survivors) <= set(candidates),
-        "sweep survivors must be a subset of candidates",
+    """The record the draft cites, not the bit that a sweep happened."""
+    return parse_model(
+        Sweep,
+        {
+            "checked": raw.get("checked"),
+            "candidates": tuple(raw.get("candidates") or ()),
+            "survivors": tuple(raw.get("survivors") or ()),
+        },
+        "sweep event",
     )
-    return Sweep(checked, candidates, survivors)
 
 
 def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
@@ -61,9 +61,9 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
         premise = str(raw.get("premise") or "").strip()
         detail = str(raw.get("detail") or "").strip()
         if state == "retrieved":
-            return Retrieved(sources, premise, detail)
+            return Retrieved(sources=sources, premise=premise, detail=detail)
         require(bool(premise), "refuted requires the contradicted premise")
-        return Refuted(sources, premise, detail)
+        return Refuted(sources=sources, premise=premise, detail=detail)
     if state == "folded":
         into = str(raw.get("into") or "").strip()
         target = demand(ledger.leaves.get(into), f"fold target does not exist: {into}")
@@ -71,15 +71,16 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
             isinstance(target.state, Retrieved),
             f"fold target must be retrieved: {into}",
         )
-        return Folded(into)
+        return Folded(into=into)
     detail = str(raw.get("detail") or "").strip()
     if state == "unresolved":
         require(bool(detail), "unresolved requires detail")
         return Unresolved(
-            parse_enum(Reason, raw.get("reason"), "unresolved reason"), detail
+            reason=parse_enum(Reason, raw.get("reason"), "unresolved reason"),
+            detail=detail,
         )
     require(bool(detail), "retired detail must name the conclusion it fails to change")
-    return Retired(detail)
+    return Retired(detail=detail)
 
 
 def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:
@@ -94,7 +95,9 @@ def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:
         f"illegal transition on {leaf_id}: {type(leaf.state).__name__} -> "
         f"{type(new_state).__name__} (only Open -> any, Retrieved -> Refuted)",
     )
-    ledger.leaves[leaf_id] = Leaf(leaf.question, leaf.origin, new_state)
+    ledger.leaves[leaf_id] = Leaf(
+        question=leaf.question, origin=leaf.origin, state=new_state
+    )
 
 
 def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
@@ -114,7 +117,9 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             require(bool(question), "add_leaf requires a question")
             origin = raw.get("origin", "frame")
             origin = parse_enum(Origin, origin, "leaf origin")
-            ledger.leaves[leaf_id] = Leaf(question, origin, Open())
+            ledger.leaves[leaf_id] = Leaf(
+                question=question, origin=origin, state=Open()
+            )
         case "add_source":
             source_id = str(raw.get("id") or "").strip()
             require(bool(source_id), "add_source requires an id")
@@ -128,7 +133,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             title = str(raw.get("title") or "").strip()
             require(bool(title), "add_source requires a title")
             ledger.sources[source_id] = Source(
-                leaf_id, cls, title, str(raw.get("url") or "")
+                leaf=leaf_id, cls=cls, title=title, url=str(raw.get("url") or "")
             )
             ledger.source_order.append(source_id)
         case "close":

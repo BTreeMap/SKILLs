@@ -35,12 +35,12 @@ class TestDecoder:
         )
         record = ledger.objections["o1"]
         assert record.kind is Kind.CONTROL and record.kind.bank is Bank.DESIGN
-        assert record.evidence == Quoted(("q",))
+        assert record.evidence == Quoted(anchors=("q",))
         assert ledger.walks == {Bank.DESIGN: "n"} and ledger.withdrawn == {"o1": "r"}
 
     def test_missing_is_the_other_evidence_variant(self):
         ledger = replay(objection(anchors=[], missing="error bars"))
-        assert ledger.objections["o1"].evidence == Missing("error bars")
+        assert ledger.objections["o1"].evidence == Missing(what="error bars")
 
     @pytest.mark.parametrize(
         ("fields", "message"),

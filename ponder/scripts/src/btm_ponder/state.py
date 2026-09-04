@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from pydantic import Field, model_validator
+
+from btm_corekit import Model, NonEmpty, Slug
+
 
 class SourceClass(StrEnum):
     """What a source is relative to the question it answers. The first two
@@ -52,67 +56,63 @@ UNRESOLVED_REASONS = tuple(Reason)
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 
 
-@dataclass(frozen=True, slots=True)
-class Open:
+class Open(Model):
     pass
 
 
-@dataclass(frozen=True, slots=True)
-class Retrieved:
-    sources: tuple[str, ...]  # non-empty by construction
+class Retrieved(Model):
+    sources: tuple[Slug, ...] = Field(min_length=1)
     premise: str = ""  # the claim, one line; comes back in the check scaffold
-    detail: str = ""  # supporting note, likewise
+    detail: str = ""
 
 
-@dataclass(frozen=True, slots=True)
-class Refuted:
-    sources: tuple[str, ...]  # non-empty by construction
-    premise: str  # what the leaf assumed that evidence contradicts
-    detail: str = ""  # supporting note, likewise
+class Refuted(Model):
+    sources: tuple[Slug, ...] = Field(min_length=1)
+    premise: NonEmpty  # what the leaf assumed that evidence contradicts
+    detail: str = ""
 
 
-@dataclass(frozen=True, slots=True)
-class Unresolved:
+class Unresolved(Model):
     reason: Reason
-    detail: str
+    detail: NonEmpty
 
 
-@dataclass(frozen=True, slots=True)
-class Retired:
-    detail: str  # why the leaf fails to change the conclusion
+class Retired(Model):
+    detail: NonEmpty  # why the leaf fails to change the conclusion
 
 
-@dataclass(frozen=True, slots=True)
-class Folded:
-    into: str  # the retrieved leaf that absorbed this one
+class Folded(Model):
+    into: Slug  # the retrieved leaf that absorbed this one
 
 
 LeafState = Open | Retrieved | Refuted | Unresolved | Retired | Folded
 
 
-@dataclass(frozen=True, slots=True)
-class Leaf:
-    question: str
+class Leaf(Model):
+    question: NonEmpty
     origin: Origin
     state: LeafState
 
 
-@dataclass(frozen=True, slots=True)
-class Sweep:
-    """One rival sweep. Held by its decoder: `checked` is non-empty and
-    `survivors` is a subset of `candidates`, so a Rival section can be
-    rendered from the ledger rather than from the agent's memory."""
+class Sweep(Model):
+    """Held by its decoder: `survivors` is a subset of `candidates`, so a
+    Rival section renders from the ledger, not from the agent's memory."""
 
-    checked: str
+    checked: NonEmpty
     candidates: tuple[str, ...]
     survivors: tuple[str, ...]
 
+    @model_validator(mode="after")
+    def _survivors_came_from_the_candidates(self) -> Sweep:
+        if not set(self.survivors) <= set(self.candidates):
+            raise ValueError("sweep survivors must be a subset of candidates")
+        return self
 
-@dataclass(frozen=True, slots=True)
-class Source:
-    leaf: str
+
+class Source(Model):
+    leaf: Slug
     cls: SourceClass
-    title: str
+    title: NonEmpty
     url: str
 
 

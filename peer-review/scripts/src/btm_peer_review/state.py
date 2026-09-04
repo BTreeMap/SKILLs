@@ -10,8 +10,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from pydantic import Field, model_validator
+
 from btm_corekit import (
+    Model,
+    NonEmpty,
     parse_enum,
+    parse_model,
     read_count,
     read_opt_text,
     read_text,
@@ -21,30 +26,26 @@ from btm_corekit import (
 from btm_peer_review.constants import Bank, Kind, Severity
 
 
-@dataclass(frozen=True, slots=True)
-class Claim:
-    verbatim: str
+class Claim(Model):
+    verbatim: NonEmpty
     page: int  # page at admission; check re-resolves against live text
 
 
-@dataclass(frozen=True, slots=True)
-class Quoted:
-    anchors: tuple[str, ...]  # non-empty by construction
+class Quoted(Model):
+    anchors: tuple[NonEmpty, ...] = Field(min_length=1)
 
 
-@dataclass(frozen=True, slots=True)
-class Missing:
-    what: str  # what the paper omits, when nothing can be quoted
+class Missing(Model):
+    what: NonEmpty  # what the paper omits, when nothing can be quoted
 
 
 Evidence = Quoted | Missing
 
 
-@dataclass(frozen=True, slots=True)
-class Objection:
+class Objection(Model):
     kind: Kind
     severity: Severity
-    text: str
+    text: NonEmpty
     claim: str | None  # a claim id the objection contests
     where: str | None  # section or table, when a claim alone cannot place it
     evidence: Evidence
@@ -54,11 +55,20 @@ class Objection:
     def anchors(self) -> tuple[str, ...]:
         return self.evidence.anchors if isinstance(self.evidence, Quoted) else ()
 
+    @model_validator(mode="after")
+    def _prior_belongs_to_the_novelty_bank(self) -> Objection:
+        if bool(self.prior) != (self.kind.bank is Bank.NOVELTY):
+            raise ValueError(
+                f"prior keys belong to novelty kinds alone; got {self.kind} "
+                f"with {len(self.prior)}"
+            )
+        return self
+
 
 def claim_from_event(raw: Mapping[str, Any]) -> Claim:
     return Claim(
-        read_text(raw, "verbatim", "claim event"),
-        read_count(raw, "page", "claim event", minimum=1),
+        verbatim=read_text(raw, "verbatim", "claim event"),
+        page=read_count(raw, "page", "claim event", minimum=1),
     )
 
 
@@ -81,16 +91,24 @@ def objection_from_event(
     evidence: Evidence
     if anchors:
         require(missing is None, "objection carries both anchors and missing")
-        evidence = Quoted(anchors)
+        evidence = Quoted(anchors=anchors)
     else:
         require(bool(missing), "objection lacks evidence")
-        evidence = Missing(missing or "")
+        evidence = Missing(what=missing or "")
     prior = read_texts(raw, "prior", "objection")
-    require(
-        bool(prior) == (kind.bank is Bank.NOVELTY),
-        f"prior keys belong to novelty kinds alone; got {kind} with {len(prior)}",
+    return parse_model(
+        Objection,
+        {
+            "kind": kind,
+            "severity": severity,
+            "text": text,
+            "claim": claim,
+            "where": where,
+            "evidence": evidence,
+            "prior": prior,
+        },
+        "objection event",
     )
-    return Objection(kind, severity, text, claim, where, evidence, prior)
 
 
 @dataclass(slots=True)
