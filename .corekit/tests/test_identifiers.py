@@ -100,10 +100,8 @@ class TestEliminate:
             eliminate(NoMatch(), "absent", "session")
 
     def test_hint_extends_the_no_match_message(self):
-        with pytest.raises(CommandError, match="open with --question creates one"):
-            eliminate(
-                NoMatch(), "absent", "session", "open with --question creates one"
-            )
+        with pytest.raises(CommandError, match="run init first"):
+            eliminate(NoMatch(), "absent", "session", "run init first")
 
     def test_empty_reference_reports_emptiness_over_absence(self):
         with pytest.raises(CommandError, match="empty session reference"):

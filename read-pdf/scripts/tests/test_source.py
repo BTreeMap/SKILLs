@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
+from btm_corekit import CommandError, UpstreamError
 from btm_read_pdf.source import LocalPdf, RemotePdf, materialize, parse_source
 
 PDF_BYTES = b"%PDF-1.4 tiny"
@@ -35,7 +36,7 @@ class TestParseSource:
         assert parse_source(str(path)) == LocalPdf(path)
 
     def test_a_missing_file_is_rejected(self, tmp_path):
-        with pytest.raises(ValueError, match="PDF file not found"):
+        with pytest.raises(CommandError, match="PDF file not found"):
             parse_source(str(tmp_path / "gone.pdf"))
 
 
@@ -63,14 +64,43 @@ class TestMaterialize:
         assert "cached" in capsys.readouterr().err
 
     def test_an_http_error_is_rejected_cleanly(self):
-        with pytest.raises(ValueError, match="HTTP 404 fetching"):
+        with pytest.raises(CommandError, match="HTTP 404 fetching"):
             materialize(
                 RemotePdf("https://x.org/gone.pdf"),
                 transport=transport_serving(b"", status=404),
             )
 
+    @pytest.mark.parametrize("status", [400, 403, 404, 410])
+    def test_a_client_error_is_not_retryable(self, status):
+        """A 404 is the URL's problem; retrying it changes nothing, so it must
+        not arrive as the exception that tells an agent to try again."""
+        with pytest.raises(CommandError) as raised:
+            materialize(
+                RemotePdf(f"https://x.org/{status}.pdf"),
+                transport=transport_serving(b"", status=status),
+            )
+        assert not isinstance(raised.value, UpstreamError)
+
+    @pytest.mark.parametrize("status", [429, 500, 502, 503])
+    def test_a_server_error_or_rate_limit_is_retryable(self, status):
+        with pytest.raises(UpstreamError, match=f"HTTP {status} fetching"):
+            materialize(
+                RemotePdf(f"https://x.org/{status}.pdf"),
+                transport=transport_serving(b"", status=status),
+            )
+
+    def test_a_transport_failure_is_retryable(self):
+        def refuse(request):
+            raise httpx.ConnectError("connection refused")
+
+        with pytest.raises(UpstreamError, match="cannot fetch"):
+            materialize(
+                RemotePdf("https://x.org/down.pdf"),
+                transport=httpx.MockTransport(refuse),
+            )
+
     def test_the_size_cap_rejects_and_leaves_no_partial(self, tmp_path):
-        with pytest.raises(ValueError, match="exceeds 4 bytes"):
+        with pytest.raises(CommandError, match="exceeds 4 bytes"):
             materialize(
                 RemotePdf("https://x.org/big.pdf"),
                 max_bytes=4,
@@ -80,7 +110,7 @@ class TestMaterialize:
         assert not cache.exists() or list(cache.iterdir()) == []
 
     def test_non_pdf_content_is_rejected_and_never_cached(self, tmp_path):
-        with pytest.raises(ValueError, match="not a PDF"):
+        with pytest.raises(CommandError, match="not a PDF"):
             materialize(
                 RemotePdf("https://x.org/paywall"),
                 transport=transport_serving(b"<html>sign in to view</html>"),

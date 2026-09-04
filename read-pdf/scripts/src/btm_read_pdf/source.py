@@ -11,11 +11,13 @@ from pathlib import Path
 
 import httpx
 
-from btm_corekit import user_agent
+from btm_corekit import CommandError, UpstreamError, user_agent
 
 TIMEOUT_SECONDS = 30
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
 HTTP_BAD_REQUEST = 400
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVER_ERROR = 500
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,7 +39,7 @@ def parse_source(raw: str) -> Source:
         return RemotePdf(raw)
     path = Path(raw)
     if not path.is_file():
-        raise ValueError(f"PDF file not found: {path}")
+        raise CommandError(f"PDF file not found: {path}")
     return LocalPdf(path)
 
 
@@ -73,6 +75,16 @@ def materialize(
     raise AssertionError("unreachable: Source is a closed union")
 
 
+def _status_failure(status: int, url: str) -> CommandError:
+    """A 5xx or a rate limit is the server's problem and a retry may clear it;
+    a 404 or a 403 is the URL's, and retrying changes nothing. The exit code
+    the agent reads follows that split."""
+    text = f"HTTP {status} fetching {url}"
+    if status >= HTTP_SERVER_ERROR or status == HTTP_TOO_MANY_REQUESTS:
+        return UpstreamError(text)
+    return CommandError(text)
+
+
 def _fetch(
     url: str, target: Path, max_bytes: int, transport: httpx.BaseTransport | None
 ) -> None:
@@ -96,13 +108,13 @@ def _fetch(
     try:
         with client, client.stream("GET", url) as response:
             if response.status_code >= HTTP_BAD_REQUEST:
-                raise ValueError(f"HTTP {response.status_code} fetching {url}")
+                raise _status_failure(response.status_code, url)
             written = 0
             with open(partial, "wb") as out:
                 for chunk in response.iter_bytes():
                     written += len(chunk)
                     if written > max_bytes:
-                        raise ValueError(
+                        raise CommandError(
                             f"download exceeds {max_bytes} bytes; "
                             "pass --max-bytes to raise the cap"
                         )
@@ -110,11 +122,11 @@ def _fetch(
         with open(partial, "rb") as head:
             # The spec tolerates up to 1024 bytes of preamble before %PDF-.
             if b"%PDF-" not in head.read(1024):
-                raise ValueError(f"fetched content is not a PDF: {url}")
+                raise CommandError(f"fetched content is not a PDF: {url}")
     except httpx.HTTPError as err:
         partial.unlink(missing_ok=True)
-        raise ValueError(f"cannot fetch {url}: {err}") from err
-    except ValueError:
+        raise UpstreamError(f"cannot fetch {url}: {err}") from err
+    except CommandError:  # UpstreamError included: it is the retryable subclass
         partial.unlink(missing_ok=True)
         raise
     os.replace(partial, target)

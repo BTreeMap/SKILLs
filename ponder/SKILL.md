@@ -95,17 +95,21 @@ slug-plus-entropy identifier. Use full identifiers. A unique keyword subset
 recovers a lost ID; ambiguity lists candidates. Pass a directory path in
 place of an identifier to put a session somewhere specific.
 
-Commands emit JSON on stdout. Advisory `signal:` lines use stderr. `clean`
+Commands emit JSON on stdout. Advisory `signal:` lines use stderr. Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument. `clean`
 lists sizes and removes one session or `--all`, reporting bytes freed.
 
 <script_commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
-$R init "<two or three keywords>" --question "..." [--focus "..."] [--mode informal]
+$R init "<two or three keywords>" [--mode informal] <<'JSON'
+{"question": "...", "focus": "..."}
+JSON
 S="<the session identifier the init output echoed>"
 $R schema
 $R note "$S" --file <round.json> && $R check "$S"
 $R status "$S"
-$R jot "$S" '{"kind": "quote", ...}' [--text]
+$R jot "$S" [--text] <<'JSON'
+{"kind": "quote", ...}
+JSON
 $R jot "$S" --file <entry.json>
 $R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
 $R clean ["$S" | --all]

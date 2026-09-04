@@ -10,7 +10,10 @@ from typing import Any
 
 from btm_corekit import (
     CommandError,
+    Model,
+    NonEmpty,
     append_jsonl,
+    content,
     emit,
     now_iso,
     read_jsonl,
@@ -78,13 +81,27 @@ def record_fetch(
     emit({**entry, "corpus_size": len(papers)})
 
 
+class Framing(Model):
+    """The review's question. Prose, so it arrives on stdin."""
+
+    question: NonEmpty
+
+
+class Query(Model):
+    """One search string. arXiv's field syntax is `all:"<phrase>"`, whose
+    quotes the shell would strip before argparse ever saw them."""
+
+    query: NonEmpty
+
+
 def cmd_init(args: argparse.Namespace) -> int:
+    framing = content(Framing, args.file, "the framing")
     made = STORE.create(args.session)
     root, name = made.directory, made.name
     session = Session(root)
     root.mkdir(parents=True, exist_ok=True)
     protocol = {
-        "question": args.question,
+        "question": framing.question,
         "level": args.level,
         "criteria": {"include": [], "exclude": []},
         "created": now_iso(),
@@ -104,24 +121,25 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def cmd_search(args: argparse.Namespace) -> int:
+    asked = content(Query, args.file, "the query").query
     session = open_session(args.session)
     protocol = load_protocol(session)
     require_criteria(protocol)
     limit = min(args.limit, MAX_LIMIT)
     if args.source == "openalex":
-        fetched, total = fetch_openalex(args.query, limit, args.from_year, args.to_year)
+        fetched, total = fetch_openalex(asked, limit, args.from_year, args.to_year)
     elif args.source == "arxiv":
         if args.from_year or args.to_year:
             signal("arxiv source ignores year bounds; filter after fetching")
-        fetched, total = fetch_arxiv(args.query, limit)
-        if total == 0 and ":" not in args.query:
+        fetched, total = fetch_arxiv(asked, limit)
+        if total == 0 and ":" not in asked:
             signal('arXiv matched nothing; retry with field syntax: all:"<phrase>"')
     else:
-        fetched, total = fetch_crossref(args.query, limit, args.from_year, args.to_year)
+        fetched, total = fetch_crossref(asked, limit, args.from_year, args.to_year)
     entry = {
         "command": "search",
         "source": args.source,
-        "query": args.query,
+        "query": asked,
         "from_year": args.from_year,
         "to_year": args.to_year,
         "limit": limit,

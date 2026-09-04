@@ -50,15 +50,15 @@ class TestExtraction:
 
 
 class TestRefusals:
-    def test_missing_input_is_rejected(self, tmp_path):
-        with pytest.raises(ValueError, match="PDF file not found"):
-            main([str(tmp_path / "absent.pdf")])
+    def test_missing_input_is_rejected(self, tmp_path, capsys):
+        assert main([str(tmp_path / "absent.pdf")]) == 1
+        assert "PDF file not found" in capsys.readouterr().err
 
-    def test_existing_output_is_protected(self, blank_pdf, tmp_path):
+    def test_existing_output_is_protected(self, blank_pdf, tmp_path, capsys):
         out = tmp_path / "out.txt"
         out.write_text("prior", encoding="utf-8")
-        with pytest.raises(ValueError, match="pass --overwrite"):
-            main([str(blank_pdf), "--output", str(out)])
+        assert main([str(blank_pdf), "--output", str(out)]) == 1
+        assert "pass --overwrite" in capsys.readouterr().err
 
     def test_overwrite_releases_the_protection(self, blank_pdf, tmp_path):
         out = tmp_path / "out.txt"
@@ -66,18 +66,23 @@ class TestRefusals:
         assert main([str(blank_pdf), "--output", str(out), "--overwrite"]) == 0
         assert "prior" not in out.read_text(encoding="utf-8")
 
-    def test_out_of_range_page_is_rejected(self, blank_pdf):
-        with pytest.raises(ValueError, match="outside the document"):
-            main([str(blank_pdf), "--pages", "9"])
+    def test_out_of_range_page_is_rejected(self, blank_pdf, capsys):
+        assert main([str(blank_pdf), "--pages", "9"]) == 1
+        assert "outside the document" in capsys.readouterr().err
 
 
 class TestEntrypoint:
-    def test_expected_failure_becomes_exit_code_two(
-        self, tmp_path, monkeypatch, capsys
-    ):
+    def test_a_bad_input_is_exit_one_not_a_retry(self, tmp_path, monkeypatch, capsys):
+        """A missing path can never be fixed by retrying, so it belongs in the
+        exit-1 column; this command used to answer 2 for every failure."""
         monkeypatch.setattr("sys.argv", ["btm-read-pdf", str(tmp_path / "absent.pdf")])
-        assert entrypoint() == 2
+        assert entrypoint() == 1
         assert "error: PDF file not found" in capsys.readouterr().err
+
+    def test_a_malformed_argument_line_is_exit_one(self, monkeypatch, capsys):
+        monkeypatch.setattr("sys.argv", ["btm-read-pdf", "--nope"])
+        assert entrypoint() == 1
+        assert "error:" in capsys.readouterr().err
 
     def test_success_returns_zero(self, blank_pdf, monkeypatch):
         monkeypatch.setattr("sys.argv", ["btm-read-pdf", str(blank_pdf)])

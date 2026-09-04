@@ -10,6 +10,7 @@ from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
+from btm_corekit import CommandError, Parser, dispatch
 from btm_read_pdf.document import decrypt_if_needed, open_output
 from btm_read_pdf.pages import parse_page_specification
 from btm_read_pdf.render import write_extraction
@@ -17,7 +18,7 @@ from btm_read_pdf.source import DEFAULT_MAX_BYTES, materialize, parse_source
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = Parser(
         description=(
             "Extract analysis-ready text and metadata from a PDF using pypdf only."
         )
@@ -60,13 +61,13 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def _run(argv: Sequence[str] | None) -> int:
     args = build_parser().parse_args(argv)
     if args.output and args.output.exists() and not args.overwrite:
         # Destroying existing bytes is decidable here; whether it is intended
         # is the caller's judgment, so demand it explicitly. Refuse before
         # materialize, so a doomed run downloads nothing.
-        raise ValueError(
+        raise CommandError(
             f"output file already exists: {args.output}; pass --overwrite to replace it"
         )
     local_path, display_name = materialize(parse_source(args.input_pdf), args.max_bytes)
@@ -96,10 +97,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
+def main(argv: Sequence[str] | None = None) -> int:
+    """Extraction under the shared exit contract: 0 done, 1 fix the input and
+    resend, 2 the fetch failed and a retry may clear it.
+
+    pypdf's and the OS's own exceptions join the contract here, at the one
+    boundary that knows they mean an unreadable file rather than an
+    unreachable server. Every expected failure used to return 2, which told
+    an agent to retry a missing path forever."""
+
+    def run() -> int:
+        try:
+            return _run(argv)
+        except (OSError, PdfReadError) as err:
+            raise CommandError(str(err)) from err
+
+    return dispatch(run)
+
+
 def entrypoint() -> int:
-    """Console-script boundary: expected failures become exit code 2."""
-    try:
-        return main()
-    except (OSError, PdfReadError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 2
+    """Console-script boundary."""
+    return main()

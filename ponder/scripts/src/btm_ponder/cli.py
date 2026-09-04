@@ -11,6 +11,10 @@ from btm_corekit import (
     JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
+    Model,
+    NonEmpty,
+    Parser,
+    content,
     emit,
     gated,
     mint,
@@ -44,11 +48,20 @@ from btm_ponder.views import (
 )
 
 
+class Framing(Model):
+    """What one session is about. Prose, so it arrives on stdin rather than
+    through argv, where a question mark and an apostrophe are shell syntax."""
+
+    question: NonEmpty
+    focus: str | None = None
+
+
 def cmd_init(args: argparse.Namespace) -> int:
-    made = STORE.create(args.ref)
+    framing = content(Framing, args.file, "the framing")  # before the mkdir:
+    made = STORE.create(args.ref)  # a refused framing leaves no empty session
     meta = {
-        "question": args.question,
-        "focus": args.focus,
+        "question": framing.question,
+        "focus": framing.focus,
         "mode": args.mode,
         "created": now_iso(),
     }
@@ -160,14 +173,18 @@ def cmd_schema(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=btm_ponder.__doc__)
+    parser = Parser(description=btm_ponder.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    init = commands.add_parser("init", help="mint a session for one question")
+    init = commands.add_parser(
+        "init",
+        help='mint a session; {"question": ..., "focus": ...} on stdin or --file',
+    )
     init.set_defaults(func=cmd_init)
     init.add_argument("ref", help="two or three keywords, or a directory path")
-    init.add_argument("--question", required=True)
-    init.add_argument("--focus", default=None)
+    init.add_argument(
+        "--file", default=None, help="read the framing from this file instead of stdin"
+    )
     init.add_argument(
         "--mode",
         choices=MODES,

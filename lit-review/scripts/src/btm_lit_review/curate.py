@@ -13,8 +13,11 @@ from btm_corekit import (
     CommandError,
     Diagnostic,
     Item,
+    Model,
+    NonEmpty,
     append_jsonl,
     compile_match,
+    content,
     digest,
     emit,
     now_iso,
@@ -48,14 +51,22 @@ def paper_field(paper: Paper, on: str) -> str:
     return str(getattr(paper, on) or "")
 
 
+class Rule(Model):
+    """One screening rule. The pattern is a regex and the reason is prose;
+    both carry characters the shell rewrites, so both arrive on stdin.
+    `NonEmpty` trims and rejects, which retires the hand-written check."""
+
+    match: NonEmpty
+    reason: NonEmpty
+
+
 def cmd_screen(args: argparse.Namespace) -> int:
     """One rule screens many candidates; the record keeps the count honest."""
+    rule = content(Rule, args.file, "the rule")
     session = open_session(args.session)
     require_criteria(load_protocol(session))
-    pattern = compile_match(args.match)
-    reason = clean_text(args.reason)
-    if not reason:
-        raise CommandError("screen requires a non-empty --reason")
+    pattern = compile_match(rule.match)
+    reason = rule.reason
     action = Status.EXCLUDED if args.exclude else Status.INCLUDED
     papers = load_papers(session)
     matched = [
@@ -75,7 +86,7 @@ def cmd_screen(args: argparse.Namespace) -> int:
                 "id": rule_id,
                 "t": now_iso(),
                 "on": args.on,
-                "pattern": args.match,
+                "pattern": rule.match,
                 "action": action,
                 "reason": reason,
                 "matched": matched,
@@ -206,7 +217,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
     `show` costs the reader one row per candidate, which is the wrong price
     for a judgment whose real arity is the number of kinds. This projects the
     partition instead, so a few hundred candidates become a few dozen labels
-    and each verdict is one `screen --match` away."""
+    and each verdict is one `screen` away."""
     session = open_session(args.session)
     papers = load_papers(session)
     undecided = [paper for paper in papers.values() if paper.status == args.status]
@@ -225,7 +236,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
     view["status"] = args.status
     view["next"] = (
         "judge each label, then cut or keep a whole cluster with "
-        "screen --match '<rule>' --exclude --reason '...'"
+        'screen --exclude and {"match": "<rule>", "reason": "..."} on stdin'
     )
     if result.residue_total > len(result.residue):
         signal(
@@ -296,7 +307,7 @@ def next_step(
     if not searches:
         return "run the first search"
     if undecided:
-        return f"screen {undecided} undecided: digest, then screen --match per cluster"
+        return f"screen {undecided} undecided: digest, then screen per cluster"
     if not included:
         return "nothing is included yet; widen the search or revisit exclusions"
     if unextracted:

@@ -126,7 +126,7 @@ Two write paths carry different contracts:
 the undecided candidates by their most distinguishing shared term and returns
 one label, one count, one selecting rule, and two exemplars per kind, so a few
 hundred candidates become a few dozen judgments. Accepting or rejecting a kind
-is then one `screen --match "<rule>"`. Re-run `digest` after each cut: the
+is then one `screen` with the digest's rule on stdin. Re-run `digest` after each cut: the
 labels are relative to what is still undecided, so new kinds surface as the
 big ones leave. `show` remains for reading specific records by key.
 
@@ -156,18 +156,28 @@ Bind the command once per shell and re-bind after a reset; `realpath` and
 invoke it and read its output. Read the source only when troubleshooting on
 the user's instruction.
 
+Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument.
+
 <script_commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
-$R init "<two or three keywords>" --question "..." --level full
+$R init "<two or three keywords>" --level full <<'JSON'
+{"question": "..."}
+JSON
 S="<the session identifier the init output echoed>"
 $R schema
-$R search "$S" --source openalex --query "..." --limit 25 --from-year 2020
+$R search "$S" --source openalex --limit 25 --from-year 2020 <<'JSON'
+{"query": "..."}
+JSON
 $R snowball "$S" --seed <key> --direction backward
 $R digest "$S" [--status candidate] [--on title] [--clusters 20]
-$R screen "$S" --on title --match "<regex>" --exclude --reason "..."
+$R screen "$S" --on title --exclude <<'JSON'
+{"match": "<regex>", "reason": "..."}
+JSON
 $R show "$S" [--status candidate | --keys k1,k2] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv]
 $R update "$S" --file <decisions.json>
-$R jot "$S" '{"kind": "extraction", "key": "<key>", ...}' [--text] [--lore]
+$R jot "$S" [--text] [--lore] <<'JSON'
+{"kind": "extraction", "key": "<key>", ...}
+JSON
 $R jot "$S" --file <record.json>
 $R recall "$S" [--kind extraction] [--match <regex>] [--since j9] [--limit 20] [--lore]
 $R note "$S" --file <round.json>

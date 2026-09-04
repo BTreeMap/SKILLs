@@ -38,8 +38,9 @@ batch is valid.
 ## Bulk rules
 
 A vocabulary cut over hundreds of candidates is one judgment, and the
-record should say so. `screen --on title --match "<regex>" --exclude
---reason "..."` applies a case-insensitive regex to every candidate, marks
+record should say so. `screen --on title --exclude` with
+`{"match": "<regex>", "reason": "..."}` on stdin applies a case-insensitive
+regex to every candidate, marks
 each match with `rule:<id>`, and stores the rule with its matched keys in
 the notebook, so flow counts trace to the predicate that produced them.
 Decided papers stay untouched: make the individual judgments that must

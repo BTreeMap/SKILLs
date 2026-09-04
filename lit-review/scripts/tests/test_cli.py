@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 
 import pytest
 
@@ -20,10 +22,17 @@ def isolated_state(tmp_path, monkeypatch):
 
 
 def run(argv, capsys, stdin: str | None = None, monkeypatch=None):
-    """Run one command and return (exit code, parsed stdout, stderr)."""
+    """Run one command and return (exit code, parsed stdout, stderr).
+
+    stdin is swapped here rather than through monkeypatch so a caller needs no
+    fixture: content now reaches most subcommands this way."""
+    original = sys.stdin
     if stdin is not None:
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO(stdin))
-    code = main(argv)
+        sys.stdin = io.StringIO(stdin)
+    try:
+        code = main(argv)
+    finally:
+        sys.stdin = original
     captured = capsys.readouterr()
     document = json.loads(captured.out) if captured.out.strip() else None
     return code, document, captured.err
@@ -49,7 +58,7 @@ def paper(title, doi, abstract=None, **decisions):
 @pytest.fixture
 def session(tmp_path, capsys):
     root = tmp_path / "review"
-    code, document, _ = run(["init", str(root), "--question", "q"], capsys)
+    code, document, _ = run(["init", str(root)], capsys, stdin='{"question": "q"}')
     assert code == 0
     assert document["dir"] == str(root)
     built = Session(root)
@@ -78,16 +87,9 @@ def session(tmp_path, capsys):
 class TestScreen:
     def test_a_rule_screens_candidates_and_records_itself(self, session, capsys):
         code, document, _ = run(
-            [
-                "screen",
-                str(session.root),
-                "--match",
-                "cooking|blog",
-                "--exclude",
-                "--reason",
-                "off topic",
-            ],
+            ["screen", str(session.root), "--exclude"],
             capsys,
+            stdin='{"match": "cooking|blog", "reason": "off topic"}',
         )
         assert code == 0
         assert document["rule"] == "r1"
@@ -99,18 +101,9 @@ class TestScreen:
 
     def test_decided_papers_are_never_touched(self, session, capsys):
         code, document, _ = run(
-            [
-                "screen",
-                str(session.root),
-                "--match",
-                "sampler",
-                "--on",
-                "abstract",
-                "--exclude",
-                "--reason",
-                "r",
-            ],
+            ["screen", str(session.root), "--on", "abstract", "--exclude"],
             capsys,
+            stdin='{"match": "sampler", "reason": "r"}',
         )
         assert code == 0
         assert document["matched"] == 0
@@ -198,8 +191,9 @@ class TestNoteAndBrief:
 class TestPadAndDraft:
     def test_extraction_jots_are_recognized_with_advisories(self, session, capsys):
         code, receipt, err = run(
-            ["jot", str(session.root), '{"kind": "extraction", "key": "10.1/zzz"}'],
+            ["jot", str(session.root)],
             capsys,
+            stdin='{"kind": "extraction", "key": "10.1/zzz"}',
         )
         assert code == 0
         assert receipt["jotted"] == "j1"

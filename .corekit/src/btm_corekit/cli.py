@@ -9,35 +9,78 @@ import sys
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol, TypeAlias
+from typing import Any, NoReturn, Protocol, TypeAlias
 
 from btm_corekit.channels import emit, signal
 from btm_corekit.errors import CommandError, UpstreamError
+from btm_corekit.models import M, parse_model
 from btm_corekit.pad import jot, pad_body, recall
 from btm_corekit.sessions import SessionStore
 from btm_corekit.verdicts import Diagnostic
 
 REJECT_NEXT = "apply every fix above, then resend; --file makes the retry one edit"
 PAD_SCHEMA = (
-    "jot takes the entry inline, from --file, or on stdin, and stores any "
-    "JSON object unchecked; recall filters by "
+    "jot reads the entry from stdin or --file and stores any JSON object "
+    "unchecked; recall filters by "
     '--kind/--match/--since/--limit; suggested body: {"kind": "...", ...}'
 )
 REFS_SCHEMA = "a ref is the kw slug, a full id, or any unique keyword subset"
 
 
-def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) -> int:
-    """Dispatch to the parsed `func`: CommandError exits 1, UpstreamError 2."""
-    args = parser.parse_args(argv)
-    run: Callable[[argparse.Namespace], int] = args.func
+ARGV_MESSAGE_MAX = 200
+
+
+def bounded(message: str) -> str:
+    """argparse quotes the offending token verbatim, so a payload that reached
+    argv by mistake would be echoed back whole. Slicing is C-level; the tail
+    names the size instead of spending it."""
+    if len(message) <= ARGV_MESSAGE_MAX:
+        return message
+    return (
+        f"{message[:ARGV_MESSAGE_MAX]}... [{len(message)} chars] "
+        "free-form content belongs on stdin, not in an argument"
+    )
+
+
+class Parser(argparse.ArgumentParser):
+    """argv, decoded like every other untrusted input.
+
+    Stock argparse exits 2 on a malformed argument line. In this library 2
+    means the upstream failed and the call is worth retrying, so an agent
+    obeying the exit contract would retry a call that can never succeed.
+    Raising instead routes argv through the same `CommandError` channel as a
+    bad batch, and `add_subparsers` propagates this class to every subparser.
+    """
+
+    def error(self, message: str) -> NoReturn:
+        raise CommandError(bounded(message))
+
+
+def dispatch(run: Callable[[], int]) -> int:
+    """The exit contract, applied to one thunk: 0 done, 1 fix the input and
+    resend, 2 upstream failed and the call is worth retrying. Every entry
+    point routes through here, so no member can drift its own mapping."""
     try:
-        return run(args)
+        return run()
     except UpstreamError as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     except CommandError as err:
         print(f"error: {err}", file=sys.stderr)
         return 1
+
+
+def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) -> int:
+    """Parse argv and dispatch to the subcommand's `func` under the contract.
+    Parsing sits inside the boundary: with `Parser`, a malformed argument line
+    is a located rejection like any other, not argparse's own exit 2."""
+
+    def parsed() -> int:
+        args = parser.parse_args(argv)
+        run: Callable[[argparse.Namespace], int] = args.func
+        return run(args)
+
+    return dispatch(parsed)
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,7 +131,8 @@ class Payload:
 
 
 BATCH = Payload("the batch", "stdin or --file")
-ENTRY = Payload("the entry", "an inline argument, --file, or stdin")
+ENTRY = Payload("the entry", "stdin or --file")
+CONTENT = Payload("the content", "stdin or --file")
 
 
 def read_payload(source: Source, kind: Payload) -> str:
@@ -119,6 +163,24 @@ def read_batch(
     if not isinstance(batch, dict):
         raise CommandError("the batch is one JSON object")
     return batch
+
+
+def content(model: type[M], file: str | None, what: str) -> M:
+    """A subcommand's free-form fields, as one JSON object from stdin or a file.
+
+    Free-form text never travels in argv: a research question, a fielded query
+    such as `all:"phrase"`, and a regex all carry quotes, backslashes and
+    braces that the shell rewrites before the process sees them, and a
+    mis-quoted argument costs a whole tool call to discover. One object, one
+    decode, every located problem in one verdict."""
+    raw = read_payload(sole_source(None, file), CONTENT)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as err:
+        raise CommandError(f"make {what} valid JSON: {err}") from err
+    if not isinstance(data, dict):
+        raise CommandError(f"{what} is one JSON object")
+    return parse_model(model, data, what)
 
 
 class Outcome(Protocol):
@@ -168,7 +230,9 @@ def advise(lines: Iterable[str]) -> None:
         signal(line)
 
 
-Commands: TypeAlias = "argparse._SubParsersAction[argparse.ArgumentParser]"
+# Invariant in its parser type, so the alias names the decoding parser: every
+# member builds one, and a stock ArgumentParser would skip the argv boundary.
+Commands: TypeAlias = "argparse._SubParsersAction[Parser]"
 
 DirectoryOf = Callable[[argparse.Namespace], Path]
 OnJot = Callable[[argparse.Namespace, dict[str, Any]], None]
@@ -187,7 +251,7 @@ def wire_pad(
     def cmd_jot(args: argparse.Namespace) -> int:
         directory = directory_of(args)
         body, advisory = pad_body(
-            read_payload(sole_source(args.entry, args.file), ENTRY), args.text
+            read_payload(sole_source(None, args.file), ENTRY), args.text
         )
         if advisory:
             signal(advisory)
@@ -211,14 +275,11 @@ def wire_pad(
     jotter = commands.add_parser("jot", help="free note on the session pad")
     jotter.set_defaults(func=cmd_jot)
     jotter.add_argument("session", help="session identifier or directory")
+    # No inline positional: an optional positional interleaved with flags is
+    # argparse's ambiguous shape, and a JSON body is exactly what the shell
+    # mangles. The entry arrives on stdin or from --file.
     jotter.add_argument(
-        "entry",
-        nargs="?",
-        default=None,
-        help="a JSON object, or prose with --text; omit to read --file or stdin",
-    )
-    jotter.add_argument(
-        "--file", default=None, help="read the entry from this file instead"
+        "--file", default=None, help="read the entry from this file instead of stdin"
     )
     jotter.add_argument("--text", action="store_true", help="store the entry as prose")
     recaller = commands.add_parser("recall", help="filtered slice of the pad")

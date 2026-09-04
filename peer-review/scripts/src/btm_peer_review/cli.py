@@ -12,6 +12,10 @@ from btm_corekit import (
     JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
+    Model,
+    NonEmpty,
+    Parser,
+    content,
     emit,
     gated,
     mint,
@@ -55,8 +59,16 @@ from btm_peer_review.views import (
 )
 
 
+class Reviewed(Model):
+    """The paper under review. A title carries colons, quotes and dashes, so
+    it arrives on stdin rather than through argv."""
+
+    title: NonEmpty
+
+
 def cmd_init(args: argparse.Namespace) -> int:
-    meta = new_meta(args.title, args.date, Level(args.level))
+    paper = content(Reviewed, args.file, "the paper")
+    meta = new_meta(paper.title, args.date, Level(args.level))
     made = STORE.create(args.ref)
     write_meta(made.directory, meta)
     emit(
@@ -290,13 +302,17 @@ def cmd_schema(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=btm_peer_review.__doc__)
+    parser = Parser(description=btm_peer_review.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    init = commands.add_parser("init", help="mint a session for one paper")
+    init = commands.add_parser(
+        "init", help='mint a session for one paper; {"title": ...} on stdin'
+    )
     init.set_defaults(func=cmd_init)
     init.add_argument("ref", help="two or three keywords, or a directory path")
-    init.add_argument("--title", required=True)
+    init.add_argument(
+        "--file", default=None, help="read the title from this file instead of stdin"
+    )
     init.add_argument(
         "--date", required=True, help="YYYY[-MM[-DD]] of the version reviewed"
     )
@@ -305,7 +321,7 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.set_defaults(func=cmd_ingest)
     ingest.add_argument("session")
     ingest.add_argument(
-        "--text", required=True, help="read-pdf extraction with page markers"
+        "--text", required=True, help="path to a read-pdf extraction with page markers"
     )
     link = commands.add_parser("link", help="attach a lit-review corpus as prior work")
     link.set_defaults(func=cmd_link)

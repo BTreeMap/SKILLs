@@ -28,13 +28,15 @@ hypothesis-directed questions whenever the argument needs them, and the
 jot advisory warns on a key the corpus lacks.
 
 <extraction_record>
-$R jot "$S" '{"kind": "extraction", "key": "doi:10.1234/example.1",
-  "claims": "the one to three findings the paper itself asserts, each with location",
-  "method": "design, dataset or sample, baselines compared against",
-  "evidence": "the numbers backing each claim, as reported, with units",
-  "limitations": "those the authors state; then the reviewer's, labeled",
-  "relation": "which corpus papers it builds on, contradicts, or replicates",
-  "quote": "at most one verbatim sentence worth citing exactly, with location"}'
+$R jot "$S" <<'JSON'
+{"kind": "extraction", "key": "doi:10.1234/example.1",
+ "claims": "the one to three findings the paper itself asserts, each with location",
+ "method": "design, dataset or sample, baselines compared against",
+ "evidence": "the numbers backing each claim, as reported, with units",
+ "limitations": "those the authors state; then the reviewer's, labeled",
+ "relation": "which corpus papers it builds on, contradicts, or replicates",
+ "quote": "at most one verbatim sentence worth citing exactly, with location"}
+JSON
 </extraction_record>
 
 ## Quality appraisal

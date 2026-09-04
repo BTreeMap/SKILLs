@@ -106,6 +106,7 @@ More extracted source text.
 - If the script reports encryption, use `--password-env`. If it cannot decrypt with the supplied variable, report that access was unavailable.
 - If the reader cannot parse the document, report the read error and stop. Do not repair, rewrite, or substitute the PDF.
 - If the document has no standard metadata, omit metadata-based conclusions.
+- Read the exit code before acting: 0 extracted, 1 fix the argument or the file and resend, 2 the download failed and the same call is worth retrying. A missing path, an out-of-range page, a wrong password, an oversized download, and a URL serving a paywall page are all exit 1; a 5xx, a rate limit, and a transport failure are exit 2.
 
 ## Completion Checks
 

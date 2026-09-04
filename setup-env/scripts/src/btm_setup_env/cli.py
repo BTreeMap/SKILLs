@@ -9,6 +9,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from btm_corekit import Parser, dispatch
+
 from . import catalog
 from .effects import ProbeResult
 from .model import (
@@ -31,7 +33,7 @@ VERBS = ("provision", "plan", "status", "shim", "destroy", "list")
 
 
 def _parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
+    p = Parser(
         prog="btm-setup-env",
         description="Provision an isolated, userspace, per-project dev "
         "environment. Tags: family[:flavor][@version], "
@@ -221,7 +223,7 @@ def _tag_of(key: tuple[str, str]) -> str:
     return family if flavor == GENERIC else f"{family}:{flavor}"
 
 
-def main(argv: list[str] | None = None) -> int:
+def _run(argv: list[str] | None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     # A bare tag list defaults to provision.
     if argv and argv[0] not in (*VERBS, "-h", "--help"):
@@ -242,3 +244,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except KeyboardInterrupt:
         return 130
+
+
+def main(argv: list[str] | None = None) -> int:
+    return dispatch(lambda: _run(argv))

@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import partial
 from itertools import chain
 
-from btm_corekit import is_digits
+from btm_corekit import CommandError, is_digits
 
 
 def parse_page_token(page_count: int, token: str) -> range:
@@ -13,7 +13,7 @@ def parse_page_token(page_count: int, token: str) -> range:
     `N`, `N-M`, or `N-` (through the last page)."""
     head, dash, tail = token.partition("-")
     if not is_digits(head) or (dash and tail and not is_digits(tail)):
-        raise ValueError(
+        raise CommandError(
             "Invalid page selection. Use one-based page numbers and ranges, "
             "for example: 1-3,5,8-."
         )
@@ -21,7 +21,7 @@ def parse_page_token(page_count: int, token: str) -> range:
     start = int(head)
     end = start if not dash else page_count if tail == "" else int(tail)
     if start < 1 or end < start or end > page_count:
-        raise ValueError(
+        raise CommandError(
             f"Page selection {token!r} is outside the document's 1-{page_count} range."
         )
 

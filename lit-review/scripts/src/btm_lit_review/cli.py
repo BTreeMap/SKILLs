@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 
 import btm_lit_review
-from btm_corekit import Commands, run_cli, wire_clean, wire_pad
+from btm_corekit import Commands, Parser, run_cli, wire_clean, wire_pad
 from btm_corekit.digest import CLUSTER_CAP
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
@@ -37,6 +37,16 @@ from btm_lit_review.views import (
 
 MATCH_FIELDS = ("title", "abstract", "venue")
 
+STDIN_FILE = "read the JSON from this file instead of stdin"
+
+
+def add_content(parser: argparse.ArgumentParser, shape: str) -> None:
+    """A subcommand whose free-form fields are required reads them as one JSON
+    object, never as arguments. One spelling per subcommand, so the agent
+    never chooses between two channels."""
+    parser.add_argument("--file", default=None, help=STDIN_FILE)
+    parser.description = f"content on stdin or --file: {shape}"
+
 
 def add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
@@ -46,16 +56,20 @@ def add_common(parser: argparse.ArgumentParser) -> None:
 
 
 def wire_gather(commands: Commands) -> None:
-    init = commands.add_parser("init", help="create a review session")
+    init = commands.add_parser(
+        "init", help='create a review session; {"question": ...} on stdin'
+    )
     add_common(init)
-    init.add_argument("--question", required=True, help="the research question")
+    add_content(init, '{"question": "the research question"}')
     init.add_argument("--level", choices=("lite", "full", "ultra"), default="full")
     init.set_defaults(func=cmd_init)
 
-    search = commands.add_parser("search", help="run one logged search")
+    search = commands.add_parser(
+        "search", help='run one logged search; {"query": ...} on stdin'
+    )
     add_common(search)
+    add_content(search, '{"query": "the search string"}')
     search.add_argument("--source", choices=SOURCES, required=True)
-    search.add_argument("--query", required=True)
     search.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     search.add_argument("--from-year", type=int, default=None)
     search.add_argument("--to-year", type=int, default=None)
@@ -73,15 +87,15 @@ def wire_gather(commands: Commands) -> None:
 
 def wire_curate(commands: Commands) -> None:
     screen = commands.add_parser(
-        "screen", help="apply one regex rule to every candidate, recorded as bulk"
+        "screen",
+        help='one regex rule over every candidate; {"match","reason"} on stdin',
     )
     add_common(screen)
+    add_content(screen, '{"match": "case-insensitive regex", "reason": "..."}')
     screen.add_argument("--on", choices=MATCH_FIELDS, default="title")
-    screen.add_argument("--match", required=True, help="case-insensitive regex")
     verdict = screen.add_mutually_exclusive_group(required=True)
     verdict.add_argument("--exclude", action="store_true")
     verdict.add_argument("--include", action="store_true")
-    screen.add_argument("--reason", required=True)
     screen.set_defaults(func=cmd_screen)
 
     digester = commands.add_parser(
@@ -154,7 +168,7 @@ def wire_notebook(commands: Commands) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = Parser(
         prog="btm-lit-review",
         description=btm_lit_review.__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,

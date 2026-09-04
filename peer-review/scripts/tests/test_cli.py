@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 
 from btm_peer_review.cli import main
 
 
-def run(argv, capsys):
-    code = main(argv)
+def run(argv, capsys, stdin: str | None = None):
+    """Run one command and return (exit code, parsed stdout, stderr).
+
+    stdin carries a subcommand's free-form content, so the helper swaps it."""
+    original = sys.stdin
+    if stdin is not None:
+        sys.stdin = io.StringIO(stdin)
+    try:
+        code = main(argv)
+    finally:
+        sys.stdin = original
     captured = capsys.readouterr()
     document = json.loads(captured.out) if captured.out.strip() else None
     return code, document, captured.err
@@ -16,17 +27,9 @@ def run(argv, capsys):
 
 def started(capsys, paper_file, level="full") -> str:
     code, document, _ = run(
-        [
-            "init",
-            "ada route",
-            "--title",
-            "AdaRoute",
-            "--date",
-            "2026-03",
-            "--level",
-            level,
-        ],
+        ["init", "ada route", "--date", "2026-03", "--level", level],
         capsys,
+        stdin='{"title": "AdaRoute"}',
     )
     assert code == 0
     session = document["session"]
@@ -45,7 +48,9 @@ def batch(tmp_path, payload) -> str:
 class TestFlow:
     def test_init_rejects_a_bad_date(self, capsys):
         code, _, err = run(
-            ["init", "ada route", "--title", "t", "--date", "March"], capsys
+            ["init", "ada route", "--date", "March"],
+            capsys,
+            stdin='{"title": "t"}',
         )
         assert code == 1 and "YYYY" in err
 
@@ -170,7 +175,7 @@ class TestFlow:
     def test_pad_and_schema(self, capsys, paper_file):
         session = started(capsys, paper_file)
         code, document, _ = run(
-            ["jot", session, '{"kind": "injection", "page": 2}'], capsys
+            ["jot", session], capsys, stdin='{"kind": "injection", "page": 2}'
         )
         assert code == 0 and document["jotted"] == "j1"
         code, document, _ = run(["recall", session, "--kind", "injection"], capsys)

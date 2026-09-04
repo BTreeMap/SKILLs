@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 
 import pytest
 
@@ -18,24 +20,33 @@ def isolated_state(tmp_path, monkeypatch):
 
 
 def run(argv, capsys, stdin: str | None = None, monkeypatch=None):
-    """Run one command and return (exit code, parsed stdout, stderr)."""
+    """Run one command and return (exit code, parsed stdout, stderr).
+
+    stdin is swapped here rather than through monkeypatch so a caller needs no
+    fixture: content now reaches most subcommands this way."""
+    original = sys.stdin
     if stdin is not None:
-        monkeypatch.setattr("sys.stdin", __import__("io").StringIO(stdin))
-    code = main(argv)
+        sys.stdin = io.StringIO(stdin)
+    try:
+        code = main(argv)
+    finally:
+        sys.stdin = original
     captured = capsys.readouterr()
     document = json.loads(captured.out) if captured.out.strip() else None
     return code, document, captured.err
 
 
 def opened(capsys) -> str:
-    code, document, _ = run(["init", "rent length", "--question", "q"], capsys)
+    code, document, _ = run(["init", "rent length"], capsys, stdin='{"question": "q"}')
     assert code == 0
     return document["session"]
 
 
 class TestOpen:
     def test_open_with_a_question_creates_and_echoes_the_session(self, capsys):
-        code, document, _ = run(["init", "rent length", "--question", "why"], capsys)
+        code, document, _ = run(
+            ["init", "rent length"], capsys, stdin='{"question": "why"}'
+        )
         assert code == 0
         assert document["session"].startswith("rent-length-")
         assert document["question"] == "why"
@@ -60,7 +71,7 @@ class TestOpen:
         assert "run init first" in err
 
     def test_an_off_band_name_advises(self, capsys):
-        _, _, err = run(["init", "solo", "--question", "q"], capsys)
+        _, _, err = run(["init", "solo"], capsys, stdin='{"question": "q"}')
         assert "two or three keywords" in err
 
 
@@ -197,7 +208,9 @@ class TestStatusAndSchema:
 class TestInformalMode:
     def test_informal_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
         code, document, _ = run(
-            ["init", "loose idea", "--question", "q", "--mode", "informal"], capsys
+            ["init", "loose idea", "--mode", "informal"],
+            capsys,
+            stdin='{"question": "q"}',
         )
         session = document["session"]
         batch = json.dumps({"leaves": [{"kw": ["a", "b"], "q": "q"}]})
@@ -212,7 +225,9 @@ class TestInformalMode:
 class TestPad:
     def test_jot_and_recall_round_trip(self, capsys):
         session = opened(capsys)
-        code, receipt, _ = run(["jot", session, '{"kind": "hunch", "n": 1}'], capsys)
+        code, receipt, _ = run(
+            ["jot", session], capsys, stdin='{"kind": "hunch", "n": 1}'
+        )
         assert code == 0
         assert receipt["jotted"] == "j1"
         code, view, _ = run(["recall", session, "--kind", "hunch"], capsys)
@@ -221,14 +236,14 @@ class TestPad:
 
     def test_prose_is_stored_as_text_with_an_advisory(self, capsys):
         session = opened(capsys)
-        code, _, err = run(["jot", session, "plain prose"], capsys)
+        code, _, err = run(["jot", session], capsys, stdin="plain prose")
         assert code == 0
         assert "not a JSON object" in err
         _, view, _ = run(["recall", session], capsys)
         assert view["entries"][0]["body"] == {"text": "plain prose"}
 
     def test_jot_needs_an_existing_session(self, capsys):
-        code, _, err = run(["jot", "absent thing", "{}"], capsys)
+        code, _, err = run(["jot", "absent thing"], capsys, stdin="{}")
         assert code == 1
         assert "no session" in err
 

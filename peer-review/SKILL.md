@@ -142,16 +142,22 @@ Bind the command once per shell and re-bind after a reset; `realpath` is
 required. This surface is the handoff point: invoke it and read its output.
 Read the source only when troubleshooting on the user's instruction.
 
+Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument.
+
 <script_commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
-$R init "<two or three keywords>" --title "..." --date 2026-03 [--level full]
+$R init "<two or three keywords>" --date 2026-03 [--level full] <<'JSON'
+{"title": "..."}
+JSON
 S="<the session identifier the init output echoed>"
 $R ingest "$S" --text <extraction.txt>
 $R schema
 $R note "$S" --file <round.json> && $R check "$S"
 $R link "$S" --corpus <lit-review session id or path>
 $R status "$S"
-$R jot "$S" '{"kind": "note", ...}' [--text]
+$R jot "$S" [--text] <<'JSON'
+{"kind": "note", ...}
+JSON
 $R jot "$S" --file <entry.json>
 $R recall "$S" [--kind note] [--match <regex>] [--since j9] [--limit 20]
 $R cite-check "$S" --draft review.md

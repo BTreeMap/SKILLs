@@ -11,6 +11,8 @@ from typing import TextIO
 
 from pypdf import PdfReader
 
+from btm_corekit import CommandError
+
 
 def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
     """Decrypt the reader, trying the empty user password before requiring one.
@@ -28,18 +30,18 @@ def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
         )
         return
     if not password_env:
-        raise ValueError(
+        raise CommandError(
             "The PDF is encrypted. Set its password in an environment variable and "
             "pass that variable name with --password-env."
         )
 
     password = os.environ.get(password_env)
     if not password:
-        raise ValueError(
+        raise CommandError(
             f"The environment variable {password_env!r} is empty or not set."
         )
     if not reader.decrypt(password):
-        raise ValueError("The supplied password could not decrypt the PDF.")
+        raise CommandError("The supplied password could not decrypt the PDF.")
 
 
 def open_output(output_path: Path | None) -> ContextManager[TextIO]:

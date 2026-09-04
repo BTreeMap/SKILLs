@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from btm_corekit import CommandError
 from btm_read_pdf.pages import parse_page_specification, parse_page_token
 
 
@@ -22,12 +23,12 @@ class TestParsePageToken:
 
     @pytest.mark.parametrize("token", ["", "abc", "1-2-3", "-2", "1.5", " 1"])
     def test_malformed_tokens_are_rejected(self, token):
-        with pytest.raises(ValueError, match="Invalid page selection"):
+        with pytest.raises(CommandError, match="Invalid page selection"):
             parse_page_token(10, token)
 
     @pytest.mark.parametrize("token", ["0", "11", "4-3", "1-11"])
     def test_out_of_range_selections_are_rejected(self, token):
-        with pytest.raises(ValueError, match="outside the document"):
+        with pytest.raises(CommandError, match="outside the document"):
             parse_page_token(10, token)
 
 
@@ -51,5 +52,5 @@ class TestParsePageSpecification:
         assert parse_page_specification(None, 1) == [1]
 
     def test_a_bad_token_rejects_the_whole_specification(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(CommandError):
             parse_page_specification("1,99", 5)
