@@ -81,9 +81,8 @@ def apply(ledger: Ledger, event: dict[str, Any]) -> None:
                 raised.claim is None or raised.claim in ledger.claims,
                 f"objection cites unknown claim {raised.claim!r}",
             )
-            # Through the decoder: the record holds one law of its own, that
-            # prior work belongs to the novelty bank, and it must reach the
-            # command channel rather than escape as a traceback.
+            # Through the decoder, so its own law (prior belongs to novelty)
+            # reaches the command channel rather than escaping as a traceback.
             ledger.objections[raised.id] = parse_model(
                 Objection,
                 {

@@ -17,9 +17,7 @@ def require(condition: bool, invariant: str) -> None:
 
 
 def demand(value: T | None, invariant: str) -> T:
-    """The value, or the violated invariant. `require` checks a condition and
-    returns nothing, so a caller testing for absence still holds an optional;
-    this hands back the narrowed value."""
+    """The value, or the violated invariant, narrowed from optional to bound."""
     if value is None:
         raise CommandError(invariant)
     return value

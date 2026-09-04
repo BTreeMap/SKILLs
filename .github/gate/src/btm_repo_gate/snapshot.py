@@ -32,14 +32,12 @@ class Absent:
 
 @dataclass(frozen=True, slots=True)
 class LinkFarm:
-    """A real directory whose children are all symlinks: rebuildable by
-    derivation, so mechanically removable."""
+    """A real directory of only symlinks: rebuildable, so mechanically removable."""
 
 
 @dataclass(frozen=True, slots=True)
 class Occupied:
-    """A regular file, or a directory holding real content: work this program
-    cannot rebuild, so never mechanically removable."""
+    """A file, or a directory holding real content: never mechanically removable."""
 
 
 LinkState = Symlink | Absent | LinkFarm | Occupied
@@ -81,8 +79,7 @@ def _manifest_state(path: Path) -> ManifestState:
 
 @dataclass(frozen=True, slots=True)
 class Repo:
-    """An immutable reading of the repository. Every rule below is a pure
-    function of this value."""
+    """An immutable reading of the repository; every rule is a pure function of it."""
 
     skills: frozenset[str]
     texts: Mapping[Path, str]  # repo-relative path to contents
@@ -92,11 +89,8 @@ class Repo:
 
 def snapshot(root: Path) -> Repo:
     """Parse a directory into the repository this program knows how to judge.
-
     Every top-level directory that is neither dotted nor the `skills/` hub is
-    a skill directory, which AGENTS.md declares a reserved namespace, so the
-    skill set is read from the tree rather than from any list that could
-    disagree with it.
+    a skill directory (AGENTS.md's reserved namespace), read from the tree.
     """
     if not (root / "AGENTS.md").is_file():
         raise SystemExit(f"not a skills repository: {root}/AGENTS.md is missing")
@@ -124,8 +118,7 @@ def snapshot(root: Path) -> Repo:
     for skill in skills:
         kernel_link = Path(skill) / KERNEL.name
         links[kernel_link] = _link_state(root / kernel_link)
-    # Hub entries exist only inside a real hub directory; through a symlinked
-    # hub they would describe some other tree, so they are not read.
+    # Hub entries are read only from a real hub dir; a symlink could name another tree.
     if isinstance(links[HUB], LinkFarm | Occupied):
         present = {entry.name for entry in (root / HUB).iterdir()}
     else:

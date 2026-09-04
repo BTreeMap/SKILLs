@@ -1,11 +1,7 @@
-"""The batch gate's shared mechanics: problems accumulate, nothing raises.
-
-A member subclasses Admission and adds its own record semantics. Field shape
-belongs to the entry models; what lives here is what a model cannot see:
-resolving a reference against a pool with did-you-mean, minting an id with
-duplicate and band checks, and proving a pad link exists. Every check is
-O(entry) or O(pool) with pools in the low hundreds.
-"""
+"""The batch gate's shared mechanics: problems accumulate, nothing raises. A
+member subclasses Admission for its own record semantics, adding reference
+resolution, id minting, and pad-link checks; each check is O(entry) or
+O(pool), with pools in the low hundreds."""
 
 from __future__ import annotations
 
@@ -52,12 +48,9 @@ class Named(Model):
 
 
 def salvage(row: Mapping[str, Any], key: str) -> tuple[str, ...]:
-    """The strings under `key` in a row too malformed to decode.
-
-    A value checked against something outside the row, a corpus key or a
-    quote, is still checkable when its neighbours are wrong, and one
-    rejection has to carry every fix.
-    """
+    """The strings under `key` in a row too malformed to decode as a whole. A
+    field checked against something outside the row, a corpus key or a
+    quote, stays checkable even when its neighbours are wrong."""
     raw = row.get(key)
     if not isinstance(raw, list):
         return ()
@@ -80,9 +73,8 @@ def suggest(
     keywords: Mapping[str, set[str]] | None = None,
 ) -> list[str]:
     """Closest ids to a failed reference: keyword overlap first, then edit
-    distance for keys that carry no keywords (DOIs, titles). `keywords` is a
-    precomputed id-to-keyword-set index; without it each call is O(pool x
-    words)."""
+    distance for keys with no keywords (DOIs, titles). `keywords` is a
+    precomputed index; without one, each call is O(pool x words)."""
     ids = list(pool)
     words = set(keywords_of(ref))
     index = keywords if keywords is not None else {}
@@ -150,13 +142,9 @@ class Admission:
         where: str = "$",
         hint: str | None = None,
     ) -> M | None:
-        """A payload as its model, or every located problem recorded.
-
-        The model's fields carry the shape, so one call replaces the hand
-        checks for unknown keys, list shape, and every field's type.
-        Locations nest, and `hint` carries the entry's schema fragment for
-        problems pydantic states without one.
-        """
+        """A payload as its model, or every located problem recorded. Locations
+        nest, and `hint` carries the entry's schema fragment for problems
+        pydantic states without one."""
         try:
             return model.model_validate(payload)
         except ValidationError as err:
@@ -165,11 +153,9 @@ class Admission:
             return None
 
     def known_keys(self, payload: Mapping[str, Any], container: type[Model]) -> None:
-        """Top-level keys the container does not declare.
-
-        The container ignores extras so its rows still decode; naming them
-        here keeps an unknown key from silently doing nothing.
-        """
+        """Top-level keys the container does not declare. The container
+        ignores extras so rows still decode; naming them here keeps a typo
+        from failing silently."""
         allowed = set(container.model_fields)
         for key in payload:
             if key not in allowed:
@@ -180,8 +166,8 @@ class Admission:
                 )
 
     def resolve_ref(self, ref: str, pool: Pool, where: str) -> str | None:
-        # The pool's index serves both the match and the did-you-mean, so a
-        # batch tokenizes its ids once rather than once per reference.
+        # The pool's keyword index serves both the match and the did-you-mean,
+        # tokenized once per batch.
         match resolve(ref, pool.ids, pool.keywords()):
             case Exact(full):
                 return full

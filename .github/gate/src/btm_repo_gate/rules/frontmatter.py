@@ -29,10 +29,8 @@ def rule_skill_layout(repo: Repo) -> Iterator[Finding]:
 
 
 def rule_frontmatter(repo: Repo) -> Iterator[Finding]:
-    """Frontmatter facts split by who can settle them: `name`, `license`, and
-    field order are total functions of the skill and the spec, so drift is
-    repaired in one write per file; descriptions and non-spec fields need a
-    person."""
+    """`name`, `license`, and field order are repaired in one write;
+    descriptions and non-spec fields need a person."""
     for skill in sorted(repo.skills):
         document = Path(skill, "SKILL.md")
         text = repo.texts.get(document)
@@ -85,10 +83,7 @@ def _frontmatter_judgments(where: str, fields: dict[str, Any]) -> Iterator[Findi
 
 def _header_segments(header: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
     """Split a frontmatter block into (top-level key, its exact lines) runs.
-
-    Editing at segment granularity preserves every untouched field byte for
-    byte, folded block scalars included, which a YAML re-dump would not.
-    """
+    Editing at this granularity keeps every field byte exact."""
     segments: list[tuple[str, list[str]]] = []
     for line in header.split("\n"):
         if line[:1] not in ("", " ", "\t", "#") and ":" in line:
@@ -103,10 +98,8 @@ def _header_segments(header: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
 def _canonical_header(
     skill: str, fields: dict[str, Any], header: str
 ) -> tuple[str, list[str]] | None:
-    """The header with `name`, `license`, and field order made canonical, or
-    `None` when it already is. A field whose value is right keeps its exact
-    original text; only wrong values are rewritten, so the repair diff is
-    minimal."""
+    """The header with `name`, `license`, and field order canonicalized, or
+    `None` when it already is; a correct field keeps its exact text."""
     segments = list(_header_segments(header))
     reasons: list[str] = []
 

@@ -55,9 +55,8 @@ def write_metadata(reader: Document, output: TextIO) -> None:
 def write_pages(reader: Document, page_numbers: Iterable[int], output: TextIO) -> int:
     """Write text for each selected page with stable one-based page markers.
 
-    Returns the count of pages that had no extractable text, so the caller
-    can surface an aggregate signal instead of leaving the reader to infer a
-    scanned document from a wall of empty page markers.
+    Returns the count of pages with no extractable text, so the caller can
+    surface it as one aggregate signal.
     """
     empty_pages = 0
     for page_number in page_numbers:

@@ -1,7 +1,5 @@
 """The identifier algebra: slugging, minting, resolution, elimination.
-
-Pure except `suffix`/`mint` (randomness).
-"""
+Pure except `suffix`/`mint` (randomness)."""
 
 from __future__ import annotations
 
@@ -62,15 +60,9 @@ def resolve(
     ref: str, ids: Iterable[str], keywords: Mapping[str, set[str]] | None = None
 ) -> Resolution:
     """Total resolution: exact id, else the id whose keywords are a superset.
-
-    Both sides are parsed into keyword sets. A substring test over the raw
-    identifier instead lets a keyword match inside a longer word, and inside
-    the 26 random base32hex characters of the suffix, where a single letter
-    lands better than half the time.
-
-    `keywords` is the caller's own id-to-keyword index, shared with `suggest`;
-    without it each call re-tokenizes the pool at O(ids x characters).
-    """
+    Keyword sets, not substrings, avoid a match landing inside a longer word
+    or the suffix's random characters. Pass the caller's id-to-keyword index
+    as `keywords`, or each call re-tokenizes the pool at O(ids x characters)."""
     pool = list(ids)
     if ref in pool:
         return Exact(ref)
@@ -93,11 +85,8 @@ def resolve(
 def eliminate(
     resolution: Resolution, ref: str, kind: str, hint: str | None = None
 ) -> tuple[str, str | None]:
-    """Eliminate a Resolution into (identifier, recovery signal or None).
-
-    Raises CommandError on Ambiguous and NoMatch; `hint` extends the
-    NoMatch message with the command that creates the missing subject.
-    """
+    """Eliminate a Resolution into (identifier, recovery signal or None);
+    raises CommandError on Ambiguous or NoMatch, `hint` naming the fix."""
     match resolution:
         case Exact(full):
             return full, None

@@ -96,8 +96,8 @@ def detect_host() -> Host:
 
 # --- Emulation ---
 #
-# Publishers may support one platform. This function maps host and required
-# platform to a direct, emulated, or unsupported execution variant.
+# Publishers may support one platform; this maps host and required platform
+# to a direct, emulated, or unsupported execution variant.
 
 
 @dataclass(frozen=True, slots=True)

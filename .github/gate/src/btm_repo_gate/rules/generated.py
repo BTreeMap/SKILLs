@@ -14,10 +14,8 @@ from btm_repo_gate.snapshot import Absent, Parsed, Repo, Unreadable
 
 
 def rule_manifest(repo: Repo) -> Iterator[Finding]:
-    """The manifests publish this repository under one brand and declare every
-    skill path, which is what makes discovery declared rather than a fallback
-    scan. Names and the skill list are functions of `BRAND` and the tree, so
-    drift is repaired; absent or unreadable content needs a person."""
+    """The manifests declare this repository's brand and every skill path;
+    drift is repaired, but absent or unreadable content needs a person."""
     for path in sorted(repo.manifests):
         match repo.manifests[path]:
             case Absent():
@@ -31,7 +29,7 @@ def rule_manifest(repo: Repo) -> Iterator[Finding]:
 def _manifest_findings(
     path: Path, doc: dict[str, Any], skills: frozenset[str]
 ) -> Iterator[Finding]:
-    canonical = json.loads(json.dumps(doc))  # independent copy; `doc` stays pure
+    canonical = json.loads(json.dumps(doc))  # independent copy of doc
     reasons: list[str] = []
     if canonical.get("name") != BRAND:
         canonical["name"] = BRAND
@@ -61,9 +59,8 @@ def _manifest_findings(
 
 
 def rule_listings(repo: Repo) -> Iterator[Finding]:
-    """Every skill appears in each listing, in order. Ordering is a total
-    function of the entries, so it is repaired; a missing entry needs a written
-    summary, so it is not."""
+    """Every skill appears in each listing, in order. Ordering is repaired; a
+    missing entry needs a written summary, so it is not."""
     for path, extract in LISTINGS:
         text = repo.texts.get(path)
         if text is None:

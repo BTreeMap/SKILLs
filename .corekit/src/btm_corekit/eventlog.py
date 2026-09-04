@@ -1,9 +1,6 @@
-"""An append-only, stamped JSONL event log with a size backstop.
-
-The log is the gate's durable side: a member's `apply` decides what may
-enter, this class decides how it is written and read back. Reading is
-O(events); appending is O(new) plus one line count.
-"""
+"""An append-only, stamped JSONL event log with a size backstop. A member's
+`apply` decides what may enter; this class decides how it is written and
+read back. Reading is O(events); appending is O(new) plus one line count."""
 
 from __future__ import annotations
 

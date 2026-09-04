@@ -18,9 +18,8 @@ class WriteText:
 
 @dataclass(frozen=True, slots=True)
 class MakeSymlink:
-    """Constructed only against `Absent` or `Symlink` states; if the tree
-    moved since the snapshot and real content now stands here, leave it for
-    the next round's fresh audit rather than destroy it."""
+    """Constructed only against `Absent` or `Symlink` states; real content
+    found here instead is left for the next audit, never destroyed."""
 
     path: Path
     target: str
@@ -37,8 +36,7 @@ class MakeSymlink:
 
 @dataclass(frozen=True, slots=True)
 class RemovePath:
-    """Removes a symlink. Anything else is real content, which no repair may
-    destroy, so it is left standing for the next audit to report."""
+    """Removes a symlink; anything else is left standing for the next audit."""
 
     path: Path
 
@@ -50,9 +48,8 @@ class RemovePath:
 
 @dataclass(frozen=True, slots=True)
 class RemoveLinkFarm:
-    """Removes a directory whose children are all symlinks (the legacy alias
-    layout). Rebuilding such a directory is pure derivation, so deleting it
-    loses nothing; a directory holding any real file is refused."""
+    """Removes a directory whose children are all symlinks: pure derivation,
+    so deleting it loses nothing. A directory holding any real file is refused."""
 
     path: Path
 
@@ -85,10 +82,7 @@ class Finding:
 
 def _relative_target(link: Path, dest: Path) -> str:
     """The symlink target from `link` to `dest`, both repo-relative.
-
-    Pure path arithmetic, so an alias target can never disagree with the
-    location it is derived from, and a link always names a destination
-    distinct from itself.
+    Pure path arithmetic, so the target can never disagree with its source.
     """
     assert link != dest, f"self-link: {link}"
     return os.path.relpath(dest, link.parent)

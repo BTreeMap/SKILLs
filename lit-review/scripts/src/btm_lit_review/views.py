@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
+    JSON,
     emit,
     now_iso,
     pad_entries,
@@ -113,7 +114,7 @@ def cmd_brief(args: argparse.Namespace) -> int:
     markers = refresh_markers(session, papers)
     entries = pad_entries(session.root)
     last = load_snapshot(session)
-    document = {
+    document: dict[str, JSON] = {
         "session": session.root.name,
         "question": protocol.question,
         "level": protocol.level,

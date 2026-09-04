@@ -43,9 +43,8 @@ STDIN_FILE = "read the JSON from this file instead of stdin"
 
 
 def add_content(parser: argparse.ArgumentParser, shape: str) -> None:
-    """A subcommand whose free-form fields are required reads them as one JSON
-    object, never as arguments. One spelling per subcommand, so the agent
-    never chooses between two channels."""
+    """A subcommand's free-form fields arrive as one JSON object, never as
+    arguments, so the agent never chooses between two channels."""
     parser.add_argument("--file", default=None, help=STDIN_FILE)
     parser.description = f"content on stdin or --file: {shape}"
 

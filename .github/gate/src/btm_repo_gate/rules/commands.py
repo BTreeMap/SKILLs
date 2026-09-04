@@ -1,9 +1,6 @@
-"""Every subcommand names itself in `--help`.
-
-The agent reads the command surface before it reads anything else, and a
-parser without `help=` prints a blank column beside its name. Reported, never
-repaired: only the author knows what the command does.
-"""
+"""Every subcommand names itself in `--help`; a parser without `help=` prints
+a blank column beside its name. Reported, not repaired, since only the
+author knows what the command does."""
 
 from __future__ import annotations
 

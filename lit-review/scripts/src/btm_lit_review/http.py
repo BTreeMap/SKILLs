@@ -1,8 +1,7 @@
 """HTTP effects over httpx, under the kernel's request identity.
 
-One pooled client per process; HTTP/2, SOCKS proxies, and brotli/zstd
-encodings come from the manifest's httpx extras and negotiate themselves.
-Commands are one-shot, so process exit closes the pool.
+One pooled client per process, closed when the one-shot command exits;
+HTTP/2, SOCKS, and compression come from the manifest's httpx extras.
 """
 
 from __future__ import annotations

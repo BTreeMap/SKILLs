@@ -1,10 +1,7 @@
 """The paper as searchable text: page index, anchor resolution, section spans.
 
-Opening a paper normalizes each page in C and records where it begins, so
-construction touches no character from Python. A verbatim anchor then costs
-one `str.find`; a corrupted one costs one bit-parallel alignment inside
-rapidfuzz. Positions live in normalized coordinates, so a quote copied from
-a PDF with odd whitespace, curly quotes, or ligatures still resolves.
+Positions live in normalized coordinates, so a quote copied from a PDF with
+odd whitespace, curly quotes, or ligatures still resolves.
 """
 
 from __future__ import annotations
@@ -64,8 +61,7 @@ def page_marker(line: str) -> int | None:
 
 
 def parse_pages(raw: str) -> list[tuple[int, str]]:
-    """`## PDF page N` lines split the extraction; none means one page.
-    One pass over the lines."""
+    """`## PDF page N` lines split the extraction; none means one page."""
     pages: list[tuple[int, list[str]]] = []
     for line in raw.split("\n"):
         number = page_marker(line)
@@ -209,8 +205,8 @@ class PaperText:
         )
 
     def _limitations_span(self) -> Span | None:
-        """One pass over the lines: the first Limitations heading opens the
-        span; the next section-ending heading closes it."""
+        """The first Limitations heading opens the span; the next
+        section-ending heading closes it."""
         start: int | None = None
         for page_index, begin, end, line in self._lines():
             if start is None:

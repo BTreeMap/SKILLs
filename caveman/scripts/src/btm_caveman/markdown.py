@@ -111,10 +111,9 @@ def split_frontmatter(text: str) -> tuple[str, str]:
 def partition_fences(text: str) -> tuple[tuple[str, ...], str]:
     """One pass over the lines: (fenced blocks in order, remaining prose).
 
-    CommonMark rules: a closing fence uses the same character, is at least as
-    long as the opener, and carries no info string. Unclosed fences are
-    treated as prose so malformed markdown cannot hide a validation failure.
-    A fence scan is a state machine; a loop is its honest shape.
+    Closing needs the same character, at least the opener's length, and no
+    info string (CommonMark). An unclosed fence counts as prose, so malformed
+    markdown cannot hide a validation failure.
     """
     blocks: list[str] = []
     prose: list[str] = []
@@ -150,12 +149,9 @@ def partition_fences(text: str) -> tuple[tuple[str, ...], str]:
 def partition_indented(text: str) -> tuple[tuple[str, ...], str]:
     """Indented (4-space/tab) code blocks from fence-free text.
 
-    CommonMark approximation: a run of 4+-indented non-blank lines counts as
-    code only when preceded by a blank line (indented code cannot interrupt a
-    paragraph) and the nearest preceding non-blank line is not a list item
-    (there, 4-space indentation is usually list continuation, not code).
-    Blank-separated runs compare as separate blocks; that is symmetric across
-    the two texts being validated, which is all equality checking needs.
+    CommonMark approximation: a run counts as code only when preceded by a
+    blank line and not continuing a list item. Blank-separated runs stay
+    distinct blocks, which is all the validator's equality check needs.
     """
     blocks: list[str] = []
     prose: list[str] = []
@@ -231,15 +227,14 @@ PATH_TABLE = keep_table(
 
 
 def _path_runs(text: str) -> list[str]:
-    """Maximal runs of path characters, keeping `:` so a `C:\\` drive prefix
-    stays attached. One C-level translate plus one split."""
+    """Maximal runs of path characters, keeping `:` so `C:\\` stays attached."""
     return runs(text, PATH_TABLE)
 
 
 def _looks_like_path(run: str) -> bool:
     """Given a run that carries a separator: an anchor (`../`, `./`, `/`,
     `X:\\`) with at least one character after it, or a bare word joined to
-    more by an interior separator. Every test is a C-level call."""
+    more by an interior separator."""
     if run.startswith(("../", "./", "/")):
         return len(run) > run.index("/") + 1
     if run[1:3] == ":\\" and run[:1].isalpha():
@@ -267,7 +262,7 @@ def extract_paths(text: str) -> frozenset[str]:
 
 
 def _inline_codes(text: str) -> Iterator[str]:
-    """Contents of every `` `...` `` span, non-empty; one pass."""
+    """Contents of every `` `...` `` span, non-empty."""
     position = 0
     while (start := text.find("`", position)) != -1:
         end = text.find("`", start + 1)

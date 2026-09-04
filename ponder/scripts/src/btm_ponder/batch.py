@@ -1,9 +1,8 @@
 """The note pipeline: parse, resolve, simulate; a rejection lists every fix at once.
 
-The consuming agent pays output tokens for the batch and pays them again on
-every resend, so a rejection must be the last one: every phase runs to
-completion, each problem is an imperative corrective order with a hint, and
-the ledger changes only when the problem list is empty.
+The agent pays output tokens for the batch and again on every resend, so
+every phase runs to completion and the ledger changes only when the problem
+list comes back empty.
 """
 
 from __future__ import annotations

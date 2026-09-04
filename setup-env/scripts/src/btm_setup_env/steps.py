@@ -84,11 +84,10 @@ class AndroidSdk:
 
 @dataclass(frozen=True, slots=True)
 class Aapt2Shim:
-    """Google ships linux aapt2 as x86_64 only; every Android resource task
-    runs it. Materialize the aapt2 AGP itself would resolve, wrap it in the
-    emulator, and register the wrapper via android.aapt2FromMavenOverride in
-    the isolated gradle.properties. Only planned when emulation() says the
-    host cannot execute it natively."""
+    """Google ships linux aapt2 as x86_64 only, and every Android build needs
+    it. Materializes the version AGP would resolve, wraps it in the emulator,
+    and registers it via android.aapt2FromMavenOverride; planned only when
+    the host cannot run it natively."""
 
     qemu_binary: str  # emulator in the host prefix
     sysroot_platform: CondaPlatform
@@ -128,8 +127,7 @@ Step = (
 
 def stage_of(step: Step) -> Stage:
     """Exhaustive over the closed sum, so a new variant is a type error here
-    rather than a KeyError at sort time. The dict this replaces was keyed by
-    type: it type-checked everywhere and failed only once a plan was built."""
+    rather than a KeyError at sort time."""
     match step:
         case CondaEnv() | UvVenv():
             return Stage.TOOLCHAIN

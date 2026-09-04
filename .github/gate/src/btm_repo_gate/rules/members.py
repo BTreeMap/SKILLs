@@ -12,10 +12,9 @@ from btm_repo_gate.snapshot import Repo
 
 def rule_member_layout(repo: Repo) -> Iterator[Finding]:
     """The member holds manifest, `src/`, and `tests/`, so the skill directory
-    itself stays documentation. Moving code or a manifest is a judgment about
-    imports and history, so every finding here is reported, never repaired."""
-    # One pass buckets every Python file by its skill; the per-skill loop then
-    # reads its own bucket instead of rescanning the whole tree.
+    stays documentation. Moving code is a judgment about imports and history,
+    so every finding here is reported, never repaired."""
+    # One pass buckets Python files by skill; the loop below reads only its bucket.
     python_by_skill: dict[str, list[Path]] = {}
     for path in sorted(repo.texts):
         if path.suffix == ".py" and path.parts:

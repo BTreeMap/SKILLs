@@ -104,8 +104,7 @@ class SessionStore:
 
     def clean(self, ref: str | None, remove_all: bool) -> dict[str, Any]:
         """List sessions with sizes, or remove one session or the whole root,
-        reporting bytes freed. Removal demands the marker: never an arbitrary
-        tree."""
+        reporting bytes freed; removal demands the marker, never an arbitrary tree."""
         root = self.root()
         if remove_all and ref:
             raise CommandError("pass a session or --all, one of the two")

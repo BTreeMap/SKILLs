@@ -7,6 +7,7 @@ import argparse
 import json
 import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from btm_corekit import Parser, dispatch
@@ -30,52 +31,6 @@ from .render import path_value
 from .steps import CondaEnv, Fetch, stage_of
 
 VERBS = ("provision", "plan", "status", "shim", "destroy", "list")
-
-
-def _parser() -> argparse.ArgumentParser:
-    p = Parser(
-        prog="btm-setup-env",
-        description="Provision an isolated, userspace, per-project dev "
-        "environment. Tags: family[:flavor][@version], "
-        "e.g. python@3.12 kotlin:android go:cgo.",
-    )
-    sub = p.add_subparsers(dest="verb", required=True)
-
-    def common(sp: argparse.ArgumentParser) -> None:
-        sp.add_argument(
-            "--project",
-            type=Path,
-            default=None,
-            help="project root (default: nearest .git ancestor)",
-        )
-        sp.add_argument(
-            "--root",
-            type=Path,
-            default=None,
-            help="environment root (default: derived, per-project)",
-        )
-
-    for verb, summary in (
-        ("provision", "install the toolchains these tags name"),
-        ("plan", "show what provision would install, and install nothing"),
-    ):
-        sp = sub.add_parser(verb, help=summary)
-        sp.add_argument("tags", nargs="+", metavar="TAG")
-        sp.add_argument("--json", action="store_true")
-        common(sp)
-    for verb, summary in (
-        ("status", "report what is installed and whether each probe passes"),
-        ("destroy", "remove the environment root for this project"),
-    ):
-        common(sub.add_parser(verb, help=summary))
-    shim = sub.add_parser("shim", help="wrap a foreign-architecture binary to run here")
-    shim.add_argument("binary", type=Path)
-    shim.add_argument(
-        "--platform", default="linux-64", choices=[pl.value for pl in CondaPlatform]
-    )
-    common(shim)
-    sub.add_parser("list", help="print every known target tag")
-    return p
 
 
 def _resolve(
@@ -222,22 +177,71 @@ def _tag_of(key: tuple[str, str]) -> str:
     return family if flavor == GENERIC else f"{family}:{flavor}"
 
 
+def _parser() -> argparse.ArgumentParser:
+    p = Parser(
+        prog="btm-setup-env",
+        description="Provision an isolated, userspace, per-project dev "
+        "environment. Tags: family[:flavor][@version], "
+        "e.g. python@3.12 kotlin:android go:cgo.",
+    )
+    sub = p.add_subparsers(dest="verb", required=True)
+
+    def common(sp: argparse.ArgumentParser) -> None:
+        sp.add_argument(
+            "--project",
+            type=Path,
+            default=None,
+            help="project root (default: nearest .git ancestor)",
+        )
+        sp.add_argument(
+            "--root",
+            type=Path,
+            default=None,
+            help="environment root (default: derived, per-project)",
+        )
+
+    for verb, summary, handler in (
+        ("provision", "install the toolchains these tags name", cmd_provision),
+        ("plan", "show what provision would install, and install nothing", cmd_plan),
+    ):
+        sp = sub.add_parser(verb, help=summary)
+        sp.set_defaults(func=handler)
+        sp.add_argument("tags", nargs="+", metavar="TAG")
+        sp.add_argument("--json", action="store_true")
+        common(sp)
+    for verb, summary, handler in (
+        (
+            "status",
+            "report what is installed and whether each probe passes",
+            cmd_status,
+        ),
+        ("destroy", "remove the environment root for this project", cmd_destroy),
+    ):
+        sp = sub.add_parser(verb, help=summary)
+        sp.set_defaults(func=handler)
+        common(sp)
+    shim = sub.add_parser("shim", help="wrap a foreign-architecture binary to run here")
+    shim.set_defaults(func=cmd_shim)
+    shim.add_argument("binary", type=Path)
+    shim.add_argument(
+        "--platform", default="linux-64", choices=[pl.value for pl in CondaPlatform]
+    )
+    common(shim)
+    sub.add_parser("list", help="print every known target tag").set_defaults(
+        func=cmd_list
+    )
+    return p
+
+
 def _run(argv: list[str] | None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     # A bare tag list defaults to provision.
     if argv and argv[0] not in (*VERBS, "-h", "--help"):
         argv.insert(0, "provision")
     args = _parser().parse_args(argv)
-    handler = {
-        "provision": cmd_provision,
-        "plan": cmd_plan,
-        "status": cmd_status,
-        "shim": cmd_shim,
-        "destroy": cmd_destroy,
-        "list": cmd_list,
-    }[args.verb]
+    run: Callable[[argparse.Namespace], int] = args.func
     try:
-        return handler(args)
+        return run(args)
     except KeyboardInterrupt:
         return 130
 

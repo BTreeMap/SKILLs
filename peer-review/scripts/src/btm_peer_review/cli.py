@@ -245,9 +245,8 @@ def cmd_check(args: argparse.Namespace) -> int:
 def next_step(meta: Meta, ledger: Ledger) -> str:
     """The cheapest legal next action, derived from live ledger state.
 
-    Advisory only: a review can legitimately revisit any bank, and whether a
-    walk is done is judgment. What the script owes is the arithmetic over
-    banks, claims, and standings that the agent would otherwise redo."""
+    Advisory only: the script owes the arithmetic over banks, claims, and
+    standings that the agent would otherwise redo by hand."""
     if not meta.pages:
         return "ingest the paper text"
     if not ledger.claim_order:

@@ -141,10 +141,7 @@ def _prose(premise: str, detail: str) -> dict[str, str]:
 def _sweep_row(sweep: Sweep, view: View) -> dict[str, Any]:
     """What a sweep contributes to the Rival section: the survivors, and the
     set difference the section reports as eliminated. Hashing the survivors
-    keeps it O(candidates) rather than a scan per candidate.
-
-    `checked` names the sweep and stays at every level; the candidate text is
-    the agent's own, so it arrives with the rest of the prose at `draft`."""
+    keeps it O(candidates) rather than a scan per candidate."""
     row: dict[str, Any] = {"checked": sweep.checked}
     if not view.covers(View.DRAFT):
         return row
@@ -173,13 +170,9 @@ def scaffold(
 ) -> dict[str, list[dict[str, Any]]]:
     """The stored close prose keyed by marker, grouped into the derived sections.
 
-    One rule across all four row kinds: a row carries its identity and its
-    derivation at every level, and the agent's own findings only from `draft`.
-    Identity is the leaf id, its question, and a sweep's subject; derivation is
-    the marker refs, the hedge class, and an unresolved leaf's reason, which is
-    a closed vocabulary rather than prose. Withheld below `draft`: premise,
-    detail, survivors, eliminated. Those are worth their bytes after a
-    compaction and worth nothing in the window that wrote them."""
+    Every row carries its identity and derivation at every view level; the
+    agent's own findings (premise, detail, survivors, eliminated) show only
+    from `draft`, since they cost bytes no reader below that level spends."""
     prose = _prose if view.covers(View.DRAFT) else _no_prose
     body: dict[str, list[dict[str, Any]]] = {"answer": [], "rival": [], "open": []}
     for leaf_id, leaf in ledger.leaves.items():

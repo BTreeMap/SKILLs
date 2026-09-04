@@ -11,10 +11,8 @@ from btm_corekit import ASCII_WORD, digit_run, keep_table, runs
 COMPRESSIBLE_EXTENSIONS = frozenset(
     {".md", ".txt", ".markdown", ".rst", ".typ", ".typst", ".tex"}
 )
-# Compressible, but the structural checks assume Markdown syntax: reST titles
-# are underlined, LaTeX sections are \section{...} commands, Typst headings
-# are '='-runs: none visible to the Markdown extractors, so validation is
-# vacuous there and the agent must be told rather than silently unprotected.
+# Compressible, but reST/LaTeX/Typst headings are invisible to the Markdown
+# structural checks, so validation there is vacuous and the agent must be told.
 NON_MARKDOWN_PROSE_EXTENSIONS = frozenset({".rst", ".tex", ".typ", ".typst"})
 CONFIG_EXTENSIONS = frozenset(
     {
@@ -201,7 +199,6 @@ CODE_LINE_PREDICATES = (
 
 
 def _is_code_line(line: str) -> bool:
-    """The code-line evidence: one linear predicate per former pattern."""
     s = line.lstrip()
     return bool(s) and any(predicate(s) for predicate in CODE_LINE_PREDICATES)
 
@@ -233,7 +230,6 @@ def prose_marker_length(line: str) -> int:
 
 
 def _has_code_chars(text: str) -> bool:
-    """Set intersection and substring tests, both C-level."""
     return not PROSE_CODE_CHARS.isdisjoint(text) or any(
         pair in text for pair in PROSE_CODE_PAIRS
     )
@@ -243,7 +239,6 @@ LETTER_TABLE = keep_table("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def _count_words(text: str) -> int:
-    """Runs of two or more ASCII letters, counted from one C-level split."""
     return sum(len(word) >= MIN_WORD for word in runs(text, LETTER_TABLE))
 
 
@@ -288,7 +283,6 @@ def _looks_like_yaml(lines: list[str]) -> bool:
 
     stripped_head = [s for line in lines[:30] if (s := line.strip())]
     return bool(stripped_head) and (
-        # More than 60% of nonblank header lines must look like YAML.
         sum(map(is_indicator, stripped_head)) / len(stripped_head) > 0.6  # noqa: PLR2004
     )
 
@@ -296,9 +290,7 @@ def _looks_like_yaml(lines: list[str]) -> bool:
 def assess(path: Path, text: str | None) -> Assessment:  # noqa: PLR0911
     """Assess by basename, then extension, then content (extensionless).
 
-    Every heuristic observation becomes a signal with its evidence stated
-    (ratios, matched taxonomy), so the agent can weigh it; nothing here is
-    a verdict. Precedence stays one-return-per-rule for visibility.
+    Every observation becomes a signal with its evidence, never a verdict.
     """
     name = path.name.lower()
     if name in KNOWN_CODE_FILENAMES:

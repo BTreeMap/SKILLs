@@ -1,10 +1,8 @@
 """The closed (family, flavor) -> recipe table.
 
-A recipe answers three questions, each as pure data or a pure function:
-which steps materialize the toolchain on a given host, which environment
-delta activates it, and which probe commands prove it works. The catalog is
-the only module that knows suppliers and URLs; extending the skill to a new
-language means adding one entry here and nothing anywhere else.
+A recipe answers three questions, as pure data or a pure function: which
+steps materialize the toolchain, which environment delta activates it, and
+which probes prove it works. The catalog alone knows suppliers and URLs.
 
 Suppliers, each the only sensible one for what it provides:
   uv           CPython interpreters and venvs (the skill is all-in on uv)

@@ -1,10 +1,8 @@
 """The gated notebook: findings, gaps, rules, and snapshots derivations run on.
 
-Free exploration belongs on the pad. A record admitted here is one the
-script will later judge, so admission is total and strict: every problem
-comes back in one verdict, and the file changes only when the list is
-empty. Verdicts are never stored; finding_view and gap_view derive them
-from live corpus state, so a claim can never go stale silently.
+Admission is total and strict, so one verdict names every problem in a
+batch; verdicts themselves are never stored, only derived from live corpus
+state.
 """
 
 from __future__ import annotations

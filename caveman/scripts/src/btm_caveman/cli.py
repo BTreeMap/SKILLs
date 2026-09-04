@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import json
 import shutil
-import sys
 from pathlib import Path
 
+import btm_caveman
 from btm_caveman.admit import admit
 from btm_caveman.classify import NON_MARKDOWN_PROSE_EXTENSIONS
 from btm_caveman.markdown import split_frontmatter
@@ -20,7 +21,7 @@ from btm_caveman.store import (
     slot_for,
 )
 from btm_caveman.validate import validate
-from btm_corekit import tree_bytes, write_atomic
+from btm_corekit import Parser, run_cli, tree_bytes, write_atomic
 
 
 def print_signals(plan: Plan) -> None:
@@ -129,7 +130,8 @@ def cmd_apply(path: Path, compressed_body_path: Path) -> int:  # noqa: PLR0911
         print(
             "(restore missing content from the backup; do not recompress) and re-apply."
         )
-        return 3
+        # Exit 1 means: fix the input and resend.
+        return 1
     write_atomic(path, candidate)
     pct = round(100 * (len(original) - len(candidate)) / max(len(original), 1))
     print(f"APPLIED: {path}")
@@ -186,31 +188,45 @@ def cmd_clean(target: Path | None) -> int:
     return 0
 
 
-def main(argv: list[str]) -> int:  # noqa: PLR0911
-    # One return per verb; returns are the command interface.
-    usage = (
-        "Usage: btm-caveman check|prepare|restore <file>\n"
-        "       btm-caveman apply <file> <compressed-body-file>\n"
-        "       btm-caveman clean <file> | clean --all"
+def build_parser() -> argparse.ArgumentParser:
+    parser = Parser(
+        prog="btm-caveman",
+        description=btm_caveman.__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    match argv:
-        case ["check", target]:
-            return cmd_check(Path(target))
-        case ["prepare", target]:
-            return cmd_prepare(Path(target))
-        case ["apply", target, body]:
-            return cmd_apply(Path(target), Path(body))
-        case ["restore", target]:
-            return cmd_restore(Path(target))
-        case ["clean", "--all"]:
-            return cmd_clean(None)
-        case ["clean", target]:
-            return cmd_clean(Path(target))
-        case _:
-            print(usage)
-            return 1
+    commands = parser.add_subparsers(dest="command", required=True)
+    for verb, summary, run in (
+        ("check", "report whether a file is admissible, with its signals", cmd_check),
+        (
+            "prepare",
+            "back the file up and split its body out for rewriting",
+            cmd_prepare,
+        ),
+        ("restore", "put the backed-up original back", cmd_restore),
+    ):
+        sub = commands.add_parser(verb, help=summary)
+        sub.set_defaults(func=lambda args, run=run: run(Path(args.file)))
+        sub.add_argument("file")
+    apply_ = commands.add_parser(
+        "apply", help="validate a compressed body and write it in place"
+    )
+    apply_.set_defaults(func=lambda args: cmd_apply(Path(args.file), Path(args.body)))
+    apply_.add_argument("file")
+    apply_.add_argument("body", help="the compressed body to validate and apply")
+    clean = commands.add_parser("clean", help="remove backups for one file or --all")
+    clean.set_defaults(
+        func=lambda args: cmd_clean(None if args.all else Path(args.file))
+    )
+    target = clean.add_mutually_exclusive_group(required=True)
+    target.add_argument("file", nargs="?")
+    target.add_argument("--all", action="store_true")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    return run_cli(build_parser(), argv)
 
 
 def entrypoint() -> int:
-    """Console-script boundary: argv is the command interface."""
-    return main(sys.argv[1:])
+    """Console-script boundary."""
+    return main()

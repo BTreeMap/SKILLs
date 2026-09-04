@@ -1,15 +1,8 @@
-"""A projection sized to a judgment rather than to the corpus.
-
-An agent screening a few hundred candidates does not need the rows; it needs
-to know what kinds of thing are in there, and to accept or reject a kind in
-one move. Reading rows costs the agent tokens proportional to the corpus,
-which is the wrong asymptote for a decision whose real arity is the number of
-kinds. `digest` computes that partition here, in C-backed passes, and hands
-back one label, one count, one selecting rule, and a few exemplars per kind.
-
-The partition is total, so nothing is hidden: every item lands in exactly one
-cluster or in the residue, and the counts add up to the input size.
-"""
+"""A projection of an undecided set, sized to a judgment rather than a read.
+An agent screening a few hundred candidates needs to know what kinds of
+thing are there and accept or reject a kind in one move, not read every
+row. `digest` computes that partition in C-backed passes and returns one
+label, count, selecting rule, and a few exemplars per kind."""
 
 from __future__ import annotations
 
@@ -102,9 +95,8 @@ class Item:
 
 
 def brief(item: Item) -> dict[str, str]:
-    """An item as a projection carries it: enough text to recognize the kind,
-    truncated because the caller reads dozens of these and reads the record
-    itself only for the few it then acts on."""
+    """An item's text, truncated: enough to recognize the kind. The caller
+    reads the full record only for the few it acts on."""
     text = item.text
     if len(text) > TEXT_CHARS:
         text = text[:TEXT_CHARS].rstrip() + "..."
@@ -113,9 +105,8 @@ def brief(item: Item) -> dict[str, str]:
 
 @dataclass(frozen=True, slots=True)
 class Cluster:
-    """A set of items sharing one term, judgeable as a unit. `rule` selects
-    exactly `size` items, so accepting or rejecting the cluster is one
-    operation rather than `size` of them."""
+    """Items sharing one term, judged as a unit: `rule` selects exactly
+    `size` items, so accepting or rejecting the cluster is one decision."""
 
     label: str
     size: int
@@ -159,8 +150,8 @@ class Digest:
 
 def _labels(items: list[tuple[Item, list[str]]], cap: int) -> list[str]:
     """Terms that partition the set: seen at least twice, in at most
-    `LABEL_SHARE_MAX` of items, ranked by document frequency. Ties break on
-    the term itself so the same corpus always yields the same digest."""
+    `LABEL_SHARE_MAX` of items, ranked by frequency with ties on the term
+    itself so the same corpus always yields the same digest."""
     frequency: Counter[str] = Counter()
     for _, words in items:
         frequency.update(
@@ -188,14 +179,10 @@ def digest(
     exemplars: int = EXEMPLARS,
     residue_cap: int = RESIDUE_CAP,
 ) -> Digest:
-    """Partition `items` by their most distinguishing shared term.
-
-    One `ascii_words` pass per item, one document-frequency count, one
-    assignment pass, then a bounded top-k per cluster: O(n*w + V log V) for n
-    items of w words over a vocabulary of V terms, and O(V) space. At the
-    sizes this serves (hundreds of items, thousands of terms) that is
-    microseconds against the thousands of tokens it saves the caller.
-    """
+    """Partition `items` by their most distinguishing shared term. One
+    `ascii_words` pass per item, one frequency count, one assignment pass,
+    then a bounded top-k per cluster: O(n*w + V log V) for n items of w
+    words over V terms, O(V) space."""
     tokenized = [(item, ascii_words(item.text)) for item in items]
     ranked = _labels(tokenized, cap)
     order = {term: index for index, term in enumerate(ranked)}
@@ -212,8 +199,7 @@ def digest(
         members = buckets.get(term)
         if not members:
             continue
-        # A cluster too small to deserve a rule is noise in the decision
-        # surface: fold it back so the caller sees the items themselves.
+        # Too small to deserve a rule: fold back so the caller sees the items.
         if len(members) < CLUSTER_SIZE_MIN:
             residue.extend(members)
             continue

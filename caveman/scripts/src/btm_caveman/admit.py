@@ -24,8 +24,8 @@ KIND_GUIDANCE = {
 def admit(path: Path) -> Admission:  # noqa: PLR0911
     """Parse, don't validate: every refusal reason lives here, once.
 
-    Refusals are exact invariants only. Heuristic content judgment becomes
-    advisory notes on the Plan; the compressing agent owns that decision.
+    Refusals are exact invariants only; heuristic judgment becomes advisory
+    notes on the Plan instead.
     """
     # Preserve distinct refusal reasons and exit statuses.
     path = path.resolve()

@@ -17,11 +17,7 @@ UNSAFE_NAME = re.compile(r"[^A-Za-z0-9._-]")
 
 
 def backup_base() -> Path:
-    """Out-of-tree backup root so skill auto-loaders never re-ingest backups.
-
-    Durable state lands in the library's unified namespace, whose location the
-    kernel owns, so every skill agrees on where its state lives.
-    """
+    """Out-of-tree backup root, so skill auto-loaders never re-ingest backups."""
     return state_root("caveman") / "backups"
 
 
@@ -46,14 +42,10 @@ class BackupSlot:
 
 
 def slot_for(target: Path) -> BackupSlot:
-    """Derive the backup slot for a resolved path.
+    """Derive the backup slot for a resolved path: `slug(name)-16hex(sha256(path))`.
 
-    The rule: slug(name) + "-" + first 16 hex of sha256(fsencode(path)).
-    Deterministic (a pure function of the path) and total (os.fsencode hashes
-    any representable filename, including non-UTF-8 surrogates). The digest
-    makes accidental collision ~n^2/2^65; `load_slot` then proves identity
-    against meta.json, so even a collision refuses instead of touching another
-    file's backup. The component is ASCII, <= 81 bytes, and separator-free.
+    Deterministic and total over any representable filename. A hash collision
+    is still safe: `load_slot` proves identity against meta.json before use.
     """
     digest = hashlib.sha256(os.fsencode(target)).hexdigest()[:16]
     slug = UNSAFE_NAME.sub("_", target.name[:64]) or "file"
@@ -98,6 +90,3 @@ def read_utf8(path: Path) -> str | None:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return None
-
-
-# Guidance the agent receives alongside a non-prose assessment. Advisory:

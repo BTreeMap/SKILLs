@@ -27,7 +27,7 @@ def _defined_name(line: str, keyword: str) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class Kernel:
-    """What the kernel defines, read off the tree rather than listed by hand."""
+    """What the kernel defines."""
 
     functions: frozenset[str]
     classes: frozenset[str]
@@ -56,8 +56,7 @@ def kernel_symbols(repo: Repo) -> Kernel:
 
 
 def redefined_kernel_symbols(text: str, kernel: Kernel) -> Iterator[str]:
-    """Top-level definitions that shadow a kernel name. Two C-level substring
-    tests skip a file that defines nothing, so most files never split."""
+    """Defs that shadow a kernel name; skips files with no def/class fast."""
     if "def " not in text and "class " not in text:
         return
     for line in text.split("\n"):
@@ -103,11 +102,9 @@ def _kernel_consumers(repo: Repo) -> set[Path]:
 
 
 def rule_kernel(repo: Repo) -> Iterator[Finding]:
-    """The kernel is defined once and wired by the manifests. A file that
-    redefines a kernel symbol has smuggled a copy back in, and which parts
-    moved is a judgment, so that has no repair. A workspace member reaches
-    the kernel through its manifest alone, so a dotted `.corekit` symlink
-    inside a skill is a legacy remnant, removed mechanically."""
+    """The kernel is defined once and wired through manifests. A redefined
+    kernel symbol has no repair, since which parts moved is a judgment; a
+    legacy `.corekit` symlink inside a skill is removed mechanically."""
     for skill in sorted(repo.skills):
         link = Path(skill) / KERNEL.name
         match repo.links.get(link, Absent()):
@@ -128,8 +125,7 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
                     "real content stands at the legacy kernel-symlink path; "
                     "move it aside",
                 )
-    # A member's modules are covered, not just its console entry, so moving a
-    # copy of the kernel one import deeper does not escape the check.
+    # Checks every module of a consumer, not just its console entry.
     roots = _kernel_consumers(repo)
     kernel = kernel_symbols(repo)
     for path in sorted(repo.texts):

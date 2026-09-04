@@ -25,9 +25,10 @@ class Refusal:
 
 @dataclass(frozen=True, slots=True)
 class Assessment:
-    """Heuristic reading of a file: a best-guess kind plus the evidence that
-    produced it. Advisory by construction: the compressing agent owns the
-    judgment; only `Refusal` (exact invariants) blocks."""
+    """Heuristic reading of a file: a best-guess kind plus its evidence.
+
+    Advisory only; only `Refusal` blocks.
+    """
 
     kind: FileKind
     signals: tuple[str, ...] = ()
@@ -37,10 +38,8 @@ class Assessment:
 class Plan:
     """An admitted compression: the single trusted entry into the domain.
 
-    `split_frontmatter` partitions the source text, so the invariant
-    `original == frontmatter + body` holds by construction; nothing ever
-    needs to re-read the source to recover the original. `notes` carries
-    the advisory signals for the agent; it never gates.
+    `original == frontmatter + body` holds by construction. `notes` carries
+    advisory signals; it never gates.
     """
 
     path: Path

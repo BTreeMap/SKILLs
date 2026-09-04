@@ -17,14 +17,9 @@ from btm_repo_gate.snapshot import Absent, LinkFarm, Occupied, Repo, Symlink
 
 
 def rule_alias(repo: Repo) -> Iterator[Finding]:
-    """Every alias is a pure function of the skill set, so a missing, wrong,
-    orphaned, or legacy-shaped one is repaired. Only real content blocks,
-    because deleting it would destroy work no derivation can rebuild.
-
-    Two standards bound the derivation: the hub aliases exactly the visible
-    top-level directories (the reserved skill namespace; dotted
-    infrastructure is wired by rule_kernel), and every alias targets a
-    destination distinct from itself (_relative_target asserts it)."""
+    """Every alias is a pure function of the skill set: missing, wrong,
+    orphaned, or legacy-shaped is repaired; real content blocks, since
+    deleting it would destroy work no derivation can rebuild."""
     if isinstance(repo.links[HUB], Symlink):
         yield Finding(
             "alias",
@@ -61,8 +56,7 @@ def rule_alias(repo: Repo) -> Iterator[Finding]:
                     str(link),
                     "real content stands where the alias belongs; move it aside",
                 )
-    # This rule owns the hub and the vendor paths; per-skill kernel links
-    # belong to rule_kernel.
+    # Per-skill kernel links belong to rule_kernel, not this rule.
     managed = {
         link for link in repo.links if link in VENDOR_LINKS or link.parts[0] == HUB.name
     }

@@ -1,6 +1,5 @@
 """The rule set: one function per convention, each pure over the snapshot.
-
-Adding a rule means adding it here, so the registry is the only list to keep.
+Adding a rule means adding it here; this registry is the only list to keep.
 """
 
 from __future__ import annotations

@@ -1,14 +1,7 @@
 """Linear string parsers built on CPython's C-level primitives.
-
-Two costs decide the shape here. Asymptotically, every function is one
-pass. Constant-factor, a Python-level `for char in text` loop costs
-roughly 50 to 100 ns per character, while `str.translate`, `str.split`,
-and `str.find` run in C at 1 to 5 ns, so a per-character loop is the
-wrong backend even when its complexity is right: measured on a 127 KB
-paper, tokenizing by loop takes 8.7 ms against 2.0 ms by translate.
-Every scan below therefore drives C primitives and keeps Python-level
-iteration proportional to the tokens produced, never the characters read.
-"""
+Every function is one pass; a Python `for char in text` loop costs 50-100 ns
+per character against 1-5 ns for `str.translate`/`split`/`find` in C: on a
+127 KB paper, tokenizing by loop took 8.7 ms against 2.0 ms by translate."""
 
 from __future__ import annotations
 
@@ -20,11 +13,8 @@ SPACE = 32
 
 
 def keep_table(keep: str) -> bytes:
-    """A 256-byte translation table keeping `keep` and blanking the rest.
-
-    `bytes.translate` applies it in one C pass, so `runs` costs one scan
-    plus one allocation per token.
-    """
+    """A 256-byte translation table keeping `keep` and blanking the rest, so
+    `bytes.translate` applies it in one C pass: one scan per token."""
     kept = frozenset(keep.encode("ascii"))
     return bytes.maketrans(
         bytes(range(256)), bytes(b if b in kept else SPACE for b in range(256))
@@ -32,11 +22,8 @@ def keep_table(keep: str) -> bytes:
 
 
 def runs(text: str, table: bytes) -> list[str]:
-    """Maximal runs of the characters `table` keeps, in order.
-
-    Text is read as ASCII with every other codepoint replaced, so a run
-    never spans a non-ASCII character.
-    """
+    """Maximal runs of the characters `table` keeps, in order; non-ASCII
+    codepoints are replaced first, so a run never spans one."""
     blanked = text.encode("ascii", "replace").translate(table)
     return [token.decode("ascii") for token in blanked.split()]
 
@@ -69,8 +56,7 @@ def prefixed_number(text: str, prefix: str) -> int | None:
 
 def bracketed(text: str) -> Iterator[str]:
     """Contents of every innermost `[...]` in order; amortized O(n) because
-    a bracket that opens inside another restarts the scan at the inner one.
-    Every step is a C-level `find`, so no character is touched by Python."""
+    a bracket that opens inside another restarts the scan at the inner one."""
     position = 0
     while (start := text.find("[", position)) != -1:
         end = text.find("]", start + 1)
@@ -104,25 +90,19 @@ HEADING_WORDS = 4  # the longest heading any caller's closed vocabulary holds
 
 
 def digit_run(text: str, limit: int) -> int:
-    """Length of the leading ASCII digit run, counted no further than
-    `limit + 1`. The cap is what keeps the scan proportional to what a caller
-    can accept rather than to the line: an ordered-list marker admits nine
-    digits, so a line of a million digits is rejected after ten comparisons.
-    A return of `limit + 1` means "longer than the limit", never a true length.
-    `str.lstrip` runs the scan in C and leaves non-ASCII digits alone."""
+    """Length of the leading ASCII digit run, capped so the scan never goes
+    past `limit + 1` characters. A return of `limit + 1` means "longer than
+    the limit", never a true length; `str.lstrip` runs the scan in C."""
     head = text[: limit + 1]
     return len(head) - len(head.lstrip(ASCII_DIGITS))
 
 
 def heading_words(line: str, limit: int = HEADING_WORDS) -> list[str]:
     """Words of a heading line after an optional `1.2.` section number,
-    lowercased; empty when the line is blank or a bare number.
-
-    The law that makes the cap safe: the list is longer than `limit` exactly
-    when the line holds more than `limit` words, because the final element
-    carries the rest of the line unsplit. Tuple equality against any closed
-    vocabulary of at most `limit` words is therefore unchanged, while the work
-    stays proportional to `limit` rather than to the words on the line."""
+    lowercased; empty when the line is blank or a bare number. The list is
+    longer than `limit` only when the line truly holds more words, so tuple
+    equality against a closed vocabulary of at most `limit` words stays exact
+    while the work stays proportional to `limit`, not to the line."""
     parts = line.split(maxsplit=limit + 1)
     if parts and is_digits(parts[0].replace(".", "")):
         parts = parts[1:]

@@ -1,11 +1,6 @@
 """btm-corekit: the shared symbolic kernel for SKILLs bundled scripts.
-
-One module per algebra, each testable alone; this package re-exports the
-whole surface, so consumers import from `btm_corekit` and never from a
-submodule. Consumers declare this package as a workspace dependency, so a
-skill runs from a full repository checkout and a script copied out alone
-fails loudly at environment build.
-"""
+Import the whole surface from `btm_corekit`, never a submodule; a script
+copied out of its workspace fails loudly at environment build."""
 
 from __future__ import annotations
 

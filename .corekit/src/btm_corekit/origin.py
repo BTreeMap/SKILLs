@@ -1,8 +1,6 @@
 """Request origin: BTM_USER_AGENT verbatim, else BTM_CONTACT, else project contact.
-
 Origin is who the request is from. A credential is what it may spend, so
-OpenAlex's key lives here beside it and travels to that host alone.
-"""
+OpenAlex's key lives here beside it and travels to that host alone."""
 
 from __future__ import annotations
 

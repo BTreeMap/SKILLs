@@ -7,8 +7,9 @@ import sys
 from collections.abc import Mapping, Sequence
 from typing import Any, TypeAlias
 
-# What survives json.dumps. Document builders return it, so a Path or a
-# model is caught where it is written rather than at the print.
+# What survives json.dumps; a Path or a model is caught here, not at print
+# time. emit stays wide since a member may hand it a TypedDict view that
+# mypy cannot see as JSON-shaped.
 JSON: TypeAlias = (
     "bool | int | float | str | Sequence[JSON] | Mapping[str, JSON] | None"
 )

@@ -64,9 +64,8 @@ def build_parser() -> argparse.ArgumentParser:
 def _run(argv: Sequence[str] | None) -> int:
     args = build_parser().parse_args(argv)
     if args.output and args.output.exists() and not args.overwrite:
-        # Destroying existing bytes is decidable here; whether it is intended
-        # is the caller's judgment, so demand it explicitly. Refuse before
-        # materialize, so a doomed run downloads nothing.
+        # Destroying existing bytes needs the caller's explicit consent;
+        # refuse before materialize, so a doomed run downloads nothing.
         raise CommandError(
             f"output file already exists: {args.output}; pass --overwrite to replace it"
         )
@@ -103,8 +102,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     pypdf's and the OS's own exceptions join the contract here, at the one
     boundary that knows they mean an unreadable file rather than an
-    unreachable server. Every expected failure used to return 2, which told
-    an agent to retry a missing path forever."""
+    unreachable server."""
 
     def run() -> int:
         try:

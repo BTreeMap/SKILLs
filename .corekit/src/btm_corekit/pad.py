@@ -1,10 +1,5 @@
-"""The pad: free working memory beside a skill's gated stores.
-
-jot admits anything and loses nothing. The body is stored verbatim under
-its own key, so no body field can collide with the script-stamped envelope
-(id, time), and every byte comes back through recall. Rigor lives behind
-the gated verbs; the only failure here is an unreadable filter argument.
-"""
+"""The pad: free working memory beside a skill's gated stores; a jotted body
+nests under its own key so it can't collide with the stamped envelope."""
 
 from __future__ import annotations
 
@@ -37,10 +32,8 @@ def compile_match(pattern: str) -> re.Pattern[str]:
 
 def pad_entries(directory: Path) -> list[dict[str, Any]]:
     """Rows the pad holds; a line appended by hand reads as a bare body.
-
-    Positional ids match jot's count-based minting, so the two write paths
-    never collide.
-    """
+    Positional ids match jot's minting, so hand-written and jotted lines
+    never collide."""
     path = directory / SCRATCH
     if not path.exists():
         return []
@@ -78,7 +71,7 @@ def jot(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
 
 def pad_body(raw: str, as_text: bool = False) -> tuple[dict[str, Any], str | None]:
     """Anything becomes a body: a JSON object as itself, all else wrapped as
-    text with an advisory. The pad path never rejects content."""
+    text with an advisory."""
     if not as_text:
         try:
             parsed = json.loads(raw)

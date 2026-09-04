@@ -1,14 +1,9 @@
 """The imperative shell: downloads, extraction, micromamba, step executors.
 
 Idempotence is the governing law: every executor checks a postcondition and
-skips completed work, so re-running provision is the repair action, and an
-interrupted run never leaves state a later run would trust. Downloads land
-under a temporary name and rename on success for the same reason.
-
-Provisioning-time subprocesses inherit the caller's environment with HOME,
-TMPDIR, and TLS roots redirected; only the *activation* environment is fully
-hermetic. certifi supplies the CA bundle so everything works on images that
-ship no system roots.
+skips completed work, so re-running provision is the repair action; only
+the *activation* environment is fully hermetic, since provisioning
+subprocesses still inherit the caller's HOME, TMPDIR, and TLS roots.
 """
 
 from __future__ import annotations
@@ -133,9 +128,8 @@ def verify_sha256(path: Path, expected: str) -> None:
     with path.open("rb") as handle:
         actual = hashlib.file_digest(handle, "sha256").hexdigest()
     if actual != expected:
-        # Deleting the artifact is the mechanical repair: a cached corrupt
-        # download would otherwise fail every re-run forever, since fetch()
-        # trusts an existing file.
+        # The mechanical repair: fetch() trusts an existing file, so a
+        # corrupt download would otherwise poison every re-run.
         path.unlink()
         raise UpstreamError(
             f"digest mismatch for {path.name}\n"
@@ -219,9 +213,8 @@ def run_logged(
 
 class Manifest(Model):
     """What a provisioned root records about itself. One reading, so status
-    and the executors cannot disagree about which project it belongs to. This
-    tool is the only writer and an older one may have written it, so a field
-    it does not know is ignored rather than fatal."""
+    and the executors cannot disagree about which project it belongs to; an
+    older manifest missing a field is read, not rejected."""
 
     model_config = ConfigDict(frozen=True, extra="ignore")
 
@@ -265,9 +258,9 @@ class Ctx:
 
 
 def load_manifest(layout: Layout) -> Manifest:
-    """A root with no manifest was never provisioned. A manifest that will not
-    parse is not the same thing, so it says so rather than reading as absent
-    and provoking a full reinstall."""
+    """A root with no manifest was never provisioned; one that fails to parse
+    is not the same thing, so it errors instead of reading as absent and
+    forcing a reinstall."""
     try:
         raw = layout.manifest.read_text()
     except OSError:
@@ -296,8 +289,7 @@ def ensure_micromamba(ctx: Ctx) -> None:
         verify_sha256(archive, sidecar.read_text().split()[0])
     except CommandError:
         # The sidecar itself may be the corrupt cached file; clear it too so
-        # the re-run re-fetches both instead of wedging on a bad pin. Both
-        # error classes land here, whichever a mismatch is later judged to be.
+        # the re-run re-fetches both instead of wedging on a bad pin.
         sidecar.unlink(missing_ok=True)
         raise
     ctx.mamba.parent.mkdir(parents=True, exist_ok=True)
@@ -447,7 +439,6 @@ def do_android_sdk(ctx: Ctx, step: AndroidSdk) -> None:
     if not sdkmanager.exists():
         raise DenvError(f"sdkmanager missing at {sdkmanager}")
     env = ctx.tool_env(**_jvm_env_vars(ctx))
-    # Accept licenses silently; the install reports any failure.
     subprocess.run(
         [str(sdkmanager), "--licenses"],
         env=env,

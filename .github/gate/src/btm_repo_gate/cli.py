@@ -13,16 +13,15 @@ from btm_repo_gate.snapshot import snapshot
 
 
 def repair_to_fixpoint(root: Path) -> tuple[list[Finding], list[Finding]]:
-    """Apply repairs until none remain, re-auditing between rounds so the
-    verdict describes the tree as it now stands rather than as it was."""
+    """Apply repairs until none remain, re-auditing each round so the
+    verdict reflects the tree's current state."""
     applied: list[Finding] = []
     findings = audit(snapshot(root))
     for _ in range(FIXPOINT_ROUNDS):
         pending = [(f, f.repair) for f in findings if f.repair is not None]
         if not pending:
             break
-        # One writer per path per round: a repair deferred here re-derives
-        # from the next round's fresh snapshot, so no update is ever lost.
+        # One writer per path per round; a skipped repair re-derives next round.
         claimed: set[Path] = set()
         for finding, repair in pending:
             if repair.path in claimed:
@@ -36,11 +35,8 @@ def repair_to_fixpoint(root: Path) -> tuple[list[Finding], list[Finding]]:
 
 def report(applied: Sequence[Finding], findings: Sequence[Finding]) -> int:
     """Print what was repaired and what remains, then fail if anything remains.
-
-    The two remaining classes are reported separately because they ask for
-    different actions: a mechanical finding asks for `fix`, and only a finding
-    without a repair asks for a person. After `fix` the first class is empty
-    unless a repair failed to settle, which is why it is still worth naming.
+    Reported separately: a mechanical finding asks for `fix`, one without a
+    repair needs a person.
     """
     for finding in applied:
         print(f"repaired {finding.rule:<14} {finding.path}", file=sys.stderr)
@@ -62,11 +58,9 @@ def report(applied: Sequence[Finding], findings: Sequence[Finding]) -> int:
 
 
 def find_root(start: Path) -> Path:
-    """Walk up to the repository the marketplace manifest marks.
-
-    Derived from the working directory rather than from this file's depth, so
-    moving a module cannot silently change which tree gets audited.
-    """
+    """Walk up to the repository the marketplace manifest marks, derived
+    from the working directory so moving this module can't change what's
+    audited."""
     for candidate in (start, *start.parents):
         if (candidate / MARKETPLACE).is_file():
             return candidate

@@ -32,9 +32,8 @@ ARGV_MESSAGE_MAX = 200
 
 
 def bounded(message: str) -> str:
-    """argparse quotes the offending token verbatim, so a payload that reached
-    argv by mistake would be echoed back whole. Slicing is C-level; the tail
-    names the size instead of spending it."""
+    """argparse echoes a malformed token back whole; slicing here is C-level,
+    so the tail just names the size instead of spending it."""
     if len(message) <= ARGV_MESSAGE_MAX:
         return message
     return (
@@ -44,14 +43,10 @@ def bounded(message: str) -> str:
 
 
 class Parser(argparse.ArgumentParser):
-    """argv, decoded like every other untrusted input.
-
-    Stock argparse exits 2 on a malformed argument line. In this library 2
-    means the upstream failed and the call is worth retrying, so an agent
-    obeying the exit contract would retry a call that can never succeed.
-    Raising instead routes argv through the same `CommandError` channel as a
-    bad batch, and `add_subparsers` propagates this class to every subparser.
-    """
+    """argv, decoded like every other untrusted input. Stock argparse exits 2
+    on a malformed line, but here 2 means retry-worthy; raising instead
+    routes it through `CommandError`, and `add_subparsers` propagates this
+    class to every subparser."""
 
     def error(self, message: str) -> NoReturn:
         raise CommandError(bounded(message))
@@ -72,9 +67,9 @@ def dispatch(run: Callable[[], int]) -> int:
 
 
 def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) -> int:
-    """Parse argv and dispatch to the subcommand's `func` under the contract.
-    Parsing sits inside the boundary: with `Parser`, a malformed argument line
-    is a located rejection like any other, not argparse's own exit 2."""
+    """Parse argv and dispatch to the subcommand's `func`. With `Parser`, a
+    malformed argument line is a located rejection like any other, not
+    argparse's own exit 2."""
 
     def parsed() -> int:
         args = parser.parse_args(argv)
@@ -103,10 +98,8 @@ Source = Inline | FromFile | FromStdin
 
 
 def sole_source(inline: str | None, file: str | None) -> Source:
-    """Exactly one place a payload comes from, parsed out of the two optional
-    arguments argparse can hand over. The name is the law: supplying both an
-    inline argument and `--file` is a rejection, where the earlier
-    two-nullable shape resolved it silently and dropped the file."""
+    """Exactly one place a payload comes from; supplying both an inline
+    argument and `--file` is a rejection."""
     match (inline, file):
         case (None, None):
             return FromStdin()
@@ -122,10 +115,9 @@ def sole_source(inline: str | None, file: str | None) -> Source:
 
 @dataclass(frozen=True, slots=True)
 class Payload:
-    """What one subcommand calls its JSON and which spellings it accepts.
-    Declared beside the parser that wires them rather than derived from
-    whichever source happened to be used, so an empty-payload rejection can
-    never advertise a spelling the subcommand does not have."""
+    """What one subcommand calls its JSON, and which spellings it accepts; an
+    empty-payload rejection never advertises a spelling the subcommand
+    lacks."""
 
     what: str
     spellings: str
@@ -153,9 +145,8 @@ def read_payload(source: Source, kind: Payload) -> str:
 def read_batch(
     file: str | None, inline: str | None = None
 ) -> dict[str, Any] | Diagnostic:
-    """One JSON object from the batch's sole source; unparsable JSON is a
-    located rejection, so the caller emits it in the same envelope as any
-    other."""
+    """One JSON object from the batch's sole source; unparsable JSON becomes
+    a located rejection, in the same envelope as any other."""
     raw = read_payload(sole_source(inline, file), BATCH)
     try:
         batch = json.loads(raw)
@@ -167,13 +158,9 @@ def read_batch(
 
 
 def content(model: type[M], file: str | None, what: str) -> M:
-    """A subcommand's free-form fields, as one JSON object from stdin or a file.
-
-    Free-form text never travels in argv: a research question, a fielded query
-    such as `all:"phrase"`, and a regex all carry quotes, backslashes and
-    braces that the shell rewrites before the process sees them, and a
-    mis-quoted argument costs a whole tool call to discover. One object, one
-    decode, every located problem in one verdict."""
+    """A subcommand's free-form fields, as one JSON object from stdin or a
+    file. Free-form text never travels in argv: the shell rewrites quotes,
+    backslashes, and braces before the process ever sees them."""
     raw = read_payload(sole_source(None, file), CONTENT)
     try:
         data = json.loads(raw)
@@ -185,14 +172,10 @@ def content(model: type[M], file: str | None, what: str) -> M:
 
 
 class View(StrEnum):
-    """How much of a derived document to emit.
-
-    A chain, not a set of flags: each level is a superset of the one before,
-    so asking for more never costs information and a field is declared at
-    exactly one level. `draft` is the default because the documented path
-    drafts from this output; `plan` is the mid-session view, which on a real
-    session is an order of magnitude smaller than the prose it omits.
-    """
+    """How much of a derived document to emit. A chain, not flags: each level
+    is a superset of the one before, so asking for more never costs
+    information. `plan`, the mid-session view, runs an order of magnitude
+    smaller than the prose it omits; `draft` is the default."""
 
     PLAN = "plan"
     DRAFT = "draft"
@@ -203,12 +186,10 @@ class View(StrEnum):
         return VIEW_ORDER.index(self)
 
     def covers(self, level: View) -> bool:
-        """The chain law, and the only test a document builder needs.
-
-        Containment is structural, not top-level: a richer view may add fields
-        inside a row it already emitted. What it may never do is rewrite a
-        value or drop a record, so a caller can trust what a cheaper view
-        already told it."""
+        """The chain law, and the only test a document builder needs. A
+        richer view may add fields inside a row already emitted, but may
+        never rewrite a value or drop a record: a caller can trust what a
+        cheaper view already told it."""
         return self.rank >= level.rank
 
 
@@ -241,12 +222,10 @@ def gated(
     expand: Callable[[dict[str, Any]], Outcome],
     commit: Callable[[Any], dict[str, Any]],
 ) -> int:
-    """The gate protocol, defined once.
-
-    Parse the batch, run the member's expansion, surface advisories, refuse
-    with every problem in one verdict, and commit only when none remain. Each
-    member had its own copy; a copy that drifts makes the contract differ
-    between skills, which is the one thing an agent cannot discover."""
+    """The gate protocol, defined once. Parse the batch, run the member's
+    expansion, surface advisories, refuse with every problem in one verdict,
+    and commit only when none remain. A contract that drifts between skills
+    is the one thing an agent cannot discover."""
     batch = read_batch(file)
     if isinstance(batch, Diagnostic):
         emit(rejection([batch], store))
@@ -320,8 +299,7 @@ def wire_pad(
     jotter.set_defaults(func=cmd_jot)
     jotter.add_argument("session", help="session identifier or directory")
     # No inline positional: an optional positional interleaved with flags is
-    # argparse's ambiguous shape, and a JSON body is exactly what the shell
-    # mangles. The entry arrives on stdin or from --file.
+    # argparse's ambiguous shape, and a JSON body is what the shell mangles.
     jotter.add_argument(
         "--file", default=None, help="read the entry from this file instead of stdin"
     )

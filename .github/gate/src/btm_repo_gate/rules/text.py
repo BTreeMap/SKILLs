@@ -13,7 +13,7 @@ def rule_em_dash(repo: Repo) -> Iterator[Finding]:
     """AGENTS.md forbids U+2014 outright. The replacement is a hyphen, a comma,
     a colon, or a restructured sentence, which is a judgment, so no repair."""
     for path, text in repo.texts.items():
-        if EM_DASH not in text:  # Skip per-line scan for most files.
+        if EM_DASH not in text:
             continue
         for number, line in enumerate(text.split("\n"), start=1):
             if EM_DASH in line:

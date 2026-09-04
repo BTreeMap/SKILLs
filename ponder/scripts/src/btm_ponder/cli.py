@@ -137,9 +137,8 @@ def cmd_check(args: argparse.Namespace) -> int:
         "mode": mode,
         "question": meta.question,
         "sections": sections(ledger),
-        # Scaffold before markers: a draft is written from the scaffold and
-        # only consults the marker table to render its Sources section, so the
-        # long table sitting first cost a second read of the whole document.
+        # Scaffold before markers: the marker table serves only the Sources
+        # section, so putting it first would cost a second read to draft.
         "scaffold": scaffold(ledger, markers, args.view),
         "violations": blocking,
         "advisories": demoted,

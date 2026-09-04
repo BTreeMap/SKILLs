@@ -12,9 +12,9 @@ from btm_corekit import Count, Model, NonEmpty, Slug
 
 
 class SourceClass(StrEnum):
-    """What a source is relative to the question it answers. The first two
-    can settle a leaf alone; MEASURED needs corroboration; REPORTED supports
-    only hedged claims. `stated` is the eliminator that reads that order."""
+    """What a source is relative to the question it answers: the first two
+    can settle a leaf alone, MEASURED needs corroboration, REPORTED supports
+    only hedged claims."""
 
     CONSTITUTIVE = "constitutive"
     ATTESTED = "attested"
@@ -48,8 +48,8 @@ class Mode(StrEnum):
 
 
 class CloseState(StrEnum):
-    """How a leaf ends. `folded` was once spelled as retired with reason
-    folded; the close decoder still reads that."""
+    """How a leaf ends. The close decoder also accepts a legacy `retired`
+    shape with reason `folded` as this state."""
 
     RETRIEVED = "retrieved"
     REFUTED = "refuted"

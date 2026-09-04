@@ -26,11 +26,9 @@ def tree_bytes(path: Path) -> int:
 
 
 def write_atomic(path: Path, text: str) -> None:
-    """Encode first, write a sibling temp file, fsync, then os.replace().
-
-    The destination only ever moves from one complete file to another;
-    permission bits survive the swap.
-    """
+    """Encode first, write a sibling temp file, fsync, then os.replace(). The
+    destination only ever moves from one complete file to another;
+    permission bits survive the swap."""
     data = text.encode("utf-8")
     fd, tmp_name = tempfile.mkstemp(
         dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"

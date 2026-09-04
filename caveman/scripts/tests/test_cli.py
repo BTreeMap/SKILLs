@@ -83,8 +83,8 @@ class TestRoundTrip:
         capsys.readouterr()
         body_file = note.parent / "compressed.md"
         body_file.write_text("Ordinary prose.\n", encoding="utf-8")
-        # 3 is validation failure, distinct from 1, which is admission refusal.
-        assert main(["apply", str(note), str(body_file)]) == 3
+        # The ERROR lines say what to fix, which is what exit 1 means.
+        assert main(["apply", str(note), str(body_file)]) == 1
         assert note.read_text(encoding="utf-8") == PROSE  # target untouched
 
     def test_apply_without_prepare_refuses(self, note, tmp_path):
@@ -148,10 +148,9 @@ class TestCheckAndClean:
         assert main(["check", str(path)]) == 0
         assert "checks assume Markdown" in capsys.readouterr().out
 
-    def test_an_unknown_verb_prints_usage(self, capsys):
+    def test_an_unknown_verb_names_the_ones_that_exist(self, capsys):
         assert main(["fly"]) == 1
-        assert "Usage:" in capsys.readouterr().out
+        assert "invalid choice" in capsys.readouterr().err
 
     def test_the_self_test_verb_is_gone(self, capsys):
         assert main(["self-test"]) == 1
-        assert "Usage:" in capsys.readouterr().out

@@ -55,8 +55,7 @@ def paper_field(paper: Paper, on: str) -> str:
 
 class Rule(Model):
     """One screening rule. The pattern is a regex and the reason is prose;
-    both carry characters the shell rewrites, so both arrive on stdin.
-    `NonEmpty` trims and rejects, which retires the hand-written check."""
+    both carry characters the shell rewrites, so both arrive on stdin."""
 
     match: NonEmpty
     reason: NonEmpty
@@ -230,10 +229,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
     """The screening entry point: what kinds of candidate are in the corpus,
     with the rule that selects each kind.
 
-    `show` costs the reader one row per candidate, which is the wrong price
-    for a judgment whose real arity is the number of kinds. This projects the
-    partition instead, so a few hundred candidates become a few dozen labels
-    and each verdict is one `screen` away."""
+    `show` costs one row per candidate; this projects to a few dozen labels
+    so each verdict is one `screen` away."""
     session = open_session(args.session)
     papers = load_papers(session)
     undecided = [paper for paper in papers.values() if paper.status == args.status]
@@ -300,9 +297,8 @@ def cmd_show(args: argparse.Namespace) -> int:
     return 0
 
 
-# The band each level's shortlist is meant to land in. Leaving it is a
-# judgment call, not an error, so the advisory names the band and the count
-# and stops there: the agent decides whether to tighten criteria or disclose.
+# The band each level's shortlist should land in. Leaving it advises, never
+# errors; the agent decides whether to tighten criteria or disclose.
 LEVEL_BANDS = {
     Level.LITE: (5, 10),
     Level.FULL: (10, 25),
@@ -319,9 +315,8 @@ def next_step(
 ) -> str:
     """The cheapest legal next action, derived from live counts.
 
-    Advisory, never a gate: which step is actually worth taking is the
-    agent's call, and a session can legitimately revisit any phase. What the
-    script owes is the arithmetic the agent would otherwise redo by hand."""
+    Advisory, never a gate; the script owes only the arithmetic the agent
+    would otherwise redo by hand."""
     if not criteria_ready:
         return "fill criteria.include and criteria.exclude in protocol.json"
     if not searches:
