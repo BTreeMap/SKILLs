@@ -18,7 +18,14 @@ from btm_corekit import (
     suggest,
     write_atomic,
 )
-from btm_lit_review.constants import PAD_TAIL, READ_LEVELS, SOURCES, STATUSES
+from btm_lit_review.constants import (
+    PAD_TAIL,
+    READ_LEVELS,
+    SOURCES,
+    STATUSES,
+    ReadLevel,
+    Status,
+)
 from btm_lit_review.draft import marker_table, refresh_markers
 from btm_lit_review.notebook import (
     SCHEMA,
@@ -61,7 +68,7 @@ def unextracted_in(
     return [
         key
         for key, paper in papers.items()
-        if paper.status == "included" and key not in covered
+        if paper.status is Status.INCLUDED and key not in covered
     ]
 
 
@@ -188,5 +195,5 @@ def recognize_extraction(args: argparse.Namespace, body: Mapping[str, Any]) -> N
         near = suggest(key, papers)
         hint = f"; did you mean: {', '.join(near)}" if near else ""
         signal(f"extraction key '{key}' is not a corpus paper{hint}")
-    elif papers[key].read_level == "none":
+    elif papers[key].read_level is ReadLevel.NONE:
         signal(f"{key} has read_level none; record the read level via update")

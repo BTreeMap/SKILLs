@@ -104,13 +104,6 @@ def diagnostics(error: ValidationError) -> list[Diagnostic]:
     ]
 
 
-def _loc_of(where: str) -> tuple[str | int, ...]:
-    if where == "$":
-        return ()
-    parts = where.replace("[", ".").replace("]", "").split(".")
-    return tuple(int(part) if part.isdigit() else part for part in parts)
-
-
 def parse_with(adapter: TypeAdapter[T], data: Any, what: str) -> T:
     """`parse_model` for a shape no single class names: a discriminated union
     of wire variants, decoded through its adapter."""
@@ -133,7 +126,11 @@ def parse_model(model: type[M], data: Mapping[str, Any], what: str) -> M:
 
 def refuse(title: str, problems: Sequence[Diagnostic]) -> NoReturn:
     """Raise every cross-field problem together, not one `ValueError` at a time:
-    one rejection must carry every fix, not cost a round trip per problem."""
+    one rejection must carry every fix, not cost a round trip per problem.
+
+    Each `where` is one field of the model being validated; pydantic nests it
+    under whatever is decoding.
+    """
     raise ValidationError.from_exception_data(
         title,
         [
@@ -143,7 +140,7 @@ def refuse(title: str, problems: Sequence[Diagnostic]) -> NoReturn:
                     problem.fix,
                     {HINT: problem.hint} if problem.hint else None,
                 ),
-                loc=_loc_of(problem.where),
+                loc=(problem.where,),
                 input=None,
             )
             for problem in problems

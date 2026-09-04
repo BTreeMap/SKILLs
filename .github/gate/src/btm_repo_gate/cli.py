@@ -14,7 +14,11 @@ from btm_repo_gate.snapshot import snapshot
 
 def repair_to_fixpoint(root: Path) -> tuple[list[Finding], list[Finding]]:
     """Apply repairs until none remain, re-auditing each round so the
-    verdict reflects the tree's current state."""
+    verdict reflects the tree's current state.
+
+    Each round re-reads every text file, so `fix` costs up to FIXPOINT_ROUNDS
+    snapshots of the repository.
+    """
     applied: list[Finding] = []
     findings = audit(snapshot(root))
     for _ in range(FIXPOINT_ROUNDS):

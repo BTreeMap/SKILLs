@@ -56,7 +56,11 @@ def pad_ids(directory: Path) -> set[str]:
 
 
 def jot(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
-    """Append one entry; the receipt echoes the minted id."""
+    """Append one entry; the receipt echoes the minted id.
+
+    The id is the line count, so an append reads the file: O(entries) each
+    time, bounded by the soft cap. Positional ids are worth that.
+    """
     directory.mkdir(parents=True, exist_ok=True)
     count = count_lines(directory / SCRATCH) + 1
     record = {"j": f"j{count}", "t": now_iso(), "body": dict(body)}

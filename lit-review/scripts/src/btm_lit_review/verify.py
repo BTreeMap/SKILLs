@@ -14,6 +14,8 @@ from btm_lit_review.constants import (
     HTTP_OK,
     REDIRECT_STATUSES,
     TITLE_MATCH_FLOOR,
+    ReadLevel,
+    Status,
 )
 from btm_lit_review.http import doi_resolution_status, http_get_json
 from btm_lit_review.paper import Paper, clean_text, normalize_title
@@ -76,11 +78,11 @@ def cmd_verify(args: argparse.Namespace) -> int:
     included = [
         paper
         for key, paper in papers.items()
-        if paper.status == "included" and (wanted is None or key in wanted)
+        if paper.status is Status.INCLUDED and (wanted is None or key in wanted)
     ]
     if not included:
         raise CommandError("no included papers to verify; screen the corpus first")
-    unread = [paper.key for paper in included if paper.read_level == "none"]
+    unread = [paper.key for paper in included if paper.read_level is ReadLevel.NONE]
     if unread:
         signal(f"included but unread (read_level none): {', '.join(unread)}")
     results = [verify_one(paper) for paper in included]

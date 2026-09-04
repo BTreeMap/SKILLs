@@ -71,7 +71,13 @@ def markers(ledger: Ledger) -> tuple[dict[str, str], dict[str, str]]:
 def _anchor_views(
     objection: Objection, paper: PaperText | None
 ) -> tuple[list[AnchorView], bool, bool]:
-    """Anchor rows, whether all resolve, whether any sits in Limitations."""
+    """Anchor rows, whether all resolve, whether any sits in Limitations.
+
+    Resolved on every read, never stored, so a re-ingested paper cannot leave
+    a standing stale. A verbatim hit is one C-level scan; a miss costs one
+    alignment at O(quote x paper / 64), so a hundred anchors on a 100 KB
+    paper is a fraction of a second.
+    """
     if isinstance(objection.evidence, Missing):
         return [], True, False
     rows: list[AnchorView] = []

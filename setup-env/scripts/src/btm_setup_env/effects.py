@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import ssl
@@ -573,6 +574,18 @@ def _tag_contents(text: str, tag: str) -> list[str]:
     return found
 
 
+NUMBERS = re.compile(r"\d+")
+
+
+def _aapt2_rank(version: str) -> tuple[int, tuple[int, ...]]:
+    """Newest last: a stable release outranks a qualifier, then the numbers in
+    order. Google lists ascending today; this does not rely on it."""
+    return (
+        int(_stable_aapt2(version)),
+        tuple(int(found) for found in NUMBERS.findall(version)),
+    )
+
+
 def _stable_aapt2(version: str) -> bool:
     """`<digits and dots>-<digits>`: a released build, no qualifier."""
     head, dash, build = version.partition("-")
@@ -596,11 +609,10 @@ def _aapt2_version(ctx: Ctx) -> str:
     matching = [v for v in versions if v.startswith(f"{agp}-")] if agp else []
     if agp and not matching:
         raise DenvError(f"Google publishes no aapt2 for AGP {agp}")
-    stable = [v for v in versions if _stable_aapt2(v)]
-    chosen = (matching or stable)[-1:]
-    if not chosen:
+    usable = matching or [v for v in versions if _stable_aapt2(v)]
+    if not usable:
         raise DenvError("no usable aapt2 version in Google's maven metadata")
-    return chosen[0]
+    return max(usable, key=_aapt2_rank)
 
 
 def do_aapt2_shim(ctx: Ctx, step: Aapt2Shim) -> None:

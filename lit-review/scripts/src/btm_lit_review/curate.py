@@ -26,6 +26,7 @@ from btm_corekit import (
     parse_model,
     read_batch,
     read_jsonl,
+    refuse,
     rejection,
     signal,
 )
@@ -123,15 +124,17 @@ class Decision(Model):
 
     @model_validator(mode="after")
     def _sets_only_real_values(self) -> Decision:
-        nulled = [
-            name
+        problems = [
+            Diagnostic(name, f"write a value for {name}, not null")
             for name in ("status", "read_level")
             if name in self.model_fields_set and getattr(self, name) is None
         ]
-        if nulled:
-            raise ValueError(f"{', '.join(nulled)}: write a value, not null")
         if self.status is Status.EXCLUDED and not clean_text(self.reason):
-            raise ValueError("an excluded paper carries the reason it was cut")
+            problems.append(
+                Diagnostic("reason", "an excluded paper carries the reason it was cut")
+            )
+        if problems:
+            refuse("Decision", problems)
         return self
 
 
