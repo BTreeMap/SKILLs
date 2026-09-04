@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 import pytest
 
 from btm_lit_review.constants import ReadLevel, Status
@@ -11,7 +9,13 @@ from btm_lit_review.draft import assign_markers, cite_check, marker_table
 from btm_lit_review.paper import candidate
 
 
-def paper(title, doi, status=Status.INCLUDED, read_level=ReadLevel.ABSTRACT):
+def paper(
+    title,
+    doi,
+    status=Status.INCLUDED,
+    read_level=ReadLevel.ABSTRACT,
+    decision_reason=None,
+):
     built = candidate(
         title=title,
         year=2024,
@@ -25,14 +29,16 @@ def paper(title, doi, status=Status.INCLUDED, read_level=ReadLevel.ABSTRACT):
         pdf_url=None,
         landing_url=None,
     )
-    return replace(built, status=status, read_level=read_level)
+    return built.with_(
+        status=status, read_level=read_level, decision_reason=decision_reason
+    )
 
 
 @pytest.fixture
 def papers():
     one = paper("First", "10.1/a")
     two = paper("Second", "10.1/b")
-    out = paper("Cut", "10.1/c", status=Status.EXCLUDED)
+    out = paper("Cut", "10.1/c", status=Status.EXCLUDED, decision_reason="off topic")
     return {p.key: p for p in (one, two, out)}
 
 
@@ -46,7 +52,7 @@ class TestAssignMarkers:
 
     def test_a_late_inclusion_extends_the_map(self, papers):
         first = assign_markers({}, papers)
-        papers["doi:10.1/c"] = replace(papers["doi:10.1/c"], status=Status.INCLUDED)
+        papers["doi:10.1/c"] = papers["doi:10.1/c"].with_(status=Status.INCLUDED)
         assert assign_markers(first, papers)["doi:10.1/c"] == 3
 
 
@@ -58,7 +64,7 @@ class TestCiteCheck:
         assert report["unused_included"] == []
 
     def test_every_problem_class_is_named(self, papers):
-        papers["doi:10.1/b"] = replace(papers["doi:10.1/b"], read_level=ReadLevel.NONE)
+        papers["doi:10.1/b"] = papers["doi:10.1/b"].with_(read_level=ReadLevel.NONE)
         markers = assign_markers({}, papers) | {"doi:10.1/c": 3}
         report = cite_check("[1] [2] [3] [9]", markers, papers, [])
         assert any("unread" in p for p in report["problems"])

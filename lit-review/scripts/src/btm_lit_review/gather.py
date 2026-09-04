@@ -6,7 +6,6 @@ import argparse
 import json
 import urllib.parse
 from collections.abc import Mapping
-from dataclasses import replace
 from typing import Any
 
 from btm_corekit import (
@@ -56,7 +55,7 @@ def record_fetch(
     """Shared tail of search and snowball: absorb, log, report."""
     log_id = f"s{len(read_jsonl(session.log_path)) + 1}"
     papers = load_papers(session)
-    stamped = [replace(paper, found_by=(log_id,)) for paper in fetched]
+    stamped = [paper.with_(found_by=(log_id,)) for paper in fetched]
     papers, new_count = absorb(papers, stamped)
     save_papers(session, papers)
     truncated = total > len(fetched)

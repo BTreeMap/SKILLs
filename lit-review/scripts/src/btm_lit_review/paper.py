@@ -3,49 +3,26 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from dataclasses import dataclass, fields, replace
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import BeforeValidator, ValidationError, model_validator
 
 from btm_corekit import (
+    ArxivId,
     CommandError,
+    Doi,
+    Model,
     ascii_words,
     collapse_whitespace,
+    diagnostics,
     is_digits,
-    parse_enum,
-    require,
 )
 from btm_lit_review.constants import ReadLevel, Status
 
 
-@dataclass(frozen=True, slots=True)
-class Paper:
-    """One deduplicated bibliographic record in the session corpus."""
-
-    key: str
-    title: str
-    year: int | None
-    authors: tuple[str, ...]
-    venue: str | None
-    doi: str | None
-    arxiv_id: str | None
-    openalex_id: str | None
-    cited_by_count: int | None
-    abstract: str | None
-    pdf_url: str | None
-    landing_url: str | None
-    found_by: tuple[str, ...]
-    status: Status
-    decision_reason: str | None
-    read_level: ReadLevel
-
-
-def clean_text(raw: object) -> str | None:
-    if not isinstance(raw, str):
-        return None
-    return collapse_whitespace(raw) or None
-
-
-def normalize_doi(raw: object) -> str | None:
+def _lenient_doi(raw: Any) -> Any:
+    """An unparseable DOI is absence, not a rejection: indexes return junk in
+    this field and the rest of the record is still worth keeping."""
     if not isinstance(raw, str):
         return None
     doi = raw.strip().lower()
@@ -54,14 +31,14 @@ def normalize_doi(raw: object) -> str | None:
     return doi if doi.startswith("10.") else None
 
 
-def normalize_arxiv_id(raw: object) -> str | None:
-    """The `YYMM.NNNNN` (or `YYMM.NNNN`) id ending the text, an optional
-    `vN` suffix dropped, whatever precedes it (a URL, `arXiv:`)."""
+def _lenient_arxiv(raw: Any) -> Any:
+    """The `YYMM.NNNNN` id ending the text, an optional `vN` dropped, whatever
+    precedes it (a URL, `arXiv:`) ignored. Unparseable is absence."""
     if not isinstance(raw, str):
         return None
     text = raw.strip()
-    head, v, version = text.rpartition("v")
-    if v and is_digits(version):
+    head, marker, version = text.rpartition("v")
+    if marker and is_digits(version):
         text = head
     for width in (5, 4):
         tail = text[-(5 + width) :]
@@ -73,6 +50,50 @@ def normalize_arxiv_id(raw: object) -> str | None:
         ):
             return tail
     return None
+
+
+# The public normalizers and the field coercion are the same function, so a
+# key typed by hand and a key parsed from an index can never disagree.
+normalize_doi = _lenient_doi
+normalize_arxiv_id = _lenient_arxiv
+
+MaybeDoi = Annotated[Doi | None, BeforeValidator(_lenient_doi)]
+MaybeArxivId = Annotated[ArxivId | None, BeforeValidator(_lenient_arxiv)]
+
+
+class Paper(Model):
+    """One deduplicated bibliographic record in the session corpus."""
+
+    key: str
+    title: str
+    year: int | None = None
+    authors: tuple[str, ...] = ()
+    venue: str | None = None
+    doi: MaybeDoi = None
+    arxiv_id: MaybeArxivId = None
+    openalex_id: str | None = None
+    cited_by_count: int | None = None
+    abstract: str | None = None
+    pdf_url: str | None = None
+    landing_url: str | None = None
+    found_by: tuple[str, ...] = ()
+    status: Status = Status.CANDIDATE
+    decision_reason: str | None = None
+    read_level: ReadLevel = ReadLevel.NONE
+
+    @model_validator(mode="after")
+    def _an_exclusion_carries_its_reason(self) -> Paper:
+        # The write paths hold this too; the read path must, or a hand-edited
+        # corpus breaks the report's flow counts in silence.
+        if self.status is Status.EXCLUDED and not self.decision_reason:
+            raise ValueError("an excluded paper carries the reason it was cut")
+        return self
+
+
+def clean_text(raw: object) -> str | None:
+    if not isinstance(raw, str):
+        return None
+    return collapse_whitespace(raw) or None
 
 
 def normalize_title(title: str) -> str:
@@ -122,7 +143,7 @@ def merge_papers(existing: Paper, incoming: Paper) -> Paper:
     updates["cited_by_count"] = max(known_counts) if known_counts else None
     fresh = tuple(x for x in incoming.found_by if x not in existing.found_by)
     updates["found_by"] = existing.found_by + fresh
-    return replace(existing, **updates)
+    return existing.with_(**updates)
 
 
 def absorb(
@@ -147,56 +168,22 @@ def absorb(
     return result, new_count
 
 
-PAPER_FIELDS = frozenset(f.name for f in fields(Paper))
+PAPER_FIELDS = frozenset(Paper.model_fields)
 IDENTITY_FIELDS = frozenset({"key", "title"})
 DECISION_FIELDS = frozenset({"status", "decision_reason", "read_level"})
 COUNTED_FIELDS = frozenset({"cited_by_count", "found_by", "authors"})
-# Derived rather than listed, so a field added to Paper cannot be silently
-# left out of a merge: everything that is not identity, an agent decision, or
-# separately folded is a bibliographic gap an incoming record may fill.
+# Derived, so a field added to Paper cannot be left out of a merge.
 GAP_FILLABLE = tuple(
     sorted(PAPER_FIELDS - IDENTITY_FIELDS - DECISION_FIELDS - COUNTED_FIELDS)
 )
-PAPER_DEFAULTS: dict[str, Any] = {
-    "year": None,
-    "authors": (),
-    "venue": None,
-    "doi": None,
-    "arxiv_id": None,
-    "openalex_id": None,
-    "cited_by_count": None,
-    "abstract": None,
-    "pdf_url": None,
-    "landing_url": None,
-    "found_by": (),
-    "status": Status.CANDIDATE,
-    "decision_reason": None,
-    "read_level": ReadLevel.NONE,
-}
 
 
 def paper_from_json(row: Mapping[str, Any]) -> Paper:
-    """Parse boundary for state on disk; total: rejects corrupt records."""
-    unknown = sorted(set(row) - PAPER_FIELDS)
-    data = PAPER_DEFAULTS | dict(row)
-    missing = sorted(PAPER_FIELDS - set(data))
-    if unknown or missing:
+    """Parse boundary for state on disk; total, and located on the field."""
+    try:
+        return Paper.model_validate(row)
+    except ValidationError as err:
+        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
         raise CommandError(
-            f"corrupt paper record for key {row.get('key')!r}: "
-            f"unknown fields {unknown}, missing fields {missing}"
-        )
-    key = row.get("key")
-    data["status"] = parse_enum(Status, data["status"], f"status of {key!r}")
-    data["read_level"] = parse_enum(
-        ReadLevel, data["read_level"], f"read_level of {key!r}"
-    )
-    # The one implication the vocabularies cannot carry: an exclusion without
-    # a reason breaks the flow counts, and the write paths already refuse it,
-    # so the read path must too or a hand-edited corpus degrades in silence.
-    require(
-        data["status"] is not Status.EXCLUDED or bool(data["decision_reason"]),
-        f"paper {key!r} is excluded with no reason; every exclusion carries one",
-    )
-    data["authors"] = tuple(data.get("authors") or ())
-    data["found_by"] = tuple(data.get("found_by") or ())
-    return Paper(**data)
+            f"corrupt paper record for key {row.get('key')!r}: {problems}"
+        ) from err

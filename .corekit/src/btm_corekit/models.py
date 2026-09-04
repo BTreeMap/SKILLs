@@ -9,7 +9,7 @@ linear-time `regex`, so `(a+)+` rejects a 41-char adversarial input in
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Annotated, Any, NoReturn
+from typing import Annotated, Any, NoReturn, Self
 
 from pydantic import (
     BaseModel,
@@ -30,6 +30,12 @@ class Model(BaseModel):
     a typo in a batch is a located fix, not a silently dropped field."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+    def with_(self, **updates: Any) -> Self:
+        """A copy through the validators. `model_copy(update=...)` skips them,
+        so a cross-field invariant checked at construction would not survive
+        an edit that breaks it."""
+        return type(self).model_validate({**self.model_dump(), **updates})
 
 
 def _folded(raw: Any) -> Any:
@@ -53,7 +59,10 @@ Keyword = Annotated[str, Folded, StringConstraints(pattern=r"^[a-z0-9]+$")]
 Slug = Annotated[str, Folded, StringConstraints(pattern=r"^[a-z0-9-]+$")]
 """A minted id or any reference to one, the keyword-subset form included."""
 
-Doi = Annotated[str, Folded, StringConstraints(pattern=r"^10\.\d{4,9}/\S+$")]
+Doi = Annotated[str, Folded, StringConstraints(pattern=r"^10\.\d+/\S+$")]
+"""A DOI in bare form. The registrant prefix is left open: the registry now
+issues longer ones than the classic four digits, and narrowing it here would
+silently drop records this library has no reason to reject."""
 
 ArxivId = Annotated[str, Trimmed, StringConstraints(pattern=r"^\d{4}\.\d{4,5}$")]
 

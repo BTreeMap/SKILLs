@@ -6,7 +6,6 @@ import argparse
 import heapq
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import replace
 from typing import Any
 
 from btm_corekit import (
@@ -83,8 +82,8 @@ def cmd_screen(args: argparse.Namespace) -> int:
         ],
     )
     for key in matched:
-        papers[key] = replace(
-            papers[key], status=action, decision_reason=f"rule:{rule_id}: {reason}"
+        papers[key] = papers[key].with_(
+            status=action, decision_reason=f"rule:{rule_id}: {reason}"
         )
     save_papers(session, papers)
     emit(
@@ -150,7 +149,7 @@ def cmd_update(args: argparse.Namespace) -> int:
             changed[status] += 1
         if (level := updates.get("read_level")) is not None:
             changed[f"read:{level}"] += 1
-        papers[key] = replace(papers[key], **updates)
+        papers[key] = papers[key].with_(**updates)
     save_papers(session, papers)
     emit({"applied": len(decisions), "changes": dict(changed)})
     return 0

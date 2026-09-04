@@ -26,6 +26,7 @@ class TestRefinedPrimitives:
         ("kind", "raw", "parsed"),
         [
             (Doi, "  10.1175/JAS-D-18.1 ", "10.1175/jas-d-18.1"),
+            (Doi, "10.1/short", "10.1/short"),  # prefix length is left open
             (ArxivId, " 2405.08387", "2405.08387"),
             (Keyword, " Rent ", "rent"),
             (Slug, " Rent-Length ", "rent-length"),
@@ -39,7 +40,8 @@ class TestRefinedPrimitives:
         ("kind", "raw"),
         [
             (Doi, "not-a-doi"),
-            (Doi, "10.1/x"),  # registrant prefix is 4 to 9 digits
+            (Doi, "10.x/y"),  # the registrant prefix is digits
+            (Doi, "10.1175"),  # and a suffix follows a slash
             (ArxivId, "2405.8"),
             (Keyword, "rent-length"),  # a keyword carries no separator
             (Slug, "Rent Length"),

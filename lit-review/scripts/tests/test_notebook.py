@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 import pytest
 
 from btm_lit_review.constants import ReadLevel, Status
@@ -49,11 +47,11 @@ def papers():
         pdf_url=None,
         landing_url=None,
     )
-    bandit = replace(
-        bandit, status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT, found_by=("s1",)
+    bandit = bandit.with_(
+        status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT, found_by=("s1",)
     )
-    flow = replace(
-        flow, status=Status.INCLUDED, read_level=ReadLevel.ABSTRACT, found_by=("s3",)
+    flow = flow.with_(
+        status=Status.INCLUDED, read_level=ReadLevel.ABSTRACT, found_by=("s3",)
     )
     return {bandit.key: bandit, flow.key: flow}
 
@@ -161,8 +159,8 @@ class TestDerivedVerdicts:
 
     def test_at_risk_when_support_is_excluded(self, papers):
         papers = dict(papers)
-        papers["doi:10.1/bandit"] = replace(
-            papers["doi:10.1/bandit"], status=Status.EXCLUDED
+        papers["doi:10.1/bandit"] = papers["doi:10.1/bandit"].with_(
+            status=Status.EXCLUDED, decision_reason="off topic"
         )
         view = finding_view(self.finding(), papers)
         assert view["state"] == "at-risk"
@@ -170,8 +168,8 @@ class TestDerivedVerdicts:
 
     def test_at_risk_when_read_below_the_floor(self, papers):
         papers = dict(papers)
-        papers["doi:10.1/bandit"] = replace(
-            papers["doi:10.1/bandit"], read_level=ReadLevel.ABSTRACT
+        papers["doi:10.1/bandit"] = papers["doi:10.1/bandit"].with_(
+            read_level=ReadLevel.ABSTRACT
         )
         view = finding_view(self.finding(), papers)
         assert "needs full-text" in view["issues"][0]

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, replace
-
 import pytest
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, dump
 from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.paper import (
     absorb,
@@ -95,9 +93,7 @@ class TestMerge:
 
     def test_a_decision_already_taken_never_moves(self):
         existing = paper(doi="10.1/a")
-        decided = replace(
-            existing, status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT
-        )
+        decided = existing.with_(status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT)
         merged = merge_papers(decided, paper(doi="10.1/a", venue="J"))
         assert merged.status == "included"
         assert merged.read_level == "full-text"
@@ -122,7 +118,7 @@ class TestMerge:
 
 class TestParseBoundary:
     def valid_row(self) -> dict:
-        return asdict(paper(doi="10.1/a"))
+        return dump(paper(doi="10.1/a"))
 
     def test_a_record_this_program_wrote_parses_back(self):
         row = self.valid_row()
@@ -136,22 +132,20 @@ class TestParseBoundary:
     def test_an_unknown_field_is_refused(self):
         row = self.valid_row()
         row["invented"] = 1
-        with pytest.raises(CommandError, match="unknown fields"):
+        with pytest.raises(CommandError, match="Extra inputs are not permitted"):
             paper_from_json(row)
 
     def test_a_status_outside_the_vocabulary_is_refused(self):
         """The rejection names the field, the key, and the offending value."""
         row = self.valid_row()
         row["status"] = "maybe"
-        with pytest.raises(CommandError, match=r"status of .* not a valid Status"):
+        with pytest.raises(CommandError, match=r"status: Input should be"):
             paper_from_json(row)
 
     def test_a_read_level_outside_the_vocabulary_is_refused(self):
         row = self.valid_row()
         row["read_level"] = "skimmed"
-        with pytest.raises(
-            CommandError, match=r"read_level of .* not a valid ReadLevel"
-        ):
+        with pytest.raises(CommandError, match=r"read_level: Input should be"):
             paper_from_json(row)
 
     def test_an_exclusion_without_a_reason_is_refused(self):
@@ -160,7 +154,7 @@ class TestParseBoundary:
         row = self.valid_row()
         row["status"] = "excluded"
         row["decision_reason"] = None
-        with pytest.raises(CommandError, match="excluded with no reason"):
+        with pytest.raises(CommandError, match="excluded paper carries the reason"):
             paper_from_json(row)
 
     def test_a_reasoned_exclusion_parses_into_the_closed_vocabulary(self):

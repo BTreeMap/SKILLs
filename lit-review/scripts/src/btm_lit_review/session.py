@@ -5,13 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
     CommandError,
     SessionStore,
+    dump,
     read_jsonl,
     write_atomic,
 )
@@ -86,5 +87,5 @@ def load_papers(session: Session) -> dict[str, Paper]:
 
 
 def save_papers(session: Session, papers: Mapping[str, Paper]) -> None:
-    lines = [json.dumps(asdict(paper), ensure_ascii=False) for paper in papers.values()]
+    lines = [json.dumps(dump(paper), ensure_ascii=False) for paper in papers.values()]
     write_atomic(session.papers_path, "\n".join(lines) + ("\n" if lines else ""))

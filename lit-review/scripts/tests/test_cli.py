@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import replace
 
 import pytest
 
@@ -44,7 +43,7 @@ def paper(title, doi, abstract=None, **decisions):
         pdf_url=None,
         landing_url=None,
     )
-    return replace(built, **({"found_by": ("s1",)} | decisions))
+    return built.with_(**({"found_by": ("s1",)} | decisions))
 
 
 @pytest.fixture
