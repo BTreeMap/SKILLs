@@ -2,13 +2,11 @@
 name: git-commit
 description: >-
   Drafts and reviews git commit messages that follow Conventional Commits,
-  resolving scopes from repository history while minimizing output tokens.
-  Supports effort levels: lite (subject line only, no history scan), full
-  (default: scoped subject plus wrapped body and footer), and ultra (adds an
-  atomicity and history-consistency audit), plus a push verb that commits at
-  lite level and pushes to the tracked remote. Use when the user asks to
-  draft a commit, write a message for a diff, review a commit message, run
-  `git commit`, or commit and push.
+  saying why over what and resolving the scope from the surrounding
+  repository history. Effort is selectable, from a bare subject line to an
+  audit of whether the change is atomic and consistent with the history
+  around it. Use when the user asks to draft a commit, write a message for a
+  diff, review a commit message, run `git commit`, or commit and push.
 license: MIT
 metadata:
   argument-hint: "[lite|full|ultra] [push]"

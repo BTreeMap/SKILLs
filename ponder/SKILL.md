@@ -1,20 +1,23 @@
 ---
 name: ponder
 description: >-
-  Answers open questions, shower thought to academic grade, with uniform
-  investigative rigor: the lead agent runs the first round itself and stops
-  early when a question settles there, decomposes harder questions into
-  retrievable leaves tracked in a script-owned ledger, fans a few orthogonal
-  workers over bundles of related leaves, sweeps for rival accounts, and derives
-  presentation from ledger state; an informal mode keeps sourcing discipline
-  while relaxing draft ceremony. Use when the user
-  asks an open question needing a researched, sourced answer: a feasibility
-  hunch, a causal-historical why, a best-practices lookup, a procedural fix.
-  Do not use for literature reviews with citation deliverables (use
-  lit-review) or verifying claims in an existing document (use fact-check).
+  Answers an open question and shows its work: every load-bearing claim
+  carries a source, a conclusion composed from several sources is marked as
+  composed, and the strongest rival explanation is tested before the answer
+  stands. Cheap questions stay cheap, since one that settles in the first
+  round of searching is answered there, while a harder one is split into
+  independently answerable parts and researched in parallel. Whatever could
+  not be settled is reported as still open rather than smoothed over. Use
+  when the user asks an open question needing a researched, sourced answer:
+  a feasibility hunch, a causal-historical why, a best-practices lookup, a
+  procedural fix. Do not use for literature reviews with citation
+  deliverables (use lit-review) or verifying claims in an existing document
+  (use fact-check).
 license: MIT
 compatibility: >-
   Requires uv, web search or fetch, and a full SKILLs repository checkout.
+metadata:
+  argument-hint: "[informal] <question>"
 ---
 
 # Ponder

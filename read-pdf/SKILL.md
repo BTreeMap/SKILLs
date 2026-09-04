@@ -1,10 +1,11 @@
 ---
 name: read-pdf
 description: >-
-  Reads PDFs with pypdf to extract text and metadata and answer questions
-  with page-cited evidence; accepts a local file or an http(s) URL, fetching
-  URLs itself into a temp cache; never creates, modifies, merges, splits,
-  renders, OCRs, or otherwise writes PDF files. Use when the user asks to
+  Extracts text and metadata from a PDF and answers questions about it with
+  page-cited evidence, from a local file or an http(s) URL it fetches
+  itself. Reads only: it never writes, creates, merges, splits, or renders a
+  PDF, and it does not OCR, so a scanned page is reported as carrying no
+  extractable text rather than guessed at. Use when the user asks to
   inspect, summarize, search, quote, extract from, analyze, or answer
   questions about a PDF, including one behind a link.
 license: MIT
@@ -12,6 +13,8 @@ compatibility: >-
   Requires uv, and a full SKILLs repository checkout: the extractor is a uv
   workspace member under the skill's scripts/ directory. Network access is
   needed only for URL inputs.
+metadata:
+  argument-hint: "<pdf path or URL> [pages]"
 ---
 
 # Read PDF

@@ -1,15 +1,19 @@
 ---
 name: reframe
 description: >-
-  Produces a testable strategic direction judgment: sharp thesis, constraint
-  diagnosis, clean target, kill list, Conservative-vs-Clean-vs-Staged
-  options, proof point, falsifier, and concrete payoff ledger. Use when the
-  user asks to challenge a conservative design, think bigger, define a
-  greenfield target, escape incrementalism, reconsider legacy constraints, or
-  establish big-picture direction, and during product, architecture, or
-  planning discussions when compatibility fear, refactor cost, local details,
-  or the current implementation are prematurely deciding the target model.
+  Turns a design or planning discussion into a testable direction judgment:
+  a sharp thesis, the constraint actually binding, the target worth aiming
+  at, what to stop doing, three routes costed from conservative through
+  staged to clean, and the evidence that would prove the judgment wrong. Use
+  when the user asks to challenge a conservative design, think bigger,
+  define a greenfield target, escape incrementalism, reconsider legacy
+  constraints, or establish big-picture direction, and during product,
+  architecture, or planning discussions when compatibility fear, refactor
+  cost, local details, or the current implementation are prematurely
+  deciding the target model.
 license: MIT
+metadata:
+  argument-hint: "[topic or decision]"
 ---
 
 # Reframe

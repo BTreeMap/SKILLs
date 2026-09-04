@@ -1,17 +1,15 @@
 ---
 name: lit-review
 description: >-
-  Runs a literature review as a staged, evidence-tracked pipeline: fixes the
-  question and inclusion criteria before any search, searches OpenAlex,
-  arXiv, and Crossref through a bundled keyless script that logs every query
-  and deduplicates by DOI, arXiv id, and title, screens candidates in two
-  passes with recorded exclusion reasons and bulk cuts recorded as rules,
-  snowballs citations, extracts per-paper records with quality appraisal,
-  keeps findings and gaps as records re-verified against the live corpus,
-  and delivers a cited report with markers and DOIs checked first. Levels
-  lite, full, and ultra scale rigor from quick scoping to PRISMA-style
-  systematic discipline. Use when the user asks for
-  a literature review, a survey of published work, a related-work section,
+  Produces a literature review in which every citation traces to a record
+  the search actually retrieved, never to memory. Fixes the question and the
+  inclusion criteria before searching, then searches OpenAlex, arXiv, and
+  Crossref without an API key, logs each query, deduplicates, records a
+  reason for every exclusion, follows citations onward, and reports how
+  deeply each paper was read, so abstract-level knowledge is never presented
+  as full-text reading. Rigor is selectable, from quick scoping to
+  PRISMA-style systematic discipline. Use when the user asks for a
+  literature review, a survey of published work, a related-work section,
   what research says about a topic, or a systematic or scoping review. Do
   not use for fact-checking an existing document, reading one known paper,
   or web research over non-scholarly sources.

@@ -1,19 +1,18 @@
 ---
 name: peer-review
 description: >-
-  Reviews a paper as an adverse, referenced peer reviewer: extracts the
-  contribution claims verbatim, walks signalling-question banks for claims,
-  experimental design, analysis, limitations, and novelty, runs its own
-  literature check through lit-review, and admits an objection only when its
-  quote resolves to a page of the paper and its prior work resolves to a
-  dated corpus record. The bundled script derives every standing, the
-  author-echo ratio, and the recommendation from live state; no free score.
-  Levels lite, full, and ultra scale from a desk check to a recomputed,
+  Reviews a paper as an adverse referee: extracts its contribution claims
+  verbatim, then works through banks of signalling questions on claims,
+  experimental design, analysis, limitations, and novelty, checking prior
+  work against a literature search of its own. An objection is admitted only
+  when it quotes a page of the paper and cites a dated record, and the
+  recommendation is computed from the objections that survive rather than
+  chosen freely. Depth is selectable, from a desk check to a fully
   snowballed review. Use when the user asks to review, referee, red-team,
   critique, or find weaknesses in a paper, manuscript, preprint, or thesis
-  chapter, or to predict what reviewers will say. Do not use for a literature
-  survey (use lit-review), for checking facts in a document (use fact-check),
-  or for code review.
+  chapter, or to predict what reviewers will say. Do not use for a
+  literature survey (use lit-review), for checking facts in a document (use
+  fact-check), or for code review.
 license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. The novelty bank needs

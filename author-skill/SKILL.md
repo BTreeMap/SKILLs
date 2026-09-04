@@ -3,10 +3,12 @@ name: author-skill
 description: >-
   Distills a completed task history, workflow, or procedure into a
   reproducible SKILL.md that a fresh agent can execute without external
-  memory, and reviews existing skills for conformance to the Agent Skills
-  standard. Use when the user asks to create, refactor, review, or distill a
-  skill, or when a repeated procedure should become one.
+  memory, and reviews existing skills against the Agent Skills standard. Use
+  when the user asks to create, refactor, review, or distill a skill, or
+  when a repeated procedure should become one.
 license: MIT
+metadata:
+  argument-hint: "[skill name or path]"
 ---
 
 # Author Skill

@@ -1,18 +1,16 @@
 ---
 name: fact-check
 description: >-
-  Verifies factual claims in documents by decomposing them into atomic claims,
-  retrieving evidence from authoritative sources, and proposing corrections
-  with calibrated verdicts, verbatim quotes, URLs, and access dates. Edits
-  apply only after explicit user approval. Auto-detects environment
-  capabilities: parallel sub-agent verification when a spawning primitive
-  exists, an identical sequential pipeline otherwise, and abstention when
-  web access is absent. Use when the user asks to
-  fact-check a document, verify claims or specifications, check whether
-  information is still accurate, validate statistics or version numbers, or
-  update outdated facts in a file. Do not use for proofreading, style or
-  grammar editing, running or testing code, or evaluating opinions and
-  logical arguments.
+  Verifies the factual claims in a document: decomposes it into atomic
+  claims, retrieves evidence for each, and reports a calibrated verdict with
+  verbatim quotes, URLs, and access dates. Never verifies from memory, so
+  without usable evidence it abstains and says which claim it could not
+  settle, and it changes no text until the user approves that specific
+  correction. Use when the user asks to fact-check a document, verify claims
+  or specifications, check whether information is still accurate, validate
+  statistics or version numbers, or update outdated facts in a file. Do not
+  use for proofreading, style or grammar editing, running or testing code,
+  or evaluating opinions and logical arguments.
 license: MIT
 metadata:
   argument-hint: "[file-or-section]"

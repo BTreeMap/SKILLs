@@ -134,6 +134,25 @@ unchanged in any spec-compliant agent and uploads without hard errors:
   person, in two movements: what the skill does (capability statement
   carrying its key search terms), then trigger conditions starting
   "Use when ..."; append "Do not use for ..." when misfires are likely.
+  It names the deliverable and the guarantees on it, in the reader's own
+  vocabulary: what they get, and when to reach for this skill over a
+  neighboring one. How the skill works belongs in the body, so the
+  description names no internal record, phase, or file the body defines,
+  no library the skill happens to call, and no verb or level that
+  `argument-hint` already lists. A guarantee the reader can hold the skill
+  to is not an implementation detail: "cites only what it retrieved" and
+  "edits nothing without approval" earn their place where the machinery
+  behind them does not.
+* `metadata.argument-hint` is the invocation grammar and the only place it
+  is spelled: one bracket group per independent choice, ordered as a user
+  types them, so orthogonal axes never collapse into one alternation
+  (`"[lite|full|ultra] [design|review|help]"`, never
+  `"[lite|full|ultra|design|review|help]"`, which reads as pick exactly
+  one). Every skill carries one; a skill with no vocabulary names its
+  subject instead (`"[file-or-section]"`). No check can derive this from
+  the body, since verbs, levels, and modes are declared in different
+  shapes per skill and nowhere authoritatively, so it is a review
+  obligation whenever a verb, level, or mode changes.
 * `license: MIT` on every skill; skills are vendored individually and keep
   their terms when copied out of this repository.
 * `compatibility` (≤500 characters) only for real environment requirements

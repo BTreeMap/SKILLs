@@ -2,19 +2,19 @@
 name: pl-theorist
 description: >-
   Applies a programming-languages theorist's discipline across the software
-  lifecycle through verbs (design, build, refactor by default, review, audit,
-  test, teach, help), producing immutable data, algebraic data types, smart
-  constructors, total domain models, explicit effects, complexity-conscious
-  data structures (hash indexes, heaps, balanced trees, tries, Bloom filters,
-  LRU caches), and current language-standard idioms, while progressively
-  loading one verb file and one language cost model for Python, JavaScript,
-  TypeScript, Rust, Go, Haskell, C, C++, Java, Kotlin, C#, Bash, or GitHub
-  Actions workflows. Use when designing domain models, writing new code
-  functionally, refactoring toward functional style, reviewing diffs or
-  auditing repositories through a PL lens, deriving law-based property tests,
-  hardening shell scripts, structuring CI workflows with pure steps and least
-  privilege, or teaching FP design taste. Do not use for prose, general
-  knowledge, or non-code tasks.
+  lifecycle: immutable data, algebraic data types behind smart constructors,
+  domain models that make invalid states unrepresentable, explicit effects,
+  and a data structure chosen for the operation that dominates, with its
+  complexity stated as part of the contract. Carries a separate cost model
+  for Python, JavaScript, TypeScript, Rust, Go, Haskell, C, C++, Java,
+  Kotlin, C#, Bash, and GitHub Actions workflows, so the advice follows the
+  target's real runtime instead of another language's by analogy. Use when
+  designing domain models, writing new code functionally, refactoring toward
+  functional style, reviewing diffs or auditing repositories through a PL
+  lens, deriving law-based property tests, hardening shell scripts,
+  structuring CI workflows with pure steps and least privilege, or teaching
+  FP design taste. Do not use for prose, general knowledge, or non-code
+  tasks.
 license: MIT
 metadata:
   argument-hint: "[design|build|refactor|review|audit|test|teach|help] [files-or-code] [language]"

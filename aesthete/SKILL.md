@@ -1,23 +1,19 @@
 ---
 name: aesthete
 description: >-
-  Designs, builds, reviews, and reworks user interfaces with an HCI
-  researcher's rigor, an art director's eye, and a type theorist's structural
-  discipline: ingests a supplied design document and color palette under a
-  strict precedence ladder, enforces hierarchy, typography, color, spacing,
-  motion, interaction-state, and accessibility, strips the templated defaults
-  that mark generated UI, and decomposes screens into orthogonal reusable
-  components with closed variant sets.
-  Covers marketing, portfolio, editorial, and product surfaces including
-  dashboards, forms, tables, and navigation, through verbs design, build,
-  review, audit, redesign, teach, and help. Use when designing or building
-  any web interface, applying a brand or design system, mapping a color
-  palette to roles, designing component APIs, auditing a screen for friction,
-  duplicated components, or generated-looking output, or planning a redesign.
-  Do not use for backend logic, prose, or non-interface tasks.
+  Designs, builds, and reviews web interfaces to a stated accessibility
+  floor, applies a supplied brand or design system in a fixed precedence
+  order, and strips the templated look that marks generated UI. Covers
+  marketing, portfolio, editorial, and product surfaces including
+  dashboards, forms, tables, and navigation, and returns reusable components
+  rather than one-off screens. Use when designing or building any web
+  interface, applying a brand or design system, mapping a color palette to
+  roles, designing component APIs, auditing a screen for friction,
+  duplicated components, or generated-looking output, or planning a
+  redesign. Do not use for backend logic, prose, or non-interface tasks.
 license: MIT
 metadata:
-  argument-hint: "[design|build|review|audit|redesign|teach|help] [target] [surface]"
+  argument-hint: "[design|build|review|audit|redesign|teach|help] [target]"
 ---
 
 # Aesthete

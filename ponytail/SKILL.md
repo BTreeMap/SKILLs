@@ -1,23 +1,22 @@
 ---
 name: ponytail
 description: >-
-  Forces the laziest solution that actually works: the simplest and
-  shortest. Channels a senior developer who questions whether the task
-  needs to exist at all (YAGNI) and reaches for the standard library before
-  custom code, native platform features before dependencies, one line before
-  fifty. Levels: lite, full (default), ultra. Verbs: design (YAGNI kill
-  list), refactor (apply the cuts, behavior preserved), review and audit
-  (over-engineering-only diff and repo review), test (the one minimal
-  check), teach (explain a ladder decision), debt (ledger of ponytail:
-  shortcut comments), gain (impact scoreboard), and help. Use when writing, adding, refactoring, fixing, reviewing, or
-  designing any code, when choosing libraries or dependencies, or whenever the
-  user says "ponytail", "be lazy", "simplest solution", or "yagni", or
-  complains about over-engineering, bloat, boilerplate, or
+  Forces the laziest solution that actually works: asks whether the task
+  needs doing at all, then reaches for the standard library before custom
+  code, native platform features before dependencies, one line before fifty.
+  Reviews and audits for over-engineering alone, leaving other concerns to
+  other reviewers, tracks the shortcuts it chose as declared debt, and
+  scores what the cuts saved. Aggressiveness is selectable, from naming the
+  lazier alternative beside what was asked to refusing anything a profiler
+  has not justified. Use when writing, adding, refactoring, fixing,
+  reviewing, or designing any code, when choosing libraries or dependencies,
+  or whenever the user says "ponytail", "be lazy", "simplest solution", or
+  "yagni", or complains about over-engineering, bloat, boilerplate, or
   unnecessary dependencies. Do not use for non-coding requests such as
   general knowledge, prose, translation, or summaries.
 license: MIT
 metadata:
-  argument-hint: "[lite|full|ultra|design|refactor|review|audit|test|teach|debt|gain|help]"
+  argument-hint: "[lite|full|ultra] [design|refactor|review|audit|test|teach|debt|gain|help]"
 ---
 
 # Ponytail

@@ -1,23 +1,21 @@
 ---
 name: caveman
 description: >-
-  Compresses language model output into token-economical caveman phrasing
-  while keeping full technical accuracy: articles, filler, pleasantries, and
-  hedging die; code, numbers, negations, and error strings stay exact.
-  Supports intensity levels lite, full (default), ultra, and wenyan
-  (classical Chinese) variants, plus one-shot modes: commit (terse
-  Conventional Commits message), review (one-line findings), compress
-  (rewrite a prose file in place), stats (honest savings card), and help.
-  Use when the user asks for caveman mode, token optimization, "be brief",
-  "less tokens", maximum context-window longevity, or invokes
-  /caveman-compress. Do not apply to code, comments, docs, or other
-  persisted artifacts unless a mode says otherwise.
+  Compresses replies into terse caveman phrasing that keeps every technical
+  fact: articles, filler, pleasantries, and hedging go; code, numbers,
+  units, negations, and error strings stay exact. Intensity is selectable,
+  from merely tightened prose to one-word answers, with classical Chinese
+  variants. One-shot modes return a commit message, one-line review
+  findings, a rewritten prose file, or a measured savings card. Use when the
+  user asks for caveman mode, token optimization, "be brief", "less tokens",
+  or maximum context-window longevity. Do not apply to code, comments, docs,
+  or other persisted artifacts unless a mode says otherwise.
 license: MIT
 compatibility: >-
   Compress mode requires uv, and a full SKILLs repository checkout: the guard
   is a uv workspace member under the skill's scripts/ directory.
 metadata:
-  argument-hint: "[lite|full|ultra|wenyan-lite|wenyan-full|wenyan-ultra|commit|review|compress|stats|help]"
+  argument-hint: "[lite|full|ultra|wenyan-lite|wenyan-full|wenyan-ultra] [commit|review|compress|stats|help]"
 ---
 
 # Caveman
