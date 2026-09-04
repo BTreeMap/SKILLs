@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 
 import btm_search_web
 from btm_corekit import (
@@ -23,13 +24,14 @@ from btm_search_web.constants import (
     SCHOLAR_SOURCES,
     Scholar,
 )
+from btm_search_web.records import Result
 
 
-def answered(key: str, verb: str, query: str, find: object) -> int:
+def answered(key: str, verb: str, query: str, find: Callable[[], list[Result]]) -> int:
     """Emit a verb's rows, reusing the cache when this query already ran."""
     rows = remembered(key)
     if rows is None:
-        rows = find()  # type: ignore[operator]
+        rows = find()
         remember(key, rows)
     else:
         signal(f"cached: this {verb} ran before; clean drops the cache")
