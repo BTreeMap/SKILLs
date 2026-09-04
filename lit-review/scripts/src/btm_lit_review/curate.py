@@ -132,7 +132,14 @@ def parse_decision(
             Status, decision["status"], f"status of decision for {key}"
         )
     if "reason" in decision:
-        updates["decision_reason"] = clean_text(decision["reason"])
+        raw = decision["reason"]
+        # status and read_level reject a value outside their vocabulary, so a
+        # reason has to reject a value outside its type rather than let
+        # clean_text coerce it: `{"reason": 0}` would otherwise clear the
+        # field silently, which is the opposite of what was asked.
+        if raw is not None and not isinstance(raw, str):
+            raise CommandError(f"reason of decision for {key} must be text or null")
+        updates["decision_reason"] = clean_text(raw)
     if "read_level" in decision:
         updates["read_level"] = parse_enum(
             ReadLevel, decision["read_level"], f"read_level of decision for {key}"

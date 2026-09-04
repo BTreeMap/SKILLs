@@ -220,6 +220,62 @@ class TestSchema:
         )
 
 
+class TestUpdate:
+    def applied(self, session, capsys, decisions):
+        return run(["update", str(session.root)], capsys, stdin=json.dumps(decisions))
+
+    def test_decisions_move_statuses_and_report_the_counts(self, session, capsys):
+        code, document, _ = self.applied(
+            session,
+            capsys,
+            {
+                "doi:10.1/a": {"status": "included", "read_level": "abstract"},
+                "doi:10.1/c": {"status": "excluded", "reason": "off topic"},
+            },
+        )
+        assert code == 0
+        assert document["applied"] == 2
+        assert document["changes"]["included"] == 1
+        assert document["changes"]["excluded"] == 1
+        papers = load_papers(session)
+        assert papers["doi:10.1/a"].status is Status.INCLUDED
+        assert papers["doi:10.1/c"].decision_reason == "off topic"
+
+    def test_a_batch_is_all_or_nothing(self, session, capsys):
+        """Every decision is parsed before any is applied, so a corpus is
+        never left half updated by a batch the agent has to resend whole."""
+        before = load_papers(session)["doi:10.1/a"].status
+        code, _, err = self.applied(
+            session,
+            capsys,
+            {
+                "doi:10.1/a": {"status": "included"},
+                "doi:10.1/c": {"status": "excluded"},
+            },
+        )
+        assert code == 1
+        assert "needs a non-empty reason" in err
+        assert load_papers(session)["doi:10.1/a"].status is before
+
+
+class TestStatus:
+    def test_status_derives_the_next_step_from_live_counts(self, session, capsys):
+        code, document, _ = run(["status", str(session.root)], capsys)
+        assert code == 0
+        assert document["criteria_ready"] is True
+        assert document["undecided"] == 2
+        assert "screen 2 undecided" in document["next"]
+
+    def test_the_band_advisory_fires_on_a_thin_corpus(self, session, capsys):
+        run(
+            ["update", str(session.root)],
+            capsys,
+            stdin=json.dumps({"doi:10.1/a": {"status": "included"}}),
+        )
+        _, _, err = run(["status", str(session.root)], capsys)
+        assert "below the full band" in err
+
+
 class TestUpdateEnvelope:
     def test_update_rejects_bad_json_in_the_shared_envelope(
         self, session, capsys, monkeypatch

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from btm_caveman import cli as caveman_cli
 from btm_caveman.admit import admit
 from btm_caveman.cli import main
 from btm_caveman.model import MAX_FILE_SIZE, Plan, Refusal
@@ -113,6 +114,39 @@ class TestCheckAndClean:
     def test_clean_all_reports_an_empty_tree(self, capsys):
         assert main(["clean", "--all"]) == 0
         assert "no backups to remove" in capsys.readouterr().out
+
+    def test_prepare_refuses_to_overwrite_an_existing_backup(self, note, capsys):
+        """The witness gating destruction: a second prepare must not replace
+        the original the first one saved, or restore returns the compressed
+        text and the real original is gone."""
+        assert main(["prepare", str(note)]) == 0
+        note.write_text("# Notes\n\nedited since the first prepare.\n")
+        capsys.readouterr()
+        assert main(["prepare", str(note)]) == 1
+        out = capsys.readouterr().out
+        assert "backup already exists" in out
+        assert main(["restore", str(note)]) == 0
+        assert "reasonably long sentence" in note.read_text(encoding="utf-8")
+
+    def test_prepare_refuses_a_slot_recording_another_file(
+        self, note, tmp_path, monkeypatch, capsys
+    ):
+        """Slots are derived from the path, so a collision would let one file's
+        prepare destroy another file's saved original."""
+        other = tmp_path / "other.md"
+        other.write_text(PROSE, encoding="utf-8")
+        assert main(["prepare", str(note)]) == 0
+        capsys.readouterr()
+        shared = caveman_cli.slot_for(note)
+        monkeypatch.setattr(caveman_cli, "slot_for", lambda path: shared)
+        assert main(["prepare", str(other)]) == 1
+        assert "slot collision" in capsys.readouterr().out
+
+    def test_a_non_markdown_extension_warns_without_refusing(self, tmp_path, capsys):
+        path = tmp_path / "notes.rst"
+        path.write_text(PROSE, encoding="utf-8")
+        assert main(["check", str(path)]) == 0
+        assert "checks assume Markdown" in capsys.readouterr().out
 
     def test_an_unknown_verb_prints_usage(self, capsys):
         assert main(["fly"]) == 1
