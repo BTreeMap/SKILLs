@@ -16,63 +16,24 @@ import httpx
 
 from btm_corekit import (
     OPENALEX_KEY_ENV,
-    CommandError,
     Keyed,
     Trial,
     UpstreamError,
+    build_client,
+    get_bytes,
     openalex_access,
     signal,
-    user_agent,
 )
-from btm_lit_review.constants import (
-    DOI_HOST,
-    HTTP_BAD_REQUEST,
-    HTTP_SERVER_ERROR,
-    HTTP_TOO_MANY_REQUESTS,
-    RESPONSE_CAP_BYTES,
-    TIMEOUT_SECONDS,
-)
+from btm_lit_review.constants import DOI_HOST, RESPONSE_CAP_BYTES, TIMEOUT_SECONDS
 
 
 @cache
 def _client() -> httpx.Client:
-    return httpx.Client(
-        http2=True,
-        follow_redirects=True,
-        timeout=TIMEOUT_SECONDS,
-        headers={"User-Agent": user_agent("lit-review")},
-    )
-
-
-def _failure(status: int, url: str) -> CommandError:
-    """A 5xx or a rate limit may clear on a retry; any other 4xx is the
-    request's own problem, and retrying it changes nothing."""
-    text = f"HTTP {status} from {url}"
-    if status >= HTTP_SERVER_ERROR or status == HTTP_TOO_MANY_REQUESTS:
-        return UpstreamError(text)
-    return CommandError(text)
+    return build_client("lit-review", read_timeout=TIMEOUT_SECONDS)
 
 
 def http_get(url: str, params: Mapping[str, str] | None = None) -> bytes:
-    """The body, streamed under a byte cap so a slow drip cannot grow without
-    bound inside the per-read timeout."""
-    chunks: list[bytes] = []
-    size = 0
-    try:
-        with _client().stream("GET", url, params=params) as response:
-            if response.status_code >= HTTP_BAD_REQUEST:
-                raise _failure(response.status_code, str(response.url))
-            for chunk in response.iter_bytes():
-                size += len(chunk)
-                if size > RESPONSE_CAP_BYTES:
-                    raise UpstreamError(
-                        f"response from {response.url} exceeds "
-                        f"{RESPONSE_CAP_BYTES} bytes"
-                    )
-                chunks.append(chunk)
-    except httpx.RequestError as err:
-        raise UpstreamError(f"cannot reach {err.request.url}: {err}") from err
-    return b"".join(chunks)
+    return get_bytes(_client(), url, RESPONSE_CAP_BYTES, params)
 
 
 def http_get_json(url: str, params: Mapping[str, str] | None = None) -> Any:
@@ -110,12 +71,10 @@ def openalex_json(url: str, params: Mapping[str, str] | None = None) -> Any:
 
 
 def doi_resolution_status(doi: str) -> int:
-    """HEAD https://doi.org/<doi> without following the redirect.
-
-    `quote` keeps a `#` or `?` inside a DOI part of the path.
-    """
+    """HEAD https://doi.org/<doi> without following the redirect. `quote`
+    keeps a `#` or `?` inside a DOI part of the path."""
     target = f"https://{DOI_HOST}/{urllib.parse.quote(doi)}"
     try:
         return _client().head(target, follow_redirects=False).status_code
-    except httpx.RequestError as err:
+    except httpx.HTTPError as err:
         raise UpstreamError(f"cannot reach {DOI_HOST}: {err}") from err

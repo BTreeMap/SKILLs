@@ -128,9 +128,7 @@ def wire_curate(commands: Commands) -> None:
     )
     show.add_argument("--match", type=text_source, help="case-insensitive regex")
     show.add_argument("--on", choices=MATCH_FIELDS, default="title")
-    show.add_argument(
-        "--fields", type=text_source, help="comma-separated paper fields"
-    )
+    show.add_argument("--fields", type=text_source, help="comma-separated paper fields")
     show.add_argument("--sort", choices=tuple(SORTS), default="citations")
     show.add_argument("--format", choices=("json", "tsv"), default="json")
     show.add_argument("--limit", type=int, default=DEFAULT_LIMIT)

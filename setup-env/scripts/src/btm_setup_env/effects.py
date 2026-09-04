@@ -14,7 +14,6 @@ import os
 import re
 import shlex
 import shutil
-import ssl
 import stat
 import subprocess
 import sys
@@ -34,9 +33,10 @@ from btm_corekit import (
     CommandError,
     Model,
     UpstreamError,
+    build_client,
+    download,
     dump,
     parse_model,
-    user_agent,
 )
 
 from .catalog import GOOGLE_MAVEN, conda_bin_dirs, jvm_home, qemu_steps
@@ -66,8 +66,7 @@ from .steps import (
     UvVenv,
 )
 
-HTTP_TOO_MANY_REQUESTS = 429
-HTTP_SERVER_ERROR = 500
+ARCHIVE_CAP_BYTES = 4 * 1024 * 1024 * 1024  # an SDK is large; a runaway is larger
 
 MICROMAMBA_VERSION = "2.9.0-0"
 MICROMAMBA_RELEASES = (
@@ -86,43 +85,16 @@ DIGITS_AND_DOT = frozenset("0123456789.")
 
 @cache
 def _client() -> httpx.Client:
-    """Reads run unbounded: archives are large, links slow, and every fetch
-    is resumable by re-run. Connect, write, and pool waits are bounded, so a
+    """Reads run unbounded: archives are large, links slow, and every fetch is
+    resumable by re-run. Connect, write, and pool waits stay bounded, so a
     dead peer fails instead of hanging."""
-    return httpx.Client(
-        http2=True,
-        follow_redirects=True,
-        timeout=httpx.Timeout(None, connect=30.0, write=30.0, pool=30.0),
-        verify=ssl.create_default_context(cafile=certifi.where()),
-        headers={"User-Agent": user_agent("setup-env")},
-    )
-
-
-def _status_failure(status: int, url: str) -> DenvError | UpstreamError:
-    """A 5xx or a rate limit may clear on a retry; any other 4xx is the URL's
-    own problem, and retrying changes nothing."""
-    text = f"HTTP {status} fetching {url}"
-    if status >= HTTP_SERVER_ERROR or status == HTTP_TOO_MANY_REQUESTS:
-        return UpstreamError(text)
-    return DenvError(text)
+    return build_client("setup-env", read_timeout=None)
 
 
 def fetch(url: str, target: Path) -> None:
     if target.exists():
         return
-    target.parent.mkdir(parents=True, exist_ok=True)
-    partial = target.with_name(target.name + ".partial")
-    try:
-        with _client().stream("GET", url) as response:
-            response.raise_for_status()
-            with open(partial, "wb") as out:
-                for chunk in response.iter_bytes():
-                    out.write(chunk)
-    except httpx.HTTPStatusError as err:
-        raise _status_failure(err.response.status_code, url) from err
-    except httpx.RequestError as err:
-        raise UpstreamError(f"cannot reach {url}: {err}") from err
-    os.replace(partial, target)
+    download(_client(), url, target, ARCHIVE_CAP_BYTES)
 
 
 def verify_sha256(path: Path, expected: str) -> None:

@@ -200,11 +200,17 @@ name = "btm-corekit"
 version = "1.0.0"
 source = { editable = ".corekit" }
 dependencies = [
+    { name = "certifi" },
+    { name = "httpx", extra = ["http2"] },
     { name = "pydantic" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.9,<3" }]
+requires-dist = [
+    { name = "certifi", specifier = ">=2024.2.2" },
+    { name = "httpx", extras = ["http2"], specifier = ">=0.27,<1" },
+    { name = "pydantic", specifier = ">=2.9,<3" },
+]
 
 [[package]]
 name = "btm-lit-review"

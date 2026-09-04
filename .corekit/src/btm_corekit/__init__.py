@@ -37,6 +37,16 @@ from btm_corekit.fsio import (
     tree_bytes,
     write_atomic,
 )
+from btm_corekit.http import (
+    HTTP_BAD_REQUEST,
+    HTTP_SERVER_ERROR,
+    HTTP_TOO_MANY_REQUESTS,
+    build_client,
+    download,
+    get_bytes,
+    status_failure,
+    stream,
+)
 from btm_corekit.identifiers import (
     KEYWORD_RANGE,
     Ambiguous,
@@ -102,6 +112,9 @@ from btm_corekit.verdicts import Diagnostic
 
 __all__ = [
     "ASCII_WORD",
+    "HTTP_BAD_REQUEST",
+    "HTTP_SERVER_ERROR",
+    "HTTP_TOO_MANY_REQUESTS",
     "JSON",
     "KEYWORD_RANGE",
     "MAX_EVENTS",
@@ -149,6 +162,7 @@ __all__ = [
     "ascii_words",
     "band_signal",
     "bracketed",
+    "build_client",
     "collapse_whitespace",
     "compile_match",
     "content",
@@ -158,10 +172,12 @@ __all__ = [
     "digest",
     "digit_run",
     "dispatch",
+    "download",
     "dump",
     "eliminate",
     "emit",
     "gated",
+    "get_bytes",
     "heading_words",
     "is_digits",
     "is_pathlike",
@@ -193,6 +209,8 @@ __all__ = [
     "signal",
     "slugify",
     "state_root",
+    "status_failure",
+    "stream",
     "strip_tags",
     "suffix",
     "suggest",

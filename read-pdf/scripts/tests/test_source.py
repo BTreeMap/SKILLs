@@ -64,7 +64,7 @@ class TestMaterialize:
         assert "cached" in capsys.readouterr().err
 
     def test_an_http_error_is_rejected_cleanly(self):
-        with pytest.raises(CommandError, match="HTTP 404 fetching"):
+        with pytest.raises(CommandError, match="HTTP 404 from"):
             materialize(
                 RemotePdf("https://x.org/gone.pdf"),
                 transport=transport_serving(b"", status=404),
@@ -83,7 +83,7 @@ class TestMaterialize:
 
     @pytest.mark.parametrize("status", [429, 500, 502, 503])
     def test_a_server_error_or_rate_limit_is_retryable(self, status):
-        with pytest.raises(UpstreamError, match=f"HTTP {status} fetching"):
+        with pytest.raises(UpstreamError, match=f"HTTP {status} from"):
             materialize(
                 RemotePdf(f"https://x.org/{status}.pdf"),
                 transport=transport_serving(b"", status=status),
@@ -93,14 +93,14 @@ class TestMaterialize:
         def refuse(request):
             raise httpx.ConnectError("connection refused")
 
-        with pytest.raises(UpstreamError, match="cannot fetch"):
+        with pytest.raises(UpstreamError, match="cannot reach"):
             materialize(
                 RemotePdf("https://x.org/down.pdf"),
                 transport=httpx.MockTransport(refuse),
             )
 
     def test_the_size_cap_rejects_and_leaves_no_partial(self, tmp_path):
-        with pytest.raises(CommandError, match="exceeds 4 bytes"):
+        with pytest.raises(CommandError, match="more than 4 bytes"):
             materialize(
                 RemotePdf("https://x.org/big.pdf"),
                 max_bytes=4,

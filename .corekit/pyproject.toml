@@ -4,7 +4,11 @@ version = "1.0.0"
 description = "Shared symbolic kernel for SKILLs bundled scripts"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["pydantic>=2.9,<3"]
+dependencies = [
+  "pydantic>=2.9,<3",
+  "httpx[http2]>=0.27,<1",
+  "certifi>=2024.2.2",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.6,<0.13.0"]

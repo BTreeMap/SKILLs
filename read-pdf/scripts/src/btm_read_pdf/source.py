@@ -11,13 +11,10 @@ from pathlib import Path
 
 import httpx
 
-from btm_corekit import CommandError, UpstreamError, user_agent
+from btm_corekit import CommandError, build_client, stream
 
 TIMEOUT_SECONDS = 30
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
-HTTP_BAD_REQUEST = 400
-HTTP_TOO_MANY_REQUESTS = 429
-HTTP_SERVER_ERROR = 500
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,57 +71,26 @@ def materialize(
             return target, url
 
 
-def _status_failure(status: int, url: str) -> CommandError:
-    """A 5xx or a rate limit is the server's problem and a retry may clear it;
-    a 404 or a 403 is the URL's, and retrying changes nothing. The exit code
-    the agent reads follows that split."""
-    text = f"HTTP {status} fetching {url}"
-    if status >= HTTP_SERVER_ERROR or status == HTTP_TOO_MANY_REQUESTS:
-        return UpstreamError(text)
-    return CommandError(text)
-
-
 def _fetch(
     url: str, target: Path, max_bytes: int, transport: httpx.BaseTransport | None
 ) -> None:
-    """Stream to a per-process partial, cap enforced per chunk, sniff the PDF
-    magic, rename on success.
+    """Stream to a per-process partial, sniff the PDF magic, rename on success.
 
     The pid in the partial name keeps concurrent fetches of one URL from
     interleaving; os.replace makes the last completed writer win, and both
     wrote the same URL. The magic check gates the cache: a paywall's HTML
-    page must fail here once, never poison the cache and fail in pypdf
-    forever.
+    page fails here once rather than poisoning the cache.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(f"{target.name}.{os.getpid()}.partial")
-    client = httpx.Client(
-        follow_redirects=True,
-        timeout=TIMEOUT_SECONDS,
-        headers={"User-Agent": user_agent("read-pdf")},
-        transport=transport,
-    )
+    client = build_client("read-pdf", read_timeout=TIMEOUT_SECONDS, transport=transport)
     try:
-        with client, client.stream("GET", url) as response:
-            if response.status_code >= HTTP_BAD_REQUEST:
-                raise _status_failure(response.status_code, url)
-            written = 0
-            with open(partial, "wb") as out:
-                for chunk in response.iter_bytes():
-                    written += len(chunk)
-                    if written > max_bytes:
-                        raise CommandError(
-                            f"download exceeds {max_bytes} bytes; "
-                            "pass --max-bytes to raise the cap"
-                        )
-                    out.write(chunk)
-        with open(partial, "rb") as head:
+        with client, partial.open("wb") as out:
+            stream(client, url, out.write, max_bytes)
+        with partial.open("rb") as head:
             # The spec tolerates up to 1024 bytes of preamble before %PDF-.
             if b"%PDF-" not in head.read(1024):
                 raise CommandError(f"fetched content is not a PDF: {url}")
-    except httpx.HTTPError as err:
-        partial.unlink(missing_ok=True)
-        raise UpstreamError(f"cannot fetch {url}: {err}") from err
     except CommandError:  # UpstreamError included: it is the retryable subclass
         partial.unlink(missing_ok=True)
         raise
