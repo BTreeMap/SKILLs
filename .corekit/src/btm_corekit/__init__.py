@@ -44,6 +44,8 @@ from btm_corekit.http import (
     build_client,
     download,
     get_bytes,
+    openalex_params,
+    openalex_query,
     status_failure,
     stream,
 )
@@ -187,6 +189,8 @@ __all__ = [
     "mint",
     "now_iso",
     "openalex_access",
+    "openalex_params",
+    "openalex_query",
     "pad_body",
     "pad_entries",
     "pad_ids",

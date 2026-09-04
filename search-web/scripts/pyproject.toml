@@ -1,0 +1,21 @@
+[project]
+name = "btm-search-web"
+version = "1.0.0"
+description = "Keyless web, reference, and scholarly search for agents with no harness search tool"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+  "btm-corekit",
+  "ddgs>=9.16,<10",
+  "trafilatura>=2.2,<3",
+]
+
+[project.scripts]
+btm-search-web = "btm_search_web.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }

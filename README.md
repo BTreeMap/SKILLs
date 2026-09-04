@@ -25,6 +25,7 @@ submodule.
 | [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
 | [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files or URLs with pypdf; URLs download once into a capped temp cache, and no PDF is ever written. |
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
+| [search-web](search-web/SKILL.md) | Searches the web, Wikipedia, and the scholarly record without a key, for an agent whose harness offers no search tool; one record shape from every backend, plus readable page text. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
 | [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named school, with a recorded choice of approach, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |
 

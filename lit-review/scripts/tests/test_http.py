@@ -6,7 +6,8 @@ import httpx
 import pytest
 
 from btm_corekit import UpstreamError
-from btm_lit_review.http import _trial_advisory, http_get_json, openalex_params
+from btm_corekit.http import _trial_advisory, openalex_params
+from btm_lit_review.http import http_get_json
 
 
 class TestOpenAlexParams:

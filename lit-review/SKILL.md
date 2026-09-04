@@ -196,7 +196,8 @@ $R clean ["$S" | --all]
 Before the protocol phase, determine from actually available tools:
 
 - Network for the script: if the first search cannot reach its API, stop and
-  say so. A review is never written from parametric memory. When the user
+  say so. `/search-web` reaches the same indexes but keeps no corpus, so it
+  scopes a question before a review; it never substitutes for one. A review is never written from parametric memory. When the user
   supplies their own corpus (PDFs, BibTeX), skip the search phase, record
   provenance as user-supplied in the log's place, and run the remaining
   phases unchanged.

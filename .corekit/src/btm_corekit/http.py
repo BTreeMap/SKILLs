@@ -9,13 +9,21 @@ from __future__ import annotations
 
 import ssl
 from collections.abc import Callable, Mapping
+from functools import cache
 from pathlib import Path
 
 import certifi
 import httpx
 
+from btm_corekit.channels import signal
 from btm_corekit.errors import CommandError, UpstreamError
-from btm_corekit.origin import user_agent
+from btm_corekit.origin import (
+    OPENALEX_KEY_ENV,
+    Keyed,
+    Trial,
+    openalex_access,
+    user_agent,
+)
 
 HTTP_BAD_REQUEST = 400
 HTTP_TOO_MANY_REQUESTS = 429
@@ -111,3 +119,30 @@ def download(client: httpx.Client, url: str, target: Path, cap: int) -> None:
         partial.unlink(missing_ok=True)
         raise
     partial.replace(target)
+
+
+@cache
+def _trial_advisory() -> None:
+    """Once per process; the cache is the guard."""
+    signal(
+        "no OpenAlex key: these calls spend a small daily budget, then 429; "
+        f"set {OPENALEX_KEY_ENV} to a free key from openalex.org/settings/api"
+    )
+
+
+def openalex_params() -> dict[str, str]:
+    """The key OpenAlex has required since 2026-02-13, or nothing. Pure."""
+    match openalex_access():
+        case Keyed(key):
+            return {"api_key": key}
+        case Trial():
+            return {}
+
+
+def openalex_query(params: Mapping[str, str] | None = None) -> dict[str, str]:
+    """Query parameters for one OpenAlex call, credential included. Discloses
+    a keyless run once, since it 429s partway through a session instead."""
+    keyed = openalex_params()
+    if not keyed:
+        _trial_advisory()
+    return {**(params or {}), **keyed}

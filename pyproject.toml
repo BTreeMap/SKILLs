@@ -27,6 +27,7 @@ members = [
   "peer-review/scripts",
   "ponder/scripts",
   "read-pdf/scripts",
+  "search-web/scripts",
   "setup-env/scripts",
 ]
 
@@ -48,6 +49,7 @@ testpaths = [
   "peer-review/scripts/tests",
   "ponder/scripts/tests",
   "read-pdf/scripts/tests",
+  "search-web/scripts/tests",
   "setup-env/scripts/tests",
 ]
 
@@ -58,7 +60,7 @@ testpaths = [
 [tool.mypy]
 python_version = "3.11"
 plugins = ["pydantic.mypy"]
-files = [".corekit/src", ".github/gate/src", "caveman/scripts/src", "lit-review/scripts/src", "peer-review/scripts/src", "ponder/scripts/src", "read-pdf/scripts/src", "setup-env/scripts/src"]
+files = [".corekit/src", ".github/gate/src", "caveman/scripts/src", "lit-review/scripts/src", "peer-review/scripts/src", "ponder/scripts/src", "read-pdf/scripts/src", "search-web/scripts/src", "setup-env/scripts/src"]
 strict = true
 # Third-party scripts ship no stubs; their absence is not our finding.
 ignore_missing_imports = true

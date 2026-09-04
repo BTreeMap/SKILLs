@@ -14,7 +14,8 @@ description: >-
   (use fact-check).
 license: MIT
 compatibility: >-
-  Requires uv, web search or fetch, and a full SKILLs repository checkout.
+  Requires uv, retrieval (the harness's web search and fetch, else
+  `/search-web`), and a full SKILLs repository checkout.
 metadata:
   argument-hint: "[informal] <question>"
 ---
@@ -170,8 +171,10 @@ only for user-requested troubleshooting.
 
 Determine capabilities from available tools:
 
-- Require web search or fetch. If unavailable, disclose the requirement and
-  stop.
+- Require retrieval. Use the harness's web search and fetch when present.
+  Without them, run `/search-web`, which searches and reads pages from a
+  script; disclose in the answer that results came from it. With neither,
+  disclose the requirement and stop.
 - Use subagents after round one for two or more orthogonal bundles; run the
   same contract inline otherwise. Both paths produce identical ledger state.
 - Scholarly corpus leaves command `/lit-review`; PDF reading commands
