@@ -69,27 +69,31 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from typing import Self, TypeGuard
 
+
 @dataclass(frozen=True, slots=True)
 class Email:
     value: str
 
-  def __post_init__(self) -> None:
-    if "@" not in self.value:
-      raise ValueError("invalid email")
+    def __post_init__(self) -> None:
+        if "@" not in self.value:
+            raise ValueError("invalid email")
 
-  @classmethod
-  def parse(cls, raw: str) -> Self | None:
-    normalized = raw.strip().lower()
-    return cls(normalized) if "@" in normalized else None
+    @classmethod
+    def parse(cls, raw: str) -> Self | None:
+        normalized = raw.strip().lower()
+        return cls(normalized) if "@" in normalized else None
+
 
 def is_email(value: Email | None) -> TypeGuard[Email]:
     return value is not None
 
+
 def email_value(email: Email) -> str:
     return email.value
 
+
 def valid_emails(raw_values: Iterable[str]) -> Iterator[str]:
-  return map(email_value, filter(is_email, map(Email.parse, raw_values)))
+    return map(email_value, filter(is_email, map(Email.parse, raw_values)))
 ]]></teaching_example>
 
 Taste: untrusted strings cross one smart-constructor boundary; absence is
