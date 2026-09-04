@@ -1,12 +1,12 @@
 ---
 name: git-commit
 description: >-
-  Drafts and reviews git commit messages that follow Conventional Commits,
-  saying why over what and resolving the scope from the surrounding
-  repository history. Effort is selectable, from a bare subject line to an
-  audit of whether the change is atomic and consistent with the history
-  around it. Use when the user asks to draft a commit, write a message for a
-  diff, review a commit message, run `git commit`, or commit and push.
+  Drafts and reviews git commit messages in Conventional Commits form,
+  saying why over what and taking the scope from surrounding history. Effort
+  runs from a bare subject line up to an audit of whether the change is
+  atomic and sits consistently with the commits around it. Use when the user
+  asks to draft a commit, write a message for a diff, review a commit
+  message, run `git commit`, or commit and push.
 license: MIT
 metadata:
   argument-hint: "[lite|full|ultra] [push]"

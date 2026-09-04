@@ -1,13 +1,12 @@
 ---
 name: ponder
 description: >-
-  Answers an open question and shows its work: every load-bearing claim
-  carries a source, a conclusion composed from several sources is marked as
-  composed, and the strongest rival explanation is tested before the answer
-  stands. Cheap questions stay cheap, since one that settles in the first
-  round of searching is answered there, while a harder one is split into
-  independently answerable parts and researched in parallel. Whatever could
-  not be settled is reported as still open rather than smoothed over. Use
+  Answers an open question and shows its work. Every load-bearing claim
+  carries a source, a conclusion drawn from several sources is marked as
+  drawn, and the strongest rival account is tested before the answer stands.
+  A question that settles in the first round of searching is answered there,
+  so cheap questions stay cheap; a harder one splits into parts that can be
+  researched in parallel. Whatever is left unsettled gets reported open. Use
   when the user asks an open question needing a researched, sourced answer:
   a feasibility hunch, a causal-historical why, a best-practices lookup, a
   procedural fix. Do not use for literature reviews with citation

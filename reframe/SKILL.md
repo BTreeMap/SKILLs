@@ -1,16 +1,16 @@
 ---
 name: reframe
 description: >-
-  Turns a design or planning discussion into a testable direction judgment:
-  a sharp thesis, the constraint actually binding, the target worth aiming
-  at, what to stop doing, three routes costed from conservative through
-  staged to clean, and the evidence that would prove the judgment wrong. Use
-  when the user asks to challenge a conservative design, think bigger,
-  define a greenfield target, escape incrementalism, reconsider legacy
-  constraints, or establish big-picture direction, and during product,
-  architecture, or planning discussions when compatibility fear, refactor
-  cost, local details, or the current implementation are prematurely
-  deciding the target model.
+  Turns a design or planning discussion into a direction judgment that can
+  be tested. It names a thesis, the binding constraint, the target worth
+  aiming at, and what to stop doing, then costs three routes from
+  conservative through staged to clean and states the evidence that would
+  prove the whole judgment wrong. Use when the user asks to challenge a
+  conservative design, think bigger, define a greenfield target, escape
+  incrementalism, reconsider legacy constraints, or establish big-picture
+  direction, and during product, architecture, or planning discussions when
+  compatibility fear, refactor cost, local details, or the current
+  implementation are prematurely deciding the target model.
 license: MIT
 metadata:
   argument-hint: "[topic or decision]"

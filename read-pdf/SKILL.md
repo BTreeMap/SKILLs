@@ -2,12 +2,12 @@
 name: read-pdf
 description: >-
   Extracts text and metadata from a PDF and answers questions about it with
-  page-cited evidence, from a local file or an http(s) URL it fetches
-  itself. Reads only: it never writes, creates, merges, splits, or renders a
-  PDF, and it does not OCR, so a scanned page is reported as carrying no
-  extractable text rather than guessed at. Use when the user asks to
-  inspect, summarize, search, quote, extract from, analyze, or answer
-  questions about a PDF, including one behind a link.
+  page-cited evidence, working from a local file or an http(s) URL it
+  fetches itself. It only reads. Nothing is written, created, merged, split,
+  or rendered, and there is no OCR, so a scanned page reports as having no
+  extractable text. Use when the user asks to inspect, summarize, search,
+  quote, extract from, analyze, or answer questions about a PDF, including
+  one behind a link.
 license: MIT
 compatibility: >-
   Requires uv, and a full SKILLs repository checkout: the extractor is a uv

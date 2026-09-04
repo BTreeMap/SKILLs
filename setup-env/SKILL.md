@@ -1,20 +1,19 @@
 ---
 name: setup-env
 description: >-
-  Provisions a project's development toolchain entirely in userspace: no
-  sudo, no docker, no global installs, and nothing assumed present but uv.
-  Tags such as python@3.12, kotlin:android, go:cgo, rust, typescript, or
-  haskell name exactly the toolchains a project needs, and
-  foreign-architecture binaries run under emulation behind transparent
-  shims, so an arm64 machine builds an Android project whose tools ship
-  x86_64-only. Emits an activation script that redirects HOME, caches, and
-  toolchain variables under one disposable root, so nothing leaks into the
-  machine or the user's own environment. Use when an agent must build, test,
-  or lint a project on a machine lacking its toolchains, when root or docker
-  is unavailable, when arm64 must run amd64-only build tools, or when
-  several languages must coexist in one reproducible environment. Do not use
-  for CI runner images, system package administration, or deploying
-  services.
+  Provisions a project's development toolchain in userspace. No sudo, no
+  docker, nothing installed globally, and nothing assumed present but uv.
+  Tags like python@3.12, kotlin:android, go:cgo, rust, typescript, or
+  haskell name the toolchains a project needs. Foreign-architecture binaries
+  run under emulation behind transparent shims, so an arm64 machine can
+  build an Android project whose tools ship x86_64-only. The activation
+  script points HOME, caches, and toolchain variables at one disposable
+  root, keeping all of it out of the user's own environment. Use when an
+  agent must build, test, or lint a project on a machine lacking its
+  toolchains, when root or docker is unavailable, when arm64 must run
+  amd64-only build tools, or when several languages must coexist in one
+  reproducible environment. Do not use for CI runner images, system package
+  administration, or deploying services.
 license: MIT
 compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout: the

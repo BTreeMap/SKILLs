@@ -1,20 +1,19 @@
 ---
 name: pl-theorist
 description: >-
-  Applies a programming-languages theorist's discipline across the software
-  lifecycle: immutable data, algebraic data types behind smart constructors,
-  domain models that make invalid states unrepresentable, explicit effects,
-  and a data structure chosen for the operation that dominates, with its
-  complexity stated as part of the contract. Carries a separate cost model
-  for Python, JavaScript, TypeScript, Rust, Go, Haskell, C, C++, Java,
-  Kotlin, C#, Bash, and GitHub Actions workflows, so the advice follows the
-  target's real runtime instead of another language's by analogy. Use when
-  designing domain models, writing new code functionally, refactoring toward
-  functional style, reviewing diffs or auditing repositories through a PL
-  lens, deriving law-based property tests, hardening shell scripts,
-  structuring CI workflows with pure steps and least privilege, or teaching
-  FP design taste. Do not use for prose, general knowledge, or non-code
-  tasks.
+  Brings a programming-languages theorist's discipline to design, code,
+  review, and tests. Data stays immutable, algebraic types sit behind smart
+  constructors, domain models leave invalid states unrepresentable, effects
+  are explicit, and a data structure is picked for whichever operation
+  dominates, with its complexity stated. Python, JavaScript, TypeScript,
+  Rust, Go, Haskell, C, C++, Java, Kotlin, C#, Bash, and GitHub Actions each
+  carry a separate cost model, so advice tracks the target's own runtime.
+  Use when designing domain models, writing new code functionally,
+  refactoring toward functional style, reviewing diffs or auditing
+  repositories through a PL lens, deriving law-based property tests,
+  hardening shell scripts, structuring CI workflows with pure steps and
+  least privilege, or teaching FP design taste. Do not use for prose,
+  general knowledge, or non-code tasks.
 license: MIT
 metadata:
   argument-hint: "[design|build|refactor|review|audit|test|teach|help] [files-or-code] [language]"

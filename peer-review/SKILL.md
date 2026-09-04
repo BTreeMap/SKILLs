@@ -1,18 +1,17 @@
 ---
 name: peer-review
 description: >-
-  Reviews a paper as an adverse referee: extracts its contribution claims
-  verbatim, then works through banks of signalling questions on claims,
-  experimental design, analysis, limitations, and novelty, checking prior
-  work against a literature search of its own. An objection is admitted only
-  when it quotes a page of the paper and cites a dated record, and the
-  recommendation is computed from the objections that survive rather than
-  chosen freely. Depth is selectable, from a desk check to a fully
-  snowballed review. Use when the user asks to review, referee, red-team,
-  critique, or find weaknesses in a paper, manuscript, preprint, or thesis
-  chapter, or to predict what reviewers will say. Do not use for a
-  literature survey (use lit-review), for checking facts in a document (use
-  fact-check), or for code review.
+  Reviews a paper the way an adverse referee would. It pulls the
+  contribution claims out verbatim, then works banks of signalling questions
+  across claims, experimental design, analysis, limitations, and novelty,
+  checking prior work against a literature search of its own. An objection
+  has to quote a page and cite a dated record before it is admitted, and the
+  recommendation follows from whichever objections survive. Depth runs from
+  a desk check to a fully snowballed review. Use when the user asks to
+  review, referee, red-team, critique, or find weaknesses in a paper,
+  manuscript, preprint, or thesis chapter, or to predict what reviewers will
+  say. Do not use for a literature survey (use lit-review), for checking
+  facts in a document (use fact-check), or for code review.
 license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. The novelty bank needs

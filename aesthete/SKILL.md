@@ -1,12 +1,12 @@
 ---
 name: aesthete
 description: >-
-  Designs, builds, and reviews web interfaces to a stated accessibility
-  floor, applies a supplied brand or design system in a fixed precedence
-  order, and strips the templated look that marks generated UI. Covers
-  marketing, portfolio, editorial, and product surfaces including
-  dashboards, forms, tables, and navigation, and returns reusable components
-  rather than one-off screens. Use when designing or building any web
+  Designs, builds, and reviews web interfaces against a dated accessibility
+  standard. Applies a supplied brand or design system in a fixed precedence
+  order, and strips the templated look that marks generated UI. Works across
+  marketing, portfolio, editorial, and product surfaces, including
+  dashboards, forms, tables, and navigation, and decomposes a screen into
+  components meant for reuse. Use when designing or building any web
   interface, applying a brand or design system, mapping a color palette to
   roles, designing component APIs, auditing a screen for friction,
   duplicated components, or generated-looking output, or planning a
