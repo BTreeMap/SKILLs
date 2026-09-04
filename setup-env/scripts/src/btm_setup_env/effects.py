@@ -33,7 +33,7 @@ from typing import Any
 import certifi
 import httpx
 
-from btm_corekit import user_agent
+from btm_corekit import CommandError, UpstreamError, user_agent
 
 from .catalog import GOOGLE_MAVEN, conda_bin_dirs, jvm_home, qemu_steps
 from .model import (
@@ -59,6 +59,9 @@ from .steps import (
     UvShim,
     UvVenv,
 )
+
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVER_ERROR = 500
 
 MICROMAMBA_VERSION = "2.9.0-0"
 MICROMAMBA_RELEASES = (
@@ -89,6 +92,15 @@ def _client() -> httpx.Client:
     )
 
 
+def _status_failure(status: int, url: str) -> DenvError | UpstreamError:
+    """A 5xx or a rate limit may clear on a retry; any other 4xx is the URL's
+    own problem, and retrying changes nothing."""
+    text = f"HTTP {status} fetching {url}"
+    if status >= HTTP_SERVER_ERROR or status == HTTP_TOO_MANY_REQUESTS:
+        return UpstreamError(text)
+    return DenvError(text)
+
+
 def fetch(url: str, target: Path) -> None:
     if target.exists():
         return
@@ -101,9 +113,9 @@ def fetch(url: str, target: Path) -> None:
                 for chunk in response.iter_bytes():
                     out.write(chunk)
     except httpx.HTTPStatusError as err:
-        raise DenvError(f"HTTP {err.response.status_code} fetching {url}") from err
+        raise _status_failure(err.response.status_code, url) from err
     except httpx.RequestError as err:
-        raise DenvError(f"cannot reach {url}: {err}") from err
+        raise UpstreamError(f"cannot reach {url}: {err}") from err
     os.replace(partial, target)
 
 
@@ -115,7 +127,7 @@ def verify_sha256(path: Path, expected: str) -> None:
         # download would otherwise fail every re-run forever, since fetch()
         # trusts an existing file.
         path.unlink()
-        raise DenvError(
+        raise UpstreamError(
             f"digest mismatch for {path.name}\n"
             f"  expected {expected}\n  actual   {actual}\n"
             "removed the corrupt download; re-run to fetch it again"
@@ -186,7 +198,7 @@ def run_logged(
             timeout=timeout,
         )
     except subprocess.TimeoutExpired as err:
-        raise DenvError(f"{what} produced no exit within {timeout:.0f}s") from err
+        raise UpstreamError(f"{what} produced no exit within {timeout:.0f}s") from err
     if result.returncode != 0:
         tail = "\n".join((result.stdout or "").splitlines()[-40:])
         raise DenvError(f"{what} failed (exit {result.returncode}):\n{tail}")
@@ -248,9 +260,10 @@ def ensure_micromamba(ctx: Ctx) -> None:
     fetch(url + ".sha256", sidecar)
     try:
         verify_sha256(archive, sidecar.read_text().split()[0])
-    except DenvError:
+    except CommandError:
         # The sidecar itself may be the corrupt cached file; clear it too so
-        # the re-run re-fetches both instead of wedging on a bad pin.
+        # the re-run re-fetches both instead of wedging on a bad pin. Both
+        # error classes land here, whichever a mismatch is later judged to be.
         sidecar.unlink(missing_ok=True)
         raise
     ctx.mamba.parent.mkdir(parents=True, exist_ok=True)

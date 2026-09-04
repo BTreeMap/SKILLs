@@ -7,7 +7,7 @@ from enum import StrEnum
 
 from pydantic import Field, model_validator
 
-from btm_corekit import Model, NonEmpty, Slug
+from btm_corekit import Count, Model, NonEmpty, Slug
 
 
 class SourceClass(StrEnum):
@@ -114,6 +114,13 @@ class Source(Model):
     cls: SourceClass
     title: NonEmpty
     url: str
+
+
+class Checkpoint(Model):
+    """One round's declared search count; `label` names it in the yield table."""
+
+    label: str = ""
+    searches: Count
 
 
 @dataclass(slots=True)

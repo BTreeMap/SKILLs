@@ -8,6 +8,8 @@ from collections import Counter
 from collections.abc import Mapping
 from typing import Any
 
+from pydantic import model_validator
+
 from btm_corekit import (
     JSON,
     CommandError,
@@ -21,7 +23,7 @@ from btm_corekit import (
     digest,
     emit,
     now_iso,
-    parse_enum,
+    parse_model,
     read_batch,
     read_jsonl,
     rejection,
@@ -30,7 +32,6 @@ from btm_corekit import (
 from btm_lit_review.constants import (
     ABSTRACT_SHOW_LIMIT,
     AUTHOR_SHOW_LIMIT,
-    DECISION_FIELDS,
     ReadLevel,
     Status,
 )
@@ -112,40 +113,47 @@ def cmd_screen(args: argparse.Namespace) -> int:
     return 0
 
 
-def parse_decision(
-    key: str, decision: Mapping[str, Any], papers: Mapping[str, Paper]
-) -> dict[str, Any]:
-    """One screening decision becomes the field updates `replace` applies.
+class Decision(Model):
+    """One screening decision. An absent field keeps its value; an explicit
+    null clears the reason. An exclusion states why in the same decision."""
 
-    Parsing rather than validating: the vocabularies and the
-    exclusion-needs-a-reason implication are settled once, here, and what
-    comes back is already inside the Paper domain. Only the keys the caller
-    sent appear, so omitting a field keeps it and sending it null clears it."""
+    status: Status | None = None
+    reason: str | None = None
+    read_level: ReadLevel | None = None
+
+    @model_validator(mode="after")
+    def _sets_only_real_values(self) -> Decision:
+        nulled = [
+            name
+            for name in ("status", "read_level")
+            if name in self.model_fields_set and getattr(self, name) is None
+        ]
+        if nulled:
+            raise ValueError(f"{', '.join(nulled)}: write a value, not null")
+        if self.status is Status.EXCLUDED and not clean_text(self.reason):
+            raise ValueError("an excluded paper carries the reason it was cut")
+        return self
+
+
+def parse_decision(
+    key: str, decision: Any, papers: Mapping[str, Paper]
+) -> dict[str, Any]:
+    """One screening decision as the field updates `with_` applies.
+
+    Only the keys the caller sent come back, so an omitted field keeps its
+    value where a defaulted one would overwrite it.
+    """
     if key not in papers:
         raise CommandError(f"decision names unknown paper key {key!r}")
-    unknown = set(decision) - DECISION_FIELDS
-    if unknown:
-        raise CommandError(f"decision for {key} has unknown fields {sorted(unknown)}")
+    parsed = parse_model(Decision, decision, f"decision for {key}")
+    sent = parsed.model_fields_set
     updates: dict[str, Any] = {}
-    if "status" in decision:
-        updates["status"] = parse_enum(
-            Status, decision["status"], f"status of decision for {key}"
-        )
-    if "reason" in decision:
-        raw = decision["reason"]
-        # status and read_level reject a value outside their vocabulary, so a
-        # reason has to reject a value outside its type rather than let
-        # clean_text coerce it: `{"reason": 0}` would otherwise clear the
-        # field silently, which is the opposite of what was asked.
-        if raw is not None and not isinstance(raw, str):
-            raise CommandError(f"reason of decision for {key} must be text or null")
-        updates["decision_reason"] = clean_text(raw)
-    if "read_level" in decision:
-        updates["read_level"] = parse_enum(
-            ReadLevel, decision["read_level"], f"read_level of decision for {key}"
-        )
-    if updates.get("status") is Status.EXCLUDED and not updates.get("decision_reason"):
-        raise CommandError(f"exclusion of {key} needs a non-empty reason")
+    if "status" in sent:
+        updates["status"] = parsed.status
+    if "reason" in sent:
+        updates["decision_reason"] = clean_text(parsed.reason)
+    if "read_level" in sent:
+        updates["read_level"] = parsed.read_level
     return updates
 
 

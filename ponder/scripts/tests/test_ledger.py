@@ -341,8 +341,13 @@ class TestSweepAndCheckpoint:
             apply(Ledger(), {"e": "sweep", "checked": "  "})
 
     def test_checkpoint_requires_a_non_negative_count(self):
-        with pytest.raises(CommandError, match="non-negative integer"):
+        with pytest.raises(CommandError, match="searches"):
             apply(Ledger(), {"e": "checkpoint", "searches": -1})
+
+    def test_a_boolean_is_not_a_search_count(self):
+        """`bool` is an `int` in Python, so `true` counted as one search."""
+        with pytest.raises(CommandError, match="searches"):
+            apply(Ledger(), {"e": "checkpoint", "searches": True})
 
 
 class TestReplay:

@@ -16,7 +16,7 @@ from btm_lit_review.constants import (
     OPENALEX_WORKS,
     OPENSEARCH,
 )
-from btm_lit_review.http import http_get, http_get_json
+from btm_lit_review.http import http_get, http_get_json, openalex_json
 from btm_lit_review.paper import Paper
 from btm_lit_review.upstream import (
     paper_from_arxiv,
@@ -36,8 +36,7 @@ def fetch_openalex(
         filters.append(f"to_publication_date:{to_year}-12-31")
     if filters:
         params["filter"] = ",".join(filters)
-    params |= polite_params()
-    body = http_get_json(OPENALEX_WORKS, params)
+    body = openalex_json(OPENALEX_WORKS, params)
     total = (body.get("meta") or {}).get("count") or 0
     return [paper_from_openalex(work) for work in body.get("results") or []], total
 
@@ -50,7 +49,7 @@ def fetch_openalex_by_ids(openalex_ids: Sequence[str]) -> list[Paper]:
             "filter": "openalex_id:" + "|".join(batch),
             "per-page": str(ID_BATCH_SIZE),
         }
-        body = http_get_json(OPENALEX_WORKS, params)
+        body = openalex_json(OPENALEX_WORKS, params)
         papers.extend(paper_from_openalex(w) for w in body.get("results") or [])
         time.sleep(COURTESY_PAUSE_SECONDS)
     return papers

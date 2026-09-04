@@ -239,9 +239,6 @@ def _run(argv: list[str] | None) -> int:
     }[args.verb]
     try:
         return handler(args)
-    except DenvError as error:
-        print(f"btm-setup-env: error: {error}", file=sys.stderr)
-        return 1
     except KeyboardInterrupt:
         return 130
 

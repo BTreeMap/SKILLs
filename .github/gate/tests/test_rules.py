@@ -37,6 +37,15 @@ def repo(tmp_path):
         json.dumps({"name": "btm-skills"}), encoding="utf-8"
     )
     (tmp_path / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
+    kernel = tmp_path / ".corekit" / "src" / "btm_corekit"
+    kernel.mkdir(parents=True)
+    # The guarded set is read off this file, so the rule and the kernel
+    # cannot disagree about what the kernel defines.
+    (kernel / "identifiers.py").write_text(
+        "def mint(words):\n    return 1\n\n\ndef resolve(ref, ids):\n"
+        "    return ref\n\n\nclass Exact:\n    pass\n",
+        encoding="utf-8",
+    )
     (tmp_path / "README.md").write_text("# Readme\n", encoding="utf-8")
     skill = tmp_path / "alpha"
     skill.mkdir()
@@ -158,6 +167,26 @@ class TestKernel:
         (member / "code.py").write_text(
             "def resolve(x):\n    return x\n", encoding="utf-8"
         )
+        assert "kernel" not in rules_hit(repo)
+
+    def test_the_guarded_set_is_read_off_the_kernel(self, repo):
+        """A symbol added to the kernel is guarded without editing this rule."""
+        kernel = repo / ".corekit" / "src" / "btm_corekit" / "identifiers.py"
+        kernel.write_text(
+            kernel.read_text() + "\n\ndef minted_today(x):\n    return x\n"
+        )
+        member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
+        (member / "code.py").write_text(
+            "def minted_today(x):\n    return x\n", encoding="utf-8"
+        )
+        assert "kernel" in rules_hit(repo)
+
+    def test_a_private_kernel_helper_is_not_guarded(self, repo):
+        """Underscored names are the kernel's own business."""
+        kernel = repo / ".corekit" / "src" / "btm_corekit" / "identifiers.py"
+        kernel.write_text(kernel.read_text() + "\n\ndef _private(x):\n    return x\n")
+        member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
+        (member / "code.py").write_text("def _private(x):\n    return x\n", "utf-8")
         assert "kernel" not in rules_hit(repo)
 
     def test_a_legacy_kernel_symlink_is_swept(self, repo):

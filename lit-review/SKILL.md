@@ -4,8 +4,8 @@ description: >-
   Produces a literature review where every citation traces to a record the
   search retrieved. Nothing comes from memory. The question and inclusion
   criteria are fixed before the first query. Searches run against OpenAlex,
-  arXiv, and Crossref with no API key; every query is logged, results are
-  deduplicated, and each exclusion carries its reason. Citations are
+  arXiv, and Crossref; every query is logged, results are deduplicated, and
+  each exclusion carries its reason. Citations are
   followed onward, and each paper records how deeply it was read, so
   abstract-level knowledge is never passed off as full-text reading. Rigor
   runs from quick scoping to PRISMA-style systematic discipline. Use when
@@ -17,6 +17,9 @@ license: MIT
 compatibility: >-
   Requires uv, network access to api.openalex.org, export.arxiv.org,
   api.crossref.org, and doi.org, and a full SKILLs repository checkout.
+  OpenAlex requires an API key: set BTM_OPENALEX_KEY to a free key from
+  openalex.org/settings/api, or its searches spend a small daily budget and
+  then fail.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---

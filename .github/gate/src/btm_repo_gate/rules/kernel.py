@@ -3,103 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 
 from btm_repo_gate.conventions import KERNEL
 from btm_repo_gate.repairs import Finding, RemovePath
 from btm_repo_gate.snapshot import Absent, LinkFarm, Occupied, Repo, Symlink
 
-KERNEL_FUNCTIONS = frozenset(
-    {
-        "keywords_of",
-        "slugify",
-        "band_signal",
-        "resolve",
-        "eliminate",
-        "mint",
-        "suffix",
-        "is_pathlike",
-        "tree_bytes",
-        "state_root",
-        "emit",
-        "signal",
-        "now_iso",
-        "write_atomic",
-        "read_jsonl",
-        "append_jsonl",
-        "request_identity",
-        "user_agent",
-        "polite_params",
-        "run_cli",
-        "jot",
-        "recall",
-        "pad_body",
-        "pad_entries",
-        "pad_ids",
-        "require",
-        "parse_enum",
-        "parse_model",
-        "field_text",
-        "suggest",
-        "read_batch",
-        "read_count",
-        "read_opt_text",
-        "read_text",
-        "read_texts",
-        "refuse",
-        "where_of",
-        "read_payload",
-        "sole_source",
-        "rejection",
-        "advise",
-        "wire_pad",
-        "wire_clean",
-        "compile_match",
-        "ascii_words",
-        "bracketed",
-        "collapse_whitespace",
-        "demand",
-        "gated",
-        "diagnostics",
-        "digest",
-        "dump",
-        "digit_run",
-        "heading_words",
-        "is_digits",
-        "prefixed_number",
-        "strip_tags",
-        "keep_table",
-        "runs",
-    }
-)
-KERNEL_CLASSES = frozenset(
-    {
-        "Exact",
-        "Recovered",
-        "Ambiguous",
-        "NoMatch",
-        "CommandError",
-        "UpstreamError",
-        "SessionStore",
-        "CustomAgent",
-        "Contact",
-        "Diagnostic",
-        "Admission",
-        "Pool",
-        "EventLog",
-        "Created",
-        "Cluster",
-        "Digest",
-        "Item",
-        "JSON",
-        "Model",
-        "Outcome",
-        "Inline",
-        "FromFile",
-        "FromStdin",
-        "Payload",
-    }
-)
 WORD_CHARS = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 )
@@ -115,16 +25,46 @@ def _defined_name(line: str, keyword: str) -> str | None:
     return line[len(keyword) : end] or None
 
 
-def redefined_kernel_symbols(text: str) -> Iterator[str]:
+@dataclass(frozen=True, slots=True)
+class Kernel:
+    """What the kernel defines, read off the tree rather than listed by hand."""
+
+    functions: frozenset[str]
+    classes: frozenset[str]
+
+
+def kernel_symbols(repo: Repo) -> Kernel:
+    """Public top-level defs and classes of the kernel package. Derived, so a
+    symbol added there is guarded the moment it exists."""
+    functions: set[str] = set()
+    classes: set[str] = set()
+    for path, text in repo.texts.items():
+        # `src/` only: the kernel's own tests name helpers a member may reuse.
+        if path.suffix != ".py" or path.parts[:1] != (KERNEL.name,):
+            continue
+        if "src" not in path.parts:
+            continue
+        for line in text.split("\n"):
+            if name := _defined_name(line, "def "):
+                functions.add(name)
+            elif name := _defined_name(line, "class "):
+                classes.add(name)
+    return Kernel(
+        frozenset(n for n in functions if not n.startswith("_")),
+        frozenset(n for n in classes if not n.startswith("_")),
+    )
+
+
+def redefined_kernel_symbols(text: str, kernel: Kernel) -> Iterator[str]:
     """Top-level definitions that shadow a kernel name. Two C-level substring
     tests skip a file that defines nothing, so most files never split."""
     if "def " not in text and "class " not in text:
         return
     for line in text.split("\n"):
-        if (name := _defined_name(line, "def ")) and name in KERNEL_FUNCTIONS:
+        if (name := _defined_name(line, "def ")) and name in kernel.functions:
             if line[len("def ") + len(name) :].startswith("("):
                 yield f"def {name}("
-        elif (name := _defined_name(line, "class ")) and name in KERNEL_CLASSES:
+        elif (name := _defined_name(line, "class ")) and name in kernel.classes:
             yield f"class {name}"
 
 
@@ -191,10 +131,11 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
     # A member's modules are covered, not just its console entry, so moving a
     # copy of the kernel one import deeper does not escape the check.
     roots = _kernel_consumers(repo)
+    kernel = kernel_symbols(repo)
     for path in sorted(repo.texts):
         if path.suffix != ".py" or not any(root in path.parents for root in roots):
             continue
-        for found in redefined_kernel_symbols(repo.texts[path]):
+        for found in redefined_kernel_symbols(repo.texts[path], kernel):
             yield Finding(
                 "kernel",
                 str(path),

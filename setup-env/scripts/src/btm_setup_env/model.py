@@ -15,12 +15,12 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from btm_corekit import ascii_words
+from btm_corekit import CommandError, ascii_words
 
 
-class DenvError(Exception):
-    """The one error channel. Raised with a complete, actionable message;
-    the CLI renders str(error) and exits nonzero. Nothing else escapes."""
+class DenvError(CommandError):
+    """This member's failures, on the library's exit contract: 1, fix the
+    input and re-run. Network and timeout raise UpstreamError instead."""
 
 
 # --- Host ---

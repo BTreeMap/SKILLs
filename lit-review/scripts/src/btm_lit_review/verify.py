@@ -40,8 +40,10 @@ def _verify_into(result: dict[str, Any], paper: Paper) -> None:
         result["doi_http_status"] = status
         try:
             message = http_get_json(f"{CROSSREF_WORKS}/{paper.doi}").get("message")
+        except UpstreamError:
+            raise  # the registrar failed; verify_one records it on the row
         except CommandError:
-            message = None
+            message = None  # the registrar holds no record for this DOI
         if message and message.get("title"):
             registered = clean_text(" ".join(message["title"])) or ""
             ratio = difflib.SequenceMatcher(

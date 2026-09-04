@@ -15,6 +15,8 @@ from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from pydantic import ValidationError
+
 from btm_corekit.errors import CommandError
 from btm_corekit.identifiers import (
     Ambiguous,
@@ -26,6 +28,7 @@ from btm_corekit.identifiers import (
     resolve,
     slugify,
 )
+from btm_corekit.models import M, diagnostics
 from btm_corekit.verdicts import Diagnostic
 
 Minter = Callable[[Iterable[str]], str]
@@ -145,6 +148,21 @@ class Admission:
             )
             clean = False
         return clean
+
+    def decode(self, model: type[M], entry: Any, where: str) -> M | None:
+        """One entry as its model, or every located problem recorded.
+
+        The model's fields and `extra="forbid"` carry the shape; each
+        problem's location is prefixed with the entry's own, so a fix names
+        the field to edit.
+        """
+        try:
+            return model.model_validate(entry)
+        except ValidationError as err:
+            for problem in diagnostics(err):
+                spot = where if problem.where == "$" else f"{where}.{problem.where}"
+                self.fail(spot, problem.fix, problem.hint)
+            return None
 
     def resolve_ref(self, ref: str, pool: Pool, where: str) -> str | None:
         match resolve(ref, pool.ids):

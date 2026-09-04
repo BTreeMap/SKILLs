@@ -12,9 +12,17 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from btm_corekit import Admission, CommandError, Diagnostic, Pool, keywords_of, slugify
+from btm_corekit import (
+    Admission,
+    CommandError,
+    Diagnostic,
+    Pool,
+    dump,
+    keywords_of,
+    slugify,
+)
 from btm_ponder.ledger import apply
-from btm_ponder.state import Ledger
+from btm_ponder.state import Checkpoint, Ledger
 
 BATCH_KEYS = ("leaves", "sources", "closes", "sweeps", "checkpoints")
 SCHEMA: dict[str, str] = {
@@ -230,7 +238,13 @@ class _Expansion(Admission):
 
     def take_checkpoints(self, entries: list[dict[str, Any]]) -> None:
         for index, entry in enumerate(entries):
-            self.staged.append((f"checkpoints[{index}]", {"e": "checkpoint", **entry}))
+            where = f"checkpoints[{index}]"
+            checkpoint = self.decode(Checkpoint, entry, where)
+            if checkpoint is None:
+                continue
+            # Through the model, so no entry key can reach the event and
+            # overwrite `e` with a kind that mints nothing.
+            self.staged.append((where, {"e": "checkpoint", **dump(checkpoint)}))
 
     def simulate(self) -> None:
         """Replay staged events on the ledger, turning refusals into orders."""

@@ -15,6 +15,7 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
+    Field,
     StringConstraints,
     ValidationError,
 )
@@ -68,6 +69,18 @@ issues longer ones than the classic four digits, and narrowing it here would
 silently drop records this library has no reason to reject."""
 
 ArxivId = Annotated[str, Trimmed, StringConstraints(pattern=r"^\d{4}\.\d{4,5}$")]
+
+
+def _whole(raw: Any) -> Any:
+    """`bool` is an `int` in Python and pydantic admits it, so `true` would
+    count as one search. A count is a number."""
+    if isinstance(raw, bool):
+        raise ValueError("write a number, not a boolean")
+    return raw
+
+
+Count = Annotated[int, BeforeValidator(_whole), Field(ge=0)]
+"""A non-negative tally: searches run, pages held."""
 
 
 def where_of(loc: Sequence[str | int]) -> str:

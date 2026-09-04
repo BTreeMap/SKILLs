@@ -21,7 +21,7 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_lit_review.constants import MAX_LIMIT, OPENALEX_WORKS
-from btm_lit_review.http import http_get_json
+from btm_lit_review.http import openalex_json
 from btm_lit_review.paper import (
     Paper,
     absorb,
@@ -165,7 +165,7 @@ def resolve_openalex_id(papers: Mapping[str, Paper], token: str) -> tuple[str, s
     if paper.openalex_id:
         return key, paper.openalex_id
     if paper.doi:
-        work = http_get_json(f"{OPENALEX_WORKS}/doi:{urllib.parse.quote(paper.doi)}")
+        work = openalex_json(f"{OPENALEX_WORKS}/doi:{urllib.parse.quote(paper.doi)}")
         openalex_id = str(work.get("id") or "").rsplit("/", 1)[-1]
         if openalex_id:
             return key, openalex_id
@@ -182,7 +182,7 @@ def cmd_snowball(args: argparse.Namespace) -> int:
     papers = load_papers(session)
     seed_key, work_id = resolve_openalex_id(papers, args.seed)
     if args.direction == "backward":
-        work = http_get_json(f"{OPENALEX_WORKS}/{work_id}")
+        work = openalex_json(f"{OPENALEX_WORKS}/{work_id}")
         referenced = [
             url.rsplit("/", 1)[-1] for url in work.get("referenced_works") or []
         ]
@@ -195,7 +195,7 @@ def cmd_snowball(args: argparse.Namespace) -> int:
         fetched = fetch_openalex_by_ids(referenced[:limit])
     else:
         params = {"filter": f"cites:{work_id}", "per-page": str(limit)}
-        body = http_get_json(OPENALEX_WORKS, params)
+        body = openalex_json(OPENALEX_WORKS, params)
         total = (body.get("meta") or {}).get("count") or 0
         fetched = [paper_from_openalex(w) for w in body.get("results") or []]
     entry = {

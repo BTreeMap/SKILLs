@@ -22,6 +22,8 @@ AUTHOR_SHOW_LIMIT = 6
 PAD_TAIL = 10
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVER_ERROR = 500
 
 ATOM = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
@@ -53,5 +55,4 @@ STATUSES = tuple(Status)
 READ_LEVELS = tuple(ReadLevel)
 SOURCES = ("openalex", "arxiv", "crossref")
 DIRECTIONS = ("backward", "forward")
-DECISION_FIELDS = frozenset({"status", "reason", "read_level"})
 REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})

@@ -15,6 +15,7 @@ from btm_corekit import (
 )
 from btm_ponder.state import (
     CLOSE_STATES,
+    Checkpoint,
     Folded,
     Leaf,
     LeafState,
@@ -42,6 +43,15 @@ def _sweep(raw: dict[str, Any]) -> Sweep:
             "survivors": tuple(raw.get("survivors") or ()),
         },
         "sweep event",
+    )
+
+
+def _checkpoint(raw: dict[str, Any]) -> Checkpoint:
+    """The declared count; the log line also carries `e`, which the model forbids."""
+    return parse_model(
+        Checkpoint,
+        {"label": raw.get("label", ""), "searches": raw.get("searches")},
+        "checkpoint event",
     )
 
 
@@ -141,11 +151,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
         case "sweep":
             ledger.sweeps.append(_sweep(raw))
         case "checkpoint":
-            searches = raw.get("searches")
-            require(
-                isinstance(searches, int) and searches >= 0,
-                "checkpoint requires a non-negative integer search count",
-            )
+            _checkpoint(raw)
         case _:
             raise CommandError(f"unknown event kind: {kind}")
     ledger.events += 1

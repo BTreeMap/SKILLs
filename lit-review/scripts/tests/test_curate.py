@@ -74,13 +74,19 @@ class TestParseDecision:
             parse_decision("doi:absent", {"status": "included"}, CORPUS)
 
     def test_an_unknown_field_is_refused_rather_than_ignored(self):
-        with pytest.raises(CommandError, match="unknown fields"):
+        """The verdict names the offending key, so the fix is one edit."""
+        with pytest.raises(CommandError, match="statuss"):
             parse_decision(KEY, {"statuss": "included"}, CORPUS)
+
+    def test_a_decision_that_is_not_an_object_is_refused(self):
+        """A bare string once read as a set of one-letter field names."""
+        with pytest.raises(CommandError, match="valid dictionary"):
+            parse_decision(KEY, "included", CORPUS)
 
     def test_an_exclusion_needs_its_reason(self):
         """The implication the corpus depends on: a flow count traces to a
         stated reason or it traces to nothing."""
-        with pytest.raises(CommandError, match="needs a non-empty reason"):
+        with pytest.raises(CommandError, match="carries the reason"):
             parse_decision(KEY, {"status": "excluded"}, CORPUS)
 
     def test_an_exclusion_with_a_reason_is_admitted(self):
@@ -106,16 +112,21 @@ class TestParseDecision:
         """status and read_level reject a value outside their vocabulary; a
         reason has to reject a value outside its type for the same reason.
         Coercing `0` to null cleared the field instead of refusing it."""
-        with pytest.raises(CommandError, match="must be text or null"):
+        with pytest.raises(CommandError, match="reason: Input should be"):
             parse_decision(KEY, {"reason": 0}, CORPUS)
 
     def test_a_status_outside_the_vocabulary_names_it(self):
-        with pytest.raises(CommandError, match="status of decision"):
+        with pytest.raises(CommandError, match="status: Input should be"):
             parse_decision(KEY, {"status": "maybe"}, CORPUS)
 
     def test_a_read_level_outside_the_vocabulary_names_it(self):
-        with pytest.raises(CommandError, match="read_level of decision"):
+        with pytest.raises(CommandError, match="read_level: Input should be"):
             parse_decision(KEY, {"read_level": "skimmed"}, CORPUS)
+
+    def test_a_nulled_vocabulary_field_is_refused(self):
+        """Clearing a status has no meaning; only a reason may be cleared."""
+        with pytest.raises(CommandError, match="not null"):
+            parse_decision(KEY, {"status": None}, CORPUS)
 
     def test_a_valid_read_level_lands_in_the_domain(self):
         updates = parse_decision(KEY, {"read_level": "full-text"}, CORPUS)

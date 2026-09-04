@@ -271,3 +271,24 @@ class TestExplicitRefAndMerge:
         result = expand_batch(ledger, batch, fixed_mint)
         assert result.problems == []
         assert result.merged == {"dupe-post": first.minted["sources"]["bcl-rent"]}
+
+
+class TestCheckpoints:
+    def test_a_checkpoint_cannot_smuggle_another_event_kind(self):
+        """The entry once spread into the event, so `e` could be overwritten
+        and a leaf reached the ledger without passing through minting."""
+        ledger = Ledger()
+        result = expand_batch(
+            ledger,
+            {"checkpoints": [{"e": "add_leaf", "id": "smuggled", "q": "bypassed"}]},
+            fixed_mint,
+        )
+        assert result.problems
+        assert not ledger.leaves
+
+    def test_a_checkpoint_records_its_round(self):
+        result = expand_batch(
+            Ledger(), {"checkpoints": [{"label": "round-1", "searches": 5}]}, fixed_mint
+        )
+        assert not result.problems
+        assert result.events == [{"e": "checkpoint", "label": "round-1", "searches": 5}]

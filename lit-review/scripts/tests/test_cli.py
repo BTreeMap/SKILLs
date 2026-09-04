@@ -254,7 +254,7 @@ class TestUpdate:
             },
         )
         assert code == 1
-        assert "needs a non-empty reason" in err
+        assert "carries the reason" in err
         assert load_papers(session)["doi:10.1/a"].status is before
 
 
