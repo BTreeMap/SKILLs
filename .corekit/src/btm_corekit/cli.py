@@ -9,7 +9,7 @@ import sys
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 from btm_corekit.channels import emit, signal
 from btm_corekit.errors import CommandError, UpstreamError
@@ -29,8 +29,9 @@ REFS_SCHEMA = "a ref is the kw slug, a full id, or any unique keyword subset"
 def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) -> int:
     """Dispatch to the parsed `func`: CommandError exits 1, UpstreamError 2."""
     args = parser.parse_args(argv)
+    run: Callable[[argparse.Namespace], int] = args.func
     try:
-        return args.func(args)
+        return run(args)
     except UpstreamError as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
@@ -65,9 +66,9 @@ def sole_source(inline: str | None, file: str | None) -> Source:
     match (inline, file):
         case (None, None):
             return FromStdin()
-        case (None, path):
+        case (None, str() as path):
             return FromFile(Path(path))
-        case (text, None):
+        case (str() as text, None):
             return Inline(text)
         case _:
             raise CommandError(
@@ -134,12 +135,14 @@ def advise(lines: Iterable[str]) -> None:
         signal(line)
 
 
+Commands: TypeAlias = "argparse._SubParsersAction[argparse.ArgumentParser]"
+
 DirectoryOf = Callable[[argparse.Namespace], Path]
 OnJot = Callable[[argparse.Namespace, dict[str, Any]], None]
 
 
 def wire_pad(
-    commands: argparse._SubParsersAction,
+    commands: Commands,
     directory_of: DirectoryOf,
     *,
     lore: str | None = None,
@@ -197,7 +200,7 @@ def wire_pad(
             parser.add_argument("--lore", action="store_true", help=lore)
 
 
-def wire_clean(commands: argparse._SubParsersAction, store: SessionStore) -> None:
+def wire_clean(commands: Commands, store: SessionStore) -> None:
     def cmd_clean(args: argparse.Namespace) -> int:
         emit(store.clean(args.session, args.all))
         return 0

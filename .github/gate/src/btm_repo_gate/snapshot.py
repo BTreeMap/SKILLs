@@ -7,6 +7,7 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from btm_repo_gate.conventions import (
     HUB,
@@ -55,7 +56,7 @@ def _link_state(path: Path) -> LinkState:
 
 @dataclass(frozen=True, slots=True)
 class Parsed:
-    doc: dict  # shallowly immutable; rules copy before rewriting
+    doc: dict[str, Any]  # shallowly immutable; rules copy before rewriting
 
 
 @dataclass(frozen=True, slots=True)

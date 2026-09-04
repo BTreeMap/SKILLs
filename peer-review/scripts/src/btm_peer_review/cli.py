@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 import btm_peer_review
 from btm_corekit import (
@@ -17,6 +18,7 @@ from btm_corekit import (
     pad_ids,
     read_batch,
     rejection,
+    require,
     run_cli,
     signal,
     wire_clean,
@@ -26,7 +28,7 @@ from btm_corekit import (
 from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, expand_batch
 from btm_peer_review.constants import BANKS, LEVEL_BANKS, Level, Severity, Standing
 from btm_peer_review.ledger import replay
-from btm_peer_review.state import Ledger, require
+from btm_peer_review.state import Ledger
 from btm_peer_review.store import (
     LIT_STORE,
     STORE,
@@ -161,7 +163,7 @@ def cmd_note(args: argparse.Namespace) -> int:
     return 0
 
 
-def _derive(directory: Path, meta: Meta) -> dict:
+def _derive(directory: Path, meta: Meta) -> dict[str, Any]:
     ledger = replay(event_log(directory).read())
     paper = _paper(directory)
     corpus = corpus_of(meta)

@@ -13,7 +13,10 @@ from btm_corekit import (
     is_digits,
     now_iso,
     parse_enum,
+    read_count,
     read_jsonl,
+    read_opt_text,
+    read_text,
     require,
 )
 from btm_peer_review.constants import Level
@@ -78,14 +81,12 @@ def read_meta(directory: Path) -> Meta:
     path = STORE.meta_path(directory)
     raw = STORE.read_meta(directory)
     level = parse_enum(Level, raw.get("level"), f"{path} level")
-    title, date, created = raw.get("title"), raw.get("date"), raw.get("created")
-    require(isinstance(title, str), f"{path} lacks a title")
-    require(isinstance(date, str), f"{path} lacks a date")
-    corpus, pages = raw.get("corpus"), raw.get("pages", 0)
-    require(corpus is None or isinstance(corpus, str), f"{path} corpus must be a path")
-    require(isinstance(pages, int), f"{path} pages must be an integer")
+    title = read_text(raw, "title", str(path))
+    date = read_text(raw, "date", str(path))
+    corpus = read_opt_text(raw, "corpus", f"{path} corpus")
+    pages = read_count(raw, "pages", f"{path} pages") if "pages" in raw else 0
     year_of(date)
-    return Meta(title, date, level, str(created or ""), corpus, pages)
+    return Meta(title, date, level, str(raw.get("created") or ""), corpus, pages)
 
 
 def write_meta(directory: Path, meta: Meta) -> None:

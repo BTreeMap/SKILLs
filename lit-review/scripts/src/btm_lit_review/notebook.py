@@ -108,7 +108,9 @@ def first_log_number(paper: Paper) -> int:
     return 0
 
 
-def finding_view(record: Mapping[str, Any], papers: Mapping[str, Paper]) -> dict:
+def finding_view(
+    record: Mapping[str, Any], papers: Mapping[str, Paper]
+) -> dict[str, Any]:
     issues = []
     for support in record["support"]:
         paper = papers.get(support["key"])
@@ -131,7 +133,7 @@ def finding_view(record: Mapping[str, Any], papers: Mapping[str, Paper]) -> dict
 
 def gap_view(
     record: Mapping[str, Any], arrivals: Mapping[str, tuple[int, str]]
-) -> dict:
+) -> dict[str, Any]:
     """A gap is challenged by papers that arrived after it and match its watch."""
     hits = []
     if record.get("watch"):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -63,7 +64,7 @@ def rule_frontmatter(repo: Repo) -> Iterator[Finding]:
             )
 
 
-def _frontmatter_judgments(where: str, fields: dict) -> Iterator[Finding]:
+def _frontmatter_judgments(where: str, fields: dict[str, Any]) -> Iterator[Finding]:
     unknown = [name for name in fields if name not in SPEC_FIELDS]
     if unknown:
         yield Finding(
@@ -100,7 +101,7 @@ def _header_segments(header: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
 
 
 def _canonical_header(
-    skill: str, fields: dict, header: str
+    skill: str, fields: dict[str, Any], header: str
 ) -> tuple[str, list[str]] | None:
     """The header with `name`, `license`, and field order made canonical, or
     `None` when it already is. A field whose value is right keeps its exact

@@ -14,6 +14,7 @@ from btm_corekit.channels import emit, signal
 from btm_corekit.cli import (
     PAD_SCHEMA,
     REFS_SCHEMA,
+    Commands,
     advise,
     read_batch,
     rejection,
@@ -48,7 +49,18 @@ from btm_corekit.identifiers import (
     slugify,
     suffix,
 )
-from btm_corekit.invariants import parse_enum, require
+from btm_corekit.invariants import demand, parse_enum, require
+from btm_corekit.models import (
+    ArxivId,
+    Doi,
+    Keyword,
+    Model,
+    NonEmpty,
+    Slug,
+    diagnostics,
+    dump,
+    refuse,
+)
 from btm_corekit.origin import (
     Contact,
     CustomAgent,
@@ -58,6 +70,12 @@ from btm_corekit.origin import (
     user_agent,
 )
 from btm_corekit.pad import compile_match, jot, pad_body, pad_entries, pad_ids, recall
+from btm_corekit.reading import (
+    read_count,
+    read_opt_text,
+    read_text,
+    read_texts,
+)
 from btm_corekit.sessions import Created, SessionStore
 from btm_corekit.text import (
     ascii_words,
@@ -80,22 +98,29 @@ __all__ = [
     "REFS_SCHEMA",
     "Admission",
     "Ambiguous",
+    "ArxivId",
     "Cluster",
     "CommandError",
+    "Commands",
     "Contact",
     "Created",
     "CustomAgent",
     "Diagnostic",
     "Digest",
+    "Doi",
     "EventLog",
     "Exact",
     "Item",
+    "Keyword",
+    "Model",
     "NoMatch",
+    "NonEmpty",
     "Pool",
     "Recovered",
     "RequestIdentity",
     "Resolution",
     "SessionStore",
+    "Slug",
     "UpstreamError",
     "advise",
     "append_jsonl",
@@ -104,8 +129,11 @@ __all__ = [
     "bracketed",
     "collapse_whitespace",
     "compile_match",
+    "demand",
+    "diagnostics",
     "digest",
     "digit_run",
+    "dump",
     "eliminate",
     "emit",
     "field_text",
@@ -124,8 +152,13 @@ __all__ = [
     "polite_params",
     "prefixed_number",
     "read_batch",
+    "read_count",
     "read_jsonl",
+    "read_opt_text",
+    "read_text",
+    "read_texts",
     "recall",
+    "refuse",
     "rejection",
     "request_identity",
     "require",

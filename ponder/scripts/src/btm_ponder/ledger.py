@@ -4,16 +4,23 @@ from __future__ import annotations
 
 from typing import Any
 
-from btm_corekit import MAX_EVENTS, CommandError, parse_enum, require
+from btm_corekit import (
+    MAX_EVENTS,
+    CommandError,
+    demand,
+    parse_enum,
+    read_text,
+    require,
+)
 from btm_ponder.state import (
     CLOSE_STATES,
-    UNRESOLVED_REASONS,
     Folded,
     Leaf,
     LeafState,
     Ledger,
     Open,
     Origin,
+    Reason,
     Refuted,
     Retired,
     Retrieved,
@@ -59,8 +66,7 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
         return Refuted(sources, premise, detail)
     if state == "folded":
         into = str(raw.get("into") or "").strip()
-        target = ledger.leaves.get(into)
-        require(target is not None, f"fold target does not exist: {into}")
+        target = demand(ledger.leaves.get(into), f"fold target does not exist: {into}")
         require(
             isinstance(target.state, Retrieved),
             f"fold target must be retrieved: {into}",
@@ -68,21 +74,17 @@ def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
         return Folded(into)
     detail = str(raw.get("detail") or "").strip()
     if state == "unresolved":
-        reason = raw.get("reason")
-        require(
-            reason in UNRESOLVED_REASONS,
-            f"unresolved reason must be one of {tuple(UNRESOLVED_REASONS)}",
-        )
         require(bool(detail), "unresolved requires detail")
-        return Unresolved(reason, detail)
+        return Unresolved(
+            parse_enum(Reason, raw.get("reason"), "unresolved reason"), detail
+        )
     require(bool(detail), "retired detail must name the conclusion it fails to change")
     return Retired(detail)
 
 
 def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:
-    leaf_id = raw.get("leaf")
-    leaf = ledger.leaves.get(leaf_id)
-    require(leaf is not None, f"unknown leaf id: {leaf_id}")
+    leaf_id = read_text(raw, "leaf", "close")
+    leaf = demand(ledger.leaves.get(leaf_id), f"unknown leaf id: {leaf_id}")
     new_state = _close_state(raw, ledger)
     legal = isinstance(leaf.state, Open) or (
         isinstance(leaf.state, Retrieved) and isinstance(new_state, Refuted)
@@ -119,7 +121,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             require(
                 source_id not in ledger.sources, f"duplicate source id: {source_id}"
             )
-            leaf_id = raw.get("leaf")
+            leaf_id = read_text(raw, "leaf", "add_source")
             require(leaf_id in ledger.leaves, f"unknown leaf id: {leaf_id}")
             cls = raw.get("cls")
             cls = parse_enum(SourceClass, cls, "source cls")

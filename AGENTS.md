@@ -313,3 +313,12 @@ repository's `skills/` hub and its vendor aliases are relative symlinks.
   `description`.
 * When in doubt about a project-specific value, write the skill to discover it from
   the repository at runtime instead of assuming it.
+
+## Types
+
+Every bundled script is typechecked. `uv run mypy` runs strict over every
+member's `src/`, with the pydantic plugin so a model's fields are checked at
+authoring time, and the gate workflow fails on a finding. Domain records
+subclass `Model` from the kernel, which is frozen and refuses unknown fields;
+constrained strings use the kernel's refined aliases (`Slug`, `Doi`,
+`ArxivId`, `Keyword`, `NonEmpty`) rather than bare `str`.

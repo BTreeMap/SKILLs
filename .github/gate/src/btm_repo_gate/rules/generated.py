@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from btm_repo_gate.conventions import BRAND, MARKETPLACE
 from btm_repo_gate.listings import LISTINGS
@@ -28,7 +29,7 @@ def rule_manifest(repo: Repo) -> Iterator[Finding]:
 
 
 def _manifest_findings(
-    path: Path, doc: dict, skills: frozenset[str]
+    path: Path, doc: dict[str, Any], skills: frozenset[str]
 ) -> Iterator[Finding]:
     canonical = json.loads(json.dumps(doc))  # independent copy; `doc` stays pure
     reasons: list[str] = []

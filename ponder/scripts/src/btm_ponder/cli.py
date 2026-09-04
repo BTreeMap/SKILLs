@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from typing import Any
 
 import btm_ponder
 from btm_corekit import (
@@ -72,7 +73,7 @@ def cmd_note(args: argparse.Namespace) -> int:
         emit(rejection(result.problems, "ledger"))
         return 1
     event_log(directory).append(result.events, held=len(events))
-    document: dict = {
+    document: dict[str, Any] = {
         "session": directory.name,
         "admitted": dict(Counter(event["e"] for event in result.events)),
         "minted": result.minted,
@@ -115,7 +116,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     if blocking:
         signal(f"{len(blocking)} violation(s); details in the JSON violations array")
     signal("Boundary section is yours: render it where the answer flips inside scope")
-    document: dict = {
+    document: dict[str, Any] = {
         "session": directory.name,
         "mode": mode,
         "question": meta.get("question"),

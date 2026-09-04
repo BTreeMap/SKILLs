@@ -31,7 +31,7 @@ members = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "mypy>=1.11"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib --strict-markers"
@@ -45,3 +45,20 @@ testpaths = [
   "read-pdf/scripts/tests",
   "setup-env/scripts/tests",
 ]
+
+# The typechecker is the second half of the modelling discipline: pydantic
+# holds the shapes at runtime, mypy holds them at authoring time. Its plugin
+# reads pydantic models, so a wrong field name or type is a CI failure rather
+# than a rejection an agent discovers mid-session.
+[tool.mypy]
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+files = [".corekit/src", ".github/gate/src", "caveman/scripts/src", "lit-review/scripts/src", "peer-review/scripts/src", "ponder/scripts/src", "read-pdf/scripts/src", "setup-env/scripts/src"]
+strict = true
+# Third-party scripts ship no stubs; their absence is not our finding.
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_typed = true
+init_forbid_extra = true
+warn_required_dynamic_aliases = true

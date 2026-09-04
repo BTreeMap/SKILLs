@@ -38,7 +38,7 @@ def _anchor_views(
     """Anchor rows, whether all resolve, whether any sits in Limitations."""
     if isinstance(objection.evidence, Missing):
         return [], True, False
-    rows = []
+    rows: list[dict[str, Any]] = []
     grounded = True
     echoed = False
     for quote in objection.evidence.anchors:
@@ -64,7 +64,7 @@ def _prior_views(
 ) -> tuple[list[dict[str, Any]], bool]:
     """Prior rows and whether every key resolves to a record dated at or
     before the paper; an objection without prior keys is dated by construction."""
-    rows = []
+    rows: list[dict[str, Any]] = []
     dated = True
     for key in objection.prior:
         record = corpus.lookup(key) if corpus else None

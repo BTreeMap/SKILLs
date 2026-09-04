@@ -24,9 +24,11 @@ import subprocess
 import sys
 import tarfile
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path, PurePosixPath
+from typing import Any
 
 import certifi
 import httpx
@@ -197,7 +199,7 @@ def run_logged(
 class Ctx:
     layout: Layout
     host: Host
-    manifest: dict = field(default_factory=dict)
+    manifest: dict[str, Any] = field(default_factory=dict)
 
     @property
     def mamba(self) -> Path:
@@ -222,9 +224,10 @@ class Ctx:
         os.replace(partial, path)
 
 
-def load_manifest(layout: Layout) -> dict:
+def load_manifest(layout: Layout) -> dict[str, Any]:
     try:
-        return json.loads(layout.manifest.read_text())
+        loaded: dict[str, Any] = json.loads(layout.manifest.read_text())
+        return loaded
     except (OSError, ValueError):
         return {}
 
@@ -664,7 +667,7 @@ def do_bind_gradle(ctx: Ctx, step: BindGradleProject) -> None:
 # --- Orchestration ---
 
 
-_EXECUTORS = {
+_EXECUTORS: dict[type, Callable[[Ctx, Any], None]] = {
     CondaEnv: conda_create,
     UvVenv: do_uv_venv,
     Fetch: do_fetch,

@@ -78,7 +78,7 @@ def make_plan(spec: Spec, host: Host, layout: Layout) -> Plan:
         if prior is not None and prior.platform != platform:
             raise DenvError(
                 f"prefix {step.prefix_rel} claimed for two "
-                f"platforms: {prior.platform.value} and "
+                f"platforms: {prior.platform.value if prior.platform else 'host'} and "
                 f"{platform.value}"
             )
         packages = set(prior.packages if prior else ()) | set(step.packages)

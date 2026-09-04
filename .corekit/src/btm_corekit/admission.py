@@ -94,7 +94,7 @@ class Pool:
 class Admission:
     """Accumulates corrective orders and advisories for one batch."""
 
-    def __init__(self, mint: Minter | None = None, pad: Collection[str] = ()) -> None:
+    def __init__(self, mint: Minter | None = None, pad: Iterable[str] = ()) -> None:
         self.mint = mint
         self.pad = set(pad)
         self.problems: list[Diagnostic] = []

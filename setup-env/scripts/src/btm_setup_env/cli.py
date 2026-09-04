@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from . import catalog
+from .effects import ProbeResult
 from .model import (
     GENERIC,
     CondaPlatform,
@@ -84,7 +85,7 @@ def _build_plan(project: Path | None, root: Path | None, tags: list[str]) -> Pla
     return make_plan(spec, detect_host(), layout)
 
 
-def _describe_step(step) -> str:
+def _describe_step(step: object) -> str:
     match step:
         case CondaEnv(prefix_rel=p, platform=pl, packages=pkgs):
             return f"conda {p} [{pl.value if pl else 'host'}]: " + " ".join(pkgs)
@@ -116,7 +117,7 @@ def cmd_plan(args: argparse.Namespace) -> int:
     return 0
 
 
-def _report(plan: Plan, results, as_json: bool) -> int:
+def _report(plan: Plan, results: list[ProbeResult], as_json: bool) -> int:
     ok = all(r.ok for r in results)
     if as_json:
         print(
@@ -209,7 +210,7 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
-def _tag_of(key) -> str:
+def _tag_of(key: tuple[str, str]) -> str:
     family, flavor = key
     return family if flavor == GENERIC else f"{family}:{flavor}"
 

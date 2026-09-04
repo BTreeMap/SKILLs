@@ -155,12 +155,17 @@ jobs:
         #
         # `uv lock --check` fails when a manifest moved without the lock: no
         # fixer relocks, because choosing versions is a person's call.
+        #
+        # mypy runs strict with the pydantic plugin, so a field name or type
+        # that no longer matches its model fails here rather than surfacing as
+        # a rejection an agent hits mid-session.
         run: |
           set -uo pipefail
           rc=0
           uvx "ruff@${RUFF_VERSION}" check --output-format=github . || rc=1
           uv lock --check || rc=1
           uv run --all-packages pytest -q || rc=1
+          uv run mypy || rc=1
           uv run --project .github/gate btm-repo-gate check || rc=1
           exit "${rc}"
 

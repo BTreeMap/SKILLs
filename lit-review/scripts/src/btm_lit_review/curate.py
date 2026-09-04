@@ -56,7 +56,7 @@ def cmd_screen(args: argparse.Namespace) -> int:
     reason = clean_text(args.reason)
     if not reason:
         raise CommandError("screen requires a non-empty --reason")
-    action = "excluded" if args.exclude else "included"
+    action = Status.EXCLUDED if args.exclude else Status.INCLUDED
     papers = load_papers(session)
     matched = [
         key
@@ -144,7 +144,7 @@ def cmd_update(args: argparse.Namespace) -> int:
         key: parse_decision(key, decision, papers)
         for key, decision in decisions.items()
     }
-    changed = Counter()
+    changed: Counter[str] = Counter()
     for key, updates in parsed.items():
         if (status := updates.get("status")) is not None:
             changed[status] += 1
@@ -339,8 +339,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     criteria = protocol.get("criteria") or {}
     ready = bool(criteria.get("include")) and bool(criteria.get("exclude"))
     pending = unextracted(session.root, papers)
-    undecided = by_status.get("candidate", 0)
-    included = by_status.get("included", 0)
+    undecided = by_status.get(Status.CANDIDATE, 0)
+    included = by_status.get(Status.INCLUDED, 0)
     level = protocol.get("level") or ""
     band = band_advisory(level, included)
     if band:

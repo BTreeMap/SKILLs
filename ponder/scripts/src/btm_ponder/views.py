@@ -85,7 +85,7 @@ def hedges(ledger: Ledger) -> list[str]:
 
 def yield_table(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """New sources per declared search, segmented by checkpoint events."""
-    rows = []
+    rows: list[dict[str, Any]] = []
     new_sources = 0
     for raw in events:
         if raw.get("e") == "add_source":
@@ -143,9 +143,11 @@ def _sweep_row(sweep: Sweep) -> dict[str, Any]:
     }
 
 
-def scaffold(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, list[dict]]:
+def scaffold(
+    ledger: Ledger, marker_of: dict[str, str]
+) -> dict[str, list[dict[str, Any]]]:
     """The stored close prose keyed by marker, grouped into the derived sections."""
-    body: dict[str, list[dict]] = {"answer": [], "rival": [], "open": []}
+    body: dict[str, list[dict[str, Any]]] = {"answer": [], "rival": [], "open": []}
     for leaf_id, leaf in ledger.leaves.items():
         match leaf.state:
             case Retrieved(sources, premise, detail):

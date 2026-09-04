@@ -10,7 +10,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from btm_corekit import parse_enum, require
+from btm_corekit import (
+    parse_enum,
+    read_count,
+    read_opt_text,
+    read_text,
+    read_texts,
+    require,
+)
 from btm_peer_review.constants import Bank, Kind, Severity
 
 
@@ -48,19 +55,11 @@ class Objection:
         return self.evidence.anchors if isinstance(self.evidence, Quoted) else ()
 
 
-def _strings(raw: Any, where: str) -> tuple[str, ...]:
-    require(
-        isinstance(raw, list) and all(isinstance(s, str) for s in raw),
-        f"{where} must be a list of strings",
-    )
-    return tuple(raw)
-
-
 def claim_from_event(raw: Mapping[str, Any]) -> Claim:
-    verbatim, page = raw.get("verbatim"), raw.get("page")
-    require(isinstance(verbatim, str) and bool(verbatim), "claim event lacks verbatim")
-    require(isinstance(page, int) and page > 0, "claim event lacks a page")
-    return Claim(verbatim, page)
+    return Claim(
+        read_text(raw, "verbatim", "claim event"),
+        read_count(raw, "page", "claim event", minimum=1),
+    )
 
 
 def objection_from_event(
@@ -69,24 +68,24 @@ def objection_from_event(
     """The decoder: disk shape to domain value, or a loud CommandError."""
     kind = parse_enum(Kind, raw.get("kind"), "objection kind")
     severity = parse_enum(Severity, raw.get("severity"), "objection severity")
-    text = raw.get("text")
-    require(isinstance(text, str) and bool(text), "objection event lacks text")
+    text = read_text(raw, "text", "objection event")
     claim = raw.get("claim")
     require(
         claim is None or claim in claims, f"objection cites unknown claim {claim!r}"
     )
-    where = raw.get("where")
-    require(where is None or isinstance(where, str), "objection where must be text")
-    anchors = _strings(raw.get("anchors", []), "objection anchors")
-    missing = raw.get("missing")
+    where = read_opt_text(raw, "where", "objection")
+    anchors = read_texts(raw, "anchors", "objection")
+    # Not a kernel reader: the requirement is disjunctive, so "needs a
+    # non-empty missing" would misstate it. Anchors satisfy it too.
+    missing = read_opt_text(raw, "missing", "objection")
     evidence: Evidence
     if anchors:
         require(missing is None, "objection carries both anchors and missing")
         evidence = Quoted(anchors)
     else:
-        require(isinstance(missing, str) and bool(missing), "objection lacks evidence")
-        evidence = Missing(missing)
-    prior = _strings(raw.get("prior", []), "objection prior")
+        require(bool(missing), "objection lacks evidence")
+        evidence = Missing(missing or "")
+    prior = read_texts(raw, "prior", "objection")
     require(
         bool(prior) == (kind.bank is Bank.NOVELTY),
         f"prior keys belong to novelty kinds alone; got {kind} with {len(prior)}",

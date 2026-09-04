@@ -20,6 +20,8 @@ from __future__ import annotations
 import difflib
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
+from pathlib import Path
 
 from .model import (
     GENERIC,
@@ -150,11 +152,11 @@ def _no_windows(host: Host, what: str) -> None:
         raise DenvError(f"{what} is not provisionable on windows; use WSL")
 
 
-def _venv_bin(layout: Layout, host: Host):
+def _venv_bin(layout: Layout, host: Host) -> Path:
     return layout.venv / ("Scripts" if host.os is OS.WINDOWS else "bin")
 
 
-def conda_bin_dirs(layout: Layout, host: Host) -> tuple:
+def conda_bin_dirs(layout: Layout, host: Host) -> tuple[Path, ...]:
     """Where executables land in a conda prefix, per OS."""
     p = layout.conda_host
     if host.os is OS.WINDOWS:
@@ -162,7 +164,7 @@ def conda_bin_dirs(layout: Layout, host: Host) -> tuple:
     return (p / "bin",)
 
 
-def jvm_home(layout: Layout, host: Host):
+def jvm_home(layout: Layout, host: Host) -> Path:
     # openjdk nests the JDK; the prefix is not JAVA_HOME.
     if host.os is OS.WINDOWS:
         return layout.conda_host / "Library" / "lib" / "jvm"
@@ -197,6 +199,12 @@ class Recipe:
     requirements: Callable[[Host, str | None], tuple[Step, ...]]
     env: Callable[[Layout, Host], EnvDelta]
     probes: tuple[tuple[str, ...], ...]
+
+
+def _conda_only(tool: str, host: Host, version: str | None) -> tuple[Step, ...]:
+    """One conda package and nothing else. Named rather than a lambda with a
+    late-binding default, which is both the profile's shape and inferrable."""
+    return (host_conda(conda_spec(tool, version)),)
 
 
 def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
@@ -494,7 +502,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
     )
 
     # C#
-    def _dotnet_root(layout: Layout, host: Host):
+    def _dotnet_root(layout: Layout, host: Host) -> Path:
         # conda ships no bin wrapper; set DOTNET_ROOT here.
         base = (
             layout.conda_host / "Library"
@@ -599,7 +607,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
                 (tool, GENERIC),
                 tool,
                 f"{tool} version",
-                lambda host, v, _t=tool: (host_conda(conda_spec(_t, v)),),
+                partial(_conda_only, tool),
                 lambda layout, host: EnvDelta(),
                 (probe,),
             )

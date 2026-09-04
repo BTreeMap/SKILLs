@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 
 import btm_lit_review
-from btm_corekit import run_cli, wire_clean, wire_pad
+from btm_corekit import Commands, run_cli, wire_clean, wire_pad
 from btm_corekit.digest import CLUSTER_CAP
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
@@ -45,7 +45,7 @@ def add_common(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def wire_gather(commands: argparse._SubParsersAction) -> None:
+def wire_gather(commands: Commands) -> None:
     init = commands.add_parser("init", help="create a review session")
     add_common(init)
     init.add_argument("--question", required=True, help="the research question")
@@ -71,7 +71,7 @@ def wire_gather(commands: argparse._SubParsersAction) -> None:
     snowball.set_defaults(func=cmd_snowball)
 
 
-def wire_curate(commands: argparse._SubParsersAction) -> None:
+def wire_curate(commands: Commands) -> None:
     screen = commands.add_parser(
         "screen", help="apply one regex rule to every candidate, recorded as bulk"
     )
@@ -122,7 +122,7 @@ def wire_curate(commands: argparse._SubParsersAction) -> None:
     update.set_defaults(func=cmd_update)
 
 
-def wire_notebook(commands: argparse._SubParsersAction) -> None:
+def wire_notebook(commands: Commands) -> None:
     note = commands.add_parser("note", help="admit findings and gaps into the notebook")
     add_common(note)
     note.add_argument(
