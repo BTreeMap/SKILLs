@@ -1,15 +1,14 @@
-# Repair what is mechanical, commit it, and fail only on what needs a person.
+# Repair what is mechanical, commit it, fail only on what needs a person.
 #
-# Contract: after this workflow, main is formatted, linted, aliased, and its
-# skill listings are sorted. The run goes red only for findings no fixer can
-# settle.
+# Contract: main ends up formatted, linted, aliased, with its skill listings
+# sorted. The run goes red only for findings no fixer can settle.
 #
-# The rules live in the repository, not here: ruff.toml holds the lint and
-# format policy, and the `.github/gate` workspace member holds the conventions
-# from AGENTS.md. This file decides when they run and who may write.
+# The rules live in the repository, not here: ruff.toml holds lint and format
+# policy, `.github/gate` holds the AGENTS.md conventions. This file decides
+# when they run and who may write.
 #
 # Least privilege, following .github/workflows/sync-skills.yml:
-#   - `fix` holds `contents: read` and only computes; it produces the new file
+#   - `fix` holds `contents: read` and only computes, producing the new file
 #     contents as a value. `commit` holds the sole `contents: write` and only
 #     applies that value.
 #   - `commit` checks out nothing, so no working tree, no hook, and no
@@ -23,12 +22,13 @@
 # recomputes the same repairs.
 #
 # No loop: a commit made with GITHUB_TOKEN does not trigger workflows, so the
-# repair commit cannot start this workflow again. Every fixer is idempotent in
-# any case, so a second run over a repaired tree finds nothing to do.
+# repair commit cannot start this workflow again. Every fixer is idempotent
+# anyway: a second run over a repaired tree finds nothing to do.
 #
-# Actions are pinned to their major tag, which is the maintained line for the
-# trusted publishers used here; ruff and uv, which decide what a clean tree
-# looks like, are pinned to exact versions instead.
+# Actions are pinned to their major tag, the maintained line for the trusted
+# publishers used here. The two pins that decide what a clean tree looks like
+# are tighter: RUFF_VERSION names an exact ruff build, and setup-uv an exact
+# release.
 
 name: Gate
 
@@ -67,17 +67,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # Pinned to a minor rather than a major, unlike the trusted actions
-      # above, because this one carries the toolchain that decides what a
-      # clean tree looks like.
       - uses: astral-sh/setup-uv@v9.0.0
 
       - name: Apply every fixer
-        # Fixers never fail this job. `ruff check --fix` and the gate both
-        # exit nonzero on findings they cannot fix, but that verdict belongs to
-        # the assertion step below, once the repairs are collected. Only safe
-        # fixes are applied: an unsafe fix changes behavior and must not land
-        # unreviewed.
+        # Fixers never fail this job. `ruff check --fix` and the gate exit
+        # nonzero on findings they cannot fix, but that verdict belongs to the
+        # assertion step below, once the repairs are collected. Only safe fixes
+        # apply: an unsafe fix changes behavior and must not land unreviewed.
         run: |
           set -uo pipefail
           uvx "ruff@${RUFF_VERSION}" check --fix . || true
@@ -170,8 +166,8 @@ jobs:
   commit:
     needs: fix
     # Runs even when the assertion above failed: the computed repairs are
-    # still correct and still worth landing, and withholding them only makes
-    # the remaining human-sized problem harder to see.
+    # still correct, and withholding them only makes the remaining human-sized
+    # problem harder to see.
     if: ${{ !cancelled() && needs.fix.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5

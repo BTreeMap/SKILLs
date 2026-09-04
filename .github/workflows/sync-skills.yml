@@ -1,6 +1,6 @@
 # Reusable workflow: fast-forward a skills submodule gitlink to its upstream tip
-# on every listed branch of the caller. See sync-skills.example.yml at the
-# repository root for the ready-to-use caller.
+# on every listed branch of the caller. sync-skills.example.yml at the
+# repository root is the ready-to-use caller.
 #
 # Contract: each branch yields exactly one status line - updated, already
 # current, skipped, or not synced. The last also raises a ::warning:: naming
