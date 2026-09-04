@@ -167,10 +167,10 @@ only for user-requested troubleshooting.
 
 Determine capabilities from available tools:
 
-- Require retrieval. Use the harness's web search and fetch when present.
-  Without them, run `/search-web`, which searches and reads pages from a
-  script; disclose in the answer that results came from it. With neither,
-  disclose the requirement and stop.
+- Retrieval: prefer the harness's own web search and fetch. Where they are
+  absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
+  `scholar`, and `fetch`. Read a PDF with `/read-pdf`. With neither, say
+  the question needs retrieval and stop.
 - Use subagents after round one for two or more orthogonal bundles; run the
   same contract inline otherwise. Both paths produce identical ledger state.
 - Scholarly corpus leaves command `/lit-review`; PDF reading commands

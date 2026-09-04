@@ -55,11 +55,12 @@ compaction; re-open this SKILL.md then. Copy into the state file under
 
 Determine from the tools actually present:
 
-- Web search or fetch available? If NO, run `/search-web`, which retrieves
-  from a script, and record which backend each quote came from. If neither
-  is available: inventory claims (Step 1), mark every claim needing external
-  evidence `unverifiable` with note "no web access in this environment",
-  report, and stop. Do not verify from memory.
+- Retrieval: prefer the harness's own web search and fetch. Where they are
+  absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
+  `scholar`, and `fetch`. Read a PDF with `/read-pdf`. With neither:
+  inventory claims (Step 1), mark every claim needing external evidence
+  `unverifiable` with the note "no web access in this environment", report,
+  and stop. Do not verify from memory.
 - File editing available? If NO: deliver the report only; present corrections
   as old-span/new-span pairs the user can apply.
 - Sub-agent spawning available (a task or agent primitive among the tools)?

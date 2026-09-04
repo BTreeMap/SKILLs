@@ -182,8 +182,10 @@ Before ingest, determine from available tools:
 - PDF text: read with `/read-pdf` and pass the extraction file to `ingest`.
   A paper with no reachable text runs at lite only, disclosed in the report.
 - Network: the novelty bank runs lit-review. Without network, walk the
-  other banks and report novelty as unassessed. Reading one page a paper
-  cites commands `/search-web fetch`.
+  other banks and report novelty as unassessed.
+- Retrieval: prefer the harness's own web search and fetch. Where they are
+  absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
+  `scholar`, and `fetch`. Read a PDF with `/read-pdf`.
 - Sub-agents: optional, one bank per worker at most. A worker receives the
   session identifier and one bank, jots and notes through the script, and
   writes nothing else. Results must not depend on which branch ran.

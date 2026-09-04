@@ -178,8 +178,9 @@ $R clean ["$S" | --all]
 Before the protocol phase, determine from actually available tools:
 
 - Network for the script: if the first search cannot reach its API, stop and
-  say so. `/search-web` reaches the same indexes but keeps no corpus, so it
-  scopes a question before a review; it never substitutes for one. When the
+  say so. `/search-web` reaches the same indexes without keeping a corpus,
+  so it scopes a question before a review and never substitutes for one.
+  Read a PDF with `/read-pdf`. When the
   user supplies their own corpus (PDFs, BibTeX), skip the search phase,
   record provenance as user-supplied in the log's place, and run the
   remaining phases unchanged.
