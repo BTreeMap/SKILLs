@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from btm_corekit import (
+    JSON,
     CommandError,
     Diagnostic,
     Item,
@@ -162,7 +163,7 @@ SORTS = {
 }
 
 
-def default_row(paper: Paper) -> dict[str, Any]:
+def default_row(paper: Paper) -> dict[str, JSON]:
     abstract = paper.abstract
     if abstract and len(abstract) > ABSTRACT_SHOW_LIMIT:
         abstract = abstract[:ABSTRACT_SHOW_LIMIT] + " [truncated]"
@@ -326,7 +327,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     log = read_jsonl(session.log_path)
     by_status = Counter(paper.status for paper in papers.values())
     by_read = Counter(
-        paper.read_level for paper in papers.values() if paper.status == "included"
+        paper.read_level for paper in papers.values() if paper.status is Status.INCLUDED
     )
     current_hash = criteria_hash(protocol)
     logged_hashes = {entry.get("criteria_hash") for entry in log}
@@ -351,8 +352,8 @@ def cmd_status(args: argparse.Namespace) -> int:
             "criteria_ready": ready,
             "criteria_hash": current_hash,
             "searches": len(log),
-            "papers": dict(by_status),
-            "included_read_levels": dict(by_read),
+            "papers": {status.value: n for status, n in by_status.items()},
+            "included_read_levels": {level.value: n for level, n in by_read.items()},
             "undecided": undecided,
             "unextracted": pending,
             "next": next_step(ready, len(log), undecided, included, pending),

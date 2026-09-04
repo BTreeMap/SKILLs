@@ -16,10 +16,8 @@ description: >-
   or for code review.
 license: MIT
 compatibility: >-
-  Requires uv and a full SKILLs repository checkout: the engine is a uv
-  workspace member under the skill's scripts/ directory, and uv resolves its
-  rapidfuzz dependency on first run. The novelty bank needs lit-review's
-  network access.
+  Requires uv and a full SKILLs repository checkout. The novelty bank needs
+  lit-review's network access.
 metadata:
   argument-hint: "[lite|full|ultra] <paper path or URL>"
 ---
@@ -96,13 +94,11 @@ gate once its quote is in hand.
 
 ## Session
 
-The script owns a session directory: `session.json` (title, date, level,
-corpus path), `paper.txt` (the ingested extraction with `## PDF page N`
-markers), `ledger.jsonl` (claims, objections, walks, withdrawals), and
-`scratch.jsonl` (the pad). `init` takes two or three keywords and the
-paper's date, mints the session identifier, and echoes it; a keyword subset
-recovers a lost identifier. Sessions live under the library's XDG state root;
-an explicit path overrides that.
+`init` takes two or three keywords and the paper's date, mints the session
+identifier, and echoes it with its directory; a keyword subset recovers a lost
+one. Ingested text is split on `## PDF page N` lines, so an extraction that
+keeps those markers gets per-page anchors. Pass a directory path in place of
+an identifier to put a session somewhere specific.
 
 Two write paths:
 
@@ -142,11 +138,9 @@ Exit codes: 0 done (stderr `signal:` lines are advisory); 1 fix the input
 and resend. `clean` lists sessions with sizes and removes one or
 `--all`, reporting bytes freed.
 
-Bind the command once per shell and re-bind after a reset; the `realpath` is
-required (uv resolves the project path lexically, and an alias path such as
-`.claude/skills/peer-review/` has no workspace root above it). This surface
-is the handoff point: invoke it and read its output; source reading belongs
-to user-instructed troubleshooting.
+Bind the command once per shell and re-bind after a reset; `realpath` is
+required. This surface is the handoff point: invoke it and read its output.
+Read the source only when troubleshooting on the user's instruction.
 
 <script_commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"

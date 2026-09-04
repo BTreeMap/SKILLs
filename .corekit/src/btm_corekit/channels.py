@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import json
 import sys
-from collections.abc import Mapping
-from typing import Any
+from collections.abc import Mapping, Sequence
+from typing import Any, TypeAlias
+
+# What survives json.dumps. Document builders return it, so a Path or a
+# model is caught where it is written rather than at the print.
+JSON: TypeAlias = (
+    "bool | int | float | str | Sequence[JSON] | Mapping[str, JSON] | None"
+)
 
 
 def emit(document: Mapping[str, Any]) -> None:

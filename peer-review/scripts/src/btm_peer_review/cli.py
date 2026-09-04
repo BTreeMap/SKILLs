@@ -5,10 +5,11 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import btm_peer_review
 from btm_corekit import (
+    JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
     emit,
@@ -41,6 +42,7 @@ from btm_peer_review.store import (
 )
 from btm_peer_review.text import PaperText, parse_pages
 from btm_peer_review.views import (
+    Coverage,
     cite_check,
     claim_views,
     coverage,
@@ -141,7 +143,7 @@ def cmd_note(args: argparse.Namespace) -> int:
     def expand(batch: dict[str, Any]) -> NoteResult:
         return expand_batch(ledger, batch, context, mint, pad_ids(directory))
 
-    def commit(result: NoteResult) -> dict[str, Any]:
+    def commit(result: NoteResult) -> dict[str, JSON]:
         event_log(directory).append(result.events, held=len(events))
         return {
             "session": directory.name,
@@ -155,7 +157,23 @@ def cmd_note(args: argparse.Namespace) -> int:
     return gated(args.file, "ledger", expand, commit)
 
 
-def _derive(directory: Path, meta: Meta) -> dict[str, Any]:
+class Review(TypedDict):
+    """The check envelope. A TypedDict rather than the channel's JSON type
+    because callers index it: cite-check reads `claims` and `objections`
+    back out, so the shape has to survive the return."""
+
+    session: str
+    title: str
+    date: str
+    coverage: Coverage
+    recommendation: dict[str, JSON]
+    echo: dict[str, JSON]
+    claims: list[dict[str, JSON]]
+    objections: list[dict[str, JSON]]
+    scaffold: dict[str, JSON]
+
+
+def _derive(directory: Path, meta: Meta) -> Review:
     ledger = replay(event_log(directory).read())
     paper = _paper(directory)
     corpus = corpus_of(meta)
@@ -189,7 +207,7 @@ def cmd_check(args: argparse.Namespace) -> int:
             "authors' own Limitations; hunt outside it"
         )
     broken = [
-        v["marker"]
+        str(v["marker"])
         for v in document["objections"]
         if v["standing"] in (Standing.UNANCHORED, Standing.UNDATED)
     ]
@@ -300,7 +318,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("session")
-    status = commands.add_parser("status")
+    status = commands.add_parser(
+        "status", help="ledger counts, banks walked, and the next step"
+    )
     status.set_defaults(func=cmd_status)
     status.add_argument("session")
     cite = commands.add_parser(

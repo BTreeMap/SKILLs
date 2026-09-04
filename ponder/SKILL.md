@@ -14,9 +14,7 @@ description: >-
   lit-review) or verifying claims in an existing document (use fact-check).
 license: MIT
 compatibility: >-
-  Requires uv and web search or fetch, and a full SKILLs repository checkout:
-  the ledger engine is a uv workspace member under the skill's scripts/
-  directory.
+  Requires uv, web search or fetch, and a full SKILLs repository checkout.
 ---
 
 # Ponder
@@ -94,8 +92,8 @@ The script owns the ledger and its verification: `note` admits one JSON
 batch per round; `check` derives the drafting scaffold. Supply two or three
 keywords for each session, leaf, or source; the script returns its
 slug-plus-entropy identifier. Use full identifiers. A unique keyword subset
-recovers a lost ID; ambiguity lists candidates. Sessions persist under the
-XDG state root; an explicit path overrides it.
+recovers a lost ID; ambiguity lists candidates. Pass a directory path in
+place of an identifier to put a session somewhere specific.
 
 Commands emit JSON on stdout. Advisory `signal:` lines use stderr. `clean`
 lists sizes and removes one session or `--all`, reporting bytes freed.

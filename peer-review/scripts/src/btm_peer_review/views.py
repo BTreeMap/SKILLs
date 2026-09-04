@@ -5,7 +5,7 @@ the ledger, the live paper text, and the linked corpus. Nothing here is stored.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any
+from typing import Any, TypedDict
 
 from btm_corekit import bracketed, is_digits
 from btm_peer_review.constants import (
@@ -205,9 +205,21 @@ def recommendation(objections: list[dict[str, Any]]) -> dict[str, Any]:
     return {"verdict": verdict, "grounded": {s: counts[s] for s in Severity}}
 
 
+class Coverage(TypedDict):
+    """What the review has walked. Indexed by the check command, so its shape
+    outlives the return."""
+
+    level: Level
+    walked: list[Bank]
+    unwalked: list[Bank]
+    corpus: str | None
+    pages: int
+    confidence: Band
+
+
 def coverage(
     ledger: Ledger, level: Level, corpus: Corpus | None, paper: PaperText | None
-) -> dict[str, Any]:
+) -> Coverage:
     required = LEVEL_BANKS[level]
     walked = [bank for bank in required if bank in ledger.walks]
     unwalked = [bank for bank in required if bank not in ledger.walks]

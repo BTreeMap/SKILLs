@@ -18,8 +18,7 @@ description: >-
 license: MIT
 compatibility: >-
   Requires uv, network access to api.openalex.org, export.arxiv.org,
-  api.crossref.org, and doi.org, and a full SKILLs repository checkout: the
-  session engine is a uv workspace member under the skill's scripts/ directory.
+  api.crossref.org, and doi.org, and a full SKILLs repository checkout.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---
@@ -48,7 +47,7 @@ compaction event, re-open this SKILL.md and reload state via the script
 before continuing.
 
 1. Cite only corpus records. Every citation in the deliverable resolves to a
-   record in the session's `papers.jsonl`. Never cite from memory, from a
+   record in the session corpus. Never cite from memory, from a
    search-result snippet, or from a paper the corpus does not hold. No
    record, no citation.
 2. Criteria precede search. Inclusion and exclusion criteria stand in
@@ -92,17 +91,16 @@ screen that leaves too few papers reopens search); log what reopened it.
 
 ## Session
 
-The script owns a session directory: `protocol.json` (the agent fills
-`criteria`; the script gates on it), `papers.jsonl` (one record per
-deduplicated paper), `search_log.jsonl` (one entry per query or snowball),
-`notebook.jsonl` (findings, gaps, screening rules), `snapshot.json` (the
-last brief's corpus statuses),
-`citations.json` (marker numbers), and `scratch.jsonl` (the pad). `init`
-takes two or three keywords, mints the session identifier, and echoes it
-with the directory path. A keyword subset recovers a lost identifier;
-`schema` prints every record shape whenever a field name is in doubt.
-Sessions live under the library's XDG state root and survive across
-conversations; an explicit path overrides that.
+`init` takes two or three keywords, mints the session identifier, and echoes
+it with its directory. A keyword subset recovers a lost identifier; `schema`
+prints every record shape whenever a field name is in doubt. Sessions survive
+across conversations; pass a directory path in place of an identifier to put
+one somewhere specific.
+
+`protocol.json` in that directory is the one file the agent edits by hand:
+fill `criteria.include` and `criteria.exclude` before the first search, and
+append to `amendments` when they change. Everything else moves through
+commands.
 
 Two write paths carry different contracts:
 
@@ -153,13 +151,10 @@ other heavy artifacts belong in the scratch directory. `clean` lists
 sessions with sizes and removes one session or `--all`, reporting bytes
 freed.
 
-Run the engine through its console command, bound once per shell and
-re-bound after a reset. The `realpath` in the binding is required (uv
-resolves the project path lexically, and an alias path such as
-`.claude/skills/lit-review/` has no workspace root above it), and
-`env -u VIRTUAL_ENV` keeps an ambient virtualenv out of resolution. This
-command surface is the handoff point: invoke it and read its output;
-source reading belongs to user-instructed troubleshooting.
+Bind the command once per shell and re-bind after a reset; `realpath` and
+`env -u VIRTUAL_ENV` are both required. This surface is the handoff point:
+invoke it and read its output. Read the source only when troubleshooting on
+the user's instruction.
 
 <script_commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"

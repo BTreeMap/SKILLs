@@ -10,7 +10,7 @@ fails loudly at environment build.
 from __future__ import annotations
 
 from btm_corekit.admission import Admission, Pool, field_text, suggest
-from btm_corekit.channels import emit, signal
+from btm_corekit.channels import JSON, emit, signal
 from btm_corekit.cli import (
     PAD_SCHEMA,
     REFS_SCHEMA,
@@ -95,6 +95,7 @@ from btm_corekit.text import (
 from btm_corekit.verdicts import Diagnostic
 
 __all__ = [
+    "JSON",
     "KEYWORD_RANGE",
     "MAX_EVENTS",
     "PAD_SCHEMA",

@@ -7,7 +7,7 @@ import difflib
 import time
 from typing import Any
 
-from btm_corekit import CommandError, UpstreamError, emit, signal
+from btm_corekit import JSON, CommandError, UpstreamError, emit, signal
 from btm_lit_review.constants import (
     COURTESY_PAUSE_SECONDS,
     CROSSREF_WORKS,
@@ -20,7 +20,7 @@ from btm_lit_review.paper import Paper, clean_text, normalize_title
 from btm_lit_review.session import load_papers, open_session
 
 
-def verify_one(paper: Paper) -> dict[str, Any]:
+def verify_one(paper: Paper) -> dict[str, JSON]:
     """One row per paper; an unreachable registrar is recorded in the row, so
     one bad moment upstream never discards the rows already collected."""
     result: dict[str, Any] = {"key": paper.key, "title": paper.title}

@@ -8,6 +8,7 @@ from typing import Any
 
 import btm_ponder
 from btm_corekit import (
+    JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
     emit,
@@ -66,7 +67,7 @@ def cmd_note(args: argparse.Namespace) -> int:
 
     def commit(result: NoteResult) -> dict[str, Any]:
         event_log(directory).append(result.events, held=len(events))
-        document: dict[str, Any] = {
+        document: dict[str, JSON] = {
             "session": directory.name,
             "admitted": dict(Counter(event["e"] for event in result.events)),
             "minted": result.minted,
@@ -110,7 +111,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     if blocking:
         signal(f"{len(blocking)} violation(s); details in the JSON violations array")
     signal("Boundary section is yours: render it where the answer flips inside scope")
-    document: dict[str, Any] = {
+    document: dict[str, JSON] = {
         "session": directory.name,
         "mode": mode,
         "question": meta.get("question"),
@@ -173,7 +174,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="full",
         help="informal demotes draft blockers to advisories",
     )
-    note = commands.add_parser("note")
+    note = commands.add_parser(
+        "note", help="admit one round of leaves, sources, and closes"
+    )
     note.set_defaults(func=cmd_note)
     note.add_argument("session", help="session identifier; batch JSON on stdin")
     note.add_argument(
@@ -182,11 +185,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="read the batch from this file; retries cost one edit",
     )
     note.add_argument("--full", action="store_true", help="add the leaf dump")
-    check = commands.add_parser("check")
+    check = commands.add_parser(
+        "check", help="derive the drafting scaffold and any violations"
+    )
     check.set_defaults(func=cmd_check)
     check.add_argument("session", help="session identifier")
     check.add_argument("--full", action="store_true", help="add the leaf dump")
-    status = commands.add_parser("status")
+    status = commands.add_parser(
+        "status", help="counts, open leaves, and the next step"
+    )
     status.set_defaults(func=cmd_status)
     status.add_argument("session", help="session identifier")
     schema = commands.add_parser("schema", help="print the note batch shape")

@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from btm_corekit import (
+    JSON,
     Admission,
     Diagnostic,
     append_jsonl,
@@ -370,7 +371,7 @@ def cmd_note(args: argparse.Namespace) -> int:
     def expand(batch: dict[str, Any]) -> NoteResult:
         return expand_notes(batch, papers, log_count, pad_ids(session.root), records)
 
-    def commit(result: NoteResult) -> dict[str, Any]:
+    def commit(result: NoteResult) -> dict[str, JSON]:
         append_jsonl(session.notebook_path, result.records)
         everything = records + result.records
         return {

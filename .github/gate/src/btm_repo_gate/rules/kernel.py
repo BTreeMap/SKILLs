@@ -91,6 +91,7 @@ KERNEL_CLASSES = frozenset(
         "Cluster",
         "Digest",
         "Item",
+        "JSON",
         "Model",
         "Outcome",
         "Inline",
