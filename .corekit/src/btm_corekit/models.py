@@ -17,6 +17,7 @@ from pydantic import (
     ConfigDict,
     Field,
     StringConstraints,
+    TypeAdapter,
     ValidationError,
 )
 from pydantic_core import InitErrorDetails, PydanticCustomError
@@ -25,6 +26,7 @@ from btm_corekit.errors import CommandError
 from btm_corekit.verdicts import Diagnostic
 
 M = TypeVar("M", bound=BaseModel)
+T = TypeVar("T")
 
 HINT = "hint"  # a Diagnostic's hint rides in the pydantic error context
 
@@ -82,6 +84,9 @@ def _whole(raw: Any) -> Any:
 Count = Annotated[int, BeforeValidator(_whole), Field(ge=0)]
 """A non-negative tally: searches run, pages held."""
 
+Positive = Annotated[int, BeforeValidator(_whole), Field(ge=1)]
+"""A count that starts at one: a page number, an ordinal."""
+
 
 def where_of(loc: Sequence[str | int]) -> str:
     """`("objections", 0, "anchors", 1)` becomes `objections[0].anchors[1]`."""
@@ -110,6 +115,16 @@ def _loc_of(where: str) -> tuple[str | int, ...]:
         return ()
     parts = where.replace("[", ".").replace("]", "").split(".")
     return tuple(int(part) if part.isdigit() else part for part in parts)
+
+
+def parse_with(adapter: TypeAdapter[T], data: Any, what: str) -> T:
+    """`parse_model` for a shape no single class names: a discriminated union
+    of wire variants, decoded through its adapter."""
+    try:
+        return adapter.validate_python(data)
+    except ValidationError as err:
+        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
+        raise CommandError(f"{what}: {problems}") from err
 
 
 def parse_model(model: type[M], data: Mapping[str, Any], what: str) -> M:

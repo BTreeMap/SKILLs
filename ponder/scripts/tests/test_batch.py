@@ -187,9 +187,9 @@ class TestTotalRejection:
         batch = {"leaves": [{"kw": ["a", "b"], "q": "x", "origin": "invented"}]}
         result = expand_batch(Ledger(), batch, fixed_mint)
         [problem] = result.problems
-        # parse_enum supplies the kernel-wide phrasing; the hint keeps the
-        # schema fragment, which is where the vocabulary is spelled out.
-        assert "not a valid Origin" in problem.fix
+        # The field type names the vocabulary; the hint keeps the schema
+        # fragment, which is where the whole entry shape is spelled out.
+        assert "'frame'" in problem.fix
         assert "frame|spawned" in problem.hint
 
     def test_empty_batch_is_a_problem_not_a_crash(self):
@@ -204,7 +204,7 @@ class TestTotalRejection:
         result = expand_batch(
             Ledger(), {"leaves": [{"kw": ["!!"], "q": "x"}]}, fixed_mint
         )
-        assert any(p.where == "leaves[0]" for p in result.problems)
+        assert any(p.where == "leaves[0].kw[0]" for p in result.problems)
 
     def test_duplicate_keywords_in_one_batch_are_a_problem(self):
         batch = {"leaves": [{"kw": ["a", "b"], "q": "x"}, {"kw": ["a", "b"], "q": "y"}]}

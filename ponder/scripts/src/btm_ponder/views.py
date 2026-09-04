@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from btm_corekit import JSON, View
@@ -219,8 +220,5 @@ def scaffold(
 
 
 def counts_of(ledger: Ledger) -> dict[str, int]:
-    tally: dict[str, int] = {}
-    for leaf in ledger.leaves.values():
-        key = leaf_view(leaf.state)["state"]
-        tally[key] = tally.get(key, 0) + 1
-    return tally
+    """Each variant names itself, so this reads the tag."""
+    return dict(Counter(leaf.state.state for leaf in ledger.leaves.values()))

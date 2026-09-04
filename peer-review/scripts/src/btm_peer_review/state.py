@@ -1,34 +1,29 @@
-"""Records the ledger holds, their one decoder from disk, and the ledger value.
+"""Records the ledger holds and the ledger value.
 
 A record exists only through its parser, so every field a view reads is
 already inside the closed vocabulary and every cross-reference resolves.
+The wire shapes that build them live in `ledger`.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Annotated
 
-from pydantic import Field, model_validator
+from pydantic import Field, StringConstraints, model_validator
 
-from btm_corekit import (
-    Model,
-    NonEmpty,
-    parse_enum,
-    parse_model,
-    read_count,
-    read_opt_text,
-    read_text,
-    read_texts,
-    require,
-)
-from btm_peer_review.constants import Bank, Kind, Severity
+from btm_corekit import Model, NonEmpty, Positive, Trimmed, demand
+from btm_peer_review.constants import ANCHOR_CHARS_MAX, Bank, Kind, Severity
+
+Anchor = Annotated[
+    str, Trimmed, StringConstraints(min_length=1, max_length=ANCHOR_CHARS_MAX)
+]
+"""A quote long enough to locate and short enough to align: one sentence."""
 
 
 class Claim(Model):
     verbatim: NonEmpty
-    page: int  # page at admission; check re-resolves against live text
+    page: Positive  # page at admission; check re-resolves against live text
 
 
 class Quoted(Model):
@@ -40,6 +35,29 @@ class Missing(Model):
 
 
 Evidence = Quoted | Missing
+
+
+class Evidenced(Model):
+    """Carries one kind of evidence. Both wire shapes that build an objection
+    inherit it, so the law is stated once."""
+
+    anchors: tuple[Anchor, ...] = ()
+    missing: NonEmpty | None = None
+
+    @model_validator(mode="after")
+    def _one_kind_of_evidence(self) -> Evidenced:
+        if bool(self.anchors) == bool(self.missing):
+            raise ValueError(
+                "quote the paper or name what it omits, never both and never neither"
+            )
+        return self
+
+    @property
+    def evidence(self) -> Evidence:
+        """Total: the validator has already refused the other two shapes."""
+        if self.anchors:
+            return Quoted(anchors=self.anchors)
+        return Missing(what=demand(self.missing, "objection lacks evidence"))
 
 
 class Objection(Model):
@@ -63,52 +81,6 @@ class Objection(Model):
                 f"with {len(self.prior)}"
             )
         return self
-
-
-def claim_from_event(raw: Mapping[str, Any]) -> Claim:
-    return Claim(
-        verbatim=read_text(raw, "verbatim", "claim event"),
-        page=read_count(raw, "page", "claim event", minimum=1),
-    )
-
-
-def objection_from_event(
-    raw: Mapping[str, Any], claims: Mapping[str, Claim]
-) -> Objection:
-    """The decoder: disk shape to domain value, or a loud CommandError."""
-    kind = parse_enum(Kind, raw.get("kind"), "objection kind")
-    severity = parse_enum(Severity, raw.get("severity"), "objection severity")
-    text = read_text(raw, "text", "objection event")
-    claim = raw.get("claim")
-    require(
-        claim is None or claim in claims, f"objection cites unknown claim {claim!r}"
-    )
-    where = read_opt_text(raw, "where", "objection")
-    anchors = read_texts(raw, "anchors", "objection")
-    # Not a kernel reader: the requirement is disjunctive, so "needs a
-    # non-empty missing" would misstate it. Anchors satisfy it too.
-    missing = read_opt_text(raw, "missing", "objection")
-    evidence: Evidence
-    if anchors:
-        require(missing is None, "objection carries both anchors and missing")
-        evidence = Quoted(anchors=anchors)
-    else:
-        require(bool(missing), "objection lacks evidence")
-        evidence = Missing(what=missing or "")
-    prior = read_texts(raw, "prior", "objection")
-    return parse_model(
-        Objection,
-        {
-            "kind": kind,
-            "severity": severity,
-            "text": text,
-            "claim": claim,
-            "where": where,
-            "evidence": evidence,
-            "prior": prior,
-        },
-        "objection event",
-    )
 
 
 @dataclass(slots=True)

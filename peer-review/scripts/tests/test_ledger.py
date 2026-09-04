@@ -45,11 +45,11 @@ class TestDecoder:
     @pytest.mark.parametrize(
         ("fields", "message"),
         [
-            ({"kind": "vibes"}, "vocabulary"),
-            ({"severity": "huge"}, "vocabulary"),
+            ({"kind": "vibes"}, "kind: Input should be"),
+            ({"severity": "huge"}, "severity: Input should be"),
             ({"claim": "c9"}, "unknown claim"),
-            ({"anchors": [], "missing": None}, "lacks evidence"),
-            ({"missing": "x"}, "both anchors and missing"),
+            ({"anchors": [], "missing": None}, "quote the paper or name"),
+            ({"missing": "x"}, "never both"),
             ({"prior": ["doi:10.1/a"]}, "novelty kinds alone"),
             ({"kind": "first"}, "novelty kinds alone"),
         ],
@@ -59,7 +59,7 @@ class TestDecoder:
             replay(objection(**fields))
 
     def test_unknown_walk_bank_and_withdraw_target_fail(self):
-        with pytest.raises(CommandError, match="vocabulary"):
+        with pytest.raises(CommandError, match="bank: Input should be"):
             replay([{"e": "walk", "bank": "vibes"}])
         with pytest.raises(CommandError, match="unknown"):
             replay([{"e": "withdraw", "objection": "o9", "reason": "r"}])

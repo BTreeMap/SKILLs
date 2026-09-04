@@ -16,6 +16,7 @@ from typing import Any
 import httpx
 
 from btm_corekit import (
+    OPENALEX_KEY_ENV,
     CommandError,
     Keyed,
     Trial,
@@ -24,7 +25,6 @@ from btm_corekit import (
     signal,
     user_agent,
 )
-from btm_corekit.origin import OPENALEX_KEY_ENV
 from btm_lit_review.constants import (
     DOI_HOST,
     HTTP_BAD_REQUEST,

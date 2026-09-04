@@ -6,27 +6,27 @@ ledger changes only when the problem list is empty.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, TypeVar
+from typing import Annotated, Any
 
-from btm_corekit import Admission, Diagnostic, Pool, field_text
-from btm_peer_review.constants import (
-    ANCHOR_CHARS_MAX,
-    BANKS,
-    CLAIM_WORDS_MAX,
-    Bank,
-    Kind,
-    Severity,
+from pydantic import AfterValidator, ConfigDict, Field
+
+from btm_corekit import (
+    Admission,
+    Diagnostic,
+    Model,
+    Named,
+    NonEmpty,
+    Pool,
+    salvage,
 )
+from btm_peer_review.constants import BANKS, CLAIM_WORDS_MAX, Bank, Kind, Severity
 from btm_peer_review.ledger import apply
-from btm_peer_review.state import Ledger
+from btm_peer_review.state import Evidenced, Ledger
 from btm_peer_review.store import Corpus
 from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim
 
-E = TypeVar("E")
-
-BATCH_KEYS = ("claims", "objections", "walks", "withdraws")
 SCHEMA: dict[str, str] = {
     "claims": '{"kw": ["two", "words"], "verbatim": "the claim as the paper '
     'states it, one sentence"}',
@@ -41,9 +41,56 @@ SCHEMA: dict[str, str] = {
     '"note": "what the walk found or ruled out"}',
     "withdraws": '{"objection": "<objection ref>", "reason": "why it no longer holds"}',
 }
-KIND_HINT = ", ".join(f"{bank}: {' '.join(kinds)}" for bank, kinds in BANKS.items())
-SEVERITY_HINT = ", ".join(Severity)
-BANK_HINT = ", ".join(Bank)
+
+
+def _one_sentence(text: str) -> str:
+    if len(text.split()) > CLAIM_WORDS_MAX:
+        raise ValueError(f"shorten to {CLAIM_WORDS_MAX} words or fewer")
+    return text
+
+
+class ClaimEntry(Named):
+    verbatim: Annotated[NonEmpty, AfterValidator(_one_sentence)]
+
+
+class ObjectionEntry(Named, Evidenced):
+    kind: Kind
+    severity: Severity
+    text: NonEmpty
+    claim: str | None = None
+    where: str | None = None
+    prior: tuple[NonEmpty, ...] = ()
+    from_: tuple[str, ...] = Field(default=(), alias="from")
+
+
+class WalkEntry(Model):
+    bank: Bank
+    note: str = ""
+
+
+class WithdrawEntry(Model):
+    objection: NonEmpty
+    reason: NonEmpty
+
+
+Rows = tuple[Mapping[str, Any], ...]
+
+
+class NoteBatch(Model):
+    """The container. Rows stay opaque here and decode one at a time, so a
+    row with a bad field still lets its neighbours reach the checks that need
+    the paper and the corpus. Extras are ignored here and named by
+    `known_keys`, so one unknown key cannot swallow the whole batch."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    claims: Rows = ()
+    objections: Rows = ()
+    walks: Rows = ()
+    withdraws: Rows = ()
+
+
+BATCH_KEYS = tuple(NoteBatch.model_fields)
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,13 +130,6 @@ class _Admission(Admission):
         if self.context.paper is None:
             self.fail(where, "ingest the paper text before quoting it")
             return None
-        if len(quote) > ANCHOR_CHARS_MAX:
-            self.fail(
-                where,
-                f"shorten the quote to {ANCHOR_CHARS_MAX} characters or fewer",
-                "an anchor is the sentence that carries the problem",
-            )
-            return None
         match self.context.paper.resolve(quote):
             case Verbatim() | Fuzzy() as hit:
                 return hit
@@ -104,55 +144,41 @@ class _Admission(Admission):
                 )
         return None
 
-    def take_claims(self, entries: Any) -> None:
-        for index, entry in enumerate(self.rows(entries, "claims", SCHEMA)):
+    def take_claims(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"claims[{index}]"
-            verbatim = field_text(entry, "verbatim")
-            if verbatim is None:
-                self.fail(where, 'add "verbatim": the claim sentence as printed')
+            entry = self.decode(ClaimEntry, row, where, SCHEMA["claims"])
+            if entry is None:
                 continue
-            if len(verbatim.split()) > CLAIM_WORDS_MAX:
-                self.fail(
-                    where, f"shorten verbatim to {CLAIM_WORDS_MAX} words or fewer"
-                )
-                continue
-            hit = self.anchor(verbatim, f"{where}.verbatim")
+            hit = self.anchor(entry.verbatim, f"{where}.verbatim")
             full = self.mint_id(entry, self.claims, where)
             if hit is None or full is None:
                 continue
             self.events.append(
-                {"e": "claim", "id": full, "verbatim": verbatim, "page": hit.page}
+                {
+                    "e": "claim",
+                    "id": full,
+                    "verbatim": entry.verbatim,
+                    "page": hit.page,
+                }
             )
 
-    def take_objections(self, entries: Any) -> None:
-        for index, entry in enumerate(self.rows(entries, "objections", SCHEMA)):
+    def take_objections(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"objections[{index}]"
-            ok = True
-            kind = self.vocabulary(Kind, entry, "kind", f"{where}.kind", KIND_HINT)
-            severity = self.vocabulary(
-                Severity, entry, "severity", f"{where}.severity", SEVERITY_HINT
-            )
-            text = field_text(entry, "text")
-            if text is None:
-                self.fail(f"{where}.text", "state the objection and what resolves it")
+            entry = self.decode(ObjectionEntry, row, where, SCHEMA["objections"])
+            if entry is None:
+                self.quotes(salvage(row, "anchors"), where)
+                continue
+            ok = self.pad_links(entry.from_, where)
+            ok = self.quotes(entry.anchors, where) and ok
             claim = None
-            if (ref := field_text(entry, "claim")) is not None:
-                claim = self.resolve_ref(ref, self.claims, f"{where}.claim")
+            if entry.claim is not None:
+                claim = self.resolve_ref(entry.claim, self.claims, f"{where}.claim")
                 ok = ok and claim is not None
-            anchors = self.quotes(entry, where)
-            missing = field_text(entry, "missing")
-            if anchors is None:
-                ok = False
-            elif not anchors and missing is None:
-                self.fail(
-                    where, 'add "anchors": [quotes] or "missing": what the paper omits'
-                )
-                ok = False
-            links = self.links(entry, where)
-            prior = entry.get("prior") or []
-            if kind is not None and kind.bank is Bank.NOVELTY:
-                ok = self.take_prior(prior, where) and ok
-            elif prior:
+            if entry.kind.bank is Bank.NOVELTY:
+                ok = self.take_prior(entry.prior, where) and ok
+            elif entry.prior:
                 self.fail(
                     f"{where}.prior",
                     "prior keys belong to novelty kinds; drop them here",
@@ -160,55 +186,34 @@ class _Admission(Admission):
                 )
                 ok = False
             full = self.mint_id(entry, self.objections, where)
-            if not ok or None in (full, kind, severity, text, links):
+            if not ok or full is None:
                 continue
             self.events.append(
                 {
                     "e": "objection",
                     "id": full,
-                    "kind": kind,
-                    "severity": severity,
-                    "text": text,
+                    "kind": entry.kind,
+                    "severity": entry.severity,
+                    "text": entry.text,
                     "claim": claim,
-                    "where": field_text(entry, "where"),
-                    "anchors": anchors,
-                    "missing": missing if not anchors else None,
-                    "prior": [str(p).strip() for p in prior],
-                    "from": list(links or ()),
+                    "where": entry.where,
+                    "anchors": list(entry.anchors),
+                    "missing": entry.missing,
+                    "prior": list(entry.prior),
+                    "from": list(entry.from_),
                 }
             )
 
-    def vocabulary(
-        self,
-        cls: Callable[[Any], E],
-        entry: dict[str, Any],
-        key: str,
-        where: str,
-        hint: str,
-    ) -> E | None:
-        try:
-            return cls(field_text(entry, key))
-        except ValueError:
-            self.fail(where, f"use one of the {key} vocabulary", hint)
-            return None
-
-    def quotes(self, entry: dict[str, Any], where: str) -> list[str] | None:
-        """Anchors as stripped strings, each resolved; None when malformed."""
-        anchors = entry.get("anchors") or []
-        if not isinstance(anchors, list) or not all(
-            isinstance(a, str) for a in anchors
-        ):
-            self.fail(f"{where}.anchors", "anchors is a list of verbatim quotes")
-            return None
-        stripped = [a.strip() for a in anchors]
+    def quotes(self, anchors: Sequence[str], where: str) -> bool:
+        """Every anchor resolves against the paper as ingested."""
         hits = [
-            self.anchor(quote, f"{where}.anchors[{a_index}]")
-            for a_index, quote in enumerate(stripped)
+            self.anchor(quote, f"{where}.anchors[{index}]")
+            for index, quote in enumerate(anchors)
         ]
-        return stripped if all(hit is not None for hit in hits) else None
+        return all(hit is not None for hit in hits)
 
-    def take_prior(self, prior: Any, where: str) -> bool:
-        if not isinstance(prior, list) or not prior:
+    def take_prior(self, prior: Sequence[str], where: str) -> bool:
+        if not prior:
             self.fail(
                 f"{where}.prior",
                 "a novelty objection names the prior work as corpus keys",
@@ -226,7 +231,7 @@ class _Admission(Admission):
         ok = True
         year = self.context.year
         for p_index, key in enumerate(prior):
-            record = corpus.lookup(str(key))
+            record = corpus.lookup(key)
             spot = f"{where}.prior[{p_index}]"
             if record is None:
                 self.fail(spot, f"'{key}' is not in the linked corpus")
@@ -244,29 +249,27 @@ class _Admission(Admission):
                 )
         return ok
 
-    def take_walks(self, entries: Any) -> None:
-        for index, entry in enumerate(self.rows(entries, "walks", SCHEMA)):
-            bank = self.vocabulary(
-                Bank, entry, "bank", f"walks[{index}].bank", BANK_HINT
-            )
-            if bank is None:
-                continue
-            self.events.append(
-                {"e": "walk", "bank": bank, "note": field_text(entry, "note") or ""}
-            )
+    def take_walks(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
+            entry = self.decode(WalkEntry, row, f"walks[{index}]", SCHEMA["walks"])
+            if entry is not None:
+                self.events.append(
+                    {"e": "walk", "bank": entry.bank, "note": entry.note}
+                )
 
-    def take_withdraws(self, entries: Any) -> None:
-        for index, entry in enumerate(self.rows(entries, "withdraws", SCHEMA)):
+    def take_withdraws(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"withdraws[{index}]"
-            ref = field_text(entry, "objection")
-            reason = field_text(entry, "reason")
-            if ref is None or reason is None:
-                self.fail(where, 'add "objection": <ref> and "reason": why it fails')
+            entry = self.decode(WithdrawEntry, row, where, SCHEMA["withdraws"])
+            if entry is None:
                 continue
-            full = self.resolve_ref(ref, self.objections, f"{where}.objection")
-            if full is None:
-                continue
-            self.events.append({"e": "withdraw", "objection": full, "reason": reason})
+            full = self.resolve_ref(
+                entry.objection, self.objections, f"{where}.objection"
+            )
+            if full is not None:
+                self.events.append(
+                    {"e": "withdraw", "objection": full, "reason": entry.reason}
+                )
 
 
 def expand_batch(
@@ -277,11 +280,13 @@ def expand_batch(
     pad: Iterable[str] = (),
 ) -> NoteResult:
     admission = _Admission(ledger, context, mint, pad)
-    admission.keys(batch, BATCH_KEYS)
-    admission.take_claims(batch.get("claims"))
-    admission.take_objections(batch.get("objections"))
-    admission.take_walks(batch.get("walks"))
-    admission.take_withdraws(batch.get("withdraws"))
+    admission.known_keys(batch, NoteBatch)
+    note = admission.decode(NoteBatch, batch)
+    if note is not None:
+        admission.take_claims(note.claims)
+        admission.take_objections(note.objections)
+        admission.take_walks(note.walks)
+        admission.take_withdraws(note.withdraws)
     if admission.clean and not admission.events:
         admission.fail("$", "add at least one entry: the batch records nothing")
     result = NoteResult(

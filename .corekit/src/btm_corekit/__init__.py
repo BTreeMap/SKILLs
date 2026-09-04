@@ -9,7 +9,7 @@ fails loudly at environment build.
 
 from __future__ import annotations
 
-from btm_corekit.admission import Admission, Pool, field_text, suggest
+from btm_corekit.admission import Admission, Named, Pool, salvage, suggest
 from btm_corekit.channels import JSON, emit, signal
 from btm_corekit.cli import (
     PAD_SCHEMA,
@@ -64,13 +64,17 @@ from btm_corekit.models import (
     Keyword,
     Model,
     NonEmpty,
+    Positive,
     Slug,
+    Trimmed,
     diagnostics,
     dump,
     parse_model,
+    parse_with,
     refuse,
 )
 from btm_corekit.origin import (
+    OPENALEX_KEY_ENV,
     Contact,
     CustomAgent,
     Keyed,
@@ -108,6 +112,7 @@ __all__ = [
     "JSON",
     "KEYWORD_RANGE",
     "MAX_EVENTS",
+    "OPENALEX_KEY_ENV",
     "PAD_SCHEMA",
     "REFS_SCHEMA",
     "Admission",
@@ -129,18 +134,21 @@ __all__ = [
     "Keyed",
     "Keyword",
     "Model",
+    "Named",
     "NoMatch",
     "NonEmpty",
     "OpenAlexAccess",
     "Outcome",
     "Parser",
     "Pool",
+    "Positive",
     "Recovered",
     "RequestIdentity",
     "Resolution",
     "SessionStore",
     "Slug",
     "Trial",
+    "Trimmed",
     "UpstreamError",
     "View",
     "advise",
@@ -159,7 +167,6 @@ __all__ = [
     "dump",
     "eliminate",
     "emit",
-    "field_text",
     "gated",
     "heading_words",
     "is_digits",
@@ -175,6 +182,7 @@ __all__ = [
     "pad_ids",
     "parse_enum",
     "parse_model",
+    "parse_with",
     "polite_params",
     "prefixed_number",
     "read_batch",
@@ -191,6 +199,7 @@ __all__ = [
     "resolve",
     "run_cli",
     "runs",
+    "salvage",
     "signal",
     "slugify",
     "state_root",

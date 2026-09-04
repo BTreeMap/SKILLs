@@ -162,7 +162,7 @@ class TestNoteAndCheck:
         )
         assert code == 1
         wheres = {problem["where"] for problem in document["rejected"]}
-        assert {"leaves[0]", "sweeps[0].survivors[0]"} <= wheres
+        assert {"leaves[0].q", "sweeps[0].survivors[0]"} <= wheres
 
     def test_note_reads_a_batch_file(self, capsys, tmp_path, monkeypatch):
         session = opened(capsys)

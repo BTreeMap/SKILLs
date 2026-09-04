@@ -1,21 +1,21 @@
 """The batch gate's shared mechanics: problems accumulate, nothing raises.
 
-A member subclasses Admission and adds its own record semantics; what lives
-here is the part every gate repeats: unknown keys and fields, list shape,
-reference resolution with did-you-mean, keyword minting with duplicate and
-band checks, and pad-provenance links. Every check is O(entry) or
-O(pool) with pools in the low hundreds.
+A member subclasses Admission and adds its own record semantics. Field shape
+belongs to the entry models; what lives here is what a model cannot see:
+resolving a reference against a pool with did-you-mean, minting an id with
+duplicate and band checks, and proving a pad link exists. Every check is
+O(entry) or O(pool) with pools in the low hundreds.
 """
 
 from __future__ import annotations
 
 import difflib
 import heapq
-from collections.abc import Callable, Collection, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import ValidationError
+from pydantic import ValidationError, model_validator
 
 from btm_corekit.errors import CommandError
 from btm_corekit.identifiers import (
@@ -28,16 +28,49 @@ from btm_corekit.identifiers import (
     resolve,
     slugify,
 )
-from btm_corekit.models import M, diagnostics
+from btm_corekit.models import Keyword, M, Model, Trimmed, diagnostics
 from btm_corekit.verdicts import Diagnostic
 
 Minter = Callable[[Iterable[str]], str]
 
 
-def field_text(entry: Mapping[str, Any], key: str) -> str | None:
-    """A non-empty string field, stripped; anything else reads as absent."""
-    value = entry.get(key)
-    return value.strip() if isinstance(value, str) and value.strip() else None
+class Named(Model):
+    """An entry that mints its own id: two or three keywords, or one stem."""
+
+    kw: tuple[Keyword, ...] = ()
+    ref: Annotated[str, Trimmed] | None = None
+
+    @property
+    def words(self) -> tuple[str, ...]:
+        return (self.ref,) if self.ref else self.kw
+
+    @model_validator(mode="after")
+    def _names_itself(self) -> Named:
+        if not self.words:
+            raise ValueError('add "kw": ["two", "words"]')
+        return self
+
+
+def salvage(row: Mapping[str, Any], key: str) -> tuple[str, ...]:
+    """The strings under `key` in a row too malformed to decode.
+
+    A value checked against something outside the row, a corpus key or a
+    quote, is still checkable when its neighbours are wrong, and one
+    rejection has to carry every fix.
+    """
+    raw = row.get(key)
+    if not isinstance(raw, list):
+        return ()
+    return tuple(item for item in raw if isinstance(item, str))
+
+
+def _at(outer: str, inner: str) -> str:
+    """Nest one location inside another; `$` is the whole payload."""
+    if inner == "$":
+        return outer
+    if outer == "$":
+        return inner
+    return f"{outer}.{inner}"
 
 
 def suggest(
@@ -110,59 +143,41 @@ class Admission:
     def fail(self, where: str, fix: str, hint: str | None = None) -> None:
         self.problems.append(Diagnostic(where, fix, hint))
 
-    def keys(self, batch: Mapping[str, Any], allowed: Collection[str]) -> None:
-        for key in batch:
+    def decode(
+        self,
+        model: type[M],
+        payload: Any,
+        where: str = "$",
+        hint: str | None = None,
+    ) -> M | None:
+        """A payload as its model, or every located problem recorded.
+
+        The model's fields carry the shape, so one call replaces the hand
+        checks for unknown keys, list shape, and every field's type.
+        Locations nest, and `hint` carries the entry's schema fragment for
+        problems pydantic states without one.
+        """
+        try:
+            return model.model_validate(payload)
+        except ValidationError as err:
+            for problem in diagnostics(err):
+                self.fail(_at(where, problem.where), problem.fix, problem.hint or hint)
+            return None
+
+    def known_keys(self, payload: Mapping[str, Any], container: type[Model]) -> None:
+        """Top-level keys the container does not declare.
+
+        The container ignores extras so its rows still decode; naming them
+        here keeps an unknown key from silently doing nothing.
+        """
+        allowed = set(container.model_fields)
+        for key in payload:
             if key not in allowed:
                 self.fail(
                     key,
                     f"remove or rename the unknown key '{key}'",
-                    f"valid keys: {', '.join(allowed)}",
+                    f"valid keys: {', '.join(sorted(allowed))}",
                 )
-
-    def rows(
-        self, entries: Any, key: str, schema: Mapping[str, str] | None = None
-    ) -> list[dict[str, Any]]:
-        """The entries under one batch key as objects; a wrong shape is one
-        problem and an empty list, so the other keys still run."""
-        if entries is None:
-            return []
-        if not isinstance(entries, list) or not all(
-            isinstance(e, dict) for e in entries
-        ):
-            self.fail(
-                key, f"{key} is a list of objects", schema.get(key) if schema else None
-            )
-            return []
-        return entries
-
-    def shape(
-        self, entry: Mapping[str, Any], allowed: Collection[str], where: str
-    ) -> bool:
-        clean = True
-        for name in sorted(set(entry) - set(allowed)):
-            self.fail(
-                where,
-                f"remove the unknown field '{name}'",
-                f"gated fields: {', '.join(sorted(allowed))}; free-form notes "
-                "belong on the pad (jot)",
-            )
-            clean = False
-        return clean
-
-    def decode(self, model: type[M], entry: Any, where: str) -> M | None:
-        """One entry as its model, or every located problem recorded.
-
-        The model's fields and `extra="forbid"` carry the shape; each
-        problem's location is prefixed with the entry's own, so a fix names
-        the field to edit.
-        """
-        try:
-            return model.model_validate(entry)
-        except ValidationError as err:
-            for problem in diagnostics(err):
-                spot = where if problem.where == "$" else f"{where}.{problem.where}"
-                self.fail(spot, problem.fix, problem.hint)
-            return None
 
     def resolve_ref(self, ref: str, pool: Pool, where: str) -> str | None:
         match resolve(ref, pool.ids):
@@ -192,19 +207,11 @@ class Admission:
                 )
         return None
 
-    def mint_id(self, entry: Mapping[str, Any], pool: Pool, where: str) -> str | None:
-        """Mint from `ref` (one explicit stem) or `kw` (two or three words)."""
+    def mint_id(self, entry: Named, pool: Pool, where: str) -> str | None:
+        """Mint from the entry's own words; a batch may not name one twice."""
         if self.mint is None:
             raise CommandError("this admission mints nothing")
-        explicit = field_text(entry, "ref")
-        words = [explicit] if explicit else entry.get("kw")
-        if (
-            not isinstance(words, list)
-            or not words
-            or not all(isinstance(w, str) for w in words)
-        ):
-            self.fail(where, 'add "kw": ["two", "words"]')
-            return None
+        words = entry.words
         try:
             stem = slugify(words)
         except CommandError as err:
@@ -222,14 +229,10 @@ class Admission:
         pool.fresh.add(full)
         return full
 
-    def links(self, entry: Mapping[str, Any], where: str) -> tuple[str, ...] | None:
-        """Pad-provenance ids under `from`, each one an existing pad entry."""
-        raw = entry.get("from") or []
-        if not isinstance(raw, list) or not all(isinstance(p, str) for p in raw):
-            self.fail(f"{where}.from", "from is a list of pad ids like j12")
-            return None
+    def pad_links(self, ids: Sequence[str], where: str) -> bool:
+        """Every provenance id names an entry the pad actually holds."""
         clean = True
-        for index, pad_id in enumerate(raw):
+        for index, pad_id in enumerate(ids):
             if pad_id not in self.pad:
                 self.fail(
                     f"{where}.from[{index}]",
@@ -237,4 +240,4 @@ class Admission:
                     "recall lists pad ids",
                 )
                 clean = False
-        return tuple(raw) if clean else None
+        return clean

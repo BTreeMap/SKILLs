@@ -13,12 +13,22 @@ import argparse
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Annotated, Any, Literal
+
+from pydantic import (
+    AfterValidator,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    StringConstraints,
+)
 
 from btm_corekit import (
     JSON,
     Admission,
     Diagnostic,
+    Model,
+    NonEmpty,
     append_jsonl,
     gated,
     keywords_of,
@@ -26,9 +36,10 @@ from btm_corekit import (
     pad_ids,
     prefixed_number,
     read_jsonl,
+    salvage,
     suggest,
 )
-from btm_lit_review.constants import READ_RANK
+from btm_lit_review.constants import READ_RANK, ReadLevel
 from btm_lit_review.paper import (
     Paper,
     normalize_arxiv_id,
@@ -38,7 +49,6 @@ from btm_lit_review.paper import (
 )
 from btm_lit_review.session import Session, load_papers, open_session
 
-NOTE_KEYS = ("findings", "gaps")
 SCHEMA: dict[str, str] = {
     "findings": '{"claim": "...", "support": ["<paper key>" or {"key": "...", '
     '"needs": "abstract|full-text"}], "from": ["<pad id>"], '
@@ -47,10 +57,76 @@ SCHEMA: dict[str, str] = {
     '"watch": "word|phrase|... matched literally in title+abstract", '
     '"from": ["<pad id>"], "supersedes": "<gap id>"}',
 }
-FINDING_FIELDS = frozenset({"claim", "support", "from", "supersedes"})
-GAP_FIELDS = frozenset({"statement", "probes", "watch", "from", "supersedes"})
 ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r"}
 WATCH_MAX = 200  # a watch is a few words; brief scans it per paper
+
+
+def _has_terms(watch: str) -> str:
+    if not watch_terms(watch):
+        raise ValueError("write the watch as words separated by |")
+    return watch
+
+
+Watch = Annotated[
+    str, StringConstraints(max_length=WATCH_MAX), AfterValidator(_has_terms)
+]
+
+
+def _cited(row: Mapping[str, Any]) -> tuple[str, ...]:
+    """The support keys of a row too malformed to decode; a key resolves
+    against the corpus, so it stays checkable."""
+    raw = row.get("support")
+    if not isinstance(raw, list):
+        return ()
+    tokens = (item.get("key") if isinstance(item, dict) else item for item in raw)
+    return tuple(token for token in tokens if isinstance(token, str))
+
+
+def _as_support(raw: Any) -> Any:
+    """A support entry is a key, or a key with the read level it needs."""
+    return {"key": raw} if isinstance(raw, str) else raw
+
+
+class SupportEntry(Model):
+    key: NonEmpty
+    needs: Literal[ReadLevel.ABSTRACT, ReadLevel.FULL_TEXT] | None = None
+
+
+Support = Annotated[SupportEntry, BeforeValidator(_as_support)]
+
+
+class Linked(Model):
+    """What both note kinds carry: provenance and the record they replace."""
+
+    from_: tuple[str, ...] = Field(default=(), alias="from")
+    supersedes: str | None = None
+
+
+class FindingEntry(Linked):
+    claim: NonEmpty
+    support: tuple[Support, ...] = Field(min_length=1)
+
+
+class GapEntry(Linked):
+    statement: NonEmpty
+    probes: tuple[str, ...] = ()
+    watch: Watch | None = None
+
+
+Rows = tuple[Mapping[str, Any], ...]
+
+
+class NoteBatch(Model):
+    """The container. Rows stay opaque here and decode one at a time, so a
+    row with a bad field still lets its neighbours reach the corpus checks."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    findings: Rows = ()
+    gaps: Rows = ()
+
+
+NOTE_KEYS = tuple(NoteBatch.model_fields)
 
 
 def watch_terms(watch: str) -> list[str]:
@@ -217,127 +293,104 @@ class _Admission(Admission):
         )
         return None
 
-    def take_links(self, entry: Mapping[str, Any], kind: str, where: str) -> bool:
-        clean = self.links(entry, where) is not None
-        if target := entry.get("supersedes"):
+    def take_links(self, entry: Linked, kind: str, where: str) -> bool:
+        clean = self.pad_links(entry.from_, where)
+        if entry.supersedes:
             known = self.ids[kind]
-            if target not in known:
+            if entry.supersedes not in known:
                 self.fail(
                     f"{where}.supersedes",
-                    f"replace '{target}': no {kind} has this id",
+                    f"replace '{entry.supersedes}': no {kind} has this id",
                     hint=f"existing {kind} ids: {', '.join(sorted(known)) or 'none'}",
                 )
                 clean = False
         return clean
 
-    def admit(
-        self, kind: str, record: dict[str, Any], entry: Mapping[str, Any]
-    ) -> None:
+    def admit(self, kind: str, record: dict[str, Any], entry: Linked) -> None:
         record["e"] = kind
         self.counts[kind] += 1
         record["id"] = f"{ID_PREFIX[kind]}{self.counts[kind]}"
         self.ids[kind].add(record["id"])
         record["t"] = now_iso()
-        if entry.get("from"):
-            record["from"] = list(entry["from"])
-        if entry.get("supersedes"):
-            record["supersedes"] = entry["supersedes"]
+        if entry.from_:
+            record["from"] = list(entry.from_)
+        if entry.supersedes:
+            record["supersedes"] = entry.supersedes
         self.records.append(record)
         self.admitted[f"{kind}s"].append(record["id"])
 
-    def take_findings(self, entries: Any) -> None:
-        for index, entry in enumerate(self.rows(entries, "findings", SCHEMA)):
+    def take_findings(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"findings[{index}]"
-            clean = self.shape(entry, FINDING_FIELDS, where)
-            claim = str(entry.get("claim") or "").strip()
-            if not claim:
-                self.fail(where, "state the claim", hint=SCHEMA["findings"])
-                clean = False
-            support = self._support(entry.get("support"), where)
-            clean = clean and support is not None
+            entry = self.decode(FindingEntry, row, where, SCHEMA["findings"])
+            if entry is None:
+                for position, token in enumerate(_cited(row)):
+                    self.resolve_key(token, f"{where}.support[{position}]")
+                continue
+            support = self._support(entry.support, where)
+            clean = support is not None
             clean = self.take_links(entry, "finding", where) and clean
             if clean:
-                self.admit("finding", {"claim": claim, "support": support}, entry)
+                self.admit("finding", {"claim": entry.claim, "support": support}, entry)
 
-    def _support(self, raw: Any, where: str) -> list[dict[str, str]] | None:
-        if not isinstance(raw, list) or not raw:
-            self.fail(
-                where,
-                "cite at least one supporting paper",
-                hint=SCHEMA["findings"],
-            )
-            return None
+    def _support(
+        self, entries: tuple[SupportEntry, ...], where: str
+    ) -> list[dict[str, str]] | None:
         parsed: list[dict[str, str]] = []
         clean = True
-        for j, item in enumerate(raw):
-            spot = f"{where}.support[{j}]"
-            token = item.get("key") if isinstance(item, dict) else item
-            key = self.resolve_key(str(token or ""), spot)
+        for index, item in enumerate(entries):
+            spot = f"{where}.support[{index}]"
+            key = self.resolve_key(item.key, spot)
             if key is None:
                 clean = False
                 continue
-            needs = item.get("needs") if isinstance(item, dict) else None
-            if needs is None:
-                paper = self.papers[key]
-                needs = paper.read_level if paper.read_level != "none" else "abstract"
-            elif needs not in ("abstract", "full-text"):
-                self.fail(
-                    spot,
-                    f"replace needs '{needs}'",
-                    hint="needs is the honesty floor: abstract or full-text",
-                )
-                clean = False
-                continue
+            needs = item.needs or self._floor(key)
             parsed.append({"key": key, "needs": needs})
         return parsed if clean else None
 
-    def take_gaps(self, entries: Any) -> None:
-        for index, entry in enumerate(self.rows(entries, "gaps", SCHEMA)):
+    def _floor(self, key: str) -> ReadLevel:
+        """An uncited read level defaults to how deeply the paper was read,
+        and to abstract when it has not been read at all."""
+        level = self.papers[key].read_level
+        return ReadLevel.ABSTRACT if level is ReadLevel.NONE else level
+
+    def take_gaps(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"gaps[{index}]"
-            clean = self.shape(entry, GAP_FIELDS, where)
-            statement = str(entry.get("statement") or "").strip()
-            if not statement:
-                self.fail(where, "state the absence claimed", hint=SCHEMA["gaps"])
-                clean = False
-            probes = list(entry.get("probes") or [])
-            for j, probe in enumerate(probes):
-                number = prefixed_number(str(probe), "s")
-                if number is None or not 1 <= number <= self.log_count:
-                    self.fail(
-                        f"{where}.probes[{j}]",
-                        f"replace '{probe}': no search log entry has this id",
-                        hint=f"the log holds s1..s{self.log_count}",
-                    )
-                    clean = False
-            if not probes:
+            entry = self.decode(GapEntry, row, where, SCHEMA["gaps"])
+            if entry is None:
+                self.probes(salvage(row, "probes"), where)
+                continue
+            clean = self.probes(entry.probes, where)
+            if not entry.probes:
                 self.advisories.append(
                     f"{where}: no probe evidence; run the null search and cite "
                     "its log id"
                 )
-            watch = entry.get("watch")
-            if watch is not None and (
-                not isinstance(watch, str)
-                or len(watch) > WATCH_MAX
-                or not watch_terms(watch)
-            ):
-                self.fail(
-                    f"{where}.watch",
-                    f"write the watch as words separated by |, under {WATCH_MAX} "
-                    "characters",
-                    hint="the words a challenger would use in its title or abstract",
-                )
-                clean = False
-                watch = None
             clean = self.take_links(entry, "gap", where) and clean
             if clean:
                 record: dict[str, Any] = {
-                    "statement": statement,
-                    "probes": probes,
+                    "statement": entry.statement,
+                    "probes": list(entry.probes),
                     "seen": self.log_count,
                 }
-                if watch:
-                    record["watch"] = watch
+                if entry.watch:
+                    record["watch"] = entry.watch
                 self.admit("gap", record, entry)
+
+    def probes(self, probes: Sequence[str], where: str) -> bool:
+        """Every probe names a search the log actually holds."""
+        clean = True
+        for index, probe in enumerate(probes):
+            number = prefixed_number(probe, "s")
+            if number is None or not 1 <= number <= self.log_count:
+                self.fail(
+                    f"{where}.probes[{index}]",
+                    f"replace '{probe}': no search log entry has this id",
+                    hint=f"the log holds s1..s{self.log_count}",
+                )
+                clean = False
+        return clean
 
 
 def expand_notes(
@@ -349,9 +402,11 @@ def expand_notes(
 ) -> NoteResult:
     """Expand one note batch into records, collecting every problem."""
     admission = _Admission(papers, log_count, pad, existing)
-    admission.keys(batch, NOTE_KEYS)
-    admission.take_findings(batch.get("findings"))
-    admission.take_gaps(batch.get("gaps"))
+    admission.known_keys(batch, NoteBatch)
+    note = admission.decode(NoteBatch, batch)
+    if note is not None:
+        admission.take_findings(note.findings)
+        admission.take_gaps(note.gaps)
     if not admission.records and admission.clean:
         admission.fail("$", "add at least one entry: the batch records nothing")
     return NoteResult(

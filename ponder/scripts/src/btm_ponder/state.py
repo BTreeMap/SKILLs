@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import Field, model_validator
 
@@ -46,7 +47,18 @@ class Mode(StrEnum):
     INFORMAL = "informal"
 
 
-CLOSE_STATES = ("retrieved", "refuted", "unresolved", "retired", "folded")
+class CloseState(StrEnum):
+    """How a leaf ends. `folded` was once spelled as retired with reason
+    folded; the close decoder still reads that."""
+
+    RETRIEVED = "retrieved"
+    REFUTED = "refuted"
+    UNRESOLVED = "unresolved"
+    RETIRED = "retired"
+    FOLDED = "folded"
+
+
+CLOSE_STATES = tuple(CloseState)
 # The validation surfaces read their vocabulary off the type, so a variant
 # cannot be added in one place and forgotten in the other.
 SOURCE_CLASSES = tuple(SourceClass)
@@ -56,32 +68,39 @@ UNRESOLVED_REASONS = tuple(Reason)
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 
 
+# Each variant names itself, so a count or a view reads the tag rather than
+# rebuilding a dict to look at one key.
 class Open(Model):
-    pass
+    state: Literal["open"] = "open"
 
 
 class Retrieved(Model):
+    state: Literal[CloseState.RETRIEVED] = CloseState.RETRIEVED
     sources: tuple[Slug, ...] = Field(min_length=1)
     premise: str = ""  # the claim, one line; comes back in the check scaffold
     detail: str = ""
 
 
 class Refuted(Model):
+    state: Literal[CloseState.REFUTED] = CloseState.REFUTED
     sources: tuple[Slug, ...] = Field(min_length=1)
     premise: NonEmpty  # what the leaf assumed that evidence contradicts
     detail: str = ""
 
 
 class Unresolved(Model):
+    state: Literal[CloseState.UNRESOLVED] = CloseState.UNRESOLVED
     reason: Reason
     detail: NonEmpty
 
 
 class Retired(Model):
+    state: Literal[CloseState.RETIRED] = CloseState.RETIRED
     detail: NonEmpty  # why the leaf fails to change the conclusion
 
 
 class Folded(Model):
+    state: Literal[CloseState.FOLDED] = CloseState.FOLDED
     into: Slug  # the retrieved leaf that absorbed this one
 
 

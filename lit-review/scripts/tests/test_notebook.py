@@ -88,7 +88,7 @@ class TestAdmission:
         )
         wheres = {problem.where for problem in result.problems}
         assert {
-            "findings[0]",
+            "findings[0].claim",
             "findings[0].support[0]",
             "gaps[0].probes[0]",
             "gaps[0].watch",

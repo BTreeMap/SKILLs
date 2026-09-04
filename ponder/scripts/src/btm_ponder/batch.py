@@ -8,29 +8,40 @@ the ledger changes only when the problem list is empty.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
+
+from pydantic import ConfigDict, Field
 
 from btm_corekit import (
     Admission,
     CommandError,
     Diagnostic,
+    Model,
+    Named,
+    NonEmpty,
     Pool,
     dump,
     keywords_of,
     slugify,
 )
 from btm_ponder.ledger import apply
-from btm_ponder.state import Checkpoint, Ledger
+from btm_ponder.state import (
+    Checkpoint,
+    CloseState,
+    Ledger,
+    Origin,
+    Reason,
+    SourceClass,
+)
 
-BATCH_KEYS = ("leaves", "sources", "closes", "sweeps", "checkpoints")
 SCHEMA: dict[str, str] = {
     "leaves": '{"kw": ["two", "words"], "q": "the sub-question", '
     '"origin": "frame|spawned"}',
     "sources": '{"kw": ["two", "words"] or "ref": "explicit-name", "leaf": "<ref>", '
     '"cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}',
-    "closes": '{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired", '
+    "closes": '{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired|folded", '
     '"sources": ["<ref>"], "premise": "the claim, one line", '
     '"detail": "supporting note; retired: why immaterial", '
     '"reason": "searched|not_pursued (unresolved only)", '
@@ -39,6 +50,58 @@ SCHEMA: dict[str, str] = {
     '"survivors": [0, 2]} (survivors are zero-based indexes into candidates)',
     "checkpoints": '{"label": "round-1", "searches": 5}',
 }
+
+
+class LeafEntry(Named):
+    q: NonEmpty
+    origin: Origin = Origin.FRAME
+
+
+class SourceEntry(Named):
+    leaf: NonEmpty
+    cls: SourceClass
+    title: NonEmpty
+    url: str = ""
+
+
+class CloseEntry(Model):
+    """References are unresolved here; which fields each state needs is the
+    event's law, reported when the close is simulated."""
+
+    leaf: NonEmpty
+    state: CloseState
+    sources: tuple[NonEmpty, ...] = ()
+    premise: str = ""
+    detail: str = ""
+    reason: Reason | None = None
+    into: str | None = None
+    from_: tuple[str, ...] = Field(default=(), alias="from")
+
+
+class SweepEntry(Model):
+    checked: NonEmpty
+    candidates: tuple[str, ...] = ()
+    survivors: tuple[int | str, ...] = ()
+
+
+Rows = tuple[Mapping[str, Any], ...]
+
+
+class NoteBatch(Model):
+    """The container. Rows stay opaque here and decode one at a time, so a
+    row with a bad field still lets its neighbours resolve. Extras are named
+    by `known_keys`, so one unknown key cannot swallow the whole batch."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    leaves: Rows = ()
+    sources: Rows = ()
+    closes: Rows = ()
+    sweeps: Rows = ()
+    checkpoints: Rows = ()
+
+
+BATCH_KEYS = tuple(NoteBatch.model_fields)
 
 
 @dataclass(slots=True)
@@ -54,10 +117,9 @@ class NoteResult:
     problems: list[Diagnostic] = field(default_factory=list)
 
 
-def _stem(entry: dict[str, Any]) -> str | None:
-    words = [entry["ref"]] if entry.get("ref") else entry.get("kw") or []
+def _stem(entry: Named) -> str | None:
     try:
-        return slugify(words)
+        return slugify(entry.words)
     except CommandError:
         return None
 
@@ -94,13 +156,13 @@ class _Expansion(Admission):
         alias = self.aliases.get(slugify(words)) if words else None
         return alias or self.resolve_ref(ref, pool, where)
 
-    def admit(self, entry: dict[str, Any], pool: Pool, where: str) -> str | None:
-        return self.mint_id(entry, pool, where)
-
-    def take_leaves(self, entries: list[dict[str, Any]]) -> None:
-        for index, entry in enumerate(entries):
+    def take_leaves(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"leaves[{index}]"
-            full = self.admit(entry, self.leaves, where)
+            entry = self.decode(LeafEntry, row, where, SCHEMA["leaves"])
+            if entry is None:
+                continue
+            full = self.mint_id(entry, self.leaves, where)
             if full is None:
                 continue
             self.staged.append(
@@ -109,16 +171,19 @@ class _Expansion(Admission):
                     {
                         "e": "add_leaf",
                         "id": full,
-                        "q": entry.get("q"),
-                        "origin": entry.get("origin", "frame"),
+                        "q": entry.q,
+                        "origin": entry.origin,
                     },
                 )
             )
 
-    def take_sources(self, entries: list[dict[str, Any]]) -> None:
-        for index, entry in enumerate(entries):
+    def take_sources(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"sources[{index}]"
-            url = _normal_url(entry.get("url"))
+            entry = self.decode(SourceEntry, row, where, SCHEMA["sources"])
+            if entry is None:
+                continue
+            url = _normal_url(entry.url)
             stem = _stem(entry)
             if url and url in self.url_index and stem is not None:
                 existing = self.url_index[url]
@@ -128,12 +193,10 @@ class _Expansion(Admission):
                     f"{where} merges into {existing}: same url already in the ledger"
                 )
                 continue
-            full = self.admit(entry, self.sources, where)
+            full = self.mint_id(entry, self.sources, where)
             if full is None:
                 continue
-            leaf = self.lookup(
-                str(entry.get("leaf") or ""), self.leaves, f"{where}.leaf"
-            )
+            leaf = self.lookup(entry.leaf, self.leaves, f"{where}.leaf")
             if leaf is None:
                 continue
             if url:
@@ -145,54 +208,55 @@ class _Expansion(Admission):
                         "e": "add_source",
                         "id": full,
                         "leaf": leaf,
-                        "cls": entry.get("cls"),
-                        "title": entry.get("title"),
-                        "url": str(entry.get("url") or ""),
+                        "cls": entry.cls,
+                        "title": entry.title,
+                        "url": entry.url,
                     },
                 )
             )
 
-    def take_closes(self, entries: list[dict[str, Any]]) -> None:
-        for index, entry in enumerate(entries):
+    def take_closes(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"closes[{index}]"
-            leaf = self.lookup(
-                str(entry.get("leaf") or ""), self.leaves, f"{where}.leaf"
-            )
-            links = self.links(entry, where)
-            broken = leaf is None or links is None
+            entry = self.decode(CloseEntry, row, where, SCHEMA["closes"])
+            if entry is None:
+                continue
+            leaf = self.lookup(entry.leaf, self.leaves, f"{where}.leaf")
+            broken = leaf is None or not self.pad_links(entry.from_, where)
             event: dict[str, Any] = {
                 "e": "close",
                 "leaf": leaf,
-                "state": entry.get("state"),
-                "from": list(links or ()),
+                "state": entry.state,
+                "from": list(entry.from_),
             }
-            if entry.get("sources"):
+            if entry.sources:
                 resolved = [
-                    self.lookup(str(ref), self.sources, f"{where}.sources[{j}]")
-                    for j, ref in enumerate(entry["sources"])
+                    self.lookup(ref, self.sources, f"{where}.sources[{position}]")
+                    for position, ref in enumerate(entry.sources)
                 ]
                 broken = broken or None in resolved
                 event["sources"] = resolved
-            if entry.get("premise"):
-                event["premise"] = entry["premise"]
-            if entry.get("reason"):
-                event["reason"] = entry["reason"]
-            if entry.get("detail"):
-                event["detail"] = entry["detail"]
-            if entry.get("state") == "folded" or entry.get("into"):
-                into = self.lookup(
-                    str(entry.get("into") or ""), self.leaves, f"{where}.into"
-                )
+            if entry.premise:
+                event["premise"] = entry.premise
+            if entry.reason:
+                event["reason"] = entry.reason
+            if entry.detail:
+                event["detail"] = entry.detail
+            if entry.state is CloseState.FOLDED or entry.into:
+                into = self.lookup(entry.into or "", self.leaves, f"{where}.into")
                 broken = broken or into is None
                 event["into"] = into
             if not broken:
                 self.staged.append((where, event))
 
-    def take_sweeps(self, entries: list[dict[str, Any]]) -> None:
-        for index, entry in enumerate(entries):
+    def take_sweeps(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"sweeps[{index}]"
-            candidates = list(entry.get("candidates") or [])
-            survivors = self._survivors(entry, candidates, where)
+            entry = self.decode(SweepEntry, row, where, SCHEMA["sweeps"])
+            if entry is None:
+                continue
+            candidates = list(entry.candidates)
+            survivors = self._survivors(entry.survivors, candidates, where)
             if survivors is None:
                 continue
             self.staged.append(
@@ -200,7 +264,7 @@ class _Expansion(Admission):
                     where,
                     {
                         "e": "sweep",
-                        "checked": entry.get("checked"),
+                        "checked": entry.checked,
                         "candidates": candidates,
                         "survivors": survivors,
                     },
@@ -208,11 +272,11 @@ class _Expansion(Admission):
             )
 
     def _survivors(
-        self, entry: dict[str, Any], candidates: list[str], where: str
+        self, survivors: tuple[int | str, ...], candidates: list[str], where: str
     ) -> list[str] | None:
         chosen: list[str] = []
         broken = False
-        for j, survivor in enumerate(entry.get("survivors") or []):
+        for j, survivor in enumerate(survivors):
             spot = f"{where}.survivors[{j}]"
             if isinstance(survivor, int):
                 if 0 <= survivor < len(candidates):
@@ -236,10 +300,10 @@ class _Expansion(Admission):
                 broken = True
         return None if broken else chosen
 
-    def take_checkpoints(self, entries: list[dict[str, Any]]) -> None:
-        for index, entry in enumerate(entries):
+    def take_checkpoints(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
             where = f"checkpoints[{index}]"
-            checkpoint = self.decode(Checkpoint, entry, where)
+            checkpoint = self.decode(Checkpoint, row, where, SCHEMA["checkpoints"])
             if checkpoint is None:
                 continue
             # Through the model, so no entry key can reach the event and
@@ -272,12 +336,14 @@ def expand_batch(
     non-empty problem list the caller discards ledger and events alike.
     """
     expansion = _Expansion(ledger, minter, pad)
-    expansion.keys(batch, BATCH_KEYS)
-    expansion.take_leaves(batch.get("leaves") or [])
-    expansion.take_sources(batch.get("sources") or [])
-    expansion.take_closes(batch.get("closes") or [])
-    expansion.take_sweeps(batch.get("sweeps") or [])
-    expansion.take_checkpoints(batch.get("checkpoints") or [])
+    expansion.known_keys(batch, NoteBatch)
+    note = expansion.decode(NoteBatch, batch)
+    if note is not None:
+        expansion.take_leaves(note.leaves)
+        expansion.take_sources(note.sources)
+        expansion.take_closes(note.closes)
+        expansion.take_sweeps(note.sweeps)
+        expansion.take_checkpoints(note.checkpoints)
     if not expansion.staged and expansion.clean:
         expansion.fail("$", "add at least one entry: the batch records nothing")
     expansion.simulate()

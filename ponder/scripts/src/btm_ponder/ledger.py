@@ -1,21 +1,31 @@
-"""Event transitions: the smart constructor that decides what the log may hold."""
+"""Event transitions: the smart constructor that decides what the log may hold.
+
+An event is parsed into its variant before the ledger sees it, so field shape
+is pydantic's business and this module keeps only what the ledger knows:
+which ids exist, which are taken, and which transitions are legal.
+"""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any, Literal
+
+from pydantic import Field, TypeAdapter
 
 from btm_corekit import (
     MAX_EVENTS,
     CommandError,
+    Model,
+    NonEmpty,
+    Slug,
+    Trimmed,
     demand,
-    parse_enum,
     parse_model,
-    read_text,
+    parse_with,
     require,
 )
 from btm_ponder.state import (
-    CLOSE_STATES,
     Checkpoint,
+    CloseState,
     Folded,
     Leaf,
     LeafState,
@@ -32,9 +42,95 @@ from btm_ponder.state import (
     Unresolved,
 )
 
+Prose = Annotated[str, Trimmed]
 
+
+class Stamped(Model):
+    """The envelope the log adds on append; a staged batch carries none."""
+
+    t: str = ""
+
+
+class AddLeaf(Stamped):
+    e: Literal["add_leaf"]
+    id: Slug
+    q: NonEmpty
+    origin: Origin = Origin.FRAME
+
+
+class AddSource(Stamped):
+    e: Literal["add_source"]
+    id: Slug
+    leaf: Slug
+    cls: SourceClass
+    title: NonEmpty
+    url: str = ""
+
+
+class Closing(Stamped):
+    """What every close carries; the state decides the rest."""
+
+    e: Literal["close"]
+    leaf: Slug
+    from_: tuple[str, ...] = Field(default=(), alias="from")
+
+
+class RetrievedClose(Closing):
+    state: Literal[CloseState.RETRIEVED]
+    sources: tuple[Slug, ...] = Field(min_length=1)
+    premise: Prose = ""
+    detail: Prose = ""
+
+
+class RefutedClose(Closing):
+    state: Literal[CloseState.REFUTED]
+    sources: tuple[Slug, ...] = Field(min_length=1)
+    premise: NonEmpty
+    detail: Prose = ""
+
+
+class UnresolvedClose(Closing):
+    state: Literal[CloseState.UNRESOLVED]
+    reason: Reason
+    detail: NonEmpty
+
+
+class RetiredClose(Closing):
+    state: Literal[CloseState.RETIRED]
+    detail: NonEmpty
+
+
+class FoldedClose(Closing):
+    state: Literal[CloseState.FOLDED]
+    into: Slug
+
+
+def _legacy_fold(raw: Any) -> Any:
+    """Logs written before `folded` became a state spell it as a retired close
+    whose reason is folded."""
+    if not isinstance(raw, dict) or raw.get("state") != CloseState.RETIRED:
+        return raw
+    if raw.get("reason") != "folded":
+        return raw
+    lifted = {k: v for k, v in raw.items() if k not in ("reason", "detail")}
+    return {
+        **lifted,
+        "state": CloseState.FOLDED,
+        "into": raw.get("into") or raw.get("detail"),
+    }
+
+
+CloseEvent = (
+    RetrievedClose | RefutedClose | UnresolvedClose | RetiredClose | FoldedClose
+)
+CLOSE: TypeAdapter[CloseEvent] = TypeAdapter(
+    Annotated[CloseEvent, Field(discriminator="state")]
+)
+
+
+# A projection names every field it reads, so the envelope cannot smuggle
+# one in; the record it builds owns its own law.
 def _sweep(raw: dict[str, Any]) -> Sweep:
-    """The record the draft cites, not the bit that a sweep happened."""
     return parse_model(
         Sweep,
         {
@@ -47,7 +143,6 @@ def _sweep(raw: dict[str, Any]) -> Sweep:
 
 
 def _checkpoint(raw: dict[str, Any]) -> Checkpoint:
-    """The declared count; the log line also carries `e`, which the model forbids."""
     return parse_model(
         Checkpoint,
         {"label": raw.get("label", ""), "searches": raw.get("searches")},
@@ -55,57 +150,49 @@ def _checkpoint(raw: dict[str, Any]) -> Checkpoint:
     )
 
 
-def _close_state(raw: dict[str, Any], ledger: Ledger) -> LeafState:
-    """Parse a close payload into a LeafState, or raise the violated invariant."""
-    state = raw.get("state")
-    if state == "retired" and raw.get("reason") == "folded":
-        # Logs written before folded became its own state carry it this way.
-        state = "folded"
-        raw = {**raw, "into": raw.get("into") or raw.get("detail")}
-    require(state in CLOSE_STATES, f"close state must be one of {CLOSE_STATES}")
-    if state in ("retrieved", "refuted"):
-        sources = tuple(raw.get("sources") or ())
-        require(bool(sources), f"{state} requires at least one source id")
-        for sid in sources:
-            require(sid in ledger.sources, f"unknown source id: {sid}")
-        premise = str(raw.get("premise") or "").strip()
-        detail = str(raw.get("detail") or "").strip()
-        if state == "retrieved":
+def _known(sources: tuple[str, ...], ledger: Ledger) -> None:
+    for source_id in sources:
+        require(source_id in ledger.sources, f"unknown source id: {source_id}")
+
+
+def _state_of(event: CloseEvent, ledger: Ledger) -> LeafState:
+    """The variant this close names. Shape is already parsed; what is checked
+    here is what only the ledger knows."""
+    match event:
+        case RetrievedClose(sources=sources, premise=premise, detail=detail):
+            _known(sources, ledger)
             return Retrieved(sources=sources, premise=premise, detail=detail)
-        require(bool(premise), "refuted requires the contradicted premise")
-        return Refuted(sources=sources, premise=premise, detail=detail)
-    if state == "folded":
-        into = str(raw.get("into") or "").strip()
-        target = demand(ledger.leaves.get(into), f"fold target does not exist: {into}")
-        require(
-            isinstance(target.state, Retrieved),
-            f"fold target must be retrieved: {into}",
-        )
-        return Folded(into=into)
-    detail = str(raw.get("detail") or "").strip()
-    if state == "unresolved":
-        require(bool(detail), "unresolved requires detail")
-        return Unresolved(
-            reason=parse_enum(Reason, raw.get("reason"), "unresolved reason"),
-            detail=detail,
-        )
-    require(bool(detail), "retired detail must name the conclusion it fails to change")
-    return Retired(detail=detail)
+        case RefutedClose(sources=sources, premise=premise, detail=detail):
+            _known(sources, ledger)
+            return Refuted(sources=sources, premise=premise, detail=detail)
+        case UnresolvedClose(reason=reason, detail=detail):
+            return Unresolved(reason=reason, detail=detail)
+        case RetiredClose(detail=detail):
+            return Retired(detail=detail)
+        case FoldedClose(into=into):
+            target = demand(
+                ledger.leaves.get(into), f"fold target does not exist: {into}"
+            )
+            require(
+                isinstance(target.state, Retrieved),
+                f"fold target must be retrieved: {into}",
+            )
+            return Folded(into=into)
 
 
 def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:
-    leaf_id = read_text(raw, "leaf", "close")
-    leaf = demand(ledger.leaves.get(leaf_id), f"unknown leaf id: {leaf_id}")
-    new_state = _close_state(raw, ledger)
+    event = parse_with(CLOSE, _legacy_fold(raw), "close event")
+    leaf = demand(ledger.leaves.get(event.leaf), f"unknown leaf id: {event.leaf}")
+    new_state = _state_of(event, ledger)
     legal = isinstance(leaf.state, Open) or (
         isinstance(leaf.state, Retrieved) and isinstance(new_state, Refuted)
     )
     require(
         legal,
-        f"illegal transition on {leaf_id}: {type(leaf.state).__name__} -> "
+        f"illegal transition on {event.leaf}: {type(leaf.state).__name__} -> "
         f"{type(new_state).__name__} (only Open -> any, Retrieved -> Refuted)",
     )
-    ledger.leaves[leaf_id] = Leaf(
+    ledger.leaves[event.leaf] = Leaf(
         question=leaf.question, origin=leaf.origin, state=new_state
     )
 
@@ -117,42 +204,30 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
     appended, so the log on disk holds only admitted events.
     """
     require(ledger.events < MAX_EVENTS, f"event cap reached ({MAX_EVENTS})")
-    kind = raw.get("e")
-    match kind:
+    match raw.get("e"):
         case "add_leaf":
-            leaf_id = str(raw.get("id") or "").strip()
-            require(bool(leaf_id), "add_leaf requires an id")
-            require(leaf_id not in ledger.leaves, f"duplicate leaf id: {leaf_id}")
-            question = str(raw.get("q") or "").strip()
-            require(bool(question), "add_leaf requires a question")
-            origin = raw.get("origin", "frame")
-            origin = parse_enum(Origin, origin, "leaf origin")
-            ledger.leaves[leaf_id] = Leaf(
-                question=question, origin=origin, state=Open()
+            event = parse_model(AddLeaf, raw, "add_leaf event")
+            require(event.id not in ledger.leaves, f"duplicate leaf id: {event.id}")
+            ledger.leaves[event.id] = Leaf(
+                question=event.q, origin=event.origin, state=Open()
             )
         case "add_source":
-            source_id = str(raw.get("id") or "").strip()
-            require(bool(source_id), "add_source requires an id")
+            source = parse_model(AddSource, raw, "add_source event")
             require(
-                source_id not in ledger.sources, f"duplicate source id: {source_id}"
+                source.id not in ledger.sources, f"duplicate source id: {source.id}"
             )
-            leaf_id = read_text(raw, "leaf", "add_source")
-            require(leaf_id in ledger.leaves, f"unknown leaf id: {leaf_id}")
-            cls = raw.get("cls")
-            cls = parse_enum(SourceClass, cls, "source cls")
-            title = str(raw.get("title") or "").strip()
-            require(bool(title), "add_source requires a title")
-            ledger.sources[source_id] = Source(
-                leaf=leaf_id, cls=cls, title=title, url=str(raw.get("url") or "")
+            require(source.leaf in ledger.leaves, f"unknown leaf id: {source.leaf}")
+            ledger.sources[source.id] = Source(
+                leaf=source.leaf, cls=source.cls, title=source.title, url=source.url
             )
-            ledger.source_order.append(source_id)
+            ledger.source_order.append(source.id)
         case "close":
             _apply_close(ledger, raw)
         case "sweep":
             ledger.sweeps.append(_sweep(raw))
         case "checkpoint":
             _checkpoint(raw)
-        case _:
+        case kind:
             raise CommandError(f"unknown event kind: {kind}")
     ledger.events += 1
     return ledger

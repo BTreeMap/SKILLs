@@ -101,7 +101,7 @@ class TestAddSource:
             )
 
     def test_class_outside_the_set_is_refused(self):
-        with pytest.raises(CommandError, match="not a valid SourceClass"):
+        with pytest.raises(CommandError, match="cls: Input should be"):
             apply(
                 seeded(),
                 {
@@ -133,11 +133,11 @@ class TestCloses:
         assert ledger.leaves["leaf-a"].state == Retrieved(sources=("src-a",))
 
     def test_retrieved_without_a_source_is_refused(self):
-        with pytest.raises(CommandError, match="requires at least one source"):
+        with pytest.raises(CommandError, match="sources"):
             apply(seeded(), {"e": "close", "leaf": "leaf-a", "state": "retrieved"})
 
     def test_refuted_requires_the_contradicted_premise(self):
-        with pytest.raises(CommandError, match="requires the contradicted premise"):
+        with pytest.raises(CommandError, match=r"refuted\.premise"):
             apply(
                 seeded(),
                 {
@@ -149,7 +149,7 @@ class TestCloses:
             )
 
     def test_unresolved_requires_detail(self):
-        with pytest.raises(CommandError, match="unresolved requires detail"):
+        with pytest.raises(CommandError, match=r"unresolved\.detail"):
             apply(
                 seeded(),
                 {
@@ -177,8 +177,18 @@ class TestCloses:
         )
 
     def test_close_on_unknown_leaf_is_refused(self):
+        """Shape first, then the reference: a well-formed close naming a leaf
+        that does not exist is refused for the leaf."""
         with pytest.raises(CommandError, match="unknown leaf id"):
-            apply(seeded(), {"e": "close", "leaf": "absent", "state": "retrieved"})
+            apply(
+                seeded(),
+                {
+                    "e": "close",
+                    "leaf": "absent",
+                    "state": "retrieved",
+                    "sources": ["src-a"],
+                },
+            )
 
     def test_close_citing_unknown_source_is_refused(self):
         with pytest.raises(CommandError, match="unknown source id"):
@@ -253,7 +263,7 @@ class TestFolds:
             )
 
     def test_retired_requires_the_conclusion_it_leaves_standing(self):
-        with pytest.raises(CommandError, match="retired detail"):
+        with pytest.raises(CommandError, match=r"retired\.detail"):
             apply(
                 seeded(),
                 {"e": "close", "leaf": "leaf-a", "state": "retired"},
