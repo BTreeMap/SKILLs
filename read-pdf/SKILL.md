@@ -10,8 +10,7 @@ description: >-
   one behind a link.
 license: MIT
 compatibility: >-
-  Requires uv, and a full SKILLs repository checkout: the extractor is a uv
-  workspace member under the skill's scripts/ directory. Network access is
+  Requires uv, and a full SKILLs repository checkout. Network access is
   needed only for URL inputs.
 metadata:
   argument-hint: "<pdf path or URL> [pages]"
@@ -19,14 +18,14 @@ metadata:
 
 # Read PDF
 
-Extract text and metadata from PDFs with pypdf and answer questions with
-page-cited evidence. Never creates, modifies, or otherwise writes a PDF.
+Extract text and metadata from PDFs and answer questions with page-cited
+evidence. Never creates, modifies, or otherwise writes a PDF.
 
 ## Scope
 
 Read PDF content for analysis. Extract text, page numbers, and standard metadata. Preserve source-page provenance.
 
-Use only `pypdf`, resolved by `uv` from the workspace member's manifest. Run the extractor through its console command with `uv run --project`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer.
+Run the extractor through its console command with `uv run --project`; do not invoke a host `python` or `python3`, install packages manually, or use another PDF library, a command-line PDF utility, an OCR tool, or an image renderer.
 
 Pass an http(s) URL directly as the document argument: the extractor's own fetch caches, caps, and cites the URL as provenance.
 
@@ -43,7 +42,7 @@ Pass an http(s) URL directly as the document argument: the extractor's own fetch
 
 The extractor's console command `btm-read-pdf` accepts one-based page selections, including open-ended ranges. By default it prints all pages and available standard metadata to standard output. It refuses to replace an existing `--output` file unless `--overwrite` is passed, opens owner-locked PDFs (empty user password) without asking, and reports on stderr when selected pages have no extractable text (a likely scanned document).
 
-Bind the command once per shell and re-bind after a reset; the `realpath` is required, because uv resolves the project path lexically and an alias path such as `.claude/skills/read-pdf/` has no workspace root above it. This command surface is the handoff point: invoke it and read its output; source reading belongs to user-instructed troubleshooting.
+Bind the command once per shell and re-bind after a reset; `realpath` is required. Invoke it and read its output; source reading belongs to user-instructed troubleshooting.
 
 <commands for="all-pages">
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
@@ -63,8 +62,8 @@ $R https://<host>/<paper>.pdf --pages 1-3
 </commands>
 
 A URL downloads once into a digest-keyed file under the system temp
-directory's `btm-read-pdf/`; a rerun reuses it and says so on stderr, and
-deleting that file forces a refetch. Downloads over 200 MB are refused
+directory's `btm-read-pdf/`; a rerun reuses it, and deleting that file
+forces a refetch. Downloads over 200 MB are refused
 (`--max-bytes` raises the cap), and a response without PDF magic bytes, such
 as a paywall's HTML page, is refused and left uncached.
 
@@ -104,7 +103,7 @@ More extracted source text.
 
 ## Limitations and Recovery
 
-- `pypdf` reads a PDF text layer. A `[No extractable text on this page.]` marker usually means the page is scanned, image-only, or has unusable text encoding. Report that limitation; do not claim OCR results.
+- The extractor reads a PDF text layer. A `[No extractable text on this page.]` marker usually means the page is scanned, image-only, or has unusable text encoding. Report that limitation; do not claim OCR results.
 - Multi-column layouts, tables, headers, footers, ligatures, and unusual fonts can scramble reading order. Do not silently repair ambiguous values.
 - If the script reports encryption, use `--password-env`. If it cannot decrypt with the supplied variable, report that access was unavailable.
 - If the reader cannot parse the document, report the read error and stop. Do not repair, rewrite, or substitute the PDF.
@@ -117,4 +116,4 @@ More extracted source text.
 - Every analyzed passage is traceable to a `PDF page N` marker.
 - The response distinguishes extracted facts from interpretation.
 - Empty or unreliable pages, encryption, and layout ambiguity are disclosed when relevant.
-- No PDF package or tool other than `pypdf` was used.
+- No PDF package or tool other than the bundled extractor was used.

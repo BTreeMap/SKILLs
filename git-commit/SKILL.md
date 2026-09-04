@@ -26,8 +26,8 @@ the cheapest effort level that does the job.
 
 Effort levels gate history scanned and text produced. Default: **full**.
 Switch per invocation: `/git-commit lite|full|ultra`. Each level's name is
-its registered name, so the level selects the file; **lite** loads none,
-**ultra** loads `full` before its own.
+its registered name; **lite** loads none, **ultra** loads `full` before its
+own.
 
 | Level | Behavior |
 | --- | --- |
@@ -42,8 +42,8 @@ apply at every level.
 
 `push` is a quick-ship action: stage as directed, commit, then push to the
 tracked remote, reporting the pushed range in one line. Without an explicit
-level, `push` implies **lite** (nothing extra loads); an explicit level wins,
-so `full push` and `ultra push` draft at that level first. Run `git push`
+level, `push` implies **lite**; an explicit level wins, so `full push` and
+`ultra push` draft at that level first. Run `git push`
 ONLY when the user passed the push verb or asked to push.
 
 <directives>
@@ -78,7 +78,7 @@ ONLY when the user passed the push verb or asked to push.
   </procedure>
 
   <directives for="exceptions">
-    <rule>Retain bot-authored commits (e.g., Renovate, Dependabot) and platform-generated merge commits exactly as they are; reformat nothing.</rule>
+    <rule>Retain bot-authored commits and platform-generated merge commits exactly as they are; reformat nothing.</rule>
   </directives>
 
   <directives for="output">

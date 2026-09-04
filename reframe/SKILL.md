@@ -29,8 +29,7 @@ Strategic altitude means big-picture judgment plus conceptual compression: prefe
 <directives>
 
   <directives for="principles">
-    <rule>Bold hypothesis, careful verification: open the frame, make the call, then make it falsifiable before execution commitment.</rule>
-    <rule>Treat the thesis as a high-leverage hypothesis to test.</rule>
+    <rule>Bold hypothesis, careful verification: treat the thesis as a high-leverage hypothesis, open the frame, make the call, then make it falsifiable before execution commitment.</rule>
     <rule>Separate the right target from the path used to reach it.</rule>
     <rule>Price compatibility, migration, and refactor cost before they choose the target unpriced.</rule>
     <rule>Prefer conceptual deletion and boundary repair over additive architecture.</rule>
@@ -57,7 +56,7 @@ Invoke proactively only when at least one symptom exists:
 - Many small concepts obscure one lifecycle, owner, or product promise.
 - Proposed options differ in mechanics but preserve the same questionable frame.
 
-A small proposal alone is not a trigger. Small can be the correct answer when the boundary, target, and evidence support it.
+A small proposal alone is not a trigger; it can be correct when the boundary, target, and evidence support it.
 
 ## Required Inputs
 
@@ -68,6 +67,9 @@ Derive from supplied material before asking questions:
 - Current proposal or inherited model.
 - Known contracts and stakeholders.
 - Claimed constraints and supporting evidence.
+
+Ask one focused question when a missing piece could change the target.
+Otherwise continue and state the assumption.
 
 If a repository or document set is available:
 
@@ -113,8 +115,6 @@ Select the smallest set that exposes the hidden decision. Use at least one; name
 
 State the real choice at the highest useful level. Define outcome, horizon, system boundary, and decision owner. Reject vague goals such as "cleaner" or "more scalable."
 
-If missing context could change the target, ask a focused question. If it cannot, continue with an explicit assumption.
-
 ### 2. Establish the evidence baseline
 
 Separate observed facts, explicit instructions, and assumptions. Record missing evidence only when it can change the decision.
@@ -125,7 +125,7 @@ Name the constraint currently controlling the proposal. Classify it using the co
 
 ### 4. Open the frame
 
-Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle. The result must simplify the model or increase durable leverage.
+Apply one or more frame-opening moves. Explain the newly visible option, boundary, deletion, or principle.
 
 ### 5. Form the clean target
 
@@ -137,8 +137,6 @@ Describe the end-state independently of migration:
 - What survives.
 - Kill list: what to delete, merge, split, rename, reframe, or rebuild.
 
-Every kill-list item must identify the wrong assumption or duplicate responsibility it removes.
-
 ### 6. Name what not to do
 
 Identify safe-looking actions that block the target:
@@ -147,21 +145,19 @@ Identify safe-looking actions that block the target:
 - Permanent shims or dual models without a named contract and retirement condition.
 - Detail work that does not reduce uncertainty or advance the target.
 
-Tie each warning to the target or kill-list item it would contradict.
-
 ### 7. Compare three paths
 
 Use the canonical options:
 
 - **Conservative path**: preserve the inherited model; minimize immediate disruption.
 - **Clean target**: move directly to the preferred end-state.
-- **Staged clean path**: preserve the same clean target; sequence reversible steps and retire temporary bridges explicitly.
+- **Staged clean path**: preserve the same clean target; sequence reversible steps and give every temporary bridge an owner, a removal trigger, and a deadline or measurable gate.
 
 Compare target integrity, immediate price, permanent complexity, contract risk, and time to evidence. Recommend one. Choose Staged only when it preserves the clean target and has explicit retirement. If a path is incoherent, mark it non-viable.
 
 ### 8. Make the call
 
-Lead with a one-to-three-sentence thesis. State material tradeoffs without weakening the recommendation. Assign confidence:
+State material tradeoffs without weakening the recommendation. Assign confidence:
 
 - **High**: decisive contracts and representative evidence inspected; no major unresolved assumption.
 - **Medium**: direction supported; one or more material assumptions remain testable.
@@ -187,7 +183,7 @@ For each major bold take or kill-list item, record:
 - Moment or signal when payoff appears.
 - Stakeholder receiving the payoff.
 
-Include only rows that justify the direction to someone paying for it. Reject rows based solely on "cleaner," "simpler," "more maintainable," or similar generic claims.
+Reject rows based solely on "cleaner," "simpler," "more maintainable," or similar generic claims.
 
 ## Output Contract
 
@@ -215,16 +211,9 @@ After the target is accepted, route it to an available feasibility or landing pr
 
 ## Gotchas
 
-- Optimize the model; diff size is a price.
-- Preserve named public and data contracts.
-- Classify internal migration cost as migration cost.
-- Keep temporary bridge design out of the clean target.
-- Give every bridge an owner, removal trigger, and deadline or measurable gate.
-- Give every bold take a falsifier; testability matters more than provocation.
-- Make the proof point test the direction.
+- Diff size is a price, not a strategy.
 - Give the three option rows distinct tradeoffs.
-- Tie each kill-list removal to the bad assumption it removes.
-- Tie the payoff ledger to concrete outcomes.
+- Give every bold take a falsifier; testability matters more than provocation.
 
 ## Validation
 

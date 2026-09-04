@@ -23,9 +23,8 @@ metadata:
 Rewrite AI-sounding text so it reads like its writer. §1-35 come from
 Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
 §36-40 and the added cases in older entries cover tells that survive a
-vocabulary scrub in current model prose. Shared diagnosis: LLMs pick the most
-statistically likely phrasing for the widest range of cases. Cure: the
-specific over the generic.
+vocabulary scrub in current model prose. Cure: the specific over the
+generic.
 
 ## Registry
 
@@ -53,8 +52,8 @@ Hold these in every mode. Each outranks any pattern fix.
    exempt: invented detail is the task.
 3. **Match the voice.** Formal, casual, or technical to fit the text. Read
    any supplied sample first: note sentence length, word choice, paragraph
-   openings, punctuation, repeated phrases, and transitions, then match
-   them. Keep casual words casual and deliberate quirks intact. A personal
+   openings, punctuation, repeated phrases, and transitions. Keep casual
+   words casual and deliberate quirks intact. A personal
    style file (voice guide, style document, explicit voice instructions) or
    sample outranks every pattern here: load it before any owner file, and
    where it permits a construction a pattern flags (an em-dash habit,
@@ -64,7 +63,7 @@ Hold these in every mode. Each outranks any pattern fix.
 4. **Personality only where it fits.** In blog posts, essays, opinion, and
    personal writing, keep the writer's opinions, uncertainty, mixed feelings,
    humor, asides, and uneven rhythm. Keep reference, technical, legal, and
-   factual text neutral. Never invent facts to add warmth.
+   factual text neutral.
 5. **Preserve logical strength.** Cutting a negation, a hedge, or a
    comparative can change what a sentence claims. After any such cut,
    re-read the claim: a criterion stays a criterion, evidence stays
@@ -148,16 +147,15 @@ structural ones last.
 5. §14-19 are mechanically checkable: search for U+2014, U+2013, `**`,
    heading case, emoji, curly quotes, ` -- `, and `---` lines. §36 is
    measurable: run the command in `register` on prose over about 40
-   sentences, before and after the rewrite, so a pass that removed twelve
-   phrases and left the rhythm flat is caught.
+   sentences, before and after the rewrite.
 
 ## Rewrite process
 
 1. Mark each pattern instance from the scan. Confirm against the loaded owner
    files; drop the false positives `calibration` names.
 2. Draft. Read it aloud for rhythm, concrete detail, simple verbs, and the
-   right formality. State each point fresh; patching flagged phrases one at
-   a time leaves the shape. When a sentence stays awkward, rewrite the
+   right formality. State each point fresh rather than patching flagged
+   phrases one at a time. When a sentence stays awkward, rewrite the
    paragraph around its main point.
 3. Self-check three questions, treating a yes to any as an error to fix:
    - What still sounds AI-generated?

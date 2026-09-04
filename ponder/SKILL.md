@@ -71,8 +71,8 @@ practitioner belief). Two outcomes:
 
 - Settled: all material questions are answered. Register one or two leaves,
   add sources, close, then load `answer` for sweep and draft.
-- Open: material sub-questions remain. Keep the round's sources (they
-  seed leaves), then load `framing` and `explore`.
+- Open: material sub-questions remain. Keep the round's sources, then load
+  `framing` and `explore`.
 
 Judge settlement against the question's stakes. A canonical constitutive or
 attested source can settle; contested claims require stronger evidence than
@@ -98,8 +98,12 @@ slug-plus-entropy identifier. Use full identifiers. A unique keyword subset
 recovers a lost ID; ambiguity lists candidates. Pass a directory path in
 place of an identifier to put a session somewhere specific.
 
-Commands emit JSON on stdout. Advisory `signal:` lines use stderr. Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. An option that takes a literal also takes `@path`, which reads the file, or `-`, which reads stdin; `@@` starts a literal `@`. A parameter that is only ever a path keeps its bare spelling. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument. `clean`
-lists sizes and removes one session or `--all`, reporting bytes freed.
+Commands emit JSON on stdout; `signal:` lines on stderr are advisory.
+Free-form content (a question, a query, a regex, a pad entry, a batch)
+arrives as one JSON object on stdin or from `--file`; flags carry closed
+choices, counts, paths, and identifiers. An option that takes a literal also
+takes `@path` or `-` for stdin, and `@@` starts a literal `@`. `clean`
+removes one session or `--all`.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
@@ -121,24 +125,16 @@ $R clean ["$S" | --all]
 </commands>
 
 Bind `R` and `S` per shell; chain a round's calls with `&&` so a rejected
-note stops the chain. Write each round's batch to a file and pass `--file`:
-a rejection then costs one edit. `schema` prints the batch shape whenever a
-field name is in doubt; `status` is the cheap mid-session view and carries
-`next`, the cheapest legal action derived from live state, advisory rather
-than a gate. `check --view` is a chain: `plan` derives sections, markers,
-hedges and violations without echoing back the prose your own closes stored;
-`draft` adds that prose and the source table, and is the default; `full` adds
-the leaf dump. Draft from `draft`, read `plan` mid-round, and after a
-compaction take `draft`, since the prose is genuinely gone from context then.
-A rejected
-`note` returns every problem in one verdict, each an imperative fix with its
-location and a hint (did-you-mean, valid vocabulary, or the schema
-fragment); the ledger stays unchanged, so apply all fixes and resend once.
-The receipt echoes every minted id under `minted`: copy refs from it
-verbatim. A source whose url already exists in the ledger merges into the
-existing id (reported under `merged`), which is the cheap import path for
-prior work. `--mode informal` demotes open-leaf and unswept violations to
-advisories; sourcing discipline is unchanged.
+note stops the chain. Write each round's batch to a file: a rejection then
+costs one edit. `schema` prints the batch shape whenever a field name is in
+doubt; `status` is the cheap mid-session view and carries an advisory
+`next`. `check --view` is a chain: `plan` omits the prose your own closes
+stored, `draft` adds it and the source table and is the default, `full` adds
+the leaf dump. Read `plan` mid-round; take `draft` to write from and after a
+compaction. A rejected `note` names every problem at once and changes
+nothing, so apply all the fixes and resend. Copy refs verbatim from the
+`minted` receipt. `--mode informal` demotes open-leaf and unswept violations
+to advisories; sourcing discipline is unchanged.
 
 The pad is free working memory beside the ledger: `jot` admits any JSON
 object (or prose with `--text`) and never rejects content; `recall` filters

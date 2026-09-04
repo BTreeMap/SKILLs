@@ -34,10 +34,9 @@ evidence, report evidence-first, edit only what the user approves.
 
 ## Invariants
 
-Non-negotiable at every step, on every branch, after any context compaction.
-Copy into the state file under `constraints` at Step 1; re-read that key
-before every file edit. If aware of a compaction event, re-open this
-SKILL.md before continuing.
+Non-negotiable at every step, on every branch, and after context
+compaction; re-open this SKILL.md then. Copy into the state file under
+`constraints` at Step 1; re-read that key before every file edit.
 
 1. NEVER edit a file without explicit user approval of the specific
    correction. Approval of one batch never covers a later batch.
@@ -72,8 +71,7 @@ span with the corrected span using the available file-editing tool".
 ## Workflow
 
 1. **Inventory**: read the document. Decompose verifiable statements into
-   atomic claims per `claims` (decontextualization, span mapping, typing,
-   granularity cap, skip list). Write the state file (below) with the
+   atomic claims per `claims`. Write the state file (below) with the
    inventory and pinned constraints.
 2. **Verify**: run the per-claim contract (below) for every claim via the
    selected orchestration branch. Route retrieval by claim type per
@@ -138,13 +136,11 @@ detail visible only as cost and latency metadata.
   contract input, performs its own retrieval, returns exactly one verdict
   record. Workers never see the document, other claims, other verdicts, or
   the file system for writing; workers NEVER edit files. The orchestrator
-  alone aggregates, reports, seeks approval, and edits. This split is a
-  security boundary: only workers touch untrusted web content.
+  alone aggregates, reports, seeks approval, and edits.
 - **Sequential**: no sub-agent primitive, or claim count <= 5. Same contract
   per claim, run inline one claim at a time. Summarize fetched evidence into
   the verdict record immediately; discard raw page content from working
-  context (offload to a scratch file if a later step may need it). Never
-  spawn agents for a small workload.
+  context (offload to a scratch file if a later step may need it).
 
 ## State file
 
@@ -161,9 +157,7 @@ flush between batches.
 
 Text documents only, in the document's own language. Cannot verify images,
 figures, paywalled sources, subjective judgments, disputed interpretations,
-or future predictions; mark these `unverifiable` with the reason. This skill
-never states current-world facts in its own instructions: all concrete
-values in its references are placeholders marked illustrative.
+or future predictions; mark these `unverifiable` with the reason.
 
 ## Gotchas
 

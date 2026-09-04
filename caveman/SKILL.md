@@ -12,8 +12,7 @@ description: >-
   or other persisted artifacts unless a mode says otherwise.
 license: MIT
 compatibility: >-
-  Compress mode requires uv, and a full SKILLs repository checkout: the guard
-  is a uv workspace member under the skill's scripts/ directory.
+  Compress mode requires uv and a full SKILLs repository checkout.
 metadata:
   argument-hint: "[lite|full|ultra|wenyan-lite|wenyan-full|wenyan-ultra] [commit|review|compress|stats|help]"
 ---
@@ -48,9 +47,9 @@ Short synonyms (big not extensive, fix not "implement a solution for"). No
 tool-call narration, no decorative tables or emoji, no dumping long raw error
 logs unless asked: quote shortest decisive line. Standard tech acronyms OK
 (DB/API/HTTP); never invent abbreviations (cfg/impl/req/res/fn): tokenizer
-split them same as full word, zero token saved, reader still decode.
-No causal arrows either: own token, save nothing. Technical terms exact. Code
-blocks unchanged. Errors quoted exact.
+splits them like full word, zero saved. No causal arrows either: own token,
+save nothing. Technical terms exact. Code blocks unchanged. Errors quoted
+exact.
 
 Never drop not/never/no/only/except: flip meaning worse than any token saved.
 Numbers, units exact.
@@ -61,16 +60,15 @@ call. Text before call only to clarify, warn security/irreversible, or resolve
 ambiguity.
 
 Reply in the user's dominant language, every emitted line included,
-regardless of example text elsewhere. Compress the style; keep the language.
-ALWAYS keep technical terms, code, API names, CLI commands, commit-type
+regardless of example text elsewhere. ALWAYS keep technical terms, code, API names, CLI commands, commit-type
 keywords, and exact error strings verbatim unless the user asks for
 translation. "Drop articles" applies to article languages only; small
 markers that carry case or role (particles, postpositions) are grammar:
 keep them, compress politeness instead.
 
-No self-reference. Never name or announce the style. No "caveman mode on",
-no third-person caveman tags, never a normal answer plus a caveman recap.
-Exception: user explicitly asks what the mode is.
+No self-reference: no "caveman mode on", no third-person caveman tags,
+never a normal answer plus a caveman recap. Exception: user explicitly asks
+what the mode is.
 
 Pattern: `[thing] [action] [reason]. [next step].`
 
@@ -92,7 +90,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
   </rule>
 
   <rule trigger="Reviewing (Audits/Critiques)">
-    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format is defined in `review`.
+    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format defined in `review`.
   </rule>
 </directives>
 
@@ -141,7 +139,7 @@ then resume caveman after the clear part is done.
 ## Gotchas
 
 - Compress natural-language prose exclusively: compressed code syntax, URLs, or literal string values break functionality.
-- Models frequently append a helpful summary after a large code block. Stop precisely at the end of the requested artifact.
+- Stop precisely at the end of the requested artifact; don't append a summary after a code block.
 - Classical characters belong to wenyan levels only; never swap a word for a classical character to shrink at other levels.
 
 ## Boundaries

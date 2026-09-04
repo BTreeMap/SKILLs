@@ -41,8 +41,8 @@ verdict.
 
 ## Invariants
 
-Hold at every step and after any context compaction; on compaction, re-open
-this file and replay state with `check`.
+Hold at every step and after context compaction; re-open this file and
+replay state with `check`.
 
 1. Every objection anchors. It quotes the paper verbatim and the script
    resolves the quote to a page, or it names what the paper omits under
@@ -52,7 +52,7 @@ this file and replay state with `check`.
    year precedes the paper's; "not novel" without a key is unrepresentable.
 3. Claims come from the paper's front and back only. Extract them from the
    abstract, introduction, and conclusion before reading related work or
-   discussion, so framing cannot set the target.
+   discussion.
 4. The authors' Limitations section is a floor. An objection anchored
    there restates what the authors already concede; the report's weight sits
    in objections anchored outside it, and `check` reports the echo ratio.
@@ -94,9 +94,9 @@ gate once its quote is in hand.
 
 `init` takes two or three keywords and the paper's date, mints the session
 identifier, and echoes it with its directory; a keyword subset recovers a lost
-one. Ingested text is split on `## PDF page N` lines, so an extraction that
-keeps those markers gets per-page anchors. Pass a directory path in place of
-an identifier to put a session somewhere specific.
+one. Ingested text splits on `## PDF page N` lines, giving per-page anchors.
+Pass a directory path in place of an identifier to put a session somewhere
+specific.
 
 Two write paths:
 
@@ -108,18 +108,11 @@ Two write paths:
   banks, a `severity`, the text, an optional `claim` ref, `anchors` or
   `missing`, `prior` keys for novelty kinds, and optional `from` pad ids
   checked to exist), `walks` (a bank done),
-  `withdraws` (an objection a re-read defeated). A rejected batch returns
-  every problem in one verdict with an imperative fix and a hint (closest
-  page and similarity, did-you-mean, the bank vocabulary); the ledger stays
-  unchanged, so apply all fixes and resend once. Write batches to a file and
-  pass `--file`. Every JSON-carrying command reads the same three ways: an
-  inline argument where one is offered, `--file`, or stdin; giving both an
-  inline argument and `--file` is refused rather than silently resolved.
+  `withdraws` (an objection a re-read defeated). A rejected batch names every
+  problem at once and changes nothing, so apply all the fixes and resend.
 
-`status` carries `next`, the cheapest legal action derived from live ledger
-state (ingest, claims, the banks still unwalked, then check and draft). It is
-advisory rather than a gate: revisiting a bank is normal, and the script only
-supplies arithmetic the agent would otherwise redo by hand.
+`status` carries an advisory `next`, never a gate: revisiting a bank is
+normal.
 
 `check` derives from live state: each objection's standing (`grounded`,
 `unanchored` after a re-ingest, `undated` when its prior work fails the
@@ -132,17 +125,19 @@ and the report scaffold. `cite-check --draft` requires every `[On]` and
 `[Cn]` in the draft to resolve to a grounded record and every grounded fatal
 or major objection to appear.
 
-An option that takes a literal also takes `@path`, which reads the file, or `-`, which reads stdin; `@@` starts a literal `@`. A parameter that is only ever a path keeps its bare spelling.
-
 Exit codes: 0 done (stderr `signal:` lines are advisory); 1 fix the input
 and resend. `clean` lists sessions with sizes and removes one or
 `--all`, reporting bytes freed.
 
 Bind the command once per shell and re-bind after a reset; `realpath` is
-required. This surface is the handoff point: invoke it and read its output.
-Read the source only when troubleshooting on the user's instruction.
+required. Invoke it and read its output; read the source only when
+troubleshooting on the user's instruction.
 
-Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument.
+Free-form content (a title, a quote, a batch) arrives as one JSON object on
+stdin or from `--file`; flags carry closed choices, counts, paths, and
+identifiers. An option that takes a literal also takes `@path` or `-` for
+stdin, and `@@` starts a literal `@`. Write a batch to a file: a retry then
+costs one edit.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
@@ -186,9 +181,9 @@ Before ingest, determine from available tools:
 
 - PDF text: read with `/read-pdf` and pass the extraction file to `ingest`.
   A paper with no reachable text runs at lite only, disclosed in the report.
-- Network: the novelty bank runs lit-review, which needs its APIs. Without
-  network, walk the other banks and report novelty as unassessed. Reading
-  one page a paper cites commands `/search-web fetch`.
+- Network: the novelty bank runs lit-review. Without network, walk the
+  other banks and report novelty as unassessed. Reading one page a paper
+  cites commands `/search-web fetch`.
 - Sub-agents: optional, one bank per worker at most. A worker receives the
   session identifier and one bank, jots and notes through the script, and
   writes nothing else. Results must not depend on which branch ran.
@@ -197,9 +192,9 @@ Before ingest, determine from available tools:
 
 - An anchor resolves as a verbatim substring of the normalized page text, or
   as the best-matching span at 0.85 similarity or better. A failed quote
-  usually crosses a page break, a hyphenated line end, or a figure caption;
-  the hint names the closest page and the similarity it reached. Quotes run 12
-  to 1000 characters: shorter resembles any paper, longer is a section.
+  usually crosses a page break, a hyphenated line end, or a figure caption.
+  Quotes run 12 to 1000 characters: shorter resembles any paper, longer is a
+  section.
 - An objection with `missing` needs a `where` (the table or section that
   should hold the absent item), or the report cannot place it.
 - Limitations detection matches a closed heading list; when `ingest` signals

@@ -77,10 +77,9 @@ Current skills:
   download once into a capped temp cache.
 * `reframe/` - testable target-direction judgments that challenge incremental
   or legacy-bound framing.
-* `search-web/` - keyless retrieval for an agent with no harness search
-  tool: ranked web results, DuckDuckGo instant answers, Wikipedia summaries,
-  papers from OpenAlex, Crossref, or arXiv, and the readable text of one
-  page, all in one record shape, with a temp-space cache per query.
+* `search-web/` - retrieval for an agent with no harness search tool:
+  ranked web results, instant answers, Wikipedia summaries, papers with
+  DOIs, and the readable text of one page, all in one record shape.
 * `setup-env/` - isolated per-project dev environments in userspace with uv
   as the only assumption: a typed target algebra of
   `family[:flavor][@version]` tags, micromamba and publisher suppliers, qemu

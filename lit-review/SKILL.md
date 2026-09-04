@@ -15,11 +15,7 @@ description: >-
   one known paper, or web research over non-scholarly sources.
 license: MIT
 compatibility: >-
-  Requires uv, network access to api.openalex.org, export.arxiv.org,
-  api.crossref.org, and doi.org, and a full SKILLs repository checkout.
-  OpenAlex requires an API key: set BTM_OPENALEX_KEY to a free key from
-  openalex.org/settings/api, or its searches spend a small daily budget and
-  then fail.
+  Requires uv, network access, and a full SKILLs repository checkout.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---
@@ -43,14 +39,12 @@ owns criteria, screening, reading, and synthesis.
 
 ## Invariants
 
-Non-negotiable at every step and after any context compaction. If aware of a
-compaction event, re-open this SKILL.md and reload state via the script
-before continuing.
+Non-negotiable at every step and after context compaction; re-open this
+SKILL.md and reload state via the script.
 
 1. Cite only corpus records. Every citation in the deliverable resolves to a
-   record in the session corpus. Never cite from memory, from a
-   search-result snippet, or from a paper the corpus does not hold. No
-   record, no citation.
+   record in the session corpus; never from memory, a search-result
+   snippet, or a paper the corpus does not hold.
 2. Criteria precede search. Inclusion and exclusion criteria stand in
    `protocol.json` before the first query; the script refuses to search
    without them. A later criteria change is appended to `amendments` with
@@ -94,14 +88,12 @@ screen that leaves too few papers reopens search); log what reopened it.
 
 `init` takes two or three keywords, mints the session identifier, and echoes
 it with its directory. A keyword subset recovers a lost identifier; `schema`
-prints every record shape whenever a field name is in doubt. Sessions survive
-across conversations; pass a directory path in place of an identifier to put
-one somewhere specific.
+prints every record shape whenever a field name is in doubt. Pass a
+directory path in place of an identifier to put one somewhere specific.
 
 `protocol.json` in that directory is the one file the agent edits by hand:
 fill `criteria.include` and `criteria.exclude` before the first search, and
-append to `amendments` when they change. Everything else moves through
-commands.
+append to `amendments` when they change.
 
 Two write paths carry different contracts:
 
@@ -109,44 +101,31 @@ Two write paths carry different contracts:
   with `--text`) and never rejects content; `recall` filters it back by
   kind, regex, id, or count. An entry with `"kind": "extraction"` and a
   paper `key` is recognized for coverage tracking; `map`, `open`, and
-  `lore` are suggested kinds; `--lore` reads and writes a cross-session
-  pad for tool facts worth keeping between reviews.
+  `lore` are suggested kinds; `--lore` reads and writes a cross-session pad
+  for facts worth keeping between reviews.
 - The gate is what the script later judges. `update` and `screen` move
   paper statuses; `note` admits findings (claim plus supporting keys plus
   the read level each citation needs) and gaps (the absence claimed, the
   null-search log ids proving it, a watch of literal words). A rejected
-  batch returns every problem in one verdict, each an imperative fix with a
-  hint, and a DOI or arXiv id resolves as a key; the file stays unchanged,
-  so apply all fixes and resend once. Write batches to a file and pass `--file`: a
-  retry then costs one edit. Every JSON-carrying command reads the same
-  three ways: an inline argument where one is offered, `--file`, or stdin.
-  Passing both an inline argument and `--file` is refused rather than
-  silently resolved.
+  batch names every problem at once and changes nothing, so apply all the
+  fixes and resend. A DOI or arXiv id resolves as a key.
 
-`digest` is the screening entry point, and the cheapest one. It partitions
-the undecided candidates by their most distinguishing shared term and returns
-one label, one count, one selecting rule, and two exemplars per kind, so a few
-hundred candidates become a few dozen judgments. Accepting or rejecting a kind
-is then one `screen` with the digest's rule on stdin. Re-run `digest` after each cut: the
-labels are relative to what is still undecided, so new kinds surface as the
-big ones leave. `show` remains for reading specific records by key.
+`digest` is the screening entry point and the cheapest one: it groups the
+undecided candidates into kinds, each with a rule that selects it, so
+accepting or rejecting a whole kind is one `screen`. Re-run it after each
+cut, since the kinds are relative to what is still undecided. `show` reads
+specific records by key.
 
-Every command's envelope carries `next`, the cheapest legal action derived
-from live counts. It is advisory, never a gate: revisiting an earlier phase is
-normal, and the script only supplies arithmetic the agent would otherwise redo.
-`status` also signals when the included count leaves the level's band.
+Every envelope carries `next`, an advisory step and never a gate:
+revisiting an earlier phase is normal.
 
 `brief` is the resume view and the belief check: findings and gaps come
-back with verdicts derived from the live corpus (a finding whose support
-was excluded or under-read is at-risk; a gap whose watch words match a
-later paper is challenged), plus corpus drift since the previous brief,
-the citation marker table, unextracted papers, the pad tail, and lore.
-Run it after compaction and before drafting. `cite-check --draft` checks
-every `[n]` in the draft against assigned markers; numbers are
-append-only, so a late inclusion extends the table and existing citations
-stand.
-
-An option that takes a literal also takes `@path`, which reads the file, or `-`, which reads stdin; `@@` starts a literal `@`. A parameter that is only ever a path keeps its bare spelling.
+back with verdicts derived from the live corpus, plus corpus drift since
+the previous brief, the citation marker table, unextracted papers, the pad
+tail, and lore. Run it after compaction and before drafting. `cite-check
+--draft` checks every `[n]` in the draft against assigned markers; numbers
+are append-only, so a late inclusion extends the table and existing
+citations stand.
 
 Exit codes: 0 done (stderr `signal:` lines are advisory and never block);
 1 fix the input and resend; 2 upstream failed, retry. Downloaded PDFs and
@@ -155,11 +134,14 @@ sessions with sizes and removes one session or `--all`, reporting bytes
 freed.
 
 Bind the command once per shell and re-bind after a reset; `realpath` and
-`env -u VIRTUAL_ENV` are both required. This surface is the handoff point:
-invoke it and read its output. Read the source only when troubleshooting on
-the user's instruction.
+`env -u VIRTUAL_ENV` are both required. Invoke it and read its output; read
+the source only when troubleshooting on the user's instruction.
 
-Free-form content travels on stdin as one JSON object, or from `--file`; closed choices, counts, paths, and identifiers travel as flags. A question, a fielded query, a regex, and a pad entry all carry characters the shell rewrites, so none of them is ever an argument.
+Free-form content (a question, a query, a regex, a pad entry, a batch)
+arrives as one JSON object on stdin or from `--file`; flags carry closed
+choices, counts, paths, and identifiers. An option that takes a literal also
+takes `@path` or `-` for stdin, and `@@` starts a literal `@`. Write a batch
+to a file: a retry then costs one edit.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
@@ -197,10 +179,10 @@ Before the protocol phase, determine from actually available tools:
 
 - Network for the script: if the first search cannot reach its API, stop and
   say so. `/search-web` reaches the same indexes but keeps no corpus, so it
-  scopes a question before a review; it never substitutes for one. A review is never written from parametric memory. When the user
-  supplies their own corpus (PDFs, BibTeX), skip the search phase, record
-  provenance as user-supplied in the log's place, and run the remaining
-  phases unchanged.
+  scopes a question before a review; it never substitutes for one. When the
+  user supplies their own corpus (PDFs, BibTeX), skip the search phase,
+  record provenance as user-supplied in the log's place, and run the
+  remaining phases unchanged.
 - Full-text reading: read PDF full texts with `/read-pdf`. A paper with no
   reachable PDF falls back to landing-page HTML, then to abstract level,
   disclosed in the report.
@@ -210,9 +192,9 @@ Before the protocol phase, determine from actually available tools:
 
 ## Gotchas
 
-- OpenAlex lists zero references for some arXiv-only records; the script
-  signals this. Snowball from a journal-indexed record, or read the paper's
-  own reference list during extract.
+- OpenAlex lists zero references for some arXiv-only records. Snowball from
+  a journal-indexed record, or read the paper's own reference list during
+  extract.
 - Relevance-ranked sources return off-topic candidates; that is what
   screening is for. Never widen criteria to make noisy results fit.
 - A preprint and its journal version can enter the corpus under different
@@ -220,11 +202,10 @@ Before the protocol phase, determine from actually available tools:
   reason "superseded duplicate", keeping the citable version.
 - `cited_by_count` differs across sources and lags for recent work. Use it
   only for reading order.
-- The arxiv source ignores year bounds (the script signals this); apply the
-  window during screening instead.
+- The arxiv source ignores year bounds; apply the window during screening
+  instead.
 - arXiv ranks fielded queries far better than plain phrases: wrap terms as
-  `all:"<phrase>"`. The script signals when an unfielded query matches
-  nothing.
+  `all:"<phrase>"`.
 - A missing abstract is a data gap: keep the paper, screen it on title
   plus landing page, or mark it for full-text triage.
 

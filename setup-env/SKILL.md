@@ -16,11 +16,10 @@ description: >-
   administration, or deploying services.
 license: MIT
 compatibility: >-
-  uv on PATH, network access, and a full SKILLs repository checkout: the
-  provisioner is a uv workspace member under the skill's scripts/ directory,
-  and everything else is fetched. Linux and macos on x86_64/arm64 are first
-  class; windows x86_64 is best effort (haskell, bash, c, cpp unavailable
-  there). Roughly 1-6 GB under the environment root, depending on targets.
+  uv on PATH, network access, and a full SKILLs repository checkout. Linux
+  and macos on x86_64/arm64 are first class; windows x86_64 is best effort
+  (haskell, bash, c, cpp unavailable there). Roughly 1-6 GB under the
+  environment root, depending on targets.
 metadata:
   argument-hint: "[provision|plan|status|shim|destroy|list] [tags...]"
 ---
@@ -29,8 +28,7 @@ metadata:
 
 One command provisions everything a project needs into one disposable
 root: run it, source the printed activation script, build. Re-running is
-safe and is the repair action: every step checks its postcondition and
-skips completed work.
+the repair action.
 
 ## Registry
 
@@ -46,11 +44,10 @@ skips completed work.
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 
-The console command `btm-setup-env` is the entry point; the registered
-module names are the member's internals. Read `targets` before choosing
-tags beyond the obvious; read `extending` only to add or change a recipe.
-The command surface is the handoff point: invoke it and read its output;
-source reading belongs to user-instructed troubleshooting.
+The console command `btm-setup-env` is the entry point. Read `targets`
+before choosing tags beyond the obvious; read `extending` only to add or
+change a recipe. Invoke the command and read its output; read source only
+for user-instructed troubleshooting.
 
 ## Procedure
 
@@ -107,14 +104,14 @@ Verify later with `status`, wrap a stray foreign-architecture binary with
 ## The Interface Is The Whole Contract
 
 - Exact toolset: the environment contains the union of what the named tags
-  require and nothing else, installed by one solver call per prefix.
+  require and nothing else.
 - Conflicts are errors before effects: two versions of one toolchain, an
   unknown tag, or a target impossible on this host all fail during planning
   with a precise message, never mid-download.
 - Idempotent: an interrupted or failed run is repaired by re-running the
   same command. `provision` with a different tag set reshapes the
   environment to exactly that set.
-- Versions left unpinned resolve to the newest conda-forge build; the
+- Versions left unpinned resolve to the newest available build; the
   chosen versions are recorded in `<root>/manifest.json`.
 
 ## Isolation Invariant
@@ -139,8 +136,7 @@ env -i /bin/sh -c '. <root>/activate.sh && cd <project> && <build-command>'
 
 ## The Architecture Fact
 
-Some publishers ship a tool for exactly one platform; Google ships linux
-aapt2 as x86_64 only, and every Android resource task runs it. How a host
+Some publishers ship a build tool for exactly one platform. How a host
 reaches a foreign binary is a total function of (host, needed platform),
 decided in one place (`model`) and answered by first-class variants:
 
@@ -154,31 +150,27 @@ decided in one place (`model`) and answered by first-class variants:
 Nothing downstream branches on architecture: the emulated tool is one
 executable at one path, registered where its consumer looks (aapt2 through
 `android.aapt2FromMavenOverride` in the isolated `gradle.properties`), and
-its wrapper writes nothing to stdout because callers speak daemon protocols
-over those pipes.
+its wrapper writes nothing to stdout.
 
 ## Gotchas
 
 - uv is the only assumption. A bare ubuntu:24.04 image with uv works: the
-  scripts fetch TLS roots via certifi, download with Python itself, and
-  never call curl, git, tar, or unzip binaries.
+  scripts never call curl, git, tar, or unzip binaries.
 - Activation redirects HOME, so git identity and ssh keys are absent inside
   an activated shell. Build and test there; commit from a normal shell.
-- micromamba `create` replaces a prefix. The planner therefore merges all
-  host packages into one create call; never hand-install into
+- The prefix create step replaces the whole prefix, so the planner merges
+  all host packages into one call; never hand-install into
   `<root>/conda/host` with a second call.
 - Toolchains pinned by the project (gradlew, package.json, Cargo.toml)
-  stay authoritative: the android recipes deliberately install no gradle
-  and no kotlin, because a second copy on PATH only confuses diagnosis.
+  stay authoritative: the android recipes install no gradle and no kotlin.
 - Emulated tools run slower: minutes for a full Android resource pipeline
   where native takes seconds. Correctness is unaffected.
-- The root is ephemeral by design (under the system temp dir unless
-  `DENV_HOME` says otherwise). After a reboot, re-run provision.
+- The root is ephemeral (under the system temp dir unless `DENV_HOME` says
+  otherwise). After a reboot, re-run provision.
 - Narrowing the tag set reshapes the conda prefix exactly but leaves stale
   publisher downloads under `<root>/tools`; run `destroy` and re-provision
   for a byte-exact minimal root.
 - Recipes were validated end to end on linux (both architectures); macos
-  and windows follow the same code paths with best-effort edges, and
-  re-running provision is the repair action.
+  and windows follow the same code paths with best-effort edges.
 - macos/arm64 Android builds need Rosetta 2 once:
   `softwareupdate --install-rosetta --agree-to-license`.
