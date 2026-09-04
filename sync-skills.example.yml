@@ -1,24 +1,21 @@
 # Ready to use: copy this file to .github/workflows/sync-skills.yml in your
-# repository (a real copy - GitHub Actions does not resolve symlinks under
-# .github/workflows). It works as-is with the standard setup:
+# repository. Make it a real copy; GitHub Actions does not resolve symlinks
+# under .github/workflows. It works as-is with the standard setup:
 #
 #   git submodule add https://github.com/BTreeMap/SKILLs.git .github/skills
 #
 # Twice a day it fast-forwards the .github/skills gitlink to the upstream tip
-# on each branch listed below (default: main, master, and dev; missing branches
-# are skipped, not errors) as one GitHub-signed `chore:` commit per branch; when a
-# branch is already current it is left untouched. The upstream is whatever
-# each branch records for the submodule, so a fork of SKILLs with the same layout
-# works unchanged.
+# on each branch listed below (main, master, dev by default), one
+# GitHub-signed `chore:` commit per branch. A branch already current is left
+# untouched; a missing branch is skipped, not an error. The upstream is whatever each branch records for the submodule, so a
+# fork with the same layout works once the `uses:` line points at it.
 #
-# All logic lives in the reusable workflow inside the SKILLs repository -
-# this caller contributes only the schedule and the `contents: write` grant,
-# which the reusable workflow narrows to `contents: read` for everything but
-# the one job that writes. (Forked SKILLs? Point the `uses:` line at your
-# fork.) Commits made with GITHUB_TOKEN do not trigger other workflows, so
-# this cannot recurse. The bump commits are signed by GitHub and the refs move
-# by fast-forward, so a ruleset requiring signed commits or blocking force
-# pushes needs no bypass actor.
+# The logic lives in the reusable workflow this calls; here you supply only the
+# schedule and the `contents: write` grant, which that workflow narrows to
+# `contents: read` for every job but the one that writes. Commits made with
+# GITHUB_TOKEN do not trigger workflows, so this cannot recurse. The bumps are
+# signed and the refs move by fast-forward, so a ruleset requiring signed
+# commits or blocking force pushes needs no bypass actor.
 
 name: Sync skills
 
@@ -28,8 +25,8 @@ on:
     - cron: "23 4,16 * * *"
   workflow_dispatch:
 
-# Deny-all default; the job below grants the reusable workflow exactly the
-# one permission it needs, and only for its own job.
+# Deny-all default; the job below grants the one permission the reusable
+# workflow needs, and only for that job.
 permissions: {}
 
 concurrency:

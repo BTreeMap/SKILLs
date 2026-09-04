@@ -1,14 +1,12 @@
 # Repair what is mechanical, commit it, and fail only on what needs a person.
 #
 # Contract: after this workflow, main is formatted, linted, aliased, and its
-# skill listings are sorted. Anything a tool can fix is fixed and committed
-# here; the run goes red only for findings no fixer can settle, which is the
-# signal that a human must decide something.
+# skill listings are sorted. The run goes red only for findings no fixer can
+# settle.
 #
-# The rules themselves live in the repository, not in this file: ruff.toml
-# holds the lint and format policy, and the `.github/gate` workspace member
-# holds the conventions from AGENTS.md. This file decides when they run and who is
-# allowed to write.
+# The rules live in the repository, not here: ruff.toml holds the lint and
+# format policy, and the `.github/gate` workspace member holds the conventions
+# from AGENTS.md. This file decides when they run and who may write.
 #
 # Least privilege, following .github/workflows/sync-skills.yml:
 #   - `fix` holds `contents: read` and only computes; it produces the new file
@@ -19,7 +17,7 @@
 #
 # Signed commits: the repair goes through the Git Data API carrying no author,
 # committer, or signature field, the documented condition for GitHub to sign a
-# bot commit with its own key, so repairs satisfy a `Require signed commits`
+# bot commit with its own key. So repairs satisfy a `Require signed commits`
 # ruleset with no key, secret, or bypass actor. force=false keeps the ref
 # update a fast-forward; losing that race is a warning, because the next push
 # recomputes the same repairs.
@@ -75,11 +73,11 @@ jobs:
       - uses: astral-sh/setup-uv@v9.0.0
 
       - name: Apply every fixer
-        # Fixers never fail this job: `ruff check --fix` exits nonzero when
-        # findings it cannot fix remain, and the gate does the same, but that
-        # verdict belongs to the assertion step below, after the repairs have
-        # been collected. Only safe fixes are applied, because an unsafe fix can
-        # change behavior and must not land unreviewed.
+        # Fixers never fail this job. `ruff check --fix` and the gate both
+        # exit nonzero on findings they cannot fix, but that verdict belongs to
+        # the assertion step below, once the repairs are collected. Only safe
+        # fixes are applied: an unsafe fix changes behavior and must not land
+        # unreviewed.
         run: |
           set -uo pipefail
           uvx "ruff@${RUFF_VERSION}" check --fix . || true
@@ -89,9 +87,9 @@ jobs:
       - name: Collect the repairs
         id: collect
         # The repaired files cross to the writing job as one JSON value: the
-        # exact tree entries the Git Data API accepts, so that job adds no
-        # policy of its own. Mode comes from the filesystem, which keeps an
-        # executable bit or a symlink from being flattened into a plain file.
+        # tree entries the Git Data API accepts, so that job adds no policy of
+        # its own. Mode comes from the filesystem, which keeps an executable
+        # bit or a symlink from flattening into a plain file.
         run: |
           set -euo pipefail
           # Scratch lives outside the checkout: a file written here would show
@@ -150,15 +148,15 @@ jobs:
 
       - name: Assert what no fixer can settle
         # The sole judge, run against the repaired tree, so it reports only
-        # what a person must decide. Every check runs even when an earlier one
-        # fails, because their findings are independent.
+        # what a person must decide. Every check runs even after an earlier
+        # one fails: their findings are independent.
         #
         # `uv lock --check` fails when a manifest moved without the lock: no
         # fixer relocks, because choosing versions is a person's call.
         #
         # mypy runs strict with the pydantic plugin, so a field name or type
-        # that no longer matches its model fails here rather than surfacing as
-        # a rejection an agent hits mid-session.
+        # that no longer matches its model fails here rather than as a
+        # rejection an agent hits mid-session.
         run: |
           set -uo pipefail
           rc=0
@@ -171,9 +169,9 @@ jobs:
 
   commit:
     needs: fix
-    # Runs even when the assertion above failed: repairs that were computed are
-    # still correct and still worth landing, and withholding them would only
-    # make the remaining, human-sized problem harder to see.
+    # Runs even when the assertion above failed: the computed repairs are
+    # still correct and still worth landing, and withholding them only makes
+    # the remaining human-sized problem harder to see.
     if: ${{ !cancelled() && needs.fix.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -194,9 +192,9 @@ jobs:
             "$(jq -r '.[] | "- \(.path)"' <<<"${ENTRIES}")")
 
           # tree -> commit -> ref are dependent effects, each consuming the
-          # previous sha, so they share one failure arm; gh has already printed
-          # the HTTP error. Omitting author, committer, and signature is what
-          # makes GitHub sign the commit.
+          # previous sha, so one failure arm covers the chain; gh has already
+          # printed the HTTP error. Omitting author, committer, and signature
+          # is what makes GitHub sign the commit.
           land() {
             tree=$(jq -n --arg base "${BASE}" --argjson entries "${ENTRIES}" \
                      '{base_tree: $base, tree: $entries}' \

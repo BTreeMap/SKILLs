@@ -3,8 +3,8 @@
 # repository root for the ready-to-use caller.
 #
 # Contract: each branch yields exactly one status line - updated, already
-# current, skipped, or not synced. The last is also a ::warning:: naming the
-# input to fix. Nothing here fails the run; the next scheduled run retries.
+# current, skipped, or not synced. The last also raises a ::warning:: naming
+# the input to fix. Nothing here fails the run; the next run retries.
 #
 # Least privilege:
 #   - `plan` holds `contents: read` and only decides; `apply` holds the sole
@@ -88,9 +88,9 @@ jobs:
           for b in ${BRANCHES//,/ }; do
             head=$(gh api "${repo}/git/ref/heads/${b}" -q .object.sha 2>/dev/null) \
               || { skip 'no branch by that name in this repository'; continue; }
-            # jq is the sole constructor of a branch record, so a partial read
-            # is unrepresentable downstream. One read yields both the pinned
-            # gitlink and the URL recorded for it; .gitmodules is never parsed.
+            # jq is the sole constructor of a branch record, so a partial
+            # read is unrepresentable downstream. One read yields both the
+            # pinned gitlink and its recorded URL; .gitmodules is never parsed.
             record=$(gh api "${repo}/contents/${SUBMODULE_PATH}?ref=${head}" 2>/dev/null \
                      | jq -r --arg b "${b}" --arg head "${head}" \
                          'select(type == "object" and .type == "submodule")
@@ -122,8 +122,8 @@ jobs:
               https://*) ;;
               *) reject "the upstream URL '${url}' is not https; set the upstream-url input to an https URL"; continue ;;
             esac
-            # Untrusted: an upstream sha reaches an API call only through this
-            # guard. Empty output and a failed fetch collapse to the same case.
+            # Untrusted: an upstream sha reaches an API call only through
+            # this guard. Empty output and a failed fetch are the same case.
             tip=$(git ls-remote "${url}" "${ref}" | awk 'NR == 1 { print $1 }') || tip=''
             case "${tip}" in
               *[!0-9a-f]* | '') reject "no ${ref} found at ${url}; check the upstream-ref input"; continue ;;
