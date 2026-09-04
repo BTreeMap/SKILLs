@@ -14,6 +14,7 @@ from btm_corekit import (
     Model,
     NonEmpty,
     Parser,
+    View,
     content,
     emit,
     gated,
@@ -24,6 +25,7 @@ from btm_corekit import (
     signal,
     wire_clean,
     wire_pad,
+    wire_view,
 )
 from btm_ponder.batch import BATCH_KEYS, SCHEMA, NoteResult, expand_batch
 from btm_ponder.ledger import replay
@@ -41,6 +43,7 @@ from btm_ponder.views import (
     counts_of,
     hedges,
     leaf_view,
+    marker_table,
     scaffold,
     sections,
     violations,
@@ -83,7 +86,6 @@ def cmd_note(args: argparse.Namespace) -> int:
         document: dict[str, JSON] = {
             "session": directory.name,
             "admitted": dict(Counter(event["e"] for event in result.events)),
-            "minted": result.minted,
             "counts": counts_of(ledger),
             "open": [
                 leaf_id
@@ -92,9 +94,13 @@ def cmd_note(args: argparse.Namespace) -> int:
             ],
             "yield": yield_table(events + result.events),
         }
+        if args.view.covers(View.DRAFT):
+            # Only a later batch referencing these ids needs them; a round that
+            # mints and consumes in one batch pays 2.5 KB for nothing.
+            document["minted"] = result.minted
         if result.merged:
             document["merged"] = result.merged
-        if args.full:
+        if args.view.covers(View.FULL):
             document["leaves"] = {
                 leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
                 for leaf_id, leaf in ledger.leaves.items()
@@ -128,24 +134,19 @@ def cmd_check(args: argparse.Namespace) -> int:
         "session": directory.name,
         "mode": mode,
         "question": meta.get("question"),
-        # Markers first: drafting reads this table before anything else.
-        "markers": {
-            markers[source_id]: {
-                "id": source_id,
-                "cls": ledger.sources[source_id].cls,
-                "title": ledger.sources[source_id].title,
-                "url": ledger.sources[source_id].url,
-            }
-            for source_id in ledger.source_order
-        },
         "sections": sections(ledger),
-        "scaffold": scaffold(ledger, markers),
+        # Scaffold before markers: a draft is written from the scaffold and
+        # only consults the marker table to render its Sources section, so the
+        # long table sitting first cost a second read of the whole document.
+        "scaffold": scaffold(ledger, markers, args.view),
         "violations": blocking,
         "advisories": demoted,
         "hedges": hedges(ledger),
         "yield": yield_table(events),
     }
-    if args.full:
+    if args.view.covers(View.DRAFT):
+        document["markers"] = marker_table(ledger, markers)
+    if args.view.covers(View.FULL):
         document["leaves"] = {
             leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
             for leaf_id, leaf in ledger.leaves.items()
@@ -201,13 +202,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="read the batch from this file; retries cost one edit",
     )
-    note.add_argument("--full", action="store_true", help="add the leaf dump")
+    wire_view(note, "the minted-id table")
     check = commands.add_parser(
         "check", help="derive the drafting scaffold and any violations"
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("session", help="session identifier")
-    check.add_argument("--full", action="store_true", help="add the leaf dump")
+    wire_view(check, "the stored prose and the source table")
     status = commands.add_parser(
         "status", help="counts, open leaves, and the next step"
     )

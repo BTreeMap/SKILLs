@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from btm_corekit import JSON, View
 from btm_ponder.state import (
     CHAIN_MIN_LINKS,
     SETTLING,
@@ -122,6 +123,11 @@ def leaf_view(state: LeafState) -> dict[str, Any]:
             return {"state": "folded", "into": into}
 
 
+def _no_prose(premise: str, detail: str) -> dict[str, str]:
+    """The `plan` view's projection: the same shape, none of the payload."""
+    return {}
+
+
 def _prose(premise: str, detail: str) -> dict[str, str]:
     fields = {}
     if premise:
@@ -143,10 +149,30 @@ def _sweep_row(sweep: Sweep) -> dict[str, Any]:
     }
 
 
+def marker_table(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, JSON]:
+    """Marker to the three fields a Sources line needs. The minted id is the
+    ledger's business, not the draft's, and 41 of them cost 1.9 KB no reader
+    spends."""
+    return {
+        marker_of[source_id]: {
+            "cls": ledger.sources[source_id].cls,
+            "title": ledger.sources[source_id].title,
+            "url": ledger.sources[source_id].url,
+        }
+        for source_id in ledger.source_order
+    }
+
+
 def scaffold(
-    ledger: Ledger, marker_of: dict[str, str]
+    ledger: Ledger, marker_of: dict[str, str], view: View = View.DRAFT
 ) -> dict[str, list[dict[str, Any]]]:
-    """The stored close prose keyed by marker, grouped into the derived sections."""
+    """The stored close prose keyed by marker, grouped into the derived sections.
+
+    Below `draft` the prose is withheld: premise and detail are the agent's own
+    words, worth their bytes after a compaction and worth nothing in the window
+    that wrote them. Marker refs stay at every level, so the chain law holds
+    field by field."""
+    prose = _prose if view.covers(View.DRAFT) else _no_prose
     body: dict[str, list[dict[str, Any]]] = {"answer": [], "rival": [], "open": []}
     for leaf_id, leaf in ledger.leaves.items():
         match leaf.state:
@@ -159,7 +185,7 @@ def scaffold(
                         "markers": [marker_of[sid] for sid in sources],
                         "stated": stated(classes),
                     }
-                    | _prose(premise, detail)
+                    | prose(premise, detail)
                 )
             case Refuted(sources=sources, premise=premise, detail=detail):
                 body["rival"].append(
@@ -169,7 +195,7 @@ def scaffold(
                         "markers": [marker_of[sid] for sid in sources],
                         "premise": premise,
                     }
-                    | _prose("", detail)
+                    | prose("", detail)
                 )
             case Unresolved(reason=reason, detail=detail):
                 body["open"].append(

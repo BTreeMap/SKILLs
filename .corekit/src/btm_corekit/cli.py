@@ -8,8 +8,9 @@ import json
 import sys
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, NoReturn, Protocol, TypeAlias
+from typing import Any, Final, NoReturn, Protocol, TypeAlias
 
 from btm_corekit.channels import emit, signal
 from btm_corekit.errors import CommandError, UpstreamError
@@ -181,6 +182,49 @@ def content(model: type[M], file: str | None, what: str) -> M:
     if not isinstance(data, dict):
         raise CommandError(f"{what} is one JSON object")
     return parse_model(model, data, what)
+
+
+class View(StrEnum):
+    """How much of a derived document to emit.
+
+    A chain, not a set of flags: each level is a superset of the one before,
+    so asking for more never costs information and a field is declared at
+    exactly one level. `draft` is the default because the documented path
+    drafts from this output; `plan` is the mid-session view, which on a real
+    session is an order of magnitude smaller than the prose it omits.
+    """
+
+    PLAN = "plan"
+    DRAFT = "draft"
+    FULL = "full"
+
+    @property
+    def rank(self) -> int:
+        return VIEW_ORDER.index(self)
+
+    def covers(self, level: View) -> bool:
+        """The chain law, and the only test a document builder needs.
+
+        Containment is structural, not top-level: a richer view may add fields
+        inside a row it already emitted. What it may never do is rewrite a
+        value or drop a record, so a caller can trust what a cheaper view
+        already told it."""
+        return self.rank >= level.rank
+
+
+VIEW_ORDER: Final = (View.PLAN, View.DRAFT, View.FULL)
+
+
+def wire_view(parser: argparse.ArgumentParser, omitted: str) -> None:
+    """One spelling of "how much", identical in every member. `omitted` names
+    what `plan` leaves out, since only the member knows."""
+    parser.add_argument(
+        "--view",
+        type=View,
+        choices=list(View),
+        default=View.DRAFT,
+        help=f"plan omits {omitted}; draft is the default; full adds the record dump",
+    )
 
 
 class Outcome(Protocol):

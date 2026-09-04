@@ -17,6 +17,7 @@ from btm_corekit.cli import (
     Commands,
     Outcome,
     Parser,
+    View,
     advise,
     content,
     dispatch,
@@ -26,6 +27,7 @@ from btm_corekit.cli import (
     run_cli,
     wire_clean,
     wire_pad,
+    wire_view,
 )
 from btm_corekit.clock import now_iso
 from btm_corekit.digest import Cluster, Digest, Item, digest
@@ -131,6 +133,7 @@ __all__ = [
     "SessionStore",
     "Slug",
     "UpstreamError",
+    "View",
     "advise",
     "append_jsonl",
     "ascii_words",
@@ -188,5 +191,6 @@ __all__ = [
     "user_agent",
     "wire_clean",
     "wire_pad",
+    "wire_view",
     "write_atomic",
 ]

@@ -283,3 +283,156 @@ class TestClean:
         assert code == 1
         assert "refusing to remove" in err
         assert stray.exists()
+
+
+def contained(small, big) -> bool:
+    """Structural containment: every field of `small` appears in `big` at the
+    same path with a contained value, and lists keep their length."""
+    if isinstance(small, dict):
+        return isinstance(big, dict) and all(
+            key in big and contained(value, big[key]) for key, value in small.items()
+        )
+    if isinstance(small, list):
+        return (
+            isinstance(big, list)
+            and len(small) == len(big)
+            and all(contained(a, b) for a, b in zip(small, big, strict=True))
+        )
+    return bool(small == big)
+
+
+class TestViewChain:
+    """`View` is a chain: each level is a superset of the one before, so a
+    caller that asks for more never loses a field, and a field is declared at
+    exactly one level."""
+
+    def batch(self) -> str:
+        return json.dumps(
+            {
+                "leaves": [{"kw": ["rent", "length"], "q": "what does Rent guarantee"}],
+                "sources": [
+                    {
+                        "kw": ["bcl", "rent"],
+                        "leaf": "rent length",
+                        "cls": "constitutive",
+                        "title": "BCL source",
+                        "url": "https://example.org/bcl",
+                    }
+                ],
+                "closes": [
+                    {
+                        "leaf": "rent length",
+                        "state": "retrieved",
+                        "sources": ["bcl"],
+                        "premise": "Rent guarantees at-least length",
+                        "detail": "the exact overload is the other one",
+                    }
+                ],
+                "sweeps": [{"checked": "rivals", "candidates": [], "survivors": []}],
+            }
+        )
+
+    def noted(self, capsys) -> str:
+        """One session with one closed round, reusable across views."""
+        session = opened(capsys)
+        run(["note", session], capsys, stdin=self.batch())
+        return session
+
+    def viewed(self, capsys, session: str, view: str | None = None) -> dict:
+        argv = ["check", session] + (["--view", view] if view else [])
+        code, document, _ = run(argv, capsys)
+        assert code == 0
+        return document
+
+    def checked(self, capsys, view: str | None = None) -> dict:
+        return self.viewed(capsys, self.noted(capsys), view)
+
+    def test_each_level_is_a_superset_of_the_one_before(self, capsys):
+        session = self.noted(capsys)
+        plan = set(self.viewed(capsys, session, "plan"))
+        draft = set(self.viewed(capsys, session, "draft"))
+        full = set(self.viewed(capsys, session, "full"))
+        assert plan < draft < full
+
+    def test_a_richer_view_only_ever_adds(self, capsys):
+        """The chain law where it bites, and it is structural, not top-level:
+        `scaffold` is a shared key whose rows themselves grow. A richer view
+        adds fields at some depth and rewrites none, so a caller can trust
+        what a cheaper view already told it. Row cardinality is preserved:
+        a view projects fields, never filters records."""
+        session = self.noted(capsys)
+        plan = self.viewed(capsys, session, "plan")
+        draft = self.viewed(capsys, session, "draft")
+        full = self.viewed(capsys, session, "full")
+        assert contained(plan, draft)
+        assert contained(draft, full)
+
+    def test_scaffold_rows_grow_the_same_way(self, capsys):
+        session = self.noted(capsys)
+
+        def row(view: str) -> set[str]:
+            return set(self.viewed(capsys, session, view)["scaffold"]["answer"][0])
+
+        assert row("plan") < row("draft") <= row("full")
+
+    def test_plan_withholds_the_prose_it_was_handed(self, capsys):
+        """premise and detail are the agent's own words; echoing them back
+        into the window that wrote them is the cost this level removes."""
+        document = self.checked(capsys, "plan")
+        answer = document["scaffold"]["answer"][0]
+        assert "premise" not in answer
+        assert "detail" not in answer
+
+    def test_plan_keeps_the_marker_refs_that_carry_the_derivation(self, capsys):
+        answer = self.checked(capsys, "plan")["scaffold"]["answer"][0]
+        assert answer["markers"] == ["S1"]
+        assert answer["stated"] == "plain"
+
+    def test_plan_omits_the_source_table(self, capsys):
+        assert "markers" not in self.checked(capsys, "plan")
+
+    def test_draft_is_the_default(self, capsys):
+        session = self.noted(capsys)
+        assert self.viewed(capsys, session) == self.viewed(capsys, session, "draft")
+
+    def test_draft_carries_the_prose_and_the_table(self, capsys):
+        document = self.checked(capsys, "draft")
+        assert document["scaffold"]["answer"][0]["premise"].startswith("Rent")
+        assert document["markers"]["S1"]["title"] == "BCL source"
+
+    def test_the_marker_table_drops_the_minted_id(self, capsys):
+        """A draft cites S1 and renders a title and a url; the ledger's own
+        identifier is never read, and 41 of them are 1.9 KB."""
+        assert set(self.checked(capsys, "draft")["markers"]["S1"]) == {
+            "cls",
+            "title",
+            "url",
+        }
+
+    def test_the_scaffold_is_emitted_before_the_table(self, capsys):
+        keys = list(self.checked(capsys, "draft"))
+        assert keys.index("scaffold") < keys.index("markers")
+
+    def test_full_adds_the_record_dump(self, capsys):
+        assert "leaves" in self.checked(capsys, "full")
+        assert "leaves" not in self.checked(capsys, "draft")
+
+    def test_a_note_receipt_withholds_minted_ids_below_draft(self, capsys):
+        session = opened(capsys)
+        code, receipt, _ = run(
+            ["note", session, "--view", "plan"], capsys, stdin=self.batch()
+        )
+        assert code == 0
+        assert "minted" not in receipt
+        assert receipt["counts"] == {"retrieved": 1}
+
+    def test_a_note_receipt_carries_minted_ids_by_default(self, capsys):
+        session = opened(capsys)
+        _, receipt, _ = run(["note", session], capsys, stdin=self.batch())
+        assert "bcl-rent" in receipt["minted"]["sources"]
+
+    def test_an_unknown_view_names_the_vocabulary(self, capsys):
+        session = opened(capsys)
+        code, _, err = run(["check", session, "--view", "everything"], capsys)
+        assert code == 1
+        assert "invalid choice" in err or "invalid View value" in err

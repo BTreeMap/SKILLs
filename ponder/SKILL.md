@@ -106,6 +106,8 @@ JSON
 S="<the session identifier the init output echoed>"
 $R schema
 $R note "$S" --file <round.json> && $R check "$S"
+$R check "$S" --view plan|draft|full
+$R note "$S" --file <round.json> --view plan
 $R status "$S"
 $R jot "$S" [--text] <<'JSON'
 {"kind": "quote", ...}
@@ -120,7 +122,12 @@ note stops the chain. Write each round's batch to a file and pass `--file`:
 a rejection then costs one edit. `schema` prints the batch shape whenever a
 field name is in doubt; `status` is the cheap mid-session view and carries
 `next`, the cheapest legal action derived from live state, advisory rather
-than a gate. A rejected
+than a gate. `check --view` is a chain: `plan` derives sections, markers,
+hedges and violations without echoing back the prose your own closes stored;
+`draft` adds that prose and the source table, and is the default; `full` adds
+the leaf dump. Draft from `draft`, read `plan` mid-round, and after a
+compaction take `draft`, since the prose is genuinely gone from context then.
+A rejected
 `note` returns every problem in one verdict, each an imperative fix with its
 location and a hint (did-you-mean, valid vocabulary, or the schema
 fragment); the ledger stays unchanged, so apply all fixes and resend once.
