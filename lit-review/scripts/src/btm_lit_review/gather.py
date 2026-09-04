@@ -18,11 +18,13 @@ from btm_corekit import (
     dump,
     emit,
     now_iso,
+    openalex_page,
+    openalex_work,
     signal,
     write_atomic,
 )
-from btm_lit_review.constants import MAX_LIMIT, OPENALEX_WORKS
-from btm_lit_review.http import openalex_json
+from btm_lit_review.constants import MAX_LIMIT, RESPONSE_CAP_BYTES
+from btm_lit_review.http import client
 from btm_lit_review.paper import (
     Paper,
     absorb,
@@ -161,10 +163,11 @@ def resolve_openalex_id(papers: Mapping[str, Paper], token: str) -> tuple[str, s
     if paper.openalex_id:
         return key, paper.openalex_id
     if paper.doi:
-        work = openalex_json(f"{OPENALEX_WORKS}/doi:{urllib.parse.quote(paper.doi)}")
-        openalex_id = str(work.get("id") or "").rsplit("/", 1)[-1]
-        if openalex_id:
-            return key, openalex_id
+        work = openalex_work(
+            client(), RESPONSE_CAP_BYTES, f"doi:{urllib.parse.quote(paper.doi)}"
+        )
+        if work.key:
+            return key, work.key
     raise CommandError(
         f"paper {key} has no OpenAlex id or DOI; snowball needs one of them"
     )
@@ -178,10 +181,8 @@ def cmd_snowball(args: argparse.Namespace) -> int:
     papers = load_papers(session)
     seed_key, work_id = resolve_openalex_id(papers, args.seed)
     if args.direction == "backward":
-        work = openalex_json(f"{OPENALEX_WORKS}/{work_id}")
-        referenced = [
-            url.rsplit("/", 1)[-1] for url in work.get("referenced_works") or []
-        ]
+        work = openalex_work(client(), RESPONSE_CAP_BYTES, work_id)
+        referenced = [url.rsplit("/", 1)[-1] for url in work.referenced_works]
         total = len(referenced)
         if not referenced:
             signal(
@@ -190,10 +191,13 @@ def cmd_snowball(args: argparse.Namespace) -> int:
             )
         fetched = fetch_openalex_by_ids(referenced[:limit])
     else:
-        params = {"filter": f"cites:{work_id}", "per-page": str(limit)}
-        body = openalex_json(OPENALEX_WORKS, params)
-        total = (body.get("meta") or {}).get("count") or 0
-        fetched = [paper_from_openalex(w) for w in body.get("results") or []]
+        page = openalex_page(
+            client(),
+            RESPONSE_CAP_BYTES,
+            {"filter": f"cites:{work_id}", "per-page": str(limit)},
+        )
+        total = page.meta.count
+        fetched = [paper_from_openalex(work) for work in page.results]
     entry = {
         "command": "snowball",
         "seed": seed_key,

@@ -1,64 +1,61 @@
-"""Upstream normalization: one record per source becomes one Paper."""
+"""Projection: one index record becomes one Paper."""
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
-
+from btm_corekit import ArxivEntry, CrossrefItem, OpenAlexWork
 from btm_lit_review.upstream import (
     paper_from_arxiv,
     paper_from_crossref,
     paper_from_openalex,
-    reconstruct_abstract,
 )
 
-ARXIV_ENTRY = """<entry xmlns="http://www.w3.org/2005/Atom"
-                        xmlns:arxiv="http://arxiv.org/schemas/atom">
-  <id>http://arxiv.org/abs/2401.01234v2</id>
-  <title>A Study of Things</title>
-  <summary>We study things.</summary>
-  <published>2024-01-05T00:00:00Z</published>
-  <author><name>Ada Lovelace</name></author>
-  <arxiv:doi>10.1/xyz</arxiv:doi>
-</entry>"""
 
-
-class TestInvertedAbstract:
-    def test_positions_rebuild_the_original_word_order(self):
-        assert reconstruct_abstract({"Hello": [0], "world": [1]}) == "Hello world"
-
-    def test_a_repeated_word_lands_at_every_position(self):
-        assert reconstruct_abstract({"a": [0, 2], "b": [1]}) == "a b a"
-
-    def test_an_absent_index_yields_absence(self):
-        assert reconstruct_abstract(None) is None
+def openalex(**fields) -> OpenAlexWork:
+    return OpenAlexWork.model_validate(fields)
 
 
 class TestOpenAlex:
     def test_a_work_becomes_a_paper_with_its_identifiers(self):
-        work = {
-            "display_name": "A Study",
-            "doi": "https://doi.org/10.1/abc",
-            "publication_year": 2023,
-            "cited_by_count": 7,
-            "authorships": [{"author": {"display_name": "Ada"}}],
-        }
-        paper = paper_from_openalex(work)
+        paper = paper_from_openalex(
+            openalex(
+                display_name="A Study",
+                doi="https://doi.org/10.1/abc",
+                publication_year=2023,
+                cited_by_count=7,
+                authorships=[{"author": {"display_name": "Ada"}}],
+            )
+        )
         assert paper.title == "A Study"
         assert paper.doi == "10.1/abc"
         assert paper.year == 2023
         assert paper.authors == ("Ada",)
 
+    def test_an_inverted_abstract_rebuilds_its_word_order(self):
+        work = openalex(
+            display_name="T", abstract_inverted_index={"a": [0, 2], "b": [1]}
+        )
+        assert paper_from_openalex(work).abstract == "a b a"
+
     def test_a_sparse_work_still_parses(self):
-        assert paper_from_openalex({"display_name": "Bare"}).title == "Bare"
+        assert paper_from_openalex(openalex(display_name="Bare")).title == "Bare"
 
     def test_a_work_without_a_name_is_marked_untitled(self):
         """The corpus never holds a blank title; absence is stated instead."""
-        assert paper_from_openalex({}).title == "(untitled)"
+        assert paper_from_openalex(openalex()).title == "(untitled)"
 
 
 class TestArxiv:
     def test_an_entry_becomes_a_paper(self):
-        paper = paper_from_arxiv(ET.fromstring(ARXIV_ENTRY))
+        paper = paper_from_arxiv(
+            ArxivEntry(
+                id="http://arxiv.org/abs/2401.01234v2",
+                title="A Study of Things",
+                summary="We study things.",
+                published="2024-01-05T00:00:00Z",
+                doi="10.1/xyz",
+                authors=("Ada Lovelace",),
+            )
+        )
         assert paper.title == "A Study of Things"
         assert paper.arxiv_id == "2401.01234"
         assert paper.doi == "10.1/xyz"
@@ -68,18 +65,23 @@ class TestArxiv:
 
 class TestCrossref:
     def test_an_item_becomes_a_paper(self):
-        item = {
-            "title": ["A Crossref Work"],
-            "DOI": "10.1/cr",
-            "issued": {"date-parts": [[2022, 4]]},
-            "author": [{"given": "Grace", "family": "Hopper"}],
-            "container-title": ["Journal of Things"],
-        }
-        paper = paper_from_crossref(item)
+        paper = paper_from_crossref(
+            CrossrefItem.model_validate(
+                {
+                    "title": ["A Crossref Work"],
+                    "DOI": "10.1/cr",
+                    "issued": {"date-parts": [[2022, 4]]},
+                    "author": [{"given": "Grace", "family": "Hopper"}],
+                    "container-title": ["Journal of Things"],
+                }
+            )
+        )
         assert paper.title == "A Crossref Work"
         assert paper.doi == "10.1/cr"
         assert paper.year == 2022
         assert paper.venue == "Journal of Things"
+        assert paper.authors == ("Grace Hopper",)
 
     def test_a_title_less_item_is_marked_untitled(self):
-        assert paper_from_crossref({"DOI": "10.1/x"}).title == "(untitled)"
+        item = CrossrefItem.model_validate({"DOI": "10.1/x"})
+        assert paper_from_crossref(item).title == "(untitled)"

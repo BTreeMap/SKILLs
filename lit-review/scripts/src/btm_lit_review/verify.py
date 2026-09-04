@@ -7,17 +7,17 @@ import difflib
 import time
 from typing import Any
 
-from btm_corekit import JSON, CommandError, UpstreamError, emit, signal
+from btm_corekit import JSON, CommandError, UpstreamError, crossref_work, emit, signal
 from btm_lit_review.constants import (
     COURTESY_PAUSE_SECONDS,
-    CROSSREF_WORKS,
     HTTP_OK,
     REDIRECT_STATUSES,
+    RESPONSE_CAP_BYTES,
     TITLE_MATCH_FLOOR,
     ReadLevel,
     Status,
 )
-from btm_lit_review.http import doi_resolution_status, http_get_json
+from btm_lit_review.http import client, doi_resolution_status
 from btm_lit_review.paper import Paper, clean_text, normalize_title
 from btm_lit_review.session import load_papers, open_session
 
@@ -40,14 +40,9 @@ def _verify_into(result: dict[str, Any], paper: Paper) -> None:
         status = doi_resolution_status(paper.doi)
         result["doi_resolves"] = status in REDIRECT_STATUSES or status == HTTP_OK
         result["doi_http_status"] = status
-        try:
-            message = http_get_json(f"{CROSSREF_WORKS}/{paper.doi}").get("message")
-        except UpstreamError:
-            raise  # the registrar failed; verify_one records it on the row
-        except CommandError:
-            message = None  # the registrar holds no record for this DOI
-        if message and message.get("title"):
-            registered = clean_text(" ".join(message["title"])) or ""
+        record = crossref_work(client(), RESPONSE_CAP_BYTES, paper.doi)
+        if record and record.title:
+            registered = clean_text(" ".join(record.title)) or ""
             ratio = difflib.SequenceMatcher(
                 None, normalize_title(paper.title), normalize_title(registered)
             ).ratio()

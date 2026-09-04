@@ -7,12 +7,6 @@ from enum import StrEnum
 INSTANT_ANSWER = "https://api.duckduckgo.com/"
 WIKI_SEARCH = "https://en.wikipedia.org/w/rest.php/v1/search/page"
 WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
-OPENALEX_WORKS = "https://api.openalex.org/works"
-CROSSREF_WORKS = "https://api.crossref.org/works"
-ARXIV_QUERY = "https://export.arxiv.org/api/query"
-
-ATOM = "{http://www.w3.org/2005/Atom}"
-ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 
 APP = "btm-skills"  # the instant-answer API asks callers to name themselves
 TIMEOUT_SECONDS = 30

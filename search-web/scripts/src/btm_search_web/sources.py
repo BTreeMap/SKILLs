@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-import xml.etree.ElementTree as ET
 from collections.abc import Callable, Mapping
 from functools import cache
 from typing import TypeVar
@@ -18,19 +17,16 @@ from btm_corekit import (
     CommandError,
     Model,
     UpstreamError,
+    arxiv_feed,
     build_client,
+    crossref_page,
     get_bytes,
-    openalex_query,
+    openalex_page,
     parse_model,
 )
 from btm_search_web.constants import (
     APP,
-    ARXIV_NS,
-    ARXIV_QUERY,
-    ATOM,
-    CROSSREF_WORKS,
     INSTANT_ANSWER,
-    OPENALEX_WORKS,
     PAGE_CAP_BYTES,
     RESPONSE_CAP_BYTES,
     TIMEOUT_SECONDS,
@@ -39,13 +35,7 @@ from btm_search_web.constants import (
     Scholar,
 )
 from btm_search_web.records import Result, trimmed
-from btm_search_web.upstream import (
-    CrossrefResponse,
-    InstantAnswer,
-    OpenAlexPage,
-    WikiSearch,
-    WikiSummary,
-)
+from btm_search_web.upstream import InstantAnswer, WikiSearch, WikiSummary
 
 U = TypeVar("U", bound=Model)
 
@@ -142,37 +132,27 @@ def wiki(query: str, limit: int) -> list[Result]:
 
 
 def _openalex(query: str, limit: int) -> list[Result]:
-    body = _read(
-        OpenAlexPage,
-        OPENALEX_WORKS,
-        openalex_query({"search": query, "per-page": str(limit)}),
+    page = openalex_page(
+        client(), RESPONSE_CAP_BYTES, {"search": query, "per-page": str(limit)}
     )
     return [
         Result(
             title=trimmed(work.display_name, 300) or "(untitled)",
             url=work.doi or work.id,
-            snippet=trimmed(_abstract(work.abstract_inverted_index)),
+            snippet=trimmed(work.abstract),
             source="openalex",
             doi=(work.doi or "").removeprefix("https://doi.org/") or None,
             year=work.publication_year,
             cited_by=work.cited_by_count,
         )
-        for work in body.results
+        for work in page.results
     ]
 
 
-def _abstract(inverted: Mapping[str, tuple[int, ...]] | None) -> str:
-    """OpenAlex stores an abstract as a word-to-positions index."""
-    if not inverted:
-        return ""
-    places = sorted(
-        (position, word) for word, spots in inverted.items() for position in spots
-    )
-    return " ".join(word for _, word in places)
-
-
 def _crossref(query: str, limit: int) -> list[Result]:
-    body = _read(CrossrefResponse, CROSSREF_WORKS, {"query": query, "rows": str(limit)})
+    message = crossref_page(
+        client(), RESPONSE_CAP_BYTES, {"query": query, "rows": str(limit)}
+    )
     return [
         Result(
             title=trimmed(" ".join(item.title), 300) or "(untitled)",
@@ -183,34 +163,24 @@ def _crossref(query: str, limit: int) -> list[Result]:
             year=item.issued.year,
             cited_by=item.cited_by,
         )
-        for item in body.message.items
+        for item in message.items
     ]
 
 
 def _arxiv(query: str, limit: int) -> list[Result]:
-    """arXiv ranks a fielded query far better than a bare phrase."""
-    fielded = query if ":" in query else f'all:"{query}"'
-    payload = get_bytes(
-        client(),
-        ARXIV_QUERY,
-        RESPONSE_CAP_BYTES,
-        {"search_query": fielded, "max_results": str(limit)},
-    )
-    found = []
-    for entry in ET.fromstring(payload).findall(ATOM + "entry"):
-        published = (entry.findtext(ATOM + "published") or "")[:10]
-        found.append(
-            Result(
-                title=trimmed(entry.findtext(ATOM + "title"), 300) or "(untitled)",
-                url=entry.findtext(ATOM + "id") or "",
-                snippet=trimmed(entry.findtext(ATOM + "summary")),
-                source="arxiv",
-                published=published or None,
-                doi=entry.findtext(ARXIV_NS + "doi"),
-                year=int(published[:4]) if published[:4].isdigit() else None,
-            )
+    feed = arxiv_feed(client(), RESPONSE_CAP_BYTES, query, limit)
+    return [
+        Result(
+            title=trimmed(entry.title, 300) or "(untitled)",
+            url=entry.id,
+            snippet=trimmed(entry.summary),
+            source="arxiv",
+            published=entry.published[:10] or None,
+            doi=entry.doi,
+            year=int(entry.published[:4]) if entry.published[:4].isdigit() else None,
         )
-    return found
+        for entry in feed.entries
+    ]
 
 
 SCHOLARS: dict[Scholar, Callable[[str, int], list[Result]]] = {

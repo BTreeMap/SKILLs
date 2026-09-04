@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-OPENALEX_WORKS = "https://api.openalex.org/works"
-ARXIV_QUERY = "https://export.arxiv.org/api/query"
-CROSSREF_WORKS = "https://api.crossref.org/works"
 DOI_HOST = "doi.org"
 TIMEOUT_SECONDS = 30
 RESPONSE_CAP_BYTES = (
@@ -21,10 +18,6 @@ ABSTRACT_SHOW_LIMIT = 1500
 AUTHOR_SHOW_LIMIT = 6
 PAD_TAIL = 10
 HTTP_OK = 200
-
-ATOM = "{http://www.w3.org/2005/Atom}"
-ARXIV_NS = "{http://arxiv.org/schemas/atom}"
-OPENSEARCH = "{http://a9.com/-/spec/opensearch/1.1/}"
 
 
 class Level(StrEnum):

@@ -29,7 +29,7 @@ class TestOpenAlexParams:
 
 def test_a_non_json_body_names_its_source(monkeypatch):
     monkeypatch.setattr(
-        "btm_lit_review.http._client",
+        "btm_lit_review.http.client",
         lambda: httpx.Client(
             transport=httpx.MockTransport(
                 lambda request: httpx.Response(200, content=b"<html>")
