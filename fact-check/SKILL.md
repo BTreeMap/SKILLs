@@ -1,10 +1,10 @@
 ---
 name: fact-check
 description: >-
-  Breaks a document into atomic claims, retrieves evidence for each, and
-  reports a calibrated verdict carrying verbatim quotes, URLs, and access
-  dates. It will not verify from memory. Where the evidence does not settle
-  a claim it abstains and names it, and no text changes until the user
+  Checks a document claim by claim against sources it retrieves, and reports
+  a verdict on each with verbatim quotes, URLs, and the date the source was
+  read. It never verifies from memory, abstains and says so where the
+  evidence does not settle a claim, and changes no text until the user
   approves that specific correction. Use when the user asks to fact-check a
   document, verify claims or specifications, check whether information is
   still accurate, validate statistics or version numbers, or update outdated

@@ -3,9 +3,9 @@ name: read-pdf
 description: >-
   Extracts text and metadata from a PDF and answers questions about it with
   page-cited evidence, working from a local file or an http(s) URL it
-  fetches itself. It only reads. Nothing is written, created, merged, split,
-  or rendered, and there is no OCR, so a scanned page reports as having no
-  extractable text. Use when the user asks to inspect, summarize, search,
+  fetches itself. It only reads: nothing is written, created, merged, split,
+  or rendered, and there is no OCR, so a scanned page is reported as having
+  no extractable text. Use when the user asks to inspect, summarize, search,
   quote, extract from, analyze, or answer questions about a PDF, including
   one behind a link.
 license: MIT

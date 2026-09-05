@@ -1,19 +1,18 @@
 ---
 name: setup-env
 description: >-
-  Provisions a project's development toolchain in userspace. No sudo, no
+  Provisions a project's development toolchain in userspace: no sudo, no
   docker, nothing installed globally, and nothing assumed present but uv.
-  Tags like python@3.12, kotlin:android, go:cgo, rust, typescript, or
-  haskell name the toolchains a project needs. Foreign-architecture binaries
-  run under emulation behind transparent shims, so an arm64 machine can
-  build an Android project whose tools ship x86_64-only. The activation
-  script points HOME, caches, and toolchain variables at one disposable
-  root, keeping all of it out of the user's own environment. Use when an
-  agent must build, test, or lint a project on a machine lacking its
-  toolchains, when root or docker is unavailable, when arm64 must run
-  amd64-only build tools, or when several languages must coexist in one
-  reproducible environment. Do not use for CI runner images, system package
-  administration, or deploying services.
+  Tags such as python@3.12, kotlin:android, go:cgo, rust, typescript, or
+  haskell name the toolchains a project needs. Tools published for one CPU
+  architecture still run on another, so an arm64 machine can build an
+  Android project whose tools ship x86_64-only. Everything lands under one
+  disposable root, leaving the user's own HOME, caches, and toolchain
+  variables as they were. Use when an agent must build, test, or lint a
+  project on a machine lacking its toolchains, when root or docker is
+  unavailable, when arm64 must run amd64-only build tools, or when several
+  languages must coexist in one reproducible environment. Do not use for CI
+  runner images, system package administration, or deploying services.
 license: MIT
 compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout. Linux

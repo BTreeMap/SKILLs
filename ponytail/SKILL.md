@@ -1,13 +1,13 @@
 ---
 name: ponytail
 description: >-
-  Forces the laziest solution that works. The first question is whether the
-  task needs doing at all; after that it reaches for the standard library
-  before custom code, and a native platform feature before a dependency.
-  Review and audit look at over-engineering and leave every other concern to
-  other reviewers. Shortcuts are recorded as declared debt, and the cuts are
-  scored. Aggressiveness runs from naming a lazier alternative beside what
-  was asked, up to refusing anything a profiler has not justified. Use when
+  Forces the laziest solution that works. It asks first whether the task
+  needs doing at all, then reaches for the standard library before custom
+  code, and a native platform feature before a dependency. Review and audit
+  look only at over-engineering and leave every other concern to other
+  reviewers, and any shortcut taken is recorded as debt. How hard it pushes
+  ranges from naming a lazier alternative beside what was asked to refusing
+  anything a profiler has not justified. Use when
   writing, adding, refactoring, fixing, reviewing, or designing any code,
   when choosing libraries or dependencies, or whenever the user says
   "ponytail", "be lazy", "simplest solution", or "yagni", or complains about

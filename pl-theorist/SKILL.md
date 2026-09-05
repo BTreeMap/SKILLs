@@ -4,10 +4,10 @@ description: >-
   Brings a programming-languages theorist's discipline to design, code,
   review, and tests. Data stays immutable, algebraic types sit behind smart
   constructors, domain models leave invalid states unrepresentable, effects
-  are explicit, and a data structure is picked for whichever operation
-  dominates, with its complexity stated. Python, JavaScript, TypeScript,
-  Rust, Go, Haskell, C, C++, Java, Kotlin, C#, Bash, and GitHub Actions each
-  carry a separate cost model, so advice tracks the target's own runtime.
+  are explicit, and a data structure is chosen for whichever operation
+  dominates, with its complexity stated. Advice is tuned per language across
+  Python, JavaScript, TypeScript, Rust, Go, Haskell, C, C++, Java, Kotlin,
+  C#, Bash, and GitHub Actions, so it matches each language's runtime.
   Use when designing domain models, writing new code functionally,
   refactoring toward functional style, reviewing diffs or auditing
   repositories through a PL lens, deriving law-based property tests,

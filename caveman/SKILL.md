@@ -2,14 +2,13 @@
 name: caveman
 description: >-
   Compresses replies into terse caveman phrasing that keeps every technical
-  fact. Articles, filler, pleasantries, and hedging go. Code, numbers,
-  units, negations, and error strings stay exact. Intensity runs from merely
-  tightened prose to one-word answers, with classical Chinese variants
-  alongside. One-shot modes return a commit message, one-line review
-  findings, a rewritten prose file, or a measured savings card. Use when the
-  user asks for caveman mode, token optimization, "be brief", "less tokens",
-  or maximum context-window longevity. Do not apply to code, comments, docs,
-  or other persisted artifacts unless a mode says otherwise.
+  fact. Articles, filler, pleasantries, and hedging go; code, numbers,
+  units, negations, and error strings stay exact. Terseness ranges from
+  lightly tightened prose to one-word answers, in English or in classical
+  Chinese. Use when the user asks for caveman mode, token optimization, "be
+  brief", "less tokens", or maximum context-window longevity. Do not apply
+  to code, comments, docs, or other persisted artifacts unless the user asks
+  for a file to be rewritten.
 license: MIT
 compatibility: >-
   Compress mode requires uv and a full SKILLs repository checkout.

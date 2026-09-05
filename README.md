@@ -12,23 +12,23 @@ submodule.
 
 | Skill | Purpose |
 | --- | --- |
-| [aesthete](aesthete/SKILL.md) | Designs and reviews interfaces: typography, color, spacing, motion, interaction states, and a dated WCAG 2.2 accessibility floor, through design, build, review, audit, redesign, and teach verbs. |
+| [aesthete](aesthete/SKILL.md) | Designs and reviews web interfaces to a WCAG 2.2 accessibility floor, applies a supplied brand or design system, and strips the templated look of generated UI. |
 | [author-skill](author-skill/SKILL.md) | Writes and reviews skills; every skill here was authored under it. |
-| [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost; a guarded compress mode rewrites a prose file in place with scripted backup, validation, and undo. |
-| [fact-check](fact-check/SKILL.md) | Decomposes a document into checkable claims, verifies each against retrieved sources with cited quotes, and applies corrections only after per-item approval. |
-| [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages at three effort levels; a push verb commits and pushes in one step. |
-| [humanize](humanize/SKILL.md) | Rewrites AI-sounding text in its writer's voice, keeping every claim: 40 patterns from Wikipedia's "Signs of AI writing" plus Claude-specific tells, loading only the groups a text triggers. |
-| [lit-review](lit-review/SKILL.md) | Runs literature reviews as a staged pipeline: criteria fixed before any search, every query logged by a keyless script over OpenAlex, arXiv, and Crossref, two-pass screening with reasons, findings and gaps re-checked as the corpus grows, and DOI verification before delivery. |
-| [peer-review](peer-review/SKILL.md) | Reviews a paper as an adverse, referenced reviewer: verbatim claims, signalling-question banks for design, analysis, limitations, and novelty, a lit-review corpus for prior work, objections admitted only with a resolved quote or a dated corpus key, and a recommendation derived by rule. |
-| [pl-theorist](pl-theorist/SKILL.md) | Code design, review, and refactoring grounded in typed domain modeling and complexity analysis, with per-language cost models including Bash and GitHub Actions. |
-| [ponder](ponder/SKILL.md) | Answers open questions, shower thought to academic grade, with one investigative standard: the lead runs the first round itself, a scripted ledger tracks every leaf and source, workers cover what stays open, a rival sweep precedes every draft, and the answer's sections derive from ledger state. |
+| [caveman](caveman/SKILL.md) | Compresses agent output into terse phrasing to cut token cost, and rewrites a prose file in place reversibly. |
+| [fact-check](fact-check/SKILL.md) | Checks a document claim by claim against retrieved sources, quotes the evidence behind every verdict, and applies corrections only after per-item approval. |
+| [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages, and can commit and push in one step. |
+| [humanize](humanize/SKILL.md) | Rewrites AI-sounding text in its writer's voice while keeping every claim, working from a documented catalogue of AI writing tells. |
+| [lit-review](lit-review/SKILL.md) | Runs a literature review where the criteria are fixed before the first search, every exclusion carries a reason, and every citation traces to a paper it retrieved. |
+| [peer-review](peer-review/SKILL.md) | Reviews a paper as an adverse referee: verbatim claims, objections admitted only when quoted and sourced, and a recommendation that follows from whatever survives. |
+| [pl-theorist](pl-theorist/SKILL.md) | Code design, review, and refactoring grounded in typed domain modeling and stated complexity, with advice tuned to each language's runtime. |
+| [ponder](ponder/SKILL.md) | Answers an open question with a source behind every load-bearing claim, the strongest rival explanation tested, and whatever stays unsettled reported open. |
 | [ponytail](ponytail/SKILL.md) | Pushes every change toward the simplest working solution: fewer dependencies, smaller diffs, standard library first. |
-| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from PDF files or URLs with pypdf; URLs download once into a capped temp cache, and no PDF is ever written. |
-| [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
-| [search-web](search-web/SKILL.md) | Searches the web, Wikipedia, and the scholarly record for an agent whose harness offers no search tool; one record shape from every verb, plus readable page text. |
-| [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
-| [summon](summon/SKILL.md) | Hands work to another agent: whether to delegate at all, the six-field brief that binds a delegate, disjoint bundles that keep parallel agents off each other's ground, returns judged as untrusted against their contract, and what six harnesses give a delegate to start with. |
-| [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named school, with a recorded choice of approach, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |
+| [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from a PDF file or URL and answers questions about it with page-cited evidence, writing nothing. |
+| [reframe](reframe/SKILL.md) | Produces a testable direction judgment, with costed routes, when planning has locked onto incremental or legacy-bound framing. |
+| [search-web](search-web/SKILL.md) | Searches the web, Wikipedia, and the scholarly record for an agent whose harness has no search tool, and returns the readable text of a page. |
+| [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; tools built for another CPU architecture still run. |
+| [summon](summon/SKILL.md) | Hands work to another agent: whether to delegate at all, what the delegate must be told, how to keep parallel agents off each other's ground, and how to judge what comes back. |
+| [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named school, backing each theme with verbatim extracts and counts, with defaults tuned for feedback and ticket data. |
 
 ## Installing
 

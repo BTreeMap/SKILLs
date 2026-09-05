@@ -2,16 +2,15 @@
 name: ponder
 description: >-
   Answers an open question and shows its work. Every load-bearing claim
-  carries a source, a conclusion drawn from several sources is marked as
-  drawn, and the strongest rival account is tested before the answer stands.
-  A question that settles in the first round of searching is answered there,
-  so cheap questions stay cheap; a harder one splits into parts that can be
-  researched in parallel. Whatever is left unsettled gets reported open. Use
-  when the user asks an open question needing a researched, sourced answer:
-  a feasibility hunch, a causal-historical why, a best-practices lookup, a
-  procedural fix. Do not use for literature reviews with citation
-  deliverables (use lit-review) or verifying claims in an existing document
-  (use fact-check).
+  carries a source, a conclusion the sources only imply is marked as
+  inferred, and the strongest rival explanation is tested before the answer
+  stands. A question that settles quickly is answered quickly, and whatever
+  stays unsettled is reported open. Use when the user asks an open question
+  needing a
+  researched, sourced answer: a feasibility hunch, a causal-historical why,
+  a best-practices lookup, a procedural fix. Do not use for literature
+  reviews with citation deliverables (use lit-review) or verifying claims in
+  an existing document (use fact-check).
 license: MIT
 compatibility: >-
   Requires uv, retrieval (the harness's web search and fetch, else

@@ -1,18 +1,18 @@
 ---
 name: humanize
 description: >-
-  Rewrites AI-sounding prose so it reads like its writer. Nothing it says
-  changes: every claim, number, and citation keeps its original strength,
-  and no fact is invented to fill a gap. It works from 40 documented
-  patterns, Wikipedia's "Signs of AI writing" plus the Claude-specific tells
-  named since, covering inflated claims, sales language, vague sourcing,
-  overused vocabulary, formulaic rhetoric, chatbot artifacts, punctuation
-  and formatting tells, and flat rhythm. A writing sample or personal style
-  file outranks all of them. Pasted text comes back rewritten, a named file
-  is edited in place, and a calling task gets bare text. Use when asked to
-  humanize, de-AI, or naturalize prose, edit text that sounds like a
-  chatbot, or remove AI writing patterns. Do not use for code, for judging
-  whether a text is AI-authored, or for fact-checking claims.
+  Rewrites AI-sounding prose so it reads like its writer. Every claim,
+  number, and citation keeps its original strength, and no fact is invented
+  to fill a gap. It works from a documented catalogue of AI writing tells,
+  Wikipedia's "Signs of AI writing" plus the Claude-specific ones named
+  since: inflated claims, sales language, vague sourcing, overused
+  vocabulary, formulaic rhetoric, chatbot artifacts, punctuation and
+  formatting habits, and flat rhythm. A writing sample or personal style
+  file outranks all of them. Pasted text comes back rewritten, and a named
+  file is edited in place. Use when asked to humanize, de-AI, or naturalize
+  prose, edit text that sounds like a chatbot, or remove AI writing
+  patterns. Do not use for code, for judging whether a text is AI-authored,
+  or for fact-checking claims.
 license: MIT
 metadata:
   argument-hint: "[text-or-file]"

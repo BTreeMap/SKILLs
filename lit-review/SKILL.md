@@ -1,18 +1,18 @@
 ---
 name: lit-review
 description: >-
-  Produces a literature review where every citation traces to a record the
-  search retrieved. Nothing comes from memory. The question and inclusion
-  criteria are fixed before the first query. Searches run against OpenAlex,
-  arXiv, and Crossref; every query is logged, results are deduplicated, and
-  each exclusion carries its reason. Citations are
-  followed onward, and each paper records how deeply it was read, so
+  Produces a literature review in which every citation traces to a paper the
+  search retrieved from OpenAlex, arXiv, or Crossref, never to memory. The
+  question and the inclusion criteria are settled before the first search,
+  every excluded paper carries its reason, and each included one records how
+  deeply it was read, so
   abstract-level knowledge is never passed off as full-text reading. Rigor
-  runs from quick scoping to PRISMA-style systematic discipline. Use when
-  the user asks for a literature review, a survey of published work, a
-  related-work section, what research says about a topic, or a systematic or
-  scoping review. Do not use for fact-checking an existing document, reading
-  one known paper, or web research over non-scholarly sources.
+  ranges from a quick scoping pass to PRISMA-style systematic discipline.
+  Use when the user asks for a literature review, a survey of published
+  work, a related-work section, what research says about a topic, or a
+  systematic or scoping review. Do not use for fact-checking an existing
+  document, reading one known paper, or web research over non-scholarly
+  sources.
 license: MIT
 compatibility: >-
   Requires uv, network access, and a full SKILLs repository checkout.

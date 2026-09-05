@@ -2,11 +2,11 @@
 name: git-commit
 description: >-
   Drafts and reviews git commit messages in Conventional Commits form,
-  saying why over what and taking the scope from surrounding history. Effort
-  runs from a bare subject line up to an audit of whether the change is
-  atomic and sits consistently with the commits around it. Use when the user
-  asks to draft a commit, write a message for a diff, review a commit
-  message, run `git commit`, or commit and push.
+  saying why over what, with the scope taken from the surrounding history.
+  Review can also judge whether the change is atomic and consistent with the
+  commits around it. Use when the user asks to draft a commit, write a
+  message for a diff, review a commit message, run `git commit`, or commit
+  and push.
 license: MIT
 metadata:
   argument-hint: "[lite|full|ultra] [push]"
