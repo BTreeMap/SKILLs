@@ -31,6 +31,8 @@ HTTP_SERVER_ERROR = 500
 
 CONNECT_TIMEOUT = 30.0
 
+RAISE_THE_CAP = "raise the cap"
+
 
 def status_failure(status: int, url: str) -> CommandError:
     """A 5xx or a rate limit may clear on a retry; any other 4xx is the
@@ -66,18 +68,21 @@ def build_client(
     )
 
 
-def stream(
+def stream(  # noqa: PLR0913 - the request, the sink, and the limit are all flat
     client: httpx.Client,
     url: str,
     sink: Callable[[bytes], object],
     cap: int,
+    *,
     params: Mapping[str, str] | None = None,
+    remedy: str = RAISE_THE_CAP,
 ) -> None:
     """Feed the body to `sink` in chunks, refusing past `cap`.
 
     The cap is what keeps a slow drip from growing without bound inside the
     per-read timeout. Exceeding it is the caller's limit, not the server's
-    fault, so it asks for a bigger cap rather than a retry.
+    fault, so it asks for a bigger cap rather than a retry. A caller that
+    exposes the cap as a flag passes `remedy` to name it.
     """
     try:
         with client.stream("GET", url, params=params) as response:
@@ -87,9 +92,7 @@ def stream(
             for chunk in response.iter_bytes():
                 written += len(chunk)
                 if written > cap:
-                    raise CommandError(
-                        f"{url} sends more than {cap} bytes; raise the cap"
-                    )
+                    raise CommandError(f"{url} sends more than {cap} bytes; {remedy}")
                 sink(chunk)
     except httpx.HTTPError as err:
         raise UpstreamError(f"cannot reach {url}: {err}") from err
@@ -103,18 +106,24 @@ def get_bytes(
 ) -> bytes:
     """The whole body, under the cap."""
     chunks: list[bytes] = []
-    stream(client, url, chunks.append, cap, params)
+    stream(client, url, chunks.append, cap, params=params)
     return b"".join(chunks)
 
 
-def download(client: httpx.Client, url: str, target: Path, cap: int) -> None:
+def download(
+    client: httpx.Client,
+    url: str,
+    target: Path,
+    cap: int,
+    remedy: str = RAISE_THE_CAP,
+) -> None:
     """Stream to a sibling partial, then rename, so a target file is either
     absent or complete. The caller owns what a partial left behind means."""
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(f"{target.name}.partial")
     try:
         with partial.open("wb") as out:
-            stream(client, url, out.write, cap)
+            stream(client, url, out.write, cap, remedy=remedy)
     except BaseException:
         partial.unlink(missing_ok=True)
         raise

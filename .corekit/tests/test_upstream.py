@@ -73,6 +73,25 @@ class TestOpenAlexWork:
         """Another service owns this shape and may extend it."""
         assert OpenAlexWork.model_validate({"invented_next_year": 1}).id == ""
 
+    def test_a_null_field_reads_as_the_absent_one(self):
+        """OpenAlex spells what it holds nothing for as null rather than by
+        omitting the key: a work with no venue carries a null
+        `primary_location.source`, and a nested default only covers absence."""
+        work = OpenAlexWork.model_validate(
+            {
+                "display_name": None,
+                "primary_location": {"source": None},
+                "open_access": None,
+                "referenced_works": None,
+                "authorships": [{"author": None}],
+            }
+        )
+        assert work.display_name == ""
+        assert work.primary_location.source.display_name == ""
+        assert work.open_access.oa_url is None
+        assert work.referenced_works == ()
+        assert work.authors == ()
+
 
 class TestCrossrefItem:
     def test_a_date_part_becomes_a_year(self):
@@ -81,6 +100,9 @@ class TestCrossrefItem:
 
     def test_an_absent_date_is_absent(self):
         assert CrossrefItem().issued.year is None
+
+    def test_a_null_date_is_absent_too(self):
+        assert CrossrefItem.model_validate({"issued": None}).issued.year is None
 
     def test_a_name_joins_its_halves(self):
         item = CrossrefItem.model_validate(

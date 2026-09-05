@@ -45,6 +45,18 @@ class TestStream:
             get_bytes(client, "https://example.org/big", 10)
         assert not isinstance(raised.value, UpstreamError)
 
+    def test_a_caller_with_a_flag_names_it_in_the_refusal(self):
+        """The refusal carries the fix, and only the caller knows its spelling."""
+        client = answering(status_code=200, content=b"x" * 100)
+        with pytest.raises(CommandError, match="pass --max-bytes"):
+            stream(
+                client,
+                "https://example.org/big",
+                lambda _: None,
+                10,
+                remedy="pass --max-bytes to raise the cap",
+            )
+
     def test_a_missing_record_does_not_ask_for_a_retry(self):
         client = answering(status_code=404)
         with pytest.raises(CommandError) as raised:

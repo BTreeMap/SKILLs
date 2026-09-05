@@ -11,9 +11,10 @@ from __future__ import annotations
 import json
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping, Sequence
+from typing import Any
 
 import httpx
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from btm_corekit.errors import CommandError, UpstreamError
 from btm_corekit.http import get_bytes, openalex_query
@@ -33,6 +34,16 @@ class Upstream(Model):
     """A record another service owns and may extend at any time."""
 
     model_config = ConfigDict(frozen=True, extra="ignore")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _null_is_absent(cls, raw: Any) -> Any:
+        """An index spells a field it holds nothing for as an explicit null:
+        OpenAlex nulls `primary_location.source` for a work with no venue. A
+        default covers an absent key, so drop the null and let it stand."""
+        if not isinstance(raw, Mapping):
+            return raw
+        return {key: value for key, value in raw.items() if value is not None}
 
 
 def _json(

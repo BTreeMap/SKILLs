@@ -86,7 +86,13 @@ def _fetch(
     client = build_client("read-pdf", read_timeout=TIMEOUT_SECONDS, transport=transport)
     try:
         with client, partial.open("wb") as out:
-            stream(client, url, out.write, max_bytes)
+            stream(
+                client,
+                url,
+                out.write,
+                max_bytes,
+                remedy="pass --max-bytes to raise the cap",
+            )
         with partial.open("rb") as head:
             # The spec tolerates up to 1024 bytes of preamble before %PDF-.
             if b"%PDF-" not in head.read(1024):

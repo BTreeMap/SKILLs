@@ -76,4 +76,4 @@ class TestEndToEnd:
         exit code. Asserting the status too, since a server answering 200 with
         an HTML error page would also exit 1 and hide a broken split."""
         assert main([SAMPLE.replace("sample.pdf", "absent-object.pdf")]) == 1
-        assert "HTTP 404 fetching" in capsys.readouterr().err
+        assert "HTTP 404 from" in capsys.readouterr().err
