@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 import btm_lit_review
 from btm_corekit import (
+    CLUSTER_CAP,
     Commands,
     Parser,
     run_cli,
@@ -15,7 +16,6 @@ from btm_corekit import (
     wire_clean,
     wire_pad,
 )
-from btm_corekit.digest import CLUSTER_CAP
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
@@ -24,7 +24,7 @@ from btm_lit_review.constants import (
     STATUSES,
     Level,
 )
-from btm_lit_review.curate import (
+from btm_lit_review.corpus.curate import (
     SORTS,
     cmd_digest,
     cmd_screen,
@@ -32,17 +32,17 @@ from btm_lit_review.curate import (
     cmd_status,
     cmd_update,
 )
-from btm_lit_review.draft import cmd_cite_check
-from btm_lit_review.gather import cmd_init, cmd_search, cmd_snowball
-from btm_lit_review.notebook import cmd_note
-from btm_lit_review.session import STORE
-from btm_lit_review.verify import cmd_verify
-from btm_lit_review.views import (
+from btm_lit_review.corpus.gather import cmd_init, cmd_search, cmd_snowball
+from btm_lit_review.findings.draft import cmd_cite_check
+from btm_lit_review.findings.notebook import cmd_note
+from btm_lit_review.report.verify import cmd_verify
+from btm_lit_review.report.views import (
     cmd_brief,
     cmd_schema,
     pad_directory,
     recognize_extraction,
 )
+from btm_lit_review.session import STORE
 
 MATCH_FIELDS = ("title", "abstract", "venue")
 

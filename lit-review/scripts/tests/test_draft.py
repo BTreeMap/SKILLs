@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import pytest
 
+from btm_corekit import Work
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.draft import assign_markers, cite_check, marker_table
-from btm_lit_review.paper import candidate
+from btm_lit_review.corpus.paper import paper_from
+from btm_lit_review.findings.draft import assign_markers, cite_check, marker_table
 
 
 def paper(
@@ -16,18 +17,21 @@ def paper(
     read_level=ReadLevel.ABSTRACT,
     decision_reason=None,
 ):
-    built = candidate(
-        title=title,
-        year=2024,
-        authors=(),
-        venue=None,
-        doi=doi,
-        arxiv_id=None,
-        openalex_id=None,
-        cited_by_count=None,
-        abstract=None,
-        pdf_url=None,
-        landing_url=None,
+    built = paper_from(
+        Work(
+            title=title,
+            year=2024,
+            authors=(),
+            venue=None,
+            doi=doi,
+            arxiv_id=None,
+            openalex_id=None,
+            cited_by=None,
+            abstract=None,
+            pdf_url=None,
+            landing_url=None,
+            published=None,
+        )
     )
     return built.with_(
         status=status, read_level=read_level, decision_reason=decision_reason

@@ -5,25 +5,28 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, Work
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.curate import band_advisory, next_step, parse_decision
-from btm_lit_review.paper import candidate
+from btm_lit_review.corpus.curate import band_advisory, next_step, parse_decision
+from btm_lit_review.corpus.paper import paper_from
 
 
 def paper(key_doi: str, **decisions):
-    built = candidate(
-        title="a title",
-        year=2024,
-        authors=("A",),
-        venue="venue",
-        doi=key_doi,
-        arxiv_id=None,
-        openalex_id=None,
-        cited_by_count=1,
-        abstract=None,
-        pdf_url=None,
-        landing_url=None,
+    built = paper_from(
+        Work(
+            title="a title",
+            year=2024,
+            authors=("A",),
+            venue="venue",
+            doi=key_doi,
+            arxiv_id=None,
+            openalex_id=None,
+            cited_by=1,
+            abstract=None,
+            pdf_url=None,
+            landing_url=None,
+            published=None,
+        )
     )
     return built.with_(**({"found_by": ("s1",)} | decisions))
 

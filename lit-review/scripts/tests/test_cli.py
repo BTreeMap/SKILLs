@@ -8,9 +8,10 @@ import sys
 
 import pytest
 
+from btm_corekit import Work
 from btm_lit_review.cli import main
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.paper import candidate
+from btm_lit_review.corpus.paper import paper_from
 from btm_lit_review.session import Session, load_papers, save_papers
 
 
@@ -39,18 +40,21 @@ def run(argv, capsys, stdin: str | None = None, monkeypatch=None):
 
 
 def paper(title, doi, abstract=None, **decisions):
-    built = candidate(
-        title=title,
-        year=2024,
-        authors=("A", "B"),
-        venue="venue",
-        doi=doi,
-        arxiv_id=None,
-        openalex_id=None,
-        cited_by_count=5,
-        abstract=abstract,
-        pdf_url=None,
-        landing_url=None,
+    built = paper_from(
+        Work(
+            title=title,
+            year=2024,
+            authors=("A", "B"),
+            venue="venue",
+            doi=doi,
+            arxiv_id=None,
+            openalex_id=None,
+            cited_by=5,
+            abstract=abstract,
+            pdf_url=None,
+            landing_url=None,
+            published=None,
+        )
     )
     return built.with_(**({"found_by": ("s1",)} | decisions))
 

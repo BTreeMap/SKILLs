@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
 import urllib.parse
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from functools import cache
-from typing import TypeVar
 
 import httpx
 import trafilatura
@@ -15,14 +13,14 @@ from ddgs.exceptions import DDGSException
 
 from btm_corekit import (
     CommandError,
-    Model,
     UpstreamError,
-    arxiv_feed,
+    Work,
+    arxiv,
     build_client,
-    crossref_page,
+    crossref,
     get_bytes,
-    openalex_page,
-    parse_model,
+    json_body,
+    openalex,
 )
 from btm_search_web.constants import (
     APP,
@@ -30,6 +28,8 @@ from btm_search_web.constants import (
     PAGE_CAP_BYTES,
     RESPONSE_CAP_BYTES,
     TIMEOUT_SECONDS,
+    TITLE_CHARS,
+    TOPIC_CHARS,
     WIKI_SEARCH,
     WIKI_SUMMARY,
     Scholar,
@@ -37,22 +37,10 @@ from btm_search_web.constants import (
 from btm_search_web.records import Result, trimmed
 from btm_search_web.upstream import InstantAnswer, WikiSearch, WikiSummary
 
-U = TypeVar("U", bound=Model)
-
 
 @cache
 def client() -> httpx.Client:
     return build_client("search-web", read_timeout=TIMEOUT_SECONDS)
-
-
-def _read(model: type[U], url: str, params: Mapping[str, str] | None = None) -> U:
-    """One upstream response, decoded into the record this skill reads."""
-    payload = get_bytes(client(), url, RESPONSE_CAP_BYTES, params)
-    try:
-        body = json.loads(payload)
-    except json.JSONDecodeError as err:
-        raise UpstreamError(f"non-JSON response from {url}") from err
-    return parse_model(model, body, f"response from {url}")
 
 
 def web(query: str, limit: int) -> list[Result]:
@@ -81,25 +69,27 @@ def instant(query: str) -> list[Result]:
     """DuckDuckGo's own instant answers: a definition or an abstract, never a
     ranked result list. Official and keyless; `t` names the caller as its
     terms ask."""
-    body = _read(
+    body = json_body(
         InstantAnswer,
+        client(),
         INSTANT_ANSWER,
+        RESPONSE_CAP_BYTES,
         {"q": query, "format": "json", "no_html": "1", "skip_disambig": "1", "t": APP},
     )
     found: list[Result] = []
-    if abstract := body.abstract or body.answer:
+    if says := body.says:
         found.append(
             Result(
                 title=body.heading or query,
-                url=body.abstract_url,
-                snippet=trimmed(abstract),
+                url=body.source_url,
+                snippet=trimmed(says),
                 source="instant",
             )
         )
     found += [
         Result(
-            title=trimmed(topic.text, 80),
-            url=topic.url,
+            title=trimmed(topic.text, TOPIC_CHARS),
+            url=topic.url or "",
             snippet=trimmed(topic.text),
             source="instant",
         )
@@ -111,19 +101,29 @@ def instant(query: str) -> list[Result]:
 
 def wiki(query: str, limit: int) -> list[Result]:
     """Wikipedia's own search, then each page's summary."""
-    body = _read(WikiSearch, WIKI_SEARCH, {"q": query, "limit": str(limit)})
+    body = json_body(
+        WikiSearch,
+        client(),
+        WIKI_SEARCH,
+        RESPONSE_CAP_BYTES,
+        {"q": query, "limit": str(limit)},
+    )
     found: list[Result] = []
     for page in body.pages:
         summary = (
-            _read(WikiSummary, WIKI_SUMMARY + urllib.parse.quote(page.key))
+            json_body(
+                WikiSummary,
+                client(),
+                WIKI_SUMMARY + urllib.parse.quote(page.key),
+                RESPONSE_CAP_BYTES,
+            )
             if page.key
             else WikiSummary()
         )
         found.append(
             Result(
                 title=page.title or page.key or "(untitled)",
-                url=summary.content_urls.desktop.page
-                or f"https://en.wikipedia.org/wiki/{page.key}",
+                url=summary.url or f"https://en.wikipedia.org/wiki/{page.key}",
                 snippet=trimmed(summary.extract or page.description),
                 source="wiki",
             )
@@ -131,56 +131,38 @@ def wiki(query: str, limit: int) -> list[Result]:
     return found
 
 
+def _hit(work: Work, source: Scholar) -> Result:
+    """One crossed index record as a result row. Written once: what differs
+    between the indexes is upstream of here."""
+    return Result(
+        title=trimmed(work.names, TITLE_CHARS),
+        url=work.landing_url or "",
+        snippet=trimmed(work.abstract),
+        source=source.value,
+        published=work.published,
+        doi=work.doi,
+        year=work.year,
+        cited_by=work.cited_by,
+    )
+
+
 def _openalex(query: str, limit: int) -> list[Result]:
-    page = openalex_page(
+    page = openalex.page(
         client(), RESPONSE_CAP_BYTES, {"search": query, "per-page": str(limit)}
     )
-    return [
-        Result(
-            title=trimmed(work.display_name, 300) or "(untitled)",
-            url=work.doi or work.id,
-            snippet=trimmed(work.abstract),
-            source="openalex",
-            doi=(work.doi or "").removeprefix("https://doi.org/") or None,
-            year=work.publication_year,
-            cited_by=work.cited_by_count,
-        )
-        for work in page.results
-    ]
+    return [_hit(openalex.record(work), Scholar.OPENALEX) for work in page.results]
 
 
 def _crossref(query: str, limit: int) -> list[Result]:
-    message = crossref_page(
+    message = crossref.page(
         client(), RESPONSE_CAP_BYTES, {"query": query, "rows": str(limit)}
     )
-    return [
-        Result(
-            title=trimmed(" ".join(item.title), 300) or "(untitled)",
-            url=item.url,
-            snippet=trimmed(item.abstract),
-            source="crossref",
-            doi=item.doi,
-            year=item.issued.year,
-            cited_by=item.cited_by,
-        )
-        for item in message.items
-    ]
+    return [_hit(crossref.record(item), Scholar.CROSSREF) for item in message.items]
 
 
 def _arxiv(query: str, limit: int) -> list[Result]:
-    feed = arxiv_feed(client(), RESPONSE_CAP_BYTES, query, limit)
-    return [
-        Result(
-            title=trimmed(entry.title, 300) or "(untitled)",
-            url=entry.id,
-            snippet=trimmed(entry.summary),
-            source="arxiv",
-            published=entry.published[:10] or None,
-            doi=entry.doi,
-            year=int(entry.published[:4]) if entry.published[:4].isdigit() else None,
-        )
-        for entry in feed.entries
-    ]
+    feed = arxiv.feed(client(), RESPONSE_CAP_BYTES, query, limit)
+    return [_hit(arxiv.record(entry), Scholar.ARXIV) for entry in feed.entries]
 
 
 SCHOLARS: dict[Scholar, Callable[[str, int], list[Result]]] = {

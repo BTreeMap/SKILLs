@@ -82,7 +82,7 @@ with `fetch` before relying on it.
   JavaScript comes back refused rather than empty.
 - `fetch` refuses a PDF; extract it with `/read-pdf`.
 - Space out a long scholarly run rather than parallelizing it; the indexes
-  are rate-limited per address.
+  are metered per address, and one refuses for the rest of the day.
 - A scholarly search is not a literature review. When the deliverable is a
   survey with citations, run `/lit-review`.
 

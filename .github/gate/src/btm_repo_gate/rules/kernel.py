@@ -27,31 +27,51 @@ def _defined_name(line: str, keyword: str) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class Kernel:
-    """What the kernel defines."""
+    """What the kernel offers a consumer."""
 
     functions: frozenset[str]
     classes: frozenset[str]
 
 
+def exported_names(text: str) -> frozenset[str]:
+    """The quoted names in the barrel's `__all__` list, read linearly."""
+    start = text.find("__all__")
+    opened = text.find("[", start) if start != -1 else -1
+    if opened == -1:
+        return frozenset()
+    closed = text.find("]", opened)
+    body = text[opened : closed if closed != -1 else len(text)]
+    return frozenset(body.split('"')[1::2])
+
+
 def kernel_symbols(repo: Repo) -> Kernel:
-    """Public top-level defs and classes of the kernel package. Derived, so a
-    symbol added there is guarded the moment it exists."""
+    """What a consumer could import from the kernel and therefore shadow: the
+    barrel's exports, split back into defs and classes so a finding can say
+    which it was. Derived, so a symbol added there is guarded at once.
+
+    A name defined inside a kernel submodule but left out of `__all__` is
+    addressed through its module (`openalex.Page`) and cannot be shadowed, so
+    it is not a kernel symbol and a consumer is free to use the word.
+    """
     functions: set[str] = set()
     classes: set[str] = set()
+    exported: frozenset[str] = frozenset()
     for path, text in repo.texts.items():
         # `src/` only: the kernel's own tests name helpers a member may reuse.
         if path.suffix != ".py" or path.parts[:1] != (KERNEL.name,):
             continue
         if "src" not in path.parts:
             continue
+        if path.name == "__init__.py" and path.parts[-2] == "btm_corekit":
+            exported = exported_names(text)
         for line in text.split("\n"):
             if name := _defined_name(line, "def "):
                 functions.add(name)
             elif name := _defined_name(line, "class "):
                 classes.add(name)
     return Kernel(
-        frozenset(n for n in functions if not n.startswith("_")),
-        frozenset(n for n in classes if not n.startswith("_")),
+        frozenset(functions & exported),
+        frozenset(classes & exported),
     )
 
 

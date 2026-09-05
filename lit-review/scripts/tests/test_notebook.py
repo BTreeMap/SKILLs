@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import pytest
 
+from btm_corekit import Work
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.notebook import (
+from btm_lit_review.corpus.paper import paper_from
+from btm_lit_review.findings.notebook import (
     WATCH_MAX,
     FindingRecord,
     GapRecord,
@@ -18,36 +20,41 @@ from btm_lit_review.notebook import (
     watch_hits,
     watch_terms,
 )
-from btm_lit_review.paper import candidate
 
 
 @pytest.fixture
 def papers():
-    bandit = candidate(
-        title="Bandit routing",
-        year=2024,
-        authors=("A",),
-        venue=None,
-        doi="10.1/bandit",
-        arxiv_id=None,
-        openalex_id=None,
-        cited_by_count=3,
-        abstract="combinatorial bandit",
-        pdf_url=None,
-        landing_url=None,
+    bandit = paper_from(
+        Work(
+            title="Bandit routing",
+            year=2024,
+            authors=("A",),
+            venue=None,
+            doi="10.1/bandit",
+            arxiv_id=None,
+            openalex_id=None,
+            cited_by=3,
+            abstract="combinatorial bandit",
+            pdf_url=None,
+            landing_url=None,
+            published=None,
+        )
     )
-    flow = candidate(
-        title="GFlowNet sampling",
-        year=2025,
-        authors=("B",),
-        venue=None,
-        doi=None,
-        arxiv_id="2501.00001",
-        openalex_id=None,
-        cited_by_count=1,
-        abstract="gflownet sampler",
-        pdf_url=None,
-        landing_url=None,
+    flow = paper_from(
+        Work(
+            title="GFlowNet sampling",
+            year=2025,
+            authors=("B",),
+            venue=None,
+            doi=None,
+            arxiv_id="2501.00001",
+            openalex_id=None,
+            cited_by=1,
+            abstract="gflownet sampler",
+            pdf_url=None,
+            landing_url=None,
+            published=None,
+        )
     )
     bandit = bandit.with_(
         status=Status.INCLUDED, read_level=ReadLevel.FULL_TEXT, found_by=("s1",)

@@ -39,11 +39,16 @@ def repo(tmp_path):
     (tmp_path / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
     kernel = tmp_path / ".corekit" / "src" / "btm_corekit"
     kernel.mkdir(parents=True)
-    # The guarded set is read off this file, so the rule and the kernel
-    # cannot disagree about what the kernel defines.
+    # The guarded set is read off these two files, so the rule and the
+    # kernel cannot disagree about what a consumer could import.
     (kernel / "identifiers.py").write_text(
         "def mint(words):\n    return 1\n\n\ndef resolve(ref, ids):\n"
         "    return ref\n\n\nclass Exact:\n    pass\n",
+        encoding="utf-8",
+    )
+    (kernel / "__init__.py").write_text(
+        "from btm_corekit.identifiers import Exact, mint, resolve\n\n"
+        '__all__ = ["Exact", "mint", "resolve"]\n',
         encoding="utf-8",
     )
     (tmp_path / "README.md").write_text("# Readme\n", encoding="utf-8")
@@ -171,15 +176,33 @@ class TestKernel:
 
     def test_the_guarded_set_is_read_off_the_kernel(self, repo):
         """A symbol added to the kernel is guarded without editing this rule."""
-        kernel = repo / ".corekit" / "src" / "btm_corekit" / "identifiers.py"
-        kernel.write_text(
-            kernel.read_text() + "\n\ndef minted_today(x):\n    return x\n"
+        root = repo / ".corekit" / "src" / "btm_corekit"
+        (root / "identifiers.py").write_text(
+            (root / "identifiers.py").read_text()
+            + "\n\ndef minted_today(x):\n    return x\n"
+        )
+        (root / "__init__.py").write_text(
+            (root / "__init__.py")
+            .read_text()
+            .replace('__all__ = ["Exact"', '__all__ = ["Exact", "minted_today"')
         )
         member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
         (member / "code.py").write_text(
             "def minted_today(x):\n    return x\n", encoding="utf-8"
         )
         assert "kernel" in rules_hit(repo)
+
+    def test_a_name_the_kernel_keeps_to_itself_is_not_guarded(self, repo):
+        """A name defined in a kernel submodule but left out of the barrel is
+        addressed through its module (`openalex.Page`) and cannot be shadowed,
+        so a consumer is free to use the word."""
+        root = repo / ".corekit" / "src" / "btm_corekit"
+        (root / "identifiers.py").write_text(
+            (root / "identifiers.py").read_text() + "\n\nclass Page:\n    pass\n"
+        )
+        member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
+        (member / "code.py").write_text("class Page:\n    pass\n", encoding="utf-8")
+        assert "kernel" not in rules_hit(repo)
 
     def test_a_private_kernel_helper_is_not_guarded(self, repo):
         """Underscored names are the kernel's own business."""

@@ -7,7 +7,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from btm_corekit import Diagnostic
-from btm_corekit.models import (
+from btm_corekit.records.models import (
     ArxivId,
     Doi,
     Keyword,

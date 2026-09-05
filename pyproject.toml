@@ -35,11 +35,14 @@ members = [
 dev = ["pytest>=8", "mypy>=1.11"]
 
 [tool.pytest.ini_options]
-# The gate stays deterministic: network tests are opt-in with `-m network`,
-# which overrides this default because pytest takes the last -m it is given.
-addopts = "--import-mode=importlib --strict-markers -m 'not network'"
+addopts = "--import-mode=importlib --strict-markers"
 markers = [
-  "network: reaches a real server; excluded from the default run",
+  # Reaches a real server. These run everywhere, including CI, because a
+  # mock can only prove our own half: that a service still answers in the
+  # shape we parse is a fact no fixture holds. Their verdict is advisory,
+  # since a third party having a bad afternoon is not this repository
+  # breaking; the gate runs them as a separate, non-blocking step.
+  "network: reaches a real server; advisory, never a blocking failure",
 ]
 testpaths = [
   ".corekit/tests",

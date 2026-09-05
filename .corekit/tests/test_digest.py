@@ -7,7 +7,7 @@ import re
 import pytest
 
 from btm_corekit import CommandError, Item, digest
-from btm_corekit.digest import Digest
+from btm_corekit.records.digest import Digest
 
 CORPUS = [
     Item("a1", "Cloud seeding over the Snowy Mountains", 9.0),

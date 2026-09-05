@@ -158,10 +158,33 @@ jobs:
           rc=0
           uvx "ruff@${RUFF_VERSION}" check --output-format=github . || rc=1
           uv lock --check || rc=1
-          uv run --all-packages pytest -q || rc=1
+          uv run --all-packages pytest -q -m 'not network' || rc=1
           uv run mypy || rc=1
           uv run --project .github/gate btm-repo-gate check || rc=1
           exit "${rc}"
+
+      - name: Ask the real services whether they still answer as parsed
+        # Advisory by construction. A mock proves our half of the contract:
+        # given this body, the decoder yields this record. It cannot prove
+        # the service still sends that body, and only a real call can. So
+        # these run on every push and never redden it: a third party
+        # rate-limiting or having an outage is not this repository breaking.
+        # A failure here means read the annotation, then go look.
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          if uv run --all-packages pytest -q -m network; then
+            echo "Upstream shapes still parse." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          echo "::warning title=Upstream check failed::A live API test failed. Either a service is down or rate-limited, or it changed shape and a decoder needs updating. This does not block the gate."
+          {
+            echo '### Upstream check failed'
+            echo 'A live API test did not pass. Rerun locally with:'
+            echo '```'
+            echo "uv run --all-packages pytest -m network"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
   commit:
     needs: fix

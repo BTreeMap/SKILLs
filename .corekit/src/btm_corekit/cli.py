@@ -12,12 +12,12 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, Final, NoReturn, Protocol, TypeAlias
 
-from btm_corekit.channels import emit, signal
-from btm_corekit.errors import CommandError, UpstreamError
-from btm_corekit.models import M, parse_model
-from btm_corekit.pad import jot, pad_body, recall
-from btm_corekit.sessions import SessionStore
-from btm_corekit.verdicts import Diagnostic
+from btm_corekit.records.models import M, parse_model
+from btm_corekit.report.channels import emit, signal
+from btm_corekit.report.errors import CommandError, UpstreamError
+from btm_corekit.report.verdicts import Diagnostic
+from btm_corekit.store.pad import jot, pad_body, recall
+from btm_corekit.store.sessions import SessionStore
 
 REJECT_NEXT = "apply every fix above, then resend; --file makes the retry one edit"
 PAD_SCHEMA = (

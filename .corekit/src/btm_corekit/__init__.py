@@ -1,11 +1,13 @@
 """btm-corekit: the shared symbolic kernel for SKILLs bundled scripts.
 Import the whole surface from `btm_corekit`, never a submodule; a script
-copied out of its workspace fails loudly at environment build."""
+copied out of its workspace fails loudly at environment build.
+
+An index is the exception, and imports as a module: `openalex.page` and
+`crossref.page` are two calls that mean different things, and flattening
+them would leave two names to invent."""
 
 from __future__ import annotations
 
-from btm_corekit.admission import Admission, Named, Pool, salvage, suggest
-from btm_corekit.channels import JSON, emit, signal
 from btm_corekit.cli import (
     PAD_SCHEMA,
     REFS_SCHEMA,
@@ -25,48 +27,42 @@ from btm_corekit.cli import (
     wire_pad,
     wire_view,
 )
-from btm_corekit.clock import now_iso
-from btm_corekit.digest import Cluster, Digest, Item, digest
-from btm_corekit.errors import CommandError, UpstreamError
-from btm_corekit.eventlog import MAX_EVENTS, EventLog
-from btm_corekit.fsio import (
-    append_jsonl,
-    count_lines,
-    read_jsonl,
-    state_root,
-    tree_bytes,
-    write_atomic,
+from btm_corekit.indexes import arxiv, crossref, doi, openalex
+from btm_corekit.indexes.work import (
+    MaybeArxivId,
+    MaybeCount,
+    MaybeDoi,
+    MaybeIsoDate,
+    MaybeYear,
+    Work,
+    collapsed,
+    normalize_arxiv_id,
+    normalize_doi,
 )
-from btm_corekit.http import (
+from btm_corekit.net.http import (
     HTTP_BAD_REQUEST,
+    HTTP_CONFLICT,
     HTTP_SERVER_ERROR,
     HTTP_TOO_MANY_REQUESTS,
     build_client,
     download,
     get_bytes,
-    openalex_params,
-    openalex_query,
+    head_status,
     status_failure,
     stream,
 )
-from btm_corekit.identifiers import (
-    KEYWORD_RANGE,
-    Ambiguous,
-    Exact,
-    NoMatch,
-    Recovered,
-    Resolution,
-    band_signal,
-    eliminate,
-    is_pathlike,
-    keywords_of,
-    mint,
-    resolve,
-    slugify,
-    suffix,
+from btm_corekit.net.origin import (
+    Contact,
+    CustomAgent,
+    RequestIdentity,
+    polite_params,
+    request_identity,
+    user_agent,
 )
-from btm_corekit.invariants import demand, parse_enum, require
-from btm_corekit.models import (
+from btm_corekit.net.wire import Upstream, decode, json_body
+from btm_corekit.records.admission import Admission, Named, Pool, salvage, suggest
+from btm_corekit.records.digest import CLUSTER_CAP, Cluster, Digest, Item, digest
+from btm_corekit.records.models import (
     ArxivId,
     Count,
     Doi,
@@ -82,21 +78,45 @@ from btm_corekit.models import (
     parse_with,
     refuse,
 )
-from btm_corekit.origin import (
-    OPENALEX_KEY_ENV,
-    Contact,
-    CustomAgent,
-    Keyed,
-    OpenAlexAccess,
-    RequestIdentity,
-    Trial,
-    openalex_access,
-    polite_params,
-    request_identity,
-    user_agent,
+from btm_corekit.report.channels import JSON, emit, signal
+from btm_corekit.report.errors import CommandError, UpstreamError
+from btm_corekit.report.invariants import demand, parse_enum, require
+from btm_corekit.report.verdicts import Diagnostic
+from btm_corekit.store.clock import now_iso
+from btm_corekit.store.eventlog import MAX_EVENTS, EventLog
+from btm_corekit.store.fsio import (
+    append_jsonl,
+    count_lines,
+    read_jsonl,
+    state_root,
+    tree_bytes,
+    write_atomic,
 )
-from btm_corekit.pad import compile_match, jot, pad_body, pad_entries, pad_ids, recall
-from btm_corekit.sessions import Created, SessionStore
+from btm_corekit.store.identifiers import (
+    KEYWORD_RANGE,
+    Ambiguous,
+    Exact,
+    NoMatch,
+    Recovered,
+    Resolution,
+    band_signal,
+    eliminate,
+    is_pathlike,
+    keywords_of,
+    mint,
+    resolve,
+    slugify,
+    suffix,
+)
+from btm_corekit.store.pad import (
+    compile_match,
+    jot,
+    pad_body,
+    pad_entries,
+    pad_ids,
+    recall,
+)
+from btm_corekit.store.sessions import Created, SessionStore
 from btm_corekit.text import (
     ASCII_WORD,
     ascii_words,
@@ -110,46 +130,21 @@ from btm_corekit.text import (
     runs,
     strip_tags,
 )
-from btm_corekit.upstream import (
-    ARXIV_QUERY,
-    CROSSREF_WORKS,
-    OPENALEX_WORKS,
-    ArxivEntry,
-    ArxivFeed,
-    CrossrefItem,
-    CrossrefMessage,
-    OpenAlexPage,
-    OpenAlexWork,
-    Upstream,
-    arxiv_feed,
-    batched,
-    crossref_filter,
-    crossref_page,
-    crossref_work,
-    openalex_page,
-    openalex_work,
-    year_filter,
-)
-from btm_corekit.verdicts import Diagnostic
 
 __all__ = [
-    "ARXIV_QUERY",
     "ASCII_WORD",
-    "CROSSREF_WORKS",
+    "CLUSTER_CAP",
     "HTTP_BAD_REQUEST",
+    "HTTP_CONFLICT",
     "HTTP_SERVER_ERROR",
     "HTTP_TOO_MANY_REQUESTS",
     "JSON",
     "KEYWORD_RANGE",
     "MAX_EVENTS",
-    "OPENALEX_KEY_ENV",
-    "OPENALEX_WORKS",
     "PAD_SCHEMA",
     "REFS_SCHEMA",
     "Admission",
     "Ambiguous",
-    "ArxivEntry",
-    "ArxivFeed",
     "ArxivId",
     "Cluster",
     "CommandError",
@@ -157,8 +152,6 @@ __all__ = [
     "Contact",
     "Count",
     "Created",
-    "CrossrefItem",
-    "CrossrefMessage",
     "CustomAgent",
     "Diagnostic",
     "Digest",
@@ -166,15 +159,16 @@ __all__ = [
     "EventLog",
     "Exact",
     "Item",
-    "Keyed",
     "Keyword",
+    "MaybeArxivId",
+    "MaybeCount",
+    "MaybeDoi",
+    "MaybeIsoDate",
+    "MaybeYear",
     "Model",
     "Named",
     "NoMatch",
     "NonEmpty",
-    "OpenAlexAccess",
-    "OpenAlexPage",
-    "OpenAlexWork",
     "Outcome",
     "Parser",
     "Pool",
@@ -184,50 +178,50 @@ __all__ = [
     "Resolution",
     "SessionStore",
     "Slug",
-    "Trial",
     "Trimmed",
     "Upstream",
     "UpstreamError",
     "View",
+    "Work",
     "advise",
     "append_jsonl",
-    "arxiv_feed",
+    "arxiv",
     "ascii_words",
     "band_signal",
-    "batched",
     "bracketed",
     "build_client",
     "collapse_whitespace",
+    "collapsed",
     "compile_match",
     "content",
     "count_lines",
-    "crossref_filter",
-    "crossref_page",
-    "crossref_work",
+    "crossref",
+    "decode",
     "demand",
     "diagnostics",
     "digest",
     "digit_run",
     "dispatch",
+    "doi",
     "download",
     "dump",
     "eliminate",
     "emit",
     "gated",
     "get_bytes",
+    "head_status",
     "heading_words",
     "is_digits",
     "is_pathlike",
     "jot",
+    "json_body",
     "keep_table",
     "keywords_of",
     "mint",
+    "normalize_arxiv_id",
+    "normalize_doi",
     "now_iso",
-    "openalex_access",
-    "openalex_page",
-    "openalex_params",
-    "openalex_query",
-    "openalex_work",
+    "openalex",
     "pad_body",
     "pad_entries",
     "pad_ids",
@@ -262,5 +256,4 @@ __all__ = [
     "wire_pad",
     "wire_view",
     "write_atomic",
-    "year_filter",
 ]

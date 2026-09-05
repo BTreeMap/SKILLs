@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from btm_corekit import CommandError
-from btm_lit_review.paper import candidate
+from btm_corekit import CommandError, Work
+from btm_lit_review.corpus.paper import paper_from
 from btm_lit_review.session import (
     Criteria,
     Protocol,
@@ -62,18 +62,21 @@ class TestCriteriaGate:
 
 class TestCorpusRoundTrip:
     def test_saved_papers_load_back_equal(self, session):
-        record = candidate(
-            title="T",
-            year=None,
-            authors=(),
-            venue=None,
-            doi="10.1/a",
-            arxiv_id=None,
-            openalex_id=None,
-            cited_by_count=None,
-            abstract=None,
-            pdf_url=None,
-            landing_url=None,
+        record = paper_from(
+            Work(
+                title="T",
+                year=None,
+                authors=(),
+                venue=None,
+                doi="10.1/a",
+                arxiv_id=None,
+                openalex_id=None,
+                cited_by=None,
+                abstract=None,
+                pdf_url=None,
+                landing_url=None,
+                published=None,
+            )
         )
         papers = {record.key: record}
         save_papers(session, papers)

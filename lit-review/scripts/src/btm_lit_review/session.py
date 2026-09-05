@@ -20,7 +20,7 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_lit_review.constants import Level
-from btm_lit_review.paper import Paper, paper_from_json
+from btm_lit_review.corpus.paper import Paper, paper_from_json
 
 STORE = SessionStore("lit-review", marker="protocol.json", hint="run init first")
 

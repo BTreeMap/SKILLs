@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from btm_corekit import Keyed, Trial, openalex_access, request_identity, user_agent
+from btm_corekit import request_identity, user_agent
 
 
 class TestRequestIdentity:
@@ -20,13 +20,3 @@ class TestRequestIdentity:
         monkeypatch.delenv("BTM_USER_AGENT", raising=False)
         monkeypatch.delenv("BTM_CONTACT", raising=False)
         assert "skills@oss.joefang.org" in request_identity().address
-
-
-class TestOpenAlexAccess:
-    def test_a_key_is_carried(self, monkeypatch):
-        monkeypatch.setenv("BTM_OPENALEX_KEY", "k-123")
-        assert openalex_access() == Keyed("k-123")
-
-    def test_no_key_is_the_trial_budget(self, monkeypatch):
-        monkeypatch.delenv("BTM_OPENALEX_KEY", raising=False)
-        assert isinstance(openalex_access(), Trial)

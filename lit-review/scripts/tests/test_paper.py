@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, dump
+from btm_corekit import (
+    CommandError,
+    Work,
+    dump,
+)
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.paper import (
+from btm_lit_review.corpus.paper import (
     absorb,
-    candidate,
-    clean_text,
     merge_papers,
-    normalize_arxiv_id,
-    normalize_doi,
     normalize_title,
     paper_aliases,
+    paper_from,
     paper_from_json,
     paper_key,
 )
@@ -27,40 +28,22 @@ BIBLIOGRAPHIC = {
     "doi": None,
     "arxiv_id": None,
     "openalex_id": None,
-    "cited_by_count": None,
+    "cited_by": None,
     "abstract": None,
     "pdf_url": None,
     "landing_url": None,
+    "published": None,
 }
 
 
 def paper(**overrides):
-    """candidate() forwards every Paper field, so tests state them all once."""
-    return candidate(**{**BIBLIOGRAPHIC, **overrides})
+    """One crossed record, so a test states only the field it varies."""
+    return paper_from(Work(**{**BIBLIOGRAPHIC, **overrides}))
 
 
 class TestNormalization:
-    def test_runs_of_whitespace_collapse(self):
-        assert clean_text("Hello   world\n") == "Hello world"
-
-    def test_empty_text_normalizes_to_absence(self):
-        assert clean_text("   ") is None
-        assert clean_text(None) is None
-
-    @pytest.mark.parametrize(
-        "raw", ["10.1/AbC", "https://doi.org/10.1/AbC", "DOI:10.1/AbC"]
-    )
-    def test_doi_forms_converge(self, raw):
-        assert normalize_doi(raw) == "10.1/abc"
-
-    def test_a_non_doi_normalizes_to_absence(self):
-        assert normalize_doi("not-a-doi") is None
-
-    @pytest.mark.parametrize(
-        "raw", ["2401.01234", "arXiv:2401.01234v3", "https://arxiv.org/abs/2401.01234"]
-    )
-    def test_arxiv_forms_converge_and_drop_the_version(self, raw):
-        assert normalize_arxiv_id(raw) == "2401.01234"
+    """Only what this member owns; the identifier normalizers moved to the
+    kernel with their tests."""
 
     def test_title_normalization_ignores_case_and_punctuation(self):
         assert normalize_title("The Cat: A Study!") == normalize_title(
