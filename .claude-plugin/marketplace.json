@@ -30,6 +30,7 @@
         "./reframe",
         "./search-web",
         "./setup-env",
+        "./summon",
         "./thematic-analysis"
       ]
     }

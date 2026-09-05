@@ -27,6 +27,7 @@ submodule.
 | [reframe](reframe/SKILL.md) | Produces a testable strategic-direction judgment when planning has locked onto incremental or legacy-bound framing. |
 | [search-web](search-web/SKILL.md) | Searches the web, Wikipedia, and the scholarly record for an agent whose harness offers no search tool; one record shape from every verb, plus readable page text. |
 | [setup-env](setup-env/SKILL.md) | Provisions per-project toolchains entirely in userspace, without root or docker, assuming only uv on PATH; foreign-architecture build tools run behind qemu shims. |
+| [summon](summon/SKILL.md) | Hands work to another agent: whether to delegate at all, the six-field brief that binds a delegate, disjoint bundles that keep parallel agents off each other's ground, returns judged as untrusted against their contract, and what six harnesses give a delegate to start with. |
 | [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named school, with a recorded choice of approach, bounded codebooks, pre-declared agreement checks, and defaults tuned for user feedback and ticket data. |
 
 ## Installing

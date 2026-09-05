@@ -84,6 +84,10 @@ Current skills:
   as the only assumption: a typed target algebra of
   `family[:flavor][@version]` tags, micromamba and publisher suppliers, qemu
   user-mode emulation, a typed planner under `scripts/`.
+* `summon/` - delegation to another agent: an inline-first mode ladder, a
+  six-field brief, a reach ladder for getting a skill into a delegate,
+  fanout bundles that name the neighbouring territory, returns treated as
+  untrusted and judged against their contract, and a cross-harness table.
 * `thematic-analysis/` - theme development from qualitative text under one
   named school (reflexive, codebook, template, framework matrix, rapid,
   hybrid), with corpus-sourced defaults, a feedback-data adaptation
