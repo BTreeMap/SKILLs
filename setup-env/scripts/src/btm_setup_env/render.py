@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import shlex
 
-from .model import OS, EnvDelta, Host
+from btm_setup_env.model import OS, EnvDelta, Host
 
 # Keep system tools reachable after replacing the caller's PATH.
 _POSIX_TAIL = ("/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin")

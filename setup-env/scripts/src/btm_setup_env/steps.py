@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 
-from .model import CondaPlatform
+from btm_setup_env.model import CondaPlatform
 
 
 class ArchiveKind(StrEnum):

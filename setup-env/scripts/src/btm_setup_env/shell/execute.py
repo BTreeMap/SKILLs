@@ -1,58 +1,38 @@
-"""The imperative shell: downloads, extraction, micromamba, step executors.
+"""One executor per step variant, and the total dispatch over them.
 
-Idempotence is the governing law: every executor checks a postcondition and
-skips completed work, so re-running provision is the repair action; only
-the *activation* environment is fully hermetic, since provisioning
-subprocesses still inherit the caller's HOME, TMPDIR, and TLS roots.
-"""
+Every executor is idempotent: it checks its own postcondition and returns
+without work when the step is already satisfied. That is what makes
+re-running provision the repair action rather than a reinstall."""
 
 from __future__ import annotations
 
-import hashlib
-import json
 import os
 import re
 import shlex
 import shutil
-import stat
 import subprocess
-import sys
-import tarfile
 import zipfile
-from dataclasses import dataclass, field
-from functools import cache
 from pathlib import Path, PurePosixPath
 from typing import assert_never
 
-import certifi
-import httpx
-from pydantic import ConfigDict
-from pydantic import Field as PydanticField
-
-from btm_corekit import (
-    CommandError,
-    Model,
-    UpstreamError,
-    build_client,
-    download,
-    dump,
-    parse_model,
-)
-
-from .catalog import GOOGLE_MAVEN, conda_bin_dirs, jvm_home, qemu_steps
-from .model import (
+from btm_setup_env.catalog import GOOGLE_MAVEN, conda_bin_dirs, jvm_home
+from btm_setup_env.model import (
     OS,
     CondaPlatform,
     DenvError,
-    Host,
     Layout,
-    QemuUser,
-    Unsupported,
-    emulation,
 )
-from .plan import Plan
-from .render import realize, render_ps1, render_sh
-from .steps import (
+from btm_setup_env.shell.process import run_logged
+from btm_setup_env.shell.root import Ctx
+from btm_setup_env.shell.supply import ensure_micromamba, uv_binary
+from btm_setup_env.shell.transfer import (
+    extract_tar,
+    extract_zip,
+    fetch,
+    log,
+    verify_sha256,
+)
+from btm_setup_env.steps import (
     Aapt2Shim,
     AndroidSdk,
     ArchiveKind,
@@ -66,208 +46,13 @@ from .steps import (
     UvVenv,
 )
 
-ARCHIVE_CAP_BYTES = 4 * 1024 * 1024 * 1024  # an SDK is large; a runaway is larger
-
-MICROMAMBA_VERSION = "2.9.0-0"
-MICROMAMBA_RELEASES = (
-    "https://github.com/mamba-org/micromamba-releases/releases/download"
-)
-
-
-def log(message: str) -> None:
-    print(f"btm-setup-env: {message}", file=sys.stderr)
-
-
 DIGITS_AND_DOT = frozenset("0123456789.")
 
-# --- Downloads and extraction ---
+
+_COMPILERS = (("cc", ("-gcc", "-clang")), ("c++", ("-g++", "-clang++")))
 
 
-@cache
-def _client() -> httpx.Client:
-    """Reads run unbounded: archives are large, links slow, and every fetch is
-    resumable by re-run. Connect, write, and pool waits stay bounded, so a
-    dead peer fails instead of hanging."""
-    return build_client("setup-env", read_timeout=None)
-
-
-def fetch(url: str, target: Path) -> None:
-    if target.exists():
-        return
-    download(_client(), url, target, ARCHIVE_CAP_BYTES)
-
-
-def verify_sha256(path: Path, expected: str) -> None:
-    with path.open("rb") as handle:
-        actual = hashlib.file_digest(handle, "sha256").hexdigest()
-    if actual != expected:
-        # The mechanical repair: fetch() trusts an existing file, so a
-        # corrupt download would otherwise poison every re-run.
-        path.unlink()
-        raise UpstreamError(
-            f"digest mismatch for {path.name}\n"
-            f"  expected {expected}\n  actual   {actual}\n"
-            "removed the corrupt download; re-run to fetch it again"
-        )
-
-
-def _stripped(name: str, strip: int) -> tuple[str, ...] | None:
-    parts = PurePosixPath(name).parts[strip:]
-    if not parts or ".." in parts or parts[0].startswith("/"):
-        return None
-    return parts
-
-
-def _extract_zip(archive: Path, dest: Path, strip: int) -> None:
-    with zipfile.ZipFile(archive) as zf:
-        for info in zf.infolist():
-            parts = _stripped(info.filename, strip)
-            if parts is None or info.is_dir():
-                continue
-            target = dest.joinpath(*parts)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            mode = (info.external_attr >> 16) & 0o170777
-            if stat.S_ISLNK(mode):
-                target.symlink_to(zf.read(info).decode())
-                continue
-            with zf.open(info) as src, open(target, "wb") as out:
-                shutil.copyfileobj(src, out)
-            if mode & 0o777:
-                os.chmod(target, mode & 0o777)
-
-
-def _extract_tar(archive: Path, dest: Path, strip: int) -> None:
-    with tarfile.open(archive) as tf:
-        members = []
-        for member in tf.getmembers():
-            parts = _stripped(member.name, strip)
-            if parts is None:
-                continue
-            member.name = str(PurePosixPath(*parts))
-            members.append(member)
-        try:
-            tf.extractall(dest, members=members, filter="tar")
-        except TypeError:  # Python <3.11.4 has no filter parameter.
-            tf.extractall(dest, members=members)
-
-
-INSTALL_TIMEOUT = 3600.0  # seconds; an installer past this is stuck on a lock or prompt
-
-
-def run_logged(
-    what: str,
-    cmd: list[str],
-    env: dict[str, str],
-    stdin_text: str | None = None,
-    timeout: float = INSTALL_TIMEOUT,
-) -> None:
-    """Run quietly; on failure surface the tail, which is where build tools
-    put the sentence worth reading."""
-    try:
-        result = subprocess.run(
-            cmd,
-            env=env,
-            input=stdin_text,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,  # Surface the output tail as DenvError.
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as err:
-        raise UpstreamError(f"{what} produced no exit within {timeout:.0f}s") from err
-    if result.returncode != 0:
-        tail = "\n".join((result.stdout or "").splitlines()[-40:])
-        raise DenvError(f"{what} failed (exit {result.returncode}):\n{tail}")
-
-
-# --- Context ---
-
-
-class Manifest(Model):
-    """What a provisioned root records about itself. One reading, so status
-    and the executors cannot disagree about which project it belongs to; an
-    older manifest missing a field is read, not rejected."""
-
-    model_config = ConfigDict(frozen=True, extra="ignore")
-
-    project: str = ""
-    spec: tuple[str, ...] = ()
-    host: str = ""
-    conda: dict[str, tuple[str, ...]] = PydanticField(default_factory=dict)
-    uv_python: str | None = None
-
-
-@dataclass
-class Ctx:
-    layout: Layout
-    host: Host
-    manifest: Manifest = field(default_factory=Manifest)
-
-    @property
-    def mamba(self) -> Path:
-        name = "micromamba.exe" if self.host.os is OS.WINDOWS else "micromamba"
-        return self.layout.mamba_bin.with_name(name)
-
-    def tool_env(self, **extra: str) -> dict[str, str]:
-        env = dict(os.environ)
-        env.update(
-            HOME=str(self.layout.home),
-            TMPDIR=str(self.layout.tmp),
-            SSL_CERT_FILE=certifi.where(),
-            MAMBA_ROOT_PREFIX=str(self.layout.mamba_root),
-        )
-        env.update(extra)
-        return env
-
-    def record(self, **changes: object) -> None:
-        self.manifest = self.manifest.with_(**changes)
-
-    def save_manifest(self) -> None:
-        path = self.layout.manifest
-        partial = path.with_name(path.name + ".partial")
-        partial.write_text(json.dumps(dump(self.manifest), indent=2, sort_keys=True))
-        os.replace(partial, path)
-
-
-def load_manifest(layout: Layout) -> Manifest:
-    """A root with no manifest was never provisioned; one that fails to parse
-    is not the same thing, so it errors instead of reading as absent and
-    forcing a reinstall."""
-    try:
-        raw = layout.manifest.read_text()
-    except OSError:
-        return Manifest()
-    try:
-        return parse_model(Manifest, json.loads(raw), str(layout.manifest))
-    except ValueError as err:
-        raise DenvError(f"unreadable {layout.manifest}: {err}") from err
-
-
-# --- micromamba ---
-
-
-def ensure_micromamba(ctx: Ctx) -> None:
-    if ctx.mamba.exists():
-        return
-    platform = ctx.host.conda_platform.value
-    log(f"installing micromamba {MICROMAMBA_VERSION} ({platform})")
-    url = f"{MICROMAMBA_RELEASES}/{MICROMAMBA_VERSION}/micromamba-{platform}"
-    archive = ctx.layout.downloads / f"micromamba-{platform}"
-    fetch(url, archive)
-    # Fetch the publisher digest to keep verification architecture-independent.
-    sidecar = archive.with_name(archive.name + ".sha256")
-    fetch(url + ".sha256", sidecar)
-    try:
-        verify_sha256(archive, sidecar.read_text().split()[0])
-    except CommandError:
-        # The sidecar itself may be the corrupt cached file; clear it too so
-        # the re-run re-fetches both instead of wedging on a bad pin.
-        sidecar.unlink(missing_ok=True)
-        raise
-    ctx.mamba.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(archive, ctx.mamba)
-    ctx.mamba.chmod(0o755)
+NUMBERS = re.compile(r"\d+")
 
 
 def conda_create(ctx: Ctx, step: CondaEnv) -> None:
@@ -300,18 +85,6 @@ def conda_create(ctx: Ctx, step: CondaEnv) -> None:
     ctx.save_manifest()
 
 
-# --- Step executors ---
-
-
-def _uv(ctx: Ctx) -> str:
-    found = shutil.which("uv")
-    if found is None:
-        raise DenvError(
-            "uv is required and was not found on PATH; see https://docs.astral.sh/uv/"
-        )
-    return found
-
-
 def do_uv_venv(ctx: Ctx, step: UvVenv) -> None:
     layout, host = ctx.layout, ctx.host
     python = layout.venv / (
@@ -319,7 +92,7 @@ def do_uv_venv(ctx: Ctx, step: UvVenv) -> None:
     )
     if python.exists() and ctx.manifest.uv_python == step.version:
         return
-    uv = _uv(ctx)
+    uv = uv_binary(ctx)
     env = ctx.tool_env(
         UV_PYTHON_INSTALL_DIR=str(layout.uv_python),
         UV_CACHE_DIR=str(layout.cache / "uv"),
@@ -376,7 +149,7 @@ def do_fetch(ctx: Ctx, step: Fetch) -> None:
     if partial.exists():
         shutil.rmtree(partial)
     partial.mkdir(parents=True)
-    extract = _extract_zip if step.kind is ArchiveKind.ZIP else _extract_tar
+    extract = extract_zip if step.kind is ArchiveKind.ZIP else extract_tar
     extract(archive, partial, step.strip)
     if dest.exists():
         shutil.rmtree(dest)
@@ -463,9 +236,6 @@ def do_ghcup(ctx: Ctx, step: GhcupToolchain) -> None:
         )
 
 
-_COMPILERS = (("cc", ("-gcc", "-clang")), ("c++", ("-g++", "-clang++")))
-
-
 def do_compiler_shims(ctx: Ctx, step: CompilerShims) -> None:
     """conda compilers carry triple-prefixed names; fixed-name shims give
     CC/CXX a plan-time value and let configure scripts find them."""
@@ -508,9 +278,6 @@ def do_uv_shim(ctx: Ctx, step: UvShim) -> None:
             link.symlink_to(found)
 
 
-# --- aapt2 ---
-
-
 def _agp_version(project: Path) -> str | None:
     catalog = project / "gradle" / "libs.versions.toml"
     try:
@@ -544,9 +311,6 @@ def _tag_contents(text: str, tag: str) -> list[str]:
             found.append(text[start + len(opener) : end])
         position = end + len(closer)
     return found
-
-
-NUMBERS = re.compile(r"\d+")
 
 
 def _aapt2_rank(version: str) -> tuple[int, tuple[int, ...]]:
@@ -688,9 +452,6 @@ def do_bind_gradle(ctx: Ctx, step: BindGradleProject) -> None:
     local.write_text("\n".join(lines) + "\n")
 
 
-# --- Orchestration ---
-
-
 def execute(ctx: Ctx, step: Step) -> None:
     """Exhaustive over the closed sum, so a new variant is a type error here
     rather than a KeyError partway through a provision."""
@@ -715,115 +476,3 @@ def execute(ctx: Ctx, step: Step) -> None:
             do_bind_gradle(ctx, step)
         case _:
             assert_never(step)
-
-
-@dataclass(frozen=True, slots=True)
-class ProbeResult:
-    command: tuple[str, ...]
-    ok: bool
-    output: str
-
-
-def ensure_dirs(layout: Layout) -> None:
-    for directory in (
-        layout.root,
-        layout.downloads,
-        layout.home,
-        layout.tmp,
-        layout.cache,
-        layout.shims,
-        layout.home / ".config",
-    ):
-        directory.mkdir(parents=True, exist_ok=True)
-
-
-def provision(plan: Plan) -> list[ProbeResult]:
-    layout = plan.layout
-    ensure_dirs(layout)
-    ctx = Ctx(layout, plan.host, load_manifest(layout))
-    ctx.record(
-        project=str(plan.spec.project),
-        spec=tuple(str(target) for target in plan.spec.targets),
-        host=str(plan.host),
-    )
-    for step in plan.steps:
-        execute(ctx, step)
-    write_activation(plan)
-    ctx.save_manifest()
-    return verify(plan)
-
-
-def write_activation(plan: Plan) -> None:
-    layout = plan.layout
-    for path, text in (
-        (layout.activate_sh, render_sh(plan.env, plan.host)),
-        (layout.activate_ps1, render_ps1(plan.env, plan.host)),
-    ):
-        partial = path.with_name(path.name + ".partial")
-        partial.write_text(text)
-        partial.chmod(0o755)
-        os.replace(partial, path)
-
-
-def verify(plan: Plan) -> list[ProbeResult]:
-    """Run every recipe's probes inside the realized activation environment:
-    what these prove is exactly what a sourced activate.sh grants."""
-    env = realize(plan.env, plan.host)
-    results = []
-    for command in plan.probes:
-        argv0 = shutil.which(command[0], path=env.get("PATH"))
-        if argv0 is None:
-            results.append(ProbeResult(command, False, "not found on PATH"))
-            continue
-        try:
-            proc = subprocess.run(
-                [argv0, *command[1:]],
-                env=env,
-                timeout=600,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=False,  # Report failed probes as results.
-            )
-        except subprocess.TimeoutExpired:
-            results.append(ProbeResult(command, False, "probe timed out"))
-            continue
-        first = next(
-            (line for line in (proc.stdout or "").splitlines() if line.strip()), ""
-        )
-        results.append(ProbeResult(command, proc.returncode == 0, first))
-    return results
-
-
-# --- Standalone foreign-binary shims ---
-
-
-def make_shim(
-    layout: Layout, host: Host, binary: Path, platform: CondaPlatform
-) -> Path:
-    """Wrap an arbitrary foreign-architecture binary so it runs on this host:
-    the aapt2 answer, offered for any binary a build unexpectedly needs."""
-    emu = emulation(host, platform)
-    match emu:
-        case Unsupported(reason=reason):
-            raise DenvError(reason)
-        case QemuUser():
-            pass
-        case _:
-            raise DenvError(
-                f"{platform.value} binaries already run natively "
-                f"on {host}; no shim needed"
-            )
-    if not binary.is_file():
-        raise DenvError(f"no such binary: {binary}")
-    ctx = Ctx(layout, host, load_manifest(layout))
-    host_step, foreign_step = qemu_steps(emu)
-    # Merge existing packages; a second create would replace the prefix.
-    existing = set(ctx.manifest.conda.get("conda/host", ()))
-    merged = tuple(sorted(existing | set(host_step.packages)))
-    conda_create(ctx, CondaEnv("conda/host", host.conda_platform, merged))
-    conda_create(ctx, foreign_step)
-    wrapper = layout.shims / binary.name
-    write_qemu_wrapper(ctx, emu.qemu_binary, platform, binary.resolve(), wrapper)
-    ctx.save_manifest()
-    return wrapper

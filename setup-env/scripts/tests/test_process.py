@@ -8,8 +8,8 @@ import sys
 import pytest
 
 from btm_corekit import CommandError, UpstreamError
-from btm_setup_env.effects import run_logged
 from btm_setup_env.model import DenvError
+from btm_setup_env.shell.process import run_logged
 
 
 class TestExitContract:

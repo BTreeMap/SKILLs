@@ -179,7 +179,7 @@ RecipeKey = tuple[str, str]  # (family, flavor), post-alias, catalog-closed
 
 @dataclass(frozen=True, slots=True)
 class Target:
-    """A parsed, catalog-validated tag. Constructed only by catalog.resolve_tag."""
+    """A parsed, catalog-validated tag. Constructed only by tags.resolve_tag."""
 
     key: RecipeKey
     version: str | None

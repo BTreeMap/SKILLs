@@ -15,13 +15,12 @@ Suppliers, each the only sensible one for what it provides:
 
 from __future__ import annotations
 
-import difflib
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 
-from .model import (
+from btm_setup_env.model import (
     GENERIC,
     OS,
     Arch,
@@ -31,12 +30,10 @@ from .model import (
     Host,
     Layout,
     QemuUser,
-    RawTag,
     RecipeKey,
-    Target,
     emulation,
 )
-from .steps import (
+from btm_setup_env.steps import (
     Aapt2Shim,
     AndroidSdk,
     ArchiveKind,
@@ -630,36 +627,3 @@ def _parse_api(v: str | None) -> int:
 
 
 CATALOG: dict[RecipeKey, Recipe] = _recipes()
-
-# Normalize aliases before lookup; bare "android" maps to java:android.
-_ALIAS = {
-    "js": "javascript",
-    "node": "javascript",
-    "ts": "typescript",
-    "py": "python",
-    "golang": "go",
-    "c++": "cpp",
-    "cs": "csharp",
-    "dotnet": "csharp",
-    "sh": "bash",
-    "shell": "bash",
-}
-
-
-def resolve_tag(raw: RawTag) -> Target:
-    family = _ALIAS.get(raw.family, raw.family)
-    key: RecipeKey = (family, raw.flavor)
-    if family == "android" and raw.flavor == GENERIC:
-        key = ("java", "android")
-    recipe = CATALOG.get(key)
-    if recipe is None:
-        known = sorted(f if fl == GENERIC else f"{f}:{fl}" for f, fl in CATALOG)
-        asked = raw.family if raw.flavor == GENERIC else f"{raw.family}:{raw.flavor}"
-        hints = difflib.get_close_matches(asked, known, n=3)
-        hint = f"; did you mean {', '.join(hints)}?" if hints else ""
-        raise DenvError(
-            f"unknown target {asked!r}{hint}\nknown targets: {', '.join(known)}"
-        )
-    if raw.version is not None and recipe.version_doc is None:
-        raise DenvError(f"{family} does not take a version")
-    return Target(key, raw.version)

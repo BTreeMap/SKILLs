@@ -11,10 +11,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 from btm_corekit import Parser, dispatch
-
-from . import catalog
-from .effects import ProbeResult
-from .model import (
+from btm_setup_env.catalog import CATALOG
+from btm_setup_env.model import (
     GENERIC,
     CondaPlatform,
     DenvError,
@@ -26,9 +24,11 @@ from .model import (
     make_spec,
     parse_tag,
 )
-from .plan import Plan, make_plan
-from .render import path_value
-from .steps import CondaEnv, Fetch, stage_of
+from btm_setup_env.plan import Plan, make_plan
+from btm_setup_env.render import path_value
+from btm_setup_env.shell.commands import ProbeResult
+from btm_setup_env.steps import CondaEnv, Fetch, stage_of
+from btm_setup_env.tags import resolve_tag
 
 VERBS = ("provision", "plan", "status", "shim", "destroy", "list")
 
@@ -38,7 +38,7 @@ def _resolve(
 ) -> tuple[Spec, Layout]:
     host = detect_host()
     base = (project or find_project(Path.cwd())).resolve()
-    targets = [catalog.resolve_tag(parse_tag(t)) for t in tags]
+    targets = [resolve_tag(parse_tag(t)) for t in tags]
     spec = make_spec(targets, base) if targets else Spec((), base)
     return spec, Layout((root or default_root(base, host)).resolve())
 
@@ -120,7 +120,7 @@ def _report(plan: Plan, results: list[ProbeResult], as_json: bool) -> int:
 
 def cmd_provision(args: argparse.Namespace) -> int:
     # Defer effects: importing them builds an SSL context and needs certifi.
-    from .effects import provision  # noqa: PLC0415
+    from btm_setup_env.shell.commands import provision  # noqa: PLC0415
 
     plan = _build_plan(args.project, args.root, args.tags)
     results = provision(plan)
@@ -128,13 +128,16 @@ def cmd_provision(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    from .effects import load_manifest, verify  # noqa: PLC0415
+    from btm_setup_env.shell.commands import verify  # noqa: PLC0415
+    from btm_setup_env.shell.root import Provisioned, read_root  # noqa: PLC0415
 
     _, layout = _resolve(args.project, args.root, [])
-    manifest = load_manifest(layout)
-    if not manifest.project:
-        print(f"no environment at {layout.root}; run provision first")
-        return 1
+    match read_root(layout):
+        case Provisioned(manifest):
+            pass
+        case _:
+            print(f"no environment at {layout.root}; run provision first")
+            return 1
     plan = _build_plan(Path(manifest.project), layout.root, list(manifest.spec))
     return _report(plan, verify(plan), as_json=False)
 
@@ -152,7 +155,8 @@ def cmd_destroy(args: argparse.Namespace) -> int:
 
 
 def cmd_shim(args: argparse.Namespace) -> int:
-    from .effects import ensure_dirs, make_shim  # noqa: PLC0415
+    from btm_setup_env.shell.commands import make_shim  # noqa: PLC0415
+    from btm_setup_env.shell.root import ensure_dirs  # noqa: PLC0415
 
     _, layout = _resolve(args.project, args.root, [])
     ensure_dirs(layout)
@@ -164,9 +168,9 @@ def cmd_shim(args: argparse.Namespace) -> int:
 
 
 def cmd_list(args: argparse.Namespace) -> int:
-    width = max(len(_tag_of(key)) for key in catalog.CATALOG)
-    for key in sorted(catalog.CATALOG):
-        recipe = catalog.CATALOG[key]
+    width = max(len(_tag_of(key)) for key in CATALOG)
+    for key in sorted(CATALOG):
+        recipe = CATALOG[key]
         version = f"  [@{recipe.version_doc}]" if recipe.version_doc else ""
         print(f"{_tag_of(key):<{width}}  {recipe.summary}{version}")
     return 0
