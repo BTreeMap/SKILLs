@@ -23,6 +23,7 @@ from pydantic import (
 )
 
 from btm_corekit import (
+    BATCH,
     JSON,
     Admission,
     Count,
@@ -493,4 +494,4 @@ def cmd_note(args: argparse.Namespace) -> int:
             "gaps": len(live(everything, GapRecord)),
         }
 
-    return gated(args.file, "notebook", expand, commit)
+    return gated(BATCH, args, "notebook", expand, commit)

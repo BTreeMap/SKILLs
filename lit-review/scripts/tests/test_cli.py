@@ -156,7 +156,7 @@ class TestNoteAndBrief:
     def admit(self, session, tmp_path, capsys):
         batch_file = tmp_path / "round.json"
         batch_file.write_text(json.dumps(BATCH))
-        return run(["note", str(session.root), "--file", str(batch_file)], capsys)
+        return run(["note", str(session.root), "--batch:file", str(batch_file)], capsys)
 
     def test_a_clean_batch_is_admitted_with_a_receipt(self, session, tmp_path, capsys):
         code, document, _ = self.admit(session, tmp_path, capsys)
@@ -207,7 +207,7 @@ class TestPadAndDraft:
         draft = tmp_path / "report.md"
         draft.write_text("Sampling works [1]; phantom [4].")
         code, report, err = run(
-            ["cite-check", str(session.root), "--draft", str(draft)], capsys
+            ["cite-check", str(session.root), "--draft:file", str(draft)], capsys
         )
         assert code == 1
         assert any("never assigned" in p for p in report["problems"])

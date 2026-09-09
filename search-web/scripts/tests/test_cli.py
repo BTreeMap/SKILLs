@@ -25,14 +25,14 @@ class TestVerbs:
         monkeypatch.setattr(
             sources, "web", lambda query, limit: [Result(title="T", source="web")]
         )
-        code, document, _ = run(["web", "chaos"], capsys)
+        code, document, _ = run(["web", "--query", "chaos"], capsys)
         assert code == 0
         assert document["verb"] == "web" and document["count"] == 1
         assert document["results"][0]["title"] == "T"
 
     def test_an_empty_result_names_the_next_move(self, capsys, monkeypatch):
         monkeypatch.setattr(sources, "wiki", lambda query, limit: [])
-        _, document, _ = run(["wiki", "zzz"], capsys)
+        _, document, _ = run(["wiki", "--query", "zzz"], capsys)
         assert document["count"] == 0 and "widen" in document["next"]
 
     def test_the_second_identical_query_costs_no_request(self, capsys, monkeypatch):
@@ -43,8 +43,8 @@ class TestVerbs:
             return [Result(title="T", source="web")]
 
         monkeypatch.setattr(sources, "web", once)
-        run(["web", "chaos"], capsys)
-        _, document, err = run(["web", "chaos"], capsys)
+        run(["web", "--query", "chaos"], capsys)
+        _, document, err = run(["web", "--query", "chaos"], capsys)
         assert calls == ["chaos"]
         assert document["count"] == 1 and "cached" in err
 
@@ -55,8 +55,8 @@ class TestVerbs:
             "web",
             lambda query, limit: calls.append(limit) or [Result(title="T", source="w")],
         )
-        run(["web", "chaos", "--limit", "3"], capsys)
-        run(["web", "chaos", "--limit", "5"], capsys)
+        run(["web", "--query", "chaos", "--limit", "3"], capsys)
+        run(["web", "--query", "chaos", "--limit", "5"], capsys)
         assert calls == [3, 5]
 
 
@@ -87,7 +87,7 @@ class TestClean:
         monkeypatch.setattr(
             sources, "web", lambda query, limit: [Result(title="T", source="web")]
         )
-        run(["web", "chaos"], capsys)
+        run(["web", "--query", "chaos"], capsys)
         _, document, _ = run(["clean"], capsys)
         assert document["bytes_freed"] > 0
         assert not cache.cache_dir().exists()

@@ -1,5 +1,5 @@
-"""The process boundary shared by argparse-driven members: dispatch, batch
-input, the rejection envelope, and the pad and clean subcommands."""
+"""The process boundary shared by argparse-driven members: dispatch, content
+slots, the rejection envelope, and the pad and clean subcommands."""
 
 from __future__ import annotations
 
@@ -10,7 +10,8 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Final, NoReturn, Protocol, TypeAlias
+from typing import Any, Final, NoReturn, Protocol, TypeAlias, overload
+from weakref import WeakKeyDictionary
 
 from btm_corekit.records.models import M, parse_model
 from btm_corekit.report.channels import emit, signal
@@ -19,10 +20,8 @@ from btm_corekit.report.verdicts import Diagnostic
 from btm_corekit.store.pad import jot, pad_body, recall
 from btm_corekit.store.sessions import SessionStore
 
-REJECT_NEXT = "apply every fix above, then resend; --file makes the retry one edit"
 PAD_SCHEMA = (
-    "jot reads the entry from stdin or --file and stores any JSON object "
-    "unchecked; recall filters by "
+    "jot stores any JSON object unchecked; recall filters by "
     '--kind/--match/--since/--limit; suggested body: {"kind": "...", ...}'
 )
 REFS_SCHEMA = "a ref is the kw slug, a full id, or any unique keyword subset"
@@ -38,7 +37,7 @@ def bounded(message: str) -> str:
         return message
     return (
         f"{message[:ARGV_MESSAGE_MAX]}... [{len(message)} chars] "
-        "free-form content belongs on stdin, not in an argument"
+        "free-form content belongs on the pipe, not in an argument"
     )
 
 
@@ -79,120 +78,255 @@ def run_cli(parser: argparse.ArgumentParser, argv: Sequence[str] | None = None) 
     return dispatch(parsed)
 
 
-AT = "@"
-STDIN = "-"
-
-
-def text_source(raw: str) -> str:
-    """A free-form value written inline, as `@path`, or as `-` for stdin.
-
-    `@` marks a path only where a literal is also possible, so a parameter
-    that takes nothing but a path keeps its bare spelling. `@@` starts a
-    literal that begins with `@`.
-    """
-    if raw == STDIN:
-        return sys.stdin.read()
-    if raw.startswith(AT * 2):
-        return raw[1:]
-    if not raw.startswith(AT):
-        return raw
-    path = Path(raw[1:]).expanduser()
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError as err:
-        raise CommandError(f"cannot read {path}: {err}") from err
-
-
 @dataclass(frozen=True, slots=True)
 class Inline:
+    """The value itself, written in argv."""
+
     text: str
 
 
 @dataclass(frozen=True, slots=True)
 class FromFile:
+    """A file the command opens. Files are shareable: two slots may name one."""
+
     path: Path
 
 
 @dataclass(frozen=True, slots=True)
 class FromStdin:
-    pass
+    """The process stream. Affine: one stream, so one slot holds it."""
 
 
 Source = Inline | FromFile | FromStdin
 
 
-def sole_source(inline: str | None, file: str | None) -> Source:
-    """Exactly one place a payload comes from; supplying both an inline
-    argument and `--file` is a rejection."""
-    match (inline, file):
-        case (None, None):
-            return FromStdin()
-        case (None, str() as path):
-            return FromFile(Path(path))
-        case (str() as text, None):
-            return Inline(text)
-        case _:
-            raise CommandError(
-                "the payload came from an inline argument and --file; give one"
-            )
+@dataclass(frozen=True, slots=True)
+class Required:
+    """A slot the command cannot run without. Unclaimed, it reads the pipe."""
+
+    name: str
+    inline: bool = True
 
 
 @dataclass(frozen=True, slots=True)
-class Payload:
-    """What one subcommand calls its JSON, and which spellings it accepts; an
-    empty-payload rejection never advertises a spelling the subcommand
-    lacks."""
+class Optional:
+    """A slot that may go unfilled. Unclaimed, it stays absent."""
 
-    what: str
-    spellings: str
+    name: str
+    inline: bool = True
 
 
-BATCH = Payload("the batch", "stdin or --file")
-ENTRY = Payload("the entry", "stdin or --file")
-CONTENT = Payload("the content", "stdin or --file")
+Slot = Required | Optional
 
 
-def read_payload(source: Source, kind: Payload) -> str:
+class Provenance(StrEnum):
+    """The qualifier after a slot's name in `--<slot>:<provenance>`. Closed,
+    so a spelling added here reaches every generated family at once."""
+
+    FILE = "file"
+    STDIN = "stdin"
+
+
+def dest_of(slot: Slot) -> str:
+    """The slot's base argparse attribute. `:` is no identifier, so every
+    generated flag names its dest outright."""
+    return slot.name.replace("-", "_")
+
+
+def flag(slot: Slot, of: Provenance | None = None) -> str:
+    return f"--{slot.name}:{of}" if of else f"--{slot.name}"
+
+
+def spellings(slot: Slot) -> str:
+    """Every place this slot's bytes may come from, for its rejections."""
+    ways = [flag(slot)] if slot.inline else []
+    ways += [flag(slot, Provenance.FILE), flag(slot, Provenance.STDIN)]
+    match slot:
+        case Required():
+            ways.append("the pipe")
+        case Optional():
+            pass
+    return ", ".join(ways)
+
+
+class Claim(argparse.Action):
+    """One shared dest holds the name of the slot reading stdin, so a second
+    claim is a rejection rather than argparse's silent last-wins."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:
+        held = getattr(namespace, self.dest, None)
+        if held is not None and held != self.const:
+            parser.error(
+                f"stdin is claimed by --{held}:{Provenance.STDIN}; "
+                f"{option_string} wants it too"
+            )
+        setattr(namespace, self.dest, self.const)
+
+
+# One required slot per parser, since they would both fall back to one stdin.
+# Weak keys, so the bookkeeping dies with the parser and mutates nothing the
+# kernel does not own.
+REQUIRED_OF: Final[WeakKeyDictionary[argparse.ArgumentParser, str]] = (
+    WeakKeyDictionary()
+)
+
+
+def add_slot(parser: argparse.ArgumentParser, slot: Slot, shape: str) -> None:
+    """Generate a slot's whole flag family from one declaration, so no two
+    slots drift apart. `shape` says what the content is."""
+    match slot:
+        case Required(name=name):
+            held = REQUIRED_OF.setdefault(parser, name)
+            if held != name:
+                raise ValueError(
+                    f"{parser.prog}: {held} and {name} both fall back to the pipe; "
+                    "at most one required slot per command"
+                )
+        case Optional():
+            pass
+    dest = dest_of(slot)
+    if slot.inline:
+        parser.add_argument(flag(slot), dest=dest, help=shape)
+    else:
+        # Appended, so a second content slot documents its shape beside the
+        # first instead of erasing it.
+        described = f"{slot.name} from {spellings(slot)}: {shape}"
+        parser.description = " ".join(filter(None, (parser.description, described)))
+    parser.add_argument(
+        flag(slot, Provenance.FILE),
+        dest=f"{dest}_{Provenance.FILE}",
+        type=Path,
+        metavar="PATH",
+        help=f"read the {slot.name} from PATH",
+    )
+    parser.add_argument(
+        flag(slot, Provenance.STDIN),
+        dest=Provenance.STDIN,
+        action=Claim,
+        nargs=0,
+        const=slot.name,
+        help=f"read the {slot.name} from the pipe",
+    )
+
+
+def claims(slot: Slot, args: argparse.Namespace) -> list[tuple[str, Source]]:
+    """The slot's filled spellings, at most three, in flag order."""
+    dest = dest_of(slot)
+    found: list[tuple[str, Source]] = []
+    written = getattr(args, dest, None) if slot.inline else None
+    if written is not None:
+        found.append((flag(slot), Inline(written)))
+    path = getattr(args, f"{dest}_{Provenance.FILE}", None)
+    if path is not None:
+        found.append((flag(slot, Provenance.FILE), FromFile(path)))
+    if getattr(args, Provenance.STDIN, None) == slot.name:
+        found.append((flag(slot, Provenance.STDIN), FromStdin()))
+    return found
+
+
+def source_of(slot: Slot, args: argparse.Namespace) -> Source | None:
+    """Exactly one provenance per slot; two is a rejection naming both."""
+    match claims(slot, args):
+        case []:
+            return unclaimed(slot, args)
+        case [(_, source)]:
+            return source
+        case given:
+            names = " and ".join(name for name, _ in given)
+            raise CommandError(f"the {slot.name} came from {names}; give one")
+
+
+def unclaimed(slot: Slot, args: argparse.Namespace) -> Source | None:
+    """What a slot no flag filled falls back to."""
+    match slot:
+        case Required(name=name):
+            held = getattr(args, Provenance.STDIN, None)
+            if held is not None:
+                raise CommandError(
+                    f"the {name} has no source: stdin is claimed by "
+                    f"--{held}:{Provenance.STDIN}"
+                )
+            return FromStdin()
+        case Optional():
+            return None
+
+
+def read_source(slot: Slot, source: Source) -> str:
     """Total over the three variants; empty from the chosen source rejects."""
     match source:
-        case Inline(text):
-            raw = text
+        case Inline(written):
+            raw = written
         case FromFile(path):
-            raw = path.read_text(encoding="utf-8")
+            try:
+                raw = path.read_text(encoding="utf-8")
+            except OSError as err:
+                raise CommandError(f"cannot read {path}: {err}") from err
         case FromStdin():
             raw = sys.stdin.read()
     if not raw.strip():
-        raise CommandError(f"{kind.what} is read from {kind.spellings}; all are empty")
+        raise CommandError(f"the {slot.name} reads from {spellings(slot)}; all empty")
     return raw
 
 
-def read_batch(
-    file: str | None, inline: str | None = None
-) -> dict[str, Any] | Diagnostic:
-    """One JSON object from the batch's sole source; unparsable JSON becomes
-    a located rejection, in the same envelope as any other."""
-    raw = read_payload(sole_source(inline, file), BATCH)
-    try:
-        batch = json.loads(raw)
-    except json.JSONDecodeError as err:
-        return Diagnostic("$", f"make the batch valid JSON: {err}")
-    if not isinstance(batch, dict):
-        raise CommandError("the batch is one JSON object")
-    return batch
+@overload
+def text(slot: Required, args: argparse.Namespace) -> str: ...
 
 
-def content(model: type[M], file: str | None, what: str) -> M:
-    """A subcommand's free-form fields, as one JSON object from stdin or a
-    file. Free-form text never travels in argv: the shell rewrites quotes,
-    backslashes, and braces before the process ever sees them."""
-    raw = read_payload(sole_source(None, file), CONTENT)
+@overload
+def text(slot: Optional, args: argparse.Namespace) -> str | None: ...
+
+
+def text(slot: Slot, args: argparse.Namespace) -> str | None:
+    """A slot's bytes. A required slot always yields; an unfilled optional
+    slot yields None."""
+    source = source_of(slot, args)
+    return None if source is None else read_source(slot, source)
+
+
+@dataclass(frozen=True, slots=True)
+class Malformed:
+    """Slot text that is no JSON object. `fix` is the imperative, so each
+    caller routes one message through its own channel."""
+
+    fix: str
+
+
+def decoded(slot: Required, args: argparse.Namespace) -> dict[str, Any] | Malformed:
+    """The slot's JSON object. Free-form text never travels in argv: the
+    shell rewrites quotes, backslashes, and braces before the process ever
+    sees them."""
     try:
-        data = json.loads(raw)
+        data = json.loads(text(slot, args))
     except json.JSONDecodeError as err:
-        raise CommandError(f"make {what} valid JSON: {err}") from err
+        return Malformed(f"make the {slot.name} valid JSON: {err}")
     if not isinstance(data, dict):
-        raise CommandError(f"{what} is one JSON object")
-    return parse_model(model, data, what)
+        raise CommandError(f"the {slot.name} is one JSON object")
+    return data
+
+
+def read_batch(slot: Required, args: argparse.Namespace) -> dict[str, Any] | Diagnostic:
+    """A batch for the gate; unparsable JSON becomes a located rejection, in
+    the same envelope as any other."""
+    match decoded(slot, args):
+        case Malformed(fix):
+            return Diagnostic("$", fix)
+        case batch:
+            return batch
+
+
+def content(model: type[M], slot: Required, args: argparse.Namespace) -> M:
+    """A subcommand's free-form fields, parsed into its record at once."""
+    match decoded(slot, args):
+        case Malformed(fix):
+            raise CommandError(fix)
+        case data:
+            return parse_model(model, data, f"the {slot.name}")
 
 
 class View(StrEnum):
@@ -241,7 +375,8 @@ class Outcome(Protocol):
 
 
 def gated(
-    file: str | None,
+    slot: Required,
+    args: argparse.Namespace,
     store: str,
     expand: Callable[[dict[str, Any]], Outcome],
     commit: Callable[[Any], dict[str, Any]],
@@ -250,25 +385,28 @@ def gated(
     expansion, surface advisories, refuse with every problem in one verdict,
     and commit only when none remain. A contract that drifts between skills
     is the one thing an agent cannot discover."""
-    batch = read_batch(file)
+    batch = read_batch(slot, args)
     if isinstance(batch, Diagnostic):
-        emit(rejection([batch], store))
+        emit(rejection([batch], store, slot))
         return 1
     result = expand(batch)
     advise(result.advisories)
     if result.problems:
-        emit(rejection(result.problems, store))
+        emit(rejection(result.problems, store, slot))
         return 1
     emit(commit(result))
     return 0
 
 
-def rejection(problems: Iterable[Diagnostic], store: str) -> dict[str, Any]:
+def rejection(
+    problems: Iterable[Diagnostic], store: str, slot: Required
+) -> dict[str, Any]:
     """The verdict a rejected batch returns: every fix, and what stayed put."""
     return {
         "rejected": [problem.view() for problem in problems],
         "unchanged": store,
-        "next": REJECT_NEXT,
+        "next": f"apply every fix above, then resend; "
+        f"{flag(slot, Provenance.FILE)} makes the retry one edit",
     }
 
 
@@ -284,6 +422,11 @@ Commands: TypeAlias = "argparse._SubParsersAction[Parser]"
 DirectoryOf = Callable[[argparse.Namespace], Path]
 OnJot = Callable[[argparse.Namespace, dict[str, Any]], None]
 
+# Slots every member spells the same way. A member declares only its own.
+BATCH = Required("batch", inline=False)
+ENTRY = Required("entry", inline=False)
+MATCH = Optional("match")
+
 
 def wire_pad(
     commands: Commands,
@@ -297,9 +440,7 @@ def wire_pad(
 
     def cmd_jot(args: argparse.Namespace) -> int:
         directory = directory_of(args)
-        body, advisory = pad_body(
-            read_payload(sole_source(None, args.file), ENTRY), args.text
-        )
+        body, advisory = pad_body(text(ENTRY, args), args.prose)
         if advisory:
             signal(advisory)
         if on_jot is not None:
@@ -312,7 +453,7 @@ def wire_pad(
             recall(
                 directory_of(args),
                 kind=args.kind,
-                match=args.match,
+                match=text(MATCH, args),
                 since=args.since,
                 limit=args.limit,
             )
@@ -322,17 +463,13 @@ def wire_pad(
     jotter = commands.add_parser("jot", help="free note on the session pad")
     jotter.set_defaults(func=cmd_jot)
     jotter.add_argument("session", help="session identifier or directory")
-    # No inline positional: an optional positional interleaved with flags is
-    # argparse's ambiguous shape, and a JSON body is what the shell mangles.
-    jotter.add_argument(
-        "--file", default=None, help="read the entry from this file instead of stdin"
-    )
-    jotter.add_argument("--text", action="store_true", help="store the entry as prose")
+    add_slot(jotter, ENTRY, "any JSON object")
+    jotter.add_argument("--prose", action="store_true", help="store the entry as prose")
     recaller = commands.add_parser("recall", help="filtered slice of the pad")
     recaller.set_defaults(func=cmd_recall)
     recaller.add_argument("session", help="session identifier or directory")
     recaller.add_argument("--kind")
-    recaller.add_argument("--match", type=text_source)
+    add_slot(recaller, MATCH, "case-insensitive regex over the entry")
     recaller.add_argument("--since", help="entries after this pad id")
     recaller.add_argument("--limit", type=int)
     if lore is not None:

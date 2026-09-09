@@ -38,12 +38,12 @@ batch is valid.
 ## Bulk rules
 
 Record a vocabulary cut as one judgment. `screen --on title --exclude` with
-`{"match": "<regex>", "reason": "..."}` on stdin applies a case-insensitive
-regex to every candidate, marks each match with `rule:<id>`, and stores the
-rule with its matched keys in the notebook. Decided papers stay untouched:
-make the individual judgments that must survive a broad cut before running
-it. `--include` exists for the mirror case, still bound by the criteria
-gate.
+`{"match": "<regex>", "reason": "..."}` on the pipe applies a
+case-insensitive regex to every candidate, marks each match with
+`rule:<id>`, and stores the rule with its matched keys in the notebook.
+Decided papers stay untouched: make the individual judgments that must
+survive a broad cut before running it. `--include` exists for the mirror
+case, still bound by the criteria gate.
 
 ## Exclusion reasons
 

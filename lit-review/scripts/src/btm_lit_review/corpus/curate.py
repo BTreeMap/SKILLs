@@ -12,6 +12,7 @@ from pydantic import model_validator
 
 from btm_corekit import (
     JSON,
+    MATCH,
     CommandError,
     Diagnostic,
     Item,
@@ -30,6 +31,7 @@ from btm_corekit import (
     refuse,
     rejection,
     signal,
+    text,
 )
 from btm_lit_review.constants import (
     ABSTRACT_SHOW_LIMIT,
@@ -49,6 +51,7 @@ from btm_lit_review.session import (
     require_criteria,
     save_papers,
 )
+from btm_lit_review.slots import DECISIONS, KEYS, RULE
 
 
 def paper_field(paper: Paper, on: str) -> str:
@@ -65,7 +68,7 @@ class Rule(Model):
 
 def cmd_screen(args: argparse.Namespace) -> int:
     """One rule screens many candidates; the record keeps the count honest."""
-    rule = content(Rule, args.file, "the rule")
+    rule = content(Rule, RULE, args)
     session = open_session(args.session)
     require_criteria(load_protocol(session))
     pattern = compile_match(rule.match)
@@ -163,9 +166,9 @@ def parse_decision(
 
 def cmd_update(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    decisions = read_batch(args.file)
+    decisions = read_batch(DECISIONS, args)
     if isinstance(decisions, Diagnostic):
-        emit(rejection([decisions], "papers"))
+        emit(rejection([decisions], "papers", DECISIONS))
         return 1
     papers = load_papers(session)
     # Parse every decision before applying any, so a rejected batch leaves the
@@ -268,14 +271,15 @@ def cmd_show(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
     missing: list[str] = []
-    if args.keys:
-        wanted = [key.strip() for key in args.keys.split(",") if key.strip()]
+    keys, pattern_source = text(KEYS, args), text(MATCH, args)
+    if keys:
+        wanted = [key.strip() for key in keys.split(",") if key.strip()]
         missing = [key for key in wanted if key not in papers]
         matching = [papers[key] for key in wanted if key in papers]
     else:
         matching = [paper for paper in papers.values() if paper.status == args.status]
-    if args.match:
-        pattern = compile_match(args.match)
+    if pattern_source:
+        pattern = compile_match(pattern_source)
         matching = [
             paper for paper in matching if pattern.search(paper_field(paper, args.on))
         ]

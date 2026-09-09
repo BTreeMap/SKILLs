@@ -119,9 +119,9 @@ grounded fatal or major objection, `questioned`, `standing`), the echo
 ratio, the recommendation by severity rule (fatal: reject; major: major
 revision; minor: minor revision; else no objection stands), bank coverage
 (unwalked banks for the level, corpus linked, pages) with a confidence band,
-and the report scaffold. `cite-check --draft` requires every `[On]` and
-`[Cn]` in the draft to resolve to a grounded record and every grounded fatal
-or major objection to appear.
+and the report scaffold. `cite-check` requires every `[On]` and `[Cn]` in
+the draft to resolve to a grounded record and every grounded fatal or major
+objection to appear.
 
 Exit codes: 0 done (stderr `signal:` lines are advisory); 1 fix the input
 and resend. `clean` lists sessions with sizes and removes one or `--all`,
@@ -131,11 +131,13 @@ Bind the command once per shell and re-bind after a reset; `realpath` is
 required. Invoke it and read its output; read the source only when
 troubleshooting on the user's instruction.
 
-Free-form content (a title, a quote, a batch) arrives as one JSON object on
-stdin or from `--file`; flags carry closed choices, counts, paths, and
-identifiers. An option that takes a literal also takes `@path` or `-` for
-stdin, and `@@` starts a literal `@`. Write a batch to a file: a retry then
-costs one edit.
+Free-form content fills a named slot: `--<slot>` carries a short value,
+`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
+required slot reads the pipe when no flag claims it. One slot per call may
+claim the pipe. A JSON body has no inline spelling. A value is never
+reinterpreted, so a regex needs no escape, and an empty one is a rejection
+rather than a fallback. Write a batch to a file: a retry then costs one
+edit.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
@@ -143,17 +145,17 @@ $R init "<two or three keywords>" --date 2026-03 [--level full] <<'JSON'
 {"title": "..."}
 JSON
 S="<the session identifier the init output echoed>"
-$R ingest "$S" --text <extraction.txt>
+$R ingest "$S" --extraction:file <extraction.txt>
 $R schema
-$R note "$S" --file <round.json> && $R check "$S"
+$R note "$S" --batch:file <round.json> && $R check "$S"
 $R link "$S" --corpus <lit-review session id or path>
 $R status "$S"
-$R jot "$S" [--text] <<'JSON'
+$R jot "$S" [--prose] <<'JSON'
 {"kind": "note", ...}
 JSON
-$R jot "$S" --file <entry.json>
+$R jot "$S" --entry:file <entry.json>
 $R recall "$S" [--kind note] [--match <regex>] [--since j9] [--limit 20]
-$R cite-check "$S" --draft review.md
+$R cite-check "$S" --draft:file review.md
 $R clean ["$S" | --all]
 </commands>
 

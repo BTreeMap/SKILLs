@@ -10,11 +10,13 @@ from btm_corekit import (
     JSON,
     Commands,
     Parser,
+    Required,
+    add_slot,
     dump,
     emit,
     run_cli,
     signal,
-    text_source,
+    text,
 )
 from btm_search_web import sources
 from btm_search_web.cache import clean, remember, remembered
@@ -25,6 +27,8 @@ from btm_search_web.constants import (
     Scholar,
 )
 from btm_search_web.records import Result
+
+QUERY = Required("query")
 
 
 def answered(key: str, verb: str, query: str, find: Callable[[], list[Result]]) -> int:
@@ -52,42 +56,34 @@ def capped(limit: int) -> int:
 
 
 def cmd_web(args: argparse.Namespace) -> int:
-    limit = capped(args.limit)
+    limit, asked = capped(args.limit), text(QUERY, args)
     return answered(
-        f"web:{limit}:{args.query}",
-        "web",
-        args.query,
-        lambda: sources.web(args.query, limit),
+        f"web:{limit}:{asked}", "web", asked, lambda: sources.web(asked, limit)
     )
 
 
 def cmd_instant(args: argparse.Namespace) -> int:
+    asked = text(QUERY, args)
     return answered(
-        f"instant:{args.query}",
-        "instant",
-        args.query,
-        lambda: sources.instant(args.query),
+        f"instant:{asked}", "instant", asked, lambda: sources.instant(asked)
     )
 
 
 def cmd_wiki(args: argparse.Namespace) -> int:
-    limit = capped(args.limit)
+    limit, asked = capped(args.limit), text(QUERY, args)
     return answered(
-        f"wiki:{limit}:{args.query}",
-        "wiki",
-        args.query,
-        lambda: sources.wiki(args.query, limit),
+        f"wiki:{limit}:{asked}", "wiki", asked, lambda: sources.wiki(asked, limit)
     )
 
 
 def cmd_scholar(args: argparse.Namespace) -> int:
-    limit = capped(args.limit)
+    limit, asked = capped(args.limit), text(QUERY, args)
     source: Scholar = args.source
     return answered(
-        f"scholar:{source}:{limit}:{args.query}",
+        f"scholar:{source}:{limit}:{asked}",
         f"scholar {source}",
-        args.query,
-        lambda: sources.scholar(args.query, limit, source),
+        asked,
+        lambda: sources.scholar(asked, limit, source),
     )
 
 
@@ -114,7 +110,7 @@ def cmd_clean(args: argparse.Namespace) -> int:
 
 
 def add_query(parser: argparse.ArgumentParser, limited: bool = True) -> None:
-    parser.add_argument("query", type=text_source, help="the search terms")
+    add_slot(parser, QUERY, "the search terms")
     if limited:
         parser.add_argument("--limit", type=int, default=DEFAULT_RESULTS)
 
@@ -150,7 +146,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     fetch = commands.add_parser("fetch", help="readable text of one page")
     fetch.set_defaults(func=cmd_fetch)
-    fetch.add_argument("url", type=text_source, help="an http or https URL")
+    fetch.add_argument("url", help="an http or https URL")
 
     cleaner = commands.add_parser("clean", help="drop the query cache, freeing space")
     cleaner.set_defaults(func=cmd_clean)

@@ -100,11 +100,12 @@ recovers a lost ID; ambiguity lists candidates. Pass a directory path in
 place of an identifier to put a session somewhere specific.
 
 Commands emit JSON on stdout; `signal:` lines on stderr are advisory.
-Free-form content (a question, a query, a regex, a pad entry, a batch)
-arrives as one JSON object on stdin or from `--file`; flags carry closed
-choices, counts, paths, and identifiers. An option that takes a literal also
-takes `@path` or `-` for stdin, and `@@` starts a literal `@`. `clean`
-removes one session or `--all`.
+Free-form content fills a named slot: `--<slot>` carries a short value,
+`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
+required slot reads the pipe when no flag claims it. One slot per call may
+claim the pipe. A JSON body has no inline spelling. A value is never
+reinterpreted, so a regex needs no escape, and an empty one is a rejection
+rather than a fallback. `clean` removes one session or `--all`.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
@@ -113,14 +114,14 @@ $R init "<two or three keywords>" [--mode lite] <<'JSON'
 JSON
 S="<the session identifier the init output echoed>"
 $R schema
-$R note "$S" --file <round.json> && $R check "$S"
+$R note "$S" --batch:file <round.json> && $R check "$S"
 $R check "$S" --view plan|draft|full
-$R note "$S" --file <round.json> --view plan
+$R note "$S" --batch:file <round.json> --view plan
 $R status "$S"
-$R jot "$S" [--text] <<'JSON'
+$R jot "$S" [--prose] <<'JSON'
 {"kind": "quote", ...}
 JSON
-$R jot "$S" --file <entry.json>
+$R jot "$S" --entry:file <entry.json>
 $R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
 $R clean ["$S" | --all]
 </commands>
@@ -138,7 +139,7 @@ nothing, so apply all the fixes and resend. Copy refs verbatim from the
 to advisories; sourcing discipline is unchanged.
 
 The pad is free working memory beside the ledger: `jot` admits any JSON
-object (or prose with `--text`) and never rejects content; `recall` filters
+object (or prose with `--prose`) and never rejects content; `recall` filters
 it back by kind, regex, id, or count. Park verbatim quotes, hunches, and
 open threads there while a round is hot, then pull them back at draft time;
 only ledger events face the gate.

@@ -97,7 +97,7 @@ append to `amendments` when they change.
 Two write paths carry different contracts:
 
 - The pad is free working memory. `jot` admits any JSON object (or prose
-  with `--text`) and never rejects content; `recall` filters it back by
+  with `--prose`) and never rejects content; `recall` filters it back by
   kind, regex, id, or count. An entry with `"kind": "extraction"` and a
   paper `key` is recognized for coverage tracking; `map`, `open`, and `lore`
   are suggested kinds; `--lore` reads and writes a cross-session pad for
@@ -121,10 +121,9 @@ an earlier phase is normal.
 `brief` is the resume view and the belief check: findings and gaps come back
 with verdicts derived from the live corpus, plus corpus drift since the
 previous brief, the citation marker table, unextracted papers, the pad tail,
-and lore. Run it after compaction and before drafting. `cite-check --draft`
-checks every `[n]` in the draft against assigned markers; numbers are
-append-only, so a late inclusion extends the table and existing citations
-stand.
+and lore. Run it after compaction and before drafting. `cite-check` checks
+every `[n]` in the draft against assigned markers; numbers are append-only,
+so a late inclusion extends the table and existing citations stand.
 
 Exit codes: 0 done (stderr `signal:` lines are advisory and never block); 1
 fix the input and resend; 2 upstream failed, retry. Downloaded PDFs and
@@ -136,11 +135,13 @@ Bind the command once per shell and re-bind after a reset; `realpath` and
 `env -u VIRTUAL_ENV` are both required. Invoke it and read its output; read
 the source only when troubleshooting on the user's instruction.
 
-Free-form content (a question, a query, a regex, a pad entry, a batch)
-arrives as one JSON object on stdin or from `--file`; flags carry closed
-choices, counts, paths, and identifiers. An option that takes a literal also
-takes `@path` or `-` for stdin, and `@@` starts a literal `@`. Write a batch
-to a file: a retry then costs one edit.
+Free-form content fills a named slot: `--<slot>` carries a short value,
+`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
+required slot reads the pipe when no flag claims it. One slot per call may
+claim the pipe. A JSON body has no inline spelling. A value is never
+reinterpreted, so a regex needs no escape, and an empty one is a rejection
+rather than a fallback. Write a batch to a file: a retry then costs one
+edit.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
@@ -158,14 +159,14 @@ $R screen "$S" --on title --exclude <<'JSON'
 {"match": "<regex>", "reason": "..."}
 JSON
 $R show "$S" [--status candidate | --keys k1,k2] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv]
-$R update "$S" --file <decisions.json>
-$R jot "$S" [--text] [--lore] <<'JSON'
+$R update "$S" --decisions:file <decisions.json>
+$R jot "$S" [--prose] [--lore] <<'JSON'
 {"kind": "extraction", "key": "<key>", ...}
 JSON
-$R jot "$S" --file <record.json>
+$R jot "$S" --entry:file <record.json>
 $R recall "$S" [--kind extraction] [--match <regex>] [--since j9] [--limit 20] [--lore]
-$R note "$S" --file <round.json> && $R brief "$S"
-$R cite-check "$S" --draft report.md
+$R note "$S" --batch:file <round.json> && $R brief "$S"
+$R cite-check "$S" --draft:file report.md
 $R status "$S"
 $R verify "$S"
 $R clean ["$S" | --all]

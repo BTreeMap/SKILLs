@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+from argparse import Namespace
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
-from btm_corekit import Diagnostic, gated
+from btm_corekit import BATCH, Diagnostic, Parser, add_slot, gated
 
 
 @dataclass
@@ -20,6 +22,15 @@ def read(capsys) -> dict[str, Any]:
     return json.loads(capsys.readouterr().out)
 
 
+def batched(path: Path) -> Namespace:
+    """The batch as one file, the spelling a retry edits."""
+    parser = Parser()
+    commands = parser.add_subparsers(dest="command", required=True)
+    run = commands.add_parser("run")
+    add_slot(run, BATCH, "the batch")
+    return parser.parse_args(["run", "--batch:file", str(path)])
+
+
 class TestGateProtocol:
     def test_a_clean_batch_commits_and_returns_zero(self, capsys, tmp_path):
         path = tmp_path / "b.json"
@@ -30,7 +41,7 @@ class TestGateProtocol:
             assert batch == {"a": 1}
             return seen
 
-        code = gated(str(path), "ledger", expand, lambda r: {"ok": True})
+        code = gated(BATCH, batched(path), "ledger", expand, lambda r: {"ok": True})
         assert code == 0 and read(capsys) == {"ok": True}
 
     def test_problems_refuse_before_the_commit_runs(self, capsys, tmp_path):
@@ -44,7 +55,8 @@ class TestGateProtocol:
             committed = True
             return {}
 
-        code = gated(str(path), "ledger", lambda _: Result(problems=problems), commit)
+        args = batched(path)
+        code = gated(BATCH, args, "ledger", lambda _: Result(problems=problems), commit)
         document = read(capsys)
         assert code == 1 and not committed
         assert document["unchanged"] == "ledger"
@@ -57,7 +69,7 @@ class TestGateProtocol:
         def expand(batch: dict[str, Any]) -> Result:
             raise AssertionError("expansion must not run on unparsable input")
 
-        code = gated(str(path), "notebook", expand, lambda r: {})
+        code = gated(BATCH, batched(path), "notebook", expand, lambda r: {})
         assert code == 1 and read(capsys)["unchanged"] == "notebook"
 
     def test_advisories_reach_stderr_even_when_the_batch_is_clean(
@@ -66,7 +78,8 @@ class TestGateProtocol:
         path = tmp_path / "b.json"
         path.write_text("{}")
         gated(
-            str(path),
+            BATCH,
+            batched(path),
             "ledger",
             lambda _: Result(advisories=["watch this"]),
             lambda r: {"ok": True},

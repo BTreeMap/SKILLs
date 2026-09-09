@@ -33,7 +33,9 @@ def started(capsys, paper_file, level="full") -> str:
     )
     assert code == 0
     session = document["session"]
-    code, document, err = run(["ingest", session, "--text", str(paper_file)], capsys)
+    code, document, err = run(
+        ["ingest", session, "--extraction:file", str(paper_file)], capsys
+    )
     assert code == 0 and document["pages"] == 3 and document["limitations_section"]
     assert "author block" in err
     return session
@@ -96,7 +98,7 @@ class TestFlow:
             ],
         }
         code, document, _ = run(
-            ["note", session, "--file", batch(tmp_path, payload)], capsys
+            ["note", session, "--batch:file", batch(tmp_path, payload)], capsys
         )
         assert code == 0
         assert document["admitted"] == {"claim": 1, "objection": 2, "walk": 5}
@@ -111,11 +113,13 @@ class TestFlow:
         assert "not yet walked" not in err
         draft = tmp_path / "review.md"
         draft.write_text("Claim [C1] is contested by [O1]. Minor: [O2].")
-        code, document, _ = run(["cite-check", session, "--draft", str(draft)], capsys)
+        code, document, _ = run(
+            ["cite-check", session, "--draft:file", str(draft)], capsys
+        )
         assert code == 0 and document["problems"] == []
         draft.write_text("Only [O2].")
         code, document, err = run(
-            ["cite-check", session, "--draft", str(draft)], capsys
+            ["cite-check", session, "--draft:file", str(draft)], capsys
         )
         assert code == 1 and "[O1] is a grounded major" in document["problems"][0]
         code, document, _ = run(["clean", session], capsys)
@@ -137,7 +141,7 @@ class TestFlow:
             ]
         }
         code, document, _ = run(
-            ["note", session, "--file", batch(tmp_path, payload)], capsys
+            ["note", session, "--batch:file", batch(tmp_path, payload)], capsys
         )
         assert code == 1 and document["unchanged"] == "ledger"
         code, document, _ = run(["status", session], capsys)
@@ -157,11 +161,12 @@ class TestFlow:
             ]
         }
         assert (
-            run(["note", session, "--file", batch(tmp_path, payload)], capsys)[0] == 0
+            run(["note", session, "--batch:file", batch(tmp_path, payload)], capsys)[0]
+            == 0
         )
         other = tmp_path / "v2.txt"
         other.write_text("## PDF page 1\n\nWe report the mean over five seeds.\n")
-        code, _, err = run(["ingest", session, "--text", str(other)], capsys)
+        code, _, err = run(["ingest", session, "--extraction:file", str(other)], capsys)
         assert code == 0 and "re-derives" in err
         code, document, err = run(["check", session], capsys)
         assert document["objections"][0]["standing"] == "unanchored"
@@ -171,7 +176,8 @@ class TestFlow:
         session = started(capsys, paper_file, level="lite")
         payload = {"walks": [{"bank": "claims"}, {"bank": "limitations"}]}
         assert (
-            run(["note", session, "--file", batch(tmp_path, payload)], capsys)[0] == 0
+            run(["note", session, "--batch:file", batch(tmp_path, payload)], capsys)[0]
+            == 0
         )
         _, document, err = run(["check", session], capsys)
         assert document["coverage"]["unwalked"] == [] and "not yet walked" not in err

@@ -44,6 +44,7 @@ from btm_lit_review.session import (
     require_criteria,
     save_papers,
 )
+from btm_lit_review.slots import FRAMING, QUERY
 
 
 def record_fetch(
@@ -93,7 +94,7 @@ class Query(Model):
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    framing = content(Framing, args.file, "the framing")
+    framing = content(Framing, FRAMING, args)
     made = STORE.create(args.session)
     root, name = made.directory, made.name
     session = Session(root)
@@ -113,7 +114,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def cmd_search(args: argparse.Namespace) -> int:
-    asked = content(Query, args.file, "the query").query
+    asked = content(Query, QUERY, args).query
     session = open_session(args.session)
     protocol = load_protocol(session)
     require_criteria(protocol)

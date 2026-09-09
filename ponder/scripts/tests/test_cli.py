@@ -136,7 +136,7 @@ class TestNoteAndCheck:
             ["note", session], capsys, stdin="  ", monkeypatch=monkeypatch
         )
         assert code == 1
-        assert "read from stdin or --file" in err
+        assert "--batch:file, --batch:stdin, the pipe" in err
 
     def test_a_rejected_batch_appends_nothing(self, capsys, monkeypatch):
         session = opened(capsys)
@@ -168,7 +168,9 @@ class TestNoteAndCheck:
         session = opened(capsys)
         batch_file = tmp_path / "batch.json"
         batch_file.write_text(self.batch(), encoding="utf-8")
-        code, document, _ = run(["note", session, "--file", str(batch_file)], capsys)
+        code, document, _ = run(
+            ["note", session, "--batch:file", str(batch_file)], capsys
+        )
         assert code == 0
         assert document["admitted"]["add_source"] == 1
 

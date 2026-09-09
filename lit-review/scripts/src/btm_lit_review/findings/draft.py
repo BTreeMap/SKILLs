@@ -10,10 +10,16 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Mapping
-from pathlib import Path
 from typing import Any
 
-from btm_corekit import CommandError, bracketed, emit, is_digits, signal, write_atomic
+from btm_corekit import (
+    bracketed,
+    emit,
+    is_digits,
+    signal,
+    text,
+    write_atomic,
+)
 from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.corpus.paper import Paper
 from btm_lit_review.findings.notebook import (
@@ -23,6 +29,7 @@ from btm_lit_review.findings.notebook import (
     load_notebook,
 )
 from btm_lit_review.session import Session, load_papers, open_session
+from btm_lit_review.slots import DRAFT
 
 
 def load_markers(session: Session) -> dict[str, int]:
@@ -101,16 +108,14 @@ def cite_check(
 
 def cmd_cite_check(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    path = Path(args.draft).expanduser()
-    if not path.is_file():
-        raise CommandError(f"no draft at {path}")
+    draft = text(DRAFT, args)
     papers = load_papers(session)
     markers = refresh_markers(session, papers)
     findings = [
         finding_view(record, papers)
         for record in live(load_notebook(session), FindingRecord).values()
     ]
-    report = cite_check(path.read_text(encoding="utf-8"), markers, papers, findings)
+    report = cite_check(draft, markers, papers, findings)
     report["markers"] = marker_table(markers, papers)
     emit(report)
     if report["problems"]:

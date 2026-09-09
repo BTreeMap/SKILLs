@@ -231,13 +231,19 @@ Place each responsibility by the first row it matches.
 | `jot`, `recall` | Write to and read from the pad |
 | `clean` | Remove one target or `--all`, reporting bytes freed |
 
-* Pass configuration as flags and free-form content as one JSON object on
-  stdin or `--file`: closed vocabularies, counts, booleans, paths, and
-  identifiers are shell-safe; prose, queries, regexes, and JSON bodies are
-  not, so give them no inline spelling. Let a literal parameter also take
-  `@path` and `-`, with `@@` starting a literal `@`; keep a path-only
-  parameter bare. Reject a malformed argument line as a located exit-1
-  rejection.
+* Pass configuration as flags: closed vocabularies, counts, booleans, and
+  identifiers are shell-safe. Give free-form content a named slot instead,
+  generating its whole flag family from one declaration: `--<slot>` for a
+  short value, `--<slot>:file PATH` for a file, `--<slot>:stdin` for the
+  pipe, plus the pipe as the fallback of the one required slot, of which a
+  command declares at most one: two would drain one stdin between them, so a
+  second is a defect at wiring. Two provenances for one slot is a rejection
+  naming both; a second slot claiming the pipe is a rejection naming the
+  first, since one process has one stdin. Prose, queries, regexes, and JSON
+  bodies carry characters the shell rewrites, so give a JSON body no inline
+  spelling. Interpret nothing inside a value, so content needs no escape,
+  and reject an empty one rather than reading it as absent. Reject a
+  malformed argument line as a located exit-1 rejection.
 * Mint identifiers in the script: the agent supplies two or three keywords;
   return the lowercase dash-joined slug plus a 128-bit suffix
   (`b32hexencode(os.urandom(16)).decode().rstrip("=").lower()`) and echo it

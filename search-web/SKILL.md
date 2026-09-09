@@ -54,16 +54,18 @@ belongs to user-instructed troubleshooting.
 
 <commands for="search">
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-search-web"
-$R web "<query>" [--limit 8]
-$R instant "<term>"
-$R wiki "<query>" [--limit 8]
-$R scholar "<query>" [--source openalex|crossref|arxiv] [--limit 8]
+$R web --query "<terms>" [--limit 8]
+$R instant --query "<term>"
+$R wiki --query "<terms>" [--limit 8]
+$R scholar --query "<terms>" [--source openalex|crossref|arxiv] [--limit 8]
 $R fetch "<url>"
 $R clean
 </commands>
 
-A query is written inline, as `@path` to read a file, or as `-` to read
-stdin; `@@` starts a literal `@`. Put a long or quote-heavy query in a file.
+A query fills a named slot: `--query` carries it inline, `--query:file PATH`
+reads it from a file, `--query:stdin` reads the pipe, and the pipe fills it
+when no flag claims it. An empty query is a rejection. Put a long or
+quote-heavy query in a file.
 
 Results emit as one JSON document on stdout; `signal:` lines on stderr are
 advisory. Exit codes: 0 done, 1 fix the input and resend, 2 upstream failed

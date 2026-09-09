@@ -9,12 +9,15 @@ from typing import Any, TypedDict
 
 import btm_peer_review
 from btm_corekit import (
+    BATCH,
     JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
     Model,
     NonEmpty,
     Parser,
+    Required,
+    add_slot,
     content,
     dump,
     emit,
@@ -26,7 +29,7 @@ from btm_corekit import (
     require,
     run_cli,
     signal,
-    text_source,
+    text,
     wire_clean,
     wire_pad,
     write_atomic,
@@ -61,16 +64,20 @@ from btm_peer_review.views import (
     scaffold,
 )
 
+PAPER = Required("paper", inline=False)
+EXTRACTION = Required("extraction", inline=False)
+DRAFT = Required("draft", inline=False)
+
 
 class Reviewed(Model):
     """The paper under review. A title carries colons, quotes and dashes, so
-    it arrives on stdin rather than through argv."""
+    it arrives as content rather than through argv."""
 
     title: NonEmpty
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    paper = content(Reviewed, args.file, "the paper")
+    paper = content(Reviewed, PAPER, args)
     meta = parse_model(
         Meta,
         {
@@ -106,11 +113,9 @@ def _paper(directory: Path) -> PaperText | None:
 
 def cmd_ingest(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    source = Path(args.text).expanduser()
-    require(source.is_file(), f"no extraction at {source}")
-    raw = source.read_text(encoding="utf-8")
+    raw = text(EXTRACTION, args)
     pages = parse_pages(raw)
-    require(any(text.strip() for _, text in pages), "the extraction holds no text")
+    require(any(body.strip() for _, body in pages), "the extraction holds no text")
     if len(pages) == 1 and "## PDF page" not in raw:
         signal("no page markers: the whole text counts as page 1")
     previously = paper_path(directory).is_file()
@@ -122,7 +127,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         signal("page 1 carries an author block; the review names no author")
     if paper.limitations is None:
         signal("no Limitations heading found; the echo ratio stays unavailable")
-    empty = [n for n, text in pages if not text.strip()]
+    empty = [n for n, body in pages if not body.strip()]
     if empty:
         signal(f"{len(empty)} page(s) without text: {empty[:10]}")
     update_meta(directory, meta, pages=len(pages))
@@ -180,7 +185,7 @@ def cmd_note(args: argparse.Namespace) -> int:
             "walked": sorted(ledger.walks),
         }
 
-    return gated(args.file, "ledger", expand, commit)
+    return gated(BATCH, args, "ledger", expand, commit)
 
 
 class Review(TypedDict):
@@ -282,12 +287,9 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 def cmd_cite_check(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    path = Path(args.draft).expanduser()
-    require(path.is_file(), f"no draft at {path}")
+    draft = text(DRAFT, args)
     document = _derive(directory, meta)
-    report = cite_check(
-        path.read_text(encoding="utf-8"), document["claims"], document["objections"]
-    )
+    report = cite_check(draft, document["claims"], document["objections"])
     report["recommendation"] = document["recommendation"]
     emit(report)
     if report["problems"]:
@@ -316,14 +318,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = Parser(description=btm_peer_review.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    init = commands.add_parser(
-        "init", help='mint a session for one paper; {"title": ...} on stdin'
-    )
+    init = commands.add_parser("init", help="mint a session for one paper")
     init.set_defaults(func=cmd_init)
     init.add_argument("session", help="two or three keywords, or a directory path")
-    init.add_argument(
-        "--file", default=None, help="read the title from this file instead of stdin"
-    )
+    add_slot(init, PAPER, '{"title": "the paper under review"}')
     init.add_argument(
         "--date", required=True, help="YYYY[-MM[-DD]] of the version reviewed"
     )
@@ -331,22 +329,15 @@ def build_parser() -> argparse.ArgumentParser:
     ingest = commands.add_parser("ingest", help="store the paper's extracted text")
     ingest.set_defaults(func=cmd_ingest)
     ingest.add_argument("session")
-    ingest.add_argument(
-        "--text", required=True, help="path to a read-pdf extraction with page markers"
-    )
+    add_slot(ingest, EXTRACTION, "a read-pdf extraction with page markers")
     link = commands.add_parser("link", help="attach a lit-review corpus as prior work")
     link.set_defaults(func=cmd_link)
     link.add_argument("session")
-    link.add_argument(
-        "--corpus",
-        type=text_source,
-        required=True,
-        help="lit-review session id or path",
-    )
+    link.add_argument("--corpus", required=True, help="lit-review session id or path")
     note = commands.add_parser("note", help="admit one JSON batch")
     note.set_defaults(func=cmd_note)
     note.add_argument("session")
-    note.add_argument("--file", default=None, help="read the batch from this file")
+    add_slot(note, BATCH, "claims, objections, walks, withdraws")
     check = commands.add_parser(
         "check", help="derive standings and the report scaffold"
     )
@@ -362,7 +353,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cite.set_defaults(func=cmd_cite_check)
     cite.add_argument("session")
-    cite.add_argument("--draft", required=True)
+    add_slot(cite, DRAFT, "the draft's Markdown")
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, lambda args: STORE.directory(args.session))

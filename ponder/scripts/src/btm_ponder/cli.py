@@ -8,13 +8,16 @@ from typing import Any
 
 import btm_ponder
 from btm_corekit import (
+    BATCH,
     JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
     Model,
     NonEmpty,
     Parser,
+    Required,
     View,
+    add_slot,
     content,
     dump,
     emit,
@@ -52,9 +55,11 @@ from btm_ponder.views import (
     yield_table,
 )
 
+FRAMING = Required("framing", inline=False)
+
 
 class Framing(Model):
-    """What one session is about. Prose, so it arrives on stdin rather than
+    """What one session is about. Prose, so it arrives as content rather than
     through argv, where a question mark and an apostrophe are shell syntax."""
 
     question: NonEmpty
@@ -62,7 +67,7 @@ class Framing(Model):
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    framing = content(Framing, args.file, "the framing")  # before the mkdir:
+    framing = content(Framing, FRAMING, args)  # before the mkdir:
     made = STORE.create(args.ref)  # a refused framing leaves no empty session
     meta = SessionMeta(
         question=framing.question,
@@ -109,7 +114,7 @@ def cmd_note(args: argparse.Namespace) -> int:
             }
         return document
 
-    return gated(args.file, "ledger", expand, commit)
+    return gated(BATCH, args, "ledger", expand, commit)
 
 
 def cmd_check(args: argparse.Namespace) -> int:
@@ -178,15 +183,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = Parser(description=btm_ponder.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    init = commands.add_parser(
-        "init",
-        help='mint a session; {"question": ..., "focus": ...} on stdin or --file',
-    )
+    init = commands.add_parser("init", help="mint a session from one framing")
     init.set_defaults(func=cmd_init)
     init.add_argument("ref", help="two or three keywords, or a directory path")
-    init.add_argument(
-        "--file", default=None, help="read the framing from this file instead of stdin"
-    )
+    add_slot(init, FRAMING, '{"question": ..., "focus": ...}')
     init.add_argument(
         "--mode",
         choices=MODES,
@@ -197,12 +197,8 @@ def build_parser() -> argparse.ArgumentParser:
         "note", help="admit one round of leaves, sources, and closes"
     )
     note.set_defaults(func=cmd_note)
-    note.add_argument("session", help="session identifier; batch JSON on stdin")
-    note.add_argument(
-        "--file",
-        default=None,
-        help="read the batch from this file; retries cost one edit",
-    )
+    note.add_argument("session", help="session identifier")
+    add_slot(note, BATCH, "leaves, sources, closes, sweeps, checkpoints")
     wire_view(note, "the minted-id table")
     check = commands.add_parser(
         "check", help="derive the drafting scaffold and any violations"

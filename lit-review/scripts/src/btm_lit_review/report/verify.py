@@ -16,6 +16,7 @@ from btm_corekit import (
     doi,
     emit,
     signal,
+    text,
 )
 from btm_lit_review.constants import (
     COURTESY_PAUSE_SECONDS,
@@ -29,6 +30,7 @@ from btm_lit_review.constants import (
 from btm_lit_review.corpus.paper import Paper, normalize_title
 from btm_lit_review.http import client
 from btm_lit_review.session import load_papers, open_session
+from btm_lit_review.slots import KEYS
 
 
 def verify_one(paper: Paper) -> dict[str, JSON]:
@@ -78,7 +80,8 @@ def _verify_into(result: dict[str, Any], paper: Paper) -> None:
 def cmd_verify(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
-    wanted = set(args.keys.split(",")) if args.keys else None
+    keys = text(KEYS, args)
+    wanted = set(keys.split(",")) if keys else None
     included = [
         paper
         for key, paper in papers.items()

@@ -8,11 +8,13 @@ from collections.abc import Sequence
 
 import btm_lit_review
 from btm_corekit import (
+    BATCH,
     CLUSTER_CAP,
+    MATCH,
     Commands,
     Parser,
+    add_slot,
     run_cli,
-    text_source,
     wire_clean,
     wire_pad,
 )
@@ -43,17 +45,9 @@ from btm_lit_review.report.views import (
     recognize_extraction,
 )
 from btm_lit_review.session import STORE
+from btm_lit_review.slots import DECISIONS, DRAFT, FRAMING, KEYS, QUERY, RULE
 
 MATCH_FIELDS = ("title", "abstract", "venue")
-
-STDIN_FILE = "read the JSON from this file instead of stdin"
-
-
-def add_content(parser: argparse.ArgumentParser, shape: str) -> None:
-    """A subcommand's free-form fields arrive as one JSON object, never as
-    arguments, so the agent never chooses between two channels."""
-    parser.add_argument("--file", default=None, help=STDIN_FILE)
-    parser.description = f"content on stdin or --file: {shape}"
 
 
 def add_common(parser: argparse.ArgumentParser) -> None:
@@ -64,19 +58,15 @@ def add_common(parser: argparse.ArgumentParser) -> None:
 
 
 def wire_gather(commands: Commands) -> None:
-    init = commands.add_parser(
-        "init", help='create a review session; {"question": ...} on stdin'
-    )
+    init = commands.add_parser("init", help="create a review session")
     add_common(init)
-    add_content(init, '{"question": "the research question"}')
+    add_slot(init, FRAMING, '{"question": "the research question"}')
     init.add_argument("--level", type=Level, choices=LEVELS, default=Level.FULL)
     init.set_defaults(func=cmd_init)
 
-    search = commands.add_parser(
-        "search", help='run one logged search; {"query": ...} on stdin'
-    )
+    search = commands.add_parser("search", help="run one logged search")
     add_common(search)
-    add_content(search, '{"query": "the search string"}')
+    add_slot(search, QUERY, '{"query": "the search string"}')
     search.add_argument("--source", choices=SOURCES, required=True)
     search.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     search.add_argument("--from-year", type=int, default=None)
@@ -87,21 +77,16 @@ def wire_gather(commands: Commands) -> None:
         "snowball", help="follow citations of a corpus paper via OpenAlex"
     )
     add_common(snowball)
-    snowball.add_argument(
-        "--seed", type=text_source, required=True, help="paper key, DOI, or arXiv id"
-    )
+    snowball.add_argument("--seed", required=True, help="paper key, DOI, or arXiv id")
     snowball.add_argument("--direction", choices=DIRECTIONS, required=True)
     snowball.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     snowball.set_defaults(func=cmd_snowball)
 
 
 def wire_curate(commands: Commands) -> None:
-    screen = commands.add_parser(
-        "screen",
-        help='one regex rule over every candidate; {"match","reason"} on stdin',
-    )
+    screen = commands.add_parser("screen", help="one regex rule over every candidate")
     add_common(screen)
-    add_content(screen, '{"match": "case-insensitive regex", "reason": "..."}')
+    add_slot(screen, RULE, '{"match": "case-insensitive regex", "reason": "..."}')
     screen.add_argument("--on", choices=MATCH_FIELDS, default="title")
     verdict = screen.add_mutually_exclusive_group(required=True)
     verdict.add_argument("--exclude", action="store_true")
@@ -123,27 +108,21 @@ def wire_curate(commands: Commands) -> None:
     show = commands.add_parser("show", help="project the corpus for screening")
     add_common(show)
     show.add_argument("--status", choices=STATUSES, default="candidate")
-    show.add_argument(
-        "--keys", type=text_source, help="comma-separated keys; overrides --status"
-    )
-    show.add_argument("--match", type=text_source, help="case-insensitive regex")
+    add_slot(show, KEYS, "comma-separated keys; overrides --status")
+    add_slot(show, MATCH, "case-insensitive regex over the field --on names")
     show.add_argument("--on", choices=MATCH_FIELDS, default="title")
-    show.add_argument("--fields", type=text_source, help="comma-separated paper fields")
+    show.add_argument("--fields", help="comma-separated paper fields")
     show.add_argument("--sort", choices=tuple(SORTS), default="citations")
     show.add_argument("--format", choices=("json", "tsv"), default="json")
     show.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     show.set_defaults(func=cmd_show)
 
-    update = commands.add_parser(
-        "update",
-        help='apply screening decisions; JSON on stdin or --file: {"<key>": '
-        '{"status": ..., "reason": ..., "read_level": ...}}',
-    )
+    update = commands.add_parser("update", help="apply screening decisions")
     add_common(update)
-    update.add_argument(
-        "--file",
-        default=None,
-        help="read the decisions from this file; retries cost one edit",
+    add_slot(
+        update,
+        DECISIONS,
+        '{"<key>": {"status": ..., "reason": ..., "read_level": ...}}',
     )
     update.set_defaults(func=cmd_update)
 
@@ -151,11 +130,7 @@ def wire_curate(commands: Commands) -> None:
 def wire_notebook(commands: Commands) -> None:
     note = commands.add_parser("note", help="admit findings and gaps into the notebook")
     add_common(note)
-    note.add_argument(
-        "--file",
-        default=None,
-        help="read the batch from this file; retries cost one edit",
-    )
+    add_slot(note, BATCH, "findings and gaps")
     note.set_defaults(func=cmd_note)
 
     wire_pad(
@@ -175,7 +150,7 @@ def wire_notebook(commands: Commands) -> None:
         "cite-check", help="check every [n] in a draft against the corpus"
     )
     add_common(cite)
-    cite.add_argument("--draft", required=True, help="path to the draft file")
+    add_slot(cite, DRAFT, "the draft's Markdown")
     cite.set_defaults(func=cmd_cite_check)
 
 
@@ -199,9 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = commands.add_parser("verify", help="check DOIs of included papers")
     add_common(verify)
-    verify.add_argument(
-        "--keys", type=text_source, help="comma-separated keys; default every included"
-    )
+    add_slot(verify, KEYS, "comma-separated keys; default every included")
     verify.set_defaults(func=cmd_verify)
 
     wire_clean(commands, STORE)
