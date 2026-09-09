@@ -16,7 +16,7 @@ from btm_corekit.text import prefixed_number
 
 SCRATCH = "scratch.jsonl"
 PAD_SOFT_CAP = 500  # advisory line, never a refusal
-MATCH_MAX = 200  # an agent-authored pattern is a few words, never a program
+MATCH_MAX = 4000  # room for a long keyword alternation; catches a pasted file
 
 
 def compile_match(pattern: str) -> re.Pattern[str]:

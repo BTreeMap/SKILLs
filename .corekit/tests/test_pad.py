@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from btm_corekit import CommandError, compile_match, jot, pad_entries, pad_ids, recall
+from btm_corekit.store.pad import MATCH_MAX
 
 
 class TestJot:
@@ -74,6 +75,6 @@ class TestRedirectAppends:
 def test_compile_match_caps_length_and_reports_bad_patterns():
     assert compile_match("Ab").search("cab")
     with pytest.raises(CommandError, match="at most"):
-        compile_match("a" * 201)
+        compile_match("a" * (MATCH_MAX + 1))
     with pytest.raises(CommandError, match="unreadable"):
         compile_match("[")
