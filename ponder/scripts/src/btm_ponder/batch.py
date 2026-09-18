@@ -222,7 +222,10 @@ class _Expansion(Admission):
             if entry is None:
                 continue
             leaf = self.lookup(entry.leaf, self.leaves, f"{where}.leaf")
-            broken = leaf is None or not self.pad_links(entry.from_, where)
+            # Both checks run: `or` would skip the pad links whenever the leaf
+            # ref is the problem, hiding a bad pad id until the next resend.
+            pad_ok = self.pad_links(entry.from_, where)
+            broken = leaf is None or not pad_ok
             event: dict[str, Any] = {
                 "e": "close",
                 "leaf": leaf,
@@ -337,13 +340,12 @@ def expand_batch(
     """
     expansion = _Expansion(ledger, minter, pad)
     expansion.known_keys(batch, NoteBatch)
-    note = expansion.decode(NoteBatch, batch)
-    if note is not None:
-        expansion.take_leaves(note.leaves)
-        expansion.take_sources(note.sources)
-        expansion.take_closes(note.closes)
-        expansion.take_sweeps(note.sweeps)
-        expansion.take_checkpoints(note.checkpoints)
+    note = expansion.families(batch, NoteBatch, SCHEMA)
+    expansion.take_leaves(note.leaves)
+    expansion.take_sources(note.sources)
+    expansion.take_closes(note.closes)
+    expansion.take_sweeps(note.sweeps)
+    expansion.take_checkpoints(note.checkpoints)
     if not expansion.staged and expansion.clean:
         expansion.fail("$", "add at least one entry: the batch records nothing")
     expansion.simulate()

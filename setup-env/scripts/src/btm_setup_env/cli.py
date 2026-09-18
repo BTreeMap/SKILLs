@@ -4,13 +4,12 @@ pure plan, hand it to effects, report. All policy lives below this file."""
 from __future__ import annotations
 
 import argparse
-import json
 import shutil
-import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
-from btm_corekit import Parser, dispatch, tree_bytes
+from btm_corekit import CommandError, Parser, dispatch, emit, signal, tree_bytes
 from btm_setup_env.catalog import CATALOG
 from btm_setup_env.model import (
     GENERIC,
@@ -27,10 +26,10 @@ from btm_setup_env.model import (
 from btm_setup_env.plan import Plan, make_plan
 from btm_setup_env.render import path_value
 from btm_setup_env.shell.commands import ProbeResult
-from btm_setup_env.steps import CondaEnv, Fetch, stage_of
+from btm_setup_env.steps import CondaEnv, Fetch
 from btm_setup_env.tags import resolve_tag
 
-VERBS = ("provision", "design", "status", "shim", "destroy", "list")
+REPAIR = "re-run provision; the failed probe names what to repair"
 
 
 def _resolve(
@@ -60,62 +59,42 @@ def _describe_step(step: object) -> str:
 
 def cmd_design(args: argparse.Namespace) -> int:
     plan = _build_plan(args.project, args.root, args.tags)
-    if args.json:
-        print(
-            json.dumps(
-                {
-                    "root": str(plan.layout.root),
-                    "steps": [_describe_step(s) for s in plan.steps],
-                    "env": dict(plan.env.vars),
-                    "path": [str(p) for p in plan.env.path],
-                    "probes": [" ".join(p) for p in plan.probes],
-                },
-                indent=2,
-            )
-        )
-        return 0
-    print(f"root: {plan.layout.root}")
-    for step in plan.steps:
-        print(f"  [{stage_of(step)}] {_describe_step(step)}")
+    emit(
+        {
+            "root": str(plan.layout.root),
+            "steps": [_describe_step(s) for s in plan.steps],
+            "env": dict(plan.env.vars),
+            "path": [str(p) for p in plan.env.path],
+            "probes": [" ".join(p) for p in plan.probes],
+        }
+    )
     return 0
 
 
-def _report(plan: Plan, results: list[ProbeResult], as_json: bool) -> int:
-    ok = all(r.ok for r in results)
-    if as_json:
-        print(
-            json.dumps(
-                {
-                    "ok": ok,
-                    "root": str(plan.layout.root),
-                    "activate_sh": str(plan.layout.activate_sh),
-                    "activate_ps1": str(plan.layout.activate_ps1),
-                    "env": {
-                        **dict(plan.env.vars),
-                        "PATH": path_value(plan.env, plan.host),
-                    },
-                    "probes": [
-                        {"command": " ".join(r.command), "ok": r.ok, "output": r.output}
-                        for r in results
-                    ],
-                },
-                indent=2,
-            )
-        )
-        return 0 if ok else 1
-    print()
-    print(f"Environment ready under {plan.layout.root}")
-    print(f"  targets: {' '.join(str(t) for t in plan.spec.targets)}")
-    print(f"  activate: . {plan.layout.activate_sh}")
-    for r in results:
-        mark = "ok " if r.ok else "FAIL"
-        print(f"  {mark} {' '.join(r.command)}: {r.output}")
-    if not ok:
-        print(
-            "some probes failed; re-running provision is the repair action",
-            file=sys.stderr,
-        )
-    return 0 if ok else 1
+def _report(plan: Plan, results: list[ProbeResult]) -> int:
+    """A failed probe is a finished run reporting a broken toolchain, not a
+    malformed request: the record says which probe broke and exit 0 stands,
+    because exit 1 means the caller can fix its own input."""
+    failed = [r for r in results if not r.ok]
+    document: dict[str, Any] = {
+        "ok": not failed,
+        "root": str(plan.layout.root),
+        "activate_sh": str(plan.layout.activate_sh),
+        "activate_ps1": str(plan.layout.activate_ps1),
+        "env": {
+            **dict(plan.env.vars),
+            "PATH": path_value(plan.env, plan.host),
+        },
+        "probes": [
+            {"command": " ".join(r.command), "ok": r.ok, "output": r.output}
+            for r in results
+        ],
+    }
+    if failed:
+        document["next"] = REPAIR
+        signal(f"{len(failed)} of {len(results)} probes failed; {REPAIR}")
+    emit(document)
+    return 0
 
 
 def cmd_provision(args: argparse.Namespace) -> int:
@@ -123,8 +102,7 @@ def cmd_provision(args: argparse.Namespace) -> int:
     from btm_setup_env.shell.commands import provision  # noqa: PLC0415
 
     plan = _build_plan(args.project, args.root, args.tags)
-    results = provision(plan)
-    return _report(plan, results, args.json)
+    return _report(plan, provision(plan))
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -136,13 +114,14 @@ def cmd_status(args: argparse.Namespace) -> int:
         case Provisioned(manifest):
             pass
         case _:
-            print(f"no environment at {layout.root}; run provision first")
-            return 1
+            raise DenvError(f"no environment at {layout.root}; run provision first")
     plan = _build_plan(Path(manifest.project), layout.root, list(manifest.spec))
-    return _report(plan, verify(plan), as_json=False)
+    return _report(plan, verify(plan))
 
 
-def cmd_destroy(args: argparse.Namespace) -> int:
+def cmd_clean(args: argparse.Namespace) -> int:
+    if args.all:
+        raise CommandError("no registry of roots; pass --project")
     _, layout = _resolve(args.project, args.root, [])
     if not layout.manifest.exists():
         raise DenvError(
@@ -151,10 +130,7 @@ def cmd_destroy(args: argparse.Namespace) -> int:
         )
     freed = tree_bytes(layout.root)
     shutil.rmtree(layout.root)
-    if args.json:
-        print(json.dumps({"removed": str(layout.root), "bytes_freed": freed}, indent=2))
-        return 0
-    print(f"removed {layout.root}: {freed} bytes freed")
+    emit({"removed": str(layout.root), "bytes_freed": freed})
     return 0
 
 
@@ -167,16 +143,23 @@ def cmd_shim(args: argparse.Namespace) -> int:
     wrapper = make_shim(
         layout, detect_host(), args.binary, CondaPlatform(args.platform)
     )
-    print(str(wrapper))
+    emit({"shim": str(wrapper)})
     return 0
 
 
 def cmd_list(args: argparse.Namespace) -> int:
-    width = max(len(_tag_of(key)) for key in CATALOG)
-    for key in sorted(CATALOG):
-        recipe = CATALOG[key]
-        version = f"  [@{recipe.version_doc}]" if recipe.version_doc else ""
-        print(f"{_tag_of(key):<{width}}  {recipe.summary}{version}")
+    emit(
+        {
+            "targets": [
+                {
+                    "tag": _tag_of(key),
+                    "summary": CATALOG[key].summary,
+                    "version": CATALOG[key].version_doc,
+                }
+                for key in sorted(CATALOG)
+            ]
+        }
+    )
     return 0
 
 
@@ -219,19 +202,20 @@ def _parser() -> argparse.ArgumentParser:
         sp = sub.add_parser(verb, help=summary)
         sp.set_defaults(func=handler)
         sp.add_argument("tags", nargs="+", metavar="TAG")
-        sp.add_argument("--json", action="store_true")
         common(sp)
     status = sub.add_parser(
         "status", help="report what is installed and whether each probe passes"
     )
     status.set_defaults(func=cmd_status)
     common(status)
-    destroy = sub.add_parser(
-        "destroy", help="remove the environment root for this project"
+    clean = sub.add_parser("clean", help="remove the environment root for this project")
+    clean.set_defaults(func=cmd_clean)
+    clean.add_argument(
+        "--all",
+        action="store_true",
+        help="refused: roots are derived per project, never listed",
     )
-    destroy.set_defaults(func=cmd_destroy)
-    destroy.add_argument("--json", action="store_true")
-    common(destroy)
+    common(clean)
     shim = sub.add_parser("shim", help="wrap a foreign-architecture binary to run here")
     shim.set_defaults(func=cmd_shim)
     shim.add_argument("binary", type=Path)
@@ -245,11 +229,7 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _run(argv: list[str] | None) -> int:
-    argv = list(sys.argv[1:] if argv is None else argv)
-    # A bare tag list defaults to provision.
-    if argv and argv[0] not in (*VERBS, "-h", "--help"):
-        argv.insert(0, "provision")
+def _run(argv: Sequence[str] | None) -> int:
     args = _parser().parse_args(argv)
     run: Callable[[argparse.Namespace], int] = args.func
     try:
@@ -258,5 +238,5 @@ def _run(argv: list[str] | None) -> int:
         return 130
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     return dispatch(lambda: _run(argv))

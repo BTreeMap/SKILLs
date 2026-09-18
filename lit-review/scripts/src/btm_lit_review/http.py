@@ -4,14 +4,13 @@ manifest's httpx extras."""
 
 from __future__ import annotations
 
-from functools import cache
-
 import httpx
 
-from btm_corekit import build_client
+from btm_corekit import client_for
 from btm_lit_review.constants import TIMEOUT_SECONDS
 
 
-@cache
 def client() -> httpx.Client:
-    return build_client("lit-review", read_timeout=TIMEOUT_SECONDS)
+    """The kernel holds the singleton, keyed by skill and timeout, so every
+    call site here shares one pool and one identity chain."""
+    return client_for("lit-review", read_timeout=TIMEOUT_SECONDS)

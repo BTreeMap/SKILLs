@@ -1,59 +1,53 @@
 """A query answered twice costs one request.
 
-Results are regenerable, so they live in temp space under an owner-named
-directory. `clean` removes them and reports the bytes freed.
+Results are regenerable, so they live in the skill's temp-space cache and no
+slot is authoritative: one that will not parse is dropped with a signal and
+recomputed, costing the request that filled it. `clean` removes the whole
+directory and reports the bytes freed.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
-import shutil
-import tempfile
-from pathlib import Path
 from typing import Any
 
-from btm_corekit import dump, parse_with, tree_bytes
+from btm_corekit import (
+    CommandError,
+    cache_slot,
+    clean_cache,
+    dump,
+    parse_with,
+    signal,
+    write_atomic,
+)
 from btm_search_web.records import Result, Results
 
 
-def cache_dir() -> Path:
-    return Path(tempfile.gettempdir()) / "btm-search-web"
-
-
-def _slot(key: str) -> Path:
-    return cache_dir() / (hashlib.sha256(key.encode()).hexdigest() + ".json")
-
-
 def remembered(key: str) -> list[Result] | None:
-    """What this exact query returned before, or None."""
-    slot = _slot(key)
+    """What this exact query returned before, or None. The query string is the
+    natural key.
+
+    A slot that will not decode is removed rather than refused: the upstream
+    that filled it can fill it again.
+    """
+    slot = cache_slot("search-web", key, ".json")
     if not slot.is_file():
         return None
     try:
         raw = json.loads(slot.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        slot.unlink(missing_ok=True)  # a corrupt slot is regenerable
+        return parse_with(Results, raw, str(slot))
+    except (OSError, json.JSONDecodeError, CommandError):
+        slot.unlink(missing_ok=True)
+        signal(f"unreadable cache slot dropped, recomputing: {slot}")
         return None
-    return parse_with(Results, raw, str(slot))
 
 
 def remember(key: str, results: list[Result]) -> None:
-    directory = cache_dir()
-    directory.mkdir(parents=True, exist_ok=True)
-    slot = _slot(key)
-    partial = slot.with_suffix(".partial")
-    partial.write_text(
-        json.dumps([dump(row) for row in results], ensure_ascii=False),
-        encoding="utf-8",
-    )
-    partial.replace(slot)
+    """Write the rows atomically, so a reader finds a whole slot or none."""
+    slot = cache_slot("search-web", key, ".json")
+    slot.parent.mkdir(parents=True, exist_ok=True)
+    write_atomic(slot, json.dumps([dump(row) for row in results], ensure_ascii=False))
 
 
 def clean() -> dict[str, Any]:
-    directory = cache_dir()
-    if not directory.is_dir():
-        return {"removed": None, "bytes_freed": 0}
-    freed = tree_bytes(directory)
-    shutil.rmtree(directory)
-    return {"removed": str(directory), "bytes_freed": freed}
+    return clean_cache("search-web")

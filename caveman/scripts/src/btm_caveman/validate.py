@@ -14,13 +14,21 @@ from btm_caveman.markdown import (
     partition_indented,
 )
 from btm_caveman.model import Verdict
+from btm_corekit import Diagnostic
+
+
+def _fault(where: str, fix: str) -> tuple[Diagnostic, ...]:
+    return (Diagnostic(where=where, fix=fix),)
 
 
 def _check_headings(original: str, compressed: str) -> Verdict:
     orig, comp = extract_headings(original), extract_headings(compressed)
     if orig != comp:
         return Verdict(
-            errors=(f"Headings not preserved exactly: {len(orig)} vs {len(comp)}",)
+            errors=_fault(
+                "headings",
+                f"Headings not preserved exactly: {len(orig)} vs {len(comp)}",
+            )
         )
     return Verdict()
 
@@ -30,9 +38,19 @@ def _check_code_blocks(original: str, compressed: str) -> Verdict:
     comp_fences, comp_rest = partition_fences(compressed)
     errors = []
     if orig_fences != comp_fences:
-        errors.append("Fenced code blocks not preserved exactly (content, order)")
+        errors.append(
+            Diagnostic(
+                "fenced code",
+                "Fenced code blocks not preserved exactly (content, order)",
+            )
+        )
     if partition_indented(orig_rest)[0] != partition_indented(comp_rest)[0]:
-        errors.append("Indented code blocks not preserved exactly (content, order)")
+        errors.append(
+            Diagnostic(
+                "indented code",
+                "Indented code blocks not preserved exactly (content, order)",
+            )
+        )
     return Verdict(errors=tuple(errors))
 
 
@@ -40,7 +58,10 @@ def _check_urls(original: str, compressed: str) -> Verdict:
     orig, comp = extract_urls(original), extract_urls(compressed)
     if orig != comp:
         return Verdict(
-            errors=(f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}",)
+            errors=_fault(
+                "urls",
+                f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}",
+            )
         )
     return Verdict()
 
@@ -49,7 +70,9 @@ def _check_inline_codes(original: str, compressed: str) -> Verdict:
     orig, comp = extract_inline_codes(original), extract_inline_codes(compressed)
     lost, added = orig - comp, comp - orig
     return Verdict(
-        errors=(f"Inline code lost: {sorted(lost)}",) if lost else (),
+        errors=(
+            _fault("inline code", f"Inline code lost: {sorted(lost)}") if lost else ()
+        ),
         warnings=(f"Inline code added: {sorted(added)}",) if added else (),
     )
 

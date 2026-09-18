@@ -17,6 +17,7 @@ class Entry(Named):
 
 class Batch(Model):
     leaves: tuple[dict, ...] = ()
+    sources: tuple[dict, ...] = ()
 
 
 class TestHelpers:
@@ -44,6 +45,38 @@ class TestDecode:
         gate = Admission()
         assert gate.decode(Entry, "not an object", "leaves[0]") is None
         assert gate.problems[0].where == "leaves[0]"
+
+    def test_families_round_trip_a_batch_every_family_of_which_decodes(self):
+        gate = Admission()
+        batch = gate.families({"leaves": [{"a": 1}], "sources": []}, Batch)
+        assert gate.clean
+        assert batch.leaves == ({"a": 1},) and batch.sources == ()
+
+    def test_a_malformed_family_takes_its_default_and_its_siblings_survive(self):
+        """The whole point: one bad family costs its own contents, never the
+        checks its siblings were going to pay for."""
+        gate = Admission()
+        batch = gate.families(
+            {"leaves": {"not": "a list"}, "sources": [{"b": 2}]},
+            Batch,
+            {"leaves": "the leaf shape"},
+        )
+        assert batch.leaves == () and batch.sources == ({"b": 2},)
+        assert [(p.where, p.hint) for p in gate.problems] == [
+            ("leaves", "the leaf shape")
+        ]
+
+    def test_two_bad_families_give_two_located_problems(self):
+        gate = Admission()
+        gate.families({"leaves": 1, "sources": 2}, Batch)
+        assert [p.where for p in gate.problems] == ["leaves", "sources"]
+
+    def test_a_container_with_a_required_field_is_a_violated_invariant(self):
+        class Demanding(Model):
+            leaves: tuple[dict, ...]
+
+        with pytest.raises(CommandError, match="default"):
+            Admission().families({"leaves": []}, Demanding)
 
     def test_known_keys_names_what_the_container_does_not_declare(self):
         gate = Admission()

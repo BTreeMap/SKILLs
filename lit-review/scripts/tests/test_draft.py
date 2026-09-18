@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
-from btm_corekit import Work
+from btm_corekit import CommandError, Work
 from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.corpus.paper import paper_from
-from btm_lit_review.findings.draft import assign_markers, cite_check, marker_table
+from btm_lit_review.findings.draft import (
+    assign_markers,
+    cite_check,
+    load_markers,
+    marker_table,
+)
+from btm_lit_review.session import Session
 
 
 def paper(
@@ -84,6 +92,38 @@ class TestCiteCheck:
         views = [{"id": "f1", "state": "at-risk"}, {"id": "f2", "state": "supported"}]
         report = cite_check("[1]", assign_markers({}, papers), papers, views)
         assert [f["id"] for f in report["at_risk_findings"]] == ["f1"]
+
+    def test_a_marker_quoted_inside_code_is_not_a_citation(self, papers):
+        """A draft that shows the agent how to cite would otherwise count its
+        own example, and a fenced command could go on to cite a cut paper."""
+        markers = assign_markers({}, papers) | {"doi:10.1/c": 3}
+        draft = "First [1].\n```\nwrite [2] and [3]\n```\nInline `[9]`.\n"
+        report = cite_check(draft, markers, papers, [])
+        assert report["citations"] == 1
+        assert report["problems"] == []
+        assert report["unused_included"] == ["[2]"]
+
+
+class TestLoadMarkers:
+    """citations.json is authoritative: it is the draft's only handle on a
+    paper, so a file that will not decode refuses by name."""
+
+    def session(self, tmp_path, written):
+        (tmp_path / "citations.json").write_text(written, encoding="utf-8")
+        return Session(root=tmp_path)
+
+    def test_an_absent_file_is_an_empty_map(self, tmp_path):
+        assert load_markers(Session(root=tmp_path)) == {}
+
+    def test_a_written_map_reads_back(self, tmp_path):
+        assert load_markers(self.session(tmp_path, '{"doi:10.1/a": 1}')) == {
+            "doi:10.1/a": 1
+        }
+
+    @pytest.mark.parametrize("written", ["{", '{"doi:10.1/a": "one"}', "[1, 2]"])
+    def test_anything_undecodable_names_the_file(self, tmp_path, written):
+        with pytest.raises(CommandError, match=re.escape("citations.json")):
+            load_markers(self.session(tmp_path, written))
 
 
 class TestMarkerTable:

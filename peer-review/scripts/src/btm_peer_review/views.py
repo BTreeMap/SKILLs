@@ -5,9 +5,9 @@ the ledger, the live paper text, and the linked corpus. Nothing here is stored.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
-from btm_corekit import JSON, bracketed, is_digits
+from btm_corekit import JSON, bracketed, is_digits, strip_code
 from btm_peer_review.constants import (
     ECHO_WARN,
     LEVEL_BANKS,
@@ -27,10 +27,18 @@ from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim
 DECISIVE = frozenset({Severity.FATAL, Severity.MAJOR})
 
 
+AnchorMode = Literal["unread", "exact", "fuzzy", "unresolved"]
+"""How an anchor met the paper: the four outcomes `_anchor_views` can reach,
+closed so no fifth word can be written into a row downstream reads."""
+
+
 class AnchorView(TypedDict):
+    """One quote as the report renders it. Read by marker downstream, so the
+    keys are the contract between the views."""
+
     quote: str
     page: int | None
-    mode: str
+    mode: AnchorMode
 
 
 class ObjectionView(TypedDict):
@@ -54,6 +62,9 @@ class ObjectionView(TypedDict):
 
 
 class ClaimView(TypedDict):
+    """One contribution claim and what stands against it. Indexed by marker
+    by the draft check, so its shape outlives the return."""
+
     marker: str
     id: str
     verbatim: str
@@ -320,12 +331,13 @@ def cite_check(
 ) -> Citations:
     """Pure verdict over a draft: every marker resolves to a grounded
     objection or a claim, and every grounded fatal or major objection is
-    cited. O(draft + ledger)."""
+    cited. Code spans are blanked first, so a marker quoted inside a fence
+    is prose about the review, not a citation. O(draft + ledger)."""
     known_claims = {c["marker"] for c in claims}
     by_marker = {v["marker"]: v for v in objections}
     used = {
         content
-        for content in bracketed(text)
+        for content in bracketed(strip_code(text))
         if content[:1] in ("C", "O") and is_digits(content[1:])
     }
     problems = []

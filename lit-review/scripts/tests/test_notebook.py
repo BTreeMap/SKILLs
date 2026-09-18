@@ -105,6 +105,19 @@ class TestAdmission:
         } <= wheres
         assert result.records == []
 
+    def test_a_malformed_family_never_hides_a_problem_in_its_siblings(self, papers):
+        """A family of the wrong shape once swallowed the whole batch, so the
+        dangling pad reference beside it cost a second round trip."""
+        result = expand(
+            {
+                "findings": {"claim": "a finding, not a list of them"},
+                "gaps": [{"statement": "x", "from": ["j9"]}],
+            },
+            papers,
+            pad={"j1"},
+        )
+        assert {p.where for p in result.problems} == {"findings", "gaps[0].from[0]"}
+
     def test_support_resolves_aliases_with_an_advisory(self, papers):
         result = expand(
             {"findings": [{"claim": "c", "support": ["10.1/bandit", "2501.00001"]}]},

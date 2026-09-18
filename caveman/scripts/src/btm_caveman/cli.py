@@ -1,11 +1,9 @@
-"""The command surface: verbs in, exit codes out, evidence on stdout."""
+"""The command surface: verbs in, one JSON record out, exit codes for the shell."""
 
 from __future__ import annotations
 
 import argparse
-import contextlib
-import json
-import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 import btm_caveman
@@ -14,177 +12,152 @@ from btm_caveman.classify import NON_MARKDOWN_PROSE_EXTENSIONS
 from btm_caveman.markdown import split_frontmatter
 from btm_caveman.model import Plan, Refusal
 from btm_caveman.store import (
-    backup_base,
+    STORE,
+    SlotMeta,
     load_slot,
+    read_meta,
     read_utf8,
-    recorded_source,
     slot_for,
 )
 from btm_caveman.validate import validate
-from btm_corekit import Parser, run_cli, tree_bytes, write_atomic
+from btm_corekit import (
+    CommandError,
+    Parser,
+    Required,
+    add_slot,
+    emit,
+    rejection,
+    run_cli,
+    signal,
+    text,
+    write_atomic,
+)
+
+BODY = Required("body", inline=False)
+"""apply's compressed body: free-form prose never travels in argv."""
 
 
-def print_signals(plan: Plan) -> None:
+def send_signals(plan: Plan) -> None:
     """Hand the heuristic evidence to the agent; advisory, never blocking."""
     for note in plan.notes:
-        print(f"SIGNAL: {note}")
+        signal(note)
     if plan.notes:
-        print("Signals advise; the user's request decides (restore undoes everything).")
+        signal("signals advise; the user's request decides (restore undoes everything)")
 
 
-def print_format_warning(path: Path) -> None:
+def warn_format(path: Path) -> None:
     if path.suffix.lower() in NON_MARKDOWN_PROSE_EXTENSIONS:
-        print(
-            f"WARNING: checks assume Markdown; {path.suffix} headings and code"
+        signal(
+            f"checks assume Markdown; {path.suffix} headings and code"
             " blocks are unprotected; preserve structure manually"
         )
 
 
-def cmd_check(path: Path) -> int:
+def planned(path: Path) -> Plan:
+    """The admitted plan. A refusal is an invariant, so it ends the command."""
     match admit(path):
         case Refusal(reason):
-            print(f"REFUSED: {reason}")
-            return 1
+            raise CommandError(reason)
         case Plan() as plan:
-            fm = "yes" if plan.frontmatter else "no"
-            print(f"OK: admissible (frontmatter: {fm}, body: {len(plan.body)} chars)")
-            print_signals(plan)
-            print_format_warning(plan.path)
-            return 0
+            return plan
 
 
-def cmd_prepare(path: Path) -> int:
-    match admit(path):
-        case Refusal(reason):
-            print(f"REFUSED: {reason}")
-            return 1
-        case Plan() as plan:
-            slot = slot_for(plan.path)
-            recorded = recorded_source(slot)
-            if recorded is not None and recorded != str(plan.path):
-                print(
-                    f"REFUSED: backup slot collision: {slot.directory} records"
-                    f" {recorded}; refusing to touch another file's backup"
-                )
-                return 1
-            if slot.backup_path.exists():
-                print(
-                    f"REFUSED: backup already exists: {slot.backup_path}\n"
-                    "Remove or restore it first; refusing to overwrite a prior "
-                    "original."
-                )
-                return 1
-            slot.directory.mkdir(parents=True, exist_ok=True)
-            # Identity before content: a backup must never exist anonymously.
-            write_atomic(slot.meta_path, json.dumps({"source": str(plan.path)}))
-            write_atomic(slot.backup_path, plan.original)
-            if read_utf8(slot.backup_path) != plan.original:
-                slot.backup_path.unlink(missing_ok=True)
-                print("REFUSED: backup readback mismatch; aborting before any change")
-                return 1
-            write_atomic(slot.body_path, plan.body)
-            print(f"BACKUP: {slot.backup_path}")
-            print(f"BODY:   {slot.body_path}")
-            print_signals(plan)
-            print_format_warning(plan.path)
-            print(
-                "Compress the BODY file's prose, then run: "
-                "apply <file> <compressed-body>"
-            )
-            return 0
+def cmd_prepare(args: argparse.Namespace) -> int:
+    plan = planned(Path(args.file))
+    slot = slot_for(plan.path)
+    meta = read_meta(slot)
+    if meta is not None and meta.source != str(plan.path):
+        raise CommandError(
+            f"backup slot collision: {slot.directory} records {meta.source};"
+            " refusing to touch another file's backup"
+        )
+    if slot.backup_path.exists():
+        raise CommandError(
+            f"backup already exists: {slot.backup_path}; remove or restore it"
+            " first, refusing to overwrite a prior original"
+        )
+    # Identity before content: a backup must never exist anonymously.
+    STORE.write_meta(slot.directory, SlotMeta(source=str(plan.path)))
+    write_atomic(slot.backup_path, plan.original)
+    if read_utf8(slot.backup_path) != plan.original:
+        slot.backup_path.unlink(missing_ok=True)
+        raise CommandError("backup readback mismatch; aborting before any change")
+    write_atomic(slot.body_path, plan.body)
+    send_signals(plan)
+    warn_format(plan.path)
+    emit(
+        {
+            "file": str(plan.path),
+            "backup": str(slot.backup_path),
+            "body": str(slot.body_path),
+            "frontmatter": bool(plan.frontmatter),
+            "chars": len(plan.body),
+            "next": f"compress the body file's prose, then: apply {plan.path}"
+            " --body:file <compressed-body>",
+        }
+    )
+    return 0
 
 
-def cmd_apply(path: Path, compressed_body_path: Path) -> int:  # noqa: PLR0911
-    # Preserve each refusal's contract and exit status.
-    path = path.resolve()
+def cmd_apply(args: argparse.Namespace) -> int:
+    path = Path(args.file).resolve()
     slot = load_slot(path)
-    if isinstance(slot, Refusal):
-        print(f"REFUSED: {slot.reason}")
-        return 1
-    if not compressed_body_path.is_file():
-        print(f"REFUSED: compressed body not found: {compressed_body_path}")
-        return 1
+    # An empty body is rejected by the slot itself, before anything is read.
+    compressed_body = text(BODY, args)
     original = read_utf8(slot.backup_path)
-    compressed_body = read_utf8(compressed_body_path)
-    if original is None or compressed_body is None:
-        print("REFUSED: backup or compressed body is not valid UTF-8")
-        return 1
     frontmatter, original_body = split_frontmatter(original)
-    if not compressed_body.strip():
-        print("REFUSED: compressed body is empty")
-        return 1
     if compressed_body.strip() == original_body.strip():
-        print("REFUSED: output identical to input; file may already be compressed")
-        return 1
+        raise CommandError("output identical to input; file may already be compressed")
     candidate = frontmatter + compressed_body
-    print_format_warning(path)
+    warn_format(path)
     verdict = validate(original, candidate)
     for warning in verdict.warnings:
-        print(f"WARNING: {warning}")
+        signal(warning)
     if not verdict.is_valid:
-        for error in verdict.errors:
-            print(f"ERROR: {error}")
-        print(
-            "Target file untouched. Fix ONLY the listed errors in the compressed body"
-        )
-        print(
-            "(restore missing content from the backup; do not recompress) and re-apply."
-        )
-        # Exit 1 means: fix the input and resend.
+        # Every fix in one verdict; the target file stays as it was.
+        emit(rejection(verdict.errors, "target file", BODY))
         return 1
     write_atomic(path, candidate)
-    pct = round(100 * (len(original) - len(candidate)) / max(len(original), 1))
-    print(f"APPLIED: {path}")
-    print(f"CHARS: {len(original)} -> {len(candidate)} ({pct}% smaller)")
-    print(f"BACKUP: {slot.backup_path}")
-    return 0
-
-
-def cmd_restore(path: Path) -> int:
-    path = path.resolve()
-    slot = load_slot(path)
-    if isinstance(slot, Refusal):
-        print(f"REFUSED: {slot.reason}")
-        return 1
-    original = read_utf8(slot.backup_path)
-    if original is None:
-        print(f"REFUSED: backup is not valid UTF-8: {slot.backup_path}")
-        return 1
-    write_atomic(path, original)
-    print(f"RESTORED: {path} from {slot.backup_path}")
-    return 0
-
-
-def cmd_clean(target: Path | None) -> int:
-    """Delete backup artifacts. Destroys the undo; run only on explicit request."""
-    if target is None:
-        base = backup_base()
-        if not base.is_dir():
-            print("CLEAN: no backups to remove")
-            return 0
-        freed = tree_bytes(base)
-        shutil.rmtree(base)
-        print(f"CLEAN: removed the backup tree at {base} ({freed} bytes freed)")
-        return 0
-    slot = slot_for(target.resolve())
-    recorded = recorded_source(slot)
-    if recorded is not None and recorded != str(slot.source):
-        print(f"REFUSED: {slot.directory} records {recorded}; not cleaning it")
-        return 1
-    # Remove only the artifacts this tool writes, never an arbitrary tree.
-    removed = tuple(
-        p for p in (slot.backup_path, slot.body_path, slot.meta_path) if p.is_file()
+    percent = round(100 * (len(original) - len(candidate)) / max(len(original), 1))
+    emit(
+        {
+            "file": str(path),
+            "backup": str(slot.backup_path),
+            "chars_before": len(original),
+            "chars_after": len(candidate),
+            "percent_smaller": percent,
+        }
     )
-    freed = sum(p.stat().st_size for p in removed)
-    for artifact in removed:
-        artifact.unlink()
-        print(f"CLEAN: removed {artifact}")
-    if not removed:
-        print(f"CLEAN: no backups found for {target.name}")
+    return 0
+
+
+def cmd_restore(args: argparse.Namespace) -> int:
+    path = Path(args.file).resolve()
+    slot = load_slot(path)
+    write_atomic(path, read_utf8(slot.backup_path))
+    emit({"file": str(path), "backup": str(slot.backup_path)})
+    return 0
+
+
+def cmd_clean(args: argparse.Namespace) -> int:
+    """List the backups, or delete some. Deletion destroys the undo, so it
+    runs only on an explicit request."""
+    if args.file is None:
+        listing = STORE.clean(None, args.all)
+        # A slot is addressed by the file it backs up, never by its own name.
+        emit(
+            listing
+            if args.all
+            else listing | {"next": "pass a file path to remove its backup, or --all"}
+        )
         return 0
-    print(f"CLEAN: {freed} bytes freed")
-    with contextlib.suppress(OSError):  # foreign files present: leave the directory
-        slot.directory.rmdir()
+    target = Path(args.file).resolve()
+    slot = slot_for(target)
+    meta = read_meta(slot)
+    if meta is not None and meta.source != str(target):
+        raise CommandError(f"{slot.directory} records {meta.source}; not cleaning it")
+    # Removal demands the marker, so only what prepare wrote can be removed.
+    emit(STORE.clean(str(slot.directory), args.all))
     return 0
 
 
@@ -196,7 +169,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     commands = parser.add_subparsers(dest="command", required=True)
     for verb, summary, run in (
-        ("check", "report whether a file is admissible, with its signals", cmd_check),
         (
             "prepare",
             "back the file up and split its body out for rewriting",
@@ -205,25 +177,24 @@ def build_parser() -> argparse.ArgumentParser:
         ("restore", "put the backed-up original back", cmd_restore),
     ):
         sub = commands.add_parser(verb, help=summary)
-        sub.set_defaults(func=lambda args, run=run: run(Path(args.file)))
+        sub.set_defaults(func=run)
         sub.add_argument("file")
-    apply_ = commands.add_parser(
+    applier = commands.add_parser(
         "apply", help="validate a compressed body and write it in place"
     )
-    apply_.set_defaults(func=lambda args: cmd_apply(Path(args.file), Path(args.body)))
-    apply_.add_argument("file")
-    apply_.add_argument("body", help="the compressed body to validate and apply")
-    clean = commands.add_parser("clean", help="remove backups for one file or --all")
-    clean.set_defaults(
-        func=lambda args: cmd_clean(None if args.all else Path(args.file))
+    applier.set_defaults(func=cmd_apply)
+    applier.add_argument("file")
+    add_slot(applier, BODY, "the compressed body, frontmatter excluded")
+    cleaner = commands.add_parser(
+        "clean", help="list backups with sizes; remove one file's or --all"
     )
-    target = clean.add_mutually_exclusive_group(required=True)
-    target.add_argument("file", nargs="?")
-    target.add_argument("--all", action="store_true")
+    cleaner.set_defaults(func=cmd_clean)
+    cleaner.add_argument("file", nargs="?")
+    cleaner.add_argument("--all", action="store_true")
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     return run_cli(build_parser(), argv)
 
 

@@ -26,12 +26,13 @@ The authoritative tag list lives in `catalog` and prints via
 
 ## Version Semantics
 
-`@version` is recipe-defined and documented per row in `btm-setup-env list`:
-conda-supplied targets take a conda version spec (`java@21`, `go@1.23`),
-`python` takes a uv interpreter spec, android flavors take an API level
-(`kotlin:android@35` installs `platforms;android-35` + matching
-build-tools), `kotlin:native` takes a JetBrains release. Targets without a
-version axis (`c`, `cpp`) reject one at parse time.
+`@version` is recipe-defined, and `btm-setup-env list` carries it in each
+target's `version` field: conda-supplied targets take a conda version spec
+(`java@21`, `go@1.23`), `python` takes a uv interpreter spec, android
+flavors take an API level (`kotlin:android@35` installs
+`platforms;android-35` + matching build-tools), `kotlin:native` takes a
+JetBrains release. Targets without a version axis (`c`, `cpp`) reject one at
+parse time.
 
 ## Footprints
 

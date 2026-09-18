@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import urllib.parse
 from collections.abc import Mapping
 from typing import Any
@@ -15,14 +14,12 @@ from btm_corekit import (
     append_jsonl,
     content,
     count_lines,
-    dump,
     emit,
     normalize_arxiv_id,
     normalize_doi,
     now_iso,
     openalex,
     signal,
-    write_atomic,
 )
 from btm_lit_review.constants import MAX_LIMIT, RESPONSE_CAP_BYTES
 from btm_lit_review.corpus.paper import Paper, absorb, paper_aliases, paper_from
@@ -80,6 +77,15 @@ def record_fetch(
     emit({**entry, "corpus_size": len(papers)})
 
 
+def capped(asked: int) -> int:
+    """The limit that actually runs. A clamp is announced: silently fetching
+    fewer papers than the caller asked for misreports the coverage."""
+    if asked > MAX_LIMIT:
+        signal(f"--limit {asked} capped to {MAX_LIMIT}")
+        return MAX_LIMIT
+    return asked
+
+
 class Framing(Model):
     """The review's question. Prose, so it arrives on stdin."""
 
@@ -100,7 +106,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     session = Session(root)
     root.mkdir(parents=True, exist_ok=True)
     protocol = Protocol(question=framing.question, level=args.level, created=now_iso())
-    write_atomic(session.protocol_path, json.dumps(dump(protocol), indent=2) + "\n")
+    STORE.write_meta(root, protocol)
     session.papers_path.touch()
     session.log_path.touch()
     emit(
@@ -118,7 +124,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     protocol = load_protocol(session)
     require_criteria(protocol)
-    limit = min(args.limit, MAX_LIMIT)
+    limit = capped(args.limit)
     if args.source == "openalex":
         fetched, total = fetch_openalex(asked, limit, args.from_year, args.to_year)
     elif args.source == "arxiv":
@@ -172,7 +178,7 @@ def cmd_snowball(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     protocol = load_protocol(session)
     require_criteria(protocol)
-    limit = min(args.limit, MAX_LIMIT)
+    limit = capped(args.limit)
     papers = load_papers(session)
     seed_key, work_id = resolve_openalex_id(papers, args.seed)
     if args.direction == "backward":

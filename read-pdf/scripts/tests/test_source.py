@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import httpx
 import pytest
 
-from btm_corekit import CommandError, UpstreamError
+from btm_corekit import CommandError, UpstreamError, cache_dir
 from btm_read_pdf.source import LocalPdf, RemotePdf, materialize, parse_source
 
 PDF_BYTES = b"%PDF-1.4 tiny"
@@ -13,7 +15,10 @@ PDF_BYTES = b"%PDF-1.4 tiny"
 
 @pytest.fixture(autouse=True)
 def isolated_cache(tmp_path, monkeypatch):
-    monkeypatch.setattr("btm_read_pdf.source.cache_dir", lambda: tmp_path / "cache")
+    """The cache lives in temp space, so moving temp space moves the cache and
+    the digest-keyed slot under test is the real one."""
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    return cache_dir("read-pdf")
 
 
 def transport_serving(content: bytes, status: int = 200, calls: list | None = None):
@@ -99,21 +104,27 @@ class TestMaterialize:
                 transport=httpx.MockTransport(refuse),
             )
 
-    def test_the_size_cap_rejects_and_leaves_no_partial(self, tmp_path):
+    def test_the_size_cap_rejects_and_leaves_no_partial(self, isolated_cache):
         with pytest.raises(CommandError, match="more than 4 bytes"):
             materialize(
                 RemotePdf("https://x.org/big.pdf"),
                 max_bytes=4,
                 transport=transport_serving(PDF_BYTES),
             )
-        cache = tmp_path / "cache"
-        assert not cache.exists() or list(cache.iterdir()) == []
+        assert not isolated_cache.exists() or list(isolated_cache.iterdir()) == []
 
-    def test_non_pdf_content_is_rejected_and_never_cached(self, tmp_path):
+    def test_the_cap_never_re_judges_a_cached_file(self):
+        """The cap is a precondition on the fetch; a file already on disk cost
+        nothing to read, so a later, smaller cap must not refuse it."""
+        url = "https://x.org/a.pdf"
+        materialize(RemotePdf(url), transport=transport_serving(PDF_BYTES))
+        path, _ = materialize(RemotePdf(url), max_bytes=1)
+        assert path.read_bytes() == PDF_BYTES
+
+    def test_non_pdf_content_is_rejected_and_never_cached(self, isolated_cache):
         with pytest.raises(CommandError, match="not a PDF"):
             materialize(
                 RemotePdf("https://x.org/paywall"),
                 transport=transport_serving(b"<html>sign in to view</html>"),
             )
-        cache = tmp_path / "cache"
-        assert not cache.exists() or list(cache.iterdir()) == []
+        assert not isolated_cache.exists() or list(isolated_cache.iterdir()) == []

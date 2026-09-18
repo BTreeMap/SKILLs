@@ -14,6 +14,7 @@ from btm_corekit import (
     Commands,
     Parser,
     add_slot,
+    at_least_one,
     run_cli,
     wire_clean,
     wire_pad,
@@ -34,7 +35,11 @@ from btm_lit_review.corpus.curate import (
     cmd_status,
     cmd_update,
 )
-from btm_lit_review.corpus.gather import cmd_init, cmd_search, cmd_snowball
+from btm_lit_review.corpus.gather import (
+    cmd_init,
+    cmd_search,
+    cmd_snowball,
+)
 from btm_lit_review.findings.draft import cmd_cite_check
 from btm_lit_review.findings.notebook import cmd_note
 from btm_lit_review.report.verify import cmd_verify
@@ -68,7 +73,7 @@ def wire_gather(commands: Commands) -> None:
     add_common(search)
     add_slot(search, QUERY, '{"query": "the search string"}')
     search.add_argument("--source", choices=SOURCES, required=True)
-    search.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
+    search.add_argument("--limit", type=at_least_one, default=DEFAULT_LIMIT)
     search.add_argument("--from-year", type=int, default=None)
     search.add_argument("--to-year", type=int, default=None)
     search.set_defaults(func=cmd_search)
@@ -79,7 +84,7 @@ def wire_gather(commands: Commands) -> None:
     add_common(snowball)
     snowball.add_argument("--seed", required=True, help="paper key, DOI, or arXiv id")
     snowball.add_argument("--direction", choices=DIRECTIONS, required=True)
-    snowball.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
+    snowball.add_argument("--limit", type=at_least_one, default=DEFAULT_LIMIT)
     snowball.set_defaults(func=cmd_snowball)
 
 

@@ -26,6 +26,7 @@ from btm_corekit.cli import (
     View,
     add_slot,
     advise,
+    at_least_one,
     content,
     dispatch,
     gated,
@@ -51,6 +52,7 @@ from btm_corekit.indexes.work import (
 )
 from btm_corekit.net.http import (
     build_client,
+    client_for,
     download,
     get_bytes,
     status_failure,
@@ -81,8 +83,9 @@ from btm_corekit.records.models import (
 )
 from btm_corekit.report.channels import JSON, emit, signal
 from btm_corekit.report.errors import CommandError, UpstreamError
-from btm_corekit.report.invariants import demand, parse_enum, require
+from btm_corekit.report.invariants import demand, require
 from btm_corekit.report.verdicts import Diagnostic
+from btm_corekit.store.cache import cache_dir, cache_slot, clean_cache
 from btm_corekit.store.clock import now_iso
 from btm_corekit.store.eventlog import MAX_EVENTS, EventLog
 from btm_corekit.store.fsio import (
@@ -125,6 +128,7 @@ from btm_corekit.text import (
     keep_table,
     prefixed_number,
     runs,
+    strip_code,
     strip_tags,
 )
 
@@ -180,9 +184,14 @@ __all__ = [
     "append_jsonl",
     "arxiv",
     "ascii_words",
+    "at_least_one",
     "band_signal",
     "bracketed",
     "build_client",
+    "cache_dir",
+    "cache_slot",
+    "clean_cache",
+    "client_for",
     "collapse_whitespace",
     "collapsed",
     "compile_match",
@@ -215,7 +224,6 @@ __all__ = [
     "openalex",
     "pad_entries",
     "pad_ids",
-    "parse_enum",
     "parse_model",
     "parse_with",
     "prefixed_number",
@@ -238,6 +246,7 @@ __all__ = [
     "state_root",
     "status_failure",
     "stream",
+    "strip_code",
     "strip_tags",
     "suffix",
     "suggest",

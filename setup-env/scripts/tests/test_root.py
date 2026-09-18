@@ -6,8 +6,9 @@ import json
 
 import pytest
 
-from btm_setup_env.model import DenvError, Layout
+from btm_setup_env.model import DenvError, Layout, detect_host
 from btm_setup_env.shell.root import (
+    Ctx,
     Manifest,
     Provisioned,
     Unprovisioned,
@@ -54,6 +55,22 @@ class TestReadRoot:
     def test_a_field_a_later_version_added_is_read_anyway(self, layout):
         written(layout, project="/w/app", invented_next_year=1)
         assert isinstance(read_root(layout), Provisioned)
+
+
+class TestSaveManifest:
+    def test_the_write_swaps_one_whole_file_into_place(self, layout, tmp_path):
+        """A reader either sees the previous manifest or the new one: no
+        sibling of the write survives it, and none is half a document."""
+        Ctx(layout, detect_host(), Manifest(project="/w/app")).save_manifest()
+        assert [p.name for p in tmp_path.iterdir()] == ["manifest.json"]
+        assert json.loads(layout.manifest.read_text())["project"] == "/w/app"
+
+    def test_a_second_save_replaces_the_first(self, layout):
+        ctx = Ctx(layout, detect_host(), Manifest(project="/w/app"))
+        ctx.save_manifest()
+        ctx.record(project="/w/other")
+        ctx.save_manifest()
+        assert read_root(layout) == Provisioned(Manifest(project="/w/other"))
 
 
 class TestManifestOf:

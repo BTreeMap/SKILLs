@@ -10,6 +10,9 @@ from typing import Any
 
 from btm_corekit import (
     JSON,
+    Count,
+    Model,
+    dump,
     emit,
     now_iso,
     pad_entries,
@@ -76,26 +79,44 @@ def unextracted(directory: Path, papers: Mapping[str, Paper]) -> list[str]:
     return unextracted_in(pad_entries(directory), papers)
 
 
-def load_snapshot(session: Session) -> dict[str, Any] | None:
+class Snapshot(Model):
+    """One brief's view of the corpus, written at the end of each brief and
+    read by the next one to derive drift."""
+
+    id: str
+    n: Count = 0
+    t: str = ""
+    papers: dict[str, Status] = {}  # noqa: RUF012 - pydantic copies a default
+
+
+def load_snapshot(session: Session) -> Snapshot | None:
     """The previous brief's corpus statuses; one file, replaced per brief, so
-    the notebook never grows by the corpus size on every resume."""
+    the notebook never grows by the corpus size on every resume. Wholly
+    regenerable: a snapshot that will not parse is dropped with a signal and
+    recomputed by this brief, never a refusal to resume."""
     path = session.snapshot_path
-    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+    if not path.is_file():
+        return None
+    try:
+        return Snapshot.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        signal("snapshot.json unreadable; recomputing")
+        return None
 
 
-def drift(last: dict[str, Any] | None, papers: Mapping[str, Paper]) -> dict[str, Any]:
+def drift(last: Snapshot | None, papers: Mapping[str, Paper]) -> dict[str, Any]:
     """Corpus movement since the last brief; empty on a first run."""
     current = {key: paper.status for key, paper in papers.items()}
     if last is None:
         return {"since": None}
     changed = [
         {"key": key, "from": before, "to": current[key]}
-        for key, before in last["papers"].items()
+        for key, before in last.papers.items()
         if key in current and current[key] != before
     ]
     return {
-        "since": last["id"],
-        "new_papers": [key for key in current if key not in last["papers"]],
+        "since": last.id,
+        "new_papers": [key for key in current if key not in last.papers],
         "status_changes": changed,
     }
 
@@ -144,14 +165,14 @@ def cmd_brief(args: argparse.Namespace) -> int:
         "lore": [entry["body"] for entry in pad_entries(lore_dir())],
     }
     emit(document)
-    count = (last or {}).get("n", 0) + 1
-    snapshot = {
-        "id": f"b{count}",
-        "n": count,
-        "t": now_iso(),
-        "papers": {key: paper.status for key, paper in papers.items()},
-    }
-    write_atomic(session.snapshot_path, json.dumps(snapshot) + "\n")
+    count = (last.n if last else 0) + 1
+    snapshot = Snapshot(
+        id=f"b{count}",
+        n=count,
+        t=now_iso(),
+        papers={key: paper.status for key, paper in papers.items()},
+    )
+    write_atomic(session.snapshot_path, json.dumps(dump(snapshot)) + "\n")
     return 0
 
 

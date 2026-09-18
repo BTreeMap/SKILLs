@@ -117,11 +117,13 @@ MIN_WORD = 2  # letters that make a word
 
 
 def _word_end(text: str, start: int) -> int:
-    """Index just past the run of word characters beginning at `start`."""
-    end = start
-    while end < len(text) and text[end] in WORD_CHARS:
-        end += 1
-    return end
+    """Index just past the run of word characters beginning at `start`.
+
+    `lstrip` over the character set scans the run in C, so the cost is the
+    run's length rather than a Python step per character.
+    """
+    rest = text[start:]
+    return len(text) - len(rest.lstrip(ASCII_WORD))
 
 
 def _starts_with_word(text: str, words: tuple[str, ...]) -> bool:

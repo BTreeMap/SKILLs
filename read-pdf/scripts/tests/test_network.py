@@ -8,9 +8,11 @@ the default suite; opt in with `pytest -m network`.
 
 from __future__ import annotations
 
+import tempfile
+
 import pytest
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, cache_dir
 from btm_read_pdf.cli import main
 from btm_read_pdf.source import RemotePdf, materialize, parse_source
 
@@ -25,7 +27,8 @@ SAMPLE_BYTES = 158_677
 def own_cache(tmp_path, monkeypatch):
     """A per-test download cache. The real one is keyed by URL digest and
     shared across runs, so a warm entry would hide the fetch under test."""
-    monkeypatch.setattr("btm_read_pdf.source.cache_dir", lambda: tmp_path / "cache")
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    return cache_dir("read-pdf")
 
 
 class TestRealFetch:
@@ -49,11 +52,10 @@ class TestRealFetch:
         with pytest.raises(CommandError, match="pass --max-bytes"):
             materialize(RemotePdf(SAMPLE), max_bytes=1024)
 
-    def test_a_capped_download_leaves_no_partial(self, tmp_path):
+    def test_a_capped_download_leaves_no_partial(self, own_cache):
         with pytest.raises(CommandError):
             materialize(RemotePdf(SAMPLE), max_bytes=1024)
-        cache = tmp_path / "cache"
-        assert not cache.exists() or list(cache.iterdir()) == []
+        assert not own_cache.exists() or list(own_cache.iterdir()) == []
 
     def test_the_second_fetch_reuses_the_cache(self, capsys):
         first, _ = materialize(RemotePdf(SAMPLE))

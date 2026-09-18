@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
+
 import pytest
 from pypdf import PdfWriter
 
+from btm_corekit import cache_dir
 from btm_read_pdf.cli import entrypoint, main
 
 
@@ -84,24 +88,30 @@ class TestRefusals:
 class TestClean:
     @pytest.fixture
     def cache(self, tmp_path, monkeypatch):
-        directory = tmp_path / "cache"
+        monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+        directory = cache_dir("read-pdf")
         directory.mkdir()
         (directory / "a.pdf").write_bytes(b"%PDF-1.4 tiny")
-        monkeypatch.setattr("btm_read_pdf.source.cache_dir", lambda: directory)
         return directory
 
     @pytest.mark.parametrize("argv", [["clean"], ["clean", "--all"]])
-    def test_clean_removes_the_cache_and_reports_the_bytes(self, cache, argv, capsys):
+    def test_clean_removes_the_cache_and_emits_the_record(self, cache, argv, capsys):
+        """`--all` is accepted for uniformity and removes the same one cache."""
         assert main(argv) == 0
         assert not cache.exists()
-        out = capsys.readouterr().out
-        assert str(cache) in out and "13 bytes freed" in out
+        assert json.loads(capsys.readouterr().out) == {
+            "removed": str(cache),
+            "bytes_freed": 13,
+        }
 
-    def test_clean_without_a_cache_frees_nothing(self, cache, capsys):
+    def test_clean_without_a_cache_names_nothing_removed(self, cache, capsys):
         main(["clean"])
         capsys.readouterr()
         assert main(["clean"]) == 0
-        assert "0 bytes freed" in capsys.readouterr().out
+        assert json.loads(capsys.readouterr().out) == {
+            "removed": None,
+            "bytes_freed": 0,
+        }
 
     def test_a_document_named_clean_still_extracts(self, blank_pdf, tmp_path):
         """Dispatch is on the literal first argument, not on a path's stem."""

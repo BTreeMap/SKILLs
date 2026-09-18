@@ -15,7 +15,7 @@ compatibility: >-
   (haskell, bash, c, cpp unavailable there). Roughly 1-6 GB under the
   environment root, depending on targets.
 metadata:
-  argument-hint: "[provision|design|status|shim|destroy|list] [tags...]"
+  argument-hint: "[provision|design|status|shim|clean|list] [tags...]"
 ---
 
 # Setup Env
@@ -61,10 +61,12 @@ env -u VIRTUAL_ENV uv run --project "$(realpath <skill-dir>/scripts)" btm-setup-
 
 </commands>
 
-`--project` defaults to the nearest ancestor of the working directory
-containing `.git`. The environment root is derived from the project path
-(override the base with `DENV_HOME`, or the exact root with `DENV_ROOT` or
-`--root`). Pass `--json` for machine-readable output.
+Every verb is named outright; a bare tag list is rejected. `--project`
+defaults to the nearest ancestor of the working directory containing
+`.git`. The environment root is derived from the project path (override the
+base with `DENV_HOME`, or the exact root with `DENV_ROOT` or `--root`).
+Each verb writes one JSON record to stdout and nothing else; progress and
+warnings go to stderr as `signal:` lines.
 
 <commands for="examples">
 
@@ -88,16 +90,24 @@ btm-setup-env design haskell csharp
 
 </commands>
 
-Expected: `Environment ready under <root>`, one `ok` probe line per
-toolchain, exit 0. Then activate and work; every command is identical on
-every supported host:
+Expected: exit 0 and a record whose `ok` is true, carrying `activate_sh`
+and one entry per probe. A failed probe still exits 0, with `ok` false and
+a `next` line naming the repair; exit 1 means an argument needs fixing,
+never that a toolchain is broken. Then activate and work; every command is
+identical on every supported host:
 
 ```bash
 . <root>/activate.sh        # POSIX shells; activate.ps1 on windows
 ```
 
-Verify later with `status`, wrap a stray foreign-architecture binary with
-`shim <binary>`, delete the root with `destroy`.
+| Verb | Record on stdout |
+| --- | --- |
+| `provision <tags>` | `ok`, `root`, `activate_sh`, `activate_ps1`, `env`, `probes`, and `next` when a probe failed |
+| `design <tags>` | `root`, `steps`, `env`, `path`, `probes`; nothing is installed |
+| `status` | what `provision` emits, with the probes re-run |
+| `shim <binary>` | `shim`: the wrapper path |
+| `clean` | `removed`, `bytes_freed`; refuses a root carrying no manifest this tool wrote, and refuses `--all` |
+| `list` | `targets`: one row of `tag`, `summary`, `version` each |
 
 ## The Interface Is The Whole Contract
 
@@ -165,7 +175,7 @@ its wrapper writes nothing to stdout.
 - The root is ephemeral (under the system temp dir unless `DENV_HOME` says
   otherwise). After a reboot, re-run provision.
 - Narrowing the tag set reshapes the conda prefix exactly but leaves stale
-  publisher downloads under `<root>/tools`; run `destroy` and re-provision
+  publisher downloads under `<root>/tools`; run `clean` and re-provision
   for a byte-exact minimal root.
 - macos/arm64 Android builds need Rosetta 2 once:
   `softwareupdate --install-rosetta --agree-to-license`.

@@ -12,11 +12,16 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from pydantic import TypeAdapter
+
 from btm_corekit import (
+    CommandError,
     bracketed,
     emit,
     is_digits,
+    parse_with,
     signal,
+    strip_code,
     text,
     write_atomic,
 )
@@ -31,10 +36,21 @@ from btm_lit_review.findings.notebook import (
 from btm_lit_review.session import Session, load_papers, open_session
 from btm_lit_review.slots import DRAFT
 
+MARKERS = TypeAdapter(dict[str, int])
+"""Every paper key to its citation number. Authoritative: a marker is the
+draft's only handle on a paper, so a file that will not decode is refused
+by name rather than silently renumbering the whole draft."""
+
 
 def load_markers(session: Session) -> dict[str, int]:
     path = session.citations_path
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as err:
+        raise CommandError(f"unreadable {path}: {err}") from err
+    return parse_with(MARKERS, raw, str(path))
 
 
 def assign_markers(
@@ -77,9 +93,12 @@ def cite_check(
     papers: Mapping[str, Paper],
     findings: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Pure verdict over a draft; O(draft + markers + findings)."""
+    """Pure verdict over a draft; O(draft + markers + findings). Code spans
+    are blanked first, so a `[1]` inside a fence is an example, not a cite."""
     by_number = {number: key for key, number in markers.items()}
-    used = {int(content) for content in bracketed(text) if is_digits(content)}
+    used = {
+        int(content) for content in bracketed(strip_code(text)) if is_digits(content)
+    }
     problems = []
     for number in sorted(used):
         key = by_number.get(number)

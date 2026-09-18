@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, Work
+from btm_corekit import Work
 from btm_lit_review.constants import ReadLevel, Status
-from btm_lit_review.corpus.curate import band_advisory, next_step, parse_decision
+from btm_lit_review.corpus.curate import Screening, band_advisory, next_step
 from btm_lit_review.corpus.paper import paper_from
 
 
@@ -71,66 +71,88 @@ class TestBandAdvisory:
         assert (advice is None) if cue is None else (cue in advice)
 
 
-class TestParseDecision:
-    def test_an_unknown_key_is_refused(self):
-        with pytest.raises(CommandError, match="unknown paper key"):
-            parse_decision("doi:absent", {"status": "included"}, CORPUS)
+class TestScreening:
+    """One batch, one verdict: every unknown key and every malformed decision
+    comes back together, and nothing reaches the corpus until none remain."""
 
-    def test_an_unknown_field_is_refused_rather_than_ignored(self):
+    def screened(self, decisions):
+        screening = Screening(CORPUS)
+        screening.take(decisions)
+        return screening
+
+    def located(self, decisions):
+        return [(p.where, p.fix, p.hint) for p in self.screened(decisions).problems]
+
+    def test_three_unknown_keys_come_back_in_one_verdict_with_did_you_means(self):
+        near = f"{KEY[:-1]}b"
+        problems = self.located({key: {} for key in (near, "doi:absent", "nonsense")})
+        assert [where for where, _, _ in problems] == [near, "doi:absent", "nonsense"]
+        assert KEY in problems[0][2]
+
+    def test_an_unknown_field_is_located_rather_than_ignored(self):
         """The verdict names the offending key, so the fix is one edit."""
-        with pytest.raises(CommandError, match="statuss"):
-            parse_decision(KEY, {"statuss": "included"}, CORPUS)
+        assert self.located({KEY: {"statuss": "included"}})[0][0] == f"{KEY}.statuss"
 
     def test_a_decision_that_is_not_an_object_is_refused(self):
         """A bare string once read as a set of one-letter field names."""
-        with pytest.raises(CommandError, match="valid dictionary"):
-            parse_decision(KEY, "included", CORPUS)
+        where, fix, _ = self.located({KEY: "included"})[0]
+        assert where == KEY and "valid dictionary" in fix
 
     def test_an_exclusion_needs_its_reason(self):
         """The implication the corpus depends on: a flow count traces to a
         stated reason or it traces to nothing."""
-        with pytest.raises(CommandError, match="carries the reason"):
-            parse_decision(KEY, {"status": "excluded"}, CORPUS)
+        where, fix, _ = self.located({KEY: {"status": "excluded"}})[0]
+        assert where == f"{KEY}.reason" and "carries the reason" in fix
+
+    def test_a_bad_key_never_hides_the_bad_decision_beside_it(self):
+        problems = self.located({"doi:absent": {}, KEY: {"status": "maybe"}})
+        assert [where for where, _, _ in problems] == ["doi:absent", f"{KEY}.status"]
 
     def test_an_exclusion_with_a_reason_is_admitted(self):
-        updates = parse_decision(
-            KEY, {"status": "excluded", "reason": "off topic"}, CORPUS
-        )
-        assert updates["status"] is Status.EXCLUDED
-        assert updates["decision_reason"] == "off topic"
+        screening = self.screened({KEY: {"status": "excluded", "reason": "off topic"}})
+        assert screening.clean
+        assert screening.updates[KEY]["status"] is Status.EXCLUDED
+        assert screening.updates[KEY]["decision_reason"] == "off topic"
+
+    def test_a_malformed_decision_stages_no_update(self):
+        assert self.screened({KEY: {"status": "maybe"}}).updates == {}
+
+
+class TestDecisionUpdates:
+    def parsed(self, decision):
+        screening = Screening(CORPUS)
+        screening.take({KEY: decision})
+        assert screening.clean, [p.view() for p in screening.problems]
+        return screening.updates[KEY]
 
     def test_an_omitted_field_is_absent_from_the_updates(self):
         """`with_` applies only what comes back, so omitting a field keeps it
         rather than resetting it to a default."""
-        assert set(parse_decision(KEY, {"read_level": "abstract"}, CORPUS)) == {
-            "read_level"
-        }
+        assert set(self.parsed({"read_level": "abstract"})) == {"read_level"}
 
     def test_an_explicit_null_reason_clears_it(self):
-        assert parse_decision(KEY, {"reason": None}, CORPUS) == {
-            "decision_reason": None
-        }
-
-    def test_a_wrongly_typed_reason_is_refused_not_coerced(self):
-        """status and read_level reject a value outside their vocabulary; a
-        reason has to reject a value outside its type for the same reason.
-        Coercing `0` to null cleared the field instead of refusing it."""
-        with pytest.raises(CommandError, match="reason: Input should be"):
-            parse_decision(KEY, {"reason": 0}, CORPUS)
-
-    def test_a_status_outside_the_vocabulary_names_it(self):
-        with pytest.raises(CommandError, match="status: Input should be"):
-            parse_decision(KEY, {"status": "maybe"}, CORPUS)
-
-    def test_a_read_level_outside_the_vocabulary_names_it(self):
-        with pytest.raises(CommandError, match="read_level: Input should be"):
-            parse_decision(KEY, {"read_level": "skimmed"}, CORPUS)
-
-    def test_a_nulled_vocabulary_field_is_refused(self):
-        """Clearing a status has no meaning; only a reason may be cleared."""
-        with pytest.raises(CommandError, match="not null"):
-            parse_decision(KEY, {"status": None}, CORPUS)
+        assert self.parsed({"reason": None}) == {"decision_reason": None}
 
     def test_a_valid_read_level_lands_in_the_domain(self):
-        updates = parse_decision(KEY, {"read_level": "full-text"}, CORPUS)
-        assert updates["read_level"] is ReadLevel.FULL_TEXT
+        assert self.parsed({"read_level": "full-text"})["read_level"] is (
+            ReadLevel.FULL_TEXT
+        )
+
+
+class TestVocabulary:
+    """A value outside a closed vocabulary is refused, never coerced: coercing
+    `0` to null once cleared a reason instead of refusing it."""
+
+    @pytest.mark.parametrize(
+        ("decision", "field"),
+        [
+            ({"reason": 0}, "reason"),
+            ({"status": "maybe"}, "status"),
+            ({"read_level": "skimmed"}, "read_level"),
+            ({"status": None}, "status"),
+        ],
+    )
+    def test_the_verdict_names_the_field(self, decision, field):
+        screening = Screening(CORPUS)
+        screening.take({KEY: decision})
+        assert [p.where for p in screening.problems] == [f"{KEY}.{field}"]

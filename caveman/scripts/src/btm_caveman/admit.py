@@ -25,7 +25,8 @@ NAME_GUIDANCE = (
 
 
 def admit(path: Path) -> Admission:  # noqa: PLR0911
-    """Parse, don't validate: every refusal reason lives here, once.
+    """Parse, don't validate: every refusal this file decides lives here, once;
+    undecodable bytes reject inside `read_utf8`.
 
     Refusals are exact invariants only; heuristic judgment becomes advisory
     notes on the Plan instead.
@@ -44,8 +45,6 @@ def admit(path: Path) -> Admission:  # noqa: PLR0911
     if path.stat().st_size > MAX_FILE_SIZE:
         return Refusal(f"File exceeds {MAX_FILE_SIZE // 1000}KB; split it first")
     text = read_utf8(path)
-    if text is None:
-        return Refusal("File is not valid UTF-8")
     if not text.strip():
         return Refusal("File is empty or whitespace-only")
     frontmatter, body = split_frontmatter(text)

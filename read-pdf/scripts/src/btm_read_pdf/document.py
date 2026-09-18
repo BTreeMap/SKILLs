@@ -11,7 +11,7 @@ from typing import TextIO
 
 from pypdf import PdfReader
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, signal
 
 
 def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
@@ -24,10 +24,7 @@ def decrypt_if_needed(reader: PdfReader, password_env: str | None) -> None:
     if not reader.is_encrypted:
         return
     if reader.decrypt(""):
-        print(
-            "note: PDF is owner-locked only; opened with the empty user password",
-            file=sys.stderr,
-        )
+        signal("PDF is owner-locked only; opened with the empty user password")
         return
     if not password_env:
         raise CommandError(

@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
-import shutil
-import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
 
-from btm_corekit import CommandError, build_client, stream, tree_bytes
+from btm_corekit import CommandError, build_client, cache_slot, signal, stream
 
 TIMEOUT_SECONDS = 30
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
@@ -41,27 +37,6 @@ def parse_source(raw: str) -> Source:
     return LocalPdf(path)
 
 
-def cache_dir() -> Path:
-    """Regenerable downloads live in temp space, owner-named per convention."""
-    return Path(tempfile.gettempdir()) / "btm-read-pdf"
-
-
-@dataclass(frozen=True, slots=True)
-class Cleaned:
-    directory: Path
-    freed: int
-
-
-def clean() -> Cleaned | None:
-    """Remove the download cache; None when there was none to remove."""
-    directory = cache_dir()
-    if not directory.is_dir():
-        return None
-    freed = tree_bytes(directory)
-    shutil.rmtree(directory)
-    return Cleaned(directory, freed)
-
-
 def materialize(
     source: Source,
     max_bytes: int = DEFAULT_MAX_BYTES,
@@ -77,12 +52,9 @@ def materialize(
         case LocalPdf(path):
             return path, path.name
         case RemotePdf(url):
-            target = cache_dir() / (hashlib.sha256(url.encode()).hexdigest() + ".pdf")
+            target = cache_slot("read-pdf", url, ".pdf")
             if target.is_file():
-                print(
-                    f"note: reusing cached download: {target} (delete it to refetch)",
-                    file=sys.stderr,
-                )
+                signal(f"cached: reusing {target}; clean drops the cache")
             else:
                 _fetch(url, target, max_bytes, transport)
             return target, url

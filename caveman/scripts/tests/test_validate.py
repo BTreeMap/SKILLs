@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from btm_caveman.model import Verdict
 from btm_caveman.validate import validate
+from btm_corekit import Diagnostic
 
 
 class TestVerdict:
@@ -11,7 +12,7 @@ class TestVerdict:
         assert Verdict().is_valid
 
     def test_an_error_invalidates(self):
-        assert not Verdict(errors=("a",)).is_valid
+        assert not Verdict(errors=(Diagnostic("headings", "a"),)).is_valid
 
     def test_a_warning_does_not_invalidate(self):
         assert Verdict(warnings=("w",)).is_valid
@@ -30,9 +31,9 @@ class TestValidate:
         assert moved.is_valid
 
     def test_a_dropped_url_and_code_block_are_two_errors(self):
+        """Independent checks all run, and each error names its own check."""
         bad = validate("# H\ntext https://a.example\n```\nc\n```\n", "# H\ntext\n")
-        assert not bad.is_valid
-        assert len(bad.errors) == 2
+        assert [problem.where for problem in bad.errors] == ["fenced code", "urls"]
 
     def test_a_dropped_indented_code_block_is_an_error(self):
         assert not validate("text\n\n    code line\n", "text\n").is_valid

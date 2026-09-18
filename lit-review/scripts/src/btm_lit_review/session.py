@@ -15,7 +15,6 @@ from btm_corekit import (
     NonEmpty,
     SessionStore,
     dump,
-    parse_model,
     read_jsonl,
     write_atomic,
 )
@@ -81,11 +80,9 @@ def open_session(root: str) -> Session:
 
 
 def load_protocol(session: Session) -> Protocol:
-    try:
-        raw = json.loads(session.protocol_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as err:
-        raise CommandError(f"unreadable protocol.json: {err}") from err
-    return parse_model(Protocol, raw, "protocol.json")
+    """The session marker, read the one way every session-keeping skill reads
+    it. Authoritative: a protocol that will not parse refuses by name."""
+    return STORE.read_meta(session.root, Protocol)
 
 
 def criteria_hash(protocol: Protocol) -> str:

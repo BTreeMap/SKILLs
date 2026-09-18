@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from btm_corekit.report.errors import CommandError
 
-E = TypeVar("E", bound=StrEnum)
 T = TypeVar("T")
 
 
@@ -21,11 +19,3 @@ def demand(value: T | None, invariant: str) -> T:
     if value is None:
         raise CommandError(invariant)
     return value
-
-
-def parse_enum(cls: type[E], raw: Any, what: str) -> E:
-    """A raw value becomes its vocabulary member, or names the vocabulary."""
-    try:
-        return cls(raw)
-    except ValueError as err:
-        raise CommandError(f"{what} outside the vocabulary: {err}") from err

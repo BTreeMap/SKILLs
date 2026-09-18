@@ -176,6 +176,28 @@ class TestTotalRejection:
         assert "closes[0].sources[0]" in wheres
         assert "sweeps[0].survivors[0]" in wheres
 
+    def test_a_malformed_family_never_hides_a_problem_in_its_siblings(self, loaded):
+        """One family of the wrong shape once swallowed the whole batch, so a
+        bad pad id cost a second round trip to discover."""
+        ledger, _ = loaded
+        batch = {
+            "leaves": {"kw": ["rent", "length"], "q": "a leaf, not a list of them"},
+            "closes": [{"leaf": "rent length", "state": "retrieved", "from": ["p9"]}],
+        }
+        result = expand_batch(ledger, batch, fixed_mint, pad=["p1"])
+        wheres = {problem.where for problem in result.problems}
+        assert wheres == {"leaves", "closes[0].from[0]"}
+
+    def test_a_bad_leaf_ref_never_hides_a_bad_pad_id_in_the_same_close(self):
+        """Both checks run: `or` would skip the pad links whenever the leaf
+        reference is the problem."""
+        batch = {
+            "closes": [{"leaf": "nope nope", "state": "retrieved", "from": ["p9"]}]
+        }
+        result = expand_batch(Ledger(), batch, fixed_mint, pad=["p1"])
+        wheres = {problem.where for problem in result.problems}
+        assert wheres == {"closes[0].leaf", "closes[0].from[0]"}
+
     def test_a_rejected_batch_stages_no_event_for_the_broken_entry(self, loaded):
         ledger, _ = loaded
         batch = {"closes": [{"leaf": "nope nope", "state": "retrieved"}]}

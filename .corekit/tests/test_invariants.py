@@ -1,16 +1,10 @@
-"""require and parse_enum: the decoder's two verbs."""
+"""require and demand: the decoder's two verbs."""
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 import pytest
 
-from btm_corekit import CommandError, parse_enum, require
-
-
-class Colour(StrEnum):
-    RED = "red"
+from btm_corekit import CommandError, demand, require
 
 
 def test_require_raises_the_invariant():
@@ -19,7 +13,7 @@ def test_require_raises_the_invariant():
         require(False, "broken")
 
 
-def test_parse_enum_names_the_vocabulary():
-    assert parse_enum(Colour, "red", "colour") is Colour.RED
-    with pytest.raises(CommandError, match="colour outside the vocabulary"):
-        parse_enum(Colour, "blue", "colour")
+def test_demand_narrows_an_optional_or_names_the_invariant():
+    assert demand("value", "absent") == "value"
+    with pytest.raises(CommandError, match="absent"):
+        demand(None, "absent")

@@ -15,6 +15,7 @@ from pydantic import ValidationError, model_validator
 
 from btm_corekit.records.models import Keyword, M, Model, Trimmed, diagnostics
 from btm_corekit.report.errors import CommandError
+from btm_corekit.report.invariants import require
 from btm_corekit.report.verdicts import Diagnostic
 from btm_corekit.store.identifiers import (
     Ambiguous,
@@ -151,6 +152,42 @@ class Admission:
             for problem in diagnostics(err):
                 self.fail(_at(where, problem.where), problem.fix, problem.hint or hint)
             return None
+
+    def families(
+        self,
+        payload: Mapping[str, Any],
+        container: type[M],
+        hints: Mapping[str, str] | None = None,
+    ) -> M:
+        """The container, always: each declared field is validated on its own,
+        so a family that is the wrong shape records its problems at its own
+        location and takes its default while every sibling family still
+        decodes and every sibling check still runs. `hints` carries each
+        family's schema fragment for problems pydantic states without one."""
+        require(
+            not any(info.is_required() for info in container.model_fields.values()),
+            f"{container.__name__} admits families one at a time only if every "
+            "field has a default",
+        )
+        schema = hints or {}
+        kept: dict[str, Any] = {}
+        for name in container.model_fields:
+            if name not in payload:
+                continue
+            try:
+                one = container.model_validate({name: payload[name]})
+            except ValidationError as err:
+                for problem in diagnostics(err):
+                    # A field's own error already opens with the field name;
+                    # only a whole-container problem, located at `$`, needs it.
+                    self.fail(
+                        name if problem.where == "$" else problem.where,
+                        problem.fix,
+                        problem.hint or schema.get(name),
+                    )
+                continue
+            kept[name] = getattr(one, name)
+        return container.model_validate(kept)
 
     def known_keys(self, payload: Mapping[str, Any], container: type[Model]) -> None:
         """Top-level keys the container does not declare. The container

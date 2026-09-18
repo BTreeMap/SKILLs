@@ -52,9 +52,11 @@ fetch caches, caps, and cites the URL as provenance.
 The extractor's console command `btm-read-pdf` accepts one-based page
 selections, including open-ended ranges. By default it prints all pages and
 available standard metadata to standard output. It refuses to replace an
-existing `--output` file unless `--overwrite` is passed, opens owner-locked
-PDFs (empty user password) without asking, and reports on stderr when
-selected pages have no extractable text (a likely scanned document).
+existing `--output` file unless `--overwrite` is passed, and opens
+owner-locked PDFs (empty user password) without asking. The extracted text
+is the whole of standard output; everything else, including the note that
+selected pages have no extractable text (a likely scanned document), is a
+`signal:` line on stderr.
 
 Bind the command once per shell and re-bind after a reset; `realpath` is
 required. Invoke it and read its output; source reading belongs to
@@ -82,10 +84,11 @@ $R clean
 </commands>
 
 A URL downloads once into a digest-keyed file under the system temp
-directory's `btm-read-pdf/`; a rerun reuses it, and `clean` removes the
-cache, reports the bytes freed, and makes the next run refetch
-(`clean --all` is the same call, since the cache is this skill's only
-state). Downloads over 200 MB are refused
+directory's `btm-read-pdf/`; a rerun reuses it and says so on stderr.
+`clean` removes the cache and emits one JSON document, `{"removed",
+"bytes_freed"}`, where `removed` is null when there was no cache; the next
+run then refetches (`clean --all` is the same call, since the cache is this
+skill's only state). Downloads over 200 MB are refused
 (`--max-bytes` raises the cap), and a response without PDF magic bytes, such
 as a paywall's HTML page, is refused and left uncached.
 

@@ -3,12 +3,12 @@ shim one binary. The command surface calls nothing else in this package."""
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from btm_corekit import write_atomic
 from btm_setup_env.catalog import qemu_steps
 from btm_setup_env.model import (
     CondaPlatform,
@@ -57,10 +57,11 @@ def write_activation(plan: Plan) -> None:
         (layout.activate_sh, render_sh(plan.env, plan.host)),
         (layout.activate_ps1, render_ps1(plan.env, plan.host)),
     ):
-        partial = path.with_name(path.name + ".partial")
-        partial.write_text(text)
-        partial.chmod(0o755)
-        os.replace(partial, path)
+        write_atomic(path, text)
+        # write_atomic carries over the mode of a destination that already
+        # exists; a first write lands private, so the executable bit is set
+        # here rather than assumed.
+        path.chmod(0o755)
 
 
 def verify(plan: Plan) -> list[ProbeResult]:

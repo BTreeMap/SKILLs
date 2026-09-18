@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from btm_corekit import Diagnostic
+
 MAX_FILE_SIZE = 500_000  # bytes; split larger prose files first
 
 
@@ -57,9 +59,13 @@ Admission = Plan | Refusal
 
 @dataclass(frozen=True, slots=True)
 class Verdict:
-    """Validation outcome: independent checks concatenate their findings."""
+    """Validation outcome: independent checks concatenate their findings.
 
-    errors: tuple[str, ...] = ()
+    An error carries the check that raised it, so a rejection locates every
+    fix; a warning is advisory and travels as text.
+    """
+
+    errors: tuple[Diagnostic, ...] = ()
     warnings: tuple[str, ...] = ()
 
     @property

@@ -189,8 +189,9 @@ def build_parser() -> argparse.ArgumentParser:
     add_slot(init, FRAMING, '{"question": ..., "focus": ...}')
     init.add_argument(
         "--mode",
+        type=Mode,
         choices=MODES,
-        default="full",
+        default=Mode.FULL,
         help="lite demotes draft blockers to advisories",
     )
     note = commands.add_parser(

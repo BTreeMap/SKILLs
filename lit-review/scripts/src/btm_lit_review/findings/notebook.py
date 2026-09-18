@@ -462,10 +462,9 @@ def expand_notes(
     """Expand one note batch into records, collecting every problem."""
     admission = _Admission(papers, log_count, pad, existing)
     admission.known_keys(batch, NoteBatch)
-    note = admission.decode(NoteBatch, batch)
-    if note is not None:
-        admission.take_findings(note.findings)
-        admission.take_gaps(note.gaps)
+    note = admission.families(batch, NoteBatch, SCHEMA)
+    admission.take_findings(note.findings)
+    admission.take_gaps(note.gaps)
     if not admission.records and admission.clean:
         admission.fail("$", "add at least one entry: the batch records nothing")
     return NoteResult(

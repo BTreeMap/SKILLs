@@ -14,6 +14,7 @@ from btm_corekit import (
     keep_table,
     prefixed_number,
     runs,
+    strip_code,
     strip_tags,
 )
 
@@ -47,6 +48,26 @@ def test_bracketed_is_linear_on_nested_openers():
     started = time.perf_counter()
     assert list(bracketed(text)) == [""]
     assert time.perf_counter() - started < 0.5
+
+
+def test_strip_code_keeps_every_offset_and_line_and_is_idempotent():
+    text = "see [1]\n```\nnot [2] a cite\n```\nand `[3]` too\n"
+    blanked = strip_code(text)
+    assert len(blanked) == len(text)
+    assert blanked.count("\n") == text.count("\n")
+    assert strip_code(blanked) == blanked
+
+
+def test_strip_code_hides_a_marker_quoted_inside_code():
+    text = "cite [1] but not ```\n[2]\n``` nor `[3]`"
+    assert list(bracketed(strip_code(text))) == ["1"]
+
+
+def test_strip_code_blanks_an_unterminated_fence_to_the_end():
+    text = "prose [1]\n```\n[2] forever"
+    blanked = strip_code(text)
+    assert list(bracketed(blanked)) == ["1"]
+    assert len(blanked) == len(text)
 
 
 def test_strip_tags_drops_closed_spans_and_keeps_an_unclosed_opener():

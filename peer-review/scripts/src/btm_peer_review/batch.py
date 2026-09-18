@@ -281,12 +281,11 @@ def expand_batch(
 ) -> NoteResult:
     admission = _Admission(ledger, context, mint, pad)
     admission.known_keys(batch, NoteBatch)
-    note = admission.decode(NoteBatch, batch)
-    if note is not None:
-        admission.take_claims(note.claims)
-        admission.take_objections(note.objections)
-        admission.take_walks(note.walks)
-        admission.take_withdraws(note.withdraws)
+    note = admission.families(batch, NoteBatch, SCHEMA)
+    admission.take_claims(note.claims)
+    admission.take_objections(note.objections)
+    admission.take_walks(note.walks)
+    admission.take_withdraws(note.withdraws)
     if admission.clean and not admission.events:
         admission.fail("$", "add at least one entry: the batch records nothing")
     result = NoteResult(

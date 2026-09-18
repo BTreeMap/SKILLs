@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import urllib.parse
 from collections.abc import Callable
-from functools import cache
 
 import httpx
 import trafilatura
@@ -16,7 +15,7 @@ from btm_corekit import (
     UpstreamError,
     Work,
     arxiv,
-    build_client,
+    client_for,
     crossref,
     get_bytes,
     json_body,
@@ -38,9 +37,11 @@ from btm_search_web.records import Result, trimmed
 from btm_search_web.upstream import InstantAnswer, WikiSearch, WikiSummary
 
 
-@cache
 def client() -> httpx.Client:
-    return build_client("search-web", read_timeout=TIMEOUT_SECONDS)
+    """Every request this skill owns goes through the kernel's client for it,
+    memoized there, so the identity chain and the timeouts are the same on
+    every call a process makes."""
+    return client_for("search-web", read_timeout=TIMEOUT_SECONDS)
 
 
 def web(query: str, limit: int) -> list[Result]:
@@ -49,6 +50,10 @@ def web(query: str, limit: int) -> list[Result]:
     The library falls back through its backends, so one rate-limited engine
     does not end the search. None of them is an official API: prefer the
     harness's own search tool wherever one exists.
+
+    This is the one path that does not use `client`: DDGS owns its transport,
+    so the shared identity chain, the shared timeouts, and the byte cap do
+    not reach it. Replacing it would mean maintaining the scrape here.
     """
     try:
         rows = DDGS().text(query, max_results=limit)

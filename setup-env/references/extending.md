@@ -70,13 +70,13 @@ On at least one linux host, ideally both architectures:
 
 - `btm-setup-env design <tag>`: steps and env look right, twice for
   determinism.
-- `btm-setup-env provision <tag>`: exit 0, probes ok; re-run completes in
-  under a second changing nothing.
+- `btm-setup-env provision <tag>`: the record's `ok` is true and every probe
+  passes; re-run completes in under a second changing nothing.
 - The falsifier from `SKILL.md`: an `env -i` shell sourcing activate.sh
   compiles and runs a hello program end to end (link steps included; a
   compiler that cannot link passes --version probes and still fails users).
 - `btm-setup-env provision` with the tag removed: the conda prefix reshapes
   to the smaller set.
-- `btm-setup-env destroy`, then a fresh provision from nothing.
+- `btm-setup-env clean`, then a fresh provision from nothing.
 
 Record in `targets` what was validated per platform; claim nothing untested.

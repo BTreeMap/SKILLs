@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ssl
 from collections.abc import Callable, Mapping
+from functools import cache
 from pathlib import Path
 
 import certifi
@@ -65,6 +66,17 @@ def build_client(
         headers={"User-Agent": user_agent(skill)},
         transport=transport,
     )
+
+
+@cache
+def client_for(
+    skill: str, *, read_timeout: float | None = CONNECT_TIMEOUT
+) -> httpx.Client:
+    """The process's client for one skill, built once. A one-shot command
+    opens at most a handful of hosts, so a single pooled client per
+    (skill, read_timeout) keeps the connection, the identity chain, and the
+    timeouts identical across every call the command makes."""
+    return build_client(skill, read_timeout=read_timeout)
 
 
 def stream(  # noqa: PLR0913 - the request, the sink, and the limit are all flat

@@ -7,14 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from btm_caveman.model import Refusal
 from btm_caveman.store import (
     backup_base,
     load_slot,
+    read_meta,
     read_utf8,
     slot_for,
 )
-from btm_corekit import write_atomic
+from btm_corekit import CommandError, write_atomic
 
 SLOT_NAME_LIMIT = 81  # slug(64) + "-" + hex(16)
 
@@ -23,6 +23,16 @@ SLOT_NAME_LIMIT = 81  # slug(64) + "-" + hex(16)
 def isolated_state(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
+
+
+def planted(target: Path, meta: str | None) -> Path:
+    """A slot holding a backup, and the meta.json text given (none if None)."""
+    slot = slot_for(target.resolve())
+    slot.directory.mkdir(parents=True)
+    slot.backup_path.write_text("body", encoding="utf-8")
+    if meta is not None:
+        slot.meta_path.write_text(meta, encoding="utf-8")
+    return target.resolve()
 
 
 class TestSlotDerivation:
@@ -44,35 +54,35 @@ class TestSlotDerivation:
         assert len(name.encode()) <= SLOT_NAME_LIMIT
 
     def test_the_backup_root_lives_under_the_library_namespace(self):
-        assert backup_base().parts[-3:] == ("btm-skills", "caveman", "backups")
+        assert backup_base().parts[-3:] == ("btm-skills", "caveman", "sessions")
+
+
+class TestMeta:
+    def test_an_unprepared_slot_records_nothing(self, tmp_path):
+        assert read_meta(slot_for(tmp_path / "notes.md")) is None
+
+    def test_a_malformed_record_rejects_naming_the_file(self, tmp_path):
+        """meta.json is the identity proof, so an unreadable one is a refusal,
+        never a slot treated as anonymous."""
+        target = planted(tmp_path / "notes.md", "{not json")
+        with pytest.raises(CommandError, match=r"unreadable .*meta\.json"):
+            read_meta(slot_for(target))
 
 
 class TestLoadSlot:
     def test_a_missing_backup_refuses(self, tmp_path):
-        result = load_slot(tmp_path / "absent.md")
-        assert isinstance(result, Refusal)
-        assert "run prepare first" in result.reason
+        with pytest.raises(CommandError, match="run prepare first"):
+            load_slot(tmp_path / "absent.md")
 
     def test_a_backup_without_metadata_refuses(self, tmp_path):
-        target = tmp_path / "notes.md"
-        target.write_text("body", encoding="utf-8")
-        slot = slot_for(target.resolve())
-        slot.directory.mkdir(parents=True)
-        slot.backup_path.write_text("body", encoding="utf-8")
-        result = load_slot(target.resolve())
-        assert isinstance(result, Refusal)
-        assert "metadata missing or unreadable" in result.reason
+        target = planted(tmp_path / "notes.md", None)
+        with pytest.raises(CommandError, match="metadata missing"):
+            load_slot(target)
 
     def test_a_slot_recording_another_file_refuses(self, tmp_path):
-        target = tmp_path / "notes.md"
-        target.write_text("body", encoding="utf-8")
-        slot = slot_for(target.resolve())
-        slot.directory.mkdir(parents=True)
-        slot.backup_path.write_text("body", encoding="utf-8")
-        slot.meta_path.write_text('{"source": "/elsewhere/other.md"}', encoding="utf-8")
-        result = load_slot(target.resolve())
-        assert isinstance(result, Refusal)
-        assert "identity mismatch" in result.reason
+        target = planted(tmp_path / "notes.md", '{"source": "/elsewhere/other.md"}')
+        with pytest.raises(CommandError, match="identity mismatch"):
+            load_slot(target)
 
 
 class TestFileIO:
@@ -87,7 +97,8 @@ class TestFileIO:
         write_atomic(path, "text")
         assert [p.name for p in tmp_path.iterdir()] == ["a.md"]
 
-    def test_undecodable_bytes_read_as_none(self, tmp_path):
+    def test_undecodable_bytes_reject(self, tmp_path):
         path = tmp_path / "bin"
         path.write_bytes(b"\xff\xfe\x00")
-        assert read_utf8(path) is None
+        with pytest.raises(CommandError, match="UTF-8"):
+            read_utf8(path)

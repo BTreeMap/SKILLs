@@ -71,6 +71,31 @@ def bracketed(text: str) -> Iterator[str]:
         position = end + 1
 
 
+def blanked(span: str) -> str:
+    """The span as spaces, its newlines kept: same length, same line count.
+    `str.split` and `str.join` do the work in C, never a per-character loop."""
+    return "\n".join(" " * len(line) for line in span.split("\n"))
+
+
+def strip_code(text: str) -> str:
+    """Fenced (```...```) and inline (`...`) spans blanked, so a marker quoted
+    inside code never counts as a citation while every offset, length, and
+    line number of the surrounding prose survives. An unterminated fence
+    blanks to the end. One pass over `str.find`, O(n), and idempotent: the
+    blanking leaves no backtick for a second pass to find."""
+    pieces: list[str] = []
+    position = 0
+    while (start := text.find("`", position)) != -1:
+        mark = "```" if text.startswith("```", start) else "`"
+        end = text.find(mark, start + len(mark))
+        stop = len(text) if end == -1 else end + len(mark)
+        pieces.append(text[position:start])
+        pieces.append(blanked(text[start:stop]))
+        position = stop
+    pieces.append(text[position:])
+    return "".join(pieces)
+
+
 def strip_tags(text: str, fill: str = "") -> str:
     """Replace `<...>` spans with `fill`; an unclosed `<` stays as text."""
     pieces: list[str] = []

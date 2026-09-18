@@ -41,6 +41,19 @@ def bounded(message: str) -> str:
     )
 
 
+def at_least_one(raw: str) -> int:
+    """An argparse type for a count of things to fetch or show: below 1 asks
+    for nothing, refused where it is written rather than floored into a call
+    that ran and returned nothing."""
+    try:
+        value = int(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{raw!r} is not a whole number") from None
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"{value} asks for nothing; pass 1 or more")
+    return value
+
+
 class Parser(argparse.ArgumentParser):
     """argv, decoded like every other untrusted input. Stock argparse exits 2
     on a malformed line, but here 2 means retry-worthy; raising instead

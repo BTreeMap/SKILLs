@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import btm_search_web
 from btm_corekit import (
@@ -12,6 +12,7 @@ from btm_corekit import (
     Parser,
     Required,
     add_slot,
+    at_least_one,
     dump,
     emit,
     run_cli,
@@ -31,8 +32,17 @@ from btm_search_web.records import Result
 QUERY = Required("query")
 
 
-def answered(key: str, verb: str, query: str, find: Callable[[], list[Result]]) -> int:
-    """Emit a verb's rows, reusing the cache when this query already ran."""
+def answered(
+    key: str,
+    verb: str,
+    query: str,
+    find: Callable[[], list[Result]],
+    limit: int | None = None,
+) -> int:
+    """Emit a verb's rows, reusing the cache when this query already ran.
+
+    `limit` is the number actually asked of the upstream, so a clamped run
+    reports what it ran rather than what was typed."""
     rows = remembered(key)
     if rows is None:
         rows = find()
@@ -45,6 +55,8 @@ def answered(key: str, verb: str, query: str, find: Callable[[], list[Result]]) 
         "results": [dump(row) for row in rows],
         "count": len(rows),
     }
+    if limit is not None:
+        document["limit"] = limit
     if not rows:
         document["next"] = "widen the query, or try another verb"
     emit(document)
@@ -52,13 +64,17 @@ def answered(key: str, verb: str, query: str, find: Callable[[], list[Result]]) 
 
 
 def capped(limit: int) -> int:
-    return max(1, min(limit, MAX_RESULTS))
+    """A silent clamp is a lie about what ran, so the clamp says so."""
+    if limit <= MAX_RESULTS:
+        return limit
+    signal(f"--limit {limit} capped to {MAX_RESULTS}")
+    return MAX_RESULTS
 
 
 def cmd_web(args: argparse.Namespace) -> int:
     limit, asked = capped(args.limit), text(QUERY, args)
     return answered(
-        f"web:{limit}:{asked}", "web", asked, lambda: sources.web(asked, limit)
+        f"web:{limit}:{asked}", "web", asked, lambda: sources.web(asked, limit), limit
     )
 
 
@@ -72,7 +88,11 @@ def cmd_instant(args: argparse.Namespace) -> int:
 def cmd_wiki(args: argparse.Namespace) -> int:
     limit, asked = capped(args.limit), text(QUERY, args)
     return answered(
-        f"wiki:{limit}:{asked}", "wiki", asked, lambda: sources.wiki(asked, limit)
+        f"wiki:{limit}:{asked}",
+        "wiki",
+        asked,
+        lambda: sources.wiki(asked, limit),
+        limit,
     )
 
 
@@ -84,6 +104,7 @@ def cmd_scholar(args: argparse.Namespace) -> int:
         f"scholar {source}",
         asked,
         lambda: sources.scholar(asked, limit, source),
+        limit,
     )
 
 
@@ -112,7 +133,12 @@ def cmd_clean(args: argparse.Namespace) -> int:
 def add_query(parser: argparse.ArgumentParser, limited: bool = True) -> None:
     add_slot(parser, QUERY, "the search terms")
     if limited:
-        parser.add_argument("--limit", type=int, default=DEFAULT_RESULTS)
+        parser.add_argument(
+            "--limit",
+            type=at_least_one,
+            default=DEFAULT_RESULTS,
+            help=f"rows to ask for, 1 to {MAX_RESULTS} (default {DEFAULT_RESULTS})",
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -153,5 +179,5 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     return run_cli(build_parser(), argv)

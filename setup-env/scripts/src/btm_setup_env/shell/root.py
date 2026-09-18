@@ -19,6 +19,7 @@ from btm_corekit import (
     Model,
     dump,
     parse_model,
+    write_atomic,
 )
 from btm_setup_env.model import (
     OS,
@@ -68,10 +69,10 @@ class Ctx:
         self.manifest = self.manifest.with_(**changes)
 
     def save_manifest(self) -> None:
-        path = self.layout.manifest
-        partial = path.with_name(path.name + ".partial")
-        partial.write_text(json.dumps(dump(self.manifest), indent=2, sort_keys=True))
-        os.replace(partial, path)
+        write_atomic(
+            self.layout.manifest,
+            json.dumps(dump(self.manifest), indent=2, sort_keys=True),
+        )
 
 
 @dataclass(frozen=True, slots=True)

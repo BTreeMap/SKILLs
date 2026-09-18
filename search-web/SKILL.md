@@ -67,6 +67,10 @@ reads it from a file, `--query:stdin` reads the pipe, and the pipe fills it
 when no flag claims it. An empty query is a rejection. Put a long or
 quote-heavy query in a file.
 
+`--limit` takes 1 or more; below that is a rejection, and above 50 is
+clamped to 50 with a `signal:` line, so the record's `limit` is what the
+search actually asked for.
+
 Results emit as one JSON document on stdout; `signal:` lines on stderr are
 advisory. Exit codes: 0 done, 1 fix the input and resend, 2 upstream failed
 and a retry may clear it. A repeated query is answered from a cache and says

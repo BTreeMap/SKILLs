@@ -30,7 +30,7 @@ from btm_lit_review.constants import (
 from btm_lit_review.corpus.paper import Paper, normalize_title
 from btm_lit_review.http import client
 from btm_lit_review.session import load_papers, open_session
-from btm_lit_review.slots import KEYS
+from btm_lit_review.slots import KEYS, key_list
 
 
 def verify_one(paper: Paper) -> dict[str, JSON]:
@@ -81,7 +81,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
     keys = text(KEYS, args)
-    wanted = set(keys.split(",")) if keys else None
+    wanted = set(key_list(keys)) if keys else None
     included = [
         paper
         for key, paper in papers.items()

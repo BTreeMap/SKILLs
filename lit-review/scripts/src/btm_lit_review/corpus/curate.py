@@ -13,6 +13,7 @@ from pydantic import model_validator
 from btm_corekit import (
     JSON,
     MATCH,
+    Admission,
     CommandError,
     Diagnostic,
     Item,
@@ -24,13 +25,12 @@ from btm_corekit import (
     content,
     digest,
     emit,
+    gated,
     now_iso,
-    parse_model,
-    read_batch,
     read_jsonl,
     refuse,
-    rejection,
     signal,
+    suggest,
     text,
 )
 from btm_lit_review.constants import (
@@ -51,7 +51,7 @@ from btm_lit_review.session import (
     require_criteria,
     save_papers,
 )
-from btm_lit_review.slots import DECISIONS, KEYS, RULE
+from btm_lit_review.slots import DECISIONS, KEYS, RULE, key_list
 
 
 def paper_field(paper: Paper, on: str) -> str:
@@ -142,51 +142,74 @@ class Decision(Model):
         return self
 
 
-def parse_decision(
-    key: str, decision: Any, papers: Mapping[str, Paper]
-) -> dict[str, Any]:
+DECISION_SCHEMA = '{"status": "...", "reason": "...", "read_level": "..."}'
+
+
+def decision_updates(decision: Decision) -> dict[str, Any]:
     """One screening decision as the field updates `with_` applies.
 
     Only the keys the caller sent come back, so an omitted field keeps its
     value where a defaulted one would overwrite it.
     """
-    if key not in papers:
-        raise CommandError(f"decision names unknown paper key {key!r}")
-    parsed = parse_model(Decision, decision, f"decision for {key}")
-    sent = parsed.model_fields_set
+    sent = decision.model_fields_set
     updates: dict[str, Any] = {}
     if "status" in sent:
-        updates["status"] = parsed.status
+        updates["status"] = decision.status
     if "reason" in sent:
-        updates["decision_reason"] = collapsed(parsed.reason)
+        updates["decision_reason"] = collapsed(decision.reason)
     if "read_level" in sent:
-        updates["read_level"] = parsed.read_level
+        updates["read_level"] = decision.read_level
     return updates
+
+
+class Screening(Admission):
+    """Every decision in the batch judged before any is applied: one verdict
+    names every unknown key and every malformed decision at once, and the
+    corpus moves only when nothing is left to fix."""
+
+    def __init__(self, papers: Mapping[str, Paper]) -> None:
+        super().__init__()
+        self.papers = papers
+        self.updates: dict[str, dict[str, Any]] = {}
+
+    def take(self, decisions: Mapping[str, Any]) -> None:
+        for key, decision in decisions.items():
+            if key not in self.papers:
+                near = suggest(key, self.papers)
+                self.fail(
+                    key,
+                    f"replace '{key}': no corpus paper has this key",
+                    f"did you mean: {', '.join(near)}"
+                    if near
+                    else "run show to list the corpus keys",
+                )
+                continue
+            parsed = self.decode(Decision, decision, key, DECISION_SCHEMA)
+            if parsed is not None:
+                self.updates[key] = decision_updates(parsed)
 
 
 def cmd_update(args: argparse.Namespace) -> int:
     session = open_session(args.session)
-    decisions = read_batch(DECISIONS, args)
-    if isinstance(decisions, Diagnostic):
-        emit(rejection([decisions], "papers", DECISIONS))
-        return 1
     papers = load_papers(session)
-    # Parse every decision before applying any, so a rejected batch leaves the
-    # corpus exactly as it was rather than half updated.
-    parsed = {
-        key: parse_decision(key, decision, papers)
-        for key, decision in decisions.items()
-    }
-    changed: Counter[str] = Counter()
-    for key, updates in parsed.items():
-        if (status := updates.get("status")) is not None:
-            changed[status] += 1
-        if (level := updates.get("read_level")) is not None:
-            changed[f"read:{level}"] += 1
-        papers[key] = papers[key].with_(**updates)
-    save_papers(session, papers)
-    emit({"applied": len(decisions), "changes": dict(changed)})
-    return 0
+
+    def expand(batch: dict[str, Any]) -> Screening:
+        screening = Screening(papers)
+        screening.take(batch)
+        return screening
+
+    def commit(screening: Screening) -> dict[str, JSON]:
+        changed: Counter[str] = Counter()
+        for key, updates in screening.updates.items():
+            if (status := updates.get("status")) is not None:
+                changed[status] += 1
+            if (level := updates.get("read_level")) is not None:
+                changed[f"read:{level}"] += 1
+            papers[key] = papers[key].with_(**updates)
+        save_papers(session, papers)
+        return {"applied": len(screening.updates), "changes": dict(changed)}
+
+    return gated(DECISIONS, args, "papers", expand, commit)
 
 
 SORTS = {
@@ -273,7 +296,7 @@ def cmd_show(args: argparse.Namespace) -> int:
     missing: list[str] = []
     keys, pattern_source = text(KEYS, args), text(MATCH, args)
     if keys:
-        wanted = [key.strip() for key in keys.split(",") if key.strip()]
+        wanted = key_list(keys)
         missing = [key for key in wanted if key not in papers]
         matching = [papers[key] for key in wanted if key in papers]
     else:

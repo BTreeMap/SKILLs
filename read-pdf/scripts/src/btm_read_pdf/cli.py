@@ -10,11 +10,11 @@ from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from btm_corekit import CommandError, Parser, dispatch
+from btm_corekit import CommandError, Parser, clean_cache, dispatch, emit, signal
 from btm_read_pdf.document import decrypt_if_needed, open_output
 from btm_read_pdf.pages import parse_page_specification
 from btm_read_pdf.render import write_extraction
-from btm_read_pdf.source import DEFAULT_MAX_BYTES, clean, materialize, parse_source
+from btm_read_pdf.source import DEFAULT_MAX_BYTES, materialize, parse_source
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,7 +64,9 @@ def build_parser() -> argparse.ArgumentParser:
 def clean_parser() -> argparse.ArgumentParser:
     parser = Parser(
         prog="btm-read-pdf clean",
-        description="Remove the download cache and report the bytes freed.",
+        description=(
+            "Remove the download cache, emitting {removed, bytes_freed} on stdout."
+        ),
     )
     parser.add_argument(
         "--all",
@@ -76,11 +78,7 @@ def clean_parser() -> argparse.ArgumentParser:
 
 def _clean(argv: Sequence[str]) -> int:
     clean_parser().parse_args(argv)
-    cleaned = clean()
-    if cleaned is None:
-        print("nothing to remove: 0 bytes freed")
-    else:
-        print(f"{cleaned.directory}: {cleaned.freed} bytes freed")
+    emit(clean_cache("read-pdf"))
     return 0
 
 
@@ -113,12 +111,12 @@ def _run(argv: Sequence[str] | None) -> int:
 
     if empty_pages:
         note = (
-            f"note: {empty_pages} of {len(page_numbers)} selected pages "
+            f"{empty_pages} of {len(page_numbers)} selected pages "
             "had no extractable text"
         )
         if empty_pages == len(page_numbers):
             note += "; likely a scanned/image-based PDF (this tool has no OCR)"
-        print(note, file=sys.stderr)
+        signal(note)
 
     return 0
 

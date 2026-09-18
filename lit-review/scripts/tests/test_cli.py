@@ -8,9 +8,10 @@ import sys
 
 import pytest
 
-from btm_corekit import Work
-from btm_lit_review.cli import main
-from btm_lit_review.constants import ReadLevel, Status
+from btm_corekit import CommandError, Work
+from btm_lit_review.cli import build_parser, main
+from btm_lit_review.constants import MAX_LIMIT, ReadLevel, Status
+from btm_lit_review.corpus.gather import capped
 from btm_lit_review.corpus.paper import paper_from
 from btm_lit_review.session import Session, load_papers, save_papers
 
@@ -113,6 +114,37 @@ class TestScreen:
         assert document["matched"] == 0
 
 
+class TestLimitBounds:
+    """A limit is the coverage claim a search makes, so neither end of it is
+    allowed to be silent: below 1 refuses, above the cap says it clamped."""
+
+    def parsed(self, limit):
+        return build_parser().parse_args(
+            ["search", "s", "--source", "openalex", "--limit", limit]
+        )
+
+    @pytest.mark.parametrize(
+        ("limit", "fix"), [("0", "asks for nothing"), ("-3", "asks for nothing")]
+    )
+    def test_a_limit_below_one_is_refused_where_it_is_written(self, limit, fix):
+        with pytest.raises(CommandError, match=fix):
+            self.parsed(limit)
+
+    def test_a_limit_that_is_no_number_is_refused(self):
+        with pytest.raises(CommandError, match="not a whole number"):
+            self.parsed("many")
+
+    def test_a_limit_above_the_cap_clamps_out_loud(self, capsys):
+        assert capped(MAX_LIMIT + 5) == MAX_LIMIT
+        assert (
+            f"--limit {MAX_LIMIT + 5} capped to {MAX_LIMIT}" in capsys.readouterr().err
+        )
+
+    def test_a_limit_under_the_cap_runs_as_asked_and_says_nothing(self, capsys):
+        assert capped(3) == 3
+        assert capsys.readouterr().err == ""
+
+
 class TestShow:
     def test_match_fields_and_tsv_compose(self, session, capsys):
         code = main(
@@ -131,9 +163,14 @@ class TestShow:
         assert code == 0
         assert out.splitlines() == ["key\tyear", "doi:10.1/a\t2024"]
 
-    def test_keys_select_exactly_and_name_the_missing(self, session, capsys):
+    @pytest.mark.parametrize(
+        "written", ["doi:10.1/b,doi:10.1/z", "doi:10.1/b, doi:10.1/z"]
+    )
+    def test_keys_select_exactly_and_name_the_missing(self, session, capsys, written):
+        """A space after the comma is how a human writes a list; both readers
+        of --keys strip it, so neither turns a real key into a missing one."""
         code, document, err = run(
-            ["show", str(session.root), "--keys", "doi:10.1/b,doi:10.1/z"], capsys
+            ["show", str(session.root), "--keys", written], capsys
         )
         assert code == 0
         assert [p["key"] for p in document["papers"]] == ["doi:10.1/b"]
@@ -191,6 +228,17 @@ class TestNoteAndBrief:
         assert second["gaps"][0]["state"] == "challenged"
         assert "challenged gaps: g1" in err
 
+    def test_an_unreadable_snapshot_is_recomputed_not_refused(self, session, capsys):
+        """The snapshot is wholly derived from the corpus, so losing it costs
+        one brief's drift, never the resume the agent came for."""
+        run(["brief", str(session.root)], capsys)
+        session.snapshot_path.write_text("{not json", encoding="utf-8")
+        code, document, err = run(["brief", str(session.root)], capsys)
+        assert code == 0
+        assert document["drift"] == {"since": None}
+        assert "snapshot.json unreadable; recomputing" in err
+        assert json.loads(session.snapshot_path.read_text())["id"] == "b1"
+
 
 class TestPadAndDraft:
     def test_extraction_jots_are_recognized_with_advisories(self, session, capsys):
@@ -245,20 +293,27 @@ class TestUpdate:
         assert papers["doi:10.1/a"].status is Status.INCLUDED
         assert papers["doi:10.1/c"].decision_reason == "off topic"
 
-    def test_a_batch_is_all_or_nothing(self, session, capsys):
-        """Every decision is parsed before any is applied, so a corpus is
-        never left half updated by a batch the agent has to resend whole."""
+    def test_a_batch_is_all_or_nothing_and_one_verdict_carries_every_fix(
+        self, session, capsys
+    ):
+        """Every decision is judged before any is applied, so a corpus is
+        never left half updated, and an unknown key never hides the malformed
+        decision beside it: both fixes ride the same resend."""
         before = load_papers(session)["doi:10.1/a"].status
-        code, _, err = self.applied(
+        code, document, _ = self.applied(
             session,
             capsys,
             {
                 "doi:10.1/a": {"status": "included"},
                 "doi:10.1/c": {"status": "excluded"},
+                "doi:10.1/absent": {"status": "included"},
             },
         )
         assert code == 1
-        assert "carries the reason" in err
+        assert document["unchanged"] == "papers"
+        rejected = {problem["where"]: problem for problem in document["rejected"]}
+        assert "carries the reason" in rejected["doi:10.1/c.reason"]["fix"]
+        assert "no corpus paper" in rejected["doi:10.1/absent"]["fix"]
         assert load_papers(session)["doi:10.1/a"].status is before
 
 

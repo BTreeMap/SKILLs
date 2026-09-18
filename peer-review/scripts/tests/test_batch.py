@@ -119,6 +119,20 @@ class TestObjections:
         assert ledger.objections == {}
         assert result.events == []
 
+    def test_a_malformed_family_never_hides_a_problem_in_its_siblings(self, admit):
+        """A container of the wrong shape once swallowed the whole batch, so
+        the unanchored quote beside it cost a second round trip."""
+        _, result = admit(
+            {
+                "claims": CLAIM,
+                "objections": [{**SEEDS, "anchors": ["not in the paper at all here"]}],
+            }
+        )
+        assert {p.where for p in result.problems} == {
+            "claims",
+            "objections[0].anchors[0]",
+        }
+
     def test_novelty_needs_a_linked_corpus_and_dated_prior(self, admit, corpus_dir):
         base = {
             "kw": ["not", "first"],

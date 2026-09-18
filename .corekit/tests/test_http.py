@@ -8,6 +8,7 @@ import pytest
 from btm_corekit import (
     CommandError,
     UpstreamError,
+    client_for,
     download,
     get_bytes,
     status_failure,
@@ -22,6 +23,15 @@ def served(handler) -> httpx.Client:
 
 def answering(**response) -> httpx.Client:
     return served(lambda request: httpx.Response(**response))
+
+
+class TestClientFor:
+    def test_one_skill_and_timeout_get_one_client(self):
+        """The pool is the point: a second build would open new connections."""
+        assert client_for("peer-review") is client_for("peer-review")
+        assert client_for("lit-review", read_timeout=5.0) is not client_for(
+            "lit-review"
+        )
 
 
 class TestStatusFailure:
