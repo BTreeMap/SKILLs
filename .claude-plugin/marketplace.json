@@ -19,6 +19,7 @@
         "./aesthete",
         "./author-skill",
         "./caveman",
+        "./draft-paper",
         "./fact-check",
         "./git-commit",
         "./humanize",

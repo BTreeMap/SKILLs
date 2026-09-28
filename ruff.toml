@@ -61,6 +61,7 @@ known-first-party = [
   "btm_caveman",
   "btm_read_pdf",
   "btm_setup_env",
+  "btm_draft_paper",
   "btm_repo_gate",
 ]
 

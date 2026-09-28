@@ -1,0 +1,17 @@
+[project]
+name = "btm-draft-paper"
+version = "1.0.0"
+description = "Trace verifier for paper-drafting runs"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["btm-corekit"]
+
+[project.scripts]
+btm-draft-paper = "btm_draft_paper.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }
