@@ -21,8 +21,8 @@ from btm_corekit import (
     Named,
     NonEmpty,
     Pool,
+    ascii_words,
     dump,
-    keywords_of,
     slugify,
 )
 from btm_ponder.ledger import apply
@@ -152,7 +152,7 @@ class _Expansion(Admission):
         }
 
     def lookup(self, ref: str, pool: Pool, where: str) -> str | None:
-        words = keywords_of(ref)
+        words = ascii_words(ref)
         alias = self.aliases.get(slugify(words)) if words else None
         return alias or self.resolve_ref(ref, pool, where)
 

@@ -6,7 +6,8 @@ import tempfile
 
 import pytest
 
-from btm_corekit import cache_dir, cache_slot, clean_cache
+from btm_corekit import cache_slot, clean_cache
+from btm_corekit.store.cache import cache_dir
 
 
 @pytest.fixture(autouse=True)

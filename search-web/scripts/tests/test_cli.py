@@ -10,7 +10,7 @@ from btm_search_web import cli, sources
 from btm_search_web.constants import MAX_RESULTS
 from btm_search_web.records import Result
 
-from btm_corekit import cache_dir
+from btm_corekit.store.cache import cache_dir
 
 
 @pytest.fixture(autouse=True)

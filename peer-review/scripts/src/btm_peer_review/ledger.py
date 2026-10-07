@@ -14,21 +14,15 @@ from pydantic import Field
 
 from btm_corekit import (
     MAX_EVENTS,
-    Model,
     NonEmpty,
     Positive,
     Slug,
+    Stamped,
     parse_model,
     require,
 )
 from btm_peer_review.constants import Bank, Kind, Severity
 from btm_peer_review.state import Claim, Evidenced, Ledger, Objection
-
-
-class Stamped(Model):
-    """The envelope the log adds on append; a staged batch carries none."""
-
-    t: str = ""
 
 
 class ClaimEvent(Stamped):

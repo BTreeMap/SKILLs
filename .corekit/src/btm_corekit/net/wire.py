@@ -30,7 +30,7 @@ import httpx
 from pydantic import ConfigDict, ValidationError, model_validator
 
 from btm_corekit.net.http import get_bytes
-from btm_corekit.records.models import Model, diagnostics
+from btm_corekit.records.models import Model, located
 from btm_corekit.report.errors import UpstreamError
 
 W = TypeVar("W", bound="Upstream")
@@ -58,9 +58,8 @@ def decode(model: type[W], body: Any, url: str) -> W:
     try:
         return model.model_validate(body)
     except ValidationError as err:
-        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
         raise UpstreamError(
-            f"{url} no longer answers as {model.__name__} parses it: {problems}"
+            f"{url} no longer answers as {model.__name__} parses it: {located(err)}"
         ) from err
 
 

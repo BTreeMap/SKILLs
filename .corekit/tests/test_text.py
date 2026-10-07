@@ -15,8 +15,8 @@ from btm_corekit import (
     prefixed_number,
     runs,
     strip_code,
-    strip_tags,
 )
+from btm_corekit.text import strip_tags
 
 
 def test_ascii_words_lowers_and_splits_on_anything_else():

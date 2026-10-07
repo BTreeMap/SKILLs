@@ -4,30 +4,21 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import (
+from btm_corekit import CommandError, mint, slugify
+from btm_corekit.store.identifiers import (
     Ambiguous,
-    CommandError,
     Exact,
     NoMatch,
     Recovered,
     band_signal,
     eliminate,
-    keywords_of,
-    mint,
     resolve,
-    slugify,
     suffix,
 )
+from btm_corekit.text import ascii_words
 
 
 class TestKeywords:
-    def test_splits_on_every_non_slug_run(self):
-        assert keywords_of("Rent  Length_v2") == ["rent", "length", "v2"]
-
-    def test_empty_text_yields_no_keywords(self):
-        assert keywords_of("") == []
-        assert keywords_of("---") == []
-
     def test_slugify_joins_and_lowercases(self):
         assert slugify(["Rent", "Length"]) == "rent-length"
 
@@ -143,6 +134,6 @@ class TestSharedIndex:
         """resolve and suggest need the same keyword sets; the pool builds
         them once and both read them."""
         ids = ["rent-length-1", "rent-width-2"]
-        index = {name: set(keywords_of(name)) for name in ids}
+        index = {name: set(ascii_words(name)) for name in ids}
         for ref in ("rent-length-1", "width", "rent", "zzz", ""):
             assert resolve(ref, ids) == resolve(ref, ids, index)

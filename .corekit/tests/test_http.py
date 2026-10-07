@@ -11,9 +11,9 @@ from btm_corekit import (
     client_for,
     download,
     get_bytes,
-    status_failure,
     stream,
 )
+from btm_corekit.net.http import status_failure
 
 
 def served(handler) -> httpx.Client:

@@ -424,7 +424,8 @@ def gated(
         emit(rejection([batch], store, slot))
         return 1
     result = expand(batch)
-    advise(result.advisories)
+    for advisory in result.advisories:
+        signal(advisory)
     if result.problems:
         emit(rejection(result.problems, store, slot))
         return 1
@@ -442,11 +443,6 @@ def rejection(
         "next": f"apply every fix above, then resend; "
         f"{flag(slot, Provenance.FILE)} makes the retry one edit",
     }
-
-
-def advise(lines: Iterable[str]) -> None:
-    for line in lines:
-        signal(line)
 
 
 # Invariant in its parser type, so the alias names the decoding parser: every

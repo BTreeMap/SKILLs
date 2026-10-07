@@ -11,6 +11,8 @@ import btm_peer_review
 from btm_corekit import (
     BATCH,
     JSON,
+    LIT_REVIEW_CORPUS,
+    LIT_REVIEW_SESSIONS,
     PAD_SCHEMA,
     REFS_SCHEMA,
     Model,
@@ -39,7 +41,6 @@ from btm_peer_review.constants import BANKS, LEVEL_BANKS, Level, Severity, Stand
 from btm_peer_review.ledger import replay
 from btm_peer_review.state import Ledger
 from btm_peer_review.store import (
-    LIT_STORE,
     STORE,
     Meta,
     corpus_of,
@@ -144,8 +145,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
 def cmd_link(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    corpus_dir = LIT_STORE.dir_of(args.corpus)
-    papers = corpus_dir / "papers.jsonl"
+    papers = LIT_REVIEW_SESSIONS.dir_of(args.corpus) / LIT_REVIEW_CORPUS
     corpus = load_corpus(papers)
     update_meta(directory, meta, corpus=str(papers))
     later = sum(1 for r in corpus.records if r.year is not None and r.year > meta.year)

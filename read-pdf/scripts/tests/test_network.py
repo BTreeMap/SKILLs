@@ -12,7 +12,8 @@ import tempfile
 
 import pytest
 
-from btm_corekit import CommandError, cache_dir
+from btm_corekit import CommandError
+from btm_corekit.store.cache import cache_dir
 from btm_read_pdf.cli import main
 from btm_read_pdf.source import RemotePdf, materialize, parse_source
 

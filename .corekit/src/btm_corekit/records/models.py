@@ -114,14 +114,19 @@ def diagnostics(error: ValidationError) -> list[Diagnostic]:
     ]
 
 
+def located(error: ValidationError) -> str:
+    """Every problem on one line, `where: fix; ...`: how a decode failure
+    reads on the command channel, whichever boundary raised it."""
+    return "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(error))
+
+
 def parse_with(adapter: TypeAdapter[T], data: Any, what: str) -> T:
     """`parse_model` for a shape no single class names: a discriminated union
     of wire variants, decoded through its adapter."""
     try:
         return adapter.validate_python(data)
     except ValidationError as err:
-        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
-        raise CommandError(f"{what}: {problems}") from err
+        raise CommandError(f"{what}: {located(err)}") from err
 
 
 def parse_model(model: type[M], data: Mapping[str, Any], what: str) -> M:
@@ -130,8 +135,7 @@ def parse_model(model: type[M], data: Mapping[str, Any], what: str) -> M:
     try:
         return model.model_validate(data)
     except ValidationError as err:
-        problems = "; ".join(f"{d.where}: {d.fix}" for d in diagnostics(err))
-        raise CommandError(f"{what}: {problems}") from err
+        raise CommandError(f"{what}: {located(err)}") from err
 
 
 def refuse(title: str, problems: Sequence[Diagnostic]) -> NoReturn:

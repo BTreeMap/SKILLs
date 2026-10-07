@@ -10,10 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from btm_corekit import (
+    LIT_REVIEW_CORPUS,
+    LIT_REVIEW_SESSIONS,
     CommandError,
     Model,
     NonEmpty,
-    SessionStore,
     dump,
     read_jsonl,
     write_atomic,
@@ -21,7 +22,7 @@ from btm_corekit import (
 from btm_lit_review.constants import Level
 from btm_lit_review.corpus.paper import Paper, paper_from_json
 
-STORE = SessionStore("lit-review", marker="protocol.json", hint="run init first")
+STORE = LIT_REVIEW_SESSIONS
 
 
 class Criteria(Model):
@@ -56,7 +57,7 @@ class Session:
 
     @property
     def papers_path(self) -> Path:
-        return self.root / "papers.jsonl"
+        return self.root / LIT_REVIEW_CORPUS
 
     @property
     def log_path(self) -> Path:

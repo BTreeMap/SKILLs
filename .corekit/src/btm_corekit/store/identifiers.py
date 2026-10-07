@@ -14,12 +14,8 @@ from btm_corekit.text import ascii_words
 KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
 
 
-def keywords_of(text: str) -> list[str]:
-    return ascii_words(text)
-
-
 def slugify(words: Iterable[str]) -> str:
-    cleaned = [part for word in words for part in keywords_of(str(word))]
+    cleaned = [part for word in words for part in ascii_words(str(word))]
     if not cleaned:
         raise CommandError("identifier keywords must contain letters or digits")
     return "-".join(cleaned)
@@ -66,14 +62,14 @@ def resolve(
     pool = list(ids)
     if ref in pool:
         return Exact(ref)
-    wanted = frozenset(keywords_of(ref))
+    wanted = frozenset(ascii_words(ref))
     if not wanted:
         return NoMatch()
     index = keywords or {}
     matches = [
         candidate
         for candidate in pool
-        if wanted <= (index.get(candidate) or frozenset(keywords_of(candidate)))
+        if wanted <= (index.get(candidate) or frozenset(ascii_words(candidate)))
     ]
     if not matches:
         return NoMatch()
@@ -96,7 +92,7 @@ def eliminate(
             raise CommandError(
                 f"'{ref}' is ambiguous across {kind}s: {', '.join(candidates)}"
             )
-        case NoMatch() if not keywords_of(ref):
+        case NoMatch() if not ascii_words(ref):
             raise CommandError(f"empty {kind} reference")
         case NoMatch():
             tail = f"; {hint}" if hint else ""

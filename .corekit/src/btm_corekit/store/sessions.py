@@ -148,3 +148,12 @@ class SessionStore:
                 "refusing to remove anything until they are moved aside"
             )
         return remove_tree(root)
+
+
+LIT_REVIEW_SESSIONS = SessionStore(
+    "lit-review", marker="protocol.json", hint="run lit-review init first"
+)
+LIT_REVIEW_CORPUS = "papers.jsonl"
+"""lit-review's session layout, the one cross-member contract: lit-review
+writes its corpus here and peer-review links to it, so neither may restate
+where it lives."""

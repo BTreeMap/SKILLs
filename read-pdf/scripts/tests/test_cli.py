@@ -8,7 +8,7 @@ import tempfile
 import pytest
 from pypdf import PdfWriter
 
-from btm_corekit import cache_dir
+from btm_corekit.store.cache import cache_dir
 from btm_read_pdf.cli import entrypoint, main
 
 

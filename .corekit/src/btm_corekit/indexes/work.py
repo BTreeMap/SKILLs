@@ -84,10 +84,10 @@ ISO_DATE_LENGTH = 10
 def collapsed(raw: str | None) -> str | None:
     """Collapsed text, or None where nothing survives. An index sends an
     empty string for a field it has no value for as readily as it omits it."""
-    return collapse_whitespace(raw).strip() or None if raw else None
+    return collapse_whitespace(raw) or None if raw else None
 
 
-def _doi(raw: Any) -> Any:
+def normalize_doi(raw: Any) -> Any:
     """An unparseable DOI is absence, not a rejection: indexes return junk in
     this field and the rest of the record is still worth keeping."""
     if not isinstance(raw, str):
@@ -98,7 +98,7 @@ def _doi(raw: Any) -> Any:
     return doi if DOI.match(doi) else None
 
 
-def _arxiv(raw: Any) -> Any:
+def normalize_arxiv_id(raw: Any) -> Any:
     """The arXiv id ending the text, either scheme, version and `.pdf` dropped,
     whatever precedes it ignored: the bare id, `arXiv:` prefix, abs or pdf URL,
     or the registered DOI. Unparseable is absence."""
@@ -183,14 +183,11 @@ def _iso_date(raw: Any) -> Any:
     return head if fits else None
 
 
-MaybeDoi = Annotated[Doi | None, BeforeValidator(_doi)]
-MaybeArxivId = Annotated[ArxivId | None, BeforeValidator(_arxiv)]
+MaybeDoi = Annotated[Doi | None, BeforeValidator(normalize_doi)]
+MaybeArxivId = Annotated[ArxivId | None, BeforeValidator(normalize_arxiv_id)]
 MaybeYear = Annotated[int | None, BeforeValidator(_year)]
 MaybeCount = Annotated[Count | None, BeforeValidator(_count)]
 MaybeIsoDate = Annotated[str | None, BeforeValidator(_iso_date)]
-
-normalize_doi = _doi
-normalize_arxiv_id = _arxiv
 
 
 class Work(Model):

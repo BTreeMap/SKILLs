@@ -7,7 +7,8 @@ import tempfile
 import httpx
 import pytest
 
-from btm_corekit import CommandError, UpstreamError, cache_dir
+from btm_corekit import CommandError, UpstreamError
+from btm_corekit.store.cache import cache_dir
 from btm_read_pdf.source import LocalPdf, RemotePdf, materialize, parse_source
 
 PDF_BYTES = b"%PDF-1.4 tiny"

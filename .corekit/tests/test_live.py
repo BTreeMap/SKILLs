@@ -151,7 +151,7 @@ class TestArxiv:
 
 class TestDoi:
     def test_a_live_handle_redirects(self, client):
-        assert doi.resolves(client, ALEXNET_DOI) == doi.RESOLVED
+        assert doi.resolves(client, ALEXNET_DOI) == 302  # redirected to the publisher
 
     def test_an_unknown_handle_does_not(self, client):
         assert doi.resolves(client, UNREGISTERED_DOI) == 404

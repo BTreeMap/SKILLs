@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, compile_match, jot, pad_entries, pad_ids, recall
-from btm_corekit.store.pad import MATCH_MAX
+from btm_corekit import CommandError, compile_match, pad_entries, pad_ids
+from btm_corekit.store.pad import MATCH_MAX, jot, recall
 
 
 class TestJot:

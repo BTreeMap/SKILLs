@@ -12,9 +12,6 @@ from btm_corekit import (
     BATCH,
     CommandError,
     Diagnostic,
-    FromFile,
-    FromStdin,
-    Inline,
     Model,
     NonEmpty,
     Optional,
@@ -24,16 +21,22 @@ from btm_corekit import (
     UpstreamError,
     add_slot,
     content,
-    read_batch,
-    read_source,
     rejection,
     run_cli,
-    source_of,
     wire_clean,
     wire_limit,
     wire_pad,
 )
-from btm_corekit.cli import ARGV_MESSAGE_MAX, bounded
+from btm_corekit.cli import (
+    ARGV_MESSAGE_MAX,
+    FromFile,
+    FromStdin,
+    Inline,
+    bounded,
+    read_batch,
+    read_source,
+    source_of,
+)
 
 DRAFT = Required("draft", inline=False)
 NOTE = Optional("note")

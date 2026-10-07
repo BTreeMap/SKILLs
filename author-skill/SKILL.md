@@ -307,9 +307,9 @@ Place each responsibility by the first row it matches.
 * Put logic shared across members once in the kernel `btm-corekit` under
   `.corekit/`, declared as `dependencies = ["btm-corekit"]` with source
   `btm-corekit = { workspace = true }`. Compose its gate mechanics
-  (`SessionStore`, `EventLog`, `Admission` with `Pool`, `read_batch` and
-  `rejection`, `wire_pad` and `wire_clean`) and add only the member's record
-  semantics; redefine no kernel symbol.
+  (`SessionStore`, `EventLog`, `Admission` with `Pool`, `gated` and
+  `rejection`, `wire_pad`, `wire_limit`, and `wire_clean`) and add only the
+  member's record semantics; redefine no kernel symbol.
 * Mark a network request's origin by the first defined of `BTM_USER_AGENT`
   (sent verbatim), `BTM_CONTACT`, and `skills@oss.joefang.org`, the latter
   two in the header `btm-skills/1.0 (<skill-name>; mailto:<contact>)`.

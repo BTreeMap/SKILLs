@@ -5,7 +5,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from btm_corekit import Upstream, UpstreamError, decode, json_body
+from btm_corekit import Upstream, UpstreamError, json_body
+from btm_corekit.net.wire import decode
 
 
 class Nested(Upstream):

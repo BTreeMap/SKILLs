@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from btm_corekit import request_identity, user_agent
+from btm_corekit.net.origin import request_identity, user_agent
 
 
 class TestRequestIdentity:

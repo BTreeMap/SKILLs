@@ -15,9 +15,6 @@ from btm_corekit.net.http import head_status
 
 HOST = "doi.org"
 
-RESOLVED = 302
-"""doi.org redirects a live handle to its publisher and 404s an unknown one."""
-
 
 def target(doi: str) -> str:
     """`quote` keeps a `#` or `?` inside a DOI part of the path rather than
@@ -26,5 +23,6 @@ def target(doi: str) -> str:
 
 
 def resolves(client: httpx.Client, doi: str) -> int:
-    """The status doi.org gives this handle, redirect unfollowed."""
+    """The status doi.org gives this handle, redirect unfollowed: a live
+    handle redirects to its publisher, an unknown one answers 404."""
     return head_status(client, target(doi))

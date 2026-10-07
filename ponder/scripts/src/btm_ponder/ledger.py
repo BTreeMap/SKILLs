@@ -14,9 +14,9 @@ from pydantic import Field, TypeAdapter
 from btm_corekit import (
     MAX_EVENTS,
     CommandError,
-    Model,
     NonEmpty,
     Slug,
+    Stamped,
     Trimmed,
     demand,
     parse_model,
@@ -43,12 +43,6 @@ from btm_ponder.state import (
 )
 
 Prose = Annotated[str, Trimmed]
-
-
-class Stamped(Model):
-    """The envelope the log adds on append; a staged batch carries none."""
-
-    t: str = ""
 
 
 class AddLeaf(Stamped):

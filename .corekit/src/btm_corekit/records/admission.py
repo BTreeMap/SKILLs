@@ -23,10 +23,10 @@ from btm_corekit.store.identifiers import (
     NoMatch,
     Recovered,
     band_signal,
-    keywords_of,
     resolve,
     slugify,
 )
+from btm_corekit.text import ascii_words
 
 Minter = Callable[[Iterable[str]], str]
 
@@ -77,7 +77,7 @@ def suggest(
     distance for keys with no keywords (DOIs, titles). `keywords` is a
     precomputed index; without one, each call is O(pool x words)."""
     ids = list(pool)
-    words = set(keywords_of(ref))
+    words = set(ascii_words(ref))
     index = keywords if keywords is not None else {}
     best = heapq.nsmallest(
         limit,
@@ -88,7 +88,7 @@ def suggest(
                     & (
                         index[candidate]
                         if candidate in index
-                        else set(keywords_of(candidate))
+                        else set(ascii_words(candidate))
                     )
                 ),
                 candidate,
@@ -116,7 +116,7 @@ class Pool:
         """Keyword sets per id, extended for ids added since the last call;
         amortized O(1) per id across a batch."""
         for candidate in self.ids[len(self._keywords) :]:
-            self._keywords[candidate] = set(keywords_of(candidate))
+            self._keywords[candidate] = set(ascii_words(candidate))
         return self._keywords
 
 
@@ -159,10 +159,12 @@ class Admission:
         container: type[M],
         hints: Mapping[str, str] | None = None,
     ) -> M:
-        """The container, always: each declared field is validated on its own,
-        so a family that is the wrong shape records its problems at its own
+        """The container, with each declared field validated on its own, so a
+        family that is the wrong shape records its problems at its own
         location and takes its default while every sibling family still
-        decodes and every sibling check still runs. `hints` carries each
+        decodes and every sibling check still runs. Total only for a container
+        with no cross-field validator: one would raise from the final
+        construction, so a batch container declares none. `hints` carries each
         family's schema fragment for problems pydantic states without one."""
         require(
             not any(info.is_required() for info in container.model_fields.values()),

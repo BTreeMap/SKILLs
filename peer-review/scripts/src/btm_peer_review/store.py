@@ -23,9 +23,6 @@ from btm_corekit import (
 from btm_peer_review.constants import Level
 
 STORE = SessionStore("peer-review", marker="session.json", hint="run init first")
-LIT_STORE = SessionStore(
-    "lit-review", marker="protocol.json", hint="run lit-review init first"
-)
 LEDGER = "ledger.jsonl"
 PAPER = "paper.txt"
 

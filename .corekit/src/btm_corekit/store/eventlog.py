@@ -9,11 +9,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from btm_corekit.records.models import Model
 from btm_corekit.report.errors import CommandError
 from btm_corekit.store.clock import now_iso
 from btm_corekit.store.fsio import append_jsonl, count_lines, read_jsonl
 
 MAX_EVENTS = 2000  # runaway backstop; a real session stays well under it
+
+
+class Stamped(Model):
+    """What `append` adds to every event, for a member's event records to
+    inherit: the stamp is the log's field, so its name and type live here.
+    A staged batch carries none, hence the empty default."""
+
+    t: str = ""
 
 
 @dataclass(frozen=True, slots=True)

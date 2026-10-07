@@ -31,10 +31,10 @@ from btm_corekit import (
     Model,
     NonEmpty,
     append_jsonl,
+    ascii_words,
     count_lines,
     dump,
     gated,
-    keywords_of,
     normalize_arxiv_id,
     normalize_doi,
     now_iso,
@@ -320,7 +320,7 @@ class _Admission(Admission):
     def key_words(self) -> dict[str, set[str]]:
         """Keyword sets per corpus key, built on the first failed token."""
         if not self._key_words:
-            self._key_words = {key: set(keywords_of(key)) for key in self.papers}
+            self._key_words = {key: set(ascii_words(key)) for key in self.papers}
         return self._key_words
 
     def resolve_key(self, token: str, where: str) -> str | None:
