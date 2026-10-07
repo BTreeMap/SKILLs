@@ -12,7 +12,7 @@ license: MIT
 compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout. Linux
   and macos on x86_64/arm64 are first class; windows x86_64 is best effort
-  (haskell, bash, c, cpp unavailable there). Roughly 1-6 GB under the
+  (haskell, bash, c, cpp unavailable there). Roughly 1-7 GB under the
   environment root, depending on targets.
 metadata:
   argument-hint: "[provision|design|status|shim|clean|list] [tags...]"
@@ -70,7 +70,7 @@ below abbreviate the invocation above as `btm-setup-env`. `--project`
 defaults to the nearest ancestor of the working directory containing
 `.git`. The environment root is derived from the project path, under the
 system temp dir; override the base with `DENV_HOME`, or the exact root with
-`DENV_ROOT` or `--root`. A root under the temp dir is ephemeral: after a
+`--root` or `DENV_ROOT`, the flag winning. A root under the temp dir is ephemeral: after a
 reboot, re-run provision.
 
 <commands for="examples">
