@@ -13,7 +13,7 @@ Applies on top of the message rules in SKILL.md.
   <rule>Separate the subject line and the body with exactly one blank line; git tooling requires it.</rule>
   <rule>Wrap all body lines at 72 characters.</rule>
   <rule>Explain exactly what changed and the rationale behind the chosen solution; leave the how to the diff and never restate it.</rule>
-  <rule>Phrase the body token-economically, in caveman style: dense syntax, no conversational filler.</rule>
+  <rule>Write the body in the `/caveman` register: terse, why over what, no filler.</rule>
 </directives>
 
 <directives for="footer">

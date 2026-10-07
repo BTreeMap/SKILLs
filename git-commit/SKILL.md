@@ -27,7 +27,9 @@ A level gates the history scanned and the text produced. Default: **full**.
 Switch per invocation: `/git-commit lite|full|ultra`. Read ONLY the active
 level's reference files: none for **lite**, `full` for **full**, `full` then
 `ultra` for **ultra**. The message rules and output contract below apply at
-every level.
+every level. A review judges a supplied message against the active level's
+rules, reports each violation with the rule it breaks, proposes the
+corrected message, and writes nothing.
 
 | Level | Scans | Produces |
 | --- | --- | --- |
@@ -68,7 +70,7 @@ verb or asked to push.
 
 <directives for="output">
   <rule>Output strictly the raw commit text or the executable `git commit -m` command, with no conversational filler, preamble, formatting acknowledgment, or concluding remark.</rule>
-  <rule>Beyond that, add only the push verb's one-line pushed range, and at ultra a split proposal before the draft and a synonym note after it.</rule>
+  <rule>Beyond that, add only the push verb's one-line pushed range, a review's violations, and at ultra a split proposal before the draft and a synonym note after it.</rule>
 </directives>
 
 ## Lite
