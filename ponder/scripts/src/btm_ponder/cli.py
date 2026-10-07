@@ -12,6 +12,7 @@ from btm_corekit import (
     JSON,
     PAD_SCHEMA,
     REFS_SCHEMA,
+    EventLog,
     Model,
     NonEmpty,
     Parser,
@@ -35,13 +36,10 @@ from btm_ponder.batch import BATCH_KEYS, SCHEMA, NoteResult, expand_batch
 from btm_ponder.ledger import replay
 from btm_ponder.state import MODES, Mode, Open
 from btm_ponder.store import (
+    LEDGER,
     STORE,
     SessionMeta,
-    event_log,
     orient,
-    read_events,
-    read_meta,
-    write_meta,
 )
 from btm_ponder.views import (
     LITE_DEMOTED,
@@ -75,21 +73,23 @@ def cmd_init(args: argparse.Namespace) -> int:
         mode=args.mode,
         created=now_iso(),
     )
-    write_meta(made.directory, meta)
+    STORE.write_meta(made.directory, meta)
+    EventLog(made.directory / LEDGER).touch()
     emit({"session": made.name, "dir": str(made.directory), **dump(meta)})
     return 0
 
 
 def cmd_note(args: argparse.Namespace) -> int:
     directory = STORE.directory(args.session)
-    events = read_events(directory)
+    log = EventLog(directory / LEDGER)
+    events = log.read()
     ledger = replay(events)
 
     def expand(batch: dict[str, Any]) -> NoteResult:
         return expand_batch(ledger, batch, mint, pad_ids(directory))
 
     def commit(result: NoteResult) -> dict[str, Any]:
-        event_log(directory).append(result.events, held=len(events))
+        log.append(result.events, held=len(events))
         document: dict[str, JSON] = {
             "session": directory.name,
             "admitted": dict(Counter(event["e"] for event in result.events)),
@@ -119,9 +119,9 @@ def cmd_note(args: argparse.Namespace) -> int:
 
 def cmd_check(args: argparse.Namespace) -> int:
     directory = STORE.directory(args.session)
-    events = read_events(directory)
+    events = EventLog(directory / LEDGER).read()
     ledger = replay(events)
-    meta = read_meta(directory)
+    meta = STORE.read_meta(directory, SessionMeta)
     mode = meta.mode
     markers = {
         source_id: f"S{index}"

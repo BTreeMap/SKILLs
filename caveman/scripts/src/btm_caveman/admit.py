@@ -6,9 +6,9 @@ from pathlib import Path
 
 from btm_caveman.classify import assess
 from btm_caveman.markdown import split_frontmatter
-from btm_caveman.model import MAX_FILE_SIZE, Admission, FileKind, Plan, Refusal
+from btm_caveman.model import MAX_FILE_SIZE, Admitted, FileKind, Plan, Refusal
 from btm_caveman.sensitive import is_sensitive, name_reads_sensitive
-from btm_caveman.store import backup_base, read_utf8
+from btm_caveman.store import STORE, read_utf8
 
 # Guidance the agent receives alongside a non-prose assessment. Advisory:
 # the agent weighs it against user intent; the backup keeps either call safe.
@@ -24,7 +24,7 @@ NAME_GUIDANCE = (
 )
 
 
-def admit(path: Path) -> Admission:  # noqa: PLR0911
+def admit(path: Path) -> Admitted:  # noqa: PLR0911
     """Parse, don't validate: every refusal this file decides lives here, once;
     undecodable bytes reject inside `read_utf8`.
 
@@ -40,7 +40,7 @@ def admit(path: Path) -> Admission:  # noqa: PLR0911
             f"Refusing {path.name}: a sensitive filename (credentials, keys,"
             " secrets, or a known private path). Rename it if this is a false positive."
         )
-    if path.name.endswith(".original.md") or backup_base().resolve() in path.parents:
+    if path.name.endswith(".original.md") or STORE.root().resolve() in path.parents:
         return Refusal("Refusing to compress a backup file")
     if path.stat().st_size > MAX_FILE_SIZE:
         return Refusal(f"File exceeds {MAX_FILE_SIZE // 1000}KB; split it first")

@@ -9,12 +9,10 @@ directory and reports the bytes freed.
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from btm_corekit import (
     CommandError,
     cache_slot,
-    clean_cache,
     dump,
     parse_with,
     signal,
@@ -47,7 +45,3 @@ def remember(key: str, results: list[Result]) -> None:
     slot = cache_slot("search-web", key, ".json")
     slot.parent.mkdir(parents=True, exist_ok=True)
     write_atomic(slot, json.dumps([dump(row) for row in results], ensure_ascii=False))
-
-
-def clean() -> dict[str, Any]:
-    return clean_cache("search-web")

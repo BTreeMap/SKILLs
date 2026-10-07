@@ -12,6 +12,7 @@ from btm_corekit import (
     Parser,
     Required,
     add_slot,
+    clean_cache,
     dump,
     emit,
     run_cli,
@@ -20,7 +21,7 @@ from btm_corekit import (
     wire_limit,
 )
 from btm_search_web import sources
-from btm_search_web.cache import clean, remember, remembered
+from btm_search_web.cache import remember, remembered
 from btm_search_web.constants import (
     DEFAULT_RESULTS,
     MAX_RESULTS,
@@ -118,7 +119,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
-    emit(clean())
+    emit(clean_cache("search-web"))
     return 0
 
 

@@ -7,7 +7,7 @@ license = "MIT"
 dependencies = ["btm-corekit", "httpx>=0.28,<1", "pypdf>=6,<7"]
 
 [project.scripts]
-btm-read-pdf = "btm_read_pdf.cli:entrypoint"
+btm-read-pdf = "btm_read_pdf.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.6,<0.13.0"]

@@ -11,7 +11,6 @@ from btm_corekit import digit_run, keep_table, runs
 
 FENCE_CHARS = frozenset("`~")
 BULLET_CHARS = frozenset("-*+")
-SEPARATORS = frozenset("/\\")
 MAX_INDENT = 3  # CommonMark: four spaces starts indented code
 MAX_HEADING = 6
 MIN_FENCE = 3

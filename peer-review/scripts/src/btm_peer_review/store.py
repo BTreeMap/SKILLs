@@ -13,7 +13,6 @@ from btm_corekit import (
     CommandError,
     Count,
     Doi,
-    EventLog,
     Model,
     NonEmpty,
     SessionStore,
@@ -24,7 +23,7 @@ from btm_peer_review.constants import Level
 
 STORE = SessionStore("peer-review", marker="session.json", hint="run init first")
 LEDGER = "ledger.jsonl"
-PAPER = "paper.txt"
+PAPER_TEXT = "paper.txt"
 
 _DATE = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 
@@ -38,14 +37,6 @@ def _dated(value: str) -> str:
 Date = Annotated[str, AfterValidator(_dated)]
 """The version of the paper reviewed. One quantifier per class, so the
 backtracking engine stays linear."""
-
-
-def event_log(directory: Path) -> EventLog:
-    return EventLog(directory / LEDGER, STORE.hint)
-
-
-def paper_path(directory: Path) -> Path:
-    return directory / PAPER
 
 
 class Meta(Model):
@@ -62,22 +53,6 @@ class Meta(Model):
     def year(self) -> int:
         """The pattern has already proved the leading four digits."""
         return int(self.date[:4])
-
-
-def read_meta(directory: Path) -> Meta:
-    return STORE.read_meta(directory, Meta)
-
-
-def write_meta(directory: Path, meta: Meta) -> None:
-    STORE.write_meta(directory, meta)
-    event_log(directory).touch()
-
-
-def update_meta(directory: Path, meta: Meta, **changes: object) -> Meta:
-    """Edits go through the validators; `model_copy` would skip them."""
-    updated = meta.with_(**changes)
-    write_meta(directory, updated)
-    return updated
 
 
 class Record(Model):

@@ -49,7 +49,6 @@ def record_fetch(
     entry: dict[str, Any],
     fetched: list[Paper],
     total: int,
-    limit: int,
 ) -> None:
     """Shared tail of search and snowball: absorb, log, report."""
     log_id = f"s{count_lines(session.log_path) + 1}"
@@ -135,7 +134,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         "limit": limit,
         "criteria_hash": criteria_hash(protocol),
     }
-    record_fetch(session, entry, fetched, total, limit)
+    record_fetch(session, entry, fetched, total)
     return 0
 
 
@@ -197,5 +196,5 @@ def cmd_snowball(args: argparse.Namespace) -> int:
         "limit": limit,
         "criteria_hash": criteria_hash(protocol),
     }
-    record_fetch(session, entry, fetched, total, limit)
+    record_fetch(session, entry, fetched, total)
     return 0

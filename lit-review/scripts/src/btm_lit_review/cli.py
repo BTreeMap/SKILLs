@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from collections.abc import Sequence
 
 import btm_lit_review
@@ -188,7 +187,3 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     return run_cli(build_parser(), argv)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

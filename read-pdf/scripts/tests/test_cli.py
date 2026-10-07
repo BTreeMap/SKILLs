@@ -9,7 +9,7 @@ import pytest
 from pypdf import PdfWriter
 
 from btm_corekit.store.cache import cache_dir
-from btm_read_pdf.cli import entrypoint, main
+from btm_read_pdf.cli import main
 
 
 @pytest.fixture
@@ -125,14 +125,14 @@ class TestEntrypoint:
         """A missing path can never be fixed by retrying, so it belongs in the
         exit-1 column; this command used to answer 2 for every failure."""
         monkeypatch.setattr("sys.argv", ["btm-read-pdf", str(tmp_path / "absent.pdf")])
-        assert entrypoint() == 1
+        assert main() == 1
         assert "error: PDF file not found" in capsys.readouterr().err
 
     def test_a_malformed_argument_line_is_exit_one(self, monkeypatch, capsys):
         monkeypatch.setattr("sys.argv", ["btm-read-pdf", "--nope"])
-        assert entrypoint() == 1
+        assert main() == 1
         assert "error:" in capsys.readouterr().err
 
     def test_success_returns_zero(self, blank_pdf, monkeypatch):
         monkeypatch.setattr("sys.argv", ["btm-read-pdf", str(blank_pdf)])
-        assert entrypoint() == 0
+        assert main() == 0

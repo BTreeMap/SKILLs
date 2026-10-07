@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import model_validator
 
-from btm_corekit import Diagnostic, EventLog, Model, NonEmpty, SessionStore, refuse
+from btm_corekit import Diagnostic, Model, NonEmpty, SessionStore, refuse
 
 STORE = SessionStore("draft-paper", marker="run.json", hint="run init first")
 TRACE = "trace.jsonl"
@@ -107,7 +107,3 @@ class RunMeta(Model):
         """A claim's artifact, relative to the root pinned at init."""
         given = Path(path).expanduser()
         return given if given.is_absolute() else Path(self.artifacts) / given
-
-
-def trace_log(directory: Path) -> EventLog:
-    return EventLog(directory / TRACE, STORE.hint)

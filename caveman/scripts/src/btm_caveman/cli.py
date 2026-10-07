@@ -37,15 +37,8 @@ BODY = Required("body", inline=False)
 """apply's compressed body: free-form prose never travels in argv."""
 
 
-def send_signals(plan: Plan) -> None:
-    """Hand the heuristic evidence to the agent; advisory, never blocking."""
-    for note in plan.notes:
-        signal(note)
-    if plan.notes:
-        signal("signals advise; the user's request decides (restore undoes everything)")
-
-
 def warn_format(path: Path) -> None:
+    """The one advisory prepare and apply must both give, in the same words."""
     if path.suffix.lower() in NON_MARKDOWN_PROSE_EXTENSIONS:
         signal(
             f"checks assume Markdown; {path.suffix} headings and code"
@@ -83,7 +76,11 @@ def cmd_prepare(args: argparse.Namespace) -> int:
         slot.backup_path.unlink(missing_ok=True)
         raise CommandError("backup readback mismatch; aborting before any change")
     write_atomic(slot.body_path, plan.body)
-    send_signals(plan)
+    # The heuristic evidence, handed over as advice: it never blocks.
+    for note in plan.notes:
+        signal(note)
+    if plan.notes:
+        signal("signals advise; the user's request decides (restore undoes everything)")
     warn_format(plan.path)
     emit(
         {
@@ -196,8 +193,3 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     return run_cli(build_parser(), argv)
-
-
-def entrypoint() -> int:
-    """Console-script boundary."""
-    return main()

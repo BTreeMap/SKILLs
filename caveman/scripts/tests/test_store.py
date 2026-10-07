@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from btm_caveman.store import (
-    backup_base,
+    STORE,
     load_slot,
     read_meta,
     read_utf8,
@@ -54,7 +54,7 @@ class TestSlotDerivation:
         assert len(name.encode()) <= SLOT_NAME_LIMIT
 
     def test_the_backup_root_lives_under_the_library_namespace(self):
-        assert backup_base().parts[-3:] == ("btm-skills", "caveman", "sessions")
+        assert STORE.root().parts[-3:] == ("btm-skills", "caveman", "sessions")
 
 
 class TestMeta:

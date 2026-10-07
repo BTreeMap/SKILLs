@@ -136,8 +136,3 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise CommandError(str(err)) from err
 
     return dispatch(run)
-
-
-def entrypoint() -> int:
-    """Console-script boundary."""
-    return main()

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from btm_caveman.markdown import MAX_HEADING, MAX_INDENT, MAX_ORDERED_DIGITS
 from btm_caveman.model import Assessment, FileKind
 from btm_corekit import ASCII_WORD, digit_run, keep_table, runs
 
@@ -110,9 +111,6 @@ STATEMENT_ENDS = (";", "{", "}")
 ASSIGNED_OPENERS = frozenset("{[(\"'")
 PROSE_CODE_CHARS = frozenset("{};=`$<>\\")
 PROSE_CODE_PAIRS = ("()", "::", "->")
-MAX_INDENT = 3  # CommonMark: four spaces starts indented code
-MAX_HEADING = 6
-MAX_ORDERED_DIGITS = 9
 MIN_WORD = 2  # letters that make a word
 
 
@@ -209,12 +207,12 @@ def prose_marker_length(line: str) -> int:
     """Length of a Markdown block marker at the line start (up to three
     spaces, then `#..######`, one of `-*+>`, or `1.`/`1)`, then blank), or 0."""
     indent = len(line) - len(line.lstrip(" "))
-    if indent > 3:  # noqa: PLR2004 - CommonMark's indent limit
+    if indent > MAX_INDENT:
         return 0
     rest = line[indent:]
     if rest.startswith("#"):
         hashes = len(rest) - len(rest.lstrip("#"))
-        marker = hashes if 1 <= hashes <= 6 else 0  # noqa: PLR2004 - h1..h6
+        marker = hashes if 1 <= hashes <= MAX_HEADING else 0
     elif rest[:1] in "-*+>":
         marker = 1
     else:

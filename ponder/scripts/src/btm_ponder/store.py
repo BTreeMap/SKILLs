@@ -24,23 +24,6 @@ class SessionMeta(Model):
     created: str = ""
 
 
-def event_log(directory: Path) -> EventLog:
-    return EventLog(directory / LEDGER, STORE.hint)
-
-
-def read_events(directory: Path) -> list[dict[str, Any]]:
-    return event_log(directory).read()
-
-
-def read_meta(directory: Path) -> SessionMeta:
-    return STORE.read_meta(directory, SessionMeta)
-
-
-def write_meta(directory: Path, meta: SessionMeta) -> None:
-    STORE.write_meta(directory, meta)
-    event_log(directory).touch()
-
-
 def next_step(ledger: Ledger, open_leaves: int) -> str:
     """The cheapest legal next action, derived from live ledger state.
 
@@ -57,9 +40,9 @@ def next_step(ledger: Ledger, open_leaves: int) -> str:
 
 def orient(directory: Path) -> dict[str, Any]:
     """The status payload: everything a resumed agent needs first."""
-    events = read_events(directory)
+    events = EventLog(directory / LEDGER).read()
     ledger = replay(events)
-    meta = read_meta(directory)
+    meta = STORE.read_meta(directory, SessionMeta)
     attached = Counter(source.leaf for source in ledger.sources.values())
     open_leaves = [
         {"id": leaf_id, "q": leaf.question, "sources": attached[leaf_id]}

@@ -17,6 +17,7 @@ from btm_corekit import (
     MAX_EVENTS,
     CommandError,
     Diagnostic,
+    EventLog,
     Model,
     NonEmpty,
     Positive,
@@ -31,9 +32,9 @@ from btm_corekit import (
 from btm_draft_paper.run import (
     GATE_STAGE,
     STORE,
+    TRACE,
     Gate,
     RunMeta,
-    trace_log,
 )
 
 Stage = Annotated[Positive, Field(le=9)]
@@ -330,7 +331,7 @@ def load(session: str) -> Run:
     line that does not decode or replay is an authoritative defect."""
     directory = STORE.directory(session)
     meta = STORE.read_meta(directory, RunMeta)
-    rows = trace_log(directory).read()
+    rows = EventLog(directory / TRACE).read()
     state = RunState.of(meta)
     for number, raw in enumerate(rows, start=1):
         where = f"trace event {number}"

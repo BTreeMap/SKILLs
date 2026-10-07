@@ -54,7 +54,7 @@ class Plan:
         return self.frontmatter + self.body
 
 
-Admission = Plan | Refusal
+Admitted = Plan | Refusal
 
 
 @dataclass(frozen=True, slots=True)

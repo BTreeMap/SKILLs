@@ -4,14 +4,12 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-DOI_HOST = "doi.org"
 TIMEOUT_SECONDS = 30
 RESPONSE_CAP_BYTES = (
     16 * 1024 * 1024
 )  # an index page is kilobytes; a cap bounds a stall
 DEFAULT_LIMIT = 25
 MAX_LIMIT = 100
-ID_BATCH_SIZE = 50
 COURTESY_PAUSE_SECONDS = 0.2
 TITLE_MATCH_FLOOR = 0.6
 ABSTRACT_SHOW_LIMIT = 1500

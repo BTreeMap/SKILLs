@@ -17,17 +17,15 @@ from btm_caveman.model import Verdict
 from btm_corekit import Diagnostic
 
 
-def _fault(where: str, fix: str) -> tuple[Diagnostic, ...]:
-    return (Diagnostic(where=where, fix=fix),)
-
-
 def _check_headings(original: str, compressed: str) -> Verdict:
     orig, comp = extract_headings(original), extract_headings(compressed)
     if orig != comp:
         return Verdict(
-            errors=_fault(
-                "headings",
-                f"Headings not preserved exactly: {len(orig)} vs {len(comp)}",
+            errors=(
+                Diagnostic(
+                    "headings",
+                    f"Headings not preserved exactly: {len(orig)} vs {len(comp)}",
+                ),
             )
         )
     return Verdict()
@@ -58,9 +56,11 @@ def _check_urls(original: str, compressed: str) -> Verdict:
     orig, comp = extract_urls(original), extract_urls(compressed)
     if orig != comp:
         return Verdict(
-            errors=_fault(
-                "urls",
-                f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}",
+            errors=(
+                Diagnostic(
+                    "urls",
+                    f"URL mismatch: lost={set(orig - comp)}, added={set(comp - orig)}",
+                ),
             )
         )
     return Verdict()
@@ -71,7 +71,9 @@ def _check_inline_codes(original: str, compressed: str) -> Verdict:
     lost, added = orig - comp, comp - orig
     return Verdict(
         errors=(
-            _fault("inline code", f"Inline code lost: {sorted(lost)}") if lost else ()
+            (Diagnostic("inline code", f"Inline code lost: {sorted(lost)}"),)
+            if lost
+            else ()
         ),
         warnings=(f"Inline code added: {sorted(added)}",) if added else (),
     )

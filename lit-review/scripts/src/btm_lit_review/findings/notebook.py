@@ -11,6 +11,7 @@ import argparse
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Annotated, Any, Literal, TypeVar
 
 from pydantic import (
@@ -180,9 +181,6 @@ class NoteBatch(Model):
     gaps: Rows = ()
 
 
-NOTE_KEYS = tuple(NoteBatch.model_fields)
-
-
 def watch_terms(watch: str) -> list[str]:
     """The literal terms of a watch: `|`-separated, trimmed, non-empty, and
     casefolded here so `watch_hits` can never be handed unfolded terms."""
@@ -311,17 +309,15 @@ class _Admission(Admission):
             for key, paper in papers.items()
             for alias in paper_aliases(paper)
         }
-        self._key_words: dict[str, set[str]] = {}
         self.counts: Counter[str] = Counter(record.e for record in existing)
         self.ids: defaultdict[str, set[str]] = defaultdict(set)
         for record in existing:
             self.ids[record.e].add(record.id)
 
+    @cached_property
     def key_words(self) -> dict[str, set[str]]:
         """Keyword sets per corpus key, built on the first failed token."""
-        if not self._key_words:
-            self._key_words = {key: set(ascii_words(key)) for key in self.papers}
-        return self._key_words
+        return {key: set(ascii_words(key)) for key in self.papers}
 
     def resolve_key(self, token: str, where: str) -> str | None:
         """A paper key, or any alias a model plausibly writes: DOI, arXiv id,
@@ -338,7 +334,7 @@ class _Admission(Admission):
             if key := self.aliases.get(candidate):
                 self.advisories.append(f"{where}: resolved {token} -> {key}")
                 return key
-        near = suggest(token, self.papers, keywords=self.key_words())
+        near = suggest(token, self.papers, keywords=self.key_words)
         self.fail(
             where,
             f"replace '{token}': no corpus paper matches it",

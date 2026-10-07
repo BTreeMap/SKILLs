@@ -15,6 +15,7 @@ from btm_corekit import (
     LIT_REVIEW_SESSIONS,
     PAD_SCHEMA,
     REFS_SCHEMA,
+    EventLog,
     Model,
     NonEmpty,
     Parser,
@@ -41,15 +42,12 @@ from btm_peer_review.constants import BANKS, LEVEL_BANKS, Level, Severity, Stand
 from btm_peer_review.ledger import replay
 from btm_peer_review.state import Ledger
 from btm_peer_review.store import (
+    LEDGER,
+    PAPER_TEXT,
     STORE,
     Meta,
     corpus_of,
-    event_log,
     load_corpus,
-    paper_path,
-    read_meta,
-    update_meta,
-    write_meta,
 )
 from btm_peer_review.text import PaperText, parse_pages
 from btm_peer_review.views import (
@@ -90,7 +88,8 @@ def cmd_init(args: argparse.Namespace) -> int:
         "the session",
     )
     made = STORE.create(args.session)
-    write_meta(made.directory, meta)
+    STORE.write_meta(made.directory, meta)
+    EventLog(made.directory / LEDGER).touch()
     emit(
         {
             "session": made.name,
@@ -104,11 +103,11 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def _session(ref: str) -> tuple[Path, Meta]:
     directory = STORE.directory(ref)
-    return directory, read_meta(directory)
+    return directory, STORE.read_meta(directory, Meta)
 
 
 def _paper(directory: Path) -> PaperText | None:
-    path = paper_path(directory)
+    path = directory / PAPER_TEXT
     return PaperText.from_file(path) if path.is_file() else None
 
 
@@ -119,8 +118,8 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     require(any(body.strip() for _, body in pages), "the extraction holds no text")
     if len(pages) == 1 and "## PDF page" not in raw:
         signal("no page markers: the whole text counts as page 1")
-    previously = paper_path(directory).is_file()
-    write_atomic(paper_path(directory), raw)
+    previously = (directory / PAPER_TEXT).is_file()
+    write_atomic(directory / PAPER_TEXT, raw)
     paper = PaperText(pages)
     if previously:
         signal("paper text replaced; every standing re-derives against it")
@@ -131,7 +130,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     empty = [n for n, body in pages if not body.strip()]
     if empty:
         signal(f"{len(empty)} page(s) without text: {empty[:10]}")
-    update_meta(directory, meta, pages=len(pages))
+    STORE.write_meta(directory, meta.with_(pages=len(pages)))
     emit(
         {
             "session": directory.name,
@@ -147,7 +146,7 @@ def cmd_link(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
     papers = LIT_REVIEW_SESSIONS.dir_of(args.corpus) / LIT_REVIEW_CORPUS
     corpus = load_corpus(papers)
-    update_meta(directory, meta, corpus=str(papers))
+    STORE.write_meta(directory, meta.with_(corpus=str(papers)))
     later = sum(1 for r in corpus.records if r.year is not None and r.year > meta.year)
     emit(
         {
@@ -167,7 +166,8 @@ def cmd_link(args: argparse.Namespace) -> int:
 
 def cmd_note(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    events = event_log(directory).read()
+    log = EventLog(directory / LEDGER)
+    events = log.read()
     ledger = replay(events)
     context = Context(_paper(directory), corpus_of(meta), meta.year)
 
@@ -175,7 +175,7 @@ def cmd_note(args: argparse.Namespace) -> int:
         return expand_batch(ledger, batch, context, mint, pad_ids(directory))
 
     def commit(result: NoteResult) -> dict[str, JSON]:
-        event_log(directory).append(result.events, held=len(events))
+        log.append(result.events, held=len(events))
         return {
             "session": directory.name,
             "admitted": dict(Counter(event["e"] for event in result.events)),
@@ -205,7 +205,7 @@ class Review(TypedDict):
 
 
 def _derive(directory: Path, meta: Meta) -> Review:
-    ledger = replay(event_log(directory).read())
+    ledger = replay(EventLog(directory / LEDGER).read())
     paper = _paper(directory)
     corpus = corpus_of(meta)
     objections = objection_views(ledger, paper, corpus, meta.year)
@@ -267,7 +267,7 @@ def next_step(meta: Meta, ledger: Ledger) -> str:
 
 def cmd_status(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
-    ledger = replay(event_log(directory).read())
+    ledger = replay(EventLog(directory / LEDGER).read())
     emit(
         {
             "session": directory.name,

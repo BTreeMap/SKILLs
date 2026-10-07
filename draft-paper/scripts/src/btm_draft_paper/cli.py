@@ -14,6 +14,7 @@ from btm_corekit import (
     PAD_SCHEMA,
     REFS_SCHEMA,
     CommandError,
+    EventLog,
     Parser,
     add_slot,
     dump,
@@ -30,11 +31,11 @@ from btm_draft_paper.batch import SCHEMA, NoteResult, expand_batch
 from btm_draft_paper.run import (
     GATE_STAGE,
     STORE,
+    TRACE,
     Format,
     InputState,
     RunMeta,
     Verb,
-    trace_log,
 )
 from btm_draft_paper.trace import Outcome, RunState, Status, load
 from btm_draft_paper.views import check_view, next_step, status_view
@@ -74,7 +75,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         "init",
     )
     STORE.write_meta(made.directory, meta)
-    trace_log(made.directory).touch()
+    EventLog(made.directory / TRACE).touch()
     state = RunState.of(meta)
     emit(
         {
@@ -97,7 +98,7 @@ def cmd_note(args: argparse.Namespace) -> int:
 
     def commit(result: NoteResult) -> dict[str, Any]:
         stamped = [{"run": run.meta.run, **event} for event in result.events]
-        trace_log(run.directory).append(stamped, held=len(run.rows))
+        EventLog(run.directory / TRACE).append(stamped, held=len(run.rows))
         document: dict[str, Any] = {
             "session": run.directory.name,
             "admitted": dict(Counter(event["event"] for event in result.events)),

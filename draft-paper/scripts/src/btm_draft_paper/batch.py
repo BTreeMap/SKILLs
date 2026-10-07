@@ -36,22 +36,17 @@ from btm_draft_paper.trace import (
     apply,
 )
 
-
-def _one_of(values: Iterable[str]) -> str:
-    return "|".join(values)
-
-
 SCHEMA: dict[str, str] = {
     "stage-entered": '{"event": "stage-entered", "stage": 1-9}',
-    "gate-requested": '{"event": "gate-requested", "gate": "' + _one_of(Gate) + '"}',
+    "gate-requested": '{"event": "gate-requested", "gate": "' + "|".join(Gate) + '"}',
     "gate-decided": '{"event": "gate-decided", "gate": "'
-    + _one_of(Gate)
+    + "|".join(Gate)
     + '", "outcome": "'
-    + _one_of(Outcome)
+    + "|".join(Outcome)
     + '", "reply": "the human\'s reply, verbatim"}',
     "claim-added": '{"event": "claim-added", "kw": ["two", "words"], '
     '"text": "the claim as the draft states it", "status": "'
-    + _one_of(Status)
+    + "|".join(Status)
     + '", "artifact": "path, relative to the artifact root", '
     '"location": "where in the artifact (supported and exploratory)"}',
     "claim-revised": '{"event": "claim-revised", "claim": "<ref>", '

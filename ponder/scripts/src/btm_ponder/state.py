@@ -58,13 +58,7 @@ class CloseState(StrEnum):
     FOLDED = "folded"
 
 
-CLOSE_STATES = tuple(CloseState)
-# The validation surfaces read their vocabulary off the type, so a variant
-# cannot be added in one place and forgotten in the other.
-SOURCE_CLASSES = tuple(SourceClass)
-ORIGINS = tuple(Origin)
-MODES = tuple(Mode)
-UNRESOLVED_REASONS = tuple(Reason)
+MODES = tuple(Mode)  # argparse reads the vocabulary off the type
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 
 

@@ -14,18 +14,14 @@ UNSAFE_NAME = re.compile(r"[^A-Za-z0-9._-]")
 """Everything a directory component may not carry, replaced in one C pass."""
 
 STORE = SessionStore("caveman", marker="meta.json", hint="run prepare first")
-"""One slot per target file, under the skill's state root."""
+"""One slot per target file, under the skill's state root: out of tree, so
+skill auto-loaders never re-ingest a backup."""
 
 
 class SlotMeta(Model):
     """The identity a slot records: the one file its backup belongs to."""
 
     source: str
-
-
-def backup_base() -> Path:
-    """Out-of-tree backup root, so skill auto-loaders never re-ingest backups."""
-    return STORE.root()
 
 
 @dataclass(frozen=True, slots=True)
