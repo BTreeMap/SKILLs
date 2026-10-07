@@ -1,7 +1,7 @@
 [project]
 name = "btm-draft-paper"
 version = "1.0.0"
-description = "Trace verifier for paper-drafting runs"
+description = "Run trace and gate keeper for paper-drafting runs"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["btm-corekit"]

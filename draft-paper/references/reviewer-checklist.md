@@ -1,7 +1,13 @@
 # Adversarial review checklist
 
-Review as a hostile reviewer: five separate passes, a punch list per pass,
-then revise and repeat once.
+Review the draft as a hostile reviewer would, in at most two rounds.
+
+1. Round one: run the five passes below separately, `jot` each finding as a
+   `punch` entry, then revise the draft against the punch list.
+2. If round one found nothing, stop. Otherwise run round two: the five
+   passes again on the revised draft.
+3. Stop after round two: fix what it found, and list every finding left
+   unfixed at the `draft` gate for the human to decide. Run no third round.
 
 ## Pass 1: Novelty and related work
 - [ ] Is the closest prior art named and cited, or only gestured at? Would
@@ -71,18 +77,15 @@ then revise and repeat once.
   technical work passes; buzzwords without substance fail.
 
 ## Citation audit (runs with every pass)
-- [ ] Three checks per citation: the source exists (API-verified); the
-  fields belong to that source; the source supports the citing sentence.
-  Field-level errors are the most common failure after outright fabrication.
-- [ ] Generate every citation from a retrieval API: Semantic Scholar,
-  OpenAlex, Crossref, or arXiv. The citation report records which source
-  supplied each entry.
+- [ ] Every citation added or moved since stage 5 has a row in the citation
+  report, with the three checks passed: the record exists, its fields belong
+  to it, and it supports the citing sentence.
 - [ ] Unverifiable citations are explicit `[CITATION NEEDED]` placeholders,
   never plausible-looking guesses.
 
 ## Integrity
 LLM review improves prose and structure. It does not certify integrity: in
-one preprint study, LLM reviewers recommended accepting AI-fabricated
-manuscripts up to 82% of the time (BadScientist, Jiang et al. 2025, arXiv,
-not peer-reviewed). The integrity gate is the human-approved evidence ledger
-plus provenance, not this checklist.
+one study, papers fabricated by a research agent reached acceptance rates of
+up to 82% from LLM reviewers (Jiang et al. 2026, "BadScientist", ACL 2026,
+doi:10.18653/v1/2026.acl-long.1134). The integrity gate is the
+human-approved evidence ledger plus provenance, not this checklist.

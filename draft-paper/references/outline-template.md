@@ -81,7 +81,7 @@ Before drafting, confirm every item:
   <item>The scenario sketch from the design plan survives in the introduction in concrete form; a reader from the field recognizes the setting in the first two paragraphs.</item>
   <item>The key insight reads as one sentence in the introduction; a cold reader can repeat it back.</item>
   <item>Every contribution bullet maps to an exhibit in Section 4.</item>
-  <item>Every exhibit maps to a ledger row, or to a planned experiment with failure criteria.</item>
+  <item>Every exhibit maps to a live ledger claim, or to a planned experiment with failure criteria.</item>
   <item>(Measurement papers) The key graphs are chosen before drafting; each graph answers a stated question.</item>
   <item>The page budget fits the venue limit.</item>
 </checklist>

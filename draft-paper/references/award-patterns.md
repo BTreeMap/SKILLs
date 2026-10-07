@@ -1,11 +1,13 @@
 # Award patterns: what best-paper winners have in common
 
 Empirical patterns from award winners, for use as a drafting checklist, not
-a formula. Evidence base: six best/award papers read end to end (NeurIPS
-2025 x2, ICML 2025 x2, NSDI 2026 x2), plus award-corpus metadata for ~230
-records across 11 venues, 2016-2026. Each finding carries its evidence
-strength. n=6 cannot prove what committees reward; it shows what winning
-papers look like.
+a formula. Evidence base: six award papers read end to end (two each from
+NeurIPS 2025, ICML 2025, and NSDI 2026) and the award literature in section
+6. Each finding carries its evidence strength. Six papers cannot prove what
+committees reward; they show what winning papers look like. Figures quoted
+from the six come from the papers themselves; the NSDI pair are Wei et al.
+2026 (HyperEdge, usenix.org/system/files/nsdi26-wei.pdf) and Zhang et al.
+2026 (OSCAR, USENIX NSDI 2026).
 
 ## 1. The idea starts from a sharp contradiction, not a topic [STRONG]
 
@@ -59,9 +61,10 @@ generalization, then some form of realism. The currency differs by venue:
 - Systems: analytical principles, testbed measurements, microbenchmarks,
   large-scale simulation, explicit limitation sections.
 - Deployment-led papers may substitute production evidence for controlled
-  novelty: HyperEdge runs on six years of operation, 100k+ edge devices,
-  ~10M participants per A/B arm, 35% modeled cost reduction. The economics
-  is load-bearing, placed before the evaluation.
+  novelty: HyperEdge reports over six years of operation, 100,000 edge
+  devices, about ten million participants per A/B arm, and a 35% overall
+  cost reduction against serving the same peak traffic from the CDN alone.
+  The economics is load-bearing, placed before the evaluation.
 
 Drafting rule: pick the currency your venue trusts and spend it in layers.
 One layer is a workshop paper; four is a best-paper-shaped evaluation. In
@@ -71,12 +74,12 @@ every claim.
 
 ## 5. Honest loss reporting [MODERATE]
 
-Winners report where they lose: HyperEdge's 2.89% speed gap where the CDN
-wins; OSCAR's 7.6% worse small-flow FCT before the matched-target
-comparison; CollabLLM's user-study quotes calling the model "bland"; the
-masked-diffusion paper conceding task diversity complicates its theory.
-Honest limitation discussion is explicitly rewarded and buys credibility for
-the headline claims.
+Winners report where they lose: HyperEdge's CDN baseline has a 2.89% higher
+median transmission speed; OSCAR's average flow completion time for small
+flows is 7.6% longer than HPCC's; CollabLLM's user-study quotes calling the
+model "bland"; the masked-diffusion paper conceding task diversity
+complicates its theory. Honest limitation discussion is explicitly rewarded
+and buys credibility for the headline claims.
 
 Drafting rule: name weaknesses plainly and specifically. A disclosed
 weakness reads as honesty; a discovered one as concealment.
@@ -88,35 +91,44 @@ regresses awards on paper-intrinsic features with controls, studies winner
 seniority or affiliation at modern CS conferences, or quantifies committee
 deliberation dynamics. What exists:
 
-- Citation correlation, not causation [MODERATE]. Award papers beat a random
-  same-conference-year non-winner on citations with probability 0.72
-  (Scopus) and 0.78 (Google Scholar); 51% land in the top citation decile
-  and 64% in the top quintile, with no older-versus-newer difference
-  (Wainer, Eckmann and Rocha 2015, peer-reviewed). A smaller CHI study found
-  no citation difference against non-nominees (Bartneck and Hu 2009); the
+- Citation correlation, not causation [MODERATE]. Across 12 CS conferences,
+  a best paper receives more citations than a non-best paper from the same
+  conference and year with probability 0.72 (Scopus) and 0.78 (Google
+  Scholar); 51% of best papers are in their conference-year's top 10% most
+  cited and 64% in the top 20%, with no significant change across years
+  (Wainer, Eckmann and Rocha 2015, PLoS ONE,
+  doi:10.1371/journal.pone.0118446). At CHI, papers the best-paper committee
+  recognized were not cited more often than a random sample of same-year
+  papers (Bartneck and Hu 2009, CHI, doi:10.1145/1518701.1518810); the
   disagreement is unresolved. Citations cannot be drafted toward, so this is
   context, not a lever.
 - Official criteria converge [STRONG as stated preference]. NeurIPS 2020:
   work that endures, new deep insights, creative and unexpected, changes how
   people think, rigorous and elegant, reproducible. CHI 2020: explicitly no
-  formal criteria, holistic top-1% judgment. ACL: the most explicit rubric
-  (fascinating, surprising, field-changing). SOSP: significant problem,
-  interesting implementation, demonstrated practicality. What committees say
-  they reward: problem importance and taste, novelty and surprise, rigor and
-  completeness, clarity and elegance, prospective lasting impact.
+  formal criteria, a holistic judgment capping best papers at the top 1% of
+  submissions (chi2020.acm.org/for-attendees/awards/). ACL: the most
+  explicit rubric (fascinating, surprising, field-changing). SOSP:
+  significant problem, interesting implementation, demonstrated
+  practicality. What committees say they reward: problem importance and
+  taste, novelty and surprise, rigor and completeness, clarity and elegance,
+  prospective lasting impact.
 - Venue families differ [MODERATE]. ML rewards insight, creativity, and
   elegance with enduring potential. Systems and networking reward
   significant problems attacked with real implementations or unusually
   strong designs, evidence from use, practicality, and explored alternatives
   (Levin and Redell 1983: effort is not novelty). HCI rewards novelty,
   impact, methodology, and transparency, with no universal formal rubric.
-- Selection is noisy [STRONG]. The NeurIPS 2021 consistency experiment found
-  23% committee disagreement, with about half the accept list changing on
-  rerun. Roughly half of reviewer-score variation is subjective, and
-  accepted-paper scores do not predict citations (Cortes and Lawrence 2021).
-  Prestige effects exist at the acceptance stage: single-blind odds 1.63x
-  for a famous author, 1.58x for a top university, 2.10x for a top company
-  (Tomkins et al. 2017).
+- Selection is noisy [STRONG]. In the NeurIPS 2021 consistency experiment,
+  two independent committees disagreed on accept or reject for 23% of
+  duplicated papers, and about half the accepted list would change if review
+  were rerun (Beygelzimer et al. 2023, arXiv:2306.03262). In the 2014
+  NeurIPS experiment, 50% of the variation in reviewer quality scores was
+  subjective, and among accepted papers quality scores did not correlate
+  with later citations (Cortes and Lawrence 2021, arXiv:2109.09774).
+  Prestige effects exist at review: at WSDM 2017, single-blind reviewers
+  recommended acceptance more often, with odds multipliers of 1.63 for
+  famous authors, 1.58 for top universities, and 2.10 for top companies
+  (Tomkins, Zhang and Heavlin 2017, PNAS, doi:10.1073/pnas.1707323114).
 - Null predictors [MODERATE]. Being the most-cited paper, reviewer scores
   among accepted papers, implementation effort alone, high scores alone, and
   incremental "2% better" results without a consequential insight do not

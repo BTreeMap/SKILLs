@@ -1,26 +1,29 @@
 # Venue standards
 
 Settle what must be true about the venue before the paper is outlined. This
-file holds the verification protocol, the CFP checklist, and venue-family
-archetypes (stable structural shapes). It holds no per-venue numbers:
-limits, deadlines, and policies drift between cycles, and a stale number
-here would silently corrupt every draft.
+file holds the verification protocol, the CFP checklist with the venue brief
+it fills, and venue-family archetypes (stable structural shapes). It holds
+no per-venue numbers: limits, deadlines, and policies drift between cycles,
+and a stale number here would silently corrupt every draft.
 
 ## Verification protocol
 
 Venue facts come from the venue's current official pages, never from memory
-and never from examples in this file. Whenever web search is available:
+and never from examples in this file.
 
 1. Find the current cycle's official call for papers and submission
    instructions (the conference site, not a mirror or a prior year's page).
-2. Extract the checklist below into a venue brief: each answer with its
-   source URL and the cycle year. File it with the evidence ledger; it is
-   part of the paper's provenance.
-3. Re-verify at camera-ready time; limits and artifact deadlines move
-   between cycles.
+   Search and fetch with the harness's own tools; where they are absent, use
+   `/search-web` (`web` to find the page, `fetch` to read it). Read a PDF
+   call with `/read-pdf`.
+2. Answer every question in the CFP checklist below and file the answers as
+   the venue brief, each with its source URL and the cycle year. The brief
+   is part of the paper's provenance.
+3. Re-verify the brief at camera-ready time; limits and artifact deadlines
+   move between cycles.
 
-When web search is unavailable, say so, fall back to the archetypes below,
-and flag every venue fact in the draft as unverified.
+With no retrieval available, say so, fall back to the archetypes below, and
+flag every venue fact in the draft as unverified.
 
 ## CFP checklist
 
@@ -31,9 +34,9 @@ Answer every question from the official CFP before outlining:
 2. Anonymization: double-blind? What must be stripped (names, affiliations,
    acknowledgments, PDF metadata, links, self-cites)? Does it extend to
    supplements, code links, videos? Any tracks with relaxed anonymization?
-3. Template and mechanics: which template, which submission system, abstract
-   vs paper deadlines, when the author list freezes.
-4. Required statements: ethics, human subjects, LLM/AI-use disclosure,
+3. Template and mechanics: which template and version, which submission
+   system, abstract vs paper deadlines, when the author list freezes.
+4. Required statements: ethics, human subjects, LLM or AI-use disclosure,
    accessibility, impact, reproducibility checklists. Which are desk-reject
    triggers?
 5. Post-submission model: rebuttal (window, word cap, new-data rules),
@@ -44,6 +47,27 @@ Answer every question from the official CFP before outlining:
 7. Archival status (workshops especially): does publication preclude later
    conference submission?
 8. Camera-ready: allowed page delta, de-anonymization steps, artifact links.
+
+File the answers in this brief, one line per checklist question:
+
+<template for="venue-brief">
+<![CDATA[
+- Venue and track:
+- Cycle year:
+- 1 Length:
+- 2 Anonymization:
+- 3 Template and mechanics (template version and where fetched):
+- 4 Required statements:
+- 5 Post-submission model:
+- 6 Artifacts:
+- 7 Archival status:
+- 8 Camera-ready:
+
+## Sources
+
+- <fact>: <URL> (<cycle year>)
+]]>
+</template>
 
 ## Venue-family archetypes
 

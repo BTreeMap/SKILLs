@@ -44,8 +44,9 @@ plan back for revision).
 
 ## Prospective evidence ledger
 
-Map every falsifiable claim to a planned artifact path, all marked TO-RUN.
-This mapping, not measured numbers, is the stage-2 deliverable for `design`.
+Map every falsifiable claim to the artifact path its experiment will write.
+Stage 2 notes each as a `to-run` claim; the `ledger` gate approves this
+mapping, not measured numbers.
 
 ## Award assessment
 

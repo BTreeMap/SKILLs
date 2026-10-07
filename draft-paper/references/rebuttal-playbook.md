@@ -1,16 +1,25 @@
 # Rebuttal playbook
 
 Post-submission response: rebuttals, revise-and-resubmit, and the
-camera-ready tail.
+camera-ready tail. The deliverable is the rebuttal draft or revision letter
+plus the response-to-reviewer mapping below.
 
-Evidence base [labeled]: two ICLR-scale quantitative studies (Kargaran et
-al. 2025, ~73,000 before/after score records across ICLR 2024-2025; Huang et
-al. 2023, 13,000+ reviews from ICLR 2022), two complete OpenReview threads,
-published NeurIPS 2020 reviews, practitioner guides. All quantitative
-findings are correlational; score statistics are ICLR-only, and transfer to
-NeurIPS/ICML is plausible extrapolation. Moves marked [established] recurred
-across studies and threads; [plausible] appeared a few times or in one
-study.
+Evidence base: one quantitative study of over 74,000 ICLR 2024 and 2025
+reviews with before- and after-rebuttal scores (Kargaran et al. 2025,
+"Insights from the ICLR Peer Review and Rebuttal Process",
+arXiv:2511.15462), plus practitioner guides. The quantitative findings are
+correlational and ICLR-only; transfer to NeurIPS or ICML is plausible
+extrapolation. Moves marked [established] recurred across sources;
+[plausible] appeared in one source or a few.
+
+## Input
+
+The user supplies the reviews as text: per reviewer, the quoted concerns and
+the score, in any readable layout, one block per reviewer:
+
+<template for="review-input">
+- Reviewer <id> (score <n>): <quoted concerns>
+</template>
 
 ## Triage
 
@@ -26,7 +35,8 @@ study.
    | Reviewer factual error | Correct it first with an exact pointer (section, table, line, quoted number), then move on. Practitioner consensus calls this the highest-yield rebuttal content. |
 
 3. Allocate depth by decision leverage. Score movement concentrates at the
-   borderline (5 to 6, 6 to 8 are the modal moves): the borderline reviewer
+   borderline (5 to 6, then 6 to 8, are the most frequent changes in the
+   ICLR study): the borderline reviewer
    gets the deepest response. The champion still gets a short, complete
    reply; ACs read the whole record and a neglected champion can drift.
    [established]
@@ -43,9 +53,10 @@ study.
   failure: brushing off a technical concern moved a score down in a
   documented case. For low-leverage concerns, answer briefly and say why the
   point would not change the assessment [established].
-- Stay in multi-turn discussion. Reply to follow-ups; discussion depth is
-  the strongest behavioral correlate of increases (2.21 vs 1.47 turns; 95.7%
-  vs 65.9% author participation) [established].
+- Stay in multi-turn discussion. Reply to follow-ups. In the ICLR 2025
+  data, reviews whose score rose averaged 2.21 conversation turns with
+  95.7% author participation, against 1.47 turns and 65.9% for reviews
+  whose score held [established].
 - Take a clear agree/disagree stance per point, with the evidence doing the
   work around it [plausible].
 - Replace vague wording with quoted numbers when challenged. Concede the
@@ -62,8 +73,7 @@ study.
   paper.
 - Per reviewer: quote or precisely restate the concern, respond, name the
   concrete change. One thread per reviewer.
-- Close with an AC-facing summary: a per-reviewer table of score trajectory
-  and what changed, mapping each accepted point to its revision location.
+- Close with the AC-facing summary from the mapping below.
 - Engage the technical substance of every concern, even ones you believe are
   wrong. Evasion is the one documented way to move a score down.
 - Promise only experiments you will run. Concede specific wording or numbers
@@ -95,3 +105,19 @@ identity-stripped citations, add artifact and code links, re-check page
 limits against the current CFP (`venue-standards`), re-run citation
 verification on added references. The reproducibility bundle ships with the
 camera-ready.
+
+## Response-to-reviewer mapping
+
+One row per concern; the class is its triage class above. `jot` each
+concern as a `concern` entry while triaging, then fill the table from
+`recall --kind concern`.
+
+<template for="mapping">
+| Reviewer | Concern (quoted one-liner) | Class | Response location | Change made |
+|----------|----------------------------|-------|-------------------|-------------|
+| | | | | |
+</template>
+
+Close the rebuttal with the AC-facing summary: per reviewer, the score
+trajectory and what changed, with every accepted point mapped to its
+revision location.
