@@ -2,8 +2,7 @@
 
 What survives a vocabulary scrub: flat rhythm, metaphor density,
 manufactured salience, compressed jargon, leaked reasoning. §36 and §39 are
-structural, §38 and §40 rhetorical, §37 lexical: there density is the tell
-and one instance is English.
+structural, §38 and §40 rhetorical, §37 lexical.
 
 ### 36. Uniform sentence rhythm
 
@@ -12,9 +11,8 @@ deviation over mean, in words, per block of about 40 sentences. Human prose
 runs 0.55 to 0.75 with a block floor near 0.4; unedited model output sits
 near 0.2 to 0.3. Flag a block under 0.45, then read it aloud: the number is
 a prompt, and the writer's own baseline replaces it when a sample exists.
-**Problem:** Every sentence lands at the same middle length. The ear hears a
-metronome even after every flagged phrase is gone. **Fix:** Merge two
-adjacent sentences that share a subject; split one sentence carrying two
+**Problem:** Every sentence lands at the same middle length. **Fix:** Merge
+two adjacent sentences that share a subject; split one sentence carrying two
 independent claims. Adding a short sentence for effect produces §31.
 
 <before>
@@ -54,8 +52,7 @@ The handoff is where failures happen. The retry policy matters most, the timeout
 if I had to pick one, the most interesting part, where this matters most,
 the best one is, precisely the X you
 **Problem:** A ranking the writer never made, used to steer attention the
-content should steer by itself. A superlative the text earns stays: after
-four numbers, "the largest" is a fact.
+content should steer by itself.
 
 <before>
 The one thing to understand is the oracle split. The most interesting part is that the agent defines the scored function as a copy of the specification's own witness.

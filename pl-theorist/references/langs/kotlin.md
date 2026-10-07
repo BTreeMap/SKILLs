@@ -10,9 +10,7 @@
 - Collection operators are eager unless using `Sequence` or `Flow`.
   Sequences add iterator/call overhead and flows add coroutine machinery;
   neither is automatically faster than a collection chain or loop.
-- Kotlin's standard `Result` is exception-oriented. Prefer an explicit
-  sealed domain result when typed expected errors matter. Nullable `T?`
-  models absence.
+- Kotlin's standard `Result` is exception-oriented.
 
 ## Preferred FP Shapes
 
@@ -93,5 +91,5 @@ boxing on the actual backend before calling the value class zero-cost.
 Build every relevant target with the configured Kotlin version. Run formatting,
 static analysis, and focused tests. Test every sealed variant, null boundary,
 factory rejection, cancellation/cleanup path, flow buffering behavior, and Java
-interop edge. Benchmark the actual backend before claiming sequence or value-
-class gains.
+interop edge. Benchmark the actual backend before claiming sequence or
+value-class gains.

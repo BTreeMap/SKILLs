@@ -21,7 +21,6 @@
   works.
 - Keep chains lazy until collection is part of the required output contract.
 - Use `try_fold` for fallible accumulation and explicit early termination.
-- Model invalid states with enums and constructors that validate invariants.
 
 ## Modern Surface
 
@@ -46,8 +45,7 @@ stable syntax they permit, never beyond.
   `select_nth_unstable` for selection/top-k, `chunk_by` for grouping runs.
 - Treat the standard library's collection and iterator APIs as the design
   exemplar the kernel's laws describe: ownership-aware signatures, total
-  return types (`Option`/`Result`, `Entry`), and adapters that fuse. When
-  designing your own API, imitate that shape.
+  return types (`Option`/`Result`, `Entry`), and adapters that fuse.
 
 ## Data Structures
 
@@ -124,10 +122,9 @@ no allocation, dynamic dispatch, or partial unwrap is required.
    materialization.
 4. Permit a local mutable accumulator when it remains encapsulated and yields
    the clearest ownership model.
-5. Preserve borrowing, consumption, drop order, short-circuiting, and error
-   conversion.
-6. Preserve cancellation safety, bounded channels, lock lifetimes, transaction
-  scope, and all effects performed before `?` returns.
+5. Preserve borrowing, consumption, drop order, short-circuiting, error
+   conversion, cancellation safety, bounded channels, lock lifetimes,
+   transaction scope, and all effects performed before `?` returns.
 
 ## Validation Focus
 

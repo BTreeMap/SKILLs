@@ -10,7 +10,7 @@ retrieved record: the stage-1 `/lit-review` corpus, or `/search-web`
 `scholar` by title or DOI (`--source crossref` resolves a DOI,
 `--source arxiv` a preprint). Read the cited passage with `/read-pdf` or
 `/search-web` `fetch`. Record in the Source column which retrieval supplied
-the entry. An entry written from memory is a fabrication.
+the entry.
 
 <template for="citation-report">
 | Key | Citing sentence (short) | Source | Exists | Fields match | Supports sentence | Action |

@@ -5,15 +5,14 @@ accessibility, keyboard behavior, and top-layer rendering already correct,
 without adding dependency code to the bundle.
 
 Browser support moves continuously and this file ages. Before relying on any
-capability below, verify its current baseline status yourself against the
-project's stated support targets, and provide a graceful fallback when the
-feature is progressive rather than essential.
+capability below, verify its current baseline status against the project's
+stated support targets, and provide a graceful fallback when the feature is
+progressive rather than essential.
 
 ## Choosing the layer
 
 1. **A native element** whose semantics match: the button, the disclosure,
-   the dialog, the label bound to its input, the ordered list. Get its
-   semantics and behavior for free.
+   the dialog, the label bound to its input, the ordered list.
 2. **A platform API** for behavior: top-layer overlays, transitions between
    states or documents, scroll-linked progress, anchored positioning.
 3. **CSS** for anything visual or state-driven that CSS can express.
@@ -28,8 +27,7 @@ accessibility and keyboard issues.
 **Overlays and layering.** The platform provides real top-layer rendering
 for dialogs and lightweight popovers, including backdrop styling, escape
 dismissal, focus handling, and light dismissal, plus anchored positioning
-that tethers an element to a reference without measurement code. Use these
-before installing a positioning or modal dependency.
+that tethers an element to a reference without measurement code.
 
 **Transitions.** Same-document and cross-document view transitions animate
 between two states or two pages, including shared-element continuity,

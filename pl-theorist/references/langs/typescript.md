@@ -71,7 +71,7 @@
   dependencies, and add comparison work.
 - Use a custom hook as an effect interpreter only when it isolates lifecycle
   and cancellation. Keep the reducer, smart constructors, and selectors
-  framework- free and directly testable.
+  framework-free and directly testable.
 
 <example for="teaching" framework="react" language="typescript">
 <![CDATA[
@@ -159,8 +159,7 @@ const foldResult = <T, E, R>(
 ]]></example>
 
 Taste: the sole assertion is inside validation, `Result` exposes expected
-failure, and consumers eliminate both variants. Types disappear at runtime, so
-external input still requires parsing.
+failure, and consumers eliminate both variants.
 
 ## Cost Guard
 
@@ -172,7 +171,7 @@ external input still requires parsing.
    simplify to explicit named unions and functions.
 5. Preserve JavaScript evaluation, identity, and async ordering semantics.
 6. Preserve abort propagation, cleanup, bounded fan-out, transaction scope, and
-  runtime decoding at external boundaries.
+   runtime decoding at external boundaries.
 
 ## Validation Focus
 

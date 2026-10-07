@@ -55,9 +55,7 @@
   perform I/O, mutation, subscription, timer creation, or state updates
   during render.
 - Model component state as stable tagged variants instead of interacting
-  booleans and nullable fields. Use event-shaped actions and a pure reducer;
-  factories and runtime checks compensate for JavaScript's open object
-  model.
+  booleans and nullable fields. Use event-shaped actions and a pure reducer.
 - Derive values during render rather than synchronizing redundant state in
   an effect. Use effects only to synchronize with an external system. Put
   user-triggered effects in event handlers when no render synchronization
@@ -131,7 +129,7 @@ function useSearch(query) {
 
 React taste: one tag defines each valid UI state; the reducer is a pure state
 transition; request identity rejects stale effects; rendering eliminates every
-known variant. JavaScript still needs runtime defensive branches.
+known variant.
 
 ## Teaching Example
 
@@ -170,8 +168,8 @@ third tag exists, so boundary validation remains mandatory.
    depends on stable shapes.
 4. If currying creates opaque closure towers or material allocation, use named
    unary/binary helpers.
-5. Preserve synchronous versus deferred effects and exact promise concurrency.
-6. Preserve abort propagation, cleanup, transaction scope, and bounded fan-out.
+5. Preserve synchronous versus deferred effects, exact promise concurrency,
+   abort propagation, cleanup, transaction scope, and bounded fan-out.
 
 ## Validation Focus
 

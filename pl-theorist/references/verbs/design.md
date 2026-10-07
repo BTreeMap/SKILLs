@@ -17,9 +17,8 @@ and only when the answer changes the model.
 ### 2. Enumerate states and transitions
 
 - List every state the domain can occupy and every event that moves it.
-- Encode alternatives as sums, simultaneous data as products, constrained
-  primitives as refined/opaque types. Name each smart-constructor boundary
-  where untrusted data enters.
+- Encode states under the kernel's sum/product/refined-type laws. Name each
+  smart-constructor boundary where untrusted data enters.
 - Walk the cartesian product of any proposed boolean/nullable fields and
   name the combinations that are meaningless; restructure until they are
   unrepresentable.

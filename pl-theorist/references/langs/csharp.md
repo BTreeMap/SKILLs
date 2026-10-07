@@ -39,8 +39,7 @@
 - Use an established `Result` type for expected domain failures when
   available; otherwise use a small closed result hierarchy or documented
   `TryX` pattern. Do not add exceptions as ordinary branch control.
-- Treat records and immutable collections according to actual ownership;
-  record properties can still reference mutable objects.
+- Treat records and immutable collections according to actual ownership.
 - Use `Task.WhenAll` for bounded independent work and sequential `await` for
   dependent work. Propagate `CancellationToken` through every cancellable
   call.
@@ -98,10 +97,9 @@ C# does not prove this hierarchy exhaustively like a native sealed ADT.
    spans where semantically valid, or one direct loop.
 4. Never replace explicit resource scope with a deferred enumerable that can
    outlive its resource.
-5. Preserve cancellation propagation, exception timing, context behavior, and
-   async concurrency.
-6. Preserve disposal, bounded async fan-out, transaction scope, retry
-  idempotency, and enumeration count.
+5. Preserve cancellation propagation, exception timing, context behavior,
+   async concurrency, disposal, bounded async fan-out, transaction scope,
+   retry idempotency, and enumeration count.
 
 ## Validation Focus
 

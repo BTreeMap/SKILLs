@@ -40,8 +40,7 @@ note, before I forget, there are two things here, three things to know, let
 me give you four reasons, I'm going to make three points **Problem:** The
 next point announced instead of stated, by topic or by count. A casual
 phrase such as "one thing that bit me" can do the same. Remove the
-announcement, keeping the content. A count earns its place only when the
-reader must hold the items open across intervening text.
+announcement, keeping the content.
 
 <before>
 Let's dive into how caching works in Next.js. Here's what you need to know.
@@ -111,8 +110,7 @@ This function uses a hash map for O(1) lookups, avoiding the O(n²) cost of naiv
 
 ### 31. Forced punchlines and dramatic fragments
 
-**Problem:** Every sentence turned into a dramatic closing line. One short
-sentence can add emphasis; a row of fragments feels forced.
+**Problem:** Every sentence turned into a dramatic closing line.
 
 <before>
 Then AlphaEvolve arrived. It had no preference for symmetry. No aesthetic prior. No nostalgia for human taste. The old rules were gone.
@@ -139,8 +137,7 @@ Symmetric layouts often feel more predictable to users. Teams can over-optimize 
 
 The coined-label face: paradox, trap, creep, divide, vacuum, inversion, tax,
 or debt appended to a domain word and presented as established vocabulary,
-so an observation reads as a known result. Keep a coinage the writer defines
-and then uses, and keep real terms of art (technical debt, scope creep).
+so an observation reads as a known result.
 
 <before case="invented compound label">
 This is the specification vacuum, and it explains why the rollout stalled.

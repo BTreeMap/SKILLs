@@ -48,7 +48,7 @@
 
 - One parse boundary at the top: validate arguments and environment with
   `${VAR:?}` and explicit checks, then treat them as trusted for the rest of
-  the script. Reject early, once.
+  the script.
 - Resource bracket: `trap cleanup EXIT` plus `mktemp`/`mktemp -d` is the
   RAII of shell. One accumulating cleanup function; register it before
   acquiring the resource.

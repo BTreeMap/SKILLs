@@ -1,7 +1,6 @@
 # Style patterns (§14-19)
 
-Typography and formatting: dashes, bold, headings, emoji, quote marks. All
-mechanically checkable by searching the text.
+Typography and formatting: dashes, bold, headings, emoji, quote marks.
 
 ### 14. Em and en dashes
 
@@ -63,8 +62,7 @@ The update improves the interface, speeds up load times through optimized algori
 
 **Problem:** Emojis added to headings and list items as decoration, and
 horizontal rules (`---`) placed between sections where a heading or a
-paragraph break already separates them. A rule that a format needs (front
-matter, a required thematic break) stays.
+paragraph break already separates them.
 
 <before>
 🚀 **Launch Phase:** The product launches in Q3

@@ -184,12 +184,12 @@ mechanism: it reduces volume while keeping each case's context and retains
 quotation references for illustration. They recommend that at least two
 researchers, or one from each discipline in a multidisciplinary team,
 independently code the first few transcripts where feasible. They also state
-the method's boundary condition plainly: "The Framework Method cannot
-accommodate highly heterogeneous data, i.e. data must cover similar topics
-or key issues so that it is possible to categorize it." Two further included
-papers [14][30] describe the same method in applied use. Miles & Huberman
-[1] are the corpus's earlier statement of the underlying idea, that data
-reduction and data display are analytic operations.
+the method's boundary condition: "The Framework Method cannot accommodate
+highly heterogeneous data, i.e. data must cover similar topics or key issues
+so that it is possible to categorize it." Two further included papers
+[14][30] describe the same method in applied use. Miles & Huberman [1] are
+the corpus's earlier statement of the underlying idea, that data reduction
+and data display are analytic operations.
 
 A rapid-analysis strand pushes further in the same direction, replacing
 line-by-line coding with templated summaries and matrix displays to reach
@@ -216,13 +216,10 @@ objective. Both [35] and [24] are surveys, so their characterisations of
 individual primary studies are reported here as those surveys' accounts of
 the underlying studies.
 
-None of the 37 included papers evaluates a thematic analysis procedure on
-bug tickets, issue trackers, or support transcripts, and none compares
-interpretive theme development against category classification on the same
-feedback corpus. The two literatures in this corpus meet only at McDonald et
-al. [22] and the software-engineering reliability and grounded-theory work
-[15][34][37], all of which concern researchers' qualitative practice, none
-the reading of product feedback.
+The two literatures in this corpus meet only at McDonald et al. [22] and the
+software-engineering reliability and grounded-theory work [15][34][37], all
+of which concern researchers' qualitative practice, none the reading of
+product feedback.
 
 ## Mapping onto a thematic analysis skill
 
@@ -263,12 +260,12 @@ heterogeneous material through a matrix method whose stated precondition is
 topical similarity [11].
 
 For feedback and ticket data specifically, the corpus offers no validated
-procedure, so a skill should present that as its own adaptation, with no
-validated method behind it. The framework and rapid strands are the closest
-structural fit, since tickets are many, short, and comparable across cases,
-and the computing strand [17][24][35] indicates that the volume problem is
-usually solved by classification into fixed categories, which is a different
-operation with different failure modes.
+procedure, so a skill should present that as its own adaptation. The
+framework and rapid strands are the closest structural fit, since tickets
+are many, short, and comparable across cases, and the computing strand
+[17][24][35] indicates that the volume problem is usually solved by
+classification into fixed categories, which is a different operation with
+different failure modes.
 
 ## Limitations of this review
 

@@ -83,10 +83,10 @@ construction failed; `maybe` eliminates absence totally.
    base effect or an explicit interpreter.
 5. Require profiling evidence before asserting fusion or allocation behavior.
 6. Preserve bracketed resources, async cancellation, boundedness, transaction
-  scope, and strictness/productivity under the chosen effect interpreter.
+   scope, and strictness/productivity under the chosen effect interpreter.
 
 ## Validation Focus
 
 Run the project build and focused tests. Test finite and infinite producers when
-productivity is contractual. Use existing time/space profiling for strictness-
-sensitive paths and inspect exception/resource behavior in `IO`.
+productivity is contractual. Use existing time/space profiling for
+strictness-sensitive paths and inspect exception/resource behavior in `IO`.

@@ -7,8 +7,7 @@ learning FP taste, or a less capable model about to edit code.
 
 ### 1. Read the artifact
 
-Ground every claim in the actual code (or design) under discussion. Never
-teach from a hypothetical version of the code.
+Ground every claim in the actual code (or design) under discussion.
 
 ### 2. Name the design
 
@@ -43,8 +42,7 @@ anything.
 
 A short teaching note: the named algebra, the invariant, the complexity
 story, the rejected alternative, and one reusable distinction. Length
-proportional to the artifact; no essays. Code snippets only from the real
-artifact.
+proportional to the artifact. Code snippets only from the real artifact.
 
 ## Completion Checks
 

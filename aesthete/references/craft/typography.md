@@ -1,7 +1,7 @@
 # Craft: typography
 
-Type is the interface. It carries most of the hierarchy, most of the voice,
-and most of the reading effort. Get it right before touching color.
+Type carries most of the hierarchy, most of the voice, and most of the
+reading effort. Get it right before touching color.
 
 ## The scale
 
@@ -23,8 +23,8 @@ preference.
   to the same grid as everything else.
 * Paragraph spacing separates; first-line indentation is for continuous
   prose. Use exactly one of the two.
-* Tighten letter spacing slightly as size increases; loosen it for uppercase
-  and for small text. Letterspace uppercase and small text only.
+* Tighten letter spacing slightly as size increases; loosen it only for
+  uppercase and small text.
 
 ## Choosing faces
 
@@ -40,9 +40,9 @@ italic being used before designing around them.
 **Serif discipline.** Reaching for a serif because it feels premium,
 creative, or considered is the most common type misjudgment in generated
 design. Use a serif when the surface is editorial, literary, or heritage, or
-when the brand specifies one. Be able to say why that particular serif suits
-that particular brand. Otherwise choose a display sans, the common default
-in contemporary brand work.
+when the brand specifies one. State why that serif suits that brand.
+Otherwise choose a display sans, the common default in contemporary brand
+work.
 
 **Emphasis stays in the family.** Emphasize a word inside a heading with the
 weight or the italic of the same family.

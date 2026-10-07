@@ -1,8 +1,7 @@
 # Ponytail Review Verb
 
 Judge the diff for smuggled complexity, and only that. One line per finding:
-location, what to cut, what replaces it. The diff's best outcome is getting
-shorter.
+location, what to cut, what replaces it.
 
 ## Format
 
@@ -33,8 +32,8 @@ Tags:
 
 ## Scoring
 
-End with the only metric that matters: `net: -<N> lines possible.` Nothing
-to cut: say `Lean already. Ship.` and stop.
+End with `net: -<N> lines possible.` Nothing to cut: say
+`Lean already. Ship.` and stop.
 
 A single smoke test or `assert`-based self-check is the ponytail minimum and
 stays.

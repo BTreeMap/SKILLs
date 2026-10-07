@@ -7,9 +7,9 @@ the work; use borders and boxes only when those signals are insufficient.
 
 * One geometric spacing scale, used for every gap, padding, and margin. Keep
   the scale below nineteen distinct values.
-* Proximity is the strongest grouping signal available and costs nothing.
-  Space between groups must clearly exceed space within a group. Most
-  confusing layouts are uniform spacing applied to non-uniform content.
+* Proximity is the strongest grouping signal and costs nothing. Space
+  between groups must clearly exceed space within a group. Most confusing
+  layouts are uniform spacing applied to non-uniform content.
 * Space belongs to the container. Prefer gap on a layout container over
   margins on items, so removing an item never leaves a hole.
 * Vertical rhythm is a cadence: section spacing, block spacing, and element
@@ -34,8 +34,8 @@ is text, use space and alignment.
 ## Grid and structure
 
 * Use a real two-dimensional grid for two-dimensional layouts. Percentage
-  arithmetic inside a flex container to fake columns is fragile and breaks
-  at every gap change.
+  arithmetic inside a flex container to fake columns breaks at every gap
+  change.
 * Constrain overall width so line lengths stay readable on large displays,
   and constrain text blocks independently of their containers.
 * Optical alignment beats mathematical alignment when they disagree.

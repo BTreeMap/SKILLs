@@ -37,8 +37,7 @@ Her views have been cited in The New York Times, BBC, Financial Times, and The H
 Her views have been cited in The New York Times and the BBC.
 </after>
 
-When the source explains what the person said and where, keep that useful
-citation. Do not invent context for a shorter version.
+When the source explains what the person said and where, keep that citation.
 
 ### 3. Shallow analysis with -ing phrases
 

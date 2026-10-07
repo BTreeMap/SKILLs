@@ -1,8 +1,5 @@
 # Ponytail Debt Verb
 
-Every deliberate ponytail shortcut is marked with a `ponytail:` comment
-naming its ceiling and upgrade path.
-
 ## Scan
 
 Grep the repository for comment markers, skipping `.git`, vendored

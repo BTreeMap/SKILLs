@@ -5,8 +5,7 @@ only, the working tree untouched, and the areas not covered named.
 
 ## 1. Admit the return
 
-A status of "failed" is no return (spine's trust boundary): its `result` is
-the delegate's last inner thought and reads like a report. Re-dispatch the
+A status of "failed" is no return (spine's trust boundary). Re-dispatch the
 bundle instead of reading it.
 
 A return arriving without a brief behind it, from an orphaned grandchild, is

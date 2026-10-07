@@ -58,7 +58,7 @@ Deliver the tests, then report:
 1. Laws derived, one line each, mapped to their test names.
 2. Boundary and effect coverage added.
 3. Any law that failed and what it reveals.
-4. Coverage honestly declined (untestable effects, missing harness) and why.
+4. Coverage declined (untestable effects, missing harness) and why.
 
 ## Completion Checks
 

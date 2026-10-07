@@ -56,7 +56,7 @@ discipline.
 - Permissions are the effect types of CI. Set a minimal default at workflow
   level (`permissions: {}` or `contents: read`) and grant per job only the
   capabilities its effects require. Never rely on the org/repo default token
-  setting; declare explicitly.
+  setting.
 - Untrusted context never crosses into a shell via `${{ }}`. Route it
   through `env:` and reference it as a quoted shell variable (`"$TITLE"`),
   so it arrives as data.
@@ -113,7 +113,7 @@ environment variable; the logic is in a ShellCheck-able script.
 3. Prune the matrix: `exclude` redundant cells; a full product of OS x
    runtime x flags is rarely all meaningful.
 4. Cache with keys derived from lockfiles and restore-keys ordered from exact
-   to acceptable; measure hit rate before trusting the cache to be a win.
+   to acceptable; measure hit rate before trusting the cache.
 5. Escape threshold: nontrivial logic in `run:` strings or `if:` expressions
    moves to a script file in the repository (testable, lintable, reviewable)
    or a small composite action. YAML coordinates, scripts compute.

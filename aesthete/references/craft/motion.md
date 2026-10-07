@@ -15,9 +15,8 @@ only valid answers:
 * **Progress**: work is underway and this is how much remains.
 * **Narrative**: this sequence has an order the user should follow.
 
-Justify motion by what it communicates. Use an animation library only when
-it supplies a needed capability. If the sentence does not come, remove the
-animation.
+Use an animation library only when it supplies a needed capability. If the
+sentence does not come, remove the animation.
 
 ## Duration and curve
 
@@ -28,8 +27,7 @@ animation.
 * Large surfaces crossing the screen: longer, but keep them brief. Anything
   past roughly half a second in a product interface starts costing the user
   time on every repetition.
-* Distance scales duration, but sublinearly. A larger object crossing a
-  larger distance takes somewhat longer.
+* Distance scales duration, but sublinearly.
 * Use eased curves that decelerate into rest. Linear motion reads mechanical
   except for continuous ambient movement and progress indicators. Spring
   behavior suits direct manipulation, where the user's gesture should feel
@@ -75,8 +73,8 @@ frame and collapse on mid-range hardware.
 ## Restraint
 
 * Infinite loops are for live state only. Ambient perpetual motion in the
-  periphery competes for attention permanently and does not return anything
-  to the user.
+  periphery competes for attention permanently and returns nothing to the
+  user.
 * At most one attention-seeking device per view. Two things looping are two
   things being ignored.
 * Keep motion from blocking input. The user can always click through, scroll

@@ -75,7 +75,7 @@ final class Port {
 ]]></example>
 
 Taste: private construction establishes the invariant, and a sealed result makes
-expected failure explicit. The release constraint above applies.
+expected failure explicit.
 
 ## Cost Guard
 

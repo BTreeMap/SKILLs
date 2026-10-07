@@ -21,9 +21,6 @@ Point rather than paste wherever the delegate can load the skill itself.
 Excerpting is the Sealed branch alone, under the excerpting law in
 `dispatch`.
 
-Where a harness preloads skills at all, it does so at agent-definition time,
-and the prompt is the only call-time channel.
-
 Probe rather than assume. An unfamiliar harness, or an agent definition with
 a restricted tool list, settles in one probe delegate (procedure in
 `harness`), one delegation that settles reach for every later one.

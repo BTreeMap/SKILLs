@@ -1,7 +1,7 @@
 # Verb: build
 
-Write new code functionally from the start; the imperative form never
-exists. Domain model first, pure core second, shell last.
+Write new code functionally from the start. Domain model first, pure core
+second, shell last.
 
 ## Pipeline
 
@@ -36,8 +36,6 @@ code follows from the bound, not the reverse.
   profile's resource, cancellation, and boundedness constraints.
 - Apply the loaded profile's cost guard as you write; descend one
   abstraction level where it demands, exactly as in `refactor` step 4.
-- Use the newest constructs the repository's configured standard permits
-  when they clarify; consult the profile's Modern Surface section.
 
 ### 5. Validate
 

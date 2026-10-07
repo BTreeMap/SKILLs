@@ -32,7 +32,3 @@ Benchmark medians only. NEVER print a per-repo savings number ("you saved X
 lines/tokens here"): the unbuilt version was never written, so a live repo
 has no baseline to subtract from. The only real per-repo figures come from
 `/ponytail debt` (a counted ledger); this card points there.
-
-## Boundaries
-
-One-shot display. Edits nothing, changes no level.
