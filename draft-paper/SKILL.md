@@ -28,7 +28,6 @@ final draft before the run moves past each.
 | `award-assessment` | [references/award-assessment.md](references/award-assessment.md) |
 | `citation-report-template` | [references/citation-report-template.md](references/citation-report-template.md) |
 | `design-plan-template` | [references/design-plan-template.md](references/design-plan-template.md) |
-| `outline-template` | [references/outline-template.md](references/outline-template.md) |
 | `rebuttal-playbook` | [references/rebuttal-playbook.md](references/rebuttal-playbook.md) |
 | `reviewer-checklist` | [references/reviewer-checklist.md](references/reviewer-checklist.md) |
 | `section-guide` | [references/section-guide.md](references/section-guide.md) |
@@ -278,8 +277,8 @@ A skipped stage is admitted with a signal, but its work is still owed: a
    award section is filled from `award-assessment`. Gate: `plan`.
 2. Evidence: note one claim per empirical claim, per the evidence ledger
    above. Gate: `ledger`.
-3. Outline: rank 2-3 framings in the pad; freeze one against
-   `outline-template` and the format's structure in `section-guide`. Freeze
+3. Outline: rank 2-3 framings in the pad; freeze one against the outline
+   template and the format's structure in `section-guide`. Freeze
    the one-sentence key insight and the arc (problem, limits of current
    practice, insight, contributions, headline results) before drafting
    prose.
