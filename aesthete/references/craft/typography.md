@@ -6,12 +6,18 @@ reading effort. Get it right before touching color.
 ## The scale
 
 Fix one scale and use only its steps; six to eight steps covers almost every
-interface. A ratio near 1.2 suits dense product interfaces; near 1.333 suits
-marketing surfaces where display type does expressive work.
+interface. Keep adjacent steps perceptibly distinct: many near-identical
+steps produce hierarchy nobody can perceive and inconsistency everybody can.
+A ratio near 1.2 suits dense product interfaces; near 1.333 suits marketing
+surfaces where display type does expressive work.
 
-Set the scale in a relative unit so it honors the user's browser text size.
-Fixed pixel sizing for body text overrides an explicit accessibility
+Set the scale in a relative unit so it honors the user's browser text size;
+fixed pixel sizing for body text overrides an explicit accessibility
 preference.
+
+Size display type against the headline actually written, not one imagined: a
+size chosen first wraps the real headline to four lines and breaks the
+composition.
 
 ## Measure and rhythm
 
@@ -29,18 +35,21 @@ preference.
 ## Choosing faces
 
 Two families is the working maximum: one for text, one for display or
-monospace. Three requires a reason you can state.
+monospace. Three requires a reason you can state. A pair must be distinct
+enough to read as a pairing or close enough to read as one voice, never in
+between.
 
 Choose for the job. A face for an operator console needs unambiguous digits,
 distinguishable I/l/1 and O/0, and a true monospace companion for numbers
 and identifiers. A face for an editorial surface needs a real italic and
 sufficient weight range. Verify the family ships the weights and the true
-italic being used before designing around them.
+italic being used before designing around them. Where the weights are close
+together, do not use weight as the only hierarchy signal.
 
 **Serif discipline.** Reaching for a serif because it feels premium,
 creative, or considered is the most common type misjudgment in generated
 design. Use a serif when the surface is editorial, literary, or heritage, or
-when the brand specifies one. State why that serif suits that brand.
+when the brand specifies one, and state why that serif suits that brand.
 Otherwise choose a display sans, the common default in contemporary brand
 work.
 
@@ -55,9 +64,8 @@ it.
 ## Setting text well
 
 * Balance headings so the last line is not a single orphaned word, and set
-  body text to avoid single-word final lines. The platform has properties
-  for both; prefer them to manual line breaks, which break at other
-  viewports.
+  body text to avoid single-word final lines. Use the platform properties
+  for both, not manual line breaks, which break at other viewports.
 * Use a hard break in a heading only when the shape survives every viewport.
 * Italic descenders clip against tight line heights. Any italic at display
   size needs line height above 1 and reserved space below.
@@ -76,19 +84,6 @@ it.
   usually costs less than three static cuts.
 * Subset to the character sets needed.
 * Swap to a fallback during load, and tune the fallback's metrics so the
-  swap does not shift layout. Untuned font fallback is a top cause of layout
+  swap does not shift layout; an untuned fallback is a top cause of layout
   instability.
 * Preload only the faces used above the fold.
-
-## Failure modes
-
-* A scale with many near-identical steps produces hierarchy nobody can
-  perceive and inconsistency everybody can.
-* Display type set at a size chosen before the headline was written; the
-  headline then wraps to four lines and the composition breaks.
-* Grey body text chosen for elegance that fails contrast at the size it is
-  set.
-* Two faces that are too similar to read as a pairing and too different to
-  read as one voice.
-* Weight used as the only hierarchy signal in a face whose weights are close
-  together.

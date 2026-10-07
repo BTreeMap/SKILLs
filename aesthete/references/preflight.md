@@ -1,16 +1,15 @@
 # Preflight: the ship gate
 
-Run before declaring any interface done. Mechanical where a count is
+Run before declaring any interface done: mechanical where a count is
 defined, judgment where it is not. A gate that cannot be honestly passed
-means the work is not finished.
-
-Report the result, including every gate that did not pass.
+means the work is not finished. Report the result, including every gate that
+did not pass.
 
 ## Mechanical counts
 
-Count each check from the source. Where a design system or palette was
-supplied, "declared" means its token set; where none was, the scales fixed
-during design. Measure each count against the declaration.
+Count each check from the source. "Declared" means the supplied design
+system's or palette's token set where one was supplied, otherwise the scales
+fixed during design. Measure each count against the declaration.
 
 | Check | Pass condition |
 | --- | --- |
@@ -39,119 +38,39 @@ during design. Measure each count against the declaration.
 | Effects whose body only copies state into state | Exactly zero |
 | Array indices used as keys in reorderable lists | Exactly zero |
 
-## Supplied material
+## Gates
 
-Skip only if nothing was supplied.
+If material was supplied, also run the completion checks in `brief`.
 
-- [ ] Precedence applied in order: the palette overrode the document's
-  colors, the document overrode this skill's defaults, and the accessibility
-  floor overrode everything.
-- [ ] Every supplied token pairing used was measured for contrast, including
-  secondary text on tinted surfaces.
-- [ ] Every floor conflict was resolved by derivation and reported, with the
-  brand preserved wherever the threshold allowed.
-- [ ] Accessibility claims made by the document were verified against the
-  specification.
-- [ ] Gaps the document left were derived from its own logic and reported.
-
-## Direction
-
-- [ ] The design read was stated, and the built result matches it.
-- [ ] Dials were set from the read with reasons, and the output reflects
-  them. If motion is above 4, the interface moves.
-- [ ] Every element can name the user goal it serves.
-- [ ] The friction budget to the primary goal was counted and reported.
-
-## Interaction
-
-- [ ] Every interactive element and every data container ships every state
-  `interaction` defines, encoded as one closed set.
-- [ ] No loader appears for a response under the flash threshold, and every
-  wait past it is acknowledged at the point of action.
-- [ ] Input is parsed liberally; nothing is rejected for formatting the
-  system could normalize.
-- [ ] Errors preserve entry, sit adjacent to their cause, name the fix, and
-  move focus to the first failure.
-- [ ] Reversible destructive actions offer undo; irreversible ones name the
-  exact object and consequence.
-- [ ] User work survives navigation, refresh, back, and server failure.
-- [ ] URL reflects record, tab, filter, sort, and page state.
-
-## Accessibility
-
-- [ ] Every text and control pairing meets the thresholds in `a11y`,
-  measured against composited backgrounds, with exemptions applied only
-  where `a11y` allows them.
-- [ ] Placeholder, helper, disabled, and focus-ring contrast were measured
-  specifically.
-- [ ] Every control's label is readable against its own background, and text
-  over imagery has a guaranteed backing.
-- [ ] Focus is always visible, never suppressed, and never obscured by
-  sticky regions.
-- [ ] Full keyboard parity; focus order matches visual order; dialogs trap
-  and return focus; escape dismisses; backgrounds are inert.
-- [ ] Touch target hit areas meet the minimum in `a11y`, with spacing
-  between neighbors.
-- [ ] No information is carried by color alone.
-- [ ] Every drag interaction has a non-drag alternative.
-- [ ] Reduced motion, reduced transparency, and forced colors are honored
-  without losing function.
-- [ ] Asynchronous changes are announced through a live region.
-
-## Composition
-
-- [ ] Hierarchy reads correctly in grayscale.
-- [ ] Between-group spacing clearly exceeds within-group spacing.
-- [ ] Cards enclose discrete objects the user acts on.
-- [ ] Narrow layouts were designed and verified, with stacking order
-  matching DOM order.
-- [ ] Prevent shifts after paint by reserving space for every asynchronous
-  element.
-- [ ] One theme holds across the surface, set once at the root.
-- [ ] Both themes were opened and reviewed.
-- [ ] Theme follows the system preference with no stored state, unless the
-  user asked for a toggle.
-
-## Craft
-
-- [ ] Body measure sits between roughly 45 and 75 characters; type sizes are
-  in relative units.
-- [ ] Aligned or updating numbers use tabular figures.
-- [ ] Fonts are self-hosted or pipelined, subset, swapped, and
-  metric-matched to their fallback.
-- [ ] One motion curve family; every animation passes the one-sentence
-  justification test.
-
-## Content
-
-- [ ] Every visible string was re-read, and anything grammatically broken,
-  referentially unclear, or clever-but-wrong was rewritten.
-- [ ] Numbers are real, explicitly labeled as illustrative, or absent.
-- [ ] No fabricated product interface, logo, testimonial, metric,
-  credential, or person.
-- [ ] Assets are real, generated, or left as labeled slots, with required
-  assets named in the response.
-- [ ] One label per call-to-action intent across the surface, fitting on one
-  line at desktop.
-
-## Engineering
-
-- [ ] Stack, tokens, and component library were derived from the repository,
-  and the repository was searched before any component was authored.
-- [ ] Variants and asynchronous states are closed sets eliminated
-  exhaustively, so omitting a state fails the build.
-- [ ] Each component varies along one axis; no prop switches which subtree
-  renders and no prop exists for a single call site.
-- [ ] Call sites adjust position only; new looks became variants.
-- [ ] No lookup runs inside a row loop; expensive construction is hoisted.
-- [ ] Interactivity is isolated to leaves; no continuous value is driven
-  through render state.
-- [ ] Only compositor-friendly properties animate; observers, timelines, and
-  contexts are torn down.
-- [ ] Native elements and platform APIs were used where they suffice; any
-  custom control carries its full keyboard and assistive contract.
-- [ ] Support status was verified for every platform capability relied on.
-- [ ] Paint, interaction, and layout-stability targets are plausibly met.
+<checklist>
+  <item>The built result matches the stated read, and the output reflects the dials: if motion is above 4, the interface moves.</item>
+  <item>The obligations, honesty rules, and stack derivation in the spine hold.</item>
+  <item>Every rule in `interaction` holds, including its keyboard and assistive access rules, and every rule in `components` holds.</item>
+  <item>Every text and control pairing meets the thresholds in `a11y`, measured against composited backgrounds, with exemptions applied only where `a11y` allows them.</item>
+  <item>Placeholder, helper, disabled, and focus-ring contrast were measured specifically.</item>
+  <item>Every control's label is readable against its own background, and text over imagery has a guaranteed backing.</item>
+  <item>Touch target hit areas meet the minimum in `a11y`, with spacing between neighbors.</item>
+  <item>Reduced motion, reduced transparency, and forced colors are honored without losing function.</item>
+  <item>Hierarchy reads correctly in grayscale.</item>
+  <item>Between-group spacing clearly exceeds within-group spacing.</item>
+  <item>Cards enclose discrete objects the user acts on.</item>
+  <item>Narrow layouts were designed and verified, with stacking order matching DOM order.</item>
+  <item>Space is reserved for every asynchronous element, so nothing shifts after paint.</item>
+  <item>One theme holds across the surface, set once at the root; both themes were opened and reviewed.</item>
+  <item>Theme follows the system preference with no stored state, unless the user asked for a toggle.</item>
+  <item>Body measure sits between roughly 45 and 75 characters; type sizes are in relative units.</item>
+  <item>Aligned or updating numbers use tabular figures.</item>
+  <item>Fonts are self-hosted or pipelined, subset, swapped, and metric-matched to their fallback.</item>
+  <item>One motion curve family; every animation passes the one-sentence justification test.</item>
+  <item>Every visible string was re-read, and anything grammatically broken, referentially unclear, or clever-but-wrong was rewritten.</item>
+  <item>Assets are real, generated, or left as labeled slots, with required assets named in the response.</item>
+  <item>One label per call-to-action intent across the surface, fitting on one line at desktop.</item>
+  <item>Interactivity is isolated to leaves; no continuous value is driven through render state.</item>
+  <item>Only compositor-friendly properties animate; observers, timelines, and contexts are torn down.</item>
+  <item>Native elements and platform APIs were used where they suffice; any custom control carries its full keyboard and assistive contract.</item>
+  <item>Support status was verified for every platform capability relied on.</item>
+  <item>Paint, interaction, and layout-stability targets are plausibly met.</item>
+</checklist>
 
 ## Reporting
 

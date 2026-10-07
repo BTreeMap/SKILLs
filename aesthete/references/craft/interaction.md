@@ -1,6 +1,6 @@
 # Craft: interaction
 
-## Principles worth applying correctly
+## Principles
 
 Cite these only where they apply.
 
@@ -25,12 +25,13 @@ Cite these only where they apply.
 
 ## The complete state set
 
-Every interactive element:
+Every interactive element ships these states; never ship the happy path
+alone.
 
 | State | Requirement |
 | --- | --- |
 | Rest | Affordance is visible without hover. |
-| Hover | Pointer only. Provide its information and actions through another channel. |
+| Hover | Pointer only. Provide its information and actions through another channel, since hover is invisible to touch and keyboard. |
 | Focus-visible | Always present, never suppressed, high contrast, not clipped. Obscuring rules are in `a11y`. |
 | Active | Immediate acknowledgment at press, before any network work begins. |
 | Disabled | Rare, and always explained. Prefer enabled with an explanation on attempt. |
@@ -38,23 +39,23 @@ Every interactive element:
 | Error | Adjacent, specific, and actionable. |
 | Success | Perceptible, then quiet. |
 
-Every data container ships six states. Treat these as six different screens.
+Every data container ships six states; treat them as six different screens.
 Independent boolean flags cannot express them: flags admit loading together
 with error, and cannot distinguish "none exist" from "none match the
 filter". Encode them as one closed set, so that omitting a state fails the
-build.
+build:
 
-<directives for="container-states">
+<template for="container-states">
   | { status: 'loading' }
   | { status: 'error'; error: LoadError; retry: () => void }
   | { status: 'empty' }                                  // none exist yet
   | { status: 'filtered'; clearFilter: () => void }      // none match
   | { status: 'partial'; items: Item[]; loadMore: () => void }
   | { status: 'ready'; items: Item[] }
-</directives>
+</template>
 
-`empty` and `filtered` are the pair most often collapsed into one, and they
-need different copy and different actions.
+`empty` and `filtered` are the pair most often collapsed into one; they need
+different copy and different actions.
 
 ## Latency
 
@@ -69,24 +70,26 @@ need different copy and different actions.
 Delay the appearance of any loader so fast responses never flash one, and
 once shown, hold it briefly so it does not flicker out. Skeletons mirror the
 real layout's dimensions. Optimistic updates apply to reversible actions
-with an honest rollback; never fake success for something that can fail
-permanently.
+with an honest rollback and error path; never fake success for something
+that can fail permanently.
 
 ## Error philosophy
 
 1. **Prevent.** Constrain input so the invalid value cannot be entered.
    Supply the correct default. Make the destructive action non-adjacent to
    the frequent one.
-2. **Tolerate.** Parse what the user meant. Accept pasted values with
-   spaces, separators, and surrounding characters. Trim. Correct case.
+2. **Tolerate.** Parse what the user meant. Accept correct but differently
+   formatted input, and pasted values with spaces, separators, and
+   surrounding characters. Trim. Correct case.
 3. **Recover.** Preserve everything the user entered, place the message next
-   to the cause, name the fix, and move focus to the first failure.
+   to the cause, name the fix, and move focus to the first failure. Reuse
+   information the system already has.
 4. **Explain.** State what happened, what it means, and the next action
    instead of exposing a raw fault code alone. Keep technical detail
    available but secondary.
 
-Accept input that is correct but differently formatted. Preserve form data
-after failure and reuse information the system already has.
+Never validate on the first keystroke, telling the user a half-typed entry
+is invalid.
 
 ## Destructive actions
 
@@ -96,8 +99,19 @@ after failure and reuse information the system already has.
 * Irreversible: confirm, naming the exact object and the exact consequence,
   with a verb on the confirming button. For the catastrophic, require a
   deliberate act such as typing the name.
+* Never confirm a safe action: it teaches users to dismiss dialogs unread,
+  so the one dangerous confirmation is dismissed too.
 * Place destructive actions away from frequent actions and away from the
   default focused control.
+
+## Feedback placement
+
+* Show progress and results where the action was initiated. A toast in the
+  far corner for an action taken in a form is a message the user will not
+  see.
+* Reserve toasts for transient, non-critical confirmations. Anything the
+  user must act on, or must not miss, belongs inline and persistent.
+* A modal never opens a modal; give the second task a route instead.
 
 ## Keyboard and assistive access
 
@@ -126,18 +140,4 @@ after failure and reuse information the system already has.
 * Persist preferences, including density, dismissed guidance, and an
   explicit theme toggle where `color` calls for one. Keep dismissed guidance
   dismissed.
-* Reuse information already provided and preserve authentication flows that
-  depend on password managers or paste.
-
-## Failure modes
-
-* The happy path shipped alone, so the first real user with slow network or
-  empty data sees an unstyled void.
-* A spinner for a response that arrives in eighty milliseconds.
-* Confirmation dialogs on safe actions, teaching users to dismiss dialogs
-  without reading, so the one dangerous confirmation is also dismissed.
-* Validation firing on the first keystroke, telling users their half-typed
-  entry is invalid.
-* Actions revealed only on hover, invisible to touch and keyboard.
-* Toasts carrying information the user must act on, in the corner, briefly.
-* A modal opened from a modal.
+* Preserve authentication flows that depend on password managers or paste.

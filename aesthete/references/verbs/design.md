@@ -1,51 +1,45 @@
 # Verb: design
 
-Produce a committed design direction and a composition plan before any code
-exists. The deliverable is a decision document someone else could build
-from.
-
-## Preconditions
-
-The design read and the three dials are already stated. If either is
-missing, produce them first; everything below depends on them.
+Takes a request for a surface; returns a committed direction and composition
+plan, a decision document someone else could build from. Writes no
+implementation code: a snippet pinning a token or a motion curve is fine; a
+component belongs to `build`.
 
 ## Procedure
 
 1. **Name the primary goal.** One sentence: the single action or
    understanding this surface optimizes. Everything competing with it is
-   secondary by definition. A surface with two primary goals is two
-   surfaces, and saying so is a valid design outcome.
-
+   secondary. A surface with two primary goals is two surfaces, and saying
+   so is a valid outcome.
 2. **Map the user's path.** Write the shortest honest sequence from arrival
-   to goal. Count the steps, decisions, fields, and waits. This count is the
-   friction budget and it appears in the deliverable. For each item, either
-   state the reason it exists or mark it for removal.
+   to goal and count its steps, decisions, fields, and waits: the friction
+   budget. For each item, state the reason it exists or mark it for removal.
+3. **Choose the foundation**: the repository's existing component library,
+   an official design system, or a hand-composed system. If the repository
+   already uses one, that is the choice; otherwise return to the spine and
+   load `systems`.
+4. **Set the token spine** before composing, once for the whole surface:
+   type scale and pairing, spacing scale, radius scale, one accent, neutral
+   family, motion curve family, elevation ladder, icon family and weight.
+   Load the craft owners from the spine for any scale the read does not
+   settle.
+5. **Compose the sequence.** On a marketing surface, plan the section order,
+   giving each section a distinct layout family and job. On a product
+   surface, plan the navigation model, the density per region, and primary,
+   secondary, and tertiary action placement. Every adjacent pair differs
+   structurally; combine sections that share a job. Specify each region's
+   mobile behavior while planning it.
+6. **Decide the accessibility posture** and compose within it: target
+   contrast level, target size minimum, keyboard model, reduced-motion
+   degradation.
+7. **Write the kill list.** Name what the design deliberately excludes and
+   why, including patterns the brief invited that you decline, and what
+   replaces each.
+8. **Identify the risks.** Name the two or three decisions most likely to be
+   wrong, the evidence that would falsify each, and the fallback.
 
-3. **Choose the foundation.** Decide between an official design system, the
-   repository's existing component library, and a hand-composed system.
-   Prefer, in order: what the repository already uses; an official system
-   when the domain expects one; a hand-composed system only when the brand
-   expression is itself the product. Return to the spine and load `systems`
-   when this decision is live.
-
-4. **Set the token spine.** Fix the scales before composing: type scale and
-   pairing, spacing scale, radius scale, one accent, neutral family, motion
-   curve family, elevation ladder, icon family and weight. These are decided
-   once for the whole surface. Load the relevant craft references from the
-   spine for any scale that is not obvious from the read.
-
-5. **Compose the sequence.** For a marketing surface, plan the section
-   order, assigning each section a distinct layout family and a job. For a
-   product surface, plan the navigation model, the information density per
-   region, and the primary/secondary/tertiary action placement. Every
-   adjacent pair must differ structurally.
-
-6. **Write the kill list.** Name what this design deliberately does not
-   include and why. Include patterns the brief invited that you are
-   declining, and say what replaces them.
-
-7. **Identify the risks.** Name the two or three decisions most likely to be
-   wrong, what evidence would falsify each, and what the fallback is.
+Commit to one direction. If a fork exists, name it, pick a side, and state
+the one question whose answer would flip it.
 
 ## Deliverable
 
@@ -86,19 +80,6 @@ Icons: {family and weight}
 ## Risks
 {decision}: wrong if {falsifier}; fallback is {alternative}
 </template>
-
-## Rules
-
-* Commit to one direction. If a fork exists, name the fork, pick a side, and
-  state the one question whose answer would flip it.
-* Give every section and region a distinct job. Combine sections that share
-  a job.
-* Specify mobile behavior for each region while planning it.
-* Decide accessibility posture here: target contrast level, target size
-  minimum, keyboard model, and reduced-motion degradation. Use these
-  constraints while composing.
-* Keep implementation code out of this verb. A snippet pinning a token or a
-  motion curve is fine; a component belongs to build.
 
 ## Completion checks
 

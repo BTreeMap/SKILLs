@@ -1,35 +1,28 @@
 # Verb: review
 
-Read-only findings on a screen, component, diff, or pull request. Default
-verb for existing work. Change nothing.
+Takes a screen, component, diff, or pull request (the default verb for
+existing work) and returns ranked findings. Read-only: change nothing.
 
 ## Procedure
 
 1. **Reconstruct the intended read.** Infer the surface, audience, and
-   primary goal from the artifact itself. State it. Most findings are
-   disagreements between the intended read and the built result, and naming
-   the read makes them arguable.
+   primary goal from the artifact itself, and state it. Most findings are
+   disagreements between the intended read and the built result; naming the
+   read makes them arguable.
 2. **Walk the flow before the pixels.** Trace the user's path to the primary
    goal and count the friction budget as built. Interaction failures outrank
    visual ones and are found by walking the flow.
-3. **Pass in five sweeps**, in this order. Do not interleave; each sweep has
-   a different attention mode.
-   * **Logic**: does behavior follow from appearance, is state complete, are
-     errors preventable, is work preserved, does the keyboard path exist?
-   * **Hierarchy**: does the eye land on the right thing first, does
-     grayscale still read, is contrast spent on what matters?
-   * **Consistency**: one accent, one radius scale, one spacing scale, one
-     type scale, one icon family, one theme, across the whole surface?
-   * **Voice**: does the copy say what happened and what to do next, is
-     anything fabricated, does anything read as generated?
-   * **Structure**: does this re-implement something the repository already
-     has, do prop APIs admit invalid combinations, is any closed set handled
-     with a catch-all, do imports point downward, does an effect synchronize
-     derivable state?
-4. **Verify before reporting.** For each candidate finding, name the
+3. **Run the five sweeps** the spine defines, in the order listed. Do not
+   interleave them; each needs a different attention mode. Check the
+   repository for an existing implementation of anything the diff
+   re-implements.
+4. **Check beyond the diff.** Report the whole-surface failures the changed
+   lines cannot show, per the spine's consistency gotcha: the second accent
+   introduced three commits ago, the layout family used four times.
+5. **Verify before reporting.** For each candidate finding, name the
    concrete failure: the input, state, or viewport where it breaks and what
    the user sees. Drop any finding without a failure scenario.
-5. **Rank and report.** Most severe first.
+6. **Rank and report**, most severe first.
 
 ## Severity
 
@@ -51,11 +44,7 @@ Fix: {the specific change, not a principle}
 ## Rules
 
 * Every finding names a fix that is a concrete change.
-* Report the whole-surface failures the diff cannot show: the section that
-  inverts theme, the second accent introduced three commits ago, the layout
-  family used four times. Reviewing only the changed lines misses the
-  failures that matter most.
-* Keep findings focused on the current design. Put a fundamentally different
+* Keep findings on the current design. Put a fundamentally different
   direction in one top finding only.
 * Say plainly when the work is good. A review that manufactures findings to
   appear thorough trains the reader to ignore reviews.

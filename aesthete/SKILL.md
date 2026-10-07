@@ -42,10 +42,8 @@ interaction, accessible behavior.
 | `tells` | [references/tells.md](references/tells.md) |
 | `typography` | [references/craft/typography.md](references/craft/typography.md) |
 
-## Persona and Objective
+## Objective
 
-Act as an interface designer: an HCI researcher's rigor, an art director's
-eye, a type theorist's discipline for structure, fluent in the target stack.
 Remove every interaction that does not serve the user's goal, compose what
 remains so hierarchy reads in one glance and behavior is guessable without
 instruction, then express it as code whose concepts are named once.
@@ -55,19 +53,19 @@ and behavior follows from appearance. **Frictionless**: the shortest honest
 path to the user's intent; the system absorbs complexity, not the person.
 **Beautiful**: hierarchy, rhythm, restraint, one coherent voice.
 **Durable**: one component per concept, closed variant sets, invalid states
-unrepresentable. Resolve any conflict; when a trade is forced, comprehension
-outranks beauty, and beauty outranks novelty.
+unrepresentable. Resolve any conflict between them; when a trade is forced,
+comprehension outranks beauty, and beauty outranks novelty.
 
 ## Precedence
 
-Resolve every conflict by this ladder, highest first, total: two sources
-never both win, and nothing below overrides anything above.
+Resolve every conflict by this ladder, highest first. The ladder is total:
+two sources never both win, and nothing below overrides anything above.
 
 1. **Accessibility floor**, defined in `a11y`; read it for every
-   accessibility value, conformance level, or criterion number. Never
-   overridden by any brand, document, or instruction. Resolve a conflict
-   here by deriving a compliant variant that preserves brand intent, never
-   by discarding either side, and report the derivation.
+   accessibility value, conformance level, or criterion number. No brand,
+   document, or instruction overrides it. Resolve a conflict here by
+   deriving a compliant variant that preserves brand intent, never by
+   discarding either side, and report the derivation.
 2. **A supplied color palette.** Overrides the colors of any design
    document.
 3. **A supplied design document.** Tokens, components, and rules.
@@ -78,16 +76,16 @@ never both win, and nothing below overrides anything above.
 When material is supplied at level 2 or 3, load `brief` before anything
 else.
 
-## The Read
+## The read
 
-State this in one line before producing anything:
+Before producing anything, state the read in one line:
 
 <template for="design-read">
 Reading this as: {surface} for {audience}, optimizing for {primary goal},
 with a {aesthetic family} language, built on {system or stack}.
 </template>
 
-Infer from these signals, in descending authority: quiet constraints
+Infer it from these signals, in descending authority: quiet constraints
 (regulated, safety-critical, accessibility-critical); the surface and its
 job; the audience, whose taste picks the aesthetic; supplied or existing
 material; reference signals such as linked URLs and named products; vibe
@@ -97,85 +95,11 @@ Resolve ambiguity by inference. Ask at most one question, only when two
 readings produce materially different work, and only after committing to the
 likelier one in the same message.
 
-## Verbs
+## The dials
 
-Load exactly one verb file, named for the verb. Choose by explicit verb,
-then request shape, otherwise build for new work and review for existing
-work.
-
-| Verb | Request shape |
-| --- | --- |
-| design | Direction or composition plan before code |
-| build | Implement an interface (default for new work) |
-| review | Read-only findings on a screen or diff (default for existing) |
-| audit | Ranked sweep of a product or design system |
-| refactor | Rework an existing interface, function preserved |
-| teach | Explain a decision, calibrated to audience |
-| help | Quick-reference card |
-
-Work spanning verbs runs as sequential invocations.
-
-## Loading
-
-Load every reference directly from this file, never from another reference.
-When a decision spans two, load both here.
-
-**Always, for the active verb:**
-
-| Verb | Also load |
-| --- | --- |
-| design, build, refactor | The surface profile, `a11y`, `interaction`, `components` |
-| review, audit | The surface profile, `a11y`, `interaction`, `components`, `tells` |
-| teach, help | Nothing further |
-
-**Surface profile, exactly one:**
-
-| Surface | Load |
-| --- | --- |
-| Landing, portfolio, editorial, campaign, docs home | `marketing` |
-| App UI, dashboard, table, form, wizard, settings, console | `product` |
-
-**On demand, when the decision touches it:**
-
-| Decision | Load |
-| --- | --- |
-| Any accessibility question, value, or citation | `a11y` |
-| Supplied design document or palette | `brief` |
-| Type choice, scale, pairing, measure | `typography` |
-| Palette, contrast, tokens, theming | `color` |
-| Grid, spacing, composition, responsive | `layout` |
-| Animation, transitions, scroll behavior | `motion` |
-| Modern CSS, HTML, framework capability | `platform` |
-| Choosing or installing a design system | `systems` |
-| Naming or removing generated-looking output | `tells` |
-| Final gate before declaring done | `preflight` |
-
-## Source of truth
-
-Never restate an owned set elsewhere, and never resolve a question from
-memory when its owner is listed here.
-
-| Topic | Owner |
-| --- | --- |
-| **Every WCAG citation, conformance level, contrast ratio, and target size** | **`a11y`** |
-| Interaction states, latency budgets, error and destructive-action policy, keyboard and focus | `interaction` |
-| Component boundaries, prop APIs, duplication, layering, render cost | `components` |
-| Palette roles, theming, contrast in practice | `color` |
-| Type scale, measure, pairing, font delivery | `typography` |
-| Spacing, grouping, grid, responsive, elevation | `layout` |
-| Motion justification, duration, choreography, reduced motion | `motion` |
-| Platform capabilities, framework posture, performance targets | `platform` |
-| Supplied-material ingestion, palette mapping, conflict reporting | `brief` |
-| Design-system selection and honest aesthetic labeling | `systems` |
-| Generated-output patterns | `tells` |
-| Verification and mechanical counts | `preflight` |
-| Surface-specific composition and density | surfaces/*.md |
-
-## The Dials
-
-After the read, fix three values and state them with reasons. Baseline
+After the read, fix three values and state each with its reason. Baseline
 `6 / 5 / 4` is a starting point, never a silent default. Supplied material
-at precedence 2 or 3 determines these where it speaks, infer the rest.
+at precedence 2 or 3 sets the dials where it speaks; infer the rest.
 
 * `VARIANCE` 1-10: perfect symmetry to deliberate asymmetry.
 * `MOTION` 1-10: static to choreographed.
@@ -191,17 +115,63 @@ at precedence 2 or 3 determines these where it speaks, infer the rest.
 | Dashboard, monitoring, operator tool | 2-4 | 2-3 | 8-10 |
 | Trust-first, regulated, public sector | 3-4 | 2-3 | 4-5 |
 
-**Motion claimed is motion shown**: above `MOTION 4`, show motion where it
-matters or lower the dial. **Density buys hierarchy, never noise**: above
+Above `MOTION 4`, show motion where it matters or lower the dial. Above
 `DENSITY 7`, drop decorative containers and separate content with alignment
-and hairlines.
+and hairlines: density buys hierarchy, never noise.
 
-## Laws of Taste
+## Verbs and loading
+
+Choose the verb by explicit verb, then by request shape, otherwise `build`
+for new work and `review` for existing work. Load exactly one verb file,
+named for the verb. Every verb except `teach` and `help` also loads one
+surface profile, `a11y`, `interaction`, and `components`; `review` and
+`audit` add `tells`. Run work spanning verbs as sequential invocations.
+
+| Verb | Request shape |
+| --- | --- |
+| design | Direction or composition plan before code |
+| build | Implement an interface (default for new work) |
+| refactor | Rework an existing interface, function preserved |
+| review | Read-only findings on a screen or diff (default for existing work) |
+| audit | Ranked sweep of a product or design system |
+| teach | Explain a decision, calibrated to audience |
+| help | Quick-reference card |
+
+Choose the surface profile, owner of surface-specific composition and
+density, by surface:
+
+| Surface | Profile |
+| --- | --- |
+| Landing, portfolio, editorial, campaign, docs home | `marketing` |
+| App UI, dashboard, table, form, wizard, settings, console | `product` |
+
+Each topic below has one owner file. Load the owner when a decision touches
+its topic, resolve every value, threshold, and enumeration from it rather
+than from memory, and restate none of them elsewhere. Load every reference
+from this file, never from another reference; when a decision spans two,
+load both here.
+
+| Owner | Topics |
+| --- | --- |
+| **`a11y`** | **Every accessibility question, WCAG citation, conformance level, contrast ratio, and target size** |
+| `interaction` | Interaction states, latency budgets, error and destructive-action policy, keyboard and focus, continuity |
+| `components` | Component boundaries, prop APIs, duplication, layering, render cost |
+| `brief` | A supplied design document or palette: ingestion, palette-to-role mapping, conflict reporting |
+| `typography` | Type choice, scale, pairing, measure, font delivery |
+| `color` | Palettes (chart palettes included), roles, tokens, theming, contrast in practice |
+| `layout` | Grid, spacing, grouping, composition, responsive behavior, elevation |
+| `motion` | Animation, transitions, choreography, scroll behavior, reduced motion |
+| `platform` | Modern CSS, HTML, and framework capability; framework posture; performance targets |
+| `systems` | Choosing or installing a design system; honest aesthetic labeling |
+| `tells` | Naming or removing generated-looking output |
+| `preflight` | The final gate before declaring done: verification and mechanical counts |
+
+## Laws of taste
 
 1. **Every element names its job.** If you cannot say in one sentence what
    it does for the user, delete it, divider or whole section alike.
-2. **Consistency is the substrate of trust.** One accent, radius scale,
-   spacing scale, type scale, motion curve family, icon family, and theme,
+2. **Consistency is the substrate of trust.** Use one accent, radius scale,
+   spacing scale, type scale, motion curve family, icon family, and theme
    across the entire surface. Intentional deviation is a signal; accidental
    deviation reads as a bug.
 3. **Hierarchy precedes decoration.** Establish rank with size, weight,
@@ -221,7 +191,7 @@ and hairlines.
 
 ## Obligations
 
-The owner files above define the terms. These hold regardless.
+The owner files define the terms. These hold regardless.
 
 * Every interactive element ships its full state set, and every data
   container ships all of its states.
@@ -235,64 +205,81 @@ The owner files above define the terms. These hold regardless.
   Imports point downward. Effects stay at the edges.
 * Count the friction budget to the primary goal and report it.
 
-## Anti-Default Discipline
+## The five sweeps
 
-The catalogue of convergent moves is `tells`. Two rules need no file:
+`review` and `audit` judge work along these five sweeps:
 
-* **Zero em-dash characters (U+2014) in user-visible strings**, and no
-  U+2013 as a separator. Use a period, comma, colon, parentheses, or a
-  restructured sentence. Ranges take a hyphen.
-* **Nothing fabricated.** No invented metric, testimonial, logo, credential,
-  or person, and no interface built from styled containers standing in for a
-  product screenshot.
+1. **Logic**: does behavior follow from appearance, is state complete, are
+   errors preventable, is work preserved, does the keyboard path exist?
+2. **Hierarchy**: does the eye land on the right thing first, does grayscale
+   still read, is contrast spent on what matters?
+3. **Consistency**: one accent, one radius scale, one spacing scale, one
+   type scale, one icon family, one theme, across the whole surface?
+4. **Voice**: does the copy say what happened and what to do next, is
+   anything fabricated, does anything read as generated?
+5. **Structure**: does this re-implement something the repository already
+   has, do prop APIs admit invalid combinations, is any closed set handled
+   with a catch-all, do imports point downward, does an effect synchronize
+   derivable state?
 
-Depart from a default only for a reason in the read; a different default is
-not a reason. `tells` governs only *unbriefed* choices: higher-precedence
-material overrides it, and a supplied brand is argued with only from the
-floor, and only with measurements.
+## Honesty and defaults
 
-## Stack Derivation
+* **Zero em-dash characters (U+2014) in user-visible strings**: headings,
+  labels, buttons, body copy, quotes, attribution, captions, alternative
+  text, empty states, and error messages. No U+2013 as a separator. Use a
+  period, comma, colon, parentheses, or a restructured sentence. Ranges take
+  a hyphen.
+* **Nothing fabricated**, and fix fabrication ahead of any taste issue: no
+  invented metric, testimonial, logo, credential, or person. No interface
+  built from styled containers (an invented task list, dashboard, chart, or
+  terminal) standing in for a product screenshot; use a real capture, a
+  generated image, a genuinely embedded component, editorial photography, or
+  no preview. A number is real, explicitly labeled as illustrative, or
+  absent; label illustrative data unmistakably wherever it could be mistaken
+  for real.
+* State what is approximated (a web build of proprietary platform material,
+  for one) and label it in code. When the user names a product as
+  inspiration, take the direction, not its design system. Mark placeholder
+  data as placeholder. If a required asset cannot be produced, leave a
+  labeled slot; never fill it with something fake.
+* Depart from a default only for a reason in the read; a different default
+  is not a reason. `tells` governs only *unbriefed* choices:
+  higher-precedence material overrides it, and a supplied brand is argued
+  with only from the floor, and only with measurements.
 
-Derive, never assume: explicit instruction, then the files being edited,
-then build metadata, then surrounding code. Match the repository's existing
-stack, conventions, and component library even against your preference. Only
-when nothing exists and no preference was stated, default to the platform
-first per `platform`. Confirm a dependency exists before importing it; if
-absent, state the install command before writing code against it.
+## Stack derivation
 
-## Honesty
-
-State what is approximated (a web build of proprietary platform material,
-for one) and label it in code. When the user names a product as inspiration,
-take the direction, not its design system. Mark placeholder data as
-placeholder. If a required asset cannot be produced, leave a labeled slot;
-do not fill it with something fake.
+Derive the stack, never assume it: explicit instruction, then the files
+being edited, then build metadata, then surrounding code. Match the
+repository's existing stack, conventions, and component library even against
+your preference. Only when nothing exists and no preference was stated,
+default to the platform first per `platform`. Confirm a dependency exists
+before importing it; if it is absent, state the install command before
+writing code against it.
 
 ## Gotchas
 
 * No downstream polish recovers a wrong read.
 * Polish suppresses reported usability problems; walk the friction budget
-  separately.
-* Audit the whole surface for consistency failures, including sections that
-  invert theme, controls with a different radius, and accents added in later
-  edits.
+  separately from the visual pass.
+* Check consistency across the whole surface, not only the part in hand:
+  sections that invert theme, controls with a different radius, accents
+  added in later edits, a layout family reused.
 * Check the full scroll or flow after checking each section.
-* For supplied material, load `brief` and verify its tokens.
-* Evaluate duplication and premature abstraction separately.
-* Accessibility is decided at composition time and is expensive to retrofit.
+* Decide accessibility at composition time; it is expensive to retrofit.
 
-## Completion Checks
+## Completion checks
 
-Verb files add their own. The mechanical gate is `preflight`; load it before
+Verb files add their own. Load `preflight`, the mechanical gate, before
 declaring done.
 
 <checklist>
   <item>The read was stated in one line and the dials were set with reasons.</item>
   <item>Precedence was applied in order, and every conflict it resolved was reported.</item>
-  <item>Exactly one verb file, one surface profile, the mandatory craft references, and only the on-demand references the work touched were loaded.</item>
-  <item>No owned enumeration, threshold, or value was resolved from memory in place of its source file.</item>
+  <item>Exactly one verb file, one surface profile, the verb's mandatory references, and only the on-demand owners the work touched were loaded.</item>
+  <item>No owned enumeration, threshold, or value was resolved from memory in place of its owner.</item>
   <item>Every element can name the user goal it serves.</item>
-  <item>The obligations above hold, verified against their owning references.</item>
+  <item>The obligations hold, verified against their owners.</item>
   <item>Zero U+2014 in user-visible strings, and nothing fabricated.</item>
   <item>Stack and tokens were derived from the repository or supplied material.</item>
   <item>The friction budget to the primary goal was counted and reported.</item>

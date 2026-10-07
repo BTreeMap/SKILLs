@@ -1,7 +1,7 @@
 # Verb: teach
 
-Explain a design decision so the reader can make the next one without
-asking. Calibrate to the audience; never lecture.
+Takes a design decision and returns an explanation that lets the reader make
+the next one without asking. Calibrate to the audience; never lecture.
 
 ## Calibration
 
@@ -14,23 +14,23 @@ asking. Calibrate to the audience; never lecture.
 
 ## Structure
 
-1. **The decision**, stated in one sentence.
+1. **The decision**, in one sentence.
 2. **The user consequence**: what changes for the person using this, said
    concretely, without quality adjectives.
 3. **The mechanism**: why this produces that consequence. Name the principle
    if a real one applies, and name it accurately.
 4. **The counterfactual**: what the common alternative would have caused.
    This is the part that transfers.
-5. **The boundary**: when this decision would be wrong. Every design rule
-   has a domain; a rule taught without its domain becomes cargo cult.
+5. **The boundary**: when this decision would be wrong. A rule taught
+   without its domain becomes cargo cult.
 
 ## Rules
 
 * Teach the reasoning behind the ruling. "Sixteen pixels" is a ruling.
   "Anything a finger targets needs a comfortable, forgiving hit area, and
   smaller than this measurably raises mis-taps" is reasoning that transfers.
-* Cite a principle only when it applies and you can state it correctly.
-  Misapplied laws of interaction are worse than no citation, because the
+* Cite a principle only when it applies and you can state it correctly. A
+  misapplied law of interaction is worse than no citation, because the
   reader will repeat the error with confidence.
 * Show one before-and-after, one snippet, or one described comparison.
 * Match length to the question. A question about one radius value gets three

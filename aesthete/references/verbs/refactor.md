@@ -1,7 +1,8 @@
 # Verb: refactor
 
-Rework an existing interface, function preserved. Detect the mode first so
-the rework matches the problem.
+Takes an existing interface and reworks it with function preserved,
+returning the changes and a before-and-after account per lever. Detect the
+mode first so the rework matches the problem.
 
 ## Mode detection
 
@@ -11,13 +12,13 @@ the rework matches the problem.
 | Overhaul | Visual language is the problem; content and IA survive | New visuals, preserved structure and copy |
 | Rebuild | Structure itself is broken, or the brand is changing | Treat as greenfield with migration obligations |
 
-If ambiguous, ask once: whether the existing brand is preserved or the
-visual language starts fresh. Otherwise infer and state the mode.
+If the mode is ambiguous, ask once whether the existing brand is preserved
+or the visual language starts fresh. Otherwise infer and state the mode.
 
 ## Audit before touching
 
-Document the current state before proposing anything so working parts
-survive the rework.
+Record the current state before proposing anything, so working parts survive
+the rework.
 
 * **Brand tokens** in use: colors, type stack, logo treatment, radii,
   spacing rhythm, motion character.
@@ -29,14 +30,14 @@ survive the rework.
 * **Patterns to retire**: broken layouts, dead ends, generated-looking
   output, performance traps.
 * **Current dials**: infer VARIANCE, MOTION, and DENSITY from the existing
-  interface. That reading is the starting point.
+  interface as the starting point.
 * **Discoverability baseline**: ranking pages, titles, structured data, and
   share cards. Migration damage here is the highest-cost rework failure and
   the least visible during the work.
 
 ## Modernization levers
 
-Apply in order and stop when the brief is satisfied. Earlier levers deliver
+Apply in order and stop when the brief is satisfied; earlier levers deliver
 more visible improvement per unit of risk.
 
 1. **Typography**: scale, pairing, measure, and rhythm. The largest visible
@@ -55,7 +56,7 @@ more visible improvement per unit of risk.
 
 ## Never change silently
 
-Requires explicit approval, because downstream systems and user habits
+These require explicit approval, because downstream systems and user habits
 depend on them:
 
 * Route structure and anchor targets.
@@ -68,13 +69,11 @@ depend on them:
 
 ## Rules
 
-* Extract the brand before applying any default. A brand that is already
-  purple stays purple; the anti-default rules govern unbriefed choices only.
+* Extract the brand before applying any default: a brand that is already
+  purple stays purple.
 * Preserve the copy voice and content unless a rewrite was requested.
 * Never regress an accessibility win: existing focus states, alt text,
   keyboard paths, and contrast are a floor.
-* Deliver a before-and-after account per lever applied, so the change is
-  reviewable.
 * If the audit shows the interface is sound and the request is aesthetic
   restlessness, say so and propose the smallest lever that satisfies it.
 

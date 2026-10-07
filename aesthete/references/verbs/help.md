@@ -22,8 +22,8 @@ Without a verb: `build` for new work, `review` for existing work.
 | help | This card |
 
 One verb file per invocation, plus the mandatory surface profile, `a11y`,
-`interaction`, and `components`. Multi-verb work runs as sequential
-invocations.
+`interaction`, and `components` (review and audit add `tells`). Multi-verb
+work runs as sequential invocations.
 
 ## Surfaces
 
@@ -34,7 +34,7 @@ invocations.
 
 ## Dials
 
-Set the dials after the read and state the reason for each.
+Set after the read, each with its reason.
 
 | Dial | 1 | 10 | Baseline |
 | --- | --- | --- | --- |
@@ -49,8 +49,8 @@ One line, before anything else:
 
 ## What always applies
 
-Obligations only. Every value, threshold, and enumeration lives in the file
-that owns it; resolve each one from that file.
+Obligations only; every value, threshold, and enumeration is resolved from
+the file that owns it.
 
 * Every element names the job it does for the user, or it is deleted.
 * One declared accent, radius scale, spacing scale, type scale, icon family,
@@ -76,7 +76,6 @@ Loaded on demand, one level deep, never chained.
 
 | Need | File |
 | --- | --- |
-| Verb procedure | one of `design` `build` `refactor` `review` `audit` `teach` `help` |
 | Accessibility value or citation | `a11y`, the only source |
 | Supplied design doc or palette | `brief` |
 | Surface profile | `marketing` or `product` |

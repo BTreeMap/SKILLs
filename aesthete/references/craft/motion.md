@@ -15,8 +15,8 @@ only valid answers:
 * **Progress**: work is underway and this is how much remains.
 * **Narrative**: this sequence has an order the user should follow.
 
-Use an animation library only when it supplies a needed capability. If the
-sentence does not come, remove the animation.
+If the sentence does not come, remove the animation. Use an animation
+library only when it supplies a needed capability.
 
 ## Duration and curve
 
@@ -24,22 +24,20 @@ sentence does not come, remove the animation.
   feedback belongs at the short end.
 * Elements entering or leaving: moderate, and asymmetric. Exits run faster
   than entrances, because the user has already decided.
-* Large surfaces crossing the screen: longer, but keep them brief. Anything
-  past roughly half a second in a product interface starts costing the user
-  time on every repetition.
+* Large surfaces crossing the screen: longer, but brief. Anything past
+  roughly half a second in a product interface costs the user time on every
+  repetition.
 * Distance scales duration, but sublinearly.
 * Use eased curves that decelerate into rest. Linear motion reads mechanical
   except for continuous ambient movement and progress indicators. Spring
-  behavior suits direct manipulation, where the user's gesture should feel
-  physically connected.
-* One curve family per product. Mixed easing across components is as
-  incoherent as mixed radii.
+  behavior suits direct manipulation, where the gesture should feel
+  physically connected. Use one curve family per product.
 
 ## Choreography
 
 * Stagger to show relationship and order, with a small delay per item, and
-  cap the total: a long stagger across many items means the last item
-  arrives after the user has already started reading the first.
+  cap the total so the last item does not arrive after the user has started
+  reading the first.
 * Animate the parent or the child, not both in competing ways.
 * When the same object persists across a state or route change, animate it
   to preserve continuity.
@@ -47,16 +45,13 @@ sentence does not come, remove the animation.
 
 ## Scroll-linked motion
 
-The mechanism matters more than the library.
-
-* Reveal-on-enter is the common case and needs only an intersection
-  observation or the platform's view-progress timeline. Reaching for a
-  scroll-orchestration library for simple reveals is over-tooling.
-* Reveals fire once. Re-animating on every scroll back through a section is
-  a distraction the user did not ask for repeatedly.
-* Pin sequences when the section's top reaches the viewport top. Starting
-  the animation before the section is pinned shows the user half a frame of
-  the intended composition.
+* Reveal-on-enter needs only an intersection observation or the platform's
+  view-progress timeline; a scroll-orchestration library for simple reveals
+  is over-tooling.
+* Reveals fire once, not on every scroll back through a section.
+* Pin a sequence when the section's top reaches the viewport top. Starting
+  the animation before the pin shows half a frame of the intended
+  composition.
 * In a stacked-card sequence, every card except the last pins, and each
   card's recede transform is driven by the arrival of the next card, not by
   its own progress.
@@ -65,36 +60,33 @@ The mechanism matters more than the library.
   exactly as the pin releases. Recompute on resize.
 * Scroll hijacking removes control from the user. Budget at most one such
   section, and keep it off surfaces where the user has a task to complete.
-
-**Use scroll-driven timelines, an intersection observer, or frame-external
-animation values.** Raw scroll events and render state rerun work every
-frame and collapse on mid-range hardware.
+* **Drive scroll-linked motion with scroll-driven timelines, an intersection
+  observer, or frame-external animation values.** Raw scroll events and
+  render state rerun work every frame and collapse on mid-range hardware.
 
 ## Restraint
 
 * Infinite loops are for live state only. Ambient perpetual motion in the
-  periphery competes for attention permanently and returns nothing to the
-  user.
-* At most one attention-seeking device per view. Two things looping are two
-  things being ignored.
-* Keep motion from blocking input. The user can always click through, scroll
+  periphery competes for attention permanently and returns nothing.
+* At most one attention-seeking device per view.
+* Keep motion from blocking input: the user can always click through, scroll
   past, or skip.
-* Interruption is normal: an animation must handle being reversed or
-  restarted mid-flight without snapping.
+* An animation must handle being reversed or restarted mid-flight without
+  snapping.
 
 ## Reduced motion is a requirement
 
-Users request reduced motion for vestibular disorders, migraine, and
-attention. Honor it: replace movement with a fade or an instant change,
-disable parallax and scroll-hijacking entirely, stop infinite loops, and
-keep every transition of state legible without the animation.
+Honor the reduced-motion preference: replace movement with a fade or an
+instant change, disable parallax and scroll hijacking entirely, stop
+infinite loops, and keep every transition of state legible without the
+animation.
 
 Reduced motion means less movement, never less function. Never gate content,
 state changes, or affordances behind an animation the preference disables.
 Check the preference at the point of use so a change mid-session takes
 effect.
 
-Respect reduced transparency and forced-colors preferences on the same
+Respect reduced-transparency and forced-colors preferences on the same
 principle, with a solid, high-contrast fallback for any material effect.
 
 ## Performance
@@ -105,6 +97,5 @@ principle, with a solid, high-contrast fallback for any material effect.
   degrade what it was meant to help.
 * Keep grain, noise, and heavy filters on a fixed, non-interactive overlay
   layer; in a scrolling container they repaint continuously.
-* Lazy-load animation libraries and heavy scenes that are not needed for the
-  first view, and tear down every observer, timeline, and context on
-  unmount.
+* Lazy-load animation libraries and heavy scenes not needed for the first
+  view, and tear down every observer, timeline, and context on unmount.

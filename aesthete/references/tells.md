@@ -1,21 +1,23 @@
 # Tells: the catalogue of generated-looking output
 
-A tell is a pattern that appears far more often in generated interfaces than
-in considered ones: a design decision nobody made. Each is banned as a
-**default reach**. Any of these is available when the brief calls for it and
-you can say why.
+A tell is a pattern far more common in generated interfaces than in
+considered ones: a design decision nobody made. Each is banned as a
+**default reach**; any of them is available when the brief calls for it and
+you can say why. The spine owns the em-dash and fabrication rules; this file
+does not restate them.
 
-## Typography and punctuation
+When building, derive each decision from the design read; these patterns
+substitute for decisions, so most disappear when each choice has a reason.
+When reviewing, count mechanically wherever a count is defined: section
+labels against section count, consecutive split layouts, marquees,
+occurrences of U+2014, distinct accent colors, distinct radius values. A
+count is not an opinion.
 
-* **The em-dash character, U+2014, anywhere a user can see it.** Headings,
-  labels, buttons, body copy, quotes, attribution, captions, alternative
-  text, empty states, error messages. The single highest-signal marker of
-  generated text. Replace with a period, a comma, a colon, parentheses, or a
-  restructured sentence. The en-dash U+2013 is likewise banned as a
-  separator; ranges take a plain hyphen.
+## Typography
+
 * **A word in a different family dropped into a heading** for visual
   interest. Emphasis stays within one family, using weight or italic.
-* **Headings hard-broken and part-italicized** to force a shape. The shape
+* **Headings hard-broken and part-italicized** to force a shape that
   survives one viewport and breaks in the rest.
 * **Vertically rotated labels** running up the side of a section.
 * **Oversized display type substituting for hierarchy**, where scale is the
@@ -27,46 +29,37 @@ you can say why.
   or twice per page it orients; above every section it is the clearest
   structural signature of generated layout. At most one per three sections.
 * **Numbered section labels**: index numbers, zero-padded counts, or
-  "phase", "stage", and "step" prefixes attached to content that is already
-  in order. The content is the label.
+  "phase", "stage", and "step" prefixes on content already in order. The
+  content is the label.
 * **Pagination counters on images or grid cells** when the user can already
   see how many there are.
-* **Generic step naming** in a process section. Use the actual verb of each
-  step.
-* **Version and status stamps** used decoratively: a version number, a
+* **Generic step naming** in a process section. Use each step's actual verb.
+* **Decorative version and status stamps**: a version number, a
   release-stage badge, or an access-tier label in a heading area, on a
   surface that is not about a release.
 * **Build metadata in a footer** on a surface that is not developer tooling.
 
 ## Separators and decoration
 
-* **The middle dot used as the universal separator**, chaining several
-  fragments into one metadata line. At most one per line; prefer columns,
-  line breaks, or a hairline.
+* **The middle dot as the universal separator**, chaining several fragments
+  into one metadata line. At most one per line; prefer columns, line breaks,
+  or a hairline.
 * **Colored status dots before list items, navigation entries, and badges**
-  where nothing has a status. A dot means live state or it means nothing.
-* **Hairline grid lines and crosshairs drawn purely as ornament**, not
-  organizing any content.
+  where nothing has a status. A dot means live state or nothing.
+* **Hairline grid lines and crosshairs drawn purely as ornament**,
+  organizing no content.
 * **A small caps strip across the bottom of a hero** listing capability
-  words. It is a decorative fragment pretending to be navigation.
-* **Ambient location, time, or weather strips.** Justified only for a
+  words: a decorative fragment pretending to be navigation.
+* **Ambient location, time, or weather strips**, justified only for a
   place-specific or timezone-distributed subject. A contact address in a
   footer is not this.
 * **Scroll prompts.** A user looking at the top of a page knows that pages
   scroll.
 
-## Fabrication
+## Placeholder credibility
 
 Treat these as honesty failures and fix them ahead of any taste issue.
 
-* **An interface built from styled containers standing in for a product
-  screenshot**: an invented task list, dashboard, chart, or terminal
-  assembled from primitives. The most recognizable single tell in generated
-  marketing pages. Use a real capture, a generated image, a genuinely
-  embedded component, or no preview.
-* **Invented precision**: percentages, multipliers, measurements, and
-  weights implying measurement nobody performed. Real, explicitly labeled as
-  illustrative, or absent.
 * **Placeholder people**: generic names, obviously synthetic avatars, and
   round-numbered statistics.
 * **Placeholder brands**: the standard set of invented company names that
@@ -76,8 +69,8 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **Category labels beneath credibility logos.** The mark is the
   credibility; the label adds nothing the reader does not already know.
 * **Decorative photo credits and archival captions** under placeholder
-  imagery. Credit a real photographer for a real photograph, or write a
-  plain functional caption, or none.
+  imagery. Credit a real photographer for a real photograph, write a plain
+  functional caption, or write none.
 * **Live-sounding counters** implying real-time scarcity or activity that is
   not real.
 
@@ -107,7 +100,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **A centered heading over a dark mesh gradient** as the reflexive hero.
 * **A third consecutive alternating image-and-text row.**
 * **A large heading with a small paragraph floating in the top-right
-  corner** of the same section header. Unresolved alignment presented as
+  corner** of the same section header: unresolved alignment presented as
   composition.
 * **Grid cells that are all text on a uniform background.** A grid needs
   real visual variation or it is a list.
@@ -135,14 +128,3 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **Translucent material applied to everything** rather than to the one
   layer where depth carries meaning.
 * **Custom cursors.** Slow, inaccessible, and dated.
-* **A second accent color** introduced in a later section.
-
-## Using this file
-
-When reviewing, count mechanically wherever a count is defined: section
-labels against section count, consecutive split layouts, marquees,
-occurrences of U+2014, distinct accent colors, distinct radius values. A
-count is not an opinion.
-
-When building, derive each decision from the design read. These patterns
-substitute for decisions, so most disappear when each choice has a reason.
