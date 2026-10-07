@@ -1,7 +1,7 @@
 # Section-by-section drafting guide
 
-Section structure per format. Venue policy comes from `venue-standards`,
-empirical patterns from `award-patterns`.
+Section structure and drafting rules per format. Venue policy comes from
+`venue-standards`.
 
 ## Full-length papers
 
@@ -10,28 +10,6 @@ Canonical flow: abstract, introduction, related work, method, experiments
 references, checklist, appendix. Budgets: abstract 150-250 words, one
 paragraph; introduction 1-1.5 pages; related work 0.75-1 page; experiments
 the largest block. Adjust to the venue page limit first.
-
-## Short: 6-page idea papers (HotNets / HotOS / HotStorage style)
-
-Budget: 6 pages total including references. One idea, one memorable
-sentence, one piece of evidence.
-
-- Abstract (half column): problem, insight, evidence, ask.
-- Introduction / Problem (1-1.5 pages): why this problem, why now. End with
-  the insight stated as crisply as possible.
-- The idea (1.5-2 pages): core mechanism or design, just enough to be
-  concrete. A sketch plus the key non-obvious decision; no full system
-  architecture.
-- Evidence (1-1.5 pages): exactly one convincing artifact (measurement,
-  prototype, trace analysis, quantitative argument). Preliminary is fine;
-  hand-waving is not.
-- Open questions (0.5 page): real research asks, falsifiable or buildable,
-  not filler future work.
-- Related work (0.5 page): "why nobody did this," closest prior art by name.
-- No appendix; nothing is "left to the appendix." If it does not fit in 6
-  pages, narrow the idea, not the font.
-
-## Full-length section details
 
 ### Abstract
 
@@ -54,10 +32,10 @@ non-experts in the opening, impress experts in the body.
 - Paragraphs 1-2: the problem and why current approaches are unsatisfactory,
   with citations to retrieved literature.
 - Lead with a sharp contradiction, objective mismatch, deployment gap, or
-  unexplained observation (`award-patterns` 1), concrete enough that a
-  skeptic could disagree with it.
-- The insight sentence: one sentence stating the single new idea. A reader
-  repeats it back after one read; if the idea cannot be stated in one
+  unexplained observation, concrete enough that a skeptic could disagree
+  with it.
+- The insight sentence: one sentence stating the single new idea, passing
+  the abstract's repeat-back test. If the idea cannot be stated in one
   sentence, the positioning is not ready.
 - Paragraph 3: what you do, concretely (method in 3-5 sentences).
 - Paragraph 4: results, with the headline numbers.
@@ -87,14 +65,14 @@ implementer would otherwise guess at.
   done; a suspected-untuned baseline is a rejection trigger.
 - Main results: one table or figure per intro claim. Report variance (seeds,
   error bars). Bold best numbers only if the text explains them.
-- Ablations: design each to kill a specific rival explanation
-  (`award-patterns` 3): oracle baselines, mechanism transplants, zeroed key
-  terms, teacher-forced baselines. List the three objections a hostile
-  reviewer will raise; each must map to an experiment already run. Run the
-  ablation or narrow the claim; "left for future work" reads as incomplete.
+- Ablations: design each to kill a specific rival explanation: oracle
+  baselines, mechanism transplants, zeroed key terms, teacher-forced
+  baselines. List the three objections a hostile reviewer will raise; each
+  must map to an experiment already run. Run the ablation or narrow the
+  claim; "left for future work" reads as incomplete.
 - Analysis: the paragraph that turns numbers into insight. Say what the
   results teach, not only what they score. Report honest losses alongside
-  wins (`award-patterns` 5).
+  wins.
 
 ### Limitations
 
@@ -123,6 +101,26 @@ NeurIPS: paper checklist with 1-2 sentence justifications.
 Proofs, extended experiments, implementation details. Nothing load-bearing:
 if removing the appendix breaks an intro claim, move the evidence into the
 main body.
+
+## Short: 6-page idea papers (HotNets / HotOS / HotStorage style)
+
+Budget: 6 pages total including references. One idea, one memorable
+sentence, one piece of evidence.
+
+- Abstract (half column): problem, insight, evidence, ask.
+- Introduction / Problem (1-1.5 pages): why this problem, why now. End with
+  the insight stated as crisply as possible.
+- The idea (1.5-2 pages): core mechanism or design, just enough to be
+  concrete. A sketch plus the key non-obvious decision; no full system
+  architecture.
+- Evidence (1-1.5 pages): exactly one convincing artifact (measurement,
+  prototype, trace analysis, quantitative argument). Preliminary is fine;
+  hand-waving is not.
+- Open questions (0.5 page): real research asks, falsifiable or buildable,
+  not filler future work.
+- Related work (0.5 page): "why nobody did this," closest prior art by name.
+- No appendix; nothing is "left to the appendix." If it does not fit in 6
+  pages, narrow the idea, not the font.
 
 ## Workshop papers (4-6 pages)
 

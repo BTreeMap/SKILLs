@@ -10,6 +10,7 @@ Review the draft as a hostile reviewer would, in at most two rounds.
    unfixed at the `draft` gate for the human to decide. Run no third round.
 
 ## Pass 1: Novelty and related work
+
 - [ ] Is the closest prior art named and cited, or only gestured at? Would
   its authors recognize their work in the description?
 - [ ] Is the novelty argument built from retrieved full-text literature, not
@@ -22,6 +23,7 @@ Review the draft as a hostile reviewer would, in at most two rounds.
   work did this, or is it merely unclaimed?
 
 ## Pass 2: Correctness
+
 - [ ] Does every theorem state its assumptions adjacent to the statement?
 - [ ] Does every empirical claim in the abstract and introduction trace to a
   main-body figure or table, not the appendix?
@@ -35,6 +37,7 @@ Review the draft as a hostile reviewer would, in at most two rounds.
   confirmatory?
 
 ## Pass 3: Clarity and reproducibility
+
 - [ ] Could an expert reader reproduce the results from the method and setup
   sections alone?
 - [ ] Are datasets, splits, seeds, hyperparameters (ranges plus selection
@@ -46,6 +49,7 @@ Review the draft as a hostile reviewer would, in at most two rounds.
   implementer would guess?
 
 ## Pass 4: Overclaiming audit
+
 - [ ] List every "significant", "best", "SOTA", "substantial", "dramatic".
   Each needs statistical or evidential backing or must be cut.
 - [ ] Do abstract/intro claims exceed the experimental scope?
@@ -77,6 +81,7 @@ Review the draft as a hostile reviewer would, in at most two rounds.
   technical work passes; buzzwords without substance fail.
 
 ## Citation audit (runs with every pass)
+
 - [ ] Every citation added or moved since stage 5 has a row in the citation
   report, with the three checks passed: the record exists, its fields belong
   to it, and it supports the citing sentence.
@@ -84,8 +89,9 @@ Review the draft as a hostile reviewer would, in at most two rounds.
   never plausible-looking guesses.
 
 ## Integrity
-LLM review improves prose and structure. It does not certify integrity: in
-one study, papers fabricated by a research agent reached acceptance rates of
-up to 82% from LLM reviewers (Jiang et al. 2026, "BadScientist", ACL 2026,
-doi:10.18653/v1/2026.acl-long.1134). The integrity gate is the
-human-approved evidence ledger plus provenance, not this checklist.
+
+LLM review improves prose and structure; it does not certify integrity, and
+this checklist is not the integrity gate (invariant 7). In one study, papers
+fabricated by a research agent reached acceptance rates of up to 82% from
+LLM reviewers (Jiang et al. 2026, "BadScientist", ACL 2026,
+doi:10.18653/v1/2026.acl-long.1134).

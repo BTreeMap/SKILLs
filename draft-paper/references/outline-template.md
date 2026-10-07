@@ -1,10 +1,9 @@
 # Paper outline
 
-Rank 2-3 candidate framings; the winner fills the template below, frozen
-before any prose is drafted. Start writing before the idea is fully formed:
-writing exposes what is not yet understood. Per subsection, write at most
-two lines stating its purpose; per paragraph, one sentence stating its
-topic. If the sentence does not fit, split the paragraph.
+The winning framing fills the template below. Start writing before the idea
+is fully formed: writing exposes what is not yet understood. Per subsection,
+write at most two lines stating its purpose; per paragraph, one sentence
+stating its topic. If the sentence does not fit, split the paragraph.
 
 <template for="outline">
 <![CDATA[

@@ -1,10 +1,8 @@
 # Venue standards
 
 Settle what must be true about the venue before the paper is outlined. This
-file holds the verification protocol, the CFP checklist with the venue brief
-it fills, and venue-family archetypes (stable structural shapes). It holds
-no per-venue numbers: limits, deadlines, and policies drift between cycles,
-and a stale number here would silently corrupt every draft.
+file holds no per-venue numbers: limits, deadlines, and policies drift
+between cycles, and a stale number here would silently corrupt every draft.
 
 ## Verification protocol
 
@@ -15,19 +13,16 @@ and never from examples in this file.
    instructions (the conference site, not a mirror or a prior year's page).
    Search and fetch with the harness's own tools; where they are absent, use
    `/search-web` (`web` to find the page, `fetch` to read it). Read a PDF
-   call with `/read-pdf`.
-2. Answer every question in the CFP checklist below and file the answers as
-   the venue brief, each with its source URL and the cycle year. The brief
-   is part of the paper's provenance.
+   call with `/read-pdf`. With no retrieval available, say so, fall back to
+   the archetypes below, and flag every venue fact in the draft as
+   unverified.
+2. Answer every question in the CFP checklist below before outlining, and
+   file the answers as the venue brief, each with its source URL and the
+   cycle year. The brief is part of the paper's provenance.
 3. Re-verify the brief at camera-ready time; limits and artifact deadlines
    move between cycles.
 
-With no retrieval available, say so, fall back to the archetypes below, and
-flag every venue fact in the draft as unverified.
-
 ## CFP checklist
-
-Answer every question from the official CFP before outlining:
 
 1. Length: page or word cap? What counts (figures, tables, appendices,
    references, acknowledgments)? What happens over the limit?

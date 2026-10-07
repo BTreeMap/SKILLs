@@ -26,7 +26,6 @@ final draft before the run moves past each.
 | Name | Path |
 | --- | --- |
 | `award-assessment` | [references/award-assessment.md](references/award-assessment.md) |
-| `award-patterns` | [references/award-patterns.md](references/award-patterns.md) |
 | `citation-report-template` | [references/citation-report-template.md](references/citation-report-template.md) |
 | `design-plan-template` | [references/design-plan-template.md](references/design-plan-template.md) |
 | `outline-template` | [references/outline-template.md](references/outline-template.md) |
@@ -87,7 +86,7 @@ results: `build`; reviews: `rebut`), then by the default verb `build`.
 ## Input states
 
 The state is pinned at `init`; the script refuses a state the verb does not
-start from.
+start from. If the state is ambiguous, ask exactly one question.
 
 | State | Means | Verbs |
 | --- | --- | --- |
@@ -98,11 +97,11 @@ start from.
 | `draft` | a draft to retarget | `refactor` re-outlines against the new format and venue checklist and keeps unchanged sections |
 | `reviews` | the reviews as text | `rebut` |
 
-If the state is ambiguous, ask exactly one question.
-
 ## Formats
 
-Each format's section structure is its section in `section-guide`.
+Each format's section structure is its section in `section-guide`. If the
+format is unknown, ask exactly one question. Defaults: `full` for results,
+`short` for a spark with a strong contradiction.
 
 | Format | Typical shape |
 | --- | --- |
@@ -112,9 +111,6 @@ Each format's section structure is its section in `section-guide`.
 | `journal` | extended, no hard cap, revision rounds |
 | `survey` | taxonomy and gaps, no novel experiments |
 | `demo` | 2-4 pages plus a live artifact |
-
-If the format is unknown, ask exactly one question. Defaults: `full` for
-results, `short` for a spark with a strong contradiction.
 
 ## Session
 
@@ -139,15 +135,18 @@ $R clean ["$S" | --all]
 </commands>
 
 Bind `R` and `S` per shell and re-bind after a reset; `realpath` is
-required. `init` mints the session from two or three keywords, or takes a
-directory path as its location, and pins the verb, format,
-input state, venue, backbone model version (reliability assumptions do not
-transfer across models), and the artifact root that claim paths resolve
-against (default: the current directory). A unique keyword subset recovers
-a lost identifier with a signal. `status` is the cheap resume view: stage,
-gate standings, claim counts, the pad tail, and an advisory `next`. `check`
-derives the gate summary and the evidence ledger. `schema` prints every
-event shape. `clean` removes one session or `--all`, reporting bytes freed.
+required. A unique keyword subset recovers a lost session identifier with a
+signal.
+
+| Command | Contract |
+| --- | --- |
+| `init` | Takes two or three keywords, or a directory path as the session location. Mints the session and pins the verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), and the artifact root that claim paths resolve against (default: the current directory). |
+| `schema` | Prints every event shape. |
+| `note` | Admits one batch of events to the trace. |
+| `status` | The cheap resume view: stage, gate standings, claim counts, the pad tail, and an advisory `next`. |
+| `check` | Derives the gate summary and the evidence ledger. |
+| `jot`, `recall` | Write to and read from the pad. |
+| `clean` | Removes one session or `--all`, reporting bytes freed. |
 
 Commands print one JSON document on stdout; `signal:` lines on stderr are
 advisory. Exit 0 means done, 1 means fix the input and resend, 2 means an
@@ -158,15 +157,16 @@ inline spelling, and an empty one is a rejection.
 
 ### The trace
 
-`note` admits one JSON batch of events. The script stamps each with the
-time `t` and the run identifier and appends it to the run's trace, an
-append-only JSONL log in the session directory; position in the file is
-the order. Never write the trace by hand. Events apply in array order, so
-one batch may approve a gate and enter the next stage, and a later event
-may cite a claim minted earlier in the batch. A rejected batch names every
-problem at once with its field path and changes nothing: apply every fix
-and resend. Write each batch to a file, so a retry is one edit, and copy
-claim identifiers from the `minted` receipt.
+`note` stamps each event with the time `t` and the run identifier and
+appends it to the run's trace, an append-only JSONL log in the session
+directory; position in the file is the order. Never write the trace by
+hand. Events apply in array order, so one batch may approve a gate and
+enter the next stage, and a later event may cite a claim minted earlier in
+the batch. A rejected batch names every problem at once with its field path
+and changes nothing: apply every fix and resend. Write each batch to a file,
+so a retry is one edit. Copy claim identifiers from the `minted` receipt; a
+recovered keyword ref works but signals, so write full identifiers in the
+next batch.
 
 <template for="note-batch">
 {"events": [
@@ -183,11 +183,10 @@ claim identifiers from the `minted` receipt.
 Note `stage-entered` when a stage starts and `decision` for each major
 choice with its reason; `from` lists pad ids, each checked to exist. The
 trace makes no integrity claim beyond an append-only log with timestamps.
-Every command replays it: each line must parse,
-carry a kind from the closed vocabulary with that kind's fields, keep the
-run identifier, replay legally, and stay under the event cap. A line that
-fails stops the command with exit 1 and names the line; show the user the
-error and stop.
+Every command replays it: each line must parse, carry a kind from the closed
+vocabulary with that kind's fields, keep the run identifier, replay legally,
+and stay under the event cap. A line that fails stops the command with exit
+1 and names the line; show the user the error and stop.
 
 The pad is free working memory beside the trace: `jot` admits any JSON
 object (or prose with `--prose`) and never rejects content; `recall`
@@ -208,15 +207,16 @@ stage 8. A run has the gates whose stage its verb runs. The script refuses
 2. Run `check` and present to the human: the artifact under review (plan,
    ledger, or draft); the events in `since_last_decision`; at the `draft`
    gate, the claims in `claims_changed_since_ledger`, which the human
-   re-checks there; and one question naming the decision: approve, revise
-   with notes, or reject.
+   re-checks there, and every punch-list item left open after review, from
+   the pad; and one question naming the decision: approve, revise with
+   notes, or reject. The human sees only what this presentation shows.
 3. Note `gate-decided` with the outcome and the human's reply verbatim.
 
 | Outcome | Effect on the run |
 | --- | --- |
 | `approve` | The gate passes; stages past it open. |
 | `revise` | The gate stays shut. Revise at the gate's stage per the notes, then request the gate again. |
-| `reject` | The run closes and the script admits nothing more. If the human redirects the work, `init` a new run. |
+| `reject` | The run closes and the script admits nothing more. If the human redirects the work, `init` a new run; its trace starts empty, so re-note the claims the redirected work keeps. |
 
 The agent never decides a gate itself, and silence is never approval. If
 the reply does not say which outcome it is, ask once. Re-entering a gated
@@ -226,11 +226,15 @@ the `ledger` gate again.
 ## Evidence ledger
 
 Each empirical claim in the draft is one claim event. The script mints its
-identifier, checks at admission that a `supported` or `exploratory`
-claim's artifact exists under the artifact root, re-checks existence on
-every `check`, and derives the ledger. Whether the artifact backs the
-claim as written (same metric, split, and baseline) is the agent's
-judgment and the human's at the gate.
+identifier, checks at admission that a `supported` or `exploratory` claim's
+artifact exists under the artifact root, re-checks existence on every
+`check`, and derives the ledger. Whether the artifact backs the claim as
+written (same metric, split, and baseline) is the agent's judgment and the
+human's at the gate.
+
+Artifact paths resolve against the root pinned at `init`; an absolute path
+stands as given. Moving the artifact tree after `init` marks every claim
+missing in `check` and blocks the `draft` gate.
 
 | Status | Meaning | Script checks |
 | --- | --- | --- |
@@ -241,9 +245,9 @@ judgment and the human's at the gate.
 
 - Resolve numbers in prose, tables, figures, and captions to the same
   claim.
-- Give a reduced, narrowed, or failed campaign a claim describing what
-  ran. Revise a claim's status when its experiment lands; drop a
-  claim the draft no longer makes, with the reason.
+- Give a reduced, narrowed, or failed campaign a claim describing what ran.
+  Revise a claim's status when its experiment lands; drop a claim the draft
+  no longer makes, with the reason.
 - Cut an unsupported claim or run its experiment; never soften it to
   "plausible" in prose.
 - For `design`, the ledger is prospective: every falsifiable claim is
@@ -260,18 +264,18 @@ Render `check`'s `ledger` rows for the human with this template:
 
 ## Pipeline
 
+A skipped stage is admitted with a signal, but its work is still owed: a
+`refactor` that jumps from stage 3 to 8 has skipped citation verification.
+
 0. Intake: detect state and verb, confirm the format, and ask for the
    target venue if it is unknown. Run `init`. Study the current CFP per
-   `venue-standards`, file the venue brief from its template, and fetch
-   the venue's LaTeX template now.
+   `venue-standards`, file the venue brief from its template, and fetch the
+   venue's LaTeX template now.
 1. Positioning (`design`; `build` from a shaped idea): sweep the literature
    with `/lit-review`, analyze the gap, argue novelty from retrieved full
    text, state falsifiable claims, and write a pre-registration-style
-   experiment plan. Write the design plan from `design-plan-template`: a
-   scenario sketch that passes the practitioner-recognition test, the
-   contradiction framing (`award-patterns` 1), a worked numerical example
-   of the core mechanism, and the award assessment (`award-assessment`).
-   Gate: `plan`.
+   experiment plan. Write the design plan from `design-plan-template`; its
+   award section is filled from `award-assessment`. Gate: `plan`.
 2. Evidence: note one claim per empirical claim, per the evidence ledger
    above. Gate: `ledger`.
 3. Outline: rank 2-3 framings in the pad; freeze one against
@@ -283,42 +287,35 @@ Render `check`'s `ledger` rows for the human with this template:
    word budgets. Every empirical sentence traces to a live claim or a
    verified citation; mark the rest `[CITATION NEEDED]`. Put each
    mechanism's worked numerical example beside the prose that explains it.
-5. Citation verification: file the report from `citation-report-template`.
-   Take each record from the stage-1 `/lit-review` corpus or retrieve it
-   with `/search-web` (`scholar`, by title or DOI); read a cited PDF with
-   `/read-pdf`. Fix, downgrade, or cut each failing citation.
+5. Citation verification: file the report from `citation-report-template`,
+   which names the retrieval routes, and fix, downgrade, or cut each failing
+   citation. The work splits by key. To delegate it, hand each delegate a
+   batch of keys with their citing sentences through `/summon`, with
+   invariant 3 as the rule it can break and `citation-report-template` rows
+   as the return shape, and admit only rows whose Source column names a
+   retrieved record.
 6. Figure and table audit: every referenced figure and table exists,
    captions describe what is shown, and prose numbers match their claims'
    artifacts.
-7. Adversarial review: run the review loop in `reviewer-checklist`; its
-   rounds and stopping rule are defined there. Then apply the best-paper
-   lens (`award-patterns` 6, `award-assessment`): the contradiction is
-   sharp, experiments kill rival explanations, the evaluation is layered in
-   the venue's currency, losses are reported, threshold dimensions hold,
-   and the lead differentiators frame the paper.
+7. Adversarial review: run the review loop in `reviewer-checklist`, which
+   defines its rounds and stopping rule. Then apply the best-paper lens in
+   `award-assessment`.
 8. Bundle and venue statements: assemble the reproducibility bundle (code
    and data pointers, seeds, logs, figure scripts; anonymized for
    double-blind). Compile the venue template and fix every error and
    warning that touches the submission. Write only the venue statements the
    CFP requires, per `venue-standards`. Gate: `draft`.
-9. Rebuttal and camera-ready (`rebut`), per `rebuttal-playbook`. The input
-   is the reviews as text: per reviewer, the quoted concerns and scores, in
-   any readable layout. Note a claim for each artifact a requested
-   experiment produces. After acceptance, run the camera-ready tail in
-   `rebuttal-playbook`.
-
-Citation verification splits by key. To delegate it, hand each delegate a
-batch of keys with their citing sentences through `/summon`, with
-invariant 3 as the rule it can break, `citation-report-template` rows as
-the return shape, and admit only rows whose Source column names a
-retrieved record.
+9. Rebuttal and camera-ready (`rebut`), per `rebuttal-playbook`, which
+   defines the reviews input. A `rebut` run is its own session
+   (`--verb rebut --state reviews`); claims from the drafting run do not
+   carry over, so note there the claims the rebuttal relies on, plus a claim
+   for each artifact a requested experiment produces. After acceptance, run
+   the camera-ready tail in `rebuttal-playbook`.
 
 ## Output contract
 
-- `design`: the research plan from `design-plan-template` (scenario sketch,
-  contradiction, falsifiable claims, worked example, experiment plan, award
-  assessment) plus the prospective ledger rendered from `check`. No results
-  prose.
+- `design`: the research plan from `design-plan-template` plus the
+  prospective ledger rendered from `check`. No results prose.
 - `build`: the complete draft in the venue's template within its limits,
   double-blind; the venue brief; the evidence ledger rendered from `check`;
   the citation verification report; the reviewer punch list with
@@ -328,25 +325,6 @@ retrieved record.
   rewritten sections, each with its reason).
 - `rebut`: the rebuttal draft or revision letter plus the
   response-to-reviewer mapping from `rebuttal-playbook`.
-
-## Gotchas
-
-- A `rebut` run is its own session (`--verb rebut --state reviews`);
-  claims from the drafting run do not carry over, so note there the claims
-  the rebuttal relies on.
-- A new `init` after a rejection starts with an empty trace; re-note the
-  claims the redirected work keeps.
-- Claim artifact paths resolve against the root pinned at `init`, and an
-  absolute path stands as given. Moving the artifact tree after `init`
-  marks every claim missing in `check` and blocks the `draft` gate.
-- A skipped stage is admitted with a signal, but its work is still owed: a
-  `refactor` that jumps from stage 3 to 8 has skipped citation
-  verification.
-- The human sees only what the gate presentation shows. Punch-list items
-  left open after review live in the pad until you list them at the
-  `draft` gate.
-- A recovered keyword ref works but signals; write full identifiers from
-  the receipt in the next batch.
 
 ## Completion checks
 
