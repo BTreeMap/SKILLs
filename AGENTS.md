@@ -118,7 +118,8 @@ earns it.
 * Before creating or modifying any skill, load
   [author-skill/SKILL.md](author-skill/SKILL.md) and follow it. It holds
   every authoring rule: frontmatter, registry, redirects, the writing
-  standard, bundled scripts, and persona verbs.
+  standard, and persona verbs; its `scripts` reference holds the rules for
+  bundled scripts.
 * When adding or renaming a skill, create it at `<skill-name>/SKILL.md` in
   the repository root and update the skill lists in `AGENTS.md` and
   `README.md` in the same change. The gate writes the alias symlink and the
