@@ -86,23 +86,16 @@ class TestLocations:
 
 class TestCorrectiveOrders:
     def test_every_cross_field_problem_arrives_in_one_verdict(self):
-        """The property the gate exists for: a rejection costs one edit."""
+        """The property the gate exists for: a rejection costs one edit, and
+        each problem keeps its location and hint across the bridge."""
         problems = [
             Diagnostic("objections[0].anchors", "quote the paper verbatim", "page 3"),
             Diagnostic("objections[0].prior", "drop prior keys here"),
+            Diagnostic("$", "add at least one entry"),
         ]
         with pytest.raises(ValidationError) as caught:
             refuse("Objection", problems)
         assert diagnostics(caught.value) == problems
-
-    def test_the_bridge_round_trips_locations_and_hints(self):
-        original = [
-            Diagnostic("$", "add at least one entry"),
-            Diagnostic("a[1].b", "f"),
-        ]
-        with pytest.raises(ValidationError) as caught:
-            refuse("M", original)
-        assert diagnostics(caught.value) == original
 
     def test_native_field_errors_translate_too(self):
         class Record(Model):

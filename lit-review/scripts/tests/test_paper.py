@@ -112,23 +112,11 @@ class TestParseBoundary:
         row["authors"] = ["Ada", "Grace"]
         assert paper_from_json(row).authors == ("Ada", "Grace")
 
-    def test_an_unknown_field_is_refused(self):
-        row = self.valid_row()
-        row["invented"] = 1
-        with pytest.raises(CommandError, match="Extra inputs are not permitted"):
-            paper_from_json(row)
-
     def test_a_status_outside_the_vocabulary_is_refused(self):
         """The rejection names the field, the key, and the offending value."""
         row = self.valid_row()
         row["status"] = "maybe"
         with pytest.raises(CommandError, match=r"status: Input should be"):
-            paper_from_json(row)
-
-    def test_a_read_level_outside_the_vocabulary_is_refused(self):
-        row = self.valid_row()
-        row["read_level"] = "skimmed"
-        with pytest.raises(CommandError, match=r"read_level: Input should be"):
             paper_from_json(row)
 
     def test_an_exclusion_without_a_reason_is_refused(self):

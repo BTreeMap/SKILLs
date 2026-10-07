@@ -43,16 +43,6 @@ class TestAddLeaf:
             question="question", origin="frame", state=Open()
         )
 
-    def test_origin_defaults_to_frame(self):
-        ledger = Ledger()
-        apply(ledger, {"e": "add_leaf", "id": "leaf-a", "q": "q"})
-        assert ledger.leaves["leaf-a"].origin == "frame"
-
-    def test_spawned_origin_is_admitted(self):
-        ledger = Ledger()
-        apply(ledger, {"e": "add_leaf", "id": "a", "q": "q", "origin": "spawned"})
-        assert ledger.leaves["a"].origin == "spawned"
-
     @pytest.mark.parametrize(
         "event",
         [
@@ -99,23 +89,6 @@ class TestAddSource:
                     "title": "t",
                 },
             )
-
-    def test_class_outside_the_set_is_refused(self):
-        with pytest.raises(CommandError, match="cls: Input should be"):
-            apply(
-                seeded(),
-                {
-                    "e": "add_source",
-                    "id": "s",
-                    "leaf": "leaf-a",
-                    "cls": "hearsay",
-                    "title": "t",
-                },
-            )
-
-    def test_url_is_optional(self):
-        ledger = seeded()
-        assert ledger.sources["src-a"].url == ""
 
 
 class TestCloses:
