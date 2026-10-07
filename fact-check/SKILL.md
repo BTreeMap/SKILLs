@@ -45,7 +45,8 @@ file under `constraints`; re-read that key before every file edit.
 4. Every non-`unverifiable` verdict cites at least one verbatim evidence
    quote with URL (or offline source identifier) and access date. Proposed
    corrections require two independent sources: different publishing
-   organizations, neither syndicating or mirroring the other.
+   organizations, neither syndicating, mirroring, or citing only the other;
+   two pages carrying identical wording are one syndicated source.
 
 ## Scope
 
@@ -124,12 +125,12 @@ only in the cost and latency metadata.
 - **Parallel**: delegate through `/summon fanout`, one delegate per claim.
   In each brief, the evidence is exactly the contract input; the rules are
   the retrieval route for the claim's type and the source tiers in
-  `evidence`, and the confidence rules in `verdicts`; the contract is one
-  verdict record, returned as the JSON object alone. A delegate never sees
-  the document, other claims, other verdicts, or the file system for
-  writing, and edits nothing. The lead alone aggregates, reports, seeks
-  approval, and edits. This split is a security boundary: only delegates
-  touch untrusted web content.
+  `evidence`, `verdicts`, and Invariant 4; the contract is one verdict
+  record, returned as the JSON object alone. A delegate never sees the
+  document, other claims, other verdicts, or the file system for writing,
+  and edits nothing. The lead alone aggregates, reports, seeks approval, and
+  edits. This split is a security boundary: only delegates touch untrusted
+  web content.
 - **Sequential**: run the same contract inline, one claim at a time, when
   summon keeps the work inline or no agent primitive exists. Discard raw
   page content from working context per `evidence`, offloading it to a

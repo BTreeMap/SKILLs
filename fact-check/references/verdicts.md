@@ -46,9 +46,7 @@ Derive confidence from evidence agreement alone.
 | medium | One authoritative source, or independent sources with minor discrepancies (rounding, as-of dates) |
 | low | Only indirect, second-hand, or partially matching evidence |
 
-Independent sources come from different publishing organizations, neither
-syndicating, mirroring, or citing only the other. Two pages carrying
-identical wording are one syndicated source.
+Independence follows Invariant 4.
 
 ## Abstention
 
