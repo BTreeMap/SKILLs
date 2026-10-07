@@ -239,13 +239,13 @@ selection should be recorded.
 | Hybrid inductive/deductive | [5][33] | Prior categories exist but must not foreclose new ones | Both passes documented; promotion of codes traceable [5] |
 
 Concrete defaults the corpus supplies, so a skill invents none: double-code
-10 to 25% of units when running an agreement check, keep the codebook to 20
-to 40 codes, and fix coder count, unit, statistic, and threshold before
-coding starts, all from O'Connor & Joffe [27]; aim for roughly 5 to 14 theme
-groupings, from Attride-Stirling [4]; have at least two people independently
-code the first few records in a multidisciplinary team, from Gale et al.
-[11]. Each of these is one source's recommendation, and [27] and [11] were
-read at full text while [4] was not.
+10 to 25% of units when running an agreement check, keep the codebook to at
+most 40 codes, aiming for 20 or fewer, and fix coder count, unit, statistic,
+and threshold before coding starts, all from O'Connor & Joffe [27]; aim for
+roughly 5 to 14 theme groupings, from Attride-Stirling [4]; have at least
+two people independently code the first few records in a multidisciplinary
+team, from Gale et al. [11]. Each of these is one source's recommendation,
+and [27] and [11] were read at full text while [4] was not.
 
 Behaviours the corpus warrants a skill guarding against: reporting agreement
 statistics alongside a reflexive procedure [19][25][26]; producing topic
