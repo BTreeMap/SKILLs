@@ -52,7 +52,7 @@ replay state with `check`.
    abstract, introduction, and conclusion before reading related work or
    discussion.
 4. The authors' Limitations section is a floor. An objection anchored there
-   restates what the authors already concede; the report's weight sits in
+   restates what the authors already concede; the report's weight goes to
    objections anchored outside it, and `check` reports the echo ratio.
 5. No free score. The recommendation and confidence come from `check`. The
    review names no author and no affiliation.
@@ -71,10 +71,22 @@ report" or "reproduce" selects ultra.
 | full | All five | Corpus via lit-review at lite; full text required |
 | ultra | All five | Recompute reported numbers per `analysis`; forward snowball from every prior key per `novelty` |
 
+## Environment probe
+
+Before ingest, determine from the available tools:
+
+- PDF text: read with `/read-pdf` and pass the extraction file to `ingest`.
+  A paper with no reachable text runs at lite only, disclosed in the report.
+- Network: the novelty bank runs lit-review. Without network, walk the other
+  banks and report novelty as unassessed.
+- Retrieval: prefer the harness's own web search and fetch; where they are
+  absent, use `/search-web` (`web`, `wiki`, `scholar`, `fetch`).
+
 ## Phases
 
-Six phases in order. Each bank phase loads exactly the reference of its
-name; `firewall` loads with every bank; `report` loads last.
+Run the six phases in order. Each bank phase loads exactly the reference of
+its name; `firewall` loads with every bank; `report` loads last. Revisiting
+a bank is normal.
 
 | Phase | Work |
 | --- | --- |
@@ -85,59 +97,36 @@ name; `firewall` loads with every bank; `report` loads last.
 | verdict | Run `check`; withdraw what a re-read defeats; resolve every signal |
 | report | Draft from the scaffold per `report`; `cite-check` the draft |
 
-Jot before noting: a hunch goes on the pad, an objection goes through the
-gate once its quote is in hand.
+Investigate may fan out through `/summon fanout`, one delegate per bank at
+most. In each brief: the evidence is the extraction file, the bank's
+reference file, and `firewall`, by absolute path, plus the claims noted so
+far with their keywords; the contract is that bank's share of the note
+batch, returned as the JSON object alone. Delegates write no session state;
+the lead judges each return, then runs `jot` and `note` itself.
 
-## Session
+## Commands
 
-`init` takes two or three keywords and the paper's date, mints the session
-identifier, and echoes it with its directory; a keyword subset recovers a
-lost one. Ingested text splits on `## PDF page N` lines, giving per-page
-anchors. Pass a directory path in place of an identifier to put a session
-somewhere specific.
-
-Two write paths:
-
-- The pad never rejects. `jot` stores any JSON object or prose; `recall`
-  filters by kind, regex, id, or count. Suggested kinds: `note`, `question`,
-  `injection`.
-- The gate judges. `note` admits one batch in schema order: `claims`
-  (verbatim sentence, resolved to a page), `objections` (a `kind` from the
-  banks, a `severity`, the text, an optional `claim` ref, `anchors` or
-  `missing`, `prior` keys for novelty kinds, and optional `from` pad ids
-  checked to exist), `walks` (a bank done), `withdraws` (an objection a
-  re-read defeated). A rejected batch names every problem at once and
-  changes nothing, so apply all the fixes and resend.
-
-`status` carries an advisory `next`, never a gate: revisiting a bank is
-normal.
-
-`check` derives from live state: each objection's standing (`grounded`,
-`unanchored` after a re-ingest, `undated` when its prior work fails the
-corpus date test, `withdrawn`), each claim's verdict (`contested` by a
-grounded fatal or major objection, `questioned`, `standing`), the echo
-ratio, the recommendation by severity rule (fatal: reject; major: major
-revision; minor: minor revision; else no objection stands), bank coverage
-(unwalked banks for the level, corpus linked, pages) with a confidence band,
-and the report scaffold. `cite-check` requires every `[On]` and `[Cn]` in
-the draft to resolve to a grounded record and every grounded fatal or major
-objection to appear.
+| Command | Contract |
+| --- | --- |
+| `init` | Takes two or three keywords, or a directory path to place the session, plus the paper's date and its title on the pipe; mints the session identifier and echoes it with its directory. A keyword subset recovers a lost identifier |
+| `ingest` | Splits the extraction on `## PDF page N` lines into per-page anchors |
+| `link` | Attaches a lit-review corpus as prior work |
+| `status` | Ledger counts, banks walked, and an advisory `next`, never a gate |
+| `cite-check` | Requires every `[On]` and `[Cn]` in the draft to resolve to a grounded record and every grounded fatal or major objection to appear |
+| `schema` | Prints the batch shape and each bank's kinds |
+| `clean` | Lists sessions with sizes; removes one or `--all`, reporting bytes freed |
 
 Exit codes: 0 done (stderr `signal:` lines are advisory); 1 fix the input
-and resend. `clean` lists sessions with sizes and removes one or `--all`,
-reporting bytes freed.
+and resend. Bind the command once per shell and re-bind after a reset;
+`realpath` is required. Invoke it and read its output; read the source only
+when troubleshooting on the user's instruction.
 
-Bind the command once per shell and re-bind after a reset; `realpath` is
-required. Invoke it and read its output; read the source only when
-troubleshooting on the user's instruction.
-
-Free-form content fills a named slot: `--<slot>` carries a short value,
-`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
-required slot reads the pipe when no flag claims it. One slot per call may
-claim the pipe. A JSON body has no inline spelling. A value is never
-reinterpreted, so a regex needs no escape, and an empty one is a rejection
-rather than a fallback. Write a batch to a file: a retry then costs one
-edit.
+Free-form content fills a named slot: `--<slot>` for a short value,
+`--<slot>:file PATH` for a file, `--<slot>:stdin` for the pipe; the required
+slot reads the pipe when no flag claims it, and one slot per call may claim
+the pipe. A JSON body has no inline spelling. A value is never
+reinterpreted, so a regex needs no escape; an empty one is a rejection, not
+a fallback.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
@@ -159,6 +148,30 @@ $R cite-check "$S" --draft:file review.md
 $R clean ["$S" | --all]
 </commands>
 
+## Pad and gate
+
+Jot before noting: a hunch goes on the pad, an objection goes through the
+gate once its quote is in hand.
+
+- The pad never rejects. `jot` stores any JSON object or prose; `recall`
+  filters by kind, regex, id, or count. Suggested kinds: `note`, `question`,
+  `injection`.
+- The gate judges. `note` admits one batch in schema order: `claims`,
+  `objections`, `walks` (a bank done), `withdraws` (an objection a re-read
+  defeated); `schema` prints each shape. A claim's verbatim sentence must
+  resolve to a page. An objection carries `anchors` or `missing`, `prior`
+  keys for novelty kinds, and optional `from` pad ids checked to exist. A
+  rejected batch names every problem at once and changes nothing, so apply
+  all the fixes and resend. Write a batch to a file: a retry then costs one
+  edit.
+
+An anchor resolves as a verbatim substring of the normalized page text, or
+as the best-matching span at 0.85 similarity or better. Quotes run 12 to
+1000 characters: shorter resembles any paper, longer is a section. A failed
+quote usually crosses a page break, a hyphenated line end, or a figure
+caption. An objection with `missing` needs a `where` (the table or section
+that should hold the absent item), or the report cannot place it.
+
 <template for="note-batch">
 {
   "claims":     [{"kw": ["first", "combine"], "verbatim": "Our method is the first to combine X with Y."}],
@@ -175,42 +188,23 @@ $R clean ["$S" | --all]
 }
 </template>
 
-## Environment probe
+## Check
 
-Before ingest, determine from available tools:
+`check` derives from live state:
 
-- PDF text: read with `/read-pdf` and pass the extraction file to `ingest`.
-  A paper with no reachable text runs at lite only, disclosed in the report.
-- Network: the novelty bank runs lit-review. Without network, walk the
-  other banks and report novelty as unassessed.
-- Retrieval: prefer the harness's own web search and fetch. Where they are
-  absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
-  `scholar`, and `fetch`.
-- Delegation: through `/summon fanout`, one delegate per bank at most. In
-  each brief: the evidence is the extraction file, the bank's reference
-  file, and `firewall`, by absolute path, plus the claims noted so far
-  with their keywords; the contract is that bank's
-  share of the note batch (template below), returned as the JSON object
-  alone. Delegates write no session state; the lead judges each return,
-  then runs `jot` and `note` itself.
+- Each objection's standing: `grounded`, `unanchored` after a re-ingest,
+  `undated` when its prior work fails the corpus date test, `withdrawn`.
+- Each claim's verdict: `contested` by a grounded fatal or major objection,
+  `questioned`, `standing`.
+- The echo ratio.
+- The recommendation by severity rule (fatal: reject; major: major
+  revision; minor: minor revision; else no objection stands).
+- Bank coverage (unwalked banks for the level, corpus linked, pages) with a
+  confidence band.
+- The report scaffold.
 
-## Gotchas
-
-- An anchor resolves as a verbatim substring of the normalized page text, or
-  as the best-matching span at 0.85 similarity or better. A failed quote
-  usually crosses a page break, a hyphenated line end, or a figure caption.
-  Quotes run 12 to 1000 characters: shorter resembles any paper, longer is a
-  section.
-- An objection with `missing` needs a `where` (the table or section that
-  should hold the absent item), or the report cannot place it.
-- Limitations detection matches a closed heading list; when `ingest` signals
-  none, the echo ratio is unavailable and invariant 4's floor is judged by hand.
-- Re-ingesting a revised version keeps the ledger and re-derives every
-  standing; expect `unanchored` objections and withdraw or re-anchor them.
-- A prior key sharing the paper's year passes with an advisory; confirm the
-  prior work was public first before keeping the objection at major.
-- More experiments is a question unless the text names the claim the
-  missing experiment would test.
+Re-ingesting a revised version keeps the ledger and re-derives every
+standing; expect `unanchored` objections and withdraw or re-anchor them.
 
 ## Completion checks
 
@@ -219,7 +213,7 @@ Before ingest, determine from available tools:
   <item>Every bank the level requires has a walk entry; check reports no unwalked bank.</item>
   <item>Every objection in the review is grounded in check output; withdrawn and unanchored records are absent from it.</item>
   <item>Every novelty objection names a corpus key dated before the paper.</item>
-  <item>The echo ratio was read; objections outside the authors' Limitations carry the review's weight.</item>
+  <item>The echo ratio was read; the review's weight goes to objections outside the authors' Limitations.</item>
   <item>The recommendation and confidence are those check derived; cite-check passed on the final draft.</item>
   <item>The review names no author or affiliation and follows the template in report.</item>
 </checklist>

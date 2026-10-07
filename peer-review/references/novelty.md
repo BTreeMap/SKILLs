@@ -17,8 +17,9 @@ the only place a novelty objection can point.
 4. Screen to the works that overlap a claim. Read at abstract level; read
    full text for any work that would carry a `major` objection.
 5. `link` the lit-review session to this one. Every corpus key with a year
-   before the paper's is now citable as `prior`; a key sharing the year
-   passes with an advisory; a later key is refused.
+   before the paper's is now citable as `prior`; a later key is refused. A
+   key sharing the paper's year passes with an advisory; confirm the prior
+   work was public first before keeping the objection at major.
 6. Walk the questions below; note a `walks` entry for `novelty`.
 
 Ultra adds a forward snowball from every key cited as `prior`, so a rebuttal
@@ -33,17 +34,14 @@ already published is in the corpus before the review says "predates".
 | `sota` | Is a state-of-the-art claim made without the strongest result available at the paper's date? | The claim sentence; the prior key holding the stronger result, with its number |
 | `positioning` | Is a directly relevant corpus work absent from the paper's related work or comparisons? | `missing: citation of <key>` with `where: related work`; the prior key |
 
+The objection text states the overlap in the prior work's own terms and the
+difference that remains. "X (2021) routes prompts with a bandit over the
+same candidate set; the present paper adds a learned prior, which the claim
+of being first does not survive" is the shape.
+
 ## Severity
 
 `major` when a `first` or `sota` claim is contradicted, or a `prior` work
 covers the main contribution; `minor` for positioning gaps that leave the
 contribution intact; `question` when the overlap depends on a reading of the
-prior work the abstract cannot settle. Lack of state-of-the-art results
-alone is no objection (see `firewall`).
-
-## Text discipline
-
-The objection text states the overlap in the prior work's own terms and the
-difference that remains. "X (2021) routes prompts with a bandit over the
-same candidate set; the present paper adds a learned prior, which the claim
-of being first does not survive" is the shape.
+prior work the abstract cannot settle.

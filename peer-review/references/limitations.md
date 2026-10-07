@@ -1,7 +1,7 @@
 # Limitations: The Floor and What Sits Above It
 
 Read the paper's Limitations section last among the banks, after the
-objections from `design` and `analysis` stand. Note a `walks` entry for
+objections from `design` and `analysis` stand, then note a `walks` entry for
 `limitations`.
 
 ## Signalling questions
@@ -17,8 +17,10 @@ objections from `design` and `analysis` stand. Note a `walks` entry for
 
 `check` reports the echo ratio: the share of anchored objections whose quote
 sits inside the authors' Limitations. Above one half, the review is
-restating the paper. Return to `design` and `analysis` and hunt outside that
-section before drafting. A limitation the authors state is `minor` at most
+restating the paper: return to `design` and `analysis` and hunt outside that
+section before drafting. Limitations detection matches a closed heading
+list; when `ingest` signals none, the echo ratio is unavailable and the
+floor is judged by hand. A limitation the authors state is `minor` at most
 unless it undermines a main claim, in which case the objection belongs to
 the bank that found it, anchored in the results.
 

@@ -1,9 +1,9 @@
 # Report: The Review Document
 
-Draft once from `check` output, then `cite-check` the file. Every objection
-in the draft is a marker `[On]` from the scaffold's `fatal`, `major`,
-`minor`, or `questions` lists; every claim is `[Cn]`. Withdrawn, unanchored,
-and undated records stay out.
+Draft once from `check` output, sweep the draft with `/humanize` in embedded
+mode, then `cite-check` the file. Every objection in the draft is a marker
+`[On]` from the scaffold's `fatal`, `major`, `minor`, or `questions` lists;
+every claim is `[Cn]`. Withdrawn, unanchored, and undated records stay out.
 
 ## Template
 
@@ -51,9 +51,8 @@ every quoted anchor and prior-work key was verified by its script.
 ## Rules
 
 - One paragraph per objection: what is wrong, where (page and quoted
-  anchor, or the missing item and its expected place), and what resolves
-  it. The resolving action is concrete: a table, a run, a citation, a
-  restated scope.
+  anchor, or the missing item and its expected place), and a concrete
+  resolving action: a table, a run, a citation, a restated scope.
 - Order within a severity by the claim it contests, main claim first.
 - The Summary is descriptive. Strengths appear only where a later objection
   needs the contrast ("the ablation in Table 3 isolates the encoder; no
@@ -62,4 +61,3 @@ every quoted anchor and prior-work key was verified by its script.
 - No author names, affiliations, or venue guesses anywhere.
 - Hedge by evidence class: a `question` reads as a question; an objection
   whose prior work was read at abstract level says so.
-- Sweep the draft with `/humanize` in embedded mode before `cite-check`.

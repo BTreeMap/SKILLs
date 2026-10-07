@@ -1,6 +1,6 @@
 # Analysis: Results and Statistics
 
-Walk once per paper over every table and figure the claims cite; note a
+Walk once per paper over every table and figure the claims cite, then note a
 `walks` entry for `analysis`.
 
 ## Signalling questions
@@ -19,11 +19,11 @@ Walk once per paper over every table and figure the claims cite; note a
 
 ## Consistency reads
 
-Numbers in the abstract, text, tables, and figures must agree. Quote both
-sides when they differ (`selective` or `reporting`, severity by the size of
-the gap). Percentages must sum, means must sit inside their reported ranges,
-a standard deviation larger than half the mean on a bounded measure is a
-flag for a non-normal spread described as normal.
+Numbers in the abstract, text, tables, and figures must agree. When they
+differ, quote both sides (`selective` or `reporting`, severity by the size
+of the gap). Percentages must sum and means must sit inside their reported
+ranges. On a bounded measure, a standard deviation larger than half the mean
+flags a non-normal spread described as normal.
 
 ## Ultra: recomputation
 

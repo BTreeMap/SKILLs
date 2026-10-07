@@ -16,8 +16,9 @@ sections earns a `rhetoric` objection with `missing`.
 
 ## Signalling questions
 
-Answer per claim while reading methods and results. A "no" is an objection
-of the named kind; the hint names the evidence to quote.
+Answer per claim while reading methods and results, then note a `walks`
+entry for `claims`. A "no" is an objection of that kind, quoting the
+evidence its row names.
 
 | Kind | Question | Anchor |
 | --- | --- | --- |
@@ -26,15 +27,13 @@ of the named kind; the hint names the evidence to quote.
 | `speculation` | Is a mechanism stated as explanation when only the outcome was measured? | The explanatory sentence |
 | `rhetoric` | Does the wording carry the weight (suggestive terms, math that restates prose, "significant" without a test)? | The sentence |
 
+In the objection text, name the section, table, or theorem that would have
+to support the claim and what it shows instead. "Table 2 covers two of the
+three benchmarks the abstract names" is an objection; "the evidence is weak"
+is a pad note.
+
 ## Severity
 
 `fatal` when the main claim has no test in the paper; `major` when a
 headline claim exceeds its evidence; `minor` when a secondary claim does;
 `question` when a re-read or the authors could settle it.
-
-## Support test
-
-For each claim, name in the objection text the section, table, or theorem
-that would have to support it and what it shows instead. "Table 2 covers two
-of the three benchmarks the abstract names" is an objection; "the evidence
-is weak" is a pad note.
