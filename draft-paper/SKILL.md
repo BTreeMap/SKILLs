@@ -146,7 +146,7 @@ signal.
 | `status` | The cheap resume view: stage, gate standings, claim counts, the pad tail, and an advisory `next`. |
 | `check` | Derives the gate summary and the evidence ledger. |
 | `jot`, `recall` | Write to and read from the pad. |
-| `clean` | Removes one session or `--all`, reporting bytes freed. |
+| `clean` | Lists sessions with sizes; removes one or `--all`, reporting bytes freed. |
 
 Commands print one JSON document on stdout; `signal:` lines on stderr are
 advisory. Exit 0 means done, 1 means fix the input and resend, 2 means an

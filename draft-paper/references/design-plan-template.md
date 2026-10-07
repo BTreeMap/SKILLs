@@ -1,7 +1,7 @@
 # Design plan
 
-Stage 1 deliverable for `design`, one section per heading below. The human
-approves it before any experiment runs.
+Stage 1 deliverable for `design` and for `build` from a shaped idea, one
+section per heading below. The human approves it before any experiment runs.
 
 ## Scenario sketch
 
