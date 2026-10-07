@@ -1,8 +1,10 @@
-# Harness reference
+# Harness and reach
 
-What a delegate starts with, per harness. "Not documented" means the vendor
-documentation surveyed does not state it; treat it as a thing to probe, not
-a thing to assume.
+What a delegate starts with: its inheritance per harness, and how a named
+skill reaches it. "Not documented" means the vendor documentation surveyed
+does not state it: probe it, never assume it.
+
+## Inheritance
 
 | Harness | Primitive | Delegate inherits | Skill access | Caps and limits | Return |
 | --- | --- | --- | --- | --- | --- |
@@ -13,12 +15,38 @@ a thing to assume.
 | DeepSeek Harness (dsh) | `dsh-tool-subagent`, plus `dsh-tool-subagent-control` for send_message, interrupt_agent, list_agents | nothing by default: each child gets a new flat tool scope, and the caller passes an optional `toolFilter`. A fork provider inherits a completed-turn prefix of the parent log; spawn and ACP providers inherit nothing | the Agent Skills SKILL.md contract with six-tier non-recursive discovery; whether a spawned child auto-loads skills is not documented | not documented | typed: `SubagentStartRequest` carries an optional `outputSchema` (JSON Schema) for the result; otherwise the child's last non-empty assistant message |
 | OpenAI Agents SDK | `handoff` transfers control with the full history; `as_tool` calls a sub-agent with generated input and leaves the answer with the orchestrator | handoff: everything. as_tool: only the generated input | not documented | not documented | handoff: the delegate owns the conversation from then on. as_tool: a tool result the orchestrator keeps |
 
-Handoff prompts in the OpenAI Agents SDK carry the SDK's recommended prefix,
-which tells the delegate it is part of a multi-agent system.
+OpenAI Agents SDK handoff prompts carry the SDK's recommended prefix,
+telling the delegate it is part of a multi-agent system.
 
-## Probing an unknown harness
+## Reach
 
-Dispatch one probe delegate before the first real brief.
+Take the first variant that holds, reading top down. The order is
+reliability of the text being read, not cost: preloading spends tokens up
+front whether or not the skill is needed, and buys certainty that the body
+is present.
+
+| Variant | Holds when | What the brief does | Standing |
+| --- | --- | --- | --- |
+| Preloaded | the agent definition names the skill under `skills:`, so the body is injected at start | names the skill only | documented |
+| Invocable | the delegate has a skill-loading tool | commands the skill by name in slash form; the delegate loads the body itself | measured |
+| Readable | no skill tool, but the file is reachable on disk | gives the absolute path and says to read it before starting | measured |
+| Definable | no preload exists, and the harness hot-reloads agent definitions | mints an agent definition naming the skill under `skills:`, then dispatches to that type | documented, untested: the agents directory must exist at session start, since the docs require a restart to pick one up |
+| Sealed | none of the above holds | excerpts the binding rules into the brief's rules field | documented, not observed |
+
+Sealed arises when the skill tool is omitted from the delegate's tools or
+listed among disallowed tools, when the skill is marked as not
+model-invocable, or on a harness with no skill loading at all.
+
+A harness that preloads skills does so at agent-definition time; the prompt
+is the only call-time channel. Point rather than paste wherever the delegate
+can load the skill itself. Excerpting is the Sealed branch alone, under the
+excerpting law in `dispatch`.
+
+## Probe
+
+On an unfamiliar harness, or an agent definition with a restricted tool
+list, dispatch one probe delegate before the first real brief; it settles
+reach for every later delegation.
 
 <template for="probe">
 OBJECTIVE
@@ -36,7 +64,7 @@ BUDGET
 Three tool calls. On hitting it, return the lines you have settled.
 </template>
 
-Read the probe against the table: skill-load succeeding puts the delegate
-at Invocable, a reachable file with no skill tool at Readable, neither at
-Sealed. Absent project instructions mean every repository convention the
-task depends on travels in the brief's evidence field.
+Read the probe against the reach table. Skill-load succeeding puts the
+delegate at Invocable, a reachable file with no skill tool at Readable,
+neither at Sealed. Absent project instructions mean every repository
+convention the task depends on travels in the brief's evidence field.

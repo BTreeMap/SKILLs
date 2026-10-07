@@ -1,10 +1,7 @@
 # Verb: help
 
-Print the card. Load no other file for this.
-
-## Card
-
-Render the following, adapted to what the user asked about.
+Print the card below, adapted to what the user asked about. Load no other
+file for this.
 
 <template for="help">
 summon - hand work to another agent so the result comes back usable

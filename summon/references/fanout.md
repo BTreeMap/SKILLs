@@ -1,26 +1,23 @@
 # Verb: fanout
 
 Partition the open work, then run one dispatch per bundle. Load `dispatch`
-first: every bundle ships a full six-field brief, and the fields are defined
-there.
+first: every bundle ships the full six-field brief defined there.
 
 ## Partition law
 
 The bundles are pairwise disjoint and their union is the open work. Overlap
-is a design error, not redundancy.
-
-Two disjointness axes, both enforced in every bundle's bounds:
+is a design error, not redundancy: it duplicates its share of the fan's
+spend and buys nothing. Enforce both axes in every bundle's bounds.
 
 | Axis | Failure it prevents |
 | --- | --- |
 | Topic | Two delegates researching one question: duplicated spend, lost coverage. |
 | Files | Two delegates writing one file: a lost update, which is a correctness bug. |
 
-## Boundary text
+## Bounds
 
-A boundary names the neighbouring agent's territory.
-
-Every bundle's bounds carry all five lines:
+A boundary names the neighbouring agent's territory. Every bundle's bounds
+carry all five lines:
 
 <template for="bounds">
 BOUNDS
@@ -40,10 +37,9 @@ another bundle's output, and a dead bundle re-dispatches alone.
 
 ## Joining returns
 
-Returns arrive one per completion notification; capture telemetry at each
-arrival. Judge each under `review`, then join. The lead owns coverage
-across bundles: reconcile the handoff lines, and re-dispatch only the work
-no bundle claimed.
+Returns arrive one per completion notification. Judge each under `review`,
+then join. The lead owns coverage across bundles: reconcile the handoff
+lines, and re-dispatch only the work no bundle claimed.
 
 ## Completion Checks
 

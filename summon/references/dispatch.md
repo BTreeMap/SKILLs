@@ -1,19 +1,24 @@
 # Verb: dispatch
 
-Compose one brief, hand off one delegate, judge what comes back.
+Compose one brief for one task, hand off one delegate, judge what comes
+back.
 
-## 1. Settle the mode, then reach
+## 1. Settle the mode and the delegate
 
 Confirm against the spine's mode table that the work is not inline, and
-state in one clause why not. Load `reach` when the delegate must follow a
-named skill, and `harness` when delegating on a harness whose inheritance,
-caps, or skill access you cannot state from memory.
+state in one clause why not. Load `harness` when the delegate must follow a
+named skill, or when delegating on a harness whose inheritance, caps, or
+skill access you cannot state from memory.
+
+Read-only explorer delegates skip the project instruction files: the right
+target for a review that must not write, the wrong target when the project's
+conventions are the task.
 
 ## 2. Fill six fields
 
-Every field is written as `Stated <value>` or `NotApplicable <reason>`.
-Omission is never a spelling of "none": "no sibling agents, nothing off
-limits" gets written out.
+Write every field as `Stated <value>` or `NotApplicable <reason>`. Omission
+is never a spelling of "none": write out "no sibling agents, nothing off
+limits".
 
 | Field | Content |
 | --- | --- |
@@ -24,15 +29,22 @@ limits" gets written out.
 | contract | The exact return shape, with nothing before or after it. |
 | budget | The tool-call or search cap, and what to return when it is hit. |
 
-### evidence carries two kinds
+State spawn permission in every brief: delegates spawned children unasked.
 
-A **value** the delegate cannot see, resolved by the lead. A **rule** the
-delegate applies to evidence it already holds.
+### evidence: values and decision rules
 
+Evidence carries two kinds: a **value** the delegate cannot see, resolved by
+the lead, and a **rule** the delegate applies to evidence it already holds.
 A rule that ranges over evidence the delegate lacks produces a confident
-wrong answer, so resolve that evidence into a value instead.
+wrong answer, so resolve that evidence into a value instead. Rules do not
+substitute for evidence: a delegate handed a whole skill still ran `git log`
+for the scope convention.
 
 The caller owns why the work is being done and states it here.
+
+When evidence is data, the brief says: cite numbers as calibration, never as
+events. A writer handed measurement files reproduced the measurements as
+narrative ("six of twelve died here").
 
 ### rules: excerpt, never dump
 
@@ -75,7 +87,7 @@ BUDGET
 
 ## 5. On return
 
-Judge it under `review` before acting on it.
+Judge the return under `review` before acting on it.
 
 ## Completion Checks
 
