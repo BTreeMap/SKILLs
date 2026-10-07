@@ -182,14 +182,16 @@ confidence from the evidence:
 
 ### 9. Design the verification path
 
-Specify:
+Specify the First Proof Point fields, then the Falsifier section:
 
-- First proof point: cheapest artifact or observation that distinguishes
-  this thesis from alternatives.
+- Artifact or observation: cheapest artifact or observation that
+  distinguishes this thesis from alternatives.
 - Expected signal: observable result supporting the thesis.
-- Falsifier: evidence that forces rejection or material revision.
+- Decision unlocked: choice the signal permits.
 - Deferred commitment: irreversible choice not to make before the signal
   arrives.
+- Falsifier: evidence that forces rejection or material revision, and the
+  alternative it would favor.
 
 Make the proof point test the target model, contract assumption, boundary,
 or payoff; showing that code can be written is not enough. Keep every
