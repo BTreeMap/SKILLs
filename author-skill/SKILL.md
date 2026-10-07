@@ -55,10 +55,19 @@ or reference topic.
    for verb, route from the spine per verb ("`/pl-theorist`, same verb").
 4. Invariants, procedure, reference material, gotchas, completion checks.
 
-* Keep `SKILL.md` near 500 lines: core contracts, routing, indispensable
-  judgments. Move bulky material to `references/`, loaded under a stated
+* Keep `SKILL.md` near 500 lines of core contracts, routing, and
+  indispensable judgments; the cap never moves out text every run reads.
+  Move bulky material some run skips to `references/`, loaded under a stated
   condition, one level deep: a reference cites a sibling by name and never
   links to it.
+* Split a file out only where the split pays: it costs a Registry row, a
+  load sentence, headings, and cross-citations that can drift, and pays only
+  when some invocation never loads the file or a long run loads it late
+  enough that reloading it near its use beats carrying it from the start.
+  Fold into the spine what every run loads at its start, and merge files
+  that always load together at the same moment. Keep a split only where it
+  spares some run text it does not need, judged by expected words loaded per
+  invocation.
 * Define each topic in one file. Where a second file would restate a value,
   threshold, or enumeration, cite the owner instead, and only when that
   owner is in context when the copy is read (the spine, or a kernel loaded
@@ -201,6 +210,7 @@ codebase, or return it as one raw Markdown block with nothing around it.
   <item>Frontmatter holds only spec fields in canonical order; `name` matches the directory; the description follows the capability-then-"Use when" form and the library's descriptions total under 7,000 characters; the argument hint matches the body's verbs, levels, and modes.</item>
   <item>The opening paragraph names task and deliverable; Registry is the first `##`; Redirects follows it with condition-colon-destination bullets.</item>
   <item>Every bundled file is cited by registered name; examples, templates, and payloads sit in closed-set XML tags.</item>
+  <item>Every bundled file spares some invocation text it does not need; what every run loads at its start sits in the spine, and files that always load together are one file.</item>
   <item>Every step names exact tools, flags, inputs, outputs, and stopping conditions; project-specific values are parameterized or derived.</item>
   <item>Delegation, where any, goes through `/summon` with only the caller's unit, record, rules, return shape, cap, and gate.</item>
   <item>Each sentence supplies an action, condition, rule, context, or example; a `/humanize` sweep finds no filler; negations, numbers, literals, and boundaries survived every cut.</item>
