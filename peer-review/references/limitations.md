@@ -10,7 +10,7 @@ objections from `design` and `analysis` stand, then note a `walks` entry for
 | --- | --- | --- |
 | `unstated` | Does a grounded objection from another bank go unmentioned in the authors' Limitations? | Use the other objection's anchor; text names the omission |
 | `shallow` | Does a stated limitation name why results fail to transfer, or only where they were not tried ("English only", "one dataset")? | The limitation sentence |
-| `misdescribed` | Is prior work described in a way its own text contradicts (a baseline said to lack a feature it has)? | The description; the prior key via `novelty` |
+| `misdescribed` | Is prior work described in a way its own text contradicts (a baseline said to lack a feature it has)? | The description; note it once the literature phase supplies the `prior` key |
 | `scope` | Does the scope claimed in the conclusion exceed the scope the limitations concede? | Both sentences |
 
 ## The echo test

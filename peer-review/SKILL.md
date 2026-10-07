@@ -92,7 +92,7 @@ a bank is normal.
 | --- | --- |
 | ingest | Extract the paper with `/read-pdf`, `ingest` the text, record its date |
 | claims | Note each contribution claim verbatim; load `claims` |
-| investigate | Walk `design`, `analysis`, `limitations` with `firewall`; note objections per bank, then a `walks` entry |
+| investigate | Walk the level's banks in Levels except `claims` and `novelty`, `limitations` last, with `firewall`; note objections per bank, then a `walks` entry |
 | literature | Build the corpus per `novelty`; `link` it; walk the novelty bank |
 | verdict | Run `check`; withdraw what a re-read defeats; resolve every signal |
 | report | Draft from the scaffold per `report`; `cite-check` the draft |
