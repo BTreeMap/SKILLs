@@ -18,8 +18,8 @@ run:
 
 Run at least 5 repetitions per condition and compare against a no-skill
 baseline on the same model. Re-run per model generation: when the with-skill
-delta approaches zero, delete scaffolding (starting with `evidence` query
-patterns) before adding anything.
+delta approaches zero, delete scaffolding (starting with the query patterns
+in `verification`) before adding anything.
 
 ## Robustness scenarios
 

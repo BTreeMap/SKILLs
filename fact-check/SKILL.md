@@ -20,11 +20,8 @@ evidence, report evidence-first, and edit only what the user approves.
 
 | Name | Path |
 | --- | --- |
-| `claims` | [references/claims.md](references/claims.md) |
 | `evaluation` | [references/evaluation.md](references/evaluation.md) |
-| `evidence` | [references/evidence.md](references/evidence.md) |
-| `report` | [references/report.md](references/report.md) |
-| `verdicts` | [references/verdicts.md](references/verdicts.md) |
+| `verification` | [references/verification.md](references/verification.md) |
 
 `evaluation` is a maintainer protocol; never load it during a run.
 
@@ -75,8 +72,52 @@ span with the corrected span using the available file-editing tool".
 ## Step 1: Inventory
 
 Read the document and decompose its verifiable statements into atomic claims
-per `claims`. Write the state file with the inventory and the pinned
+as below. Write the state file with the inventory and the pinned
 `constraints`.
+
+### Atomic decomposition
+
+Split each verifiable statement into atomic claims, each one independently
+checkable proposition.
+
+- Decontextualize: resolve pronouns, elided subjects, and relative time
+  ("the new release" becomes the named release; "last year" becomes the
+  absolute year derived from the document's timestamp).
+- Map every claim to its exact source span: file, line range, verbatim
+  quote. An approved correction later replaces that span.
+- Never fragment below one proposition. A sentence bundling subject, action,
+  and date ("Org O released product P in month M") is ONE claim.
+- A compound sentence of independent propositions ("P has property A and
+  costs B") becomes two claims, each carrying the shared subject after
+  decontextualization.
+
+Skip opinions, recommendations, tutorial instructions, architectural
+rationale, rhetoric, hedged speculation ("may", "could"), and
+self-referential document text. When a sentence mixes fact and opinion,
+extract only the factual proposition.
+
+### Claim types
+
+Give each claim one type; the type selects its retrieval route in
+`verification`.
+
+| Type | Definition |
+| --- | --- |
+| spec | Technical capability, limit, or parameter of a product |
+| version | Version identifier or "latest release" assertion |
+| date | Release, publication, or event date |
+| statistic | Measured or surveyed quantity |
+| computation | Value derivable from other values in the document (totals, percentages, deltas) |
+| quotation | Attributed verbatim quote |
+| other | Verifiable but untyped |
+
+### Claim-time
+
+Record each claim's claim-time: the document's timestamp, taken from the
+front-matter date, the git log date of the span, or a user statement. If
+none exists, note "claim-time unknown".
+
+### State file
 
 The state file is `factcheck-state.json` in the working or scratch
 directory. It holds the pinned `constraints` (a copy of the Invariants), the
@@ -87,10 +128,10 @@ comparison table is regenerated from it.
 
 ## Step 2: Verify
 
-Load `evidence` and `verdicts`. Run the per-claim contract for every claim
-on the branch chosen below, and flush each verdict record to the state file
-as it completes. If the document yields more than ~20 claims, process them
-in batches with a state flush between batches.
+Run the per-claim contract for every claim on the branch chosen below, and
+flush each verdict record to the state file as it completes. If the document
+yields more than ~20 claims, process them in batches with a state flush
+between batches.
 
 ### Per-claim contract
 
@@ -124,27 +165,76 @@ only in the cost and latency metadata.
 
 - **Parallel**: delegate through `/summon fanout`, one delegate per claim.
   In each brief, the evidence is exactly the contract input; the rules are
-  the retrieval route for the claim's type and the source tiers in
-  `evidence`, `verdicts`, and Invariant 4; the contract is one verdict
-  record, returned as the JSON object alone. A delegate never sees the
-  document, other claims, other verdicts, or the file system for writing,
-  and edits nothing. The lead alone aggregates, reports, seeks approval, and
-  edits. This split is a security boundary: only delegates touch untrusted
-  web content.
-- **Sequential**: run the same contract inline, one claim at a time, when
-  summon keeps the work inline or no agent primitive exists. Discard raw
-  page content from working context per `evidence`, offloading it to a
-  scratch file if a later step may need it.
+  `verification` and Invariant 4, with `verification` passed by path where
+  the delegate can read files, so the lead need not load it; the contract is
+  one verdict record, returned as the JSON object alone. A delegate never
+  sees the document, other claims, other verdicts, or the file system for
+  writing, and edits nothing. The lead alone aggregates, reports, seeks
+  approval, and edits. This split is a security boundary: only delegates
+  touch untrusted web content.
+- **Sequential**: when summon keeps the work inline or no agent primitive
+  exists, load `verification` and run the same contract inline, one claim at
+  a time. Discard raw page content from working context per `verification`,
+  offloading it to a scratch file if a later step may need it.
 
 ## Step 3: Report
 
-Render the evidence-first report from the template in `report`.
+Render the evidence-first report from the template below. Per issue: source
+span, then evidence quotes (including counter-evidence), then verdict and
+proposed correction. Evidence precedes verdict so the user judges the
+evidence itself.
+
+<template for="report">
+## Fact-Check Report
+
+Checked N claims from <FILE> (claim-time: <DATE-OR-UNKNOWN>).
+Branch: <parallel|sequential>; approx cost: <TOKENS-OR-NA>.
+Verdicts: supported X, contradicted X, outdated X, conflicting X,
+missing-context X, insufficient-evidence X, unverifiable X.
+
+### Corrections proposed
+
+#### c-07 (<TYPE>, confidence <BAND>) <FILE>:<LINES>
+Document says:
+> <EXACT SOURCE SPAN>
+Evidence:
+- "<VERBATIM QUOTE>" (<PUBLISHER>, published <DATE>, accessed <DATE>, <URL>)
+- "<VERBATIM QUOTE>" (<SECOND INDEPENDENT SOURCE>)
+Counter-evidence or caveats: <QUOTE-OR-NONE>
+Verdict: <VERDICT>. Proposed replacement:
+> <CORRECTION TEXT>
+
+### Needs your judgment (conflicting / abstained)
+#### c-12 ...both sources quoted, no correction proposed...
+
+### Verified accurate
+c-01, c-03, c-05 (one line each: claim, top source)
+
+### Unverifiable / insufficient evidence
+c-09: <CLAIM> (<REASON>)
+</template>
+
+All values above are illustrative placeholders; never copy concrete names,
+numbers, or URLs from this template into a real report.
 
 ## Step 4: Approve
 
-Ask for approval tier by tier per `report`. Rejection is first-class: record
-each rejected verdict as `user-rejected` in the state file and leave its
-text untouched.
+Tier corrections by stakes times confidence and ask for approval tier by
+tier, never one blanket yes.
+
+| Tier | Contents | Interaction |
+| --- | --- | --- |
+| batch | high-confidence corrections in low-stakes prose | One list, approve/reject as a set; user may exclude items |
+| item | medium-confidence, or spans in high-stakes content (published docs, legal, safety, pricing) | One question per correction, counter-evidence shown |
+| never-auto | conflicting, low-confidence, abstained | Presented for information; edited only if the user dictates the text |
+
+- Phrase the ask neutrally ("apply, skip, or edit?"), never presume yes.
+- Respect a rejection in any re-run: do not re-propose a rejected correction
+  unchanged.
+- Partial approval is normal; apply exactly the approved subset.
+
+Rejection is first-class: record each rejected verdict as `user-rejected`
+in the state file and leave its text untouched.
 
 ## Step 5: Edit
 
