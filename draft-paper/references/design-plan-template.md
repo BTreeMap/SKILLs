@@ -18,6 +18,13 @@ Frame as a contradiction, mismatch, deployment gap, or unexplained
 observation (`award-patterns` 1). Name the two things that should agree and
 do not.
 
+## Problem statement
+
+Answer in plain language, no jargon: what you are trying to do; how it is
+done today and where the limits are; what is new about your approach and why
+it will succeed; who cares and what difference it makes if it works. These
+four answers become the introduction arc.
+
 ## Falsifiable claims
 
 Each claim states what would prove it wrong. No claim without its falsifier.

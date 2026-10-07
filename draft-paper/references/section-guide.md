@@ -37,14 +37,26 @@ sentence, one piece of evidence.
 ## Abstract
 One paragraph: problem, why it matters, what you did, the key result with a
 number, the implication. Cite nothing, define every acronym, keep every
-claim traceable to the main body.
+claim traceable to the main body. Name the single insight in one sentence: a
+busy reviewer must repeat it back after one read. Signal the paper type
+(theory, measurement, design, deployment, position) so it reaches confident
+reviewers. Draft it after the story freezes; drafters who write it first use
+it to focus, but every guide agrees it states the idea crisply. No cliches,
+no equations, no general motivation.
 
 ## Introduction
+Follow the arc: problem, limits of current practice, the key insight in one
+sentence, what you do, contributions mapped to evidence, headline results.
+Before describing the solution, give the reader the reason to care: hook
+non-experts in the opening, impress experts in the body.
 - Paragraphs 1-2: the problem and why current approaches are unsatisfactory,
   with citations to retrieved literature.
 - Lead with a sharp contradiction, objective mismatch, deployment gap, or
   unexplained observation (`award-patterns` 1), concrete enough that a
   skeptic could disagree with it.
+- The insight sentence: one sentence stating the single new idea. A reader
+  repeats it back after one read; if the idea cannot be stated in one
+  sentence, the positioning is not ready.
 - Paragraph 3: what you do, concretely (method in 3-5 sentences).
 - Paragraph 4: results, with the headline numbers.
 - Contributions: 3-5 falsifiable bullets, each checkable against the
@@ -89,7 +101,8 @@ as honesty; a discovered one as concealment.
 ## Conclusion
 Two paragraphs: what was shown (restrained, scoped to the evidence) and what
 it opens up. No new claims, no new numbers, no citations needed for your own
-results.
+results. Future work is earned by the contribution: propose only directions
+the reader now cares about.
 
 ## Venue statements
 Placement only; what is required comes from the CFP (`venue-standards`).

@@ -139,7 +139,9 @@ results, `short` for a spark with a strong contradiction.
    marked TO-RUN; the gate approves the mapping, not measured numbers.
    **Gate:** human approves the ledger per `gate-protocol`.
 3. **Outline.** Rank 2-3 framings; freeze one against `outline-template` and
-   the format's structure in `section-guide`.
+   the format's structure in `section-guide`. Freeze the one-sentence key
+   insight at outline time; the arc (problem, limits of current practice,
+   insight, contributions, headline results) is fixed before drafting prose.
 4. **Drafting.** Section by section in the venue's LaTeX template (fetched
    at intake), with word budgets. Every empirical sentence traces to a
    ledger entry or verified citation; the rest marked `[CITATION NEEDED]`.
@@ -153,11 +155,14 @@ results, `short` for a spark with a strong contradiction.
 6. **Figure and table audit.** Every referenced figure/table exists;
    captions describe what is shown; prose numbers match artifacts.
 7. **Adversarial review.** `reviewer-checklist` as hostile reviewer; punch
-   list, revise, repeat once. Then the taste pass (`reviewer-checklist` pass
-   5): the scenario stays concrete and practitioner-recognizable, the prose
-   shows how each mechanism works, and no load-bearing detail (feedback
-   model, failure model, measurement vs simulation, baseline tuning) is
-   omitted without a stated reason. Best-paper lens (`award-patterns` 6,
+   list, revise, repeat until the punch list clears. Expect three to four
+   major revisions before the draft reads as finished; take breaks between
+   passes to recover perspective. Then the taste pass (`reviewer-checklist`
+   pass 5): the scenario stays concrete and practitioner-recognizable, the
+   prose shows how each mechanism works, the one-sentence insight survives a
+   cold read, and no load-bearing detail (feedback model, failure model,
+   measurement vs simulation, baseline tuning) is omitted without a stated
+   reason. Best-paper lens (`award-patterns` 6,
    `award-assessment`): contradiction sharp; experiments kill rival
    explanations; evaluation layered in the venue's currency; losses honest;
    threshold dimensions hold and the lead differentiators frame the paper.

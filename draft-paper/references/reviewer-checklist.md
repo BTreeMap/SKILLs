@@ -59,6 +59,16 @@ punch list per pass, revise, repeat once.
 - [ ] Load-bearing details present: feedback model, failure model,
   measurement vs simulation, baseline tuning budgets. Anything omitted names
   its reason.
+- [ ] One-sentence insight: the introduction names the single insight in one
+  sentence; an unfamiliar technical colleague can state the main point and
+  contributions without looking at the draft.
+- [ ] Story arc: problem, limits of current practice, insight, contributions
+  mapped to evidence, headline results; each important point appears in the
+  abstract and introduction, the body, and the conclusion.
+- [ ] Readers: at least one expert and one non-expert have read the draft;
+  seek skeptics, whose objections predict the referees'.
+- [ ] Topic fashion is no criterion: an unfashionable topic with outstanding
+  technical work passes; buzzwords without substance fail.
 
 ## Citation audit (runs with every pass)
 - [ ] Three checks per citation: the source exists (API-verified); the

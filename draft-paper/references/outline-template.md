@@ -1,11 +1,18 @@
 # Paper Outline
 
 Freeze one of these before drafting prose. Rank 2-3 candidate framings
-first; the winner fills this template.
+first; the winner fills this template. Start writing before the idea is
+fully formed: writing crystallizes what is not yet understood
+(write-to-think). Per subsection, write at most two lines stating its
+purpose; per paragraph, one sentence stating its topic. If the sentence does
+not fit, split the paragraph.
 
 **Title:** _falsifiable and specific; no unbacked superlatives_
 
 **Venue and page budget:** _from the venue brief, not memory_
+
+**Key insight (one sentence):** _the sentence a reviewer repeats back after
+one read_
 
 **One-sentence contribution:** _the claim a skeptic would try to refute_
 
@@ -20,6 +27,7 @@ first; the winner fills this template.
 - Scenario (concrete: actors, scale, workload, present failure):
 - Motivation (outsider-acceptable):
 - Gap in current approaches (with citations):
+- Key insight (one sentence):
 - Method in 3-5 sentences:
 - Headline numbers:
 - Contribution bullets (each checkable against Section 4): 1. 2. 3.
@@ -70,7 +78,11 @@ first; the winner fills this template.
 - [ ] The scenario sketch from the design plan survives in the introduction
   in concrete form; a reader from the field recognizes the setting in the
   first two paragraphs
+- [ ] The key insight reads as one sentence in the introduction; a cold
+  reader can repeat it back
 - [ ] Every contribution bullet maps to an exhibit in Section 4
 - [ ] Every exhibit maps to a ledger row, or to a planned experiment with
   failure criteria
+- [ ] (Measurement papers) the key graphs are chosen before drafting; each
+  graph answers a stated question
 - [ ] Page budget fits the venue limit
