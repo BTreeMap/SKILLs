@@ -16,7 +16,6 @@ metadata:
 
 Read a project as a composition of prior ideas, judge its setup against what
 the field runs now, size the lab, then point the work where the lab can win.
-Four moves precede every verb.
 
 ## Registry
 
@@ -24,13 +23,9 @@ Four moves precede every verb.
 | --- | --- |
 | `audit` | [references/audit.md](references/audit.md) |
 | `design` | [references/design.md](references/design.md) |
-| `evidence` | [references/evidence.md](references/evidence.md) |
 | `help` | [references/help.md](references/help.md) |
 | `review` | [references/review.md](references/review.md) |
 | `teach` | [references/teach.md](references/teach.md) |
-
-`evidence` holds the sourced heuristics behind the moves; `teach` loads it
-and no other verb does.
 
 ## Redirects
 
@@ -39,28 +34,33 @@ and no other verb does.
 - A document's facts: `/fact-check`
 - An engineering direction: `/reframe`
 
+Every verb routes work outside the lens per these bullets.
+
 ## Stance
 
 Speak as the lab's principal investigator, to the lab. Name the composition
 before any merit. Write "novel" only beside the thing it is novel over. A
 paper's framing (design properties, principles, positioning) is marketing
 until the method section has been read; the judgment comes from the method,
-the citations, and the numbers.
+the citations, and the numbers. A paper's own future-work section is the
+authors' framing again: judge it by the four moves.
 
 ## The four moves
 
-Run all four before any verb writes. Read order: the method section and the
-works it cites, then the results, then the abstract and introduction. Read a
-PDF with `/read-pdf`.
+Run all four, on the lead's tier, before any verb writes. Read the method
+section and the works it cites first, then the results, and the abstract and
+introduction last: the constitution sits in the method and the citations.
+Read a PDF with `/read-pdf`.
 
 ### 1. Constitution
 
 A research project is made of prior ideas, any number of them, each taken
 as-is, tweaked, or carried in from another field, plus whatever no cited
-origin contains. List each mechanism the method uses; for each, name the
-prior work it comes from (the paper's own citations usually say) and tag its
-relation to that origin: `as-is`, `tweaked` (what changed), `transferred`
-(from where), or `new`. State the project in one line,
+origin contains. List each mechanism the method uses, one line each; for
+each, name the prior work it comes from (the paper's own citations usually
+say) and tag its relation to that origin: `as-is`, `tweaked` (what changed),
+`transferred` (from where), or `new`. Forcing a paper into A + B is the same
+error as accepting the abstract. State the project in one line,
 `<origin 1> + <origin 2> + ... [+ new]`, with the tags where they are not
 as-is. Name the patterns it fits; a paper fits several:
 
@@ -90,7 +90,8 @@ field's current practice and class the paper's choice:
 
 A currency claim carries a dated source retrieved this run, or the mark
 "from memory" with the model's cutoff. Retrieve with the harness's search
-and fetch, else `/search-web`. A toy element is a flaw when the claim is
+and fetch, else `/search-web`. Retrieve any currency claim that decides the
+direction; one from memory ages. A toy element is a flaw when the claim is
 about the deployment scale, and a stated limitation when the claim is about
 the mechanism and the paper says so.
 
@@ -99,9 +100,10 @@ the mechanism and the paper says so.
 Infer what the lab can afford from the testbed section, the affiliation, and
 anything the user states. Cover compute (count and class of accelerators),
 network (fabric, programmable switches), data, people-months, and money for
-rented compute. Write it as an assumption the lab corrects. Ask one question
-only when the answer would change the direction; otherwise state the
-assumption and continue.
+rented compute. Write it as an assumption the lab corrects: one testbed
+section can be off by an order of magnitude. Ask one question only when the
+answer would change the direction; otherwise state the assumption and
+continue.
 
 ### 4. Claims and instruments
 
@@ -120,6 +122,11 @@ the envelope that proves it at a setup the field accepts as current:
 | A workload's tolerance | The smallest workload the field still calls current, on the real system, with the mechanism's effect injected; never the paper's own workload when the Currency table classed it toy or legacy |
 | A comparison | The strongest baseline in its own best configuration, never a reimplementation with its hardware removed |
 
+For a lab without a cluster, take the table's row; "scale up on a real
+cluster" is no direction there. Before comparing numbers, say so when a
+baseline is a reimplementation with its hardware support removed: it is a
+weaker baseline, not the state of the art.
+
 Name the kill test per claim: the outcome that ends the direction.
 
 ## Verbs
@@ -137,26 +144,6 @@ whole program is audit, an explanation for a named audience is teach.
 | teach | Explain one judgment to a named audience, citing the heuristic behind it. |
 | help | Quick-reference card. |
 
-Every verb routes work outside the lens per Redirects.
-
-## Gotchas
-
-- Read the abstract last; the constitution sits in the method and the
-  citations.
-- Write one line per mechanism with its origin and tag; forcing a paper into
-  A + B is the same error as accepting the abstract.
-- Say so before comparing numbers: a reimplemented baseline with its
-  hardware support removed is a weaker baseline, not the state of the art.
-- Judge a paper's own future-work section by the four moves; it is the
-  authors' framing again.
-- Take the instrument table's row for a lab without a cluster; "scale up on
-  a real cluster" is no direction there.
-- Write the envelope as an assumption and ask about it only when it changes
-  the direction; one testbed section can be off by an order of magnitude.
-- Retrieve a currency claim when it decides the direction; one from memory
-  ages.
-- Run the moves on the lead's tier.
-
 ## Completion Checks
 
 <checklist>
@@ -165,6 +152,6 @@ Every verb routes work outside the lens per Redirects.
   <item>Every setup element is classed with a dated source or the mark "from memory".</item>
   <item>The envelope is written as an assumption, and at most one question was asked.</item>
   <item>Every claim has an instrument inside the envelope and a kill test.</item>
-  <item>Exactly one verb file was loaded, plus evidence under teach only.</item>
+  <item>Exactly one verb file was loaded.</item>
   <item>Work outside the lens was routed to the sibling skill by name.</item>
 </checklist>

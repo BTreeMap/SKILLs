@@ -1,6 +1,7 @@
 # Verb: help
 
-Print the card. Load no other file for this.
+Print the card, nothing else, and load no other file. Where the user asked
+something specific, answer in one line above the card.
 
 <template for="help">
 advisor - read a project the way its principal investigator would
@@ -32,8 +33,3 @@ Outside the lens
   Refereeing: /peer-review. Literature survey: /lit-review. A fact in the
   text: /fact-check. Engineering direction: /reframe.
 </template>
-
-## Output Contract
-
-The card, nothing else. Where the user asked something specific, answer in
-one line above the card.

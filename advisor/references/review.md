@@ -1,20 +1,14 @@
 # Verb: review
 
 Judge one artifact, a paper, proposal, draft, or result set, after the four
-moves. Read-only: no file changes, no re-run of experiments. The output is
-the template alone; its Direction section is a headline, and `design`
-expands it into a plan.
+moves. Read-only: no file changes, no re-run of experiments. Output the
+template alone.
 
-## Sound
-
-Sound lines name what was checked; silence means unchecked.
-
-## Direction
-
-One paragraph. Where the project wins given the constitution, the currency
-table, and the envelope; which claim goes first; what the lab stops doing.
-The target is the pattern's "what it has to show" row. Route what sits
-outside the lens per Redirects.
+* Direction: one paragraph saying where the project wins given the
+  constitution, the currency table, and the envelope, which claim goes
+  first, and what the lab stops doing. The target is the pattern's "what it
+  has to show" row. It is a headline; `design` expands it into a plan.
+* Sound: each line names what was checked; silence means unchecked.
 
 <template for="review">
 ## Constitution
