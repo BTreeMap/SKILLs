@@ -1,4 +1,37 @@
-# Tells: the catalogue of generated-looking output
+# Judging: sweeps, severity, and tells
+
+Owns how `review` and `audit` judge work: the five sweeps, the severity
+scale, and the catalogue of generated-looking output.
+
+## The five sweeps
+
+Judge work along these five sweeps:
+
+1. **Logic**: does behavior follow from appearance, is state complete, are
+   errors preventable, is work preserved, does the keyboard path exist?
+2. **Hierarchy**: does the eye land on the right thing first, does grayscale
+   still read, is contrast spent on what matters?
+3. **Consistency**: one accent, one radius scale, one spacing scale, one
+   type scale, one icon family, one theme, across the whole surface?
+4. **Voice**: does the copy say what happened and what to do next, is
+   anything fabricated, does anything read as generated?
+5. **Structure**: does this re-implement something the repository already
+   has, do prop APIs admit invalid combinations, is any closed set handled
+   with a catch-all, do imports point downward, does an effect synchronize
+   derivable state?
+
+## Severity
+
+Rate each finding on this scale.
+
+| Level | Meaning |
+| --- | --- |
+| Broken | The user cannot complete the goal, loses work, or is excluded. Blocking. |
+| Friction | The goal is reachable but costs unjustified steps, waits, or confusion. |
+| Incoherent | Violates the surface's own established system. Cheap to fix, compounds if not. |
+| Generated | Reads as templated output. Undermines credibility without breaking function. |
+
+## Tells
 
 A tell is a pattern far more common in generated interfaces than in
 considered ones: a design decision nobody made. Each is banned as a
@@ -13,7 +46,7 @@ labels against section count, consecutive split layouts, marquees,
 occurrences of U+2014, distinct accent colors, distinct radius values. A
 count is not an opinion.
 
-## Typography
+### Typography
 
 * **A word in a different family dropped into a heading** for visual
   interest. Emphasis stays within one family, using weight or italic.
@@ -23,7 +56,7 @@ count is not an opinion.
 * **Oversized display type substituting for hierarchy**, where scale is the
   only signal and everything else is undifferentiated.
 
-## Micro-labels and enumeration
+### Micro-labels and enumeration
 
 * **A small uppercase wide-tracked label above every section heading.** Once
   or twice per page it orients; above every section it is the clearest
@@ -39,7 +72,7 @@ count is not an opinion.
   surface that is not about a release.
 * **Build metadata in a footer** on a surface that is not developer tooling.
 
-## Separators and decoration
+### Separators and decoration
 
 * **The middle dot as the universal separator**, chaining several fragments
   into one metadata line. At most one per line; prefer columns, line breaks,
@@ -56,7 +89,7 @@ count is not an opinion.
 * **Scroll prompts.** A user looking at the top of a page knows that pages
   scroll.
 
-## Placeholder credibility
+### Placeholder credibility
 
 Treat these as honesty failures and fix them ahead of any taste issue.
 
@@ -74,7 +107,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **Live-sounding counters** implying real-time scarcity or activity that is
   not real.
 
-## Copy
+### Copy
 
 * **Filler verbs** that mean nothing in context: elevate, unleash, seamless,
   revolutionize, next-generation, effortless.
@@ -93,7 +126,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **Call-to-action labels that wrap to two lines** at desktop. Shorten the
   label or widen the control.
 
-## Composition
+### Composition
 
 * **Three identical cards in a row** as the reflexive way to present any set
   of three things.
@@ -113,7 +146,7 @@ Treat these as honesty failures and fix them ahead of any taste issue.
 * **A section that inverts the page theme** without being a composed,
   deliberate device.
 
-## Color and material
+### Color and material
 
 * **The purple-to-blue technology gradient** as an unbriefed default, and
   glow effects generally.

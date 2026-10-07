@@ -81,5 +81,5 @@ Loaded on demand, one level deep, never chained.
 | Surface profile | `marketing` or `product` |
 | Craft decision | `typography` `color` `layout` `motion` `interaction` `components` `platform` |
 | Official design systems | `systems` |
-| Generated-output catalogue | `tells` |
+| Sweeps, severity, generated-output catalogue | `tells` |
 | Ship gate | `preflight` |

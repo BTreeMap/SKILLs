@@ -19,8 +19,8 @@ remediation plan. Read-only: change nothing.
    `components` directs. Several implementations of one primitive is
    normally the highest-leverage finding, since consolidating them fixes
    many inconsistency instances at once.
-4. **Score each surface** on the five sweeps the spine defines. Note the
-   primary goal and the friction budget per surface.
+4. **Score each surface** on the five sweeps in `tells`. Note the primary
+   goal and the friction budget per surface.
 5. **Cluster findings by cause.** Twelve contrast failures from one bad
    neutral token are one finding with twelve instances. Report accessibility
    failures as their own cluster, each with the criterion it violates, since

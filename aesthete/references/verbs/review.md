@@ -12,7 +12,7 @@ existing work) and returns ranked findings. Read-only: change nothing.
 2. **Walk the flow before the pixels.** Trace the user's path to the primary
    goal and count the friction budget as built. Interaction failures outrank
    visual ones and are found by walking the flow.
-3. **Run the five sweeps** the spine defines, in the order listed. Do not
+3. **Run the five sweeps** in `tells`, in the order listed. Do not
    interleave them; each needs a different attention mode. Check the
    repository for an existing implementation of anything the diff
    re-implements.
@@ -26,7 +26,7 @@ existing work) and returns ranked findings. Read-only: change nothing.
 
 ## Severity
 
-Rate each finding on the spine's Severity scale.
+Rate each finding on the Severity scale in `tells`.
 
 ## Finding format
 

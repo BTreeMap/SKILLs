@@ -163,19 +163,8 @@ load both here.
 | `motion` | Animation, transitions, choreography, scroll behavior, reduced motion |
 | `platform` | Modern CSS, HTML, and framework capability; framework posture; performance targets |
 | `systems` | Choosing or installing a design system; honest aesthetic labeling |
-| `tells` | Naming or removing generated-looking output |
+| `tells` | The five sweeps and the severity scale `review` and `audit` judge by; naming or removing generated-looking output |
 | `preflight` | The final gate before declaring done: verification and mechanical counts |
-
-## Severity
-
-`review` and `audit` rate each finding on this scale.
-
-| Level | Meaning |
-| --- | --- |
-| Broken | The user cannot complete the goal, loses work, or is excluded. Blocking. |
-| Friction | The goal is reachable but costs unjustified steps, waits, or confusion. |
-| Incoherent | Violates the surface's own established system. Cheap to fix, compounds if not. |
-| Generated | Reads as templated output. Undermines credibility without breaking function. |
 
 ## Laws of taste
 
@@ -215,23 +204,6 @@ The owner files define the terms. These hold regardless.
   Variants and asynchronous states are closed sets eliminated exhaustively.
   Imports point downward. Effects stay at the edges.
 * Count the friction budget to the primary goal and report it.
-
-## The five sweeps
-
-`review` and `audit` judge work along these five sweeps:
-
-1. **Logic**: does behavior follow from appearance, is state complete, are
-   errors preventable, is work preserved, does the keyboard path exist?
-2. **Hierarchy**: does the eye land on the right thing first, does grayscale
-   still read, is contrast spent on what matters?
-3. **Consistency**: one accent, one radius scale, one spacing scale, one
-   type scale, one icon family, one theme, across the whole surface?
-4. **Voice**: does the copy say what happened and what to do next, is
-   anything fabricated, does anything read as generated?
-5. **Structure**: does this re-implement something the repository already
-   has, do prop APIs admit invalid combinations, is any closed set handled
-   with a catch-all, do imports point downward, does an effect synchronize
-   derivable state?
 
 ## Honesty and defaults
 
