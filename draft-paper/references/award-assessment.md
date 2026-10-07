@@ -75,6 +75,5 @@ no revision controls it.
 
 A paper with no clear differentiator can still be publishable; it should not
 be framed or venue-targeted as award-seeking. For short papers, make the
-differentiators visible on the first page: one compelling layer of the
-venue's currency is enough, but it must be real (measurement, prototype,
-trace analysis) with a concrete artifact behind every claim.
+differentiators visible on the first page; one real layer of the venue's
+currency suffices, per `award-patterns` 4.

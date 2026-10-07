@@ -60,8 +60,8 @@ claim is unverified. Thresholds and their exemptions are owned by `a11y`;
 apply them to every supplied pairing before adopting any of it.
 
 Check at minimum: every text role against every surface it sits on, the
-accent against its on-color at the sizes actually used, secondary and muted
-text against both the canvas and any tinted card, borders that identify a
+accent against its on-color at the sizes used, secondary and muted text
+against both the canvas and any tinted card, borders that identify a
 control, and both themes if two exist.
 
 Verify every accessibility claim against the current specification.

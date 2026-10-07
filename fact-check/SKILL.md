@@ -49,7 +49,7 @@ Step 1; re-read that key before every file edit.
 
 ## Step 0: Environment probe
 
-Determine from the tools actually present:
+Determine from the tools present:
 
 - Retrieval: prefer the harness's own web search and fetch. Where they are
   absent, `/search-web` gives the same reach from a script: `web`, `wiki`,

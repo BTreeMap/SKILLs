@@ -46,8 +46,8 @@ Skip only if nothing was supplied.
 - [ ] Precedence applied in order: the palette overrode the document's
   colors, the document overrode this skill's defaults, and the accessibility
   floor overrode everything.
-- [ ] Every supplied token pairing actually used was measured for contrast,
-  including secondary text on tinted surfaces.
+- [ ] Every supplied token pairing used was measured for contrast, including
+  secondary text on tinted surfaces.
 - [ ] Every floor conflict was resolved by derivation and reported, with the
   brand preserved wherever the threshold allowed.
 - [ ] Accessibility claims made by the document were verified against the
@@ -58,7 +58,7 @@ Skip only if nothing was supplied.
 
 - [ ] The design read was stated, and the built result matches it.
 - [ ] Dials were set from the read with reasons, and the output reflects
-  them. If motion is above 4, the interface actually moves.
+  them. If motion is above 4, the interface moves.
 - [ ] Every element can name the user goal it serves.
 - [ ] The friction budget to the primary goal was counted and reported.
 

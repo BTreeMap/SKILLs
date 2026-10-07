@@ -89,8 +89,8 @@ Icons: {family and weight}
 
 ## Rules
 
-* Commit to one direction. If a genuine fork exists, name the fork, pick a
-  side, and state the one question whose answer would flip it.
+* Commit to one direction. If a fork exists, name the fork, pick a side, and
+  state the one question whose answer would flip it.
 * Give every section and region a distinct job. Combine sections that share
   a job.
 * Specify mobile behavior for each region while planning it.

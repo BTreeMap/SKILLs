@@ -185,7 +185,7 @@ Before ingest, determine from available tools:
   other banks and report novelty as unassessed.
 - Retrieval: prefer the harness's own web search and fetch. Where they are
   absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
-  `scholar`, and `fetch`. Read a PDF with `/read-pdf`.
+  `scholar`, and `fetch`.
 - Delegation: through `/summon fanout`, one delegate per bank at most. In
   each brief: the evidence is the extraction file, the bank's reference
   file, and `firewall`, by absolute path, plus the claims noted so far

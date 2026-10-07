@@ -82,9 +82,6 @@ Derive from supplied material before asking questions:
 - Known contracts and stakeholders.
 - Claimed constraints and supporting evidence.
 
-Ask one focused question when a missing piece could change the target.
-Otherwise continue and state the assumption.
-
 If a repository or document set is available:
 
 1. Search for public contracts, persisted schemas, integrations, callers,
@@ -95,9 +92,9 @@ If a repository or document set is available:
    change the decision.
 4. Label every unsupported claim as an assumption.
 
-If the outcome, horizon, boundary, or owner is missing, ask only when the
-answer could change the target model. Otherwise, state the assumption and
-lower confidence.
+If any input is missing, ask one focused question only when the answer could
+change the target model. Otherwise, state the assumption and lower
+confidence.
 
 ## Constraint Classification
 
@@ -260,7 +257,7 @@ Output rules:
   <item>Target design and migration path remain separate.</item>
   <item>Kill list explains the wrong model each removal eliminates.</item>
   <item>Warnings identify actions that would preserve the wrong model.</item>
-  <item>All three canonical paths compared or explicitly marked non-viable.</item>
+  <item>All three canonical paths compared or marked non-viable.</item>
   <item>Recommendation and confidence are explicit.</item>
   <item>Proof point distinguishes the thesis from alternatives.</item>
   <item>Falsifier could overturn the thesis.</item>

@@ -289,7 +289,7 @@ another language's cost model never transfers by analogy.
   limits, and failure behavior. Independence is necessary but not
   sufficient.
 - Exhaustive matching over an open class hierarchy is not totality. Know
-  whether the target language actually seals the variant set.
+  whether the target language seals the variant set.
 - A data structure can smuggle in hidden cost: a heap or index rebuilt
   inside the loop it was meant to accelerate, a regex recompiled per call, a
   persistent structure fully copied per iteration. Hoist construction out of

@@ -23,10 +23,9 @@ Reach in this order and stop at the first that works:
 1. **Space.** Separate the groups.
 2. **Alignment.** Shared edges imply relationship without any mark.
 3. **Hairline.** A single divider where a boundary must be explicit.
-4. **Surface tint.** A subtle background change for a genuinely distinct
-   region.
+4. **Surface tint.** A subtle background change for a distinct region.
 5. **Border.** An outline when a region must be enclosed.
-6. **Elevation.** A shadow when something genuinely floats above the plane.
+6. **Elevation.** A shadow when something floats above the plane.
 
 A card combines rungs four through six. Use it only when the content is a
 discrete, self-contained object the user acts on as a unit. When the content

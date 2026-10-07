@@ -36,10 +36,10 @@ a gap carries the absence claimed, the null-search log ids proving it, and a
 watch: `|`-separated words a challenger would use in a title or abstract,
 matched literally. `brief` re-derives their verdicts against the live
 corpus: an excluded or under-read support flags the finding at-risk, and a
-later paper matching a gap's watch flags the gap challenged, which is
-exactly when a claim written earlier needs re-reading. Supersede a record
-when the field model moves. Working hypotheses that are still forming stay
-on the pad as `map` or `open` entries until they earn support.
+later paper matching a gap's watch flags the gap challenged, which is when a
+claim written earlier needs re-reading. Supersede a record when the field
+model moves. Working hypotheses that are still forming stay on the pad as
+`map` or `open` entries until they earn support.
 
 ## Gaps
 

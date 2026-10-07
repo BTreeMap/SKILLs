@@ -140,7 +140,7 @@ $R clean ["$S" | --all]
 
 Bind `R` and `S` per shell and re-bind after a reset; `realpath` is
 required. `init` mints the session from two or three keywords, or takes a
-directory path to place it somewhere specific, and pins the verb, format,
+directory path as its location, and pins the verb, format,
 input state, venue, backbone model version (reliability assumptions do not
 transfer across models), and the artifact root that claim paths resolve
 against (default: the current directory). A unique keyword subset recovers
@@ -242,7 +242,7 @@ judgment and the human's at the gate.
 - Resolve numbers in prose, tables, figures, and captions to the same
   claim.
 - Give a reduced, narrowed, or failed campaign a claim describing what
-  actually ran. Revise a claim's status when its experiment lands; drop a
+  ran. Revise a claim's status when its experiment lands; drop a
   claim the draft no longer makes, with the reason.
 - Cut an unsupported claim or run its experiment; never soften it to
   "plausible" in prose.

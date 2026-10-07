@@ -84,6 +84,6 @@ Judge it under `review` before acting on it.
   <item>Every judgment the delegate must make has either its evidence resolved or its decision rule stated.</item>
   <item>The rules field is an excerpt of what this task can break, not a pasted document.</item>
   <item>The contract names one return shape and forbids anything around it.</item>
-  <item>Spawn permission is stated explicitly.</item>
+  <item>Spawn permission is stated.</item>
   <item>The brief carries no hedge, pleasantry, or instruction that binds nothing.</item>
 </checklist>

@@ -43,7 +43,7 @@ never summed into one score:
 
 | Dimension | Question |
 | --- | --- |
-| Method | Does the design actually test the claim? |
+| Method | Does the design test the claim? |
 | Data | Is the sample or dataset adequate and appropriate? |
 | Review status | Peer-reviewed, or preprint (label, do not penalize)? |
 | Reproducibility | Code, data, or protocol available? |

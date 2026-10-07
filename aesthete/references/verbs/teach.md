@@ -46,7 +46,7 @@ asking. Calibrate to the audience; never lecture.
 <checklist>
   <item>Audience was identified and the explanation was calibrated to it.</item>
   <item>The user consequence was stated concretely.</item>
-  <item>Any principle cited genuinely applies and is stated accurately.</item>
+  <item>Any principle cited applies and is stated accurately.</item>
   <item>The counterfactual and the boundary condition were both given.</item>
   <item>Length matches the scope of the question.</item>
   <item>Preference was labeled as preference.</item>

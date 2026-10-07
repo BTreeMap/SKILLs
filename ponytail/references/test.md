@@ -5,8 +5,8 @@ logic breaks.
 
 ## Pipeline
 
-1. Find the logic that can actually break: a branch, a loop, a parser, a
-   money or security path. Trivial one-liners get nothing.
+1. Find the logic that can break: a branch, a loop, a parser, a money or
+   security path. Trivial one-liners get nothing.
 2. Pick the smallest harness that runs today: an `assert`-based
    `demo()`/`__main__` self-check, or one small `test_*` file on the runner
    the repo already has. No new frameworks, no fixtures.

@@ -34,8 +34,8 @@ monospace. Three requires a reason you can state.
 Choose for the job. A face for an operator console needs unambiguous digits,
 distinguishable I/l/1 and O/0, and a true monospace companion for numbers
 and identifiers. A face for an editorial surface needs a real italic and
-sufficient weight range. Verify the family actually ships the weights and
-the true italic being used before designing around them.
+sufficient weight range. Verify the family ships the weights and the true
+italic being used before designing around them.
 
 **Serif discipline.** Reaching for a serif because it feels premium,
 creative, or considered is the most common type misjudgment in generated
@@ -74,7 +74,7 @@ it.
   stylesheet requests off the first-paint path.
 * Serve variable fonts when a range of weights is in use; one variable file
   usually costs less than three static cuts.
-* Subset to the character sets actually needed.
+* Subset to the character sets needed.
 * Swap to a fallback during load, and tune the fallback's metrics so the
   swap does not shift layout. Untuned font fallback is a top cause of layout
   instability.

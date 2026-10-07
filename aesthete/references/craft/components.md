@@ -22,8 +22,8 @@ fragments tokens, splits accessibility fixes across files, and multiplies
 the cost of every future change.
 
 When the existing component is close but not sufficient, extend it with a
-new variant. If extending would require contorting it, say so explicitly and
-explain why a second component is the honest answer.
+new variant. If extending would require contorting it, say so and explain
+why a second component is the honest answer.
 
 ## The two prices of duplication
 
@@ -39,7 +39,7 @@ variation is paid as a parameter, and parameters accumulate into the god
 component below.
 
 The distinguishing question: does this represent one concept the product
-genuinely has, or does it merely look similar today?
+has, or does it merely look similar today?
 
 ## Orthogonal decomposition
 

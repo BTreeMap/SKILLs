@@ -21,8 +21,8 @@ writes.
 ## Query design
 
 - Decompose the question into two to four concepts; for each, list the
-  synonyms and near terms the field actually uses. Different communities
-  name one idea differently; missing a vocabulary misses its papers.
+  synonyms and near terms the field uses. Different communities name one
+  idea differently; missing a vocabulary misses its papers.
 - Run a pilot query per concept pair, skim the top results, refine terms,
   then run the real queries. Pilot queries are logged like any other.
 - Plain phrases work for openalex and crossref. arXiv ranks fielded queries

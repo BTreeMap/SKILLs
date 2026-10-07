@@ -74,9 +74,9 @@ frame and collapse on mid-range hardware.
 
 ## Restraint
 
-* Infinite loops are for genuine live state only. Ambient perpetual motion
-  in the periphery competes for attention permanently and does not return
-  anything to the user.
+* Infinite loops are for live state only. Ambient perpetual motion in the
+  periphery competes for attention permanently and does not return anything
+  to the user.
 * At most one attention-seeking device per view. Two things looping are two
   things being ignored.
 * Keep motion from blocking input. The user can always click through, scroll

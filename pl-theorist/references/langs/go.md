@@ -28,9 +28,8 @@
 
 - Go has no native algebraic data types or exhaustive matching. Use concrete
   structs with unexported fields and validating constructors for invariants.
-  Use a small interface with an unexported marker only when variants
-  genuinely require a closed protocol; recognize that compiler
-  exhaustiveness is absent.
+  Use a small interface with an unexported marker only when variants require
+  a closed protocol; recognize that compiler exhaustiveness is absent.
 - Use `(T, bool)` for lookup-style absence and `(T, error)` for expected
   failure. Do not emulate `Option`/`Result` with a generic monad layer.
 - Keep zero values useful when possible. When zero is invalid, hide fields

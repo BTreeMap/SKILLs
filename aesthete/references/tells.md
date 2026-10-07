@@ -2,8 +2,8 @@
 
 A tell is a pattern that appears far more often in generated interfaces than
 in considered ones: a design decision nobody made. Each is banned as a
-**default reach**. Any of these is available when the brief genuinely calls
-for it and you can say why.
+**default reach**. Any of these is available when the brief calls for it and
+you can say why.
 
 ## Typography and punctuation
 
@@ -50,8 +50,8 @@ for it and you can say why.
 * **A small caps strip across the bottom of a hero** listing capability
   words. It is a decorative fragment pretending to be navigation.
 * **Ambient location, time, or weather strips.** Justified only for a
-  genuinely place-specific or timezone-distributed subject. A contact
-  address in a footer is not this.
+  place-specific or timezone-distributed subject. A contact address in a
+  footer is not this.
 * **Scroll prompts.** A user looking at the top of a page knows that pages
   scroll.
 

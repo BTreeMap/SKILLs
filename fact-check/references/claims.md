@@ -13,9 +13,9 @@ checkable proposition each.
 - Granularity cap: never fragment below one proposition. A sentence bundling
   subject, action, and date ("Org O released product P in month M") is ONE
   claim.
-- A compound sentence with genuinely independent propositions ("P has
-  property A and costs B") becomes two claims, each carrying the shared
-  subject after decontextualization.
+- A compound sentence with independent propositions ("P has property A and
+  costs B") becomes two claims, each carrying the shared subject after
+  decontextualization.
 
 ## What to skip
 

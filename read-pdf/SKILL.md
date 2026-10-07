@@ -20,8 +20,7 @@ evidence.
 
 ## Scope
 
-Read PDF content for analysis. Extract text, page numbers, and standard
-metadata. Preserve source-page provenance.
+Preserve source-page provenance.
 
 Run the extractor through its console command with `uv run --project`; do
 not invoke a host `python` or `python3`, install packages manually, or use

@@ -76,7 +76,7 @@ Leverage: {why this rank}
 ## Completion checks
 
 <checklist>
-  <item>Scope and exclusions are stated explicitly.</item>
+  <item>Scope and exclusions are stated.</item>
   <item>The implicit system was extracted from code with distinct-value counts per scale.</item>
   <item>Findings are clustered by cause, with instance counts.</item>
   <item>Ranking is by leverage and the token layer was examined first.</item>

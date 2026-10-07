@@ -79,9 +79,9 @@ Match the repository. When choosing for greenfield work:
   are where missing loading and error states come from.
 * Stream what can be streamed. Showing a usable shell immediately beats
   showing nothing until everything resolves.
-* Add an animation library when the interaction genuinely needs
-  interruptible, physics-based, or gesture-driven motion. Use platform
-  reveals and transitions for simpler interactions.
+* Add an animation library when the interaction needs interruptible,
+  physics-based, or gesture-driven motion. Use platform reveals and
+  transitions for simpler interactions.
 * Use one animation system per component tree; two compete for the same
   frames.
 

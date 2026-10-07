@@ -175,8 +175,7 @@ Determine capabilities from available tools:
   the question needs retrieval and stop.
 - Delegation: through `/summon`, after round one, per `explore`; the
   ledger state is the same on either branch.
-- Scholarly corpus leaves command `/lit-review`; PDF reading commands
-  `/read-pdf`.
+- Scholarly corpus leaves command `/lit-review`.
 
 ## Gotchas
 

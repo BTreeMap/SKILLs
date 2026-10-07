@@ -34,7 +34,7 @@ Applies on top of the core rules in SKILL.md.
 
   <checklist>
     <item>Subject follows `<type>(<scope>): <subject>` and is 70 characters or less.</item>
-    <item>Type is explicitly chosen from `<directives for="types">`.</item>
+    <item>Type is chosen from `<directives for="types">`.</item>
     <item>Scope (if present) is lowercase, a single token, and verified via `git log`.</item>
     <item>Subject description is imperative, capitalized, and period-free.</item>
     <item>A blank line separates the subject and body.</item>

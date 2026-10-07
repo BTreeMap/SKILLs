@@ -29,7 +29,7 @@ they may change what gets committed as well as the message.
   </checklist>
 
   <directives for="verbosity">
-    <rule>Run the `full` validation checklist explicitly, item by item, before outputting. On any failure, fix and re-verify instead of shipping the violation.</rule>
+    <rule>Run the `full` validation checklist item by item before outputting. On any failure, fix and re-verify instead of shipping the violation.</rule>
   </directives>
 </directives>
 

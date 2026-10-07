@@ -19,7 +19,7 @@ visual language starts fresh. Otherwise infer and state the mode.
 Document the current state before proposing anything so working parts
 survive the rework.
 
-* **Brand tokens** in actual use: colors, type stack, logo treatment, radii,
+* **Brand tokens** in use: colors, type stack, logo treatment, radii,
   spacing rhythm, motion character.
 * **Information architecture**: route tree, navigation labels, conversion or
   completion paths, anchor targets.
