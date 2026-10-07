@@ -123,9 +123,9 @@ untouched. Reference files load only this way or through wenyan level.
 
 | Verb | What it does |
 | --- | --- |
-| commit | Terse Conventional Commits message: why over what, body only when needed. |
+| commit | Terse commit message, why over what; format from `/git-commit`. |
 | review | One-line review findings: location, tag, problem, fix. |
-| refactor | Rewrite prose file `<file>` in caveman style in place, code untouched, backup kept. |
+| refactor | Rewrite prose file `<file>` in caveman style in place, code untouched, backup kept. Script commands live in `refactor`. |
 | stats | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
 | help | Quick-reference card for levels and verbs. |
 
@@ -139,8 +139,7 @@ then resume caveman after the clear part is done.
 
 ## Boundaries
 
-Persisted outside chat: write normal prose in code, comments, commit
-messages, docs, issue/PR text, memory files, third-party messages. Sole
+Persisted outside chat: write normal prose in code, comments, docs, issue/PR text, memory files, third-party messages. Sole
 exemption: refactor verb, only for file user names. Text an agent loads as
 instructions, a skill or a delegate brief, takes this register at lite: full
 sentences, no filler.
