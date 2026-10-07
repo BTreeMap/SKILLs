@@ -38,8 +38,8 @@ criteria, screening, reading, and synthesis.
 
 ## Invariants
 
-Non-negotiable at every step and after context compaction; re-open this
-SKILL.md and reload state via the script.
+These hold at every step and after context compaction; to recover, re-open
+this SKILL.md and reload state through the script.
 
 1. Cite only corpus records. Every citation in the deliverable resolves to a
    record in the session corpus; never from memory, a search-result snippet,
@@ -70,9 +70,10 @@ literature" is lite, "systematic review" is ultra.
 
 ## Phases
 
-Six phases in order; each loads exactly the reference file of its name.
+Run six phases in order; each loads exactly the reference file of its name.
 Return to an earlier phase when its output proves inadequate (a screen that
-leaves too few papers reopens search); log what reopened it.
+leaves too few papers reopens search) and log what reopened it. Delegate
+only extraction, through `/summon`, as `extract` describes.
 
 | Phase | Work |
 | --- | --- |
@@ -83,65 +84,28 @@ leaves too few papers reopens search); log what reopened it.
 | synthesize | Build themes, disagreements, and gaps from the records |
 | report | Assemble the deliverable, verify DOIs, deliver |
 
-## Session
+Criteria may change after searches ran, visibly: append to `amendments` in
+`protocol.json` the date, what changed, and why. `status` flags criteria
+hash drift; an unexplained drift is an error to repair. Re-screen papers
+already screened under the old criteria when the change could flip their
+decision.
 
-`init` takes two or three keywords, mints the session identifier, and echoes
-it with its directory. A keyword subset recovers a lost identifier; `schema`
-prints every record shape whenever a field name is in doubt. Pass a
-directory path in place of an identifier to put one somewhere specific.
+Before the protocol phase, check two conditions:
 
-`protocol.json` in that directory is the one file the agent edits by hand:
-fill `criteria.include` and `criteria.exclude` before the first search, and
-append to `amendments` when they change.
+- No network for the script: if the first search cannot reach its API, stop
+  and say so. `/search-web` reaches the same indexes without keeping a
+  corpus, so it scopes a question before a review and never substitutes for
+  one.
+- A corpus the user supplies (PDFs, BibTeX): skip the search phase, record
+  provenance as user-supplied in the log's place, and run the remaining
+  phases unchanged.
 
-Two write paths carry different contracts:
+## Script
 
-- The pad is free working memory. `jot` admits any JSON object (or prose
-  with `--prose`) and never rejects content; `recall` filters it back by
-  kind, regex, id, or count. An entry with `"kind": "extraction"` and a
-  paper `key` is recognized for coverage tracking; `map`, `open`, and `lore`
-  are suggested kinds; `--lore` reads and writes a cross-session pad for
-  facts worth keeping between reviews.
-- The gate is what the script later judges. `update` and `screen` move paper
-  statuses; `note` admits findings (claim plus supporting keys plus the read
-  level each citation needs) and gaps (the absence claimed, the null-search
-  log ids proving it, a watch of literal words). A rejected batch names
-  every problem at once and changes nothing, so apply all the fixes and
-  resend. A DOI or arXiv id resolves as a key.
-
-`digest` is the screening entry point and the cheapest one: it groups the
-undecided candidates into kinds, each with a rule that selects it, so
-accepting or rejecting a whole kind is one `screen`. Re-run it after each
-cut, since the kinds are relative to what is still undecided. `show` reads
-specific records by key.
-
-Every envelope carries `next`, an advisory step and never a gate: revisiting
-an earlier phase is normal.
-
-`brief` is the resume view and the belief check: findings and gaps come back
-with verdicts derived from the live corpus, plus corpus drift since the
-previous brief, the citation marker table, unextracted papers, the pad tail,
-and lore. Run it after compaction and before drafting. `cite-check` checks
-every `[n]` in the draft against assigned markers; numbers are append-only,
-so a late inclusion extends the table and existing citations stand.
-
-Exit codes: 0 done (stderr `signal:` lines are advisory and never block); 1
-fix the input and resend; 2 upstream failed, retry. Downloaded PDFs and
-other heavy artifacts belong in the scratch directory. `clean` lists
-sessions with sizes and removes one session or `--all`, reporting bytes
-freed.
-
-Bind the command once per shell and re-bind after a reset; `realpath` and
-`env -u VIRTUAL_ENV` are both required. Invoke it and read its output; read
-the source only when troubleshooting on the user's instruction.
-
-Free-form content fills a named slot: `--<slot>` carries a short value,
-`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
-required slot reads the pipe when no flag claims it. One slot per call may
-claim the pipe. A JSON body has no inline spelling. A value is never
-reinterpreted, so a regex needs no escape, and an empty one is a rejection
-rather than a fallback. Write a batch to a file: a retry then costs one
-edit.
+Bind the command to `R` and the session identifier to `S` once per shell,
+and re-bind after a reset; `realpath` and `env -u VIRTUAL_ENV` are both
+required. Invoke the script and read its output; read its source only when
+troubleshooting on the user's instruction.
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
@@ -150,15 +114,15 @@ $R init "<two or three keywords>" --level full <<'JSON'
 JSON
 S="<the session identifier the init output echoed>"
 $R schema
-$R search "$S" --source openalex --limit 25 --from-year 2020 <<'JSON'
+$R search "$S" --source openalex --limit 25 --from-year 2020 [--to-year 2025] <<'JSON'
 {"query": "..."}
 JSON
-$R snowball "$S" --seed <key> --direction backward
+$R snowball "$S" --seed <key> --direction backward [--limit 25]
 $R digest "$S" [--status candidate] [--on title] [--clusters 20]
 $R screen "$S" --on title --exclude <<'JSON'
 {"match": "<regex>", "reason": "..."}
 JSON
-$R show "$S" [--status candidate | --keys k1,k2] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv]
+$R show "$S" [--status candidate | --keys k1,k2] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv] [--limit 25]
 $R update "$S" --decisions:file <decisions.json>
 $R jot "$S" [--prose] [--lore] <<'JSON'
 {"kind": "extraction", "key": "<key>", ...}
@@ -168,43 +132,69 @@ $R recall "$S" [--kind extraction] [--match <regex>] [--since j9] [--limit 20] [
 $R note "$S" --batch:file <round.json> && $R brief "$S"
 $R cite-check "$S" --draft:file report.md
 $R status "$S"
-$R verify "$S"
+$R verify "$S" [--keys k1,k2]
 $R clean ["$S" | --all]
 </commands>
 
-## Environment probe
+| Command | Contract |
+| --- | --- |
+| `init` | Takes two or three keywords and the question; mints the session identifier and echoes it with its directory. A keyword subset recovers a lost identifier; a directory path in place of an identifier puts the session there. |
+| `schema` | Prints every record shape; run it whenever a field name is in doubt. |
+| `search`, `snowball` | Fetch candidates and log each call with its date, parameters, and counts; both refuse while the criteria are empty. `snowball` follows citations through OpenAlex. `--limit` takes 1 to 100, default 25. |
+| `digest` | Groups the undecided candidates into kinds, each with a label, a count, a selecting rule, and two exemplars; the cheapest screening entry point. |
+| `show` | Reads specific records by key, status, or regex. |
+| `brief` | The resume view and the belief check: findings and gaps with verdicts derived from the live corpus, corpus drift since the previous brief, the citation marker table, unextracted papers, the pad tail, and lore. Run it after compaction and before drafting. |
+| `cite-check` | Checks every `[n]` in the draft against assigned markers. Numbers are append-only: a late inclusion extends the table and existing citations stand. |
+| `status` | The cheap resume view: per-status counts, criteria drift, advisories. |
+| `clean` | Lists sessions with sizes and removes one session or `--all`, reporting bytes freed. |
 
-Before the protocol phase, determine from available tools:
+`protocol.json` in the session directory is the one file the agent edits by
+hand. Every other write goes through one of two paths:
 
-- Network for the script: if the first search cannot reach its API, stop and
-  say so. `/search-web` reaches the same indexes without keeping a corpus,
-  so it scopes a question before a review and never substitutes for one.
-  When the user supplies their own corpus (PDFs, BibTeX), skip the search phase,
-  record provenance as user-supplied in the log's place, and run the
-  remaining phases unchanged.
-- Full-text reading: read PDF full texts with `/read-pdf`. A paper with no
-  reachable PDF falls back to landing-page HTML, then to abstract level,
-  disclosed in the report.
-- Delegation: through `/summon`, for extraction only, per `extract`.
+- The pad is free working memory. `jot` admits any JSON object (or prose
+  with `--prose`) and never rejects content; `recall` filters it back by
+  kind, regex, id, or count. An entry with `"kind": "extraction"` and a
+  paper `key` counts toward extraction coverage; `map`, `open`, and `lore`
+  are suggested kinds; `--lore` reads and writes a cross-session pad for
+  facts worth keeping between reviews.
+- The gate is what the script later judges: `update` and `screen` move
+  paper statuses, and `note` admits findings and gaps. A rejected batch
+  names every problem at once and changes nothing, so apply all the fixes
+  and resend. A DOI or arXiv id resolves as a key.
+
+Output and input conventions:
+
+- Exit codes: 0 done (stderr `signal:` lines are advisory and never block);
+  1 fix the input and resend; 2 upstream failed, retry.
+- Every envelope carries `next`, an advisory step and never a gate:
+  revisiting an earlier phase is normal.
+- Free-form content fills a named slot: `--<slot>` carries a short value,
+  `--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and
+  the required slot reads the pipe when no flag claims it. One slot per
+  call may claim the pipe. A JSON body has no inline spelling. A value is
+  never reinterpreted, so a regex needs no escape, and an empty one is a
+  rejection rather than a fallback.
+- Write a batch to a file: a retry then costs one edit.
+- Put downloaded PDFs and other heavy artifacts in the scratch directory.
+
+## Banned vocabulary
+
+Keep these words out of the report and every intermediate note. One that
+appears in a quoted source title stays inside the quotation marks.
+
+<directives for="banned-words">
+delve, tapestry, landscape (figurative), pivotal, crucial, seminal,
+groundbreaking, cutting-edge, state-of-the-art (unless a paper claims it,
+attributed), rapidly evolving, burgeoning, holistic, robust (outside a
+statistics term), comprehensive, seamless, leverage (verb), showcase,
+underscore, highlight (verb), testament, interplay, myriad, plethora,
+paradigm shift, in the realm of, it is important to note
+</directives>
 
 ## Gotchas
 
-- OpenAlex lists zero references for some arXiv-only records. Snowball from
-  a journal-indexed record, or read the paper's own reference list during
-  extract.
-- Relevance-ranked sources return off-topic candidates; that is what
-  screening is for. Never widen criteria to make noisy results fit.
-- A preprint and its journal version can enter the corpus under different
-  DOIs. When both survive screening, keep one and exclude the other with
-  reason "superseded duplicate", keeping the citable version.
 - `cited_by_count` differs across sources and lags for recent work. Use it
   only for reading order.
-- The arxiv source ignores year bounds; apply the window during screening
-  instead.
-- arXiv ranks fielded queries far better than plain phrases: wrap terms as
-  `all:"<phrase>"`.
-- A missing abstract is a data gap: keep the paper, screen it on title
-  plus landing page, or mark it for full-text triage.
 
 ## Completion checks
 
@@ -214,5 +204,5 @@ Before the protocol phase, determine from available tools:
   <item>Every excluded paper carries a reason; flow counts derive from the state files.</item>
   <item>Every citation in the deliverable resolves to a corpus record, with its read level honest.</item>
   <item>verify ran; broken DOIs were fixed or their citations removed and disclosed.</item>
-  <item>The report names its search dates, sources, counts, and limits; prose follows the rules in report.</item>
+  <item>The report names its search dates, sources, counts, and limits; its prose follows the rules in report and the banned vocabulary.</item>
 </checklist>

@@ -1,29 +1,36 @@
-# Screen: Two Passes, Reasons, Flow Counts
+# Screen: two passes, reasons, shortlist
 
-Screening applies the protocol criteria to the corpus, exactly as written.
-If the criteria feel wrong while screening, record an amendment (owned by
-`protocol`).
+The phase takes the candidate corpus and returns every candidate decided:
+included, or excluded with a reason. Apply the protocol criteria exactly as
+written. Relevance-ranked sources return off-topic candidates; screening
+exists to remove them, so never widen the criteria to make noisy results
+fit. If the criteria feel wrong while screening, record an amendment.
 
 ## Pass 1: title and abstract
 
-Start from `digest`, which returns the kinds of candidate in the corpus
-rather than the rows: one label, one count, one selecting rule, and two
-exemplars each. Judge the labels, cut or keep whole kinds with the rule the
-digest hands you, then re-run `digest` on what remains, since the labels are
-relative to the undecided set. Drop to `show --status candidate` for the
-residue and for records you need in full; most-cited first; `--match` with
-`--on title|abstract` narrows by vocabulary, and `--fields` with
-`--format tsv` keeps long listings cheap. For each paper decide include,
-exclude, or unsure from title, venue, year, and abstract alone.
-
-- Judge against the criteria list, item by item.
-- Unsure costs one full-text look later; wrongly excluded costs a missing
-  paper forever. Keep unsure papers as candidates for pass 2.
-- A missing abstract is a data gap: check the landing page before deciding.
-
-Write decisions to a JSON file and apply them with `update`. The script
-rejects an exclusion without a reason and applies nothing until the whole
-batch is valid.
+1. Run `digest` and judge its labels against the criteria.
+2. Cut or keep whole kinds with the rule `digest` hands you, through
+   `screen --exclude` (or `--include`, the mirror case, still bound by the
+   criteria gate) with the `--on` field the digest used and
+   `{"match": "<regex>", "reason": "..."}` on the pipe. The case-insensitive
+   regex runs over every candidate, marks each match with `rule:<id>`, and
+   stores the rule with its matched keys in the notebook, so a vocabulary
+   cut is recorded as one judgment. Decided papers stay untouched: make the
+   individual judgments that must survive a broad cut before running it.
+3. Re-run `digest` after each cut; its kinds are relative to the undecided
+   set.
+4. Drop to `show --status candidate` for the residue and for records you
+   need in full, most-cited first. `--match` with `--on title|abstract`
+   narrows by vocabulary; `--fields` with `--format tsv` keeps long listings
+   cheap.
+5. Decide each remaining paper include, exclude, or unsure from title,
+   venue, year, and abstract alone, judging against the criteria list item
+   by item. Unsure costs one full-text look later; wrongly excluded costs a
+   missing paper forever, so keep unsure papers as candidates for pass 2. A
+   missing abstract is a data gap: keep the paper, screen it on title plus
+   landing page, or leave it unsure for pass 2.
+6. Write the decisions to a JSON file and apply them with `update`. The
+   script rejects an exclusion without a reason.
 
 <example for="decisions">
 {
@@ -35,29 +42,21 @@ batch is valid.
 }
 </example>
 
-## Bulk rules
-
-Record a vocabulary cut as one judgment. `screen --on title --exclude` with
-`{"match": "<regex>", "reason": "..."}` on the pipe applies a
-case-insensitive regex to every candidate, marks each match with
-`rule:<id>`, and stores the rule with its matched keys in the notebook.
-Decided papers stay untouched: make the individual judgments that must
-survive a broad cut before running it. `--include` exists for the mirror
-case, still bound by the criteria gate.
-
 ## Exclusion reasons
 
-Use a short reason naming the failed criterion. Recurring kinds: off-topic,
-wrong publication form, outside year window, language, superseded duplicate
-(preprint vs journal version: keep the citable one), inaccessible (no
-abstract and no reachable text). Keep reasons consistent across the batch.
+Use a short reason naming the failed criterion, and keep reasons consistent
+across the batch. Recurring kinds: off-topic, wrong publication form,
+outside year window, language, superseded duplicate, inaccessible (no
+abstract and no reachable text). A preprint and its journal version can
+enter the corpus under different DOIs; when both survive screening, keep the
+citable version and exclude the other as "superseded duplicate".
 
 ## Pass 2: full-text triage
 
-For remaining unsure papers, fetch what the record links (`pdf_url`,
-`landing_url`), skim introduction and conclusions, and decide. Papers whose
-text is unreachable at all are excluded with reason "inaccessible" at lite
-and full; at ultra, note them in the report as identified but unassessed.
+For the remaining unsure papers, fetch what the record links (`pdf_url`,
+`landing_url`), skim introduction and conclusions, and decide. Exclude a
+paper whose text is unreachable at all with reason "inaccessible" at lite
+and full; at ultra, note it in the report as identified but unassessed.
 
 ## Shortlist size
 
@@ -67,11 +66,8 @@ and agree with the user on tighter criteria or a longer run before
 proceeding. Fewer than 5 included papers usually means search coverage
 failed: reopen search before concluding the field is empty.
 
-## Bias sweep and flow counts
+## Bias sweep
 
 After screening, check the included set for concentration: one author group,
-one venue, one year dominating is a signal to search the neglected
-directions. Then derive the flow from state: `status` gives per-status
-counts, the log gives per-search totals. The report template in `report`
-carries the counts block: identified, deduplicated, screened out at pass 1,
-screened out at pass 2, included.
+one venue, or one year dominating is a signal to search the neglected
+directions.

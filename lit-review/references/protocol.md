@@ -1,6 +1,8 @@
-# Protocol: Question, Review Type, Criteria
+# Protocol: question, review type, criteria
 
-The review's scope is fixed here, before any search runs.
+Fix the review's scope before any search runs. The phase takes the user's
+request and leaves a session whose `protocol.json` holds the question, the
+level, and non-empty inclusion and exclusion criteria.
 
 ## Clarify first
 
@@ -26,18 +28,20 @@ assumptions at the top of the report.
    conference papers, gray literature. Preprints are normal in fast fields;
    the report labels them.
 
+Then run `init` with the question and the level.
+
 ## Criteria
 
-Write inclusion and exclusion criteria into `protocol.json` as concrete,
-checkable statements. The script refuses to search until both lists are
-non-empty.
+Fill `criteria.include` and `criteria.exclude` in `protocol.json` with
+concrete, checkable statements. The script refuses to search until both
+lists are non-empty.
 
 - Inclusion: topic relevance stated narrowly, year window, source types,
   methodology kinds accepted.
 - Exclusion: off-topic neighbors likely to pollute results, languages not
   read, publication forms not accepted (abstracts only, editorials).
 - A criterion an agent cannot check against a record ("high quality") does
-  not belong here; quality is appraised during extract.
+  not belong here; extract appraises quality.
 
 <example for="criteria">
 "criteria": {
@@ -53,14 +57,6 @@ non-empty.
   ]
 }
 </example>
-
-## Amendments
-
-Criteria may change after searches ran, visibly: append to `amendments` in
-`protocol.json` the date, what changed, and why. The script flags hash drift
-in `status`; an unexplained drift is an error to repair. Papers already
-screened under the old criteria are re-screened when the change could flip
-their decision.
 
 ## Seed papers
 

@@ -1,6 +1,7 @@
-# Extract: Reading, Records, Appraisal
+# Extract: reading, records, appraisal
 
-Turn each included paper into one extraction record. Synthesis reads the
+The phase takes the included papers and returns, for each, one extraction
+record on the pad and a `read_level` set with `update`. Synthesis reads the
 records; anything missing from them needs a re-read later.
 
 ## Reading order and depth
@@ -9,20 +10,19 @@ records; anything missing from them needs a re-read later.
 - Read each paper's `pdf_url` with `/read-pdf`; its page markers become the
   claim locations in the extraction record. When no PDF is reachable, fall
   back to the landing page's HTML text, then to the abstract as the floor.
-  After each paper, set its `read_level` (`abstract` or `full-text`) with
+- After each paper, set its `read_level` (`abstract` or `full-text`) with
   `update`. Invariant 5 makes this label the ceiling for how its claims
   appear in the report.
-- A survey among the included papers is read for its own claims and its
-  reference list; per invariant 5, its summaries of other papers are cited
-  as the survey's characterization, never as those papers.
+- Read a survey among the included papers for its own claims and its
+  reference list; per invariant 5, cite its summaries of other papers as the
+  survey's characterization, never as those papers.
 
 ## Extraction record
 
-One record per paper, jotted onto the session pad: `status` and `brief` list
-included papers with no extraction entry. Fill only what the source states;
-write "not reported" for the rest. The body is free beyond `kind` and `key`:
-add per-paper hypothesis-directed questions whenever the argument needs
-them, and the jot advisory warns on a key the corpus lacks.
+Jot one record per paper; `status` and `brief` list included papers with no
+extraction entry. Fill only what the source states and write "not reported"
+for the rest. The body is free beyond `kind` and `key`: add per-paper
+hypothesis-directed questions whenever the argument needs them.
 
 <template for="extraction">
 $R jot "$S" <<'JSON'
@@ -52,8 +52,7 @@ never summed into one score:
 
 At full, appraisal shapes how much weight a paper carries in synthesis and
 is mentioned where it matters. At ultra, the report carries the table for
-every included paper. Title-mismatch signals are handled at verification,
-per `report`.
+every included paper.
 
 ## Parallel extraction
 
