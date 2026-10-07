@@ -92,7 +92,7 @@ The procedure is the same in every mode.
    (invariant 3).
 2. Scan the input against the detection index and collect suspected hits.
 3. Zero hits: return the text unchanged per output mode, state that no AI
-   patterns were found, and load nothing.
+   patterns were found (Embedded: say nothing), and load nothing.
 4. Otherwise load exactly the owner files of the hits, plus `calibration`.
    Never rewrite flagged text without `calibration`.
 5. Check §14-19 mechanically: search for U+2014, U+2013, `**`, heading case,
