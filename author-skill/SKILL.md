@@ -28,8 +28,7 @@ Before writing or reviewing a skill that bundles code, load `scripts`.
 ## Frontmatter
 
 Restrict the header to Agent Skills spec fields (agentskills.io), in this
-order, with `allowed-tools` last and only when a harness needs it; put any
-agent-specific hint under `metadata` as a quoted string.
+order; put any agent-specific hint under `metadata` as a quoted string.
 
 | Field | Rule |
 | --- | --- |
@@ -38,6 +37,7 @@ agent-specific hint under `metadata` as a quoted string.
 | `license` | `MIT`. |
 | `compatibility` | Only for runtimes, system packages, network access, or a full repository checkout; at most 500 characters. |
 | `metadata.argument-hint` | The invocation grammar, spelled here only: one bracket group per independent choice in typing order (`"[lite|full|ultra] [design|review|help]"`); a skill with no vocabulary names its subject (`"[file-or-section]"`). Update on any verb, level, or mode change. |
+| `allowed-tools` | Last, only when a harness needs it. |
 
 ## Layout
 
@@ -217,8 +217,10 @@ codebase, or return it as one raw Markdown block with nothing around it.
     <context>Converting raw history into a reproducible step.</context>
     <before>I tried bumping the dependency directly, the lockfile drifted and CI failed, then I realized this repo regenerates the lock via `make lock`, so I ran that and CI passed.</before>
     <after>
-      <step>Regenerate the lockfile with the repository's command: `make lock`.</step>
-      <step>Commit the manifest and the lockfile together.</step>
+      <procedure>
+        <step>Regenerate the lockfile with the repository's command: `make lock`.</step>
+        <step>Commit the manifest and the lockfile together.</step>
+      </procedure>
       Gotcha: editing the lockfile by hand drifts CI; regenerate it.
     </after>
   </example>
@@ -226,7 +228,7 @@ codebase, or return it as one raw Markdown block with nothing around it.
   <example for="description">
     <context>Writing a routing description.</context>
     <before>This skill helps format python code using black and flake8.</before>
-    <after>Formats and lints Python code with Black and Flake8. Use when asked to format Python, lint a file, or run either tool.</after>
+    <after>Formats and lints Python code to the project's configured style, changing no behavior. Use when asked to format Python, lint a file, or fix style warnings.</after>
   </example>
 
   <example for="parameterization">
