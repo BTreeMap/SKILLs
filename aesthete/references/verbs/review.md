@@ -26,12 +26,7 @@ existing work) and returns ranked findings. Read-only: change nothing.
 
 ## Severity
 
-| Level | Meaning |
-| --- | --- |
-| Broken | The user cannot complete the goal, loses work, or is excluded. Blocking. |
-| Friction | The goal is reachable but costs unjustified steps, waits, or confusion. |
-| Incoherent | Violates the surface's own established system. Cheap to fix, compounds if not. |
-| Generated | Reads as templated output. Undermines credibility without breaking function. |
+Rate each finding on the spine's Severity scale.
 
 ## Finding format
 

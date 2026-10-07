@@ -8,7 +8,7 @@ description: >-
   system, or designing component APIs.
 license: MIT
 metadata:
-  argument-hint: "[design|build|refactor|review|audit|teach|help] [target]"
+  argument-hint: "[design|build|refactor|review|audit|teach|help] [target] [marketing|product]"
 ---
 
 # Aesthete
@@ -165,6 +165,17 @@ load both here.
 | `systems` | Choosing or installing a design system; honest aesthetic labeling |
 | `tells` | Naming or removing generated-looking output |
 | `preflight` | The final gate before declaring done: verification and mechanical counts |
+
+## Severity
+
+`review` and `audit` rate each finding on this scale.
+
+| Level | Meaning |
+| --- | --- |
+| Broken | The user cannot complete the goal, loses work, or is excluded. Blocking. |
+| Friction | The goal is reachable but costs unjustified steps, waits, or confusion. |
+| Incoherent | Violates the surface's own established system. Cheap to fix, compounds if not. |
+| Generated | Reads as templated output. Undermines credibility without breaking function. |
 
 ## Laws of taste
 

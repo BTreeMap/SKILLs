@@ -61,7 +61,9 @@ under the latency budget like anything else.
 
 ## Dashboards
 
-* State one question per view in the title before adding charts.
+* State one question per view in the title before adding charts. Choose each
+  chart's form for that question, a decision separate from its palette
+  (`color`).
 * Rank by decision value. The number that changes behavior goes top-left in
   left-to-right reading orders.
 * Every metric carries its comparison: a number without a baseline, target,
