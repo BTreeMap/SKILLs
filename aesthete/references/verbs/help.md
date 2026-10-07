@@ -72,7 +72,7 @@ the file that owns it.
 
 ## Reference map
 
-Loaded on demand, one level deep, never chained.
+One level deep, never chained; the spine names the files every verb loads.
 
 | Need | File |
 | --- | --- |
