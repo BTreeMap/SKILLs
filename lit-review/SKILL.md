@@ -26,7 +26,6 @@ criteria, screening, reading, and synthesis.
 | --- | --- |
 | `extract` | [references/extract.md](references/extract.md) |
 | `protocol` | [references/protocol.md](references/protocol.md) |
-| `report` | [references/report.md](references/report.md) |
 | `screen` | [references/screen.md](references/screen.md) |
 | `search` | [references/search.md](references/search.md) |
 | `synthesize` | [references/synthesize.md](references/synthesize.md) |
@@ -70,10 +69,11 @@ literature" is lite, "systematic review" is ultra.
 
 ## Phases
 
-Run six phases in order; each loads exactly the reference file of its name.
-Return to an earlier phase when its output proves inadequate (a screen that
-leaves too few papers reopens search) and log what reopened it. Delegate
-only extraction, through `/summon`, as `extract` describes.
+Run six phases in order; each loads exactly the reference file of its name,
+except report, which reuses `synthesize`. Return to an earlier phase when
+its output proves inadequate (a screen that leaves too few papers reopens
+search) and log what reopened it. Delegate only extraction, through
+`/summon`, as `extract` describes.
 
 | Phase | Work |
 | --- | --- |
@@ -200,9 +200,9 @@ paradigm shift, in the realm of, it is important to note
 
 <checklist>
   <item>Criteria existed in protocol.json before the first logged search; any change is in amendments.</item>
-  <item>Every phase loaded only its own reference file.</item>
+  <item>Every phase loaded only its assigned reference file.</item>
   <item>Every excluded paper carries a reason; flow counts derive from the state files.</item>
   <item>Every citation in the deliverable resolves to a corpus record, with its read level honest.</item>
   <item>verify ran; broken DOIs were fixed or their citations removed and disclosed.</item>
-  <item>The report names its search dates, sources, counts, and limits; its prose follows the rules in report and the banned vocabulary.</item>
+  <item>The report names its search dates, sources, counts, and limits; its prose follows the rules in synthesize and the banned vocabulary.</item>
 </checklist>
