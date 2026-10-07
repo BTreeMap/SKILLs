@@ -1,7 +1,7 @@
 # Maintainer Evaluation Protocol
 
-Maintainer protocol; a fact-check run never loads it. Populate results from
-real runs, never from reading docs.
+A fact-check run never loads this file. Populate results from real runs,
+never from reading docs.
 
 ## Seeded-error benchmark
 
@@ -16,7 +16,7 @@ run:
 - abstention correctness: abstains only where evidence is absent
 - cost and latency per claim
 
-Protocol: at least 5 repetitions per condition; compare against a no-skill
+Run at least 5 repetitions per condition and compare against a no-skill
 baseline on the same model. Re-run per model generation: when the with-skill
 delta approaches zero, delete scaffolding (starting with `evidence` query
 patterns) before adding anything.

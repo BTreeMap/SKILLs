@@ -49,11 +49,7 @@ Tier by stakes times confidence; ask per tier, never one blanket yes.
 | item | medium-confidence, or spans in high-stakes content (published docs, legal, safety, pricing) | One question per correction, counter-evidence shown |
 | never-auto | conflicting, low-confidence, abstained | Presented for information; edited only if the user dictates the text |
 
-Rules:
-
 - Phrase the ask neutrally ("apply, skip, or edit?"), never presume yes.
-- Rejection is recorded (`user-rejected` in the state file) and respected in
-  any re-run: do not re-propose a rejected correction unchanged.
+- Respect a rejection in any re-run: do not re-propose a rejected correction
+  unchanged.
 - Partial approval is normal; apply exactly the approved subset.
-- After edits, run the coherence pass (Workflow step 5) and list any
-  secondary edits in the final summary.

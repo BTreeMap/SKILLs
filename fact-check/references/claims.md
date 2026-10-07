@@ -1,19 +1,18 @@
-# Claim Inventory: Decomposition and Type Routing
+# Claim Inventory: Decomposition and Typing
 
 ## Atomic decomposition
 
-Split each verifiable statement into atomic claims: one independently
-checkable proposition each.
+Split each verifiable statement into atomic claims, each one independently
+checkable proposition.
 
 - Decontextualize: resolve pronouns, elided subjects, and relative time
   ("the new release" becomes the named release; "last year" becomes the
   absolute year derived from the document's timestamp).
 - Map every claim to its exact source span: file, line range, verbatim
-  quote. The span is what an approved correction later replaces.
-- Granularity cap: never fragment below one proposition. A sentence bundling
-  subject, action, and date ("Org O released product P in month M") is ONE
-  claim.
-- A compound sentence with independent propositions ("P has property A and
+  quote. An approved correction later replaces that span.
+- Never fragment below one proposition. A sentence bundling subject, action,
+  and date ("Org O released product P in month M") is ONE claim.
+- A compound sentence of independent propositions ("P has property A and
   costs B") becomes two claims, each carrying the shared subject after
   decontextualization.
 
@@ -24,23 +23,23 @@ rhetoric, hedged speculation ("may", "could"), and self-referential document
 text. When a sentence mixes fact and opinion, extract only the factual
 proposition.
 
-## Claim types and retrieval routing
+## Claim types
 
-Type each claim; the type selects the retrieval strategy.
+Give each claim one type; the type selects its retrieval route in
+`evidence`.
 
-| Type | Definition | Route |
-| --- | --- | --- |
-| spec | Technical capability, limit, or parameter of a product | Vendor's official documentation for the exact product and version |
-| version | Version identifier or "latest release" assertion | Package registry or the project's release page; registries beat blogs |
-| date | Release, publication, or event date | Primary announcement from the owning organization |
-| statistic | Measured or surveyed quantity | The measurement's original publisher |
-| computation | Value derivable from other values in the document (totals, percentages, deltas) | RECOMPUTE from the document's own inputs; search only for missing external inputs |
-| quotation | Attributed verbatim quote | Locate the original text; verify wording and attribution |
-| other | Verifiable but untyped | Two-independent-source rule, strictest reading |
+| Type | Definition |
+| --- | --- |
+| spec | Technical capability, limit, or parameter of a product |
+| version | Version identifier or "latest release" assertion |
+| date | Release, publication, or event date |
+| statistic | Measured or surveyed quantity |
+| computation | Value derivable from other values in the document (totals, percentages, deltas) |
+| quotation | Attributed verbatim quote |
+| other | Verifiable but untyped |
 
-## Temporal fields
+## Claim-time
 
-Record with each claim: claim-time (document timestamp: front-matter date,
-git log date of the span, or user-stated; if none, note "claim-time unknown"
-and judge only against verification-time). Evidence-time and
-verification-time land in the verdict record during verification.
+Record each claim's claim-time: the document's timestamp, taken from the
+front-matter date, the git log date of the span, or a user statement. If
+none exists, note "claim-time unknown".

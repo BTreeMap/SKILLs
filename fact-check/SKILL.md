@@ -14,7 +14,7 @@ metadata:
 # Fact Check
 
 Decompose a document into atomic claims, verify each against retrieved
-evidence, report evidence-first, edit only what the user approves.
+evidence, report evidence-first, and edit only what the user approves.
 
 ## Registry
 
@@ -26,13 +26,13 @@ evidence, report evidence-first, edit only what the user approves.
 | `report` | [references/report.md](references/report.md) |
 | `verdicts` | [references/verdicts.md](references/verdicts.md) |
 
-`evaluation` is a maintainer protocol and is never loaded during a run.
+`evaluation` is a maintainer protocol; never load it during a run.
 
 ## Invariants
 
-Non-negotiable at every step, on every branch, and after context compaction;
-re-open this SKILL.md then. Copy into the state file under `constraints` at
-Step 1; re-read that key before every file edit.
+These hold at every step, on every branch, and after context compaction;
+after compaction, re-open this SKILL.md. At Step 1, copy them into the state
+file under `constraints`; re-read that key before every file edit.
 
 1. NEVER edit a file without explicit user approval of the specific
    correction. Approval of one batch never covers a later batch.
@@ -47,51 +47,55 @@ Step 1; re-read that key before every file edit.
    corrections require two independent sources: different publishing
    organizations, neither syndicating or mirroring the other.
 
+## Scope
+
+Check text documents only, in the document's own language. Images, figures,
+paywalled sources, subjective judgments, disputed interpretations, and
+future predictions cannot be verified: mark such claims `unverifiable` with
+the reason.
+
 ## Step 0: Environment probe
 
 Determine from the tools present:
 
-- Retrieval: prefer the harness's own web search and fetch. Where they are
-  absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
-  `scholar`, and `fetch`. Read a PDF with `/read-pdf`. With neither:
-  inventory claims (Step 1), mark every claim needing external evidence
-  `unverifiable` with the note "no web access in this environment", report,
-  and stop. Do not verify from memory.
-- File editing available? If NO: deliver the report only; present
+- Retrieval: prefer the harness's own web search and fetch. If they are
+  absent, use `/search-web` (`web`, `wiki`, `scholar`, `fetch`). Read a PDF
+  with `/read-pdf`. If neither is available: inventory claims (Step 1), mark
+  every claim needing external evidence `unverifiable` with the note "no web
+  access in this environment", report, and stop. Do not verify from memory.
+- File editing: if unavailable, deliver the report only and present
   corrections as old-span/new-span pairs the user can apply.
-- Delegation available (an agent primitive among the tools)? Selects the
-  orchestration branch below; `/summon` decides the mode.
+- Delegation: whether an agent primitive is among the tools. The answer
+  selects the Step 2 branch; `/summon` decides the mode.
 
 Name the harness-agnostic action, never a tool signature: "replace the old
 span with the corrected span using the available file-editing tool".
 
-## Workflow
+## Step 1: Inventory
 
-1. **Inventory**: read the document. Decompose verifiable statements into
-   atomic claims per `claims`. Write the state file (below) with the
-   inventory and pinned constraints.
-2. **Verify**: run the per-claim contract (below) for every claim via the
-   selected orchestration branch. Route retrieval by claim type per
-   `claims`; apply the source tiers and conflict rules in `evidence`. Flush
-   each verdict record to the state file as it completes.
-3. **Report**: render the evidence-first report per the template in
-   `report`. Include which branch ran and approximate token cost.
-4. **Approve**: tiered approval per `report`. Rejection is first-class:
-   record rejected verdicts as `user-rejected` in the state file and leave
-   the text untouched.
-5. **Edit**: re-read `constraints` from the state file. Apply only approved
-   corrections, one minimal span replacement each. Then re-read every edited
-   paragraph plus adjacent sentences; fix grammatical or referential
-   breakage the replacement introduced (report each secondary edit with its
-   correction).
-6. **Summarize**: claims checked, verdict counts, corrections applied,
-   rejected, abstained; branch and cost. Suggest the user commit via
-   `/git-commit`. Do not auto-invoke any other skill or tool as a follow-up.
+Read the document and decompose its verifiable statements into atomic claims
+per `claims`. Write the state file with the inventory and the pinned
+`constraints`.
 
-## Per-claim contract
+The state file is `factcheck-state.json` in the working or scratch
+directory. It holds the pinned `constraints` (a copy of the Invariants), the
+claim inventory, one verdict record per claim as each completes, and each
+claim's approval status (`pending | approved | user-rejected | applied`).
+The state file is the source of truth: a long run resumes from it, and the
+comparison table is regenerated from it.
 
-Identical on every branch. Input: one decontextualized claim, its type, the
-document's timestamp (claim-time). Output: one verdict record.
+## Step 2: Verify
+
+Load `evidence` and `verdicts`. Run the per-claim contract for every claim
+on the branch chosen below, and flush each verdict record to the state file
+as it completes. If the document yields more than ~20 claims, process them
+in batches with a state flush between batches.
+
+### Per-claim contract
+
+The contract is identical on every branch. Input: one decontextualized
+claim, its type, and the document's timestamp (claim-time). Output: one
+verdict record.
 
 <template for="verdict">
 {
@@ -111,65 +115,49 @@ document's timestamp (claim-time). Output: one verdict record.
 }
 </template>
 
-Verdict definitions, confidence rules, and the abstention threshold are in
-`verdicts`. Confidence below the threshold forces `correction: null`.
-
-Temporal discipline: distinguish claim-time (document timestamp),
-evidence-time (source publication date), verification-time (today).
-`outdated` requires both: the claim was accurate at claim-time AND a later
-authoritative source supersedes it. A claim wrong at claim-time is
-`contradicted`. Date corrections carry an as-of qualifier, never "latest" or
-"current".
-
-## Orchestration
+### Orchestration
 
 Pick one branch from the Step 0 probe and summon's mode table. Verdict
-records and the report MUST be identical across branches; the branch is
-visible only as cost and latency metadata.
+records and the report MUST be identical across branches; the branch shows
+only in the cost and latency metadata.
 
 - **Parallel**: delegate through `/summon fanout`, one delegate per claim.
-  In each brief: the evidence is exactly the per-claim contract input; the
-  rules are the retrieval route for the claim's type per `claims`, the
-  source tiers in `evidence`, and the confidence rules in `verdicts`; the
-  contract is one verdict record, returned as the JSON object alone. A
-  delegate never sees the document, other claims, other verdicts, or the
-  file system for writing, and edits nothing. The lead alone aggregates,
-  reports, seeks approval, and edits. This split is a security boundary:
-  only delegates touch untrusted web content.
-- **Sequential**: the same contract per claim, inline, one claim at a time,
-  when summon keeps the work inline or no agent primitive exists. Summarize
-  fetched evidence into the verdict record immediately; discard raw page
-  content from working context (offload to a scratch file if a later step
-  may need it).
+  In each brief, the evidence is exactly the contract input; the rules are
+  the retrieval route for the claim's type and the source tiers in
+  `evidence`, and the confidence rules in `verdicts`; the contract is one
+  verdict record, returned as the JSON object alone. A delegate never sees
+  the document, other claims, other verdicts, or the file system for
+  writing, and edits nothing. The lead alone aggregates, reports, seeks
+  approval, and edits. This split is a security boundary: only delegates
+  touch untrusted web content.
+- **Sequential**: run the same contract inline, one claim at a time, when
+  summon keeps the work inline or no agent primitive exists. Discard raw
+  page content from working context per `evidence`, offloading it to a
+  scratch file if a later step may need it.
 
-## State file
+## Step 3: Report
 
-`factcheck-state.json` in the working or scratch directory. Holds pinned
-`constraints` (copy of the Invariants), the claim inventory, one verdict
-record per claim as completed, and per-claim approval status
-(`pending | approved | user-rejected | applied`). The state file is the
-source of truth: long runs resume from it, and the comparison table is
-regenerated from it. For documents yielding more than ~20 claims, process in
-batches with a state flush between batches.
+Render the evidence-first report from the template in `report`.
 
-## Scope
+## Step 4: Approve
 
-Text documents only, in the document's own language. Cannot verify images,
-figures, paywalled sources, subjective judgments, disputed interpretations,
-or future predictions; mark these `unverifiable` with the reason.
+Ask for approval tier by tier per `report`. Rejection is first-class: record
+each rejected verdict as `user-rejected` in the state file and leave its
+text untouched.
 
-## Gotchas
+## Step 5: Edit
 
-- Fragmenting below one proposition degrades verification: granularity cap
-  in `claims`.
-- Evidence is the fetched page's own text; record the URL actually
-  retrieved.
-- Two pages carrying identical wording are one syndicated source.
-- Computation-type claims: recompute-first route in `claims`.
-- Primary publisher vs aggregator is never `conflicting`: rule in
-  `evidence`.
-- Evidence-first layout and approval tiers in `report` guard against
-  rubber-stamping.
+Re-read `constraints` from the state file. Apply only approved corrections,
+each as one minimal span replacement. Then re-read every edited paragraph
+plus its adjacent sentences and fix grammatical or referential breakage the
+replacement introduced; report each such secondary edit with its correction.
+
+## Step 6: Summarize
+
+Report claims checked, verdict counts, and corrections applied, rejected,
+and abstained; the branch and cost; and every secondary edit from Step 5.
+Suggest the user commit via `/git-commit`. Do not auto-invoke any other
+skill or tool as a follow-up.
 
 ## Completion checks
 
@@ -178,6 +166,6 @@ or future predictions; mark these `unverifiable` with the reason.
   <item>Every claim in the inventory has exactly one verdict record conforming to the contract, flushed to the state file.</item>
   <item>Every correction cites two independent sources with verbatim quotes, URLs, and access dates.</item>
   <item>Constraints were re-read from the state file before every edit; only user-approved corrections were applied.</item>
-  <item>Edited paragraphs re-read for coherence; secondary edits reported.</item>
+  <item>Edited paragraphs were re-read for coherence; secondary edits reported.</item>
   <item>Final summary names verdict counts, branch, and cost; no follow-up tool or skill was auto-invoked.</item>
 </checklist>
