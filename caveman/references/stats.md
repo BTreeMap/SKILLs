@@ -1,9 +1,10 @@
-# Caveman Stats Mode
+# Caveman Stats Verb
 
-Display an honest savings card when invoked. One-shot: change no level,
-write nothing.
+Display an honest savings card. Edit nothing, write nothing, and change no
+level. NEVER fabricate or estimate per-session token counts: this skill has
+no session-log instrumentation.
 
-## What to show
+The card shows:
 
 - Upstream benchmark: the caveman project measured a median 65 percent
   output-token reduction with full technical accuracy retained. Source:
@@ -15,14 +16,6 @@ write nothing.
   net NEGATIVE. When they are, say so plainly and suggest turning caveman
   off for that workload.
 - Local numbers: the only honest per-file figures here are the
-  `CHARS: X -> Y` lines the refactor verb's guard script prints. Character
-  deltas are not token deltas; label them as characters.
-
-## Honesty Boundary
-
-NEVER fabricate or estimate per-session token counts: this skill has no
-session-log instrumentation.
-
-## Boundaries
-
-One-shot display. Edits nothing, changes no level.
+  `chars_before`, `chars_after`, and `percent_smaller` fields the refactor
+  verb's guard script reports on `apply`. Character deltas are not token
+  deltas; label them as characters.
