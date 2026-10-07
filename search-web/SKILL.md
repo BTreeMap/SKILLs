@@ -32,7 +32,7 @@ readable text out of one page.
 
 ## Channels
 
-One channel per invocation.
+Each invocation runs one channel.
 
 | Channel | Returns | Reach for it when |
 | --- | --- | --- |
@@ -42,15 +42,11 @@ One channel per invocation.
 | scholar | Papers, with DOI, year, and citations | The question is a research one |
 | fetch | The readable text of one page | A result is worth reading in full |
 
-`scholar --source` picks the index: `openalex` spans every field and is the
-default, `crossref` is the DOI registry, `arxiv` is preprints and ranks a
-fielded query such as `all:"exact phrase"` far better than a bare one.
-
 ## Commands
 
-Bind the command once per shell; `realpath` is required. This command
-surface is the handoff point: invoke it and read its output. Source reading
-belongs to user-instructed troubleshooting.
+Bind the command once per shell; `realpath` is required. Invoke this surface
+and read its output; read the source only when the user instructs
+troubleshooting.
 
 <commands for="search">
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-search-web"
@@ -62,37 +58,41 @@ $R fetch "<url>"
 $R clean
 </commands>
 
-A query fills a named slot: `--query` carries it inline, `--query:file PATH`
-reads it from a file, `--query:stdin` reads the pipe, and the pipe fills it
-when no flag claims it. An empty query is a rejection. Put a long or
-quote-heavy query in a file.
+`web`, `instant`, `wiki`, and `scholar` take the query in a named slot:
+`--query` inline, `--query:file PATH` from a file, `--query:stdin` from the
+pipe, and the pipe when no flag claims it. Put a long or quote-heavy query
+in a file. An empty query is a rejection.
 
 `--limit` takes 1 or more; below that is a rejection, and above 50 is
 clamped to 50 with a `signal:` line, so the record's `limit` is what the
 search asked for.
 
-Results emit as one JSON document on stdout; `signal:` lines on stderr are
-advisory. Exit codes: 0 done, 1 fix the input and resend, 2 upstream failed
-and a retry may clear it. A repeated query is answered from a cache and says
-so; `clean` drops it.
+Each command emits one JSON document on stdout; `signal:` lines on stderr
+are advisory. Exit codes: 0 done, 1 fix the input and resend, 2 upstream
+failed and a retry may clear it. A repeated query is answered from a cache
+and says so; `clean` drops the cache.
+
+## Channel contracts
+
+- `web`: results are unofficial and rate-limited. On empty results, try
+  `wiki` or `scholar`, or retry later.
+- `scholar`: `--source` picks the index. `openalex` spans every field and is
+  the default, `crossref` is the DOI registry, and `arxiv` is preprints and
+  ranks a fielded query such as `all:"exact phrase"` far better than a bare
+  one. Space out a long run rather than parallelizing it; the indexes are
+  metered per address, and one refuses for the rest of the day.
+- `fetch`: takes one http or https URL and returns an article. A PDF, a
+  listing, a paywall, or a page rendered by JavaScript comes back refused,
+  not empty.
 
 ## Reading results
 
 Each row carries `title`, `url`, `snippet`, and `source`, and omits what it
-does not have. Judge a row by its `source`: a `scholar` row names a real
-record whose DOI resolves; a `wiki` row is a tertiary summary, good for
-orientation and never a citation; a `web` row is whatever ranked, so open it
-with `fetch` before relying on it.
+does not have. Judge a row by its `source`:
 
-## Gotchas
-
-- `web` results are unofficial and rate-limited. On empty results, try
-  `wiki` or `scholar`, or retry later.
-- `fetch` returns an article, so a listing, a paywall, or a page rendered by
-  JavaScript comes back refused rather than empty.
-- `fetch` refuses a PDF; extract it with `/read-pdf`.
-- Space out a long scholarly run rather than parallelizing it; the indexes
-  are metered per address, and one refuses for the rest of the day.
+- `scholar`: names a real record whose DOI resolves.
+- `wiki`: a tertiary summary, good for orientation and never a citation.
+- `web`: whatever ranked; open it with `fetch` before relying on it.
 
 ## Completion checks
 
