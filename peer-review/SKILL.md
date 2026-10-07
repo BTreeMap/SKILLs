@@ -25,7 +25,6 @@ support. The agent searches adversely; the script derives the verdict.
 | Name | Path |
 | --- | --- |
 | `analysis` | [references/analysis.md](references/analysis.md) |
-| `claims` | [references/claims.md](references/claims.md) |
 | `design` | [references/design.md](references/design.md) |
 | `firewall` | [references/firewall.md](references/firewall.md) |
 | `limitations` | [references/limitations.md](references/limitations.md) |
@@ -84,14 +83,14 @@ Before ingest, determine from the available tools:
 
 ## Phases
 
-Run the six phases in order. Each bank phase loads exactly the reference of
-its name; `firewall` loads with every bank; `report` loads last. Revisiting
-a bank is normal.
+Run the six phases in order. Each bank phase but claims, whose bank is
+below, loads exactly the reference of its name; `firewall` loads with every
+bank; `report` loads last. Revisiting a bank is normal.
 
 | Phase | Work |
 | --- | --- |
 | ingest | Extract the paper with `/read-pdf`, `ingest` the text, record its date |
-| claims | Note each contribution claim verbatim; load `claims` |
+| claims | Note each contribution claim verbatim; load `firewall` |
 | investigate | Walk the level's banks in Levels except `claims` and `novelty`, `limitations` last, with `firewall`; note objections per bank, then a `walks` entry |
 | literature | Build the corpus per `novelty`; `link` it; walk the novelty bank |
 | verdict | Run `check`; withdraw what a re-read defeats; resolve every signal |
@@ -103,6 +102,46 @@ reference file, and `firewall`, by absolute path, plus the claims noted so
 far with their keywords; the contract is that bank's share of the note
 batch, returned as the JSON object alone. Delegates write no session state;
 the lead judges each return, then runs `jot` and `note` itself.
+
+## Claims bank
+
+The claim list is the review's target set, fixed before the paper's framing
+can move it.
+
+### Extraction
+
+Reading only the abstract, introduction, and conclusion, copy each
+contribution sentence verbatim (cue phrases: "we propose", "we show", "our
+contributions", "the first", "state of the art", "outperforms") into a
+`claims` entry, one sentence each, under 60 words. Split a sentence that
+bundles two results. Then read the rest of the paper.
+
+Three to eight claims is the usual range. A paper with none stated in those
+sections earns a `rhetoric` objection with `missing`.
+
+### Signalling questions
+
+Answer per claim while reading methods and results, then note a `walks`
+entry for `claims`. A "no" is an objection of that kind, quoting the
+evidence its row names.
+
+| Kind | Question | Anchor |
+| --- | --- | --- |
+| `unsupported` | Does a method, proof, or experiment in this paper test this claim as worded? | The claim plus the nearest result that falls short |
+| `overreach` | Does the claim's scope (all tasks, any model, in general) match the settings run? | The claim plus the settings table or dataset list |
+| `speculation` | Is a mechanism stated as explanation when only the outcome was measured? | The explanatory sentence |
+| `rhetoric` | Does the wording carry the weight (suggestive terms, math that restates prose, "significant" without a test)? | The sentence |
+
+In the objection text, name the section, table, or theorem that would have
+to support the claim and what it shows instead. "Table 2 covers two of the
+three benchmarks the abstract names" is an objection; "the evidence is weak"
+is a pad note.
+
+### Severity
+
+`fatal` when the main claim has no test in the paper; `major` when a
+headline claim exceeds its evidence; `minor` when a secondary claim does;
+`question` when a re-read or the authors could settle it.
 
 ## Commands
 

@@ -10,7 +10,7 @@ out. Pick the profile by study type, then answer every question.
 | Randomized trial | The five bias domains below in full: randomization, deviation, attrition, measurement, selective |
 | Observational or benchmark study | Same domains, with "assignment" replacing randomization |
 | ML or systems experiment | `baseline`, `ablation`, `data`, `reporting` with the reproducibility items |
-| Theory paper | Route to `claims`: every theorem's assumptions stated, every proof present or sketched with the full version located |
+| Theory paper | Route to the claims bank: every theorem's assumptions stated, every proof present or sketched with the full version located |
 
 ## Signalling questions
 
