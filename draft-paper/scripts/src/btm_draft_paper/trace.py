@@ -1,9 +1,7 @@
 """Verification for the append-only run trace, TRACE.jsonl.
 
-Reading, the event cap, decoding, and the failure type come from the
-kernel; this module holds only the record semantics: the event vocabulary
-as a closed variant and the ordering rules the trace-schema reference
-documents."""
+The log type, the event cap, the record decoder, and the failure type come
+from the kernel; lines are read here so each defect names its line."""
 
 from __future__ import annotations
 

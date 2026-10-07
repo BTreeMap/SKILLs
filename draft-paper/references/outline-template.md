@@ -1,20 +1,20 @@
-# Paper Outline
+# Paper outline
 
-Freeze one of these before drafting prose. Rank 2-3 candidate framings
-first; the winner fills this template. Start writing before the idea is
-fully formed: writing crystallizes what is not yet understood
-(write-to-think). Per subsection, write at most two lines stating its
-purpose; per paragraph, one sentence stating its topic. If the sentence does
-not fit, split the paragraph.
+Rank 2-3 candidate framings; the winner fills the template below, frozen
+before any prose is drafted. Start writing before the idea is fully formed:
+writing exposes what is not yet understood. Per subsection, write at most
+two lines stating its purpose; per paragraph, one sentence stating its
+topic. If the sentence does not fit, split the paragraph.
 
-**Title:** _falsifiable and specific; no unbacked superlatives_
+<template for="outline">
+<![CDATA[
+Title: _falsifiable and specific; no unbacked superlatives_
 
-**Venue and page budget:** _from the venue brief, not memory_
+Venue and page budget: _from the venue brief, not memory_
 
-**Key insight (one sentence):** _the sentence a reviewer repeats back after
-one read_
+Key insight (one sentence): _the sentence a reviewer repeats back after one read_
 
-**One-sentence contribution:** _the claim a skeptic would try to refute_
+One-sentence contribution: _the claim a skeptic would try to refute_
 
 ## Abstract (150-250 words, one paragraph)
 - Problem:
@@ -66,23 +66,22 @@ one read_
 - What it opens up:
 
 ## Venue statements
-- [ ] Only what the CFP requires (checklist / impact / LLM-use / ethics /
-  accessibility)
+- [ ] Only what the CFP requires (checklist / impact / LLM-use / ethics / accessibility)
 
 ## Appendix (non-load-bearing only)
 - Proofs:
 - Extra experiments:
 - Implementation details:
+]]>
+</template>
 
-## Pre-draft verification
-- [ ] The scenario sketch from the design plan survives in the introduction
-  in concrete form; a reader from the field recognizes the setting in the
-  first two paragraphs
-- [ ] The key insight reads as one sentence in the introduction; a cold
-  reader can repeat it back
-- [ ] Every contribution bullet maps to an exhibit in Section 4
-- [ ] Every exhibit maps to a ledger row, or to a planned experiment with
-  failure criteria
-- [ ] (Measurement papers) the key graphs are chosen before drafting; each
-  graph answers a stated question
-- [ ] Page budget fits the venue limit
+Before drafting, confirm every item:
+
+<checklist for="pre-draft">
+  <item>The scenario sketch from the design plan survives in the introduction in concrete form; a reader from the field recognizes the setting in the first two paragraphs.</item>
+  <item>The key insight reads as one sentence in the introduction; a cold reader can repeat it back.</item>
+  <item>Every contribution bullet maps to an exhibit in Section 4.</item>
+  <item>Every exhibit maps to a ledger row, or to a planned experiment with failure criteria.</item>
+  <item>(Measurement papers) The key graphs are chosen before drafting; each graph answers a stated question.</item>
+  <item>The page budget fits the venue limit.</item>
+</checklist>

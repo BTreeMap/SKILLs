@@ -1,10 +1,10 @@
-# Trace Schema
+# Trace schema
 
-Owns the append-only run log. `TRACE.jsonl` sits beside `RUN.md` in the run
+`TRACE.jsonl` is the append-only run log, beside `RUN.md` in the run
 directory: one JSON object per line, coarse events only (stage transitions,
-gate decisions, experiments, claims, major decisions). Fine-grained work
-notes belong in `RUN.md`, which the agent may rewrite freely; the trace it
-may only append to.
+gate decisions, experiments, claims, major decisions). Put fine-grained work
+notes in `RUN.md`, which the agent may rewrite freely; the agent only
+appends to the trace.
 
 ## Event vocabulary
 
@@ -27,13 +27,14 @@ may only append to.
 </template>
 
 `seq` starts at 1 and counts appended events with no gaps. `t` is an ISO
-8601 UTC timestamp in the kernel's `now_iso` shape. `run_id` is constant
-across the file. `detail` holds the event payload. Gate approvals record the
-human's verbatim reply text and its timestamp inside `detail`.
+8601 timestamp. `run_id` is constant across the file. `detail` holds the
+event payload. A gate approval records the human's verbatim reply text and
+its timestamp inside `detail`.
 
 ## Verification
 
-Verify with the bundled script (binding is defined in `SKILL.md`):
+Verify with the bundled script; `SKILL.md` defines the binding and the
+output contract.
 
 <commands>
 <![CDATA[
@@ -45,13 +46,12 @@ The verifier checks that each line parses, that the required fields are
 present with the right shapes, that `seq` runs 1..N with no gaps or repeats,
 that every `event` is in the vocabulary, that `run_id` never changes, that
 no unknown fields appear, and that the file stays under the kernel's event
-cap. It exits 0 with a JSON summary and 1 naming the first defect.
+cap. It exits 0 with a JSON summary, or 1 naming the first defect.
 
-## Integrity note
+## Integrity
 
-The log is append-only by convention, and verification detects corruption,
-truncation, and reordering. It cannot detect a rewrite that preserves the
-schema: an editor who renumbers `seq` cleanly leaves no trace of the edit.
-That is the honest claim the field settles on for keyless logs. Treat a
-failed verification as a compromised trace: restart the current stage from
-the last `gate-approved` event.
+The log is append-only by convention. Verification detects corruption,
+truncation, and reordering; it cannot detect a rewrite that preserves the
+schema, such as an edit that renumbers `seq` cleanly. Treat a failed
+verification as a compromised trace: restart the current stage from the last
+`gate-approved` event.

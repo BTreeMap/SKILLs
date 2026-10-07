@@ -1,7 +1,7 @@
-# Design Plan
+# Design plan
 
-Stage 1 deliverable for the `design` verb. The human approves this before
-any experiment runs.
+Stage 1 deliverable for `design`, one section per heading below. The human
+approves it before any experiment runs.
 
 ## Scenario sketch
 
@@ -9,25 +9,26 @@ Name the actors, the scale, the workload, the present failure, and the
 quantitative setting in concrete terms. Vague: "modern datacenters."
 Concrete: "a 128-GPU training job's all-reduce on a 4-spine fabric where one
 spine degrades 30%." Apply the practitioner-recognition test: a practitioner
-in the area reads this and recognizes the setting as real. If they would
-not, the scenario is not concrete enough to plan experiments around.
+in the area reads the sketch and recognizes the setting as real. If they
+would not, make the scenario concrete enough to plan experiments around.
 
 ## Contradiction
 
-Frame as a contradiction, mismatch, deployment gap, or unexplained
+Frame the work as a contradiction, mismatch, deployment gap, or unexplained
 observation (`award-patterns` 1). Name the two things that should agree and
 do not.
 
 ## Problem statement
 
-Answer in plain language, no jargon: what you are trying to do; how it is
-done today and where the limits are; what is new about your approach and why
-it will succeed; who cares and what difference it makes if it works. These
-four answers become the introduction arc.
+Answer in plain language, without jargon: what you are trying to do; how it
+is done today and where the limits are; what is new about your approach and
+why it will succeed; who cares and what difference it makes if it works.
+These four answers become the introduction arc.
 
 ## Falsifiable claims
 
-Each claim states what would prove it wrong. No claim without its falsifier.
+State with each claim what would prove it wrong. A claim without its
+falsifier does not enter the plan.
 
 ## Worked numerical example
 
@@ -38,16 +39,15 @@ mechanism is not understood well enough to plan experiments around.
 ## Experiment plan
 
 Per experiment: what runs, the baseline it kills, the metric that decides,
-the compute budget, and the failure criterion (what result sends the plan
-back for revision).
+the compute budget, and the failure criterion (the result that sends the
+plan back for revision).
 
 ## Prospective evidence ledger
 
-Every falsifiable claim mapped to a planned artifact path, all marked
-TO-RUN. This is the stage-2 deliverable for `design`: the mapping, not
-measured numbers.
+Map every falsifiable claim to a planned artifact path, all marked TO-RUN.
+This mapping, not measured numbers, is the stage-2 deliverable for `design`.
 
 ## Award assessment
 
-Blocking weaknesses, lead differentiators, evidence gaps, per
+Blocking weaknesses, lead differentiators, and evidence gaps, per
 `award-assessment`.

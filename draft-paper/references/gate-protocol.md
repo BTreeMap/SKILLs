@@ -1,12 +1,12 @@
-# Gate Protocol
+# Gate protocol
 
-Owns the approval handshake. Three gates: the research plan (end of stage
-1), the evidence ledger (end of stage 2), the final draft (end of stage 8).
-Nothing past a gate proceeds without human approval.
+Three gates: the research plan (end of stage 1), the evidence ledger (end of
+stage 2), the final draft (end of stage 8). Nothing past a gate proceeds
+without human approval.
 
 ## Request
 
-At a gate, the agent presents:
+At a gate, present:
 
 1. The artifact under review (plan, ledger, or draft).
 2. The `TRACE.jsonl` events since the previous gate (or run start), so the
@@ -16,15 +16,15 @@ At a gate, the agent presents:
 
 ## Decision
 
-- **Approve.** The human's reply text is recorded verbatim in `TRACE.jsonl`
-  as a `gate-approved` event with a timestamp. The run continues.
-- **Revise.** The notes are recorded as a `gate-rejected` event with the
-  requested changes; the agent returns to the stage and re-requests.
+- Approve: record the human's reply text verbatim in `TRACE.jsonl` as a
+  `gate-approved` event with a timestamp, then continue the run.
+- Revise: record the notes as a `gate-rejected` event with the requested
+  changes, return to the stage, and request the gate again.
 - The agent never approves its own gate. Silence is never approval.
 
 ## Resume
 
-A run resumes by reading `RUN.md` (working state) and the tail of
-`TRACE.jsonl` (what already happened). Verify the trace before trusting it;
-a failed verification means the trace was edited or corrupted, and the run
-restarts its current stage from the last `gate-approved` event.
+To resume, verify the trace before trusting it, then read `RUN.md` (working
+state) and the tail of `TRACE.jsonl` (what already happened). A failed
+verification means the trace was edited or corrupted; restart the current
+stage from the last `gate-approved` event.

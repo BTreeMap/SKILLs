@@ -1,9 +1,11 @@
-# Venue Brief
+# Venue brief
 
-Filed with the evidence ledger at intake and re-verified at camera-ready.
-Every answer carries its source URL and the cycle year; per-venue numbers
-drift between cycles and are never trusted from memory.
+File the brief with the evidence ledger at intake and re-verify it at
+camera-ready. Every answer carries its source URL and the cycle year;
+per-venue numbers drift between cycles, so take none from memory.
 
+<template for="venue-brief">
+<![CDATA[
 - Venue and track:
 - Cycle year:
 - Length (cap; what counts toward it; what happens over the limit):
@@ -19,3 +21,5 @@ drift between cycles and are never trusted from memory.
 ## Sources
 
 - <fact>: <URL> (<cycle year>)
+]]>
+</template>

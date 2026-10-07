@@ -1,6 +1,6 @@
-# Rebuttal Playbook
+# Rebuttal playbook
 
-Owns post-submission response: rebuttals, revise-and-resubmit, and the
+Post-submission response: rebuttals, revise-and-resubmit, and the
 camera-ready tail.
 
 Evidence base [labeled]: two ICLR-scale quantitative studies (Kargaran et
@@ -16,18 +16,15 @@ study.
 
 1. List every reviewer concern as a quoted one-liner with reviewer and
    score.
-2. Classify each concern:
-   - **Misunderstanding**: the paper already answers it. Point to the exact
-     section or figure and add a clarifying sentence. Two reviewers
-     misreading the same thing is a prose failure; fix the text.
-   - **Missing evidence**: run it if it fits the window and report the
-     numbers, whatever they show. A partial honest result beats a promised
-     one.
-   - **Scope or taste disagreement**: state the paper's scope, name what it
-     does not claim, let the contribution stand.
-   - **Reviewer factual error**: correct it first with an exact pointer
-     (section, table, line, quoted number), then move on. Practitioner
-     consensus calls this the highest-yield rebuttal content.
+2. Classify each concern and respond by its class:
+
+   | Class | Response |
+   | --- | --- |
+   | Misunderstanding | The paper already answers it. Point to the exact section or figure and add a clarifying sentence. Two reviewers misreading the same thing is a prose failure; fix the text. |
+   | Missing evidence | Run it if it fits the window and report the numbers, whatever they show. A partial honest result beats a promised one. |
+   | Scope or taste disagreement | State the paper's scope, name what it does not claim, let the contribution stand. |
+   | Reviewer factual error | Correct it first with an exact pointer (section, table, line, quoted number), then move on. Practitioner consensus calls this the highest-yield rebuttal content. |
+
 3. Allocate depth by decision leverage. Score movement concentrates at the
    borderline (5 to 6, 6 to 8 are the modal moves): the borderline reviewer
    gets the deepest response. The champion still gets a short, complete
@@ -39,29 +36,29 @@ study.
 
 ## Moves that move scores
 
-- **Run the requested experiment and name the new artifact** ("new Figure
-  R1", "Table 4 rows 3-5"). Evidence-backed clarification is the single
+- Run the requested experiment and name the new artifact ("new Figure R1",
+  "Table 4 rows 3-5"). Evidence-backed clarification is the single
   best-supported move [established].
-- **Answer every concern.** Unanswered points are the empirical signature of
+- Answer every concern. Unanswered points are the empirical signature of
   failure: brushing off a technical concern moved a score down in a
-  documented case. For low-leverage concerns, answer briefly *and* say why
-  the point would not change the assessment [established].
-- **Stay in multi-turn discussion.** Reply to follow-ups; discussion depth
-  is the strongest behavioral correlate of increases (2.21 vs 1.47 turns;
-  95.7% vs 65.9% author participation) [established].
-- **Take a clear agree/disagree stance per point**, with the evidence doing
-  the work around it [plausible].
-- **Replace vague wording with quoted numbers when challenged.** Concede the
+  documented case. For low-leverage concerns, answer briefly and say why the
+  point would not change the assessment [established].
+- Stay in multi-turn discussion. Reply to follow-ups; discussion depth is
+  the strongest behavioral correlate of increases (2.21 vs 1.47 turns; 95.7%
+  vs 65.9% author participation) [established].
+- Take a clear agree/disagree stance per point, with the evidence doing the
+  work around it [plausible].
+- Replace vague wording with quoted numbers when challenged. Concede the
   specific phrase, give exact figures, explain the scale choice in one
   sentence, change the text [plausible].
-- **Submit mid-window**, leaving room for discussion [plausible].
-- **Confirm score updates** when a reviewer agrees in text to raise; agreed
+- Submit mid-window, leaving room for discussion [plausible].
+- Confirm score updates when a reviewer agrees in text to raise; agreed
   updates sometimes never land on the official score [plausible].
-- **Acknowledge co-reviewer alignment** where points agree [plausible].
+- Acknowledge co-reviewer alignment where points agree [plausible].
 
 ## Drafting rules
 
-- Open with thanks, then 3-5 bullets of what is *new*, not a summary of the
+- Open with thanks, then 3-5 bullets of what is new, not a summary of the
   paper.
 - Per reviewer: quote or precisely restate the concern, respond, name the
   concrete change. One thread per reviewer.

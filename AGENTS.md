@@ -45,10 +45,9 @@ Current skills:
   original session.
 * `caveman/` - Compresses replies into terse phrasing that keeps every
   technical fact, and can rewrite a prose file in place.
-* `draft-paper/` - Drafts a conference, workshop, journal, survey, or demo
-  paper from any starting state (rough idea, partial or full results), with
-  an evidence ledger, verified citations, adversarial review, rebuttal
-  support, and human gates on plan, ledger, and draft.
+* `draft-paper/` - Drafts conference, workshop, journal, survey, or demo
+  papers with an evidence ledger, verified citations, adversarial review,
+  and rebuttals.
 * `fact-check/` - Checks a document claim by claim against retrieved
   sources, with quotes behind every verdict, and changes nothing until you
   approve each correction.

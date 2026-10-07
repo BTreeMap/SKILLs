@@ -1,7 +1,7 @@
-# Adversarial Review Checklist
+# Adversarial review checklist
 
-Owns review criteria. Run as a hostile reviewer: five separate passes, a
-punch list per pass, revise, repeat once.
+Review as a hostile reviewer: five separate passes, a punch list per pass,
+then revise and repeat once.
 
 ## Pass 1: Novelty and related work
 - [ ] Is the closest prior art named and cited, or only gestured at? Would
@@ -33,7 +33,7 @@ punch list per pass, revise, repeat once.
   sections alone?
 - [ ] Are datasets, splits, seeds, hyperparameters (ranges plus selection
   method), hardware, and total compute all stated?
-- [ ] Is variance reported (multiple seeds, error bars), not just means?
+- [ ] Is variance reported (multiple seeds, error bars), not only means?
 - [ ] Is code/data referenced via anonymized links, with figure-generation
   scripts in the bundle?
 - [ ] Notation defined once and used consistently? Pseudocode where an
@@ -80,7 +80,7 @@ punch list per pass, revise, repeat once.
 - [ ] Unverifiable citations are explicit `[CITATION NEEDED]` placeholders,
   never plausible-looking guesses.
 
-## Integrity reminder
+## Integrity
 LLM review improves prose and structure. It does not certify integrity: in
 one preprint study, LLM reviewers recommended accepting AI-fabricated
 manuscripts up to 82% of the time (BadScientist, Jiang et al. 2025, arXiv,

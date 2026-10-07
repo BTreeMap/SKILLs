@@ -15,7 +15,7 @@ submodule.
 | [aesthete](aesthete/SKILL.md) | Designs, builds, and reviews web interfaces that meet WCAG 2.2, honor a supplied brand or design system, and avoid the templated look of generated UI. |
 | [author-skill](author-skill/SKILL.md) | Turns a task history, workflow, or procedure into a reusable SKILL.md that another agent can follow with no memory of the original session. |
 | [caveman](caveman/SKILL.md) | Compresses replies into terse phrasing that keeps every technical fact, and can rewrite a prose file in place. |
-| [draft-paper](draft-paper/SKILL.md) | Drafts a conference, workshop, journal, survey, or demo paper from a rough idea, partial results, or completed experiments, with an evidence ledger, verified citations, adversarial review, and rebuttal support. |
+| [draft-paper](draft-paper/SKILL.md) | Drafts conference, workshop, journal, survey, or demo papers with an evidence ledger, verified citations, adversarial review, and rebuttals. |
 | [fact-check](fact-check/SKILL.md) | Checks a document claim by claim against retrieved sources, with quotes behind every verdict, and changes nothing until you approve each correction. |
 | [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages, and can commit and push in one step. |
 | [humanize](humanize/SKILL.md) | Rewrites AI-sounding prose so it reads like its writer, keeping every claim's original strength. |
