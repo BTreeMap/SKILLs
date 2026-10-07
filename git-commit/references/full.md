@@ -1,56 +1,40 @@
-# Full Level: Body, Footer, and Scope Resolution
+# Full: Scope, Body, and Footer
 
-Applies on top of the core rules in SKILL.md.
+Applies on top of the message rules in SKILL.md.
 
-<directives for="full">
+<procedure for="scope">
+  <step>Inspect recent history, e.g. `git log --pretty=format:'%s' -50`.</step>
+  <step>Reuse an existing scope from the log when it fits the change; a synonym fragments the history.</step>
+  <step>When none fits, derive a new scope from the repository's top-level packages, crates, modules, or directories: one short lowercase token, hyphens joining multiple words.</step>
+  <step>Omit the scope entirely for a repository-wide change.</step>
+</procedure>
 
-  <directives for="body">
-    <rule>Separate the subject line and the body with exactly one blank line.</rule>
-    <rule>Wrap all body lines at 72 characters.</rule>
-    <rule>Explain exactly what changed and the rationale behind the chosen solution.</rule>
-    <rule>Apply token-economical phrasing (Caveman formatting) to the body text: dense syntax, no conversational filler.</rule>
-  </directives>
-
-  <directives for="footer">
-    <rule>Place issue tracker references in the footer (e.g., Fixes #123, Resolves #456).</rule>
-    <rule>Start breaking changes with 'BREAKING CHANGE: ' followed by the detailed migration path.</rule>
-  </directives>
-
-  <procedure for="scope-resolution">
-    <step>Inspect recent history, e.g. `git log --pretty=format:'%s' -50`.</step>
-    <step>Reuse an existing scope from the log when it fits the current changes.</step>
-    <step>When none applies, derive a new scope from the repository's top-level packages, crates, modules, or directories.</step>
-    <step>Format new scopes as short, lowercase, single tokens using hyphens for multiple words.</step>
-    <step>Omit the scope entirely for repository-wide changes.</step>
-  </procedure>
-
-  <examples for="gotcha">
-    <item>Git tooling structurally requires the blank line between subject and body.</item>
-    <item>Imperative mood is strict (use "Add" instead of "Added" or "Adding").</item>
-    <item>The body explains the "what" and "why"; rely entirely on the code diff for the "how".</item>
-    <item>Reuse the scopes `git log` shows; a synonym fragments the history.</item>
-    <item>Terminating the subject line with punctuation violates the standard.</item>
-  </examples>
-
-  <checklist>
-    <item>Subject follows `<type>(<scope>): <subject>` and is 70 characters or less.</item>
-    <item>Type is chosen from `<directives for="types">`.</item>
-    <item>Scope (if present) is lowercase, a single token, and verified via `git log`.</item>
-    <item>Subject description is imperative, capitalized, and period-free.</item>
-    <item>A blank line separates the subject and body.</item>
-    <item>Body lines wrap at 72 characters and detail the what/why without restating the diff.</item>
-    <item>Issue references and breaking changes reside strictly in the footer.</item>
-    <item>Output contains zero conversational filler per the `<directives for="output">`.</item>
-  </checklist>
+<directives for="body">
+  <rule>Separate the subject line and the body with exactly one blank line; git tooling requires it.</rule>
+  <rule>Wrap all body lines at 72 characters.</rule>
+  <rule>Explain exactly what changed and the rationale behind the chosen solution; leave the how to the diff and never restate it.</rule>
+  <rule>Phrase the body token-economically, in caveman style: dense syntax, no conversational filler.</rule>
 </directives>
 
-## Examples
+<directives for="footer">
+  <rule>Place issue tracker references in the footer (e.g., Fixes #123, Resolves #456).</rule>
+</directives>
 
-<examples>
+<checklist for="full">
+  <item>Subject follows `<type>(<scope>): <subject>`, is 70 characters or fewer, and takes its type from the allowed list.</item>
+  <item>Scope, if present, is lowercase, a single token, and verified via `git log`.</item>
+  <item>Subject description is imperative, capitalized, and ends without punctuation.</item>
+  <item>One blank line separates the subject and body.</item>
+  <item>Body lines wrap at 72 characters and give the what and why without restating the diff.</item>
+  <item>Issue references and breaking changes reside only in the footer.</item>
+  <item>Output contains no conversational filler.</item>
+</checklist>
+
+<examples for="message">
 
   <example for="valid">
-    <context>A well-formed feature commit with a scope, body, and issue reference.</context>
-    <template for="raw-output">
+    <context>A feature commit with a scope, body, and issue reference.</context>
+    <variant>
 feat(auth): Reject tokens that omit an expiry claim
 
 Tokens minted before the rotation fix lacked an `exp` claim, so the
@@ -58,21 +42,14 @@ validator treated them as non-expiring. Requiring `exp` closes the
 window in which a leaked token would stay valid indefinitely.
 
 Resolves #142
-    </template>
+    </variant>
   </example>
 
   <example for="invalid">
-    <context>Common failure modes to avoid.</context>
-    <template for="raw-output">
+    <context>Intentional counterexample. Violations: missing type and scope; past tense ("fixed", "added") instead of imperative mood; no blank line between subject and body; body lines exceed 72 characters; missing capitalization.</context>
+    <variant>
 fixed the bug
 added a token refresh thing so users dont get logged out randomly anymore. also updated the ui to show a loading spinner while it happens
-    </template>
-    <template for="violations">
-      <item>Missing type and scope.</item>
-      <item>Past tense used instead of imperative mood ("fixed", "added").</item>
-      <item>Missing blank line between subject and body.</item>
-      <item>Body lines exceed 72 characters.</item>
-      <item>Missing capitalization.</item>
-    </template>
+    </variant>
   </example>
 </examples>
