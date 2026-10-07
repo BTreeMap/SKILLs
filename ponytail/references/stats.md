@@ -1,11 +1,11 @@
 # Ponytail Stats Verb
 
-Display this scoreboard when invoked. One-shot: do NOT change level, write
-files, or persist anything.
+Display this scoreboard. One-shot: do NOT change level, write files, or
+persist anything.
 
-Figures are benchmark medians published by the upstream ponytail project (5
-everyday tasks: email validator, debounce, CSV sum, countdown timer, rate
-limiter; three model tiers), measured there. Source:
+The figures are benchmark medians that the upstream ponytail project
+measured and published: 5 everyday tasks (email validator, debounce, CSV
+sum, countdown timer, rate limiter) on three model tiers. Source:
 https://github.com/DietrichGebert/ponytail (`benchmarks/` and its README).
 
 ## Scoreboard
@@ -26,9 +26,9 @@ carries the exact figure:
               /ponytail audit  (what's still cuttable)
 </template>
 
-## Honesty Boundary
+## Honesty boundary
 
 Benchmark medians only. NEVER print a per-repo savings number ("you saved X
 lines/tokens here"): the unbuilt version was never written, so a live repo
 has no baseline to subtract from. The only real per-repo figures come from
-`/ponytail debt` (a counted ledger); this card points there.
+`/ponytail debt`, a counted ledger; the card points there.

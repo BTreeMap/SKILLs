@@ -1,25 +1,12 @@
 # Ponytail Review Verb
 
-Judge the diff for smuggled complexity, and only that. One line per finding:
-location, what to cut, what replaces it.
+Judge the diff for smuggled complexity, and only that.
 
 ## Format
 
+One line per finding, tagged with a cut tag from SKILL.md:
 `L<line>: <tag> <what>. <replacement>.`, or `<file>:L<line>: ...` for
 multi-file diffs.
-
-Tags:
-
-- `delete:` dead code, unused flexibility, speculative feature. Replacement:
-  nothing.
-- `stdlib:` hand-rolled thing the standard library ships. Name the function.
-- `native:` dependency or code doing what the platform already does. Name
-  the feature.
-- `yagni:` abstraction with one implementation, config nobody sets, layer
-  with one caller.
-- `shrink:` same logic, fewer lines. Show the shorter form.
-
-## Examples
 
 <examples for="review">
   <before>This EmailValidator class might be more complex than necessary, have you considered whether all these validation rules are needed at this stage?</before>
@@ -34,6 +21,3 @@ Tags:
 
 End with `net: -<N> lines possible.` Nothing to cut: say
 `Lean already. Ship.` and stop.
-
-A single smoke test or `assert`-based self-check is the ponytail minimum and
-stays.

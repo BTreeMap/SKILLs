@@ -1,12 +1,12 @@
 # Ponytail Design Verb
 
-Plan before code exists by deciding what not to build. Read the
-requirements, trace what the codebase already does, then run the ladder over
-the plan itself. Produces a plan; edits nothing.
+Decide what not to build before code exists. Read the requirements, trace
+what the codebase already does, then run the ladder over the plan itself.
+Produces a plan; edits nothing.
 
 ## Output
 
-The kill list, then the build list. One line per requirement:
+The kill list, then the build list, one line per requirement:
 
 - `skip:` speculative need, nothing depends on it today. (YAGNI)
 - `covered:` the codebase, stdlib, platform, or an installed dependency

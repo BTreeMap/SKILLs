@@ -16,7 +16,5 @@ logic breaks.
 ## Output
 
 The check, runnable as emitted, then one line: what it catches and how to
-run it.
-
-Never delete an existing passing test to satisfy minimalism: the floor is
-one check.
+run it. Never delete an existing passing test to satisfy minimalism: the
+floor is one check.

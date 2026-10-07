@@ -1,19 +1,8 @@
 # Ponytail Audit Verb
 
-Judge the codebase: scan the whole tree for standing complexity. `review`
-guards what a change brings in; `audit` ranks what already stands, biggest
-cut first.
-
-## Tags
-
-- `delete:` dead code, unused flexibility, speculative feature. Replacement:
-  nothing.
-- `stdlib:` hand-rolled thing the standard library ships. Name the function.
-- `native:` dependency or code doing what the platform already does. Name
-  the feature.
-- `yagni:` abstraction with one implementation, config nobody sets, layer
-  with one caller.
-- `shrink:` same logic, fewer lines. Show the shorter form.
+Judge the codebase: scan the whole tree for standing complexity and rank it,
+biggest cut first. `review` guards what a change brings in; `audit` ranks
+what already stands.
 
 ## Hunt
 
@@ -23,9 +12,6 @@ exporting one thing, dead flags and config, hand-rolled stdlib.
 
 ## Output
 
-One line per finding, ranked: `<tag> <what to cut>. <replacement>. [path]`.
-End with `net: -<N> lines, -<M> deps possible.` Nothing to cut:
-`Lean already. Ship.`
-
-A single smoke test or `assert`-based self-check is the ponytail minimum and
-stays.
+One line per finding, ranked, tagged with a cut tag from SKILL.md:
+`<tag> <what to cut>. <replacement>. [path]`. End with
+`net: -<N> lines, -<M> deps possible.` Nothing to cut: `Lean already. Ship.`

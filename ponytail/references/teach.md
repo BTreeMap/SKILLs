@@ -1,7 +1,7 @@
 # Ponytail Teach Verb
 
 Explain a ladder decision so the audience can make the next one themselves.
-The one verb where prose is the deliverable; still no essays.
+Prose is the deliverable here, but still no essays.
 
 ## Pipeline
 
