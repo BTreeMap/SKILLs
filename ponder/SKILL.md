@@ -26,7 +26,6 @@ conclusions, and let ledger state set the presentation.
 | `answer` | [references/answer.md](references/answer.md) |
 | `brief` | [references/brief.md](references/brief.md) |
 | `explore` | [references/explore.md](references/explore.md) |
-| `framing` | [references/framing.md](references/framing.md) |
 
 ## Redirects
 
@@ -155,8 +154,8 @@ troubleshooting.
 ## The loop
 
 1. Probe: the lead's own first round, below.
-2. If material questions remain open, load `framing` to build the frame and
-   its leaves, then `explore` to run the rounds.
+2. If material questions remain open, load `explore` to build the frame and
+   its leaves and run the rounds.
 3. Load `answer` for the rival sweep and the draft.
 
 Load `brief` only when composing a delegate's brief.
@@ -183,7 +182,7 @@ first-page blog consensus. Two outcomes:
 - Settled: all material questions are answered. Register one or two leaves,
   add sources, close, then load `answer`.
 - Open: material sub-questions remain. Keep the round's sources, then load
-  `framing` and `explore`.
+  `explore`.
 
 ## Completion checks
 
