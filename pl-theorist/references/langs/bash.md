@@ -1,6 +1,6 @@
-# Bash Cost Model
+# Bash Profile
 
-## Disclosed Constraints
+## Cost Model
 
 - The native collection is the stream of lines (or NUL-delimited records)
   through a pipe. Bash arrays are flat only: no nesting, no structs;
@@ -22,7 +22,7 @@
 - Arithmetic `$(( ))` is fixed-width signed integer and wraps silently;
   there are no floats. Delegate real arithmetic to `awk`.
 
-## Preferred FP Shapes
+## Domain Shapes
 
 - Pipelines are point-free composition and the native `map`/`filter`/`fold`
   vocabulary: `grep` filters, `sed`/`awk` map, `sort | uniq -c` and `awk`
@@ -31,24 +31,24 @@
 - A pure function reads stdin/arguments and writes stdout, returning an exit
   status; treat every global variable write as an effect. Declare function
   state `local`; declare constants `readonly`.
-- Start every script with `set -euo pipefail` and treat the remaining
-  `set -e` gaps as known unsoundness.
 - Model absence as empty output plus a nonzero status, never as a sentinel
   string like `"null"` or `"none"`.
 - `case` is pattern matching over globs; prefer it to `if`/`elif` ladders
-  that re-test one string. `${var:?message}` is the totality check for
-  required parameters and fails loudly at the boundary.
+  that re-test one string.
+- One parse boundary at the top: validate arguments and environment with
+  `${VAR:?}` and explicit checks, then treat them as trusted for the rest of
+  the script. `${var:?message}` is the totality check for required
+  parameters and fails loudly at the boundary.
 - Build argument lists as arrays and expand with `"$@"`/`"${args[@]}"`;
   never assemble a command line in a flat string.
 - For filenames or any value that may contain whitespace or newlines, use
   NUL-delimited streams end to end: `find -print0`, `xargs -0`,
   `while IFS= read -r -d ''`.
 
-## Domain and Effect Constraints
+## Effects
 
-- One parse boundary at the top: validate arguments and environment with
-  `${VAR:?}` and explicit checks, then treat them as trusted for the rest of
-  the script.
+- Start every script with `set -euo pipefail` and treat the remaining
+  `set -e` gaps as known unsoundness.
 - Resource bracket: `trap cleanup EXIT` plus `mktemp`/`mktemp -d` is the
   RAII of shell. One accumulating cleanup function; register it before
   acquiring the resource.
@@ -83,10 +83,11 @@ main "$@"
 ]]></example>
 
 Taste: one `awk` process runs the filter and fold, where a `while read` loop
-would fork `stat` per file: n lines through one process. `${1:?}` makes the required argument total at the boundary; the
-function is pure (stdin to stdout), so it composes and tests in isolation.
-`-printf` is a GNU extension; on BSD/macOS substitute `stat -f` per file or
-install findutils, and say which you assumed.
+would fork `stat` per file: n lines through one process. `${1:?}` makes the
+required argument total at the boundary; the function is pure (stdin to
+stdout), so it composes and tests in isolation. `-printf` is a GNU
+extension; on BSD/macOS substitute `stat -f` per file or install findutils,
+and say which you assumed.
 
 ## Cost Guard
 
@@ -101,7 +102,7 @@ install findutils, and say which you assumed.
    arithmetic, or any structure beyond a flat stream means the fallback is
    another language. Say so; never simulate structs with `eval`.
 
-## Validation Focus
+## Validation
 
 ShellCheck is non-negotiable; treat its findings as type errors. `bash -n`
 for syntax. Test with paths containing spaces and globs, empty input, an

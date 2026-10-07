@@ -1,6 +1,6 @@
 # Verb: build
 
-Write new code functionally from the start. Domain model first, pure core
+Write new code functionally from the start: domain model first, pure core
 second, shell last.
 
 ## Pipeline
@@ -15,18 +15,17 @@ question only if an answer would.
 
 ### 2. Model the domain
 
-Run the `design` verb's state/transition discipline at whatever scale the
-task warrants - a full model for a new module, a single refined type for a
-small function. The kernel's sum/product/smart-constructor laws bind every
-untrusted entry. If the repository already owns a matching domain type,
-reuse it; never mint a parallel one.
+Run the kernel's Domain Modeling steps at the scale the task warrants: a
+full model for a new module, a single refined type for a small function. If
+the repository already owns a matching domain type, reuse it; never mint a
+parallel one.
 
 ### 3. Choose algebra and structures
 
 Pick the `map`/`filter`/`fold` vocabulary for each transformation and the
-data structure for each dominant operation from the kernel's cost-signal
-table. State the intended bound before writing the body: the shape of the
-code follows from the bound, not the reverse.
+data structure for each dominant operation from the cost-signal table. State
+the intended bound before writing the body: the shape of the code follows
+from the bound, not the reverse.
 
 ### 4. Write pure core, then shell
 
@@ -34,17 +33,16 @@ code follows from the bound, not the reverse.
   exhaustive elimination, no I/O, no clock, no randomness.
 - Thin shell: one explicit boundary performing effects, honoring the loaded
   profile's resource, cancellation, and boundedness constraints.
-- Apply the loaded profile's cost guard as you write; descend one
-  abstraction level where it demands, exactly as in `refactor` step 4.
+- Apply the kernel's Cost Guard as you write, with the loaded profile's
+  steps.
 
 ### 5. Validate
 
-Write tests alongside the code, not after: every sum variant, every
-smart-constructor rejection, empty and large inputs, effect order, resource
-cleanup. Property-based tests where the repository already supports them,
-for any law you relied on (fold identity/associativity, roundtrips,
-idempotence). Run the narrowest formatter, typechecker, linter, and the new
-tests.
+Write tests alongside the code, not after, under the kernel's Validation:
+add empty and large inputs, effect order, and resource cleanup, and
+property-based tests, where the repository already supports them, for any
+law you relied on (fold identity/associativity, roundtrips, idempotence).
+Run the new tests.
 
 ## Output Contract
 

@@ -1,6 +1,6 @@
-# C++ Cost Model
+# C++ Profile
 
-## Disclosed Constraints
+## Cost Model
 
 - Derive the language standard and library availability from the build. Do
   not assume ranges, coroutines, concepts, or `std::expected` when the
@@ -14,36 +14,35 @@
 - Recursive algorithms lack guaranteed TCO. Lazy range views can dangle when
   they outlive borrowed sources.
 
-## Preferred FP Shapes
+## Domain Shapes
 
 - Use `std::variant` for closed sums, structs/tuples for products,
   `std::optional` for absence, and `std::expected` for expected failure when
   the configured standard provides it. Otherwise use the project's result
   type or a small `std::variant<T, E>`.
+- Visit every `variant` alternative with an overload set or exhaustive
+  visitor. Avoid `get` when `get_if`, `visit`, or a proven state is total.
 - Use classes with private representation and static factories for refined
-  values. Prefer value semantics, RAII, and deterministic destruction.
+  values. Keep constructors private when construction can fail. A successful
+  object must satisfy its invariant; a temporarily invalid object "finished"
+  later is a defect. Prefer value semantics.
 - Use standard algorithms/ranges when they clarify intent and preserve
   traversal and allocation cost. Prefer `transform_reduce`, `any_of`,
   `all_of`, and `find_if` over a generic fold when they name the algebra.
 - Capture lambdas narrowly and by value/reference deliberately. Avoid
   `std::function` when a template parameter or concrete callable avoids type
   erasure and allocation.
+
+## Effects
+
+- Use RAII guards and deterministic destruction for memory, files, locks,
+  and transactions. Never let a view, span, iterator, callback, or coroutine
+  frame outlive its owner.
 - Use futures/coroutines only through project-standard executors and
   cancellation facilities; the core language does not provide universal
-  structured concurrency.
-
-## Domain and Effect Constraints
-
-- Visit every `variant` alternative with an overload set or exhaustive
-  visitor. Avoid `get` when `get_if`, `visit`, or a proven state is total.
-- Keep constructors private when construction can fail. A successful object
-  must satisfy its invariant; a temporarily invalid object "finished" later
-  is a defect.
-- Use RAII guards for memory, files, locks, and transactions. Never let a
-  view, span, iterator, callback, or coroutine frame outlive its owner.
-- Distinguish independent scheduled work from dependent continuation chains.
-  Bound fan-out and preserve executor, cancellation, exception aggregation,
-  and transaction semantics.
+  structured concurrency. Distinguish independent scheduled work from
+  dependent continuation chains, and preserve executor and exception
+  aggregation semantics.
 - Mark functions `noexcept` only when the complete call graph contract
   supports it; an unexpected throw then terminates the process.
 
@@ -74,23 +73,25 @@ private:
 ]]></example>
 
 Taste: private construction makes invalid ports unrepresentable; `variant`
-provides a C++17 result without dependencies. If C++23 `std::expected` is already
-available, prefer it for the same domain meaning.
+provides a C++17 result without dependencies. If C++23 `std::expected` is
+already available, prefer it for the same domain meaning.
 
 ## Cost Guard
 
 1. Replace unbounded recursion with algorithms, iterators, or a direct loop.
-2. Inspect copies, moves, allocations, type erasure, iterator invalidation, and
-   borrowed-range lifetimes.
-3. Fuse passes only when profiling or data size justifies the readability cost.
-4. Prefer stack/value representation, but do not enlarge hot variants or copy
-   large aggregates blindly; measure layout and ownership choices.
-5. Preserve RAII destruction order, exception safety guarantee, cancellation,
-   executor affinity, and transaction scope.
+2. Inspect copies, moves, allocations, type erasure, iterator invalidation,
+   and borrowed-range lifetimes.
+3. Fuse passes only when profiling or data size justifies the readability
+   cost.
+4. Prefer stack/value representation, but do not enlarge hot variants or
+   copy large aggregates blindly; measure layout and ownership choices.
+5. Preserve RAII destruction order, exception safety guarantee, and executor
+   affinity.
 
-## Validation Focus
+## Validation
 
-Build under the configured standard with warnings, static analysis, sanitizers,
-and focused tests when available. Test every variant, factory boundary, move/copy
-path, exception guarantee, lifetime edge, and cancellation path. Benchmark before
-claiming algorithm/range abstraction or hand-written loops are faster.
+Build under the configured standard with warnings, static analysis, and
+sanitizers when available. Test every variant, factory boundary, move/copy
+path, exception guarantee, lifetime edge, and cancellation path. Benchmark
+before claiming algorithm/range abstraction or hand-written loops are
+faster.

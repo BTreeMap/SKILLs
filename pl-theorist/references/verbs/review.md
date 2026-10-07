@@ -7,24 +7,14 @@ over its scope. This lens hunts unsound domain modeling and unsound cost.
 
 ### 1. Scope and contract
 
-Identify the exact changed or named code. Reconstruct its contract as in
-`refactor` step 1, but only deeply enough to judge the categories below.
-Read callers when a finding depends on how the code is used.
+Identify the exact changed or named code. Reconstruct its contract under the
+kernel's Reading Existing Code, only as deeply as judging the categories
+requires. Read callers when a finding depends on how the code is used.
 
 ### 2. Hunt by category
 
-Sweep the scope once per category, citing file and line for each hit:
-
-| Category | Signal |
-| --- | --- |
-| Partiality | Unchecked index/unwrap/cast, non-exhaustive match, "unreachable" by optimism |
-| Representable invalid states | Boolean/nullable field bags encoding a state machine, sentinel values, stringly typed domains |
-| Unparsed input | Untrusted data flowing past the boundary without one decoder/smart constructor |
-| Effect leakage | I/O, clock, randomness, or mutation inside a nominally pure core; instrumentation buried or erased |
-| Unlawful algebra | Fold reassociated without associativity, `map` changing cardinality, `reduce` where `sum`/`any`/`find` is the law |
-| Complexity | Accidental $O(n^2)$: membership/join/extremum re-scanned in a loop; structure mismatched to the operation mix (kernel cost-signal table) |
-| Unbounded effects | Missing backpressure, unbounded fan-out or queues, retries without idempotency, resources outliving scope, lost cancellation |
-| Stale surface | Conditional ladders or legacy idioms where the configured standard already provides guards, let-chains, records, or sealed variants |
+Sweep the whole scope once per row of the kernel's Finding Categories,
+citing file and line for each hit.
 
 ### 3. Verify before reporting
 

@@ -1,9 +1,9 @@
 # Verb: audit
 
-Judge a codebase: whole-repository or module-level sweep through the PL
-lens, producing a ranked ledger of modeling and cost debt. `review` is total
-over a diff and gates a decision; `audit` samples by blast radius and ranks
-a backlog. Read-only.
+Judge a codebase: read-only, whole-repository or module-level sweep through
+the PL lens, producing a ranked ledger of modeling and cost debt. `review`
+is total over a diff and gates a decision; `audit` samples by blast radius
+and ranks a backlog.
 
 ## Pipeline
 
@@ -17,7 +17,7 @@ handler outranks one in a test helper.
 
 ### 2. Sweep
 
-Apply the `review` verb's category table across the scope, plus these
+Apply the kernel's Finding Categories across the scope, plus these
 repo-scale categories only an audit can see:
 
 | Repo-scale category | Signal |

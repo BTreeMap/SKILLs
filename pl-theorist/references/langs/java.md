@@ -1,6 +1,6 @@
-# Java Cost Model
+# Java Profile
 
-## Disclosed Constraints
+## Cost Model
 
 - Derive the Java release and runtime from the build. Records, sealed types,
   pattern matching, virtual threads, and structured-concurrency APIs vary by
@@ -14,39 +14,37 @@
 - Exceptions, interruption, resource closure, synchronization, and encounter
   order are observable behavior.
 
-## Preferred FP Shapes
+## Domain Shapes
 
 - Use sealed interfaces/classes for closed sums when supported, records for
   immutable shallow products, and exhaustive pattern matching where the
   target release proves it. Otherwise use private constructors and a
-  controlled visitor.
+  controlled visitor. A default branch can hide a missing sealed variant;
+  prefer compiler-checked exhaustiveness where available.
+- Validate in a factory or canonical constructor so every published instance
+  satisfies its invariant. Keep raw constructors inaccessible when failure
+  is expected.
 - Use `Optional<T>` for expected return-value absence. Use a
   project-standard result type or a small sealed success/failure hierarchy
   for expected domain failure; do not smuggle failure through `null` or
   unchecked exceptions.
+- Use immutable values and defensive copies at ownership boundaries. Records
+  do not freeze referenced collections.
 - Use streams for readable finite transformations. Prefer `mapToInt`/other
   primitive streams, `anyMatch`, `allMatch`, `findFirst`, and collectors
   matching the operation. Keep a loop when it owns resources, requires
   complex early exit, or avoids measured allocation/boxing.
-- Use immutable values and defensive copies at ownership boundaries. Records
-  do not freeze referenced collections.
-- Use `CompletableFuture` or newer concurrency facilities only according to
-  the project's established executor and Java release.
 
-## Domain and Effect Constraints
+## Effects
 
-- Validate in a factory or canonical constructor so every published instance
-  satisfies its invariant. Keep raw constructors inaccessible when failure
-  is expected.
-- Make success/failure and state variants explicit. A default branch can
-  hide a missing sealed variant; prefer compiler-checked exhaustiveness
-  where available.
 - Use try-with-resources. Preserve interruption by restoring or propagating
   the interrupt according to the API contract; do not catch and discard it.
-- Distinguish independent future combination (`allOf`/`thenCombine`) from
-  dependent composition (`thenCompose`). Bound executor queues and fan-out.
-- Preserve transaction context, retry idempotency, thread-local/context
-  propagation, logging, and tracing across asynchronous boundaries.
+- Use `CompletableFuture` or newer concurrency facilities only according to
+  the project's established executor and Java release. Distinguish
+  independent future combination (`allOf`/`thenCombine`) from dependent
+  composition (`thenCompose`). Bound executor queues and fan-out.
+- Preserve transaction context, thread-local/context propagation, logging,
+  and tracing across asynchronous boundaries.
 
 ## Teaching Example
 
@@ -74,24 +72,25 @@ final class Port {
 }
 ]]></example>
 
-Taste: private construction establishes the invariant, and a sealed result makes
-expected failure explicit.
+Taste: private construction establishes the invariant, and a sealed result
+makes expected failure explicit.
 
 ## Cost Guard
 
 1. Replace deep recursion with streams, iteration, or a direct loop.
-2. Inspect stream materialization, primitive boxing, captures, encounter order,
-   spliterator quality, and accidental repeated traversal.
-3. Do not use parallel streams for blocking I/O or latency-sensitive shared-pool
-   work. Measure representative data before parallelizing.
-4. Keep immutable copying proportional; use persistent collections only when the
-   project already accepts their dependency and cost model.
-5. Preserve resource scope, interruption, executor choice, transaction context,
-   cancellation, and exception aggregation.
+2. Inspect stream materialization, primitive boxing, captures, encounter
+   order, spliterator quality, and accidental repeated traversal.
+3. Do not use parallel streams for blocking I/O or latency-sensitive
+   shared-pool work. Measure representative data before parallelizing.
+4. Keep immutable copying proportional; use persistent collections only when
+   the project already accepts their dependency and cost model.
+5. Preserve resource scope, interruption, executor choice, and exception
+   aggregation.
 
-## Validation Focus
+## Validation
 
-Build under the configured Java release. Run formatters, static analysis, and
-focused tests. Test every sealed/result variant, null boundary, resource closure,
-interrupt/cancellation path, stream ordering, transaction path, and async failure.
-Use JMH or an existing benchmark before making hot-path stream claims.
+Build under the configured Java release. Run formatters and static
+analysis. Test every sealed/result variant, null boundary, resource closure,
+interrupt/cancellation path, stream ordering, transaction path, and async
+failure. Use JMH or an existing benchmark before making hot-path stream
+claims.

@@ -5,11 +5,10 @@ then make each one checkable.
 
 ## Pipeline
 
-### 1. Recover the algebra
+### 1. Recover the laws
 
-Read the target as in `refactor` steps 1-2: contract, effects, and the
-algebraic reading of each region. List the laws the implementation
-implicitly relies on. Typical harvest:
+Run the kernel's Reading Existing Code over the target, then list the laws
+the implementation implicitly relies on. Typical harvest:
 
 | Structure in the code | Law to test |
 | --- | --- |
@@ -48,8 +47,9 @@ flaky; use them only where the repository already has a benchmark harness.
 
 ### 5. Run and report
 
-Run the new tests and the narrowest surrounding suite. A failing law test is
-a finding about the code: report it and keep the law as written.
+Run the new tests and the narrowest surrounding suite under the kernel's
+Validation. A failing law test is a finding about the code: report it and
+keep the law as written.
 
 ## Output Contract
 

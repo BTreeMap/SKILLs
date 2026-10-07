@@ -31,7 +31,7 @@ through the actual code.
 For a human: connect the named concept to the concrete lines, then to the
 one reusable distinction to keep for the next problem.
 
-For a less capable model: load the target profile's teaching example to
+For a less capable model: use the loaded profile's Teaching Example to
 calibrate taste, never as a template. Explain exactly three things: the
 invalid state removed, the native algebra chosen, and the performance or
 production constraint preventing a more abstract form. Then require the

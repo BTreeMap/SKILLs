@@ -1,10 +1,10 @@
-# GitHub Actions Cost Model
+# GitHub Actions Profile
 
 A typed-ish coordination layer over jobs. The FP vocabulary applies at the
 workflow/job/step level, and the effect discipline becomes privilege
 discipline.
 
-## Disclosed Constraints
+## Cost Model
 
 - Each job runs on a fresh runner; spin-up (queue, provision, checkout)
   costs tens of seconds to minutes before any work starts. A job is a
@@ -23,7 +23,7 @@ discipline.
   to true, cancelling siblings on first failure, which silently converts
   "test everything" into "test until the first break."
 
-## Preferred FP Shapes
+## Domain Shapes
 
 - Job as function: consume `needs.<job>.outputs.*`, produce declared
   `outputs`. No hidden coupling through undeclared artifacts or convention.
@@ -43,15 +43,12 @@ discipline.
   combinators. `workflow_call` inputs carry `type`, `required`, and
   `default` (composite action inputs are strings only); validate anything
   stronger in the first step: that is the smart-constructor boundary.
-- Boundedness is explicit: `timeout-minutes` on every job (the 6-hour
-  default ceiling amplifies outages), and a `concurrency` group with
-  `cancel-in-progress` for workflows where only the latest run matters.
 - Caching is memoization with a stated key law: the key names exactly the
   inputs that invalidate it (lockfile hashes), `restore-keys` define the
   acceptable staleness lattice. A wrong key law is either a stale hit
   (unsound) or a permanent miss (useless).
 
-## Domain and Effect Constraints
+## Effects
 
 - Permissions are the effect types of CI. Set a minimal default at workflow
   level (`permissions: {}` or `contents: read`) and grant per job only the
@@ -66,6 +63,9 @@ discipline.
 - Treat `pull_request_target`/`workflow_run` as elevated interpreters: never
   check out or execute PR head code in them; consume only the event payload
   you have parsed and validated.
+- Boundedness is explicit: `timeout-minutes` on every job (the 6-hour
+  default ceiling amplifies outages), and a `concurrency` group with
+  `cancel-in-progress` for workflows where only the latest run matters.
 
 ## Teaching Example
 
@@ -105,20 +105,21 @@ environment variable; the logic is in a ShellCheck-able script.
 
 ## Cost Guard
 
-1. Fuse jobs into sequential steps of one job when runner spin-up exceeds the
-   parallelism gain (many short jobs, shared setup); split into jobs when
-   cells are independent and long.
-2. Pass small values as job outputs; reserve artifacts for real files. Do not
-   upload a workspace to transport one flag.
+1. Fuse jobs into sequential steps of one job when runner spin-up exceeds
+   the parallelism gain (many short jobs, shared setup); split into jobs
+   when cells are independent and long.
+2. Pass small values as job outputs; reserve artifacts for real files. Do
+   not upload a workspace to transport one flag.
 3. Prune the matrix: `exclude` redundant cells; a full product of OS x
    runtime x flags is rarely all meaningful.
-4. Cache with keys derived from lockfiles and restore-keys ordered from exact
-   to acceptable; measure hit rate before trusting the cache.
+4. Cache with keys derived from lockfiles and restore-keys ordered from
+   exact to acceptable; measure hit rate before trusting the cache.
 5. Escape threshold: nontrivial logic in `run:` strings or `if:` expressions
-   moves to a script file in the repository (testable, lintable, reviewable)
-   or a small composite action. YAML coordinates, scripts compute.
+   moves to a script file in the repository (testable, lintable,
+   reviewable) or a small composite action. YAML coordinates, scripts
+   compute.
 
-## Validation Focus
+## Validation
 
 Run `actionlint` (it also ShellChecks embedded `run:` blocks) and a security
 scanner such as `zizmor`. Grep the workflow set for missing `permissions`,
