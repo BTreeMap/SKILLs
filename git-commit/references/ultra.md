@@ -1,9 +1,9 @@
 # Ultra: Atomicity and History-Consistency Audit
 
-Applies on top of SKILL.md and `full`. Run these audits BEFORE drafting;
-they may change what gets committed as well as the message. The audit reads
-history and the staged diff; it never restages, resets, or commits on its
-own, and a split stays a proposal until the user accepts it.
+Applies on top of SKILL.md, its Full section included. Run these audits
+BEFORE drafting; they may change what gets committed as well as the message.
+The audit reads history and the staged diff; it never restages, resets, or
+commits on its own, and a split stays a proposal until the user accepts it.
 
 <procedure for="atomicity">
   <step>Inspect the staged set with `git status --short` and `git diff --staged --stat`.</step>
@@ -29,5 +29,5 @@ own, and a split stays a proposal until the user accepts it.
 </procedure>
 
 <directives for="verification">
-  <rule>Before output, run the `full` checklist item by item. On any failure, fix and re-verify instead of shipping the violation.</rule>
+  <rule>Before output, run the Full checklist in SKILL.md item by item. On any failure, fix and re-verify instead of shipping the violation.</rule>
 </directives>
