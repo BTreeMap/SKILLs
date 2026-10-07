@@ -24,7 +24,6 @@ vocabulary scrub.
 
 | Name | Path |
 | --- | --- |
-| `calibration` | [references/calibration.md](references/calibration.md) |
 | `chatbot` | [references/chatbot.md](references/chatbot.md) |
 | `content` | [references/content.md](references/content.md) |
 | `filler` | [references/filler.md](references/filler.md) |
@@ -93,15 +92,14 @@ The procedure is the same in every mode.
 2. Scan the input against the detection index and collect suspected hits.
 3. Zero hits: return the text unchanged per output mode, state that no AI
    patterns were found (Embedded: say nothing), and load nothing.
-4. Otherwise load exactly the owner files of the hits, plus `calibration`.
-   Never rewrite flagged text without `calibration`.
+4. Otherwise load exactly the owner files of the hits.
 5. Check §14-19 mechanically: search for U+2014, U+2013, `**`, heading case,
    emoji, curly quotes, ` -- `, and `---` lines. Measure §36 with the
    command in `register` on prose over about 40 sentences, before and after
    the rewrite.
 6. Mark each pattern instance from the scan and confirm it against its owner
-   file. Drop the false positives that `calibration` and the entry's
-   exceptions name.
+   file. Drop the false positives that the entry's exceptions and the False
+   positives section name; keep what Details to keep lists.
 7. Draft. Read it aloud for rhythm, concrete detail, simple verbs, and the
    right formality. State each point fresh rather than patching flagged
    phrases one at a time: a word swap leaves the shape, and a word list
@@ -173,3 +171,46 @@ Vocabulary tells drift by model and year; structural ones last.
 | 38 | Manufactured salience: the one thing, the single most, if I had to pick one |
 | 39 | Compressed jargon: noun stacks, coined hyphen compounds, half-sentences |
 | 40 | Reasoning residue: the single most important correction, does not survive contact with |
+
+## False positives
+
+Beyond each entry's own exceptions, a person may show any of the following;
+treat none as evidence by itself:
+
+- **Perfect grammar and consistent style.** Many writers are professionals
+  or have been edited. Polish does not equal AI.
+- **Mixed casual and formal styles.** This can reflect the writer's field,
+  age, or personal habits.
+- **"Bland" or "robotic" prose.** AI prose has specific tells. Generic
+  dryness without those tells is just dry writing.
+- **Unsourced claims.** Most of the web is unsourced. Lack of citations
+  proves nothing.
+- **Correct, complex formatting.** Visual editors and templates produce
+  clean output without any AI.
+- **Edits made before November 30, 2022.** ChatGPT's public launch. Anything
+  older is, with very rare exceptions, not AI-written.
+
+## Details to keep
+
+- **Useful limits and disclaimers.** Scope statements, legal and safety
+  notices, real corrections, named objections, replies, and FAQ answers.
+- **Secondhand text.** Do not rewrite watched phrases inside quotations,
+  titles, proper names, or examples where the phrase is discussed rather
+  than used.
+
+Keep these human details unless they hurt the meaning; they often carry the
+writer's voice:
+
+- **Specific, unusual details.** A real address, an odd quote, a phrase such
+  as "the lawyer who used to work upstairs from my dentist."
+- **Mixed feelings and unresolved tension.** Lines such as "I think this is
+  mostly good, but it bothers me, and I can't fully explain why."
+- **Dated, era-bound references.** Slang, memes, or in-jokes that map to a
+  specific year and subculture. Models lag by a year or more.
+- **Deliberate first-person choices.** A cut or word choice the writer can
+  explain.
+- **Variety in sentence length.** Real writing alternates short and long. AI
+  writing tends toward an even, mid-length cadence.
+- **Genuine asides, parentheticals, self-corrections.** "(I keep wanting to
+  say 'almost' here, but it really was certain.)" Models rarely interrupt
+  themselves like this.
