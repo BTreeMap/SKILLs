@@ -26,7 +26,7 @@ from one methodological school end to end.
 `methodologies` is the evidence base: a cited literature review of the
 schools, their disagreements, and the sources behind every default below.
 Load it when the user questions a default, asks which school fits, or wants
-sources; a run otherwise proceeds on this file alone.
+sources; otherwise run on this file alone.
 
 ## Redirects
 
@@ -39,11 +39,13 @@ Hold at every step and after any context compaction.
 
 1. One school per analysis. Choose the approach before coding, record the
    choice with its reason, and take procedure and quality standard from the
-   same row of the selection table.
+   same row of the selection table. Agreement figures beside a reflexive
+   procedure are the school mix this invariant catches.
 2. A theme states a shared pattern of meaning as a one-sentence claim. A
    grouping of everything said about one subject is a topic summary: keep it
    as an intermediate artifact, or develop it into a claim before reporting
-   it as a theme.
+   it as a theme. "Everything about login" is a topic summary; "users read
+   login friction as a trust signal" is a theme.
 3. Every reported theme cites verbatim extracts with unit identifiers, and
    every analytic claim traces to coded units.
 4. Counts describe the corpus at hand. Report "coded in n of N units" and
@@ -66,14 +68,15 @@ Hold at every step and after any context compaction.
 | Rapid | Deadline-bound triage feeding a decision | Report states the depth traded away |
 | Hybrid inductive/deductive | Prior categories exist and must stay open to new ones | Both passes documented; every code promotion traceable |
 
-Routing for feedback and ticket data: framework matrix as the base; rapid
-under a deadline; codebook when several coders or repeated runs must agree.
-Invariant 6 applies to all three.
+* Feedback and ticket data: framework matrix as the base; rapid under a
+  deadline; codebook when several coders or repeated runs must agree.
+* Heterogeneous material under the framework matrix: split it into per-topic
+  matrices or route it to another school.
 
 ## Defaults
 
-Apply these as given; a user override is recorded in the analysis header
-next to the approach.
+Apply these as given; record a user override in the analysis header next to
+the approach.
 
 | Parameter | Default |
 | --- | --- |
@@ -87,9 +90,10 @@ next to the approach.
 
 1. **Scope.** Pin the question, the unit of analysis (ticket, sentence,
    session), the corpus size, and the decision the analysis feeds. Write
-   these at the top of the analysis file.
-2. **Select.** Choose the approach from the table; record it with the
-   reason.
+   them in the analysis header.
+2. **Select.** Choose one approach from the selection table and record it in
+   the analysis header with the reason. Codebook school: fix the statistic
+   and threshold now, per the defaults.
 3. **Familiarize.** Read a spread of units across sources and dates before
    coding anything; note candidate codes as observations.
 4. **Codebook.** Give each code a name, a one-sentence definition, an
@@ -98,13 +102,13 @@ next to the approach.
 5. **Code.** Label every unit against the codebook; a unit that fits no code
    earns a new dated entry. Framework matrix: chart cases as rows and codes
    as columns, each cell a short summary with a quote reference.
-6. **Check agreement** (codebook school only). Fix statistic and threshold
-   first, per the defaults. Have an independent second coder label the
-   agreement sample: a delegate briefed through `/summon dispatch` whose
-   evidence is the codebook and the raw units and nothing else, and whose
-   contract is one label per unit. Compute per-code agreement, resolve
-   disagreements by refining the codebook, recode affected units. When the
-   second coder is the same model in a fresh context, the report says so.
+6. **Check agreement** (codebook school only). Have an independent second
+   coder label the agreement sample: a delegate briefed through
+   `/summon dispatch` whose evidence is only the codebook and the raw units,
+   and whose contract is one label per unit. Compute per-code agreement
+   against the threshold fixed at Select, resolve disagreements by refining
+   the codebook, and recode affected units. If the second coder is the same
+   model in a fresh context, the report says so.
 7. **Develop themes.** Cluster codes into groupings within the default
    range. Give each theme a name and its one-sentence central claim, then
    check the claim back against the original units it summarizes.
@@ -115,17 +119,11 @@ next to the approach.
 
 ## Gotchas
 
-- "Everything about login" is a grouping; "users read login friction as a
-  trust signal" is a theme.
 - Saturation is an incoherent stopping rationale for interpretive work.
   State the actual stopping rule: corpus exhausted, time box, or decision
   deadline.
-- The framework matrix presupposes topically similar data. Heterogeneous
-  material gets split into per-topic matrices or routed to another school.
 - Themes are analytic products, so write "we developed themes"; "themes
   emerged" hides the analyst's hand.
-- Agreement figures printed beside a reflexive procedure are the school mix
-  Invariant 1 exists to catch.
 
 ## Completion checks
 

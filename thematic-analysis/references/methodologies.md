@@ -19,7 +19,7 @@ this review was asked to target (user feedback, bug tickets, and other
 high-volume operational text), the computing literature in the corpus has
 largely pursued automated classification into fixed categories, leaving
 theme development aside, so the two literatures address different problems
-and the corpus does not contain a study that reconciles them.
+and no study in the corpus reconciles them.
 
 ## Method
 
@@ -27,9 +27,9 @@ Searches ran on 2026-08-28 against OpenAlex (31 queries), Crossref (7
 queries), and six OpenAlex snowball rounds (backward and forward) seeded
 from Braun & Clarke 2006 [6], McDonald et al. 2019 [22], and Gale et al.
 2013 [11]. That date is the review's as-of point. Every query was logged by
-the session script; all searches returned truncated result sets against
-upstream totals in the thousands to millions, so coverage is a
-relevance-ranked sample rather than an enumeration of the field.
+the session script; every search returned a result set truncated against
+upstream totals in the thousands to millions, so the corpus is a
+relevance-ranked sample, not an enumeration of the field.
 
 Criteria were fixed before the first search. Inclusion required a
 methodological contribution to thematic analysis: proposing, codifying,
@@ -91,10 +91,8 @@ followed. They reach that conclusion about grounded theory, so it
 corroborates the pattern while the specific claim about thematic analysis
 stays uncorroborated.
 
-Reading level constrains this section. Braun & Clarke's typology [25] and
-the six-phase procedure [6] were both extracted at abstract level with the
-procedural detail taken from publisher records and secondary methodological
-summaries, because the primary texts were paywalled in this environment.
+This section rests on abstract-level reading of [6] and [25]; see
+Limitations.
 
 ## Where the schools differ: the code, the theme, and who decides
 
@@ -196,11 +194,10 @@ line-by-line coding with templated summaries and matrix displays to reach
 decision-makers on compressed timelines [18][21][28][31]. Saunders et al.
 [36] make the team-facing case explicitly, arguing that practical guidance
 for non-specialists is sparse and that non-specialist perspectives can
-enrich interpretation. The corpus leaves comparability with in-depth
-analysis open: Taylor et al. [18] and Gale et al. [21] each compare rapid
-against fuller analysis in a single applied setting, which is not enough to
-establish equivalence in general, and all four rapid-analysis papers were
-read at abstract level here.
+enrich interpretation. Taylor et al. [18] and Gale et al. [21] each compare
+rapid against fuller analysis in a single applied setting, which does not
+establish equivalence in general (see Gaps); all four rapid-analysis papers
+were read at abstract level here.
 
 ## Analysis of user feedback in computing has developed separately
 
@@ -212,9 +209,8 @@ classify non-functional requirements from app reviews. The work in this
 strand is oriented toward assigning high volumes of feedback to predefined
 categories such as bug report, feature request, or requirement type. Theme
 development, in the sense the thematic analysis literature uses, is not the
-objective. Both [35] and [24] are surveys, so their characterisations of
-individual primary studies are reported here as those surveys' accounts of
-the underlying studies.
+objective. Both [35] and [24] are surveys, so what they say of individual
+primary studies is reported here as their account.
 
 The two literatures in this corpus meet only at McDonald et al. [22] and the
 software-engineering reliability and grounded-theory work [15][34][37], all
@@ -279,13 +275,13 @@ publisher records and secondary methodological summaries. That is weaker
 than reading the primary text, and those step lists should be checked
 against the originals before they are hard-coded into a skill.
 
-Coverage limits. Every logged search was truncated against upstream totals,
-so the corpus is a relevance-ranked sample. Nowell et al.'s 2017 paper on
-trustworthiness criteria for thematic analysis, which is frequently cited in
-this area, was not retrieved by any query and is therefore absent from the
-corpus and uncited here. Books are indexed unevenly: Boyatzis [3] carries no
-DOI and entered under a title key, and Miles & Huberman [1] carries a
-journal venue in its record that is an indexing artefact.
+Coverage limits. Beyond the truncation noted under Method, Nowell et al.'s
+2017 paper on trustworthiness criteria for thematic analysis, which is
+frequently cited in this area, was not retrieved by any query, so it is
+absent from the corpus and uncited here. Books are indexed unevenly:
+Boyatzis [3] carries no DOI and entered under a title key, and Miles &
+Huberman [1] carries a journal venue in its record that is an indexing
+artefact.
 
 One verification flag was not cleared. The record at [16] resolves through a
 DOI redirect to a Springer reissue, and its Crossref title match is 0.33
