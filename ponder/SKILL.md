@@ -35,8 +35,6 @@ conclusions, and let ledger state set the presentation.
 
 ## Invariants
 
-After context compaction, re-open this file and replay state with `status`.
-
 1. Every retrieved claim the answer depends on carries a `[Sn]` marker
    resolving to a ledger source; every composition carries `[~]`.
 2. Apply the rigor the session mode names; derive presentation sections from
@@ -48,63 +46,19 @@ After context compaction, re-open this file and replay state with `status`.
 5. Run the rival sweep, then draft from `check` output. An empty sweep
    supports an absent Rival section.
 
-## The loop
+## Retrieval
 
-Probe, explore for up to three rounds when material questions remain, then
-answer. The spine owns the probe; open probes load `framing` with `explore`;
-drafting loads `answer`. Load `brief` only when composing a delegate's
-brief.
-
-### Probe: the lead's own first round
-
-The lead performs round one inline: search the question as asked, follow
-what opens, and class each source. Batch independent queries; sequence
-dependent queries.
-
-Class every source relative to the question it answers: `constitutive` (the
-artifact itself: source code, RFC, spec; one suffices), `attested` (the
-owner speaking about it: maintainer post, vendor doc; one suffices),
-`measured` (an observation anyone made: benchmark, paper, postmortem;
-corroborate before stating plainly), `reported` (a secondary account:
-tutorial, journalism, aggregator; supports hedged claims and records
-practitioner belief). Two outcomes:
-
-- Settled: all material questions are answered. Register one or two leaves,
-  add sources, close, then load `answer` for sweep and draft.
-- Open: material sub-questions remain. Keep the round's sources, then load
-  `framing` and `explore`.
-
-Judge settlement against the question's stakes. A canonical constitutive or
-attested source can settle; contested claims require stronger evidence than
-first-page blog consensus.
-
-### Explore, then answer
-
-`explore` decomposes open work into 3-10 principle-based leaves, partitions
-orthogonal bundles, admits rounds, and checkpoints yield. Delegation starts
-here after round one; the lead retains the comprehensive view. `answer` owns
-the rival sweep, check scaffold, and one-pass draft.
-
-`retrieved` feeds Answer and Chain; `refuted` feeds Rival; `unresolved`
-feeds Open; omit `retired`. Resolve every `open` leaf before drafting.
-Contrary evidence may move `retrieved` to `refuted`; other closes are final.
+- Prefer the harness's own web search and fetch. Where they are absent,
+  `/search-web` gives the same reach from a script: `web`, `wiki`,
+  `scholar`, and `fetch`. With neither, say the question needs retrieval and
+  stop.
+- Read a PDF with `/read-pdf`.
+- Send a scholarly-corpus leaf to `/lit-review`.
 
 ## Session
 
-The script owns the ledger and its verification: `note` admits one JSON
-batch per round; `check` derives the drafting scaffold. Supply two or three
-keywords for each session, leaf, or source; the script returns its
-slug-plus-entropy identifier. Use full identifiers. A unique keyword subset
-recovers a lost ID; ambiguity lists candidates. Pass a directory path in
-place of an identifier to put a session somewhere specific.
-
-Commands emit JSON on stdout; `signal:` lines on stderr are advisory.
-Free-form content fills a named slot: `--<slot>` carries a short value,
-`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
-required slot reads the pipe when no flag claims it. One slot per call may
-claim the pipe. A JSON body has no inline spelling. A value is never
-reinterpreted, so a regex needs no escape, and an empty one is a rejection
-rather than a fallback. `clean` removes one session or `--all`.
+The script `btm-ponder` owns the ledger and its verification. Bind `R` and
+`S` per shell:
 
 <commands>
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
@@ -125,31 +79,50 @@ $R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
 $R clean ["$S" | --all]
 </commands>
 
-Bind `R` and `S` per shell; chain a round's calls with `&&` so a rejected
-note stops the chain. Write each round's batch to a file: a rejection then
-costs one edit. `schema` prints the batch shape whenever a field name is in
-doubt; `status` is the cheap mid-session view and carries an advisory
-`next`. `check --view` is a chain: `plan` omits the prose your own closes
-stored, `draft` adds it and the source table and is the default, `full` adds
-the leaf dump. Read `plan` mid-round; take `draft` to write from and after a
-compaction. A rejected `note` names every problem at once and changes
-nothing, so apply all the fixes and resend. Copy refs verbatim from the
-`minted` receipt. `--mode lite` demotes open-leaf and unswept violations
-to advisories; sourcing discipline is unchanged.
+| Command | Takes after the session | Returns |
+| --- | --- | --- |
+| `init` | No session: keywords; the framing on the pipe or `--framing:file` | The session identifier |
+| `schema` | No session | The note batch shape; run it whenever a field name is in doubt |
+| `note` | One batch | Admitted counts, open leaves, the yield table, the `minted` receipt |
+| `check` | `--view` | The drafting scaffold, violations, and hedges, read per `answer` |
+| `status` | Nothing | Counts, open leaves, the yield table, an advisory `next`: the cheap mid-session view |
+| `jot` | Any JSON object, or prose with `--prose` | The pad id; never rejects content |
+| `recall` | Filters; `--limit` takes 1 or more, default all | Matching pad entries |
+| `clean` | The session is optional; or `--all` | Removes one session or all; with neither, lists sessions with sizes |
 
-The pad is free working memory beside the ledger: `jot` admits any JSON
-object (or prose with `--prose`) and never rejects content; `recall` filters
-it back by kind, regex, id, or count. Park verbatim quotes, hunches, and
-open threads there while a round is hot, then pull them back at draft time;
-only ledger events face the gate.
+Identifiers: supply two or three keywords for each session, leaf, or source;
+the script returns its slug-plus-entropy identifier. Use full identifiers,
+and copy refs verbatim from the `minted` receipt. A unique keyword subset
+recovers a lost ID; ambiguity lists candidates. Pass a directory path in
+place of an identifier to put a session somewhere specific.
 
-`note` admits optional arrays in schema order, allowing later entries to use
-IDs minted earlier in the batch. `premise` (the claim, one line) and `detail`
-(supporting note) are stored on any close and come back in the `check`
-scaffold; a `folded` close names its target with `into`; `reason` belongs to
-`unresolved` closes; `retired` closes say in `detail` why the leaf changes
-nothing; `from` lists the pad ids a close drew on, each checked to exist;
-`survivors` are zero-based indexes into `candidates`:
+Output: commands emit JSON on stdout; `signal:` lines on stderr are
+advisory. `--view` is a chain. On `check`, `plan` omits the prose your own
+closes stored, `draft` adds it and the source table and is the default, and
+`full` adds the leaf dump; read `plan` mid-round and take `draft` to write
+from. On `note`, `plan` omits the `minted` receipt. `--mode lite` demotes
+open-leaf and unswept violations to advisories; sourcing discipline is
+unchanged.
+
+Free-form content fills a named slot: `--<slot>` carries a short value,
+`--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and the
+required slot reads the pipe when no flag claims it. One slot per call may
+claim the pipe. A JSON body has no inline spelling. A value is never
+reinterpreted, so a regex needs no escape, and an empty one is a rejection
+rather than a fallback.
+
+Resume: after context compaction, re-open this file, replay state with
+`status`, then take `check` at `draft`.
+
+### A round
+
+Use one `note` per round. Write the round's batch to a file, so a rejection
+costs one edit, and chain the round's calls with `&&`, so a rejected note
+stops the chain. A rejected `note` names every problem at once and changes
+nothing: apply all the fixes and resend.
+
+`note` admits optional arrays in schema order; later entries may use IDs
+minted earlier in the batch:
 
 <template for="note-batch">
 {
@@ -161,33 +134,55 @@ nothing; `from` lists the pad ids a close drew on, each checked to exist;
 }
 </template>
 
-Use one `note` per round. Invoke this interface from the skill; inspect source
-only for user-requested troubleshooting.
+- `premise` (the claim, one line) and `detail` (supporting note) are stored
+  on any close and come back in the `check` scaffold keyed by marker.
+- A `folded` close names its target with `into`; `reason` belongs to
+  `unresolved` closes; a `retired` close says in `detail` why the leaf
+  changes nothing.
+- `from` lists the pad ids a close drew on, each checked to exist.
+- `survivors` are zero-based indexes into `candidates`.
+- Contrary evidence may move `retrieved` to `refuted`; other closes are
+  final.
 
-## Environment probe
+The pad is free working memory beside the ledger; only ledger events face
+the gate. Park verbatim quotes, hunches, and open threads there with `jot`
+while a round is hot, then pull them back with `recall` at draft time.
 
-Determine capabilities from available tools:
+Invoke this interface from the skill; inspect source only for user-requested
+troubleshooting.
 
-- Retrieval: prefer the harness's own web search and fetch. Where they are
-  absent, `/search-web` gives the same reach from a script: `web`, `wiki`,
-  `scholar`, and `fetch`. Read a PDF with `/read-pdf`. With neither, say
-  the question needs retrieval and stop.
-- Delegation: through `/summon`, after round one, per `explore`; the
-  ledger state is the same on either branch.
-- Scholarly corpus leaves command `/lit-review`.
+## The loop
 
-## Gotchas
+1. Probe: the lead's own first round, below.
+2. If material questions remain open, load `framing` to build the frame and
+   its leaves, then `explore` to run the rounds.
+3. Load `answer` for the rival sweep and the draft.
 
-- Decompose by governing principle; question register preserves the same rigor.
-- Put dependent sub-questions in the derived chain to keep fan-out independent.
-- Record an empty rival sweep as a valid result.
-- Inspect `check` violations despite its advisory exit status; resolve open
-  leaves before drafting.
-- Draft by transforming the `check` scaffold: the premise and detail written
-  into closes come back keyed by marker, so reuse them.
-- In niche areas, constitutive documentation can close alone; reported sources
-  support hedged closes per `answer`.
-- One authoritative source can complete a productive round.
+Load `brief` only when composing a delegate's brief.
+
+### Probe
+
+The lead performs round one inline: search the question as asked, follow
+what opens, and class each source. Batch independent queries; sequence
+dependent queries. The question's register does not lower the rigor.
+
+Class every source relative to the question it answers:
+
+| Class | What it is | Weight |
+| --- | --- | --- |
+| `constitutive` | The artifact itself: source code, RFC, spec | One suffices; in niche areas it can close alone |
+| `attested` | The owner speaking about it: maintainer post, vendor doc | One suffices |
+| `measured` | An observation anyone made: benchmark, paper, postmortem | Corroborate before stating plainly |
+| `reported` | A secondary account: tutorial, journalism, aggregator | Supports hedged claims and records practitioner belief |
+
+Judge settlement against the question's stakes. A canonical constitutive or
+attested source can settle; contested claims require stronger evidence than
+first-page blog consensus. Two outcomes:
+
+- Settled: all material questions are answered. Register one or two leaves,
+  add sources, close, then load `answer`.
+- Open: material sub-questions remain. Keep the round's sources, then load
+  `framing` and `explore`.
 
 ## Completion checks
 

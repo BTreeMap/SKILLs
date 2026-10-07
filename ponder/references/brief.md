@@ -1,8 +1,15 @@
-# Brief Fragments
+# Brief: what a search delegate is told
 
-The rules and contract a search delegate's brief carries. The lead composes
-the brief under `/summon fanout`, per `explore`; objective, evidence,
-bounds, and budget come from the bundle and from summon.
+Load only when composing one bundle's brief under `/summon fanout`. Fill the
+parts below; summon supplies the rest, including the budget.
+
+| Part | Content |
+| --- | --- |
+| Objective | The bundle's leaf questions verbatim, plus the session question for scope |
+| Evidence | The retrieval tools (web search and fetch, `/lit-review` for scholarly corpora, `/read-pdf` for PDFs) and any probe source the bundle builds on |
+| Rules | The `rules` template below |
+| Contract | The `contract` template below |
+| Bounds | The other bundles |
 
 <template for="rules">
 RULES

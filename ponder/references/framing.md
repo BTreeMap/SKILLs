@@ -1,49 +1,44 @@
 # Framing: from question to leaves
 
-Use this scaffold whenever the probe stays open. Compose its moves into a
-frame around governing mechanisms; most queries mix several modes.
+Load when the probe leaves material questions open. Build a frame from the
+question and the probe's records, register its leaves, then hand off to
+`explore`. Compose the moves below into a frame around governing mechanisms;
+most queries mix several modes.
 
-## Ready frame
+## Moves and the ready frame
 
-Build every field before registering leaves:
+Apply each contributing move in table order. Build every frame field before
+registering leaves.
 
-- scope: time, place, jurisdiction, version, population, workload, platform,
-  and stakeholder boundaries that can change the answer;
-- premises: every embedded factual or causal claim marked for confirmation
-  or refutation;
-- modes: factual, causal, normative, interpretive, feasibility, or
-  implementation claims separated where their evidence and warrants differ;
-- mechanisms: the laws, incentives, protocols, physical processes, or cost
-  drivers that decide the question;
-- evidence routes: the expected artifact and source class, using the class
-  definitions in the spine, for each retrievable claim;
-- rival: the strongest plausible premise or account that could reverse the
-  emerging answer;
-- leaves: 3-10 independent questions, each settled by one retrieval act.
+| Move | Trigger | Frame field it fills |
+| --- | --- | --- |
+| `clarify` | Two readings invoke different mechanisms or evidence | One user question, or explicit branches |
+| `bind-scope` | The answer changes across context | scope: time, place, jurisdiction, version, population, workload, platform, and stakeholder boundaries that can change the answer |
+| `audit-premise` | The query embeds a statistic, history, comparison, or causal claim | premises: every embedded factual or causal claim marked for confirmation or refutation, as a premise leaf that may close `refuted` |
+| `split-modes` | Facts, causes, values, interpretations, feasibility, or implementation are mixed | modes: factual, causal, normative, interpretive, feasibility, or implementation claims separated where their evidence and warrants differ |
+| `name-mechanisms` | Topic nouns conceal what determines the answer | mechanisms: the laws, incentives, protocols, physical processes, or cost drivers that decide the question |
+| `bridge-vocabulary` | The idea may exist under specialist terminology | Search terms and prior-art families |
+| `route-evidence` | A claim lacks a natural retrieval target | evidence routes: the expected artifact and source class, per the spine's class table, for each retrievable claim |
+| `pose-rival` | The strongest contrary account lives outside the query's own premises | rival: the strongest plausible premise or account that could reverse the emerging answer, with a leaf that may close `refuted` |
+| `compile-leaves` | Scope and mechanisms are stable | leaves, below |
 
 For critical ambiguity, ask one focused question. If clarification is
 unavailable, branch each plausible reading and use the branch point as
-Boundary material. Put dependent sub-questions in the derived chain.
+Boundary material. Re-run `clarify` when evidence exposes a new
+interpretation.
 
-## Framing moves
+## Leaves
 
-Apply each contributing move in order. Re-run `clarify` when evidence
-exposes a new interpretation.
+Turn open work into independent questions, each settled by one retrieval
+act. Decompose by governing principle: each leaf names a mechanism and a
+retrievable claim, and the leaves group by mechanism.
 
-| Move | Trigger | Product |
-| --- | --- | --- |
-| `clarify` | Two readings invoke different mechanisms or evidence | One user question, or explicit branches |
-| `bind-scope` | The answer changes across context | Named dimensions and boundaries |
-| `audit-premise` | The query embeds a statistic, history, comparison, or causal claim | A premise leaf that may close `refuted` |
-| `split-modes` | Facts, causes, values, interpretations, feasibility, or implementation are mixed | Separate claims with separate warrants |
-| `name-mechanisms` | Topic nouns conceal what determines the answer | Governing principles and cost drivers |
-| `bridge-vocabulary` | The idea may exist under specialist terminology | Search terms and prior-art families |
-| `route-evidence` | A claim lacks a natural retrieval target | Expected artifact and source class |
-| `pose-rival` | The strongest contrary account lives outside the query's own premises | The rival field, with a leaf that may close `refuted` |
-| `compile-leaves` | Scope and mechanisms are stable | Independent, retrievable leaf questions |
-
-A ready frame groups by mechanism, assigns dependent conclusions to the
-derived chain, and names evidence that could refute each premise.
+- Put dependent sub-questions in the draft's `[~]` chain, so ledger leaves
+  and fan-out stay independent.
+- 3 to 10 leaves covers the worked range. Past 10, fold near-duplicates
+  before searching; below 3 still works.
+- Register leaves as `leaves` entries in the round's `note` batch: keywords,
+  question, origin. Reference them by the identifiers the output echoes.
 
 ## Worked frames
 
@@ -65,12 +60,6 @@ derived chain, and names evidence that could refute each premise.
 <context for="query">Where do major jurisdictions draw the legal boundaries for noncommercial filming in public places?</context>
 <variant for="moves">clarify, bind-scope, split-modes, route-evidence, compile-leaves</variant>
 <variant for="leaves">Choose representative jurisdictions; separate public property from privately controlled public space; retrieve rules on permits, privacy, personality rights, data protection, sound recording, later publication; distinguish noncommercial purpose from conduct regulated regardless of profit.</variant>
-</example>
-
-<example for="control-plane-placement">
-<context for="query">Which of six spread regions should host a centralized control plane once latency to all of them counts?</context>
-<variant for="moves">bind-scope, split-modes, name-mechanisms, route-evidence</variant>
-<variant for="leaves">Separate worst-case latency from mean and from the tail the control protocol feels; retrieve measured inter-region round trips; weigh failure domains, data residency, egress cost; name the traffic pattern that decides between one central plane and regional planes.</variant>
 </example>
 
 <example for="petition-timing">
@@ -115,12 +104,6 @@ derived chain, and names evidence that could refute each premise.
 <variant for="leaves">Separate aggregate amenities and revenue from who receives them; test displacement, tenure, tax-base, service, fiscal-timing mechanisms; separate causal evidence from the normative weighting across incumbent residents, newcomers, owners, renters, city government.</variant>
 </example>
 
-<example for="durable-scheduled-state">
-<context for="query">Why do scheduled reminders vanish when a process restarts, and does a persisted outbox beat periodic polling for timezone-aware delivery?</context>
-<variant for="moves">audit-premise, name-mechanisms, split-modes, compile-leaves</variant>
-<variant for="leaves">Locate the state living only in process memory; separate durability from scheduling policy; compare a persisted outbox of due events against a periodic sweep on write amplification, clock skew, DST transitions, retries, duplicate delivery; retrieve documented scheduler and timezone-database behavior.</variant>
-</example>
-
 <example for="modern-adaptation">
 <context for="query">How does a recent film adaptation of an ancient epic reinterpret it for a modern audience?</context>
 <variant for="moves">bind-scope, audit-premise, split-modes, route-evidence</variant>
@@ -145,22 +128,10 @@ derived chain, and names evidence that could refute each premise.
 <variant for="leaves">Bind task family, compute accounting, evaluation; retrieve published results on both sides; separate framework marketing from measured matched-compute comparison; expect real survivors from the sweep.</variant>
 </example>
 
-<example for="encoded-sum-types">
-<context for="query">How should algebraic data types be represented in C#?</context>
-<variant for="moves">clarify, bind-scope, name-mechanisms, route-evidence</variant>
-<variant for="leaves">Ask whether the need is modeling, exhaustive matching, runtime representation, serialization, or interop; bind the C# and .NET version; compare records, sealed hierarchies, discriminated encodings, existing libraries on exhaustiveness, allocation, ergonomics, boundary decoding.</variant>
-</example>
-
 <example for="experiment-vocabulary">
 <context for="query">Is a three-arm within-subjects study an A/B test, and what makes a design a bandit instead?</context>
 <variant for="moves">clarify, bridge-vocabulary, split-modes, route-evidence</variant>
 <variant for="leaves">Retrieve constitutive definitions from method texts and venue conventions; separate naming convention from statistical design; identify adaptive allocation as the property that turns arms into a bandit.</variant>
-</example>
-
-<example for="population-geography">
-<context for="query">Why might two-thirds of a country's population live within 100 miles of its border, and what keeps the rest inland?</context>
-<variant for="moves">audit-premise, clarify, bind-scope, split-modes, route-evidence</variant>
-<variant for="leaves">Verify the estimate, period, geometry, border definition; map distinct inland populations; test settlement history, climate, transport, labor markets, amenities; retrieve migration evidence for reasons to stay.</variant>
 </example>
 
 <example for="work-visa-routes">
@@ -193,12 +164,6 @@ derived chain, and names evidence that could refute each premise.
 <variant for="leaves">Retrieve the definition and toggle path from attested documentation; retrieve the stated permissions and data flow; assign the trust boundary to the derived chain, since it composes those facts rather than sitting in any document.</variant>
 </example>
 
-<example for="https-filter">
-<context for="query">Does an Android ad blocker that filters HTTPS transparently pass through a browser's TLS connection, or terminate and re-establish it?</context>
-<variant for="moves">bind-scope, split-modes, name-mechanisms, route-evidence</variant>
-<variant for="leaves">Bind the blocker, Android version, browser, filtering mode; separate a local VPN tunnel from HTTPS interception; trace certificate installation, browser trust, downstream termination, upstream TLS negotiation, certificate-pinning exceptions through documentation, source where available, packet or certificate observations.</variant>
-</example>
-
 <example for="representation-brokers">
 <context for="query">Which agencies represent academics for press and speaking work, and how does the money differ between them?</context>
 <variant for="moves">bind-scope, route-evidence, split-modes</variant>
@@ -211,12 +176,6 @@ derived chain, and names evidence that could refute each premise.
 <variant for="leaves">Resolve what good buy means: horizon, alternative use of the money, tolerance for drawdown; test the premise that the disruption is not already priced; retrieve fund composition, fees, measured drawdown-and-recovery history; keep future return unretrievable and say so.</variant>
 </example>
 
-<example for="fund-price-mechanism">
-<context for="query">How does an exchange-traded fund's net asset value relate to its traded price during volatility?</context>
-<variant for="moves">name-mechanisms, bridge-vocabulary, route-evidence</variant>
-<variant for="leaves">Retrieve creation and redemption from constitutive issuer and exchange documentation; name authorized-participant arbitrage as the coupling; separate intraday indicative value from end-of-day NAV; retrieve measured premium and discount data from stressed periods.</variant>
-</example>
-
 <example for="multi-party-threads">
 <context for="query">How can several people hold one thread with an assistant across the major vendors, in real time or asynchronously?</context>
 <variant for="moves">bind-scope, split-modes, route-evidence, compile-leaves</variant>
@@ -226,14 +185,13 @@ derived chain, and names evidence that could refute each premise.
 
 ## Completion checks
 
-Before handing the frame back to `explore`, verify:
+Before handing off to `explore`, verify:
 
-- every critical ambiguous term is resolved or branched;
-- every embedded premise supports a `refuted` close while the frame remains
-  valid;
-- factual, causal, normative, interpretive, feasibility, and implementation
-  claims use distinct warrants where needed;
-- every leaf names one governing mechanism and one plausible evidence route;
-- leaves are independent, jointly cover the material question, and use
-  mechanism-level names;
-- the rival premise and answer-flipping boundaries are explicit.
+<checklist>
+  <item>Every critical ambiguous term is resolved or branched.</item>
+  <item>Every embedded premise supports a `refuted` close while the frame remains valid, and the frame names evidence that could refute it.</item>
+  <item>Factual, causal, normative, interpretive, feasibility, and implementation claims use distinct warrants where needed.</item>
+  <item>Every leaf names one governing mechanism and one plausible evidence route.</item>
+  <item>Leaves are independent, jointly cover the material question, and use mechanism-level names.</item>
+  <item>The rival premise and answer-flipping boundaries are explicit.</item>
+</checklist>

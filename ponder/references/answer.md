@@ -1,43 +1,43 @@
-# Answer: Sweep, Outline, Sections, and Markers
+# Answer: sweep, check, draft
 
-## The rival sweep
+Load once no material question stays open, then run the steps in order.
 
-After gathering, sweep once for the strongest contrary account: folk belief,
-older explanation, or competing mechanism. Record scope, candidates, and
-survivors as a `sweeps` entry. An empty scoped sweep establishes absence;
-survivors and `refuted` premises feed Rival.
+## 1. Rival sweep
 
-## Check first
+Sweep once for the strongest contrary account: folk belief, older
+explanation, or competing mechanism. Record scope, candidates, and survivors
+as a `sweeps` entry. An empty scoped sweep establishes absence and is a
+valid result.
 
-Draft from script output:
+## 2. Check
 
 <commands for="answer">
-env -u VIRTUAL_ENV uv run --project "$(realpath <skill-root>/scripts)" btm-ponder check <session>
+$R check "$S"
 </commands>
 
-The check returns the marker table first (`S1` onward, with class, title,
-url), then the derived sections, a scaffold holding each close's stored
-premise and detail keyed by marker, violations, and hedge advisories.
-Resolve violations; then the lead drafts once by transforming the
-scaffold's rows.
+At the default `draft` view, `check` returns the derived `sections`; a
+`scaffold` holding each close's stored premise and detail keyed by marker;
+`violations`, with lite-demoted ones under `advisories`; `hedges`; and the
+`markers` table, `S1` onward, with class, title, and url. It exits 0 even
+with violations: read them, and resolve every violation and every `open`
+leaf before drafting.
 
-## Sections
+## 3. Draft once
 
-Render the derived sections and add Boundary when the answer flips within
-scope. An absent Rival records an empty sweep.
+The lead drafts once by transforming the scaffold's rows; reuse the premise
+and detail written into closes. Render the derived sections and add Boundary
+when the answer flips within scope.
 
 | Section | Carries |
 | --- | --- |
-| Answer | The claim, first, in the question's own register |
-| Chain | The reasoning path when it exceeds a few links; else it collapses into the answer's sentences |
+| Answer | The claim, first, in the question's own register, from `retrieved` leaves |
+| Chain | The reasoning path through `retrieved` leaves when it exceeds a few links; else it collapses into the answer's sentences |
 | Rival | Every `refuted` premise and every sweep survivor, stated at its strongest |
 | Boundary | Where the answer flips within scope (band, version, workload) |
 | Open | Each `unresolved` leaf with what was tried or why it was passed over |
 | Sources | The check's table: marker, class, title, url |
 
-Omit `Retired` leaves.
-
-## Marker discipline
+Omit `retired` leaves. An absent Rival records an empty sweep.
 
 Bind markers to the claims the answer depends on; leave connective prose
 bare.
