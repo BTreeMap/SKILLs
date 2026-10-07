@@ -49,6 +49,22 @@ class TestSessionStore:
         assert report["bytes_freed"] > 0
         assert store.ids() == []
 
+    def test_clean_all_refuses_a_root_holding_anything_unmarked(self, store):
+        """Before, --all removed the root with no marker check, taking any
+        stray directory under it along."""
+        make_session(store, "deep-sea-abc123")
+        (store.root() / "stray").mkdir()
+        with pytest.raises(CommandError, match="stray"):
+            store.clean(None, remove_all=True)
+        assert (store.root() / "stray").is_dir()
+        assert store.ids() == ["deep-sea-abc123", "stray"]
+
+    def test_clean_all_removes_a_root_of_sessions_and_reports_bytes(self, store):
+        make_session(store, "deep-sea-abc123")
+        report = store.clean(None, remove_all=True)
+        assert report == {"removed": str(store.root()), "bytes_freed": 2}
+        assert not store.root().exists()
+
     def test_clean_all_with_a_session_is_refused(self, store):
         with pytest.raises(CommandError, match="one of the two"):
             store.clean("deep-sea-abc123", remove_all=True)

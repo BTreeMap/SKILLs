@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,7 +12,7 @@ from pydantic import BaseModel
 from btm_corekit.records.models import M, dump, parse_model
 from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError
-from btm_corekit.store.fsio import state_root, tree_bytes, write_atomic
+from btm_corekit.store.fsio import remove_tree, state_root, tree_bytes, write_atomic
 from btm_corekit.store.identifiers import (
     band_signal,
     eliminate,
@@ -103,17 +102,14 @@ class SessionStore:
         )
 
     def clean(self, ref: str | None, remove_all: bool) -> dict[str, Any]:
-        """List sessions with sizes, or remove one session or the whole root,
-        reporting bytes freed; removal demands the marker, never an arbitrary tree."""
+        """List sessions with sizes, remove one, or remove them all, reporting
+        bytes freed. Every removal demands the marker, never an arbitrary tree:
+        `--all` removes the root only when every entry under it is a session."""
         root = self.root()
         if remove_all and ref:
             raise CommandError("pass a session or --all, one of the two")
         if remove_all:
-            if not root.is_dir():
-                return {"removed": None, "bytes_freed": 0}
-            freed = tree_bytes(root)
-            shutil.rmtree(root)
-            return {"removed": str(root), "bytes_freed": freed}
+            return self._remove_all(root)
         if ref is None:
             listing = (
                 [
@@ -134,6 +130,21 @@ class SessionStore:
             raise CommandError(
                 f"{target} holds no session ({self.marker} absent); refusing to remove"
             )
-        freed = tree_bytes(target)
-        shutil.rmtree(target)
-        return {"removed": str(target), "bytes_freed": freed}
+        return remove_tree(target)
+
+    def _remove_all(self, root: Path) -> dict[str, Any]:
+        """All or nothing: every entry under the root must carry the marker,
+        or nothing is removed and the strays are named."""
+        if not root.is_dir():
+            return remove_tree(root)
+        strays = sorted(
+            entry.name
+            for entry in root.iterdir()
+            if not (entry / self.marker).is_file()
+        )
+        if strays:
+            raise CommandError(
+                f"{root} holds entries without {self.marker}: {', '.join(strays)}; "
+                "refusing to remove anything until they are moved aside"
+            )
+        return remove_tree(root)

@@ -4,12 +4,11 @@ pure plan, hand it to effects, report. All policy lives below this file."""
 from __future__ import annotations
 
 import argparse
-import shutil
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import CommandError, Parser, dispatch, emit, signal, tree_bytes
+from btm_corekit import CommandError, Parser, dispatch, emit, remove_tree, signal
 from btm_setup_env.catalog import CATALOG
 from btm_setup_env.model import (
     GENERIC,
@@ -128,9 +127,7 @@ def cmd_clean(args: argparse.Namespace) -> int:
             f"refusing to delete {layout.root}: no manifest.json; "
             "was this directory provisioned by btm-setup-env?"
         )
-    freed = tree_bytes(layout.root)
-    shutil.rmtree(layout.root)
-    emit({"removed": str(layout.root), "bytes_freed": freed})
+    emit(remove_tree(layout.root))
     return 0
 
 

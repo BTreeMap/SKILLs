@@ -92,8 +92,8 @@ from btm_corekit.store.fsio import (
     append_jsonl,
     count_lines,
     read_jsonl,
+    remove_tree,
     state_root,
-    tree_bytes,
     write_atomic,
 )
 from btm_corekit.store.identifiers import (
@@ -232,6 +232,7 @@ __all__ = [
     "recall",
     "refuse",
     "rejection",
+    "remove_tree",
     "request_identity",
     "require",
     "resolve",
@@ -250,7 +251,6 @@ __all__ = [
     "suffix",
     "suggest",
     "text",
-    "tree_bytes",
     "user_agent",
     "wire_clean",
     "wire_limit",

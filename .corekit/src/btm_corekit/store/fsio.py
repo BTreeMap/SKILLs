@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import stat
 import tempfile
 from collections.abc import Iterable, Mapping
@@ -25,6 +26,17 @@ def state_root(skill: str) -> Path:
 def tree_bytes(path: Path) -> int:
     """Total size of the regular files under a directory."""
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
+def remove_tree(path: Path) -> dict[str, Any]:
+    """Delete a directory tree and return the receipt every `clean` emits:
+    `{removed, bytes_freed}`, with `removed` null when nothing stood there.
+    The caller holds the witness; this only removes and measures."""
+    if not path.is_dir():
+        return {"removed": None, "bytes_freed": 0}
+    freed = tree_bytes(path)
+    shutil.rmtree(path)
+    return {"removed": str(path), "bytes_freed": freed}
 
 
 def write_atomic(path: Path, text: str) -> None:

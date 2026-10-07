@@ -8,12 +8,11 @@ corrupt cache costs is the request that filled it.
 from __future__ import annotations
 
 import hashlib
-import shutil
 import tempfile
 from pathlib import Path
 from typing import Any
 
-from btm_corekit.store.fsio import tree_bytes
+from btm_corekit.store.fsio import remove_tree
 
 
 def cache_dir(skill: str) -> Path:
@@ -31,9 +30,4 @@ def cache_slot(skill: str, key: str, suffix: str) -> Path:
 def clean_cache(skill: str) -> dict[str, Any]:
     """Remove the skill's cache and report what it freed, in the keys every
     member's `clean` uses: `{removed, bytes_freed}`."""
-    directory = cache_dir(skill)
-    if not directory.is_dir():
-        return {"removed": None, "bytes_freed": 0}
-    freed = tree_bytes(directory)
-    shutil.rmtree(directory)
-    return {"removed": str(directory), "bytes_freed": freed}
+    return remove_tree(cache_dir(skill))
