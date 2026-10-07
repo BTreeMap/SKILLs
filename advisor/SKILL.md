@@ -47,10 +47,11 @@ authors' framing again: judge it by the four moves.
 
 ## The four moves
 
-Run all four, on the lead's tier, before any verb writes. Read the method
-section and the works it cites first, then the results, and the abstract and
-introduction last: the constitution sits in the method and the citations.
-Read a PDF with `/read-pdf`.
+Run all four on the lead's tier (the model running the lead, never a
+delegate's) before any verb writes. Read the method section and the works it
+cites first, then the results, and the abstract and introduction last: the
+constitution sits in the method and the citations. Read a PDF with
+`/read-pdf`.
 
 ### 1. Constitution
 
