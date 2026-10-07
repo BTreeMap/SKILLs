@@ -12,10 +12,10 @@ metadata:
   argument-hint: "[text-or-file]"
 ---
 
-# Humanize: remove AI writing patterns
+# Humanize
 
-Rewrite AI-sounding text so it reads like its writer. Cure: the specific
-over the generic. §1-35 come from Wikipedia's ["Signs of AI
+Rewrite AI-sounding text so it reads like its writer, replacing the generic
+with the specific. §1-35 come from Wikipedia's ["Signs of AI
 writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
 §36-40 and added cases in older entries cover tells that survive a
 vocabulary scrub.
@@ -56,8 +56,7 @@ Hold these in every mode. Each outranks any pattern fix.
    every pattern here: load it before any owner file, and where it permits a
    construction a pattern flags (an em-dash habit, personification of
    systems, candid asides, placement verbs), keep the construction without
-   asking. A sample full of em dashes keeps its rate, so §14 in `style` is
-   not a ban.
+   asking. A sample full of em dashes keeps its rate, so §14 is not a ban.
 4. **Personality only where it fits.** In blog posts, essays, opinion, and
    personal writing, keep the writer's opinions, uncertainty, mixed
    feelings, humor, asides, and uneven rhythm. Keep reference, technical,
@@ -71,23 +70,66 @@ Hold these in every mode. Each outranks any pattern fix.
    with only, can, may, suggests, or an equivalent.
 
    <checklist for="modality">
-   necessary became sufficient: restore "only", "requires", "unless"
-   evidential became assertive: restore "suggests", "reports", "found"
-   possible became actual: restore "can", "may", "sometimes"
-   comparative became absolute: restore "more than", "than the alternative"
+     <item>necessary became sufficient: restore "only", "requires", "unless"</item>
+     <item>evidential became assertive: restore "suggests", "reports", "found"</item>
+     <item>possible became actual: restore "can", "may", "sometimes"</item>
+     <item>comparative became absolute: restore "more than", "than the alternative"</item>
    </checklist>
+
+## Output modes
+
+The procedure is the same in every mode.
+
+| Mode | Takes | Returns |
+| --- | --- | --- |
+| Pasted text (default) | Text in the conversation | Draft, short list of remaining AI patterns, final rewrite |
+| File | A file the user names | Only the final text, written to the file with prose changed only (code blocks, YAML metadata, data, and link targets kept); then a short summary |
+| Embedded | Text from another task that invokes the skill (PR text, commit message, docs) | Final text only |
+
+## Procedure
+
+1. Load the personal style file or voice sample first when one exists
+   (invariant 3).
+2. Scan the input against the detection index and collect suspected hits.
+3. Zero hits: return the text unchanged per output mode, state that no AI
+   patterns were found, and load nothing.
+4. Otherwise load exactly the owner files of the hits, plus `calibration`.
+   Never rewrite flagged text without `calibration`.
+5. Check §14-19 mechanically: search for U+2014, U+2013, `**`, heading case,
+   emoji, curly quotes, ` -- `, and `---` lines. Measure §36 with the
+   command in `register` on prose over about 40 sentences, before and after
+   the rewrite.
+6. Mark each pattern instance from the scan and confirm it against its owner
+   file. Drop the false positives that `calibration` and the entry's
+   exceptions name.
+7. Draft. Read it aloud for rhythm, concrete detail, simple verbs, and the
+   right formality. State each point fresh rather than patching flagged
+   phrases one at a time: a word swap leaves the shape, and a word list
+   applied as a ban flattens prose, removing ordinary English while the
+   suppressed term tends to resurface. When a sentence stays awkward,
+   rewrite the paragraph around its main point.
+8. Self-check three questions, treating a yes to any as an error to fix:
+   - What still sounds AI-generated?
+   - Did the rewrite add or drop any fact, name, number, date, quote,
+     citation, or ranking?
+   - Did removing a negation, hedge, or comparative strengthen a claim
+     (invariant 5)?
+9. Sweep the final text for U+2014 and U+2013 per §14, and re-measure §36
+   where it applied.
 
 ## Detection index
 
-40 patterns. Ownership by contiguous range: §1-6 `content`, §7-13
-`language`, §14-19 `style`, §20-22 `chatbot`, §23-26 `filler`, §27-35
-`rhetoric`, §36-40 `register`. Owner files hold the full watch-lists,
-problem statements, and before/after examples; the cues below route only.
-Signal strength: structural and rhetorical entries are diagnostic alone or
-in pairs; lexical entries (§7, §37) count only in clusters or above the
-density the owner file states. Every entry occurs in human writing; a hit is
-a style signal, never proof of authorship. Vocabulary tells drift by model
-and year; structural ones last.
+40 patterns, owned by contiguous range: §1-6 `content`, §7-13 `language`,
+§14-19 `style`, §20-22 `chatbot`, §23-26 `filler`, §27-35 `rhetoric`, §36-40
+`register`. The cues below route only; each owner file holds its patterns'
+watch-lists, problem statements, exceptions, and before/after examples.
+
+Every entry occurs in human writing; a hit is a style signal, never proof of
+authorship. Structural and rhetorical entries are diagnostic alone or in
+pairs; lexical entries (§7, §37) count only in clusters or above the density
+the owner file states. When unsure, look for several patterns together:
+several stock patterns in one passage are stronger evidence than any one.
+Vocabulary tells drift by model and year; structural ones last.
 
 | § | Cue |
 | --- | --- |
@@ -131,44 +173,3 @@ and year; structural ones last.
 | 38 | Manufactured salience: the one thing, the single most, if I had to pick one |
 | 39 | Compressed jargon: noun stacks, coined hyphen compounds, half-sentences |
 | 40 | Reasoning residue: the single most important correction, does not survive contact with |
-
-## Progressive loading
-
-1. Load the personal style file or voice sample first when one exists
-   (invariant 3).
-2. Scan the input against the index and collect suspected hits.
-3. Zero hits: return the text unchanged per output mode, state that no AI
-   patterns were found, and load nothing.
-4. Otherwise load exactly the owner files of the hits, plus `calibration`.
-   Never rewrite flagged text without `calibration`.
-5. §14-19 are mechanically checkable: search for U+2014, U+2013, `**`,
-   heading case, emoji, curly quotes, ` -- `, and `---` lines. §36 is
-   measurable: run the command in `register` on prose over about 40
-   sentences, before and after the rewrite.
-
-## Rewrite process
-
-1. Mark each pattern instance from the scan. Confirm against the loaded
-   owner files; drop the false positives `calibration` names.
-2. Draft. Read it aloud for rhythm, concrete detail, simple verbs, and the
-   right formality. State each point fresh rather than patching flagged
-   phrases one at a time. When a sentence stays awkward, rewrite the
-   paragraph around its main point.
-3. Self-check three questions, treating a yes to any as an error to fix:
-   - What still sounds AI-generated?
-   - Did the rewrite add or drop any fact, name, number, date, quote,
-     citation, or ranking?
-   - Did removing a negation, hedge, or comparative strengthen a claim
-     (invariant 5)?
-4. Sweep the final text for U+2014 and U+2013 per §14 in `style`, and
-   re-measure §36 where it applied.
-
-## Output modes
-
-| Mode | Trigger | Return |
-| --- | --- | --- |
-| Pasted text (default) | Text in the conversation | Draft, short list of remaining AI patterns, final rewrite |
-| File | User names a file | Write only the final text to the file, changing prose only: keep code blocks, YAML metadata, data, and link targets. Then a short summary |
-| Embedded | Another task invokes the skill (PR text, commit message, docs) | Final text only |
-
-Same rewrite process in every mode.
