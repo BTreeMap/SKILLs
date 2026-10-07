@@ -1,10 +1,8 @@
 # Targets
 
-The authoritative tag list lives in `catalog` and prints via
-`btm-setup-env list`. Aliases: `js`/`node`, `ts`, `py`, `golang`, `c++`,
-`cs`/`dotnet`, `sh`/`shell`, and bare `android` for `java:android`.
-
-## Per-Target Notes
+`catalog` holds the authoritative tag list; `list` prints it. Aliases:
+`js`/`node`, `ts`, `py`, `golang`, `c++`, `cs`/`dotnet`, `sh`/`shell`, and
+bare `android` for `java:android`.
 
 | Tag | Supplier | Notes |
 | --- | --- | --- |
@@ -17,22 +15,21 @@ The authoritative tag list lives in `catalog` and prints via
 | `c`, `cpp` | conda-forge | `c-compiler`/`cxx-compiler` metapackages resolve to gcc on linux, clang on macos. `CC`/`CXX` point at fixed-name shims, so plans never mention a compiler triple. Not on windows (MSVC needs its own activation). |
 | `java` | conda-forge | A JDK; `JAVA_HOME` points inside the prefix at `lib/jvm`, never at the prefix itself. |
 | `kotlin` | conda-forge | kotlinc for generic JVM work; the solver brings a JDK, one solve keeps them consistent. |
-| `kotlin:android`, `java:android` | Google + conda-forge | JDK + cmdline-tools + platform, build-tools, platform-tools for the API level given as `@version`. Deliberately installs no gradle and no kotlin: the project's gradlew and plugins are authoritative. Writes `sdk.dir` into `local.properties` only when the project has gradle files. On linux/arm64, provisions the emulated aapt2 described in `SKILL.md`. |
+| `kotlin:android`, `java:android` | Google + conda-forge | JDK + cmdline-tools + platform, build-tools, platform-tools for the API level given as `@version`. Installs no gradle and no kotlin: the project's gradlew and plugins are authoritative. Writes `sdk.dir` into `local.properties` only when the project has gradle files. On linux/arm64, provisions an emulated aapt2, registered through `android.aapt2FromMavenOverride` in the isolated `gradle.properties`. |
 | `kotlin:native` | JetBrains + conda-forge | Prebuilt Kotlin/Native plus a JDK; `KONAN_DATA_DIR` under the root. Closed host set (linux-64, osx-64, osx-arm64, win-64): JetBrains publishes no linux/arm64 host prebuilt, and the error says so. |
-| `gradle`, `maven`, `cmake`, `ninja` | conda-forge | Standalone build tools for projects without a committed wrapper. Prefer the project's gradlew when one exists. |
+| `gradle`, `maven`, `cmake`, `ninja` | conda-forge | Standalone build tools for projects without a committed wrapper. |
 | `csharp` | conda-forge | .NET SDK; the conda package ships no bin wrapper, so the recipe exports `DOTNET_ROOT` and puts it on PATH. Telemetry opted out. |
-| `haskell` | haskell.org + conda-forge | ghcup drives ghc + cabal into the root; conda supplies curl, tar, xz, gmp, ncurses, and a C toolchain that GHC needs to configure and link. Best effort: budget roughly 7 GB and minutes of unpacking. `LD_LIBRARY_PATH` is set to the prefix's lib, scoped to environments that requested haskell. Not on windows. |
+| `haskell` | haskell.org + conda-forge | ghcup drives ghc + cabal into the root; conda supplies curl, tar, xz, gmp, ncurses, and a C toolchain that GHC needs to configure and link. Best effort: minutes of unpacking. `LD_LIBRARY_PATH` is set to the prefix's lib, scoped to environments that requested haskell. Not on windows. |
 | `bash` | conda-forge | bash + shellcheck + shfmt (packaged as `go-shfmt`). Not on windows. |
 
 ## Version Semantics
 
-`@version` is recipe-defined, and `btm-setup-env list` carries it in each
-target's `version` field: conda-supplied targets take a conda version spec
-(`java@21`, `go@1.23`), `python` takes a uv interpreter spec, android
-flavors take an API level (`kotlin:android@35` installs
-`platforms;android-35` + matching build-tools), `kotlin:native` takes a
-JetBrains release. Targets without a version axis (`c`, `cpp`) reject one at
-parse time.
+`@version` is recipe-defined (`list` shows it per target): conda-supplied
+targets take a conda version spec (`java@21`, `go@1.23`), `python` takes a
+uv interpreter spec, android flavors take an API level (`kotlin:android@35`
+installs `platforms;android-35` + matching build-tools), `kotlin:native`
+takes a JetBrains release. Targets without a version axis (`c`, `cpp`)
+reject one at parse time.
 
 ## Footprints
 

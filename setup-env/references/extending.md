@@ -18,9 +18,8 @@ every effect; `cli` only parses and reports.
 ## Laws
 
 1. Closed domain. Hosts, conda platforms, plan steps, and catalog keys are
-   closed sets. An unknown tag, an impossible (target, host) pair, or a
-   version handed to a versionless recipe fails during planning with a
-   message naming the fix; no effect has run yet.
+   closed sets, so every conflict `SKILL.md` lists under Guarantees fails
+   during planning, before any effect, with a message naming the fix.
 2. One prefix, one create. micromamba `create` replaces a prefix. The
    planner merges every host-bound package list into a single `CondaEnv`
    step per prefix; executors never install into an existing prefix. The
@@ -31,12 +30,14 @@ every effect; `cli` only parses and reports.
    and the probe process environment, so what verification proved is what
    activation grants.
 4. Emulation is total and central. `emulation(host, platform)` in `model` is
-   the only place architecture reachability is decided; recipes match on its
-   variants and never inspect `uname` themselves.
+   the only place architecture reachability is decided, as a total function
+   of (host, needed platform). Recipes match on its variants; nothing
+   downstream inspects `uname` or branches on architecture. An emulated tool
+   is one executable at one path, registered where its consumer looks, and
+   its wrapper writes nothing to stdout.
 5. Idempotence by postcondition. Every executor checks completion state
-   (manifest entry plus on-disk evidence) before working, downloads to a
-   partial name and renames, and re-running provision is the documented
-   repair for any interruption.
+   (manifest entry plus on-disk evidence) before working and downloads to a
+   partial name, then renames.
 6. Determinism. Plans sort by (stage, type, repr); package sets sort before
    comparison; nothing reads clocks or randomness. Equal inputs yield equal
    plans and byte-equal activation scripts.
@@ -61,8 +62,8 @@ every effect; `cli` only parses and reports.
    export it in the recipe (never run foreign activation code); the
    CONDA_PREFIX and DOTNET_ROOT cases in `plan` and `catalog` are the
    precedents.
-5. Update `targets` (the per-target notes and footprint) and, when the
-   change touches invariants, `SKILL.md`.
+5. Update `targets` (the per-target row and footprint) and, when the change
+   touches invariants, `SKILL.md`.
 
 ## Testing Protocol
 
@@ -72,9 +73,10 @@ On at least one linux host, ideally both architectures:
   determinism.
 - `btm-setup-env provision <tag>`: the record's `ok` is true and every probe
   passes; re-run completes in under a second changing nothing.
-- The falsifier from `SKILL.md`: an `env -i` shell sourcing activate.sh
-  compiles and runs a hello program end to end (link steps included; a
-  compiler that cannot link passes --version probes and still fails users).
+- The isolation falsifier from `SKILL.md`: an `env -i` shell sourcing
+  activate.sh compiles and runs a hello program end to end, link steps
+  included; a compiler that cannot link passes --version probes and still
+  fails users.
 - `btm-setup-env provision` with the tag removed: the conda prefix reshapes
   to the smaller set.
 - `btm-setup-env clean`, then a fresh provision from nothing.

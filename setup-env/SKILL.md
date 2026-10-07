@@ -37,21 +37,25 @@ run it, source the printed activation script, build. Re-run to repair.
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 
-The console command `btm-setup-env` is the entry point. Read `targets`
-before choosing tags beyond the obvious; read `extending` only to add or
-change a recipe. Invoke the command and read its output; read source only
-for user-instructed troubleshooting.
+Load `targets` before choosing a tag beyond the obvious or pinning a
+version; load `extending` only to add or change a recipe. Invoke the command
+and read its output; read source only for user-instructed troubleshooting.
 
 ## Redirects
 
 - CI images, system packages, and deployment: use the project's own tooling;
   this root serves local builds and tests
 
-## Procedure
+## Choose Tags
 
 Name as tags only the languages the project uses. The grammar is
 `family[:flavor][@version]`: family picks a toolchain, flavor picks what it
-builds for, version pins it. `list` prints every known tag.
+builds for, version pins it. An unpinned version resolves to the newest
+available build; `<root>/manifest.json` records the chosen versions. `list`
+prints every known tag. Toolchains pinned by the project (gradlew,
+package.json, Cargo.toml) stay authoritative.
+
+## Provision
 
 <commands for="setup">
 
@@ -61,12 +65,13 @@ env -u VIRTUAL_ENV uv run --project "$(realpath <skill-dir>/scripts)" btm-setup-
 
 </commands>
 
-Every verb is named outright; a bare tag list is rejected. `--project`
+Every verb is named outright; a bare tag list is rejected. The examples
+below abbreviate the invocation above as `btm-setup-env`. `--project`
 defaults to the nearest ancestor of the working directory containing
-`.git`. The environment root is derived from the project path (override the
-base with `DENV_HOME`, or the exact root with `DENV_ROOT` or `--root`).
-Each verb writes one JSON record to stdout and nothing else; progress and
-warnings go to stderr as `signal:` lines.
+`.git`. The environment root is derived from the project path, under the
+system temp dir; override the base with `DENV_HOME`, or the exact root with
+`DENV_ROOT` or `--root`. A root under the temp dir is ephemeral: after a
+reboot, re-run provision.
 
 <commands for="examples">
 
@@ -90,39 +95,52 @@ btm-setup-env design haskell csharp
 
 </commands>
 
-Expected: exit 0 and a record whose `ok` is true, carrying `activate_sh`
-and one entry per probe. A failed probe still exits 0, with `ok` false and
-a `next` line naming the repair; exit 1 means an argument needs fixing,
-never that a toolchain is broken. Then activate and work; every command is
-identical on every supported host:
+Each verb writes one JSON record to stdout and nothing else; progress and
+warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true. A failed
+probe still exits 0, with `ok` false and a `next` line naming the repair;
+exit 1 means an argument needs fixing, never that a toolchain is broken.
+
+Every verb except `list` takes `--project` and `--root`.
+
+| Verb | Record on stdout | Refuses |
+| --- | --- | --- |
+| `provision <tags>` | `ok`, `root`, `activate_sh`, `activate_ps1`, `env`, `probes` (one per probe: `command`, `ok`, `output`), and `next` when a probe failed | A conflict listed under Guarantees |
+| `design <tags>` | `root`, `steps`, `env`, `path`, `probes`; nothing is installed | As `provision` |
+| `status` | what `provision` emits, with the probes re-run | A root with no environment |
+| `shim <binary> [--platform P]` | `shim`: the wrapper path; `P` is one of `linux-64` (default), `linux-aarch64`, `osx-64`, `osx-arm64`, `win-64` | A missing binary, a platform this host runs natively, a host with no emulation |
+| `clean` | `removed`, `bytes_freed` | A root carrying no manifest this tool wrote, and `--all` |
+| `list` | `targets`: one row of `tag`, `summary`, `version` each | Nothing |
+
+## Activate And Work
+
+Once activated, every command is identical on every supported host:
+
+<commands for="activate">
 
 ```bash
 . <root>/activate.sh        # POSIX shells; activate.ps1 on windows
 ```
 
-| Verb | Record on stdout |
-| --- | --- |
-| `provision <tags>` | `ok`, `root`, `activate_sh`, `activate_ps1`, `env`, `probes`, and `next` when a probe failed |
-| `design <tags>` | `root`, `steps`, `env`, `path`, `probes`; nothing is installed |
-| `status` | what `provision` emits, with the probes re-run |
-| `shim <binary>` | `shim`: the wrapper path |
-| `clean` | `removed`, `bytes_freed`; refuses a root carrying no manifest this tool wrote, and refuses `--all` |
-| `list` | `targets`: one row of `tag`, `summary`, `version` each |
+</commands>
 
-## The Interface Is The Whole Contract
+Activation redirects HOME, so git identity and ssh keys are absent inside an
+activated shell. Build and test there; commit from a normal shell.
+
+## Guarantees
 
 - Exact toolset: the environment contains the union of what the named tags
   require and nothing else.
 - Conflicts are errors before effects: two versions of one toolchain, an
-  unknown tag, or a target impossible on this host all fail during planning
-  with a precise message, never mid-download.
+  unknown tag, a version handed to a versionless target, or a target
+  impossible on this host all fail during planning with a precise message,
+  never mid-download.
 - Idempotent: an interrupted or failed run is repaired by re-running the
-  same command. `provision` with a different tag set reshapes the
-  environment to exactly that set.
-- Versions left unpinned resolve to the newest available build; the
-  chosen versions are recorded in `<root>/manifest.json`.
+  same command. `provision` with a different tag set reshapes the conda
+  prefix to exactly that set but leaves stale publisher downloads under
+  `<root>/tools`; run `clean` and re-provision for a byte-exact minimal
+  root.
 
-## Isolation Invariant
+## Isolation
 
 Every mutable path lives under the root: HOME, TMPDIR, XDG dirs, and each
 toolchain's cache and config variables are redirected by the activation
@@ -142,11 +160,9 @@ env -i /bin/sh -c '. <root>/activate.sh && cd <project> && <build-command>'
 
 </checklist>
 
-## The Architecture Fact
+## Foreign-Architecture Binaries
 
-Some publishers ship a build tool for exactly one platform. How a host
-reaches a foreign binary is a total function of (host, needed platform),
-decided in one place (`model`) and answered by first-class variants:
+Some publishers ship a build tool for exactly one platform:
 
 | Host | Foreign linux-x86_64 binary runs via |
 | --- | --- |
@@ -155,27 +171,15 @@ decided in one place (`model`) and answered by first-class variants:
 | macos/arm64 | Rosetta 2 for osx-64 binaries, transparently |
 | windows | unsupported: emulation is a linux mechanism |
 
-Nothing downstream branches on architecture: the emulated tool is one
-executable at one path, registered where its consumer looks (aapt2 through
-`android.aapt2FromMavenOverride` in the isolated `gradle.properties`), and
-its wrapper writes nothing to stdout.
+- macos/arm64 Android builds need Rosetta 2 once:
+  `softwareupdate --install-rosetta --agree-to-license`.
+- Emulated tools run slower: minutes for a full Android resource pipeline
+  where native takes seconds. Correctness is unaffected.
+- To run any other foreign binary a build needs, wrap it with `shim` and
+  call the returned wrapper path.
 
 ## Gotchas
 
-- uv is the only assumption: a bare ubuntu:24.04 image with uv works.
-- Activation redirects HOME, so git identity and ssh keys are absent inside
-  an activated shell. Build and test there; commit from a normal shell.
-- The prefix create step replaces the whole prefix, so the planner merges
-  all host packages into one call; never hand-install into
-  `<root>/conda/host` with a second call.
-- Toolchains pinned by the project (gradlew, package.json, Cargo.toml)
-  stay authoritative: the android recipes install no gradle and no kotlin.
-- Emulated tools run slower: minutes for a full Android resource pipeline
-  where native takes seconds. Correctness is unaffected.
-- The root is ephemeral (under the system temp dir unless `DENV_HOME` says
-  otherwise). After a reboot, re-run provision.
-- Narrowing the tag set reshapes the conda prefix exactly but leaves stale
-  publisher downloads under `<root>/tools`; run `clean` and re-provision
-  for a byte-exact minimal root.
-- macos/arm64 Android builds need Rosetta 2 once:
-  `softwareupdate --install-rosetta --agree-to-license`.
+- A bare ubuntu:24.04 image with uv works: uv is the only assumption.
+- Never hand-install into `<root>/conda/host` with a second call: the
+  prefix create step replaces the whole prefix.
