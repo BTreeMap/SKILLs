@@ -4,7 +4,6 @@ a claim's status is derived from it on each call and never stored."""
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -331,16 +330,10 @@ def load(session: str) -> Run:
     line that does not decode or replay is an authoritative defect."""
     directory = STORE.directory(session)
     meta = STORE.read_meta(directory, RunMeta)
-    log = trace_log(directory)
-    try:
-        rows = log.read()
-    except json.JSONDecodeError as err:
-        raise CommandError(f"{log.path} holds a line that is not JSON: {err}") from err
+    rows = trace_log(directory).read()
     state = RunState.of(meta)
     for number, raw in enumerate(rows, start=1):
         where = f"trace event {number}"
-        if not isinstance(raw, dict):
-            raise CommandError(f"{where} is not a JSON object")
         stamp = parse_model(Stamp, raw, where)
         require(
             stamp.run == meta.run,

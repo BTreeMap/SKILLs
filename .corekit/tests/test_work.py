@@ -46,6 +46,13 @@ class TestDoi:
         assert normalize_doi("not-a-doi") is None
         assert work(doi="not-a-doi").doi is None
 
+    @pytest.mark.parametrize("raw", ["10.1234", "10.1234/a b", "10.x/abc"])
+    def test_a_doi_prefix_without_a_doi_is_absence_too(self, raw):
+        """Starting with `10.` is not being a DOI: before, these reached the
+        `Doi` pattern and a whole index record raised a ValidationError."""
+        assert normalize_doi(raw) is None
+        assert work(doi=raw).doi is None
+
 
 class TestArxivId:
     @pytest.mark.parametrize(

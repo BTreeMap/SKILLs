@@ -37,18 +37,16 @@ def pad_entries(directory: Path) -> list[dict[str, Any]]:
     path = directory / SCRATCH
     if not path.exists():
         return []
-    try:
-        rows = read_jsonl(path)
-    except json.JSONDecodeError as err:
-        raise CommandError(f"{path} holds a line that is not JSON: {err}") from err
+    rows = read_jsonl(path)
     return [_enveloped(number, row) for number, row in enumerate(rows, start=1)]
 
 
-def _enveloped(number: int, row: Any) -> dict[str, Any]:
-    if isinstance(row, dict) and isinstance(row.get("body"), dict):
+def _enveloped(number: int, row: dict[str, Any]) -> dict[str, Any]:
+    """A jotted row as written; anything else is a bare body under a
+    positional id, so every entry carries the `j` that `pad_ids` reads."""
+    if isinstance(row.get("j"), str) and isinstance(row.get("body"), dict):
         return row
-    body = row if isinstance(row, dict) else {"text": str(row)}
-    return {"j": f"j{number}", "t": "", "body": body}
+    return {"j": f"j{number}", "t": "", "body": row}
 
 
 def pad_ids(directory: Path) -> set[str]:

@@ -71,6 +71,15 @@ class TestOpen:
         assert code == 1
         assert "run init first" in err
 
+    def test_a_mangled_ledger_line_is_exit_one_not_a_traceback(
+        self, capsys, isolated_state
+    ):
+        session = opened(capsys)
+        ledger = next((isolated_state / "state").rglob("ledger.jsonl"))
+        ledger.write_text("garbage\n", encoding="utf-8")
+        code, _, err = run(["status", session], capsys)
+        assert code == 1 and "line 1 is not JSON" in err
+
     def test_an_off_band_name_advises(self, capsys):
         _, _, err = run(["init", "solo"], capsys, stdin='{"question": "q"}')
         assert "two or three keywords" in err

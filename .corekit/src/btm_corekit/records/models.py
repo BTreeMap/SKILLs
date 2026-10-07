@@ -60,7 +60,8 @@ Keyword = Annotated[str, Folded, StringConstraints(pattern=r"^[a-z0-9]+$")]
 Slug = Annotated[str, Folded, StringConstraints(pattern=r"^[a-z0-9-]+$")]
 """A minted id or any reference to one, the keyword-subset form included."""
 
-Doi = Annotated[str, Folded, StringConstraints(pattern=r"^10\.\d+/\S+$")]
+DOI_PATTERN = r"^10\.\d+/\S+$"
+Doi = Annotated[str, Folded, StringConstraints(pattern=DOI_PATTERN)]
 """A DOI in bare form; the registrant prefix is left open since registries now
 issue longer ones than four digits, and narrowing it would drop valid records."""
 

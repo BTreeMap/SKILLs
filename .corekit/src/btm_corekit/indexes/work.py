@@ -11,14 +11,18 @@ without three decoders remembering the same rule.
 
 from __future__ import annotations
 
+import re
 from typing import Annotated, Any
 
 from pydantic import BeforeValidator
 
-from btm_corekit.records.models import ArxivId, Count, Doi, Model
+from btm_corekit.records.models import DOI_PATTERN, ArxivId, Count, Doi, Model
 from btm_corekit.text import collapse_whitespace, is_digits
 
 DOI_PREFIXES = ("https://doi.org/", "http://doi.org/", "doi:")
+DOI = re.compile(DOI_PATTERN)
+"""The `Doi` pattern itself, so absence and admission cannot disagree: one
+class per quantifier, linear in the backtracking engine."""
 
 ARXIV_NUMBER_WIDTHS = (5, 4)
 """New-scheme numbers: `YYMM.NNNNN`, and `YYMM.NNNN` before 2015."""
@@ -91,7 +95,7 @@ def _doi(raw: Any) -> Any:
     doi = raw.strip().lower()
     for prefix in DOI_PREFIXES:
         doi = doi.removeprefix(prefix)
-    return doi if doi.startswith("10.") else None
+    return doi if DOI.match(doi) else None
 
 
 def _arxiv(raw: Any) -> Any:

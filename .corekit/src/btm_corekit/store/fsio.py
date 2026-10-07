@@ -10,6 +10,8 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from btm_corekit.report.errors import CommandError
+
 
 def state_root(skill: str) -> Path:
     """Durable-state home for one skill, per repository convention."""
@@ -48,8 +50,23 @@ def write_atomic(path: Path, text: str) -> None:
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Every record of a JSONL file the scripts wrote, one object per line.
+    Such a file is authoritative, so a line that is not a JSON object is a
+    `CommandError` naming the file and line, never a skipped row or a
+    traceback. Python iterates per record, never per character."""
+    rows: list[dict[str, Any]] = []
     lines = path.read_text(encoding="utf-8").splitlines()
-    return [json.loads(line) for line in lines if line.strip()]
+    for number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as err:
+            raise CommandError(f"{path} line {number} is not JSON: {err}") from err
+        if not isinstance(row, dict):
+            raise CommandError(f"{path} line {number} is not a JSON object")
+        rows.append(row)
+    return rows
 
 
 def count_lines(path: Path) -> int:

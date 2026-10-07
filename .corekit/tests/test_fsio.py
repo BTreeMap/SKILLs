@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from btm_corekit import append_jsonl, read_jsonl, write_atomic
+import pytest
+
+from btm_corekit import CommandError, append_jsonl, read_jsonl, write_atomic
 
 
 class TestWriteAtomic:
@@ -30,3 +32,16 @@ class TestJsonl:
         path = tmp_path / "log.jsonl"
         path.touch()
         assert read_jsonl(path) == []
+
+    @pytest.mark.parametrize(
+        ("line", "fault"), [("{broken", "line 2 is not JSON"), ("[1]", "line 2 is not")]
+    )
+    def test_a_line_that_is_no_object_is_a_located_rejection(
+        self, tmp_path, line, fault
+    ):
+        """Before, a mangled line escaped as a JSONDecodeError traceback from
+        every log reader but the two that caught it themselves."""
+        path = tmp_path / "log.jsonl"
+        path.write_text('{"n": 1}\n' + line + "\n", encoding="utf-8")
+        with pytest.raises(CommandError, match=fault):
+            read_jsonl(path)
