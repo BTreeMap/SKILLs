@@ -87,7 +87,7 @@ BUDGET
 
 ## 5. On return
 
-Judge the return under `review` before acting on it.
+When the return arrives, judge it under `review` before acting on it.
 
 ## Completion Checks
 

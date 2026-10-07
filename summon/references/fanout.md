@@ -37,8 +37,8 @@ another bundle's output, and a dead bundle re-dispatches alone.
 
 ## Joining returns
 
-Returns arrive one per completion notification. Judge each under `review`,
-then join. The lead owns coverage across bundles: reconcile the handoff
+Returns arrive one per completion notification. Judge each under `review`
+when it arrives, then join. The lead owns coverage across bundles: reconcile the handoff
 lines, and re-dispatch only the work no bundle claimed.
 
 ## Completion Checks

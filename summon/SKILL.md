@@ -33,10 +33,10 @@ rules that bind this task, and the exact return shape.
 ## Verbs
 
 One invocation loads exactly one verb file, named for the verb; `fanout`
-loads `dispatch` before its own file. Choose the verb in descending
-priority: an explicit verb; an unambiguous request shape (several delegates
-over one body of work is fanout, a return already in hand is review);
-otherwise dispatch.
+loads `dispatch` before its own file. A return's arrival is a new invocation
+under `review`. Choose the verb in descending priority: an explicit verb; an
+unambiguous request shape (several delegates over one body of work is
+fanout, a return already in hand is review); otherwise dispatch.
 
 | Verb | Contract |
 | --- | --- |
