@@ -32,7 +32,8 @@ $R jot "$S" <<'JSON'
  "evidence": "the numbers backing each claim, as reported, with units",
  "limitations": "those the authors state; then the reviewer's, labeled",
  "relation": "which corpus papers it builds on, contradicts, or replicates",
- "quote": "at most one verbatim sentence worth citing exactly, with location"}
+ "quote": "at most one verbatim sentence worth citing exactly, with location",
+ "appraisal": "one judgment per Quality appraisal dimension, never summed"}
 JSON
 </template>
 

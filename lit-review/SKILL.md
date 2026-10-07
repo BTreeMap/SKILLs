@@ -66,7 +66,7 @@ literature" is lite, "systematic review" is ultra.
 | --- | --- |
 | lite | One search round, one source acceptable, no snowball required, short-form report, flow counts optional |
 | full | Two or more sources, at least one snowball round from included papers, flow counts, appraisal noted per theme |
-| ultra | Three sources, snowball until a round adds nothing new, per-paper appraisal table, PRISMA-style counts, amendments log in the report |
+| ultra | Three sources, snowball until a round yields no new included paper, per-paper appraisal table, PRISMA-style counts, amendments log in the report |
 
 ## Phases
 

@@ -23,8 +23,9 @@ theme: a paragraph per paper makes an annotated bibliography.
   definitions). Do not average conflicting numbers or pick the majority
   silently. If the corpus cannot resolve it, the report says so.
 - **Single-paper claims are labeled.** Write "One study reports ...".
-- **Weight follows appraisal.** A weakly appraised paper can be mentioned;
-  it cannot anchor a theme's conclusion. Say why when weight differs.
+- **Weight follows appraisal.** Read each record's `appraisal` with
+  `recall --kind extraction`. A weakly appraised paper can be mentioned; it
+  cannot anchor a theme's conclusion. Say why when weight differs.
 - **Every synthesis sentence is traceable.** Each claim maps to named
   records (invariant 1); delete a sentence no record supports.
 - **Trends come from the corpus.** Derive what is recent, growing, or
