@@ -11,7 +11,6 @@ import pytest
 from btm_corekit import CommandError, Work
 from btm_lit_review.cli import build_parser, main
 from btm_lit_review.constants import MAX_LIMIT, ReadLevel, Status
-from btm_lit_review.corpus.gather import capped
 from btm_lit_review.corpus.paper import paper_from
 from btm_lit_review.session import Session, load_papers, save_papers
 
@@ -114,35 +113,30 @@ class TestScreen:
         assert document["matched"] == 0
 
 
-class TestLimitBounds:
-    """A limit is the coverage claim a search makes, so neither end of it is
-    allowed to be silent: below 1 refuses, above the cap says it clamped."""
-
-    def parsed(self, limit):
-        return build_parser().parse_args(
-            ["search", "s", "--source", "openalex", "--limit", limit]
-        )
+class TestCountFlags:
+    """Every count flag rides the kernel's grammar; these pin the wiring."""
 
     @pytest.mark.parametrize(
-        ("limit", "fix"), [("0", "asks for nothing"), ("-3", "asks for nothing")]
+        "argv",
+        [
+            ["search", "s", "--source", "openalex", "--limit", "0"],
+            ["snowball", "s", "--seed", "k", "--direction", "forward", "--limit", "-3"],
+            ["show", "s", "--limit", "0"],
+            ["digest", "s", "--clusters", "-3"],
+        ],
     )
-    def test_a_limit_below_one_is_refused_where_it_is_written(self, limit, fix):
-        with pytest.raises(CommandError, match=fix):
-            self.parsed(limit)
+    def test_a_count_below_one_is_refused_where_it_is_written(self, argv):
+        """Before, `show --limit 0` showed nothing in silence and
+        `digest --clusters -3` dropped the three rarest labels."""
+        with pytest.raises(CommandError, match="asks for nothing"):
+            build_parser().parse_args(argv)
 
-    def test_a_limit_that_is_no_number_is_refused(self):
-        with pytest.raises(CommandError, match="not a whole number"):
-            self.parsed("many")
-
-    def test_a_limit_above_the_cap_clamps_out_loud(self, capsys):
-        assert capped(MAX_LIMIT + 5) == MAX_LIMIT
+    def test_a_fetch_limit_above_the_cap_clamps_out_loud(self, capsys):
+        argv = ["search", "s", "--source", "openalex", "--limit", str(MAX_LIMIT + 5)]
+        assert build_parser().parse_args(argv).limit == MAX_LIMIT
         assert (
             f"--limit {MAX_LIMIT + 5} capped to {MAX_LIMIT}" in capsys.readouterr().err
         )
-
-    def test_a_limit_under_the_cap_runs_as_asked_and_says_nothing(self, capsys):
-        assert capped(3) == 3
-        assert capsys.readouterr().err == ""
 
 
 class TestShow:

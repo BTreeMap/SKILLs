@@ -77,15 +77,6 @@ def record_fetch(
     emit({**entry, "corpus_size": len(papers)})
 
 
-def capped(asked: int) -> int:
-    """The limit that actually runs. A clamp is announced: silently fetching
-    fewer papers than the caller asked for misreports the coverage."""
-    if asked > MAX_LIMIT:
-        signal(f"--limit {asked} capped to {MAX_LIMIT}")
-        return MAX_LIMIT
-    return asked
-
-
 class Framing(Model):
     """The review's question. Prose, so it arrives on stdin."""
 
@@ -124,7 +115,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     protocol = load_protocol(session)
     require_criteria(protocol)
-    limit = capped(args.limit)
+    limit = args.limit
     if args.source == "openalex":
         fetched, total = fetch_openalex(asked, limit, args.from_year, args.to_year)
     elif args.source == "arxiv":
@@ -178,7 +169,7 @@ def cmd_snowball(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     protocol = load_protocol(session)
     require_criteria(protocol)
-    limit = capped(args.limit)
+    limit = args.limit
     papers = load_papers(session)
     seed_key, work_id = resolve_openalex_id(papers, args.seed)
     if args.direction == "backward":

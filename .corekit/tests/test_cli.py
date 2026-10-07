@@ -30,6 +30,7 @@ from btm_corekit import (
     run_cli,
     source_of,
     wire_clean,
+    wire_limit,
     wire_pad,
 )
 from btm_corekit.cli import ARGV_MESSAGE_MAX, bounded
@@ -229,6 +230,52 @@ class TestBatchAndWiring:
         assert json.loads(capsys.readouterr().out)["shown"] == 1
         assert run_cli(built, ["clean", made.name]) == 0
         assert json.loads(capsys.readouterr().out)["bytes_freed"] > 0
+
+
+class TestLimitGrammar:
+    """One grammar for every count flag: neither end of it may be silent."""
+
+    def limited(self, *argv: str, cap: int | None = 5) -> argparse.Namespace:
+        built = Parser()
+        wire_limit(built, what="rows", default=None, cap=cap)
+        return built.parse_args(list(argv))
+
+    @pytest.mark.parametrize(
+        ("raw", "fix"),
+        [("0", "asks for nothing"), ("-3", "asks for nothing"), ("x", "whole number")],
+    )
+    def test_below_one_or_no_number_is_refused_where_written(self, raw, fix):
+        with pytest.raises(CommandError, match=fix):
+            self.limited("--limit", raw)
+
+    def test_above_the_cap_runs_at_the_cap_out_loud(self, capsys):
+        assert self.limited("--limit", "9").limit == 5
+        assert "--limit 9 capped to 5" in capsys.readouterr().err
+
+    def test_within_the_cap_or_uncapped_passes_silently(self, capsys):
+        assert self.limited("--limit", "3").limit == 3
+        assert self.limited("--limit", "900", cap=None).limit == 900
+        assert self.limited().limit is None
+        assert capsys.readouterr().err == ""
+
+    @pytest.mark.parametrize("raw", ["0", "-1"])
+    def test_recall_refuses_a_limit_that_asks_for_nothing(
+        self, raw, tmp_path, capsys, monkeypatch
+    ):
+        """Before, `--limit 0` sliced `entries[-0:]` and returned the whole
+        pad, and `--limit -1` silently dropped the oldest entry."""
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
+        store = SessionStore("beta", marker="meta.json", hint="run init first")
+        made = store.create("one two")
+        store.write_meta(made.directory, Marker())
+        built = Parser()
+        wire_pad(
+            built.add_subparsers(dest="command", required=True),
+            lambda args: store.directory(args.session),
+        )
+        assert run_cli(built, ["recall", made.name, "--limit", raw]) == 1
+        assert "pass 1 or more" in capsys.readouterr().err
 
 
 class TestArgvBoundary:

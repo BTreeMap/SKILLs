@@ -41,19 +41,6 @@ def bounded(message: str) -> str:
     )
 
 
-def at_least_one(raw: str) -> int:
-    """An argparse type for a count of things to fetch or show: below 1 asks
-    for nothing, refused where it is written rather than floored into a call
-    that ran and returned nothing."""
-    try:
-        value = int(raw)
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"{raw!r} is not a whole number") from None
-    if value < 1:
-        raise argparse.ArgumentTypeError(f"{value} asks for nothing; pass 1 or more")
-    return value
-
-
 class Parser(argparse.ArgumentParser):
     """argv, decoded like every other untrusted input. Stock argparse exits 2
     on a malformed line, but here 2 means retry-worthy; raising instead
@@ -367,6 +354,40 @@ class View(StrEnum):
 VIEW_ORDER: Final = (View.PLAN, View.DRAFT, View.FULL)
 
 
+def wire_limit(
+    parser: argparse.ArgumentParser,
+    *,
+    what: str,
+    default: int | None,
+    cap: int | None = None,
+    flag: str = "--limit",
+) -> None:
+    """The one grammar for a count of things to fetch or show. Below 1 asks
+    for nothing, so argv refuses it where it is written; above `cap` runs at
+    the cap and says so, since a silent clamp misreports what ran. The help
+    is generated from the same declaration, so it cannot drift from the law."""
+
+    def count(raw: str) -> int:
+        try:
+            value = int(raw)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"{raw!r} is not a whole number") from None
+        if value < 1:
+            raise argparse.ArgumentTypeError(
+                f"{value} asks for nothing; pass 1 or more"
+            )
+        if cap is not None and value > cap:
+            signal(f"{flag} {value} capped to {cap}")
+            return cap
+        return value
+
+    span = f"1 to {cap}" if cap is not None else "1 or more"
+    shown = f", default {default}" if default is not None else ", default all"
+    parser.add_argument(
+        flag, type=count, default=default, metavar="N", help=f"{what}: {span}{shown}"
+    )
+
+
 def wire_view(parser: argparse.ArgumentParser, omitted: str) -> None:
     """One spelling of "how much", identical in every member. `omitted` names
     what `plan` leaves out, since only the member knows."""
@@ -484,7 +505,7 @@ def wire_pad(
     recaller.add_argument("--kind")
     add_slot(recaller, MATCH, "case-insensitive regex over the entry")
     recaller.add_argument("--since", help="entries after this pad id")
-    recaller.add_argument("--limit", type=int)
+    wire_limit(recaller, what="newest entries to show", default=None)
     if lore is not None:
         for parser in (jotter, recaller):
             parser.add_argument("--lore", action="store_true", help=lore)

@@ -14,15 +14,16 @@ from btm_corekit import (
     Commands,
     Parser,
     add_slot,
-    at_least_one,
     run_cli,
     wire_clean,
+    wire_limit,
     wire_pad,
 )
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
     LEVELS,
+    MAX_LIMIT,
     SOURCES,
     STATUSES,
     Level,
@@ -73,7 +74,7 @@ def wire_gather(commands: Commands) -> None:
     add_common(search)
     add_slot(search, QUERY, '{"query": "the search string"}')
     search.add_argument("--source", choices=SOURCES, required=True)
-    search.add_argument("--limit", type=at_least_one, default=DEFAULT_LIMIT)
+    wire_limit(search, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
     search.add_argument("--from-year", type=int, default=None)
     search.add_argument("--to-year", type=int, default=None)
     search.set_defaults(func=cmd_search)
@@ -84,7 +85,7 @@ def wire_gather(commands: Commands) -> None:
     add_common(snowball)
     snowball.add_argument("--seed", required=True, help="paper key, DOI, or arXiv id")
     snowball.add_argument("--direction", choices=DIRECTIONS, required=True)
-    snowball.add_argument("--limit", type=at_least_one, default=DEFAULT_LIMIT)
+    wire_limit(snowball, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
     snowball.set_defaults(func=cmd_snowball)
 
 
@@ -105,9 +106,7 @@ def wire_curate(commands: Commands) -> None:
     add_common(digester)
     digester.add_argument("--status", choices=STATUSES, default="candidate")
     digester.add_argument("--on", choices=MATCH_FIELDS, default="title")
-    digester.add_argument(
-        "--clusters", type=int, default=CLUSTER_CAP, help="how many kinds to return"
-    )
+    wire_limit(digester, what="kinds to return", default=CLUSTER_CAP, flag="--clusters")
     digester.set_defaults(func=cmd_digest)
 
     show = commands.add_parser("show", help="project the corpus for screening")
@@ -119,7 +118,7 @@ def wire_curate(commands: Commands) -> None:
     show.add_argument("--fields", help="comma-separated paper fields")
     show.add_argument("--sort", choices=tuple(SORTS), default="citations")
     show.add_argument("--format", choices=("json", "tsv"), default="json")
-    show.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
+    wire_limit(show, what="papers to show", default=DEFAULT_LIMIT)
     show.set_defaults(func=cmd_show)
 
     update = commands.add_parser("update", help="apply screening decisions")

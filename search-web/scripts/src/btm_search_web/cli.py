@@ -12,12 +12,12 @@ from btm_corekit import (
     Parser,
     Required,
     add_slot,
-    at_least_one,
     dump,
     emit,
     run_cli,
     signal,
     text,
+    wire_limit,
 )
 from btm_search_web import sources
 from btm_search_web.cache import clean, remember, remembered
@@ -63,16 +63,8 @@ def answered(
     return 0
 
 
-def capped(limit: int) -> int:
-    """A silent clamp is a lie about what ran, so the clamp says so."""
-    if limit <= MAX_RESULTS:
-        return limit
-    signal(f"--limit {limit} capped to {MAX_RESULTS}")
-    return MAX_RESULTS
-
-
 def cmd_web(args: argparse.Namespace) -> int:
-    limit, asked = capped(args.limit), text(QUERY, args)
+    limit, asked = args.limit, text(QUERY, args)
     return answered(
         f"web:{limit}:{asked}", "web", asked, lambda: sources.web(asked, limit), limit
     )
@@ -86,7 +78,7 @@ def cmd_instant(args: argparse.Namespace) -> int:
 
 
 def cmd_wiki(args: argparse.Namespace) -> int:
-    limit, asked = capped(args.limit), text(QUERY, args)
+    limit, asked = args.limit, text(QUERY, args)
     return answered(
         f"wiki:{limit}:{asked}",
         "wiki",
@@ -97,7 +89,7 @@ def cmd_wiki(args: argparse.Namespace) -> int:
 
 
 def cmd_scholar(args: argparse.Namespace) -> int:
-    limit, asked = capped(args.limit), text(QUERY, args)
+    limit, asked = args.limit, text(QUERY, args)
     source: Scholar = args.source
     return answered(
         f"scholar:{source}:{limit}:{asked}",
@@ -133,11 +125,8 @@ def cmd_clean(args: argparse.Namespace) -> int:
 def add_query(parser: argparse.ArgumentParser, limited: bool = True) -> None:
     add_slot(parser, QUERY, "the search terms")
     if limited:
-        parser.add_argument(
-            "--limit",
-            type=at_least_one,
-            default=DEFAULT_RESULTS,
-            help=f"rows to ask for, 1 to {MAX_RESULTS} (default {DEFAULT_RESULTS})",
+        wire_limit(
+            parser, what="rows to ask for", default=DEFAULT_RESULTS, cap=MAX_RESULTS
         )
 
 
