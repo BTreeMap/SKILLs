@@ -5,8 +5,8 @@ hashable, so identical requirements from different recipes deduplicate by
 value, and the plan is a deterministic function of (spec, host).
 
 Stages impose the only ordering that matters; within a stage, steps sort by
-their stable string key. The executor for each variant lives in `effects`;
-this module stays pure data.
+their stable string key. The executor for each variant lives in
+`shell.execute`; this module stays pure data.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ class ArchiveKind(StrEnum):
 
 
 class Stage(IntEnum):
-    BOOTSTRAP = 0  # micromamba
     TOOLCHAIN = 1  # conda prefixes and uv venv
     FETCH = 2  # publisher archives
     SHIM = 3  # wrappers over stages 1-2

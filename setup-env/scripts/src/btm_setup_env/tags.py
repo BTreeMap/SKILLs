@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import difflib
 
+from btm_corekit import CommandError
 from btm_setup_env.catalog import CATALOG
-from btm_setup_env.model import GENERIC, DenvError, RawTag, RecipeKey, Target
+from btm_setup_env.model import GENERIC, RawTag, RecipeKey, Target, tag_name
 
 _ALIAS = {
     "js": "javascript",
@@ -33,13 +34,13 @@ def resolve_tag(raw: RawTag) -> Target:
         key = ("java", "android")
     recipe = CATALOG.get(key)
     if recipe is None:
-        known = sorted(f if fl == GENERIC else f"{f}:{fl}" for f, fl in CATALOG)
-        asked = raw.family if raw.flavor == GENERIC else f"{raw.family}:{raw.flavor}"
+        known = sorted(tag_name(*known_key) for known_key in CATALOG)
+        asked = tag_name(raw.family, raw.flavor)
         hints = difflib.get_close_matches(asked, known, n=3)
         hint = f"; did you mean {', '.join(hints)}?" if hints else ""
-        raise DenvError(
+        raise CommandError(
             f"unknown target {asked!r}{hint}\nknown targets: {', '.join(known)}"
         )
     if raw.version is not None and recipe.version_doc is None:
-        raise DenvError(f"{family} does not take a version")
+        raise CommandError(f"{family} does not take a version")
     return Target(key, raw.version)

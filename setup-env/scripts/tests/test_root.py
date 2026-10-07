@@ -6,7 +6,8 @@ import json
 
 import pytest
 
-from btm_setup_env.model import DenvError, Layout, detect_host
+from btm_corekit import CommandError
+from btm_setup_env.model import Layout, detect_host
 from btm_setup_env.shell.root import (
     Ctx,
     Manifest,
@@ -49,7 +50,7 @@ class TestReadRoot:
         is already there."""
         layout.manifest.parent.mkdir(parents=True, exist_ok=True)
         layout.manifest.write_text("{not json", encoding="utf-8")
-        with pytest.raises(DenvError, match="unreadable"):
+        with pytest.raises(CommandError, match="unreadable"):
             read_root(layout)
 
     def test_a_field_a_later_version_added_is_read_anyway(self, layout):

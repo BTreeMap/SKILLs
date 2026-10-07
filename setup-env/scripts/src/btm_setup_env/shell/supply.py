@@ -9,12 +9,10 @@ import shutil
 
 from btm_corekit import (
     CommandError,
-)
-from btm_setup_env.model import (
-    DenvError,
+    signal,
 )
 from btm_setup_env.shell.root import Ctx
-from btm_setup_env.shell.transfer import fetch, log, verify_sha256
+from btm_setup_env.shell.transfer import fetch, verify_sha256
 
 MICROMAMBA_VERSION = "2.9.0-0"
 
@@ -28,7 +26,7 @@ def ensure_micromamba(ctx: Ctx) -> None:
     if ctx.mamba.exists():
         return
     platform = ctx.host.conda_platform.value
-    log(f"installing micromamba {MICROMAMBA_VERSION} ({platform})")
+    signal(f"installing micromamba {MICROMAMBA_VERSION} ({platform})")
     url = f"{MICROMAMBA_RELEASES}/{MICROMAMBA_VERSION}/micromamba-{platform}"
     archive = ctx.layout.downloads / f"micromamba-{platform}"
     fetch(url, archive)
@@ -52,7 +50,7 @@ def uv_binary(ctx: Ctx) -> str:
     bootstrap every member already runs under."""
     found = shutil.which("uv")
     if found is None:
-        raise DenvError(
+        raise CommandError(
             "uv is required and was not found on PATH; see https://docs.astral.sh/uv/"
         )
     return found

@@ -16,6 +16,7 @@ from pydantic import ConfigDict
 from pydantic import Field as PydanticField
 
 from btm_corekit import (
+    CommandError,
     Model,
     dump,
     parse_model,
@@ -23,7 +24,6 @@ from btm_corekit import (
 )
 from btm_setup_env.model import (
     OS,
-    DenvError,
     Host,
     Layout,
 )
@@ -100,7 +100,7 @@ def read_root(layout: Layout) -> Root:
     try:
         manifest = parse_model(Manifest, json.loads(raw), str(layout.manifest))
     except ValueError as err:
-        raise DenvError(f"unreadable {layout.manifest}: {err}") from err
+        raise CommandError(f"unreadable {layout.manifest}: {err}") from err
     return Provisioned(manifest) if manifest.project else Unprovisioned()
 
 

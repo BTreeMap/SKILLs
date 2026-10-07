@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
+from btm_corekit import CommandError
 from btm_setup_env.model import (
     GENERIC,
     OS,
     Arch,
     CondaPlatform,
-    DenvError,
     Host,
     Native,
     QemuUser,
@@ -45,7 +45,7 @@ class TestTagGrammar:
         "text", ["", "9lives", "python@", "python:", ":android", "py thon", "a@b@c"]
     )
     def test_malformed_tags_are_refused(self, text):
-        with pytest.raises(DenvError, match="malformed tag"):
+        with pytest.raises(CommandError, match="malformed tag"):
             parse_tag(text)
 
 
@@ -53,7 +53,7 @@ class TestSpecLaw:
     def test_two_versions_of_one_toolchain_are_refused(self):
         """The spec law: one recipe key, one version, so a version conflict is
         unrepresentable downstream rather than resolved by ordering."""
-        with pytest.raises(DenvError, match="one toolchain, one version"):
+        with pytest.raises(CommandError, match="one toolchain, one version"):
             make_spec(
                 [
                     Target(("python", GENERIC), "3.12"),
@@ -72,7 +72,7 @@ class TestSpecLaw:
         assert len(spec.targets) == 1
 
     def test_an_empty_target_list_is_refused(self):
-        with pytest.raises(DenvError, match="no targets given"):
+        with pytest.raises(CommandError, match="no targets given"):
             make_spec([], Path("/p"))
 
 

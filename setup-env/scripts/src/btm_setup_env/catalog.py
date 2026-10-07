@@ -20,12 +20,12 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 
+from btm_corekit import CommandError
 from btm_setup_env.model import (
     GENERIC,
     OS,
     Arch,
     CondaPlatform,
-    DenvError,
     EnvDelta,
     Host,
     Layout,
@@ -145,7 +145,7 @@ def qemu_steps(emu: QemuUser) -> tuple[CondaEnv, CondaEnv]:
 
 def _no_windows(host: Host, what: str) -> None:
     if host.os is OS.WINDOWS:
-        raise DenvError(f"{what} is not provisionable on windows; use WSL")
+        raise CommandError(f"{what} is not provisionable on windows; use WSL")
 
 
 def _venv_bin(layout: Layout, host: Host) -> Path:
@@ -459,7 +459,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
     def _konan_req(host: Host, v: str | None) -> tuple[Step, ...]:
         slug = KOTLIN_NATIVE_SLUG.get(host.conda_platform)
         if slug is None:
-            raise DenvError(
+            raise CommandError(
                 f"kotlin:native has no JetBrains prebuilt for {host}; "
                 "supported: linux-64, osx-64, osx-arm64, win-64"
             )
@@ -531,7 +531,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
     def _hs_req(host: Host, v: str | None) -> tuple[Step, ...]:
         triple = GHCUP_TRIPLE.get((host.os, host.arch))
         if triple is None:
-            raise DenvError(
+            raise CommandError(
                 "haskell via ghcup is not provisionable on windows; use WSL"
             )
         url = (
@@ -622,7 +622,7 @@ def _parse_api(v: str | None) -> int:
     if v is None:
         return DEFAULT_ANDROID_API
     if not v.isdigit():
-        raise DenvError(f"android takes an API level as its version, got {v!r}")
+        raise CommandError(f"android takes an API level as its version, got {v!r}")
     return int(v)
 
 

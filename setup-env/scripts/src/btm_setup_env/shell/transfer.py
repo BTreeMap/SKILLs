@@ -14,35 +14,22 @@ import tarfile
 import zipfile
 from pathlib import Path, PurePosixPath
 
-import httpx
-
 from btm_corekit import (
     UpstreamError,
     client_for,
     download,
-    signal,
 )
 
 ARCHIVE_CAP_BYTES = 4 * 1024 * 1024 * 1024  # an SDK is large; a runaway is larger
 
 
-def log(message: str) -> None:
-    """Progress belongs on the advisory channel, where stdout stays the one
-    JSON record the verb returns."""
-    signal(message)
-
-
-def _client() -> httpx.Client:
-    """Reads run unbounded: archives are large, links slow, and every fetch is
-    resumable by re-run. Connect, write, and pool waits stay bounded, so a
-    dead peer fails instead of hanging."""
-    return client_for("setup-env", read_timeout=None)
-
-
 def fetch(url: str, target: Path) -> None:
+    """Idempotent by presence. Reads run unbounded: archives are large, links
+    slow, and every fetch resumes by re-run; the kernel client still bounds
+    connect, write, and pool waits, so a dead peer fails instead of hanging."""
     if target.exists():
         return
-    download(_client(), url, target, ARCHIVE_CAP_BYTES)
+    download(client_for("setup-env", read_timeout=None), url, target, ARCHIVE_CAP_BYTES)
 
 
 def verify_sha256(path: Path, expected: str) -> None:

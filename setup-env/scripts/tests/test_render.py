@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from btm_setup_env.model import OS, Arch, DenvError, EnvDelta, Host
+from btm_corekit import CommandError
+from btm_setup_env.model import OS, Arch, EnvDelta, Host
 from btm_setup_env.render import realize, render_ps1, render_sh
 
 LINUX = Host(os=OS.LINUX, arch=Arch.X86_64)
@@ -34,7 +35,7 @@ class TestDeltaMonoid:
         """Silent overwrite would make the winning recipe depend on fold order."""
         first = EnvDelta(vars=(("K", "old"),))
         second = EnvDelta(vars=(("K", "new"),))
-        with pytest.raises(DenvError, match="recipes disagree"):
+        with pytest.raises(CommandError, match="recipes disagree"):
             first + second
 
     def test_agreeing_recipes_merge_without_complaint(self):

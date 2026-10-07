@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from btm_corekit import CommandError
 from btm_setup_env.catalog import CATALOG, Recipe, conda_bin_dirs
 from btm_setup_env.model import (
     OS,
-    DenvError,
     EnvDelta,
     Host,
     Layout,
@@ -84,7 +84,7 @@ def make_plan(spec: Spec, host: Host, layout: Layout) -> Plan:
         platform = step.platform or host.conda_platform
         prior = by_prefix.get(step.prefix_rel)
         if prior is not None and prior.platform != platform:
-            raise DenvError(
+            raise CommandError(
                 f"prefix {step.prefix_rel} claimed for two "
                 f"platforms: {prior.platform.value if prior.platform else 'host'} and "
                 f"{platform.value}"

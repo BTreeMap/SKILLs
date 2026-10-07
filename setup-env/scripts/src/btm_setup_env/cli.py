@@ -1,19 +1,18 @@
 """Argument parsing and reporting. Thin by design: parse argv, build the
-pure plan, hand it to effects, report. All policy lives below this file."""
+pure plan, hand it to the shell, report. All policy lives below this file."""
 
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import CommandError, Parser, dispatch, emit, remove_tree, signal
+from btm_corekit import CommandError, Parser, emit, remove_tree, run_cli, signal
 from btm_setup_env.catalog import CATALOG
 from btm_setup_env.model import (
-    GENERIC,
     CondaPlatform,
-    DenvError,
+    Host,
     Layout,
     Spec,
     default_root,
@@ -21,29 +20,29 @@ from btm_setup_env.model import (
     find_project,
     make_spec,
     parse_tag,
+    tag_name,
 )
 from btm_setup_env.plan import Plan, make_plan
 from btm_setup_env.render import path_value
-from btm_setup_env.shell.commands import ProbeResult
+from btm_setup_env.shell.commands import ProbeResult, make_shim, provision, verify
+from btm_setup_env.shell.root import Provisioned, ensure_dirs, read_root
 from btm_setup_env.steps import CondaEnv, Fetch
 from btm_setup_env.tags import resolve_tag
-
-REPAIR = "re-run provision; the failed probe names what to repair"
 
 
 def _resolve(
     project: Path | None, root: Path | None, tags: list[str]
-) -> tuple[Spec, Layout]:
+) -> tuple[Spec, Host, Layout]:
+    """The host is read once per command, and the plan and the root agree."""
     host = detect_host()
     base = (project or find_project(Path.cwd())).resolve()
     targets = [resolve_tag(parse_tag(t)) for t in tags]
     spec = make_spec(targets, base) if targets else Spec((), base)
-    return spec, Layout((root or default_root(base, host)).resolve())
+    return spec, host, Layout((root or default_root(base, host)).resolve())
 
 
 def _build_plan(project: Path | None, root: Path | None, tags: list[str]) -> Plan:
-    spec, layout = _resolve(project, root, tags)
-    return make_plan(spec, detect_host(), layout)
+    return make_plan(*_resolve(project, root, tags))
 
 
 def _describe_step(step: object) -> str:
@@ -75,6 +74,7 @@ def _report(plan: Plan, results: list[ProbeResult]) -> int:
     malformed request: the record says which probe broke and exit 0 stands,
     because exit 1 means the caller can fix its own input."""
     failed = [r for r in results if not r.ok]
+    repair = "re-run provision; the failed probe names what to repair"
     document: dict[str, Any] = {
         "ok": not failed,
         "root": str(plan.layout.root),
@@ -90,30 +90,24 @@ def _report(plan: Plan, results: list[ProbeResult]) -> int:
         ],
     }
     if failed:
-        document["next"] = REPAIR
-        signal(f"{len(failed)} of {len(results)} probes failed; {REPAIR}")
+        document["next"] = repair
+        signal(f"{len(failed)} of {len(results)} probes failed; {repair}")
     emit(document)
     return 0
 
 
 def cmd_provision(args: argparse.Namespace) -> int:
-    # Defer effects: importing them builds an SSL context and needs certifi.
-    from btm_setup_env.shell.commands import provision  # noqa: PLC0415
-
     plan = _build_plan(args.project, args.root, args.tags)
     return _report(plan, provision(plan))
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    from btm_setup_env.shell.commands import verify  # noqa: PLC0415
-    from btm_setup_env.shell.root import Provisioned, read_root  # noqa: PLC0415
-
-    _, layout = _resolve(args.project, args.root, [])
+    _, _, layout = _resolve(args.project, args.root, [])
     match read_root(layout):
         case Provisioned(manifest):
             pass
         case _:
-            raise DenvError(f"no environment at {layout.root}; run provision first")
+            raise CommandError(f"no environment at {layout.root}; run provision first")
     plan = _build_plan(Path(manifest.project), layout.root, list(manifest.spec))
     return _report(plan, verify(plan))
 
@@ -121,9 +115,9 @@ def cmd_status(args: argparse.Namespace) -> int:
 def cmd_clean(args: argparse.Namespace) -> int:
     if args.all:
         raise CommandError("no registry of roots; pass --project")
-    _, layout = _resolve(args.project, args.root, [])
+    _, _, layout = _resolve(args.project, args.root, [])
     if not layout.manifest.exists():
-        raise DenvError(
+        raise CommandError(
             f"refusing to delete {layout.root}: no manifest.json; "
             "was this directory provisioned by btm-setup-env?"
         )
@@ -132,14 +126,9 @@ def cmd_clean(args: argparse.Namespace) -> int:
 
 
 def cmd_shim(args: argparse.Namespace) -> int:
-    from btm_setup_env.shell.commands import make_shim  # noqa: PLC0415
-    from btm_setup_env.shell.root import ensure_dirs  # noqa: PLC0415
-
-    _, layout = _resolve(args.project, args.root, [])
+    _, host, layout = _resolve(args.project, args.root, [])
     ensure_dirs(layout)
-    wrapper = make_shim(
-        layout, detect_host(), args.binary, CondaPlatform(args.platform)
-    )
+    wrapper = make_shim(layout, host, args.binary, CondaPlatform(args.platform))
     emit({"shim": str(wrapper)})
     return 0
 
@@ -149,7 +138,7 @@ def cmd_list(args: argparse.Namespace) -> int:
         {
             "targets": [
                 {
-                    "tag": _tag_of(key),
+                    "tag": tag_name(*key),
                     "summary": CATALOG[key].summary,
                     "version": CATALOG[key].version_doc,
                 }
@@ -158,11 +147,6 @@ def cmd_list(args: argparse.Namespace) -> int:
         }
     )
     return 0
-
-
-def _tag_of(key: tuple[str, str]) -> str:
-    family, flavor = key
-    return family if flavor == GENERIC else f"{family}:{flavor}"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -226,14 +210,8 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _run(argv: Sequence[str] | None) -> int:
-    args = _parser().parse_args(argv)
-    run: Callable[[argparse.Namespace], int] = args.func
+def main(argv: Sequence[str] | None = None) -> int:
     try:
-        return run(args)
+        return run_cli(_parser(), argv)
     except KeyboardInterrupt:
         return 130
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    return dispatch(lambda: _run(argv))

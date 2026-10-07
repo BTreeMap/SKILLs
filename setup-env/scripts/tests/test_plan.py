@@ -11,13 +11,13 @@ from pathlib import Path
 
 import pytest
 
+from btm_corekit import CommandError
 from btm_setup_env.catalog import CATALOG, Recipe
 from btm_setup_env.model import (
     GENERIC,
     OS,
     Arch,
     CondaPlatform,
-    DenvError,
     EnvDelta,
     Host,
     Layout,
@@ -167,7 +167,7 @@ class TestConflict:
             [Target(("alpha", GENERIC), None), Target(("beta", GENERIC), None)],
             Path("/proj"),
         )
-        with pytest.raises(DenvError, match="claimed for two"):
+        with pytest.raises(CommandError, match="claimed for two"):
             make_plan(spec, LINUX, Layout(Path("/denv/root")))
 
     def test_one_prefix_at_one_platform_merges_instead(self, monkeypatch):

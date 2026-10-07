@@ -17,12 +17,6 @@ from pathlib import Path
 
 from btm_corekit import CommandError, ascii_words
 
-
-class DenvError(CommandError):
-    """This member's failures, on the library's exit contract: 1, fix the
-    input and re-run. Network and timeout raise UpstreamError instead."""
-
-
 # --- Host ---
 
 
@@ -82,12 +76,12 @@ def detect_host() -> Host:
         "arm64": Arch.ARM64,
     }.get(machine)
     if os_ is None or arch is None:
-        raise DenvError(
+        raise CommandError(
             f"unsupported host {system}/{machine}; "
             "supported: linux/macos/windows on x86_64/arm64"
         )
     if (os_, arch) not in _CONDA_OF:
-        raise DenvError(
+        raise CommandError(
             f"unsupported host {system}/{machine}; "
             "windows/arm64 has no toolchain coverage yet - use WSL"
         )
@@ -177,6 +171,12 @@ GENERIC = "generic"
 RecipeKey = tuple[str, str]  # (family, flavor), post-alias, catalog-closed
 
 
+def tag_name(family: str, flavor: str) -> str:
+    """How a (family, flavor) pair is written back as a tag: the generic
+    flavor is implicit, so `python`, never `python:generic`."""
+    return family if flavor == GENERIC else f"{family}:{flavor}"
+
+
 @dataclass(frozen=True, slots=True)
 class Target:
     """A parsed, catalog-validated tag. Constructed only by tags.resolve_tag."""
@@ -185,8 +185,7 @@ class Target:
     version: str | None
 
     def __str__(self) -> str:
-        family, flavor = self.key
-        tag = family if flavor == GENERIC else f"{family}:{flavor}"
+        tag = tag_name(*self.key)
         return tag if self.version is None else f"{tag}@{self.version}"
 
 
@@ -210,7 +209,7 @@ def parse_tag(text: str) -> RawTag:
         and (not at or _word(version, VERSION_FIRST, VERSION_CHARS))
     )
     if not valid:
-        raise DenvError(
+        raise CommandError(
             f"malformed tag {text!r}; expected family[:flavor][@version], "
             "e.g. python@3.12, kotlin:android, go:cgo"
         )
@@ -238,12 +237,12 @@ def make_spec(targets: list[Target], project: Path) -> Spec:
     for t in targets:
         prior = by_key.get(t.key)
         if prior is not None and prior != t:
-            raise DenvError(
+            raise CommandError(
                 f"conflicting tags {prior} and {t}: one toolchain, one version"
             )
         by_key.setdefault(t.key, t)
     if not by_key:
-        raise DenvError("no targets given; pass at least one tag, e.g. python")
+        raise CommandError("no targets given; pass at least one tag, e.g. python")
     ordered = tuple(sorted(by_key.values(), key=str))
     return Spec(ordered, project)
 
@@ -379,7 +378,7 @@ def merge_deltas(deltas: list[EnvDelta]) -> EnvDelta:
     for delta in deltas:
         for name, value in delta.vars:
             if vars_.get(name, value) != value:
-                raise DenvError(
+                raise CommandError(
                     f"recipes disagree on ${name}: {vars_[name]!r} vs {value!r}"
                 )
             vars_[name] = value

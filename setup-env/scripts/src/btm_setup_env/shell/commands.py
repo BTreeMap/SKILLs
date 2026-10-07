@@ -8,11 +8,10 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from btm_corekit import write_atomic
+from btm_corekit import CommandError, write_atomic
 from btm_setup_env.catalog import qemu_steps
 from btm_setup_env.model import (
     CondaPlatform,
-    DenvError,
     Host,
     Layout,
     QemuUser,
@@ -102,16 +101,16 @@ def make_shim(
     emu = emulation(host, platform)
     match emu:
         case Unsupported(reason=reason):
-            raise DenvError(reason)
+            raise CommandError(reason)
         case QemuUser():
             pass
         case _:
-            raise DenvError(
+            raise CommandError(
                 f"{platform.value} binaries already run natively "
                 f"on {host}; no shim needed"
             )
     if not binary.is_file():
-        raise DenvError(f"no such binary: {binary}")
+        raise CommandError(f"no such binary: {binary}")
     ctx = Ctx(layout, host, manifest_of(read_root(layout)))
     host_step, foreign_step = qemu_steps(emu)
     # Merge existing packages; a second create would replace the prefix.

@@ -15,11 +15,11 @@ import zipfile
 from pathlib import Path, PurePosixPath
 from typing import assert_never
 
+from btm_corekit import CommandError, signal
 from btm_setup_env.catalog import GOOGLE_MAVEN, conda_bin_dirs, jvm_home
 from btm_setup_env.model import (
     OS,
     CondaPlatform,
-    DenvError,
     Layout,
 )
 from btm_setup_env.shell.process import run_logged
@@ -29,7 +29,6 @@ from btm_setup_env.shell.transfer import (
     extract_tar,
     extract_zip,
     fetch,
-    log,
     verify_sha256,
 )
 from btm_setup_env.steps import (
@@ -62,7 +61,9 @@ def conda_create(ctx: Ctx, step: CondaEnv) -> None:
         return
     ensure_micromamba(ctx)
     assert step.platform is not None  # Planner resolves None to host platform.
-    log(f"conda {step.prefix_rel} ({step.platform.value}): " + " ".join(step.packages))
+    signal(
+        f"conda {step.prefix_rel} ({step.platform.value}): " + " ".join(step.packages)
+    )
     run_logged(
         f"micromamba create {step.prefix_rel}",
         [
@@ -98,7 +99,7 @@ def do_uv_venv(ctx: Ctx, step: UvVenv) -> None:
         UV_CACHE_DIR=str(layout.cache / "uv"),
         UV_PYTHON_PREFERENCE="only-managed",
     )
-    log("installing CPython " + (step.version or "(uv default)"))
+    signal("installing CPython " + (step.version or "(uv default)"))
     run_logged(
         "uv python install",
         [uv, "python", "install", *([step.version] if step.version else [])],
@@ -129,14 +130,14 @@ def do_fetch(ctx: Ctx, step: Fetch) -> None:
     if step.kind in archives and dest.is_dir() and any(dest.iterdir()):
         return
     archive = ctx.layout.downloads / PurePosixPath(step.url).name
-    log(f"fetching {step.name}")
+    signal(f"fetching {step.name}")
     fetch(step.url, archive)
     if step.sha256 is not None:
         verify_sha256(archive, step.sha256)
     else:
         # Never make a trust decision silently: the agent driving this run
         # should know verification was skipped and why.
-        log(
+        signal(
             f"{step.name}: fetched WITHOUT digest verification"
             " (no pinned publisher digest for this version)"
         )
@@ -183,7 +184,7 @@ def do_android_sdk(ctx: Ctx, step: AndroidSdk) -> None:
     suffix = ".bat" if ctx.host.os is OS.WINDOWS else ""
     sdkmanager = sdk / "cmdline-tools" / "latest" / "bin" / f"sdkmanager{suffix}"
     if not sdkmanager.exists():
-        raise DenvError(f"sdkmanager missing at {sdkmanager}")
+        raise CommandError(f"sdkmanager missing at {sdkmanager}")
     env = ctx.tool_env(**_jvm_env_vars(ctx))
     subprocess.run(
         [str(sdkmanager), "--licenses"],
@@ -195,7 +196,7 @@ def do_android_sdk(ctx: Ctx, step: AndroidSdk) -> None:
         check=False,  # The install reports license refusal.
         timeout=600,
     )
-    log("installing SDK packages: " + " ".join(packages))
+    signal("installing SDK packages: " + " ".join(packages))
     run_logged("sdkmanager --install", [str(sdkmanager), "--install", *packages], env)
 
 
@@ -222,7 +223,7 @@ def do_ghcup(ctx: Ctx, step: GhcupToolchain) -> None:
         LD_LIBRARY_PATH=str(layout.conda_host / "lib"),
     )
     ghcup = str(base / "bin" / "ghcup")
-    log(f"ghcup: installing ghc {step.ghc} + cabal (this is a large download)")
+    signal(f"ghcup: installing ghc {step.ghc} + cabal (this is a large download)")
     # ghcup refuses reinstall; guard each install for interrupted runs.
     if not ghc.exists():
         run_logged(
@@ -344,10 +345,10 @@ def _aapt2_version(ctx: Ctx) -> str:
     agp = _agp_version(Path(ctx.manifest.project or "."))
     matching = [v for v in versions if v.startswith(f"{agp}-")] if agp else []
     if agp and not matching:
-        raise DenvError(f"Google publishes no aapt2 for AGP {agp}")
+        raise CommandError(f"Google publishes no aapt2 for AGP {agp}")
     usable = matching or [v for v in versions if _stable_aapt2(v)]
     if not usable:
-        raise DenvError("no usable aapt2 version in Google's maven metadata")
+        raise CommandError("no usable aapt2 version in Google's maven metadata")
     return max(usable, key=_aapt2_rank)
 
 
@@ -356,7 +357,7 @@ def do_aapt2_shim(ctx: Ctx, step: Aapt2Shim) -> None:
     real = layout.root / "aapt2" / "aapt2.x86_64"
     if not real.exists():
         version = _aapt2_version(ctx)
-        log(f"installing aapt2 {version} (emulated)")
+        signal(f"installing aapt2 {version} (emulated)")
         jar = layout.downloads / f"aapt2-{version}-linux.jar"
         fetch(
             f"{GOOGLE_MAVEN}/com/android/tools/build/aapt2/{version}/"
