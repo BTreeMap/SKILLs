@@ -6,7 +6,7 @@ parts below; summon supplies the rest, including the budget.
 | Part | Content |
 | --- | --- |
 | Objective | The bundle's leaf questions verbatim, plus the session question for scope |
-| Evidence | The retrieval tools (web search and fetch, `/lit-review` for scholarly corpora, `/read-pdf` for PDFs) and any probe source the bundle builds on |
+| Evidence | The retrieval tools (web search and fetch, else `/search-web`; `/lit-review` for scholarly corpora; `/read-pdf` for PDFs) and any probe source the bundle builds on |
 | Rules | The `rules` template below |
 | Contract | The `contract` template below |
 | Bounds | The other bundles |

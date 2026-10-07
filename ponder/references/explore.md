@@ -43,4 +43,3 @@ Falling yield prompts a reframe-or-stop decision. Apply these bounds:
 - Begin saturation judgment one round past the declared focus.
 - Run one to three rounds. A fourth-round need triggers reframing and
   folding.
-- For one-round questions, use the floor rule.

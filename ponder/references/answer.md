@@ -20,7 +20,8 @@ At the default `draft` view, `check` returns the derived `sections`; a
 `violations`, with lite-demoted ones under `advisories`; `hedges`; and the
 `markers` table, `S1` onward, with class, title, and url. It exits 0 even
 with violations: read them, and resolve every violation and every `open`
-leaf before drafting.
+leaf before drafting. In lite mode an open leaf may remain; disclose it in
+the Open section.
 
 ## 3. Draft once
 
