@@ -1,14 +1,13 @@
 ---
 name: summon
 description: >-
-  Hands a task to another agent so the result comes back usable: whether to
-  delegate at all, what the delegate must be told outright, how parallel
-  agents are kept on separate ground, and how a return is judged as
-  untrusted text against the shape asked for. Covers Claude Code, GitHub
-  Copilot, Google Antigravity, OpenAI Codex, DeepSeek Harness, and the
-  OpenAI Agents SDK. Use when writing a prompt for a subagent, deciding
-  whether to spawn one, splitting work across agents, pointing a delegate at
-  a skill, or judging what one sent back.
+  Hands a task to another agent: whether to delegate, what to tell the
+  delegate, how parallel agents stay apart, and how to judge a return as
+  untrusted text. Covers Claude Code, GitHub Copilot, Google Antigravity,
+  OpenAI Codex, DeepSeek Harness, and the OpenAI Agents SDK. Use when
+  writing a subagent prompt, deciding whether to spawn one, splitting work
+  across agents, pointing a delegate at a skill, or judging what one sent
+  back.
 license: MIT
 metadata:
   argument-hint: "[dispatch|fanout|review|help] [task]"

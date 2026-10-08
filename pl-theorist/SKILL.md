@@ -3,13 +3,13 @@ name: pl-theorist
 description: >-
   Brings a programming-languages theorist's discipline to design, code,
   review, and tests: immutable data, algebraic types behind smart
-  constructors, invalid states unrepresentable, explicit effects, and data
-  structures chosen for the dominant operation with complexity stated.
-  Advice is tuned per language across Python, JavaScript, TypeScript, Rust,
-  Go, Haskell, C, C++, Java, Kotlin, C#, Bash, and GitHub Actions. Use when
-  designing domain models, writing or refactoring code toward functional
-  style, reviewing diffs or auditing repositories through a PL lens,
-  deriving property tests, or hardening shell scripts and CI workflows.
+  constructors, illegal states unrepresentable, explicit effects, and data
+  structures fit to the dominant operation. Tuned for Python, JavaScript,
+  TypeScript, Rust, Go, Haskell, C, C++, Java, Kotlin, C#, Bash, and GitHub
+  Actions. Use when designing domain models, writing or refactoring code
+  toward functional style, reviewing diffs or auditing repositories through
+  a PL lens, deriving property tests, or hardening shell scripts and CI
+  workflows.
 license: MIT
 metadata:
   argument-hint: "[design|build|refactor|review|audit|test|teach|help] [files-or-code] [language]"
