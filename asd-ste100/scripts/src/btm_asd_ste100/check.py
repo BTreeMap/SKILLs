@@ -388,7 +388,6 @@ class Context:
     vocab: Vocabulary
     lim: Limits
     allowed: Allowed
-    shouting: bool  # mostly capitals, as in a warning: no abbreviation pass
 
 
 @dataclass(slots=True)
@@ -407,9 +406,7 @@ def check(
     text = text.replace(CURLY_APOSTROPHE, "'")
     mode = lim.mode
     cut = layout(text, how)
-    prose = cut.masked
-    shouting = sum(c.isupper() for c in prose) > sum(c.islower() for c in prose)
-    ctx = Context(mode, vocab, lim, allowed, shouting)
+    ctx = Context(mode, vocab, lim, allowed)
     report = Report()
     n_words = 0
     for p_index, block in enumerate(cut.blocks):
@@ -535,6 +532,10 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
         })  # fmt: skip
     originals = WORD.findall(QUOTED.sub(" ", sent))
     tokens = [t.lower() for t in originals]
+    # A sentence in capitals, as in a warning, has no labels to pass. Each
+    # sentence decides for itself: one shouted warning in mixed text is
+    # checked, and a label in a mixed sentence passes in a shouted text.
+    shouting = sum(c.isupper() for c in sent) > sum(c.islower() for c in sent)
     inside = covered(tokens, (ctx.vocab.phrases, ctx.allowed.phrases))
     after_number = False
     for i, (orig, tok) in enumerate(zip(originals, tokens, strict=True)):
@@ -556,10 +557,10 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
             pos_signal(base, (index, f"{before} {orig}".strip()), ctx.vocab, report)
         elif compound(base, ctx):
             continue
-        elif not ctx.shouting and orig.isupper() and len(orig) > 1:
+        elif not shouting and orig.isupper() and len(orig) > 1:
             per_word(report, "abbreviation", orig, index, {
                 "token": orig,
-                "evidence": "all capitals in mixed-case text; passed as a label",
+                "evidence": "all capitals in a mixed-case sentence; passed as a label",
             })  # fmt: skip
         elif base not in ctx.lim.ing_approved:
             unknown(orig, base, index, ctx.vocab, report)

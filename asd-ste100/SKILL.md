@@ -231,9 +231,10 @@ Write the technical nouns and verbs first. ok: true is necessary, but not suffic
 
 ## Possible problems
 
-* If a text is not all in capital letters, the checker accepts a word in
+* The checker examines the capital letters in each sentence. If a sentence
+  has more small letters than capital letters, the checker accepts a word in
   capital letters as a label. It gives an `abbreviation` signal for that
-  word. If a text is all in capital letters, for example a warning, the
+  word. If a sentence has more capital letters, for example a warning, the
   checker examines each word.
 * The allow file accepts a term in all sentences. If you write a term as a
   noun, the checker also accepts it where you use it as a verb. Read the

@@ -250,6 +250,16 @@ class TestSignals:
     def test_capitals_in_shouted_text_are_still_checked(self, run):
         assert not run("REMOVE THE EMER TEST.")["ok"]
 
+    def test_a_shouted_sentence_in_mixed_text_is_still_checked(self, run):
+        """Capitals decide per sentence: one warning in capitals among
+        sentence-case text has no labels."""
+        report = run("Remove the test. Remove the opening. REMOVE THE EMER.")
+        assert [f["token"] for f in report["findings"]] == ["EMER"]
+
+    def test_a_label_in_a_mixed_sentence_passes_in_shouted_text(self, run):
+        report = run("REMOVE THE OPENING. INSTALL THE OPENING. Remove the EMER.")
+        assert report["ok"] and kinds(report, "signals") == ["abbreviation"]
+
     def test_a_second_instruction_after_and(self, run):
         report = run("Remove it and install it.")
         assert "second_instruction" in kinds(report, "signals")
