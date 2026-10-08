@@ -101,9 +101,9 @@ def cmd_lookup(args: argparse.Namespace) -> int:
     plurals = {(x.word, x.pos): x.plural.lower() for x in lexicon.approved if x.plural}
     by_plural: dict[str, list[Entry]] = {}
     for e in dictionary.entries:
-        form = plurals.get((e.word.lower(), e.pos))
-        if form and e.status.get("kind") == "approved":
-            by_plural.setdefault(form, []).append(e)
+        plural = plurals.get((e.word.lower(), e.pos))
+        if plural and e.status.get("kind") == "approved":
+            by_plural.setdefault(plural, []).append(e)
     words = [lookup_one(w, by_form, resolved, by_plural) for w in args.words]
     emit({"version": args.version, "words": words})
     return 0
