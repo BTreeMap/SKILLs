@@ -55,6 +55,13 @@ class TestSplitter:
         pieces = [s for p in paragraphs(text) for s in sentences(p)]
         assert [w for s in pieces for w in WORD.findall(s)] == WORD.findall(text)
 
+    @pytest.mark.parametrize("close", ["”", '"', ")", "'"])
+    def test_a_closing_mark_after_the_period_ends_a_sentence(self, close):
+        """The spec writes 'SHOWS: “NO GO.” IF THERE IS': two sentences."""
+        opening = {"”": "“", ")": "("}.get(close, close)
+        text = f"The screen shows {opening}stop.{close} Remove the test."
+        assert len(sentences(text)) == 2
+
     def test_a_decimal_does_not_end_a_sentence(self):
         assert len(sentences("Install it 6.5 mm from the edge.")) == 1
 
@@ -199,6 +206,32 @@ class TestFindings:
         assert "sure" in [f["token"] for f in run("Do sure.")["findings"]]
 
 
+class TestPhrases:
+    """Rule 1.1 for unapproved headwords of more than one word."""
+
+    def test_an_unapproved_phrase_of_approved_words_is_found(self, run):
+        (f,) = run("Turn off the test.")["findings"]
+        assert (f["token"], f["alternatives"]) == ("Turn off", ["set to off"])
+
+    def test_an_inflected_phrase_names_its_headword(self, run):
+        (f,) = run("Then the test turned off.", allow="then")["findings"]
+        assert (f["token"], f["headword"]) == ("turned off", "turn off")
+
+    def test_the_words_of_the_phrase_alone_pass(self, run):
+        assert run("Turn the test. Remove the test off.")["ok"]
+
+    def test_a_qualified_entry_is_found_as_its_phrase(self, run):
+        """few (a few) is a phrase entry; the bare word keeps its own."""
+        report = run("Remove a few tests. Remove few tests.")
+        got = {f["token"]: f["alternatives"] for f in report["findings"]}
+        assert got == {"a few": ["do (v)"], "few": ["small number"]}
+
+    def test_an_unapproved_hyphenated_headword_is_found(self, run):
+        """Every part is declared, but the whole is a headword."""
+        (f,) = run("Hand-tighten the test.", allow="hand\ntighten")["findings"]
+        assert (f["token"], f["alternatives"]) == ("Hand-tighten", ["install (v)"])
+
+
 class TestAllowList:
     def test_a_declared_noun_and_its_plural_pass(self, run):
         allow = "# technical nouns\npump\nfuel line\n"
@@ -238,6 +271,16 @@ class TestSignals:
         )
         assert s["sentences"] == [0]  # once per sentence, however often
         assert s["context"] == ["Test", "the test"]  # the word before is evidence
+
+    def test_a_regular_form_of_an_unapproved_verb_is_signaled(self, run):
+        """'tests' is the approved plural of TEST (n) and the -s form of
+        test (v); lookup links it to the verb, so check signals it."""
+        (s,) = run("The opening tests.")["signals"]
+        assert (s["kind"], s["token"], s["not_approved_as"]) == (
+            "part_of_speech",
+            "tests",
+            ["v"],
+        )
 
     def test_capitals_in_mixed_text_pass_as_a_label(self, run):
         report = run("Remove the EMER opening.")

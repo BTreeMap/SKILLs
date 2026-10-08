@@ -44,9 +44,12 @@ Phrases = dict[str, tuple[tuple[str, ...], ...]]  # first word -> phrases, longe
 # before a list item, and before the item itself (rule 8.4: each item is a
 # sentence). A colon at a wrapped line end inside prose ends nothing.
 LIST_ITEM = r"\n(?=[ \t]*(?:[-*•]|\(?[0-9a-z]{1,3}[.)])[ \t])"
+# A closing quotation mark or bracket after the end mark stays with the
+# sentence it closes: 'SHOWS: “NO GO.” IF THERE IS' is two sentences.
+CLOSING = "[\"'\u201d\u2019)\\]]*"
 SENTENCE_END = re.compile(
-    r"[.!?]+(?=\s+(?:`|[\"'“(\[]?[A-Z0-9]))"
-    r"|[.!?]+\s*$"
+    rf"[.!?]+{CLOSING}(?=\s+(?:`|[\"'“(\[]?[A-Z0-9]))"
+    rf"|[.!?]+{CLOSING}\s*$"
     rf"|:[ \t]*(?={LIST_ITEM})"
     rf"|{LIST_ITEM}"
 )
@@ -256,7 +259,8 @@ class Vocabulary:
     approved: frozenset[str]
     approved_pos: dict[str, frozenset[str]]
     phrases: Phrases
-    unapproved: dict[str, tuple[Hint, ...]]
+    unapproved: dict[str, tuple[Hint, ...]]  # by word, form, or joined phrase
+    unapproved_phrases: Phrases  # headwords of two or more words
     verbs: frozenset[str]  # base form of every verb headword, approved or not
     participles: frozenset[str]
 
@@ -286,9 +290,16 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
             verbs.add(a.word)
             participles.update(f for f in a.forms[2:] if " " not in f)
     unapproved: dict[str, list[Hint]] = {}
+    bad_multi: dict[str, set[tuple[str, ...]]] = {}
     for u in lexicon.unapproved:
         alternatives = tuple(map(spelled, u.alternatives))
         hint = Hint(u.word, u.pos, alternatives, u.note, u.help)
+        words = phrase_of(u.word, u.qualifier)
+        if len(words) > 1:
+            bad_multi.setdefault(words[0], set()).add(words)
+            unapproved.setdefault(" ".join(words), []).append(hint)
+        if u.qualifier:
+            continue  # "few (a few)": only the phrase is not approved
         for key in dict.fromkeys([u.word, *u.forms]):
             unapproved.setdefault(key, []).append(hint)
         if u.pos == "v":
@@ -298,9 +309,22 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
         approved_pos={k: frozenset(v) for k, v in pos_of.items()},
         phrases=longest_first(multi),
         unapproved={k: tuple(v) for k, v in unapproved.items()},
+        unapproved_phrases=longest_first(bad_multi),
         verbs=frozenset(verbs),
         participles=frozenset(participles),
     )
+
+
+def phrase_of(word: str, qualifier: str | None) -> tuple[str, ...]:
+    """The words a headword stands for in text. A qualifier that holds the
+    headword is the phrase ("few", "a few"); one that does not follows it
+    ("so", "that": "so that")."""
+    words = tuple(word.lower().split())
+    if not qualifier:
+        return words
+    q = tuple(qualifier.lower().split())
+    inside = any(q[i : i + len(words)] == words for i in range(len(q)))
+    return q if inside else words + q
 
 
 @dataclass(frozen=True, slots=True)
@@ -537,6 +561,7 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     # checked, and a label in a mixed sentence passes in a shouted text.
     shouting = sum(c.isupper() for c in sent) > sum(c.islower() for c in sent)
     inside = covered(tokens, (ctx.vocab.phrases, ctx.allowed.phrases))
+    inside |= phrase_findings((originals, tokens), inside, index, ctx.vocab, report)
     after_number = False
     for i, (orig, tok) in enumerate(zip(originals, tokens, strict=True)):
         number = bool(DIGIT.search(tok))
@@ -552,7 +577,9 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
         base = tok.removesuffix(POSSESSIVE)
         if base in ctx.allowed.words:
             continue
-        if approved(base, ctx.vocab):
+        if headword_compound(base, ctx.vocab):
+            unknown(orig, base, index, ctx.vocab, report)
+        elif approved(base, ctx.vocab):
             before = tokens[i - 1] if i else ""
             pos_signal(base, (index, f"{before} {orig}".strip()), ctx.vocab, report)
         elif compound(base, ctx):
@@ -567,6 +594,70 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     passive(tokens, index, ctx.vocab, report)
     if ctx.mode is Mode.PROCEDURE:
         instructions(tokens, index, ctx.vocab, report)
+
+
+def phrase_findings(
+    words: tuple[list[str], list[str]],
+    inside: set[int],
+    index: int,
+    vocab: Vocabulary,
+    report: Report,
+) -> set[int]:
+    """Report each unapproved multi-word headword in one sentence; return
+    the token indices it covers. `words` is the tokens as written and in
+    lowercase."""
+    originals, tokens = words
+    covers: set[int] = set()
+    for start, (key, length) in bad_phrases(
+        tokens, inside, vocab.unapproved_phrases
+    ).items():
+        shown = " ".join(originals[start : start + length])
+        unknown(shown, key, index, vocab, report)
+        if shown.lower() != key:
+            report.words[key].setdefault("headword", key)
+        covers.update(range(start, start + length))
+    return covers
+
+
+def bad_phrases(
+    tokens: list[str], inside: set[int], table: Phrases
+) -> dict[int, tuple[str, int]]:
+    """Start index -> (headword, length) of each unapproved multi-word
+    headword, outside approved and allowed terms. The first word may carry
+    a regular ending: "turned off" is "turn off"."""
+    out: dict[int, tuple[str, int]] = {}
+    i = 0
+    while i < len(tokens):
+        hit = None
+        if i not in inside:
+            firsts = dict.fromkeys(
+                (tokens[i], *stems(tokens[i]), *ing_stems(tokens[i]))
+            )
+            hit = next(
+                (
+                    p
+                    for first in firsts
+                    for p in table.get(first, ())
+                    if tuple(tokens[i + 1 : i + len(p)]) == p[1:]
+                    and not inside.intersection(range(i, i + len(p)))
+                ),
+                None,
+            )
+        if hit:
+            out[i] = (" ".join(hit), len(hit))
+            i += len(hit)
+        else:
+            i += 1
+    return out
+
+
+def ing_stems(tok: str) -> tuple[str, ...]:
+    """Candidate bases of an -ing token, without the verb list."""
+    if len(tok) < ING_MIN or not tok.endswith("ing"):
+        return ()
+    stem = tok[:-3]
+    undoubled = (stem[:-1],) if len(stem) >= DOUBLED and stem[-1] == stem[-2] else ()
+    return (stem, stem + "e", *undoubled)
 
 
 def cited(item: dict[str, Any], index: int) -> None:
@@ -595,6 +686,12 @@ def approved(tok: str, vocab: Vocabulary) -> bool:
     return len(parts) > 1 and all(p in vocab.approved for p in parts)
 
 
+def headword_compound(tok: str, vocab: Vocabulary) -> bool:
+    """A hyphenated unapproved headword (air-dry): checked before its parts
+    can pass as a compound of approved or declared words."""
+    return "-" in tok and tok in vocab.unapproved and tok not in vocab.approved
+
+
 def compound(tok: str, ctx: Context) -> bool:
     """A hyphenated word whose every part is approved, declared, or a
     number (rule 8.2: words that belong together)."""
@@ -610,11 +707,7 @@ def compound(tok: str, ctx: Context) -> bool:
 
 def ing_base(tok: str, vocab: Vocabulary) -> str | None:
     """The verb headword an -ing token inflects, if any."""
-    if len(tok) < ING_MIN or not tok.endswith("ing"):
-        return None
-    stem = tok[:-3]
-    undoubled = stem[:-1] if len(stem) >= DOUBLED and stem[-1] == stem[-2] else ""
-    return next((b for b in (stem, stem + "e", undoubled) if b in vocab.verbs), None)
+    return next((b for b in ing_stems(tok) if b in vocab.verbs), None)
 
 
 def stems(tok: str) -> tuple[str, ...]:
@@ -699,7 +792,12 @@ def pos_signal(
             seen["context"].append(context)
         return
     poses = vocab.approved_pos.get(tok, frozenset())
-    hints = [h for h in vocab.unapproved.get(tok, ()) if h.pos not in poses]
+    # 'tests' is the plural of TEST (n) and the -s form of test (v): the
+    # spec lists no forms of unapproved words, so try the regular stems.
+    own = vocab.unapproved.get(tok) or next(
+        (vocab.unapproved[b] for b in stems(tok) if b in vocab.unapproved), ()
+    )
+    hints = [h for h in own if h.pos not in poses]
     if hints:
         per_word(report, "part_of_speech", tok, index, {
             "rule": "1.2", "token": tok,

@@ -121,8 +121,38 @@ LEXICON = {
             "forms": ["fast", "faster"],
             "plural": None,
         },
+        {
+            "id": "turn (v)",
+            "word": "turn",
+            "pos": "v",
+            "forms": ["turn", "turns", "turned", "turned"],
+            "plural": None,
+        },
+        {
+            "id": "off (adv)",
+            "word": "off",
+            "pos": "adv",
+            "forms": ["off"],
+            "plural": None,
+        },
     ],
     "unapproved": [
+        {
+            "word": "turn off",
+            "pos": "v",
+            "qualifier": None,
+            "forms": [],
+            "alternatives": [{"phrase": "set to off"}],
+            "note": None,
+        },
+        {
+            "word": "hand-tighten",
+            "pos": "v",
+            "qualifier": None,
+            "forms": [],
+            "alternatives": [{"ref": "install (v)"}],
+            "note": None,
+        },
         {
             "word": "ensure",
             "pos": "v",
