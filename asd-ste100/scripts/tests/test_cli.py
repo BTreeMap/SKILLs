@@ -7,6 +7,7 @@ import json
 import pytest
 
 from btm_asd_ste100 import cli
+from btm_asd_ste100.records import Entry
 
 
 @pytest.fixture
@@ -104,6 +105,38 @@ class TestLookup:
         _, doc, _ = run(["lookup", "ensured"], capsys)
         (got,) = doc["words"]
         assert got["headword"] == "ensure" and got["entries"][0]["word"] == "ensure"
+
+    def test_a_noun_plural_finds_its_approved_noun(self, served, capsys):
+        _, doc, _ = run(["lookup", "tests"], capsys)
+        (got,) = doc["words"]
+        assert [(e["word"], e["pos"]) for e in got["entries"]] == [("TEST", "n")]
+        assert "next" not in got
+
+    def test_a_plural_keeps_the_unapproved_verb_it_inflects(self):
+        verb = Entry.model_validate(
+            {
+                "word": "test",
+                "pos": "v",
+                "qualifier": None,
+                "forms": [],
+                "status": {"kind": "unapproved", "alternatives": []},
+            }
+        )
+        noun = Entry.model_validate(
+            {
+                "word": "TEST",
+                "pos": "n",
+                "qualifier": None,
+                "forms": [],
+                "status": {"kind": "approved", "alternatives": []},
+            }
+        )
+        got = cli.lookup_one("tests", {"test": [verb]}, {}, {"tests": [noun]})
+        assert got["headword"] == "test"
+        assert [(e["word"], e["pos"]) for e in got["entries"]] == [
+            ("test", "v"),
+            ("TEST", "n"),
+        ]
 
     def test_an_absent_word_says_what_to_do(self, served, capsys):
         _, doc, _ = run(["lookup", "frobnicate"], capsys)

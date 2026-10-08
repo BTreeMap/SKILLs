@@ -95,7 +95,16 @@ def cmd_lookup(args: argparse.Namespace) -> int:
     for e in dictionary.entries:
         for form in dict.fromkeys([e.word.lower(), *(f.lower() for f in e.forms)]):
             by_form.setdefault(form, []).append(e)
-    words = [lookup_one(w, by_form, resolved) for w in args.words]
+    # The dictionary prints no noun plurals; the lexicon derives them, and
+    # `check` accepts them. Without these, `lookup valves` said "not in the
+    # dictionary" for the plural of an approved noun.
+    plurals = {(x.word, x.pos): x.plural.lower() for x in lexicon.approved if x.plural}
+    by_plural: dict[str, list[Entry]] = {}
+    for e in dictionary.entries:
+        form = plurals.get((e.word.lower(), e.pos))
+        if form and e.status.get("kind") == "approved":
+            by_plural.setdefault(form, []).append(e)
+    words = [lookup_one(w, by_form, resolved, by_plural) for w in args.words]
     emit({"version": args.version, "words": words})
     return 0
 
@@ -104,9 +113,12 @@ def lookup_one(
     raw: str,
     by_form: dict[str, list[Entry]],
     resolved: Resolved,
+    by_plural: dict[str, list[Entry]] | None = None,
 ) -> dict[str, Any]:
     """Every entry whose headword or form is the word; failing that, the
-    unapproved headword a regular inflection of it comes from."""
+    unapproved headword a regular inflection of it comes from. Then each
+    approved noun whose derived plural the word is ("tests": test (v) by
+    inflection, and TEST (n))."""
     word = raw.strip().lower()
     entries, headword = by_form.get(word, []), None
     if not entries:
@@ -117,7 +129,8 @@ def lookup_one(
             if e.status.get("kind") == "unapproved"
         ]
         headword = headword if entries else None
-    hits = [entry_row(e, resolved) for e in entries]
+    plural_of = [e for e in (by_plural or {}).get(word, []) if e not in entries]
+    hits = [entry_row(e, resolved) for e in [*entries, *plural_of]]
     document: dict[str, Any] = {"word": word, "entries": hits}
     if headword:
         document["headword"] = headword

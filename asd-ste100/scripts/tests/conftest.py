@@ -410,6 +410,21 @@ DICTIONARY = {
             "page": "2-1-F3",
         },
         {
+            "word": "TEST",
+            "pos": "n",
+            "qualifier": None,
+            "forms": [],
+            "status": {
+                "kind": "approved",
+                "meaning": "Procedure that finds the condition of an item",
+                "help": None,
+                "alternatives": [],
+            },
+            "ste_example": None,
+            "nonste_example": None,
+            "page": "2-1-T4",
+        },
+        {
             "word": "REMOVE",
             "pos": "v",
             "qualifier": None,

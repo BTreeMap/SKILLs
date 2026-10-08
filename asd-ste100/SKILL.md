@@ -77,15 +77,15 @@ $R clean
   and a limit for a sentence that starts with `NOTE:`. `--mode description`
   sets the sentence limit and the paragraph limit for descriptions. The
   `limits` in the report shows the numbers that apply.
-* `lookup` accepts one or more words, and gives one item in `words` for each.
-  It shows each dictionary entry that has the word as its headword or as a
-  form. Each entry gives its approved meaning or its
-  alternatives, and the examples from the specification. For a form of a
-  headword that is not approved, `lookup` gives the `headword` and its
-  entries. When the specification gives one example for each alternative,
-  `choices` gives each alternative with its STE example and with the
-  sentence that it replaces. An empty `entries` shows that the word is not in
-  the dictionary.
+* `lookup` accepts one or more words, and gives one item in `words` for
+  each. It shows each dictionary entry that has the word as its headword, as
+  a form, or as the plural of an approved noun. Each entry gives its
+  approved meaning or its alternatives, and the examples from the
+  specification. For a form of a headword that is not approved, `lookup`
+  gives the `headword` and its entries. When the specification gives one
+  example for each alternative, `choices` gives each alternative with its
+  STE example and with the sentence that it replaces. An empty `entries`
+  shows that the word is not in the dictionary.
 * `fetch` downloads the release that this skill uses, and makes sure that
   the digest of each file is correct. If the cache is empty, `check` and
   `lookup` do a `fetch` first and tell you in a `signal:` line. `clean`
