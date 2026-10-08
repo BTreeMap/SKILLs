@@ -111,11 +111,11 @@ $R clean
   * `sentence_length` gives the sentence number, the number of words, and
     the limit.
   * `paragraph_length` gives the number of sentences in the paragraph.
-  * `not_approved` gives the word, each sentence that contains it, and the
-    `alternatives` for a headword that is not approved. For a form of that
-    headword, it also gives the `headword`. If the specification gives an
-    instruction for the headword, `help` shows it. For a word with "re-",
-    read `help`.
+  * `not_approved` gives the word in `token`, each sentence that contains
+    it, and the `alternatives` for a headword that is not approved. For a
+    form of that headword, it also gives the `headword`. If the
+    specification gives an instruction for the headword, `help` shows it.
+    For a word with "re-", read `help`.
   * `ing_form` gives the verb of the -ing word.
   * `contraction` gives the word. `punctuation` gives the mark, which is a
     semicolon.
