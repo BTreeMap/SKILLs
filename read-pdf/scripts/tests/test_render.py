@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from btm_read_pdf.render import (
     format_header,
     format_metadata,
+    scalar_text,
     write_extraction,
     write_pages,
 )
@@ -112,3 +113,20 @@ class TestWriteExtraction:
         body = sink.getvalue()
         assert body.index("# Extracted from") < body.index("## Document metadata")
         assert body.index("## Document metadata") < body.index("## PDF page 1")
+
+
+class TestScalarText:
+    def test_plain_text_is_unchanged(self):
+        assert scalar_text("z = (G - gT) / sqrt(T)") == "z = (G - gT) / sqrt(T)"
+
+    def test_a_surrogate_pair_joins_into_its_code_point(self):
+        assert scalar_text("\ud835\udc65") == "\U0001d465"
+
+    def test_a_lone_surrogate_becomes_the_replacement_character(self):
+        assert scalar_text("a\ud835b") == "a\ufffdb"
+
+    def test_a_page_with_a_lone_surrogate_writes_to_a_utf8_sink(self, tmp_path):
+        out = tmp_path / "x.txt"
+        with out.open("w", encoding="utf-8") as sink:
+            write_pages(StubReader([StubPage("x \ud835 y")]), [1], sink)
+        assert "x \ufffd y" in out.read_text(encoding="utf-8")

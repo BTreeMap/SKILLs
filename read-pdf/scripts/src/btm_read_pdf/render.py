@@ -52,6 +52,17 @@ def write_metadata(reader: Document, output: TextIO) -> None:
     output.write(format_metadata(reader.metadata or {}))
 
 
+def scalar_text(text: str) -> str:
+    """Make extracted text encodable: join surrogate pairs, replace strays.
+
+    pypdf can emit a non-BMP glyph (math alphanumerics) as two UTF-16
+    surrogates, or one alone. A UTF-8 sink rejects both. A round trip
+    through UTF-16 joins each valid pair into its code point and turns a
+    lone surrogate into U+FFFD. Identity on text without surrogates.
+    """
+    return text.encode("utf-16", "surrogatepass").decode("utf-16", "replace")
+
+
 def write_pages(reader: Document, page_numbers: Iterable[int], output: TextIO) -> int:
     """Write text for each selected page with stable one-based page markers.
 
@@ -60,7 +71,7 @@ def write_pages(reader: Document, page_numbers: Iterable[int], output: TextIO) -
     """
     empty_pages = 0
     for page_number in page_numbers:
-        text = reader.pages[page_number - 1].extract_text() or ""
+        text = scalar_text(reader.pages[page_number - 1].extract_text() or "")
         output.write(f"## PDF page {page_number}\n\n")
         output.write(text.strip() or "[No extractable text on this page.]\n")
         output.write("\n\n")
