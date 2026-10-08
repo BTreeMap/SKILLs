@@ -44,6 +44,9 @@ from btm_corekit import (
 
 TEXT = Required("text")
 STOP = re.compile(r"(?<=[.!?])\s+")
+# An unapproved entry's alternatives, keyed like the dictionary: a word and
+# part of speech can carry two qualifiers ("few" and "a few").
+Resolved = dict[tuple[str, str | None, str | None], list[str]]
 ALLOW = Optional("allow", inline=False)
 
 
@@ -85,7 +88,7 @@ def cmd_lookup(args: argparse.Namespace) -> int:
     dictionary = load(manifest, args.version, "dictionary.json", Dictionary)
     lexicon = load(manifest, args.version, "lexicon.json", Lexicon)
     resolved = {
-        (u.word, u.pos): unique(map(spelled, u.alternatives))
+        (u.word, u.pos, u.qualifier): unique(map(spelled, u.alternatives))
         for u in lexicon.unapproved
     }
     by_form: dict[str, list[Entry]] = {}
@@ -100,7 +103,7 @@ def cmd_lookup(args: argparse.Namespace) -> int:
 def lookup_one(
     raw: str,
     by_form: dict[str, list[Entry]],
-    resolved: dict[tuple[str, str | None], list[str]],
+    resolved: Resolved,
 ) -> dict[str, Any]:
     """Every entry whose headword or form is the word; failing that, the
     unapproved headword a regular inflection of it comes from."""
@@ -126,12 +129,11 @@ def lookup_one(
     return document
 
 
-def entry_row(
-    e: Entry, resolved: dict[tuple[str, str | None], list[str]]
-) -> dict[str, Any]:
+def entry_row(e: Entry, resolved: Resolved) -> dict[str, Any]:
     row = e.model_dump(exclude_none=True)
     if e.status.get("kind") == "unapproved":
-        row["alternatives"] = resolved.get((e.word.lower(), e.pos), [])
+        key = (e.word.lower(), e.pos, e.qualifier)
+        row["alternatives"] = resolved.get(key, [])
         choices = paired(row["alternatives"], e.ste_example, e.nonste_example)
         if choices:
             row["choices"] = choices

@@ -81,6 +81,12 @@ class TestLookup:
         }
         assert "ste_example" not in entry
 
+    def test_each_qualifier_keeps_its_own_alternatives(self, served, capsys):
+        _, doc, _ = run(["lookup", "few"], capsys)
+        entries = doc["words"][0]["entries"]
+        got = {e.get("qualifier"): e["alternatives"] for e in entries}
+        assert got == {None: ["small number"], "a few": ["do (v)"]}
+
     def test_unpaired_examples_stay_raw(self, served, capsys):
         _, doc, _ = run(["lookup", "ensure"], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
