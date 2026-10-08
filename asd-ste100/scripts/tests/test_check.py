@@ -170,6 +170,16 @@ class TestFindings:
             ["test (n)"],
         )
 
+    def test_a_headword_with_no_alternative_carries_its_help(self, run):
+        (f,) = run("Remove the test whose test.")["findings"]
+        assert (f["alternatives"], f["help"]) == ([], "Use a different construction.")
+        assert "next" not in f
+
+    def test_a_re_word_points_to_the_prefix_help(self, run):
+        report = run("Reinstall the test. Re-remove the test.")
+        assert [f.get("headword") for f in report["findings"]] == ["re-", "re-"]
+        assert "AGAIN" in report["findings"][0]["help"]
+
     def test_alternatives_are_listed_once(self, run):
         (f,) = run("Return the test.")["findings"]
         assert f["alternatives"] == ["do (v)"]

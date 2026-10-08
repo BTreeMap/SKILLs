@@ -31,7 +31,7 @@ from btm_corekit import (
 )
 
 SKILL = "asd-ste100"
-VERSION = "v0.1.0"
+VERSION = "v0.1.1"
 BASE = "https://cdn.jsdelivr.net/gh/RadonSys/ste-tax@{version}/"
 MANIFEST = "data/manifest.json"
 MANIFEST_CAP = 64 * 1024

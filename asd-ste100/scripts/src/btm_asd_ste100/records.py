@@ -63,6 +63,7 @@ class Unapproved(Wire):
     forms: list[str] = Field(default_factory=list)
     alternatives: list[Alternative]
     note: str | None = None
+    help: str | None = None  # from v0.1.1; the only guidance with no alternative
 
 
 class Lexicon(Wire):

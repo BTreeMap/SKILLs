@@ -28,4 +28,5 @@ def test_the_pinned_release_downloads_verifies_and_decodes(tmp_path, monkeypatch
     )
     assert len(rules.rules) == 53
     assert any(a.word == "make sure" for a in lexicon.approved)
+    assert any(u.word == "whose" and u.help for u in lexicon.unapproved)
     assert len(dictionary.entries) > 2000

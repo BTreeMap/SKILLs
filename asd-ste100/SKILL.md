@@ -100,7 +100,8 @@ $R clean
   gives the paragraph's sentence count. `not_approved` gives the token, every
   sentence it occurs in, and `alternatives` when the word is an unapproved
   headword, with the `headword` when the word is a regular inflection of
-  one. `ing_form` names the verb it inflects. `contraction` and
+  one, and the spec's `help` where it gives one (the only guidance when no
+  alternative is listed, and for a word built on "re-"). `ing_form` names the verb it inflects. `contraction` and
   `punctuation` (a semicolon) name the token or mark.
 * `signals` are heuristic; weigh each one, and change the text only when it
   is right. `passive_candidate` shows the words and whether an agent follows

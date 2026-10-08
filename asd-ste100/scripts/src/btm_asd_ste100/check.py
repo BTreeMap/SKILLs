@@ -194,6 +194,7 @@ DOUBLED = 3  # a stem this long may end in a doubled consonant (running)
 PARTICIPLE_MIN = 5  # shorter words ending in -ed (bed, red) are not participles
 PASSIVE_REACH = 2  # tokens between a form of BE and its participle, at most
 CONTEXTS = 8  # distinct contexts a part-of-speech signal shows, at most
+REPREFIX = "re-"  # the spec's prefix entry: use AGAIN or BACK instead
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,6 +248,7 @@ class Hint:
     pos: str | None
     alternatives: tuple[str, ...]
     note: str | None
+    help: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -285,7 +287,8 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
             participles.update(f for f in a.forms[2:] if " " not in f)
     unapproved: dict[str, list[Hint]] = {}
     for u in lexicon.unapproved:
-        hint = Hint(u.word, u.pos, tuple(map(spelled, u.alternatives)), u.note)
+        alternatives = tuple(map(spelled, u.alternatives))
+        hint = Hint(u.word, u.pos, alternatives, u.note, u.help)
         for key in dict.fromkeys([u.word, *u.forms]):
             unapproved.setdefault(key, []).append(hint)
         if u.pos == "v":
@@ -641,6 +644,7 @@ def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) 
     base = None
     if not hints and not verb:
         base = next((b for b in stems(tok) if b in vocab.unapproved), None)
+        base = base or prefixed(tok, vocab)
         hints = vocab.unapproved.get(base, ()) if base else ()
     entry: dict[str, Any] = {
         "rule": "3.5" if verb else "1.1",
@@ -656,11 +660,23 @@ def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) 
     notes = [h.note for h in hints if h.note]
     if notes:
         entry["note"] = " ".join(notes)
+    helps = unique(h.help for h in hints if h.help)
+    if helps:
+        entry["help"] = " ".join(helps)
     if not hints and not verb:
         entry["next"] = (
             "not in the dictionary: rephrase, or declare it as a technical term"
         )
     report.words[tok] = entry
+
+
+def prefixed(tok: str, vocab: Vocabulary) -> str | None:
+    """The `re-` prefix entry for a word built on it (re-bind, rerun), when
+    the lexicon has one; its help names what to write instead."""
+    if not tok.startswith("re") or REPREFIX not in vocab.unapproved:
+        return None
+    rest = tok.removeprefix(REPREFIX) if tok.startswith(REPREFIX) else tok[2:]
+    return REPREFIX if rest in vocab.verbs else None
 
 
 def unique(items: Iterable[str]) -> list[str]:
