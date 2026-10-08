@@ -82,8 +82,9 @@ and says so; `clean` drops the cache.
   one. Space out a long run rather than parallelizing it; the indexes are
   metered per address, and one refuses for the rest of the day.
 - `fetch`: takes one http or https URL and returns an article. A PDF, a
-  listing, a paywall, or a page rendered by JavaScript comes back refused,
-  not empty.
+  raw data file such as JSONL or CSV, a listing, a paywall, or a page
+  rendered by JavaScript comes back refused, not empty. Download a data
+  file directly instead.
 
 ## Reading results
 
