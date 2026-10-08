@@ -16,31 +16,34 @@ metadata:
 
 # ASD-STE100
 
-Write new text, rewrite existing text, or review text in ASD-STE100
-Simplified Technical English (STE), Issue 9. The deliverable is the STE text
-plus the checker's last report, or the report alone for `review`.
+Write new text in ASD-STE100 Simplified Technical English (STE), Issue 9,
+change a text into STE, or examine a text for STE errors. The result is the
+STE text and the last `check` report. For `review`, the result is only the
+report.
 
-## Verbs
+## Skill verbs
 
-Choose the verb by, in order: an explicit verb; the request shape below;
-otherwise `review` when the user supplies text and asks nothing else.
+The skill verb that the user gives comes first. If the user gives no skill
+verb, the task in the table sets the skill verb. If the user gives only a
+text, the skill verb is `review`.
 
-| Verb | Request shape | Deliverable |
+| Skill verb | Task | Result |
 | --- | --- | --- |
-| `build` | New text from a brief, notes, or facts | STE text and a clean report |
-| `refactor` | Existing text into STE, meaning preserved | STE text, a clean report, and a list of meaning changes |
-| `review` | Judge text, change nothing | The report, read out as fixes named by rule |
-| `help` | What this skill does | The card under Help |
+| `build` | Write new text from a brief, from notes, or from facts | STE text and a report with no errors |
+| `refactor` | Change a text into STE and keep its meaning | STE text, a report with no errors, and a list of the changes in meaning |
+| `review` | Examine a text, but do not change it | The report, as a list of corrections, each with its rule |
+| `help` | Show how to use this skill | The `help` card |
 
-`review` never edits the text. `build` and `refactor` edit only the draft
-they produce; a named file changes only when the user asked for an in-place
-edit.
+`review` does not change the text. `build` and `refactor` change only the
+draft that they make. They change a file of the user only if the user tells
+you to change that file.
 
 ## Commands
 
-Bind the command once per shell and re-bind after a reset; `realpath` is
-required. Invoke this surface and read its output; read the source only when
-the user instructs troubleshooting.
+Bind the command one time in each shell. If the shell starts again, bind it
+again. You must use `realpath`. Use these commands and read their output.
+Read the source code only when the user tells you to find the cause of a
+problem.
 
 <commands for="bind">
 R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-asd-ste100"
@@ -53,160 +56,209 @@ $R lookup WORD [WORD ...]
 $R clean
 </commands>
 
-* `check` takes the text in a named slot: `--text` inline, `--text:file
-  PATH`, `--text:stdin`, or the pipe when no flag claims it. Put more than
-  one sentence in a file. An empty text is a rejection.
-* `--format markdown` skips front matter, fenced code, and the payload of a
-  `<commands>` or `<template>` element; each heading, list item, table row,
-  and line opening with a tag is a paragraph, and each table cell a
-  sentence. `--section HEADING` keeps one heading and its lines, up to the
-  next heading of any level. In either format an inline code span counts as
-  one word and its words are not checked.
-* `--allow:file PATH` names the declared technical nouns and technical
-  verbs, one term per line, `#` for comments. A one-word term passes, and
-  so does a declared noun's regular plural and possessive. A multi-word term
-  passes only whole: its words alone are still checked. A hyphenated word
-  passes when each part is approved, declared, or a number.
-* `--mode procedure` (the default) sets the procedural sentence limit and a
-  note limit for sentences that start `NOTE:`; `--mode description` sets the
-  descriptive sentence limit and the paragraph limit. The report's `limits`
-  echoes the numbers in force.
-* `lookup` takes one or more words and returns one item in `words` per
-  word: every dictionary entry whose headword or form is the word, with its
-  approved meaning or its alternatives and the spec's examples. A regular
-  inflection of an unapproved headword resolves to it under `headword`.
-  When the spec gives one example per alternative, `choices` pairs each
-  alternative with its STE sentence and the sentence it replaces. An empty
-  `entries` means the word is not in the dictionary.
-* `fetch` downloads the pinned release and verifies each file's digest.
-  `check` and `lookup` fetch on their own when the cache is empty and say so
-  in a `signal:` line. `clean` drops the cache; the next run fetches again.
-* Each command prints one JSON document on stdout; `signal:` lines on stderr
-  are advisory. Exit 0 done; 1 fix the input and resend; 2 the download
-  failed or a cached file was corrupt and was deleted, so rerun the same
-  command. With no network, exit 2 names the release it needed: report that
-  the check could not run, and never claim compliance without a report.
+* `check` reads the text from one of these sources: `--text` for a short
+  text, `--text:file PATH`, `--text:stdin`, or the pipe if no flag uses it.
+  For more than one sentence, use a file. `check` rejects an empty text.
+* With `--format markdown`, `check` ignores the front matter, fenced code,
+  and the lines in a `<commands>` or `<template>` element. Each heading,
+  list item, table row, and line that starts with a tag is a paragraph. Each
+  table cell is a sentence. `--section HEADING` keeps only that heading and
+  its lines, until the next heading. With `--format text` (the default), an
+  empty line ends a paragraph.
+* An inline code span counts as one word, and `check` does not examine the
+  words in it. Text in quotation marks is a technical noun. It counts as one
+  word, and the report shows it in a `quotation` signal.
+* `--allow:file PATH` gives your technical nouns and technical verbs, one
+  term on each line. A comment starts with `#`. The checker accepts a
+  one-word term and the regular plural of a noun. It accepts a term of two
+  or more words only when all its words are together. It does not accept one
+  of these words without the other words.
+* `--mode procedure` (the default) sets the sentence limit for procedures,
+  and a limit for a sentence that starts with `NOTE:`. `--mode description`
+  sets the sentence limit and the paragraph limit for descriptions. The
+  `limits` in the report shows the numbers that apply.
+* `lookup` accepts one or more words, and gives one item in `words` for each.
+  It shows each dictionary entry that has the word as its headword or as a
+  form. Each entry gives its approved meaning or its
+  alternatives, and the examples from the specification. For a form of a
+  headword that is not approved, `lookup` gives the `headword` and its
+  entries. When the specification gives one example for each alternative,
+  `choices` gives each alternative with its STE example and with the
+  sentence that it replaces. An empty `entries` shows that the word is not in
+  the dictionary.
+* `fetch` downloads the release that this skill uses, and makes sure that
+  the digest of each file is correct. If the cache is empty, `check` and
+  `lookup` do a `fetch` first and tell you in a `signal:` line. `clean`
+  removes the cache, and the next command downloads the release again.
+* Each command writes one JSON document to `stdout`. The `signal:` lines on
+  `stderr` give information only.
+* Exit 0: the command is completed. Exit 1: correct the input and send it
+  again. Exit 2: the download did not occur, or a file in the cache was not
+  correct and the command removed it. Then do the same command again.
+* With no network, exit 2 gives the release that is necessary. Then tell the
+  user that the check did not occur. Do not tell the user that a text agrees
+  with STE if you do not have a report.
 
-## Reading the report
+## The report
 
-* `summary` counts findings and signals by kind and lists each word to
-  replace; read it first on a long text.
-* `ok` is true only when no decidable finding remains. It is necessary, not
-  sufficient: the checker cannot see meaning, so text with `ok: true` can
-  still break STE.
-* `findings` are decidable, each with its `rule` and the source `line` or
-  `lines` it occurs on. `sentence_length` gives
-  the sentence index, its word count, and the limit. `paragraph_length`
-  gives the paragraph's sentence count. `not_approved` gives the token, every
-  sentence it occurs in, and `alternatives` when the word is an unapproved
-  headword, with the `headword` when the word is a regular inflection of
-  one, and the spec's `help` where it gives one (the only guidance when no
-  alternative is listed, and for a word built on "re-"). `ing_form` names the verb it inflects. `contraction` and
-  `punctuation` (a semicolon) name the token or mark.
-* `signals` are heuristic; weigh each one, and change the text only when it
-  is right. `passive_candidate` shows the words and whether an agent follows
-  with "by". `second_instruction` shows "and" or "then" before a verb.
-  `part_of_speech` marks an approved word that is also an unapproved
-  headword in another part of speech, with what to use for that one and,
-  in `context`, each use with the word before it.
-  `abbreviation` marks an all-capitals token that passed as a label.
-  `quotation` marks quoted text, which passes as a technical noun (rule 1.5)
-  and is not checked word by word.
-* `skipped` lists what this run did not decide. Read it before you report.
-* Word count follows the spec: text in parentheses, a quotation, an inline
-  code span, a hyphenated word, and a number with its unit each count as
-  one word.
+* `summary` gives the number of errors and signals of each type, and each
+  word to replace. In a long text, read it first.
+* `ok` is `true` only when `findings` is empty. This condition is necessary
+  but not sufficient. Because the checker cannot see meaning, a text with
+  `ok: true` can contain STE errors.
+* Each item in `findings` is an error that a rule finds, and it gives its
+  `rule`. Each item also gives the `line` or the `lines` in the source text.
+  * `sentence_length` gives the sentence number, the number of words, and
+    the limit.
+  * `paragraph_length` gives the number of sentences in the paragraph.
+  * `not_approved` gives the word, each sentence that contains it, and the
+    `alternatives` for a headword that is not approved. For a form of that
+    headword, it also gives the `headword`. If the specification gives an
+    instruction for the headword, `help` shows it. For a word with "re-",
+    read `help`.
+  * `ing_form` gives the verb of the -ing word.
+  * `contraction` gives the word. `punctuation` gives the mark, which is a
+    semicolon.
+* Each item in `signals` is a possible error. Examine each signal, and
+  change the text only if the signal is correct.
+  * `passive_candidate` shows the words, and if the word "by" follows them.
+  * `second_instruction` shows "and" or "then" before a verb.
+  * `part_of_speech` shows an approved word that is also a headword that is
+    not approved in a different part of speech. It gives the alternatives
+    for that part of speech. Its `context` shows the word with the word
+    that comes before it. This is usually sufficient to find the part of
+    speech.
+  * `abbreviation` shows a word in capital letters that the checker accepted
+    as a label.
+  * `quotation` shows text in quotation marks, which the checker accepts as a
+    technical noun.
+* `skipped` gives the checks that the command did not do. Read it before
+  you give the report.
+* The word count obeys the specification. Text in parentheses, a
+  quotation, an inline code span, a word with a hyphen, and a number with
+  its unit each count as one word.
 
 ## Technical nouns and verbs
 
-The dictionary holds no technical nouns or technical verbs. Declare them in
-the allow file before the first check.
+The dictionary does not contain technical nouns or technical verbs. Before
+the first check, write them in the allow file.
 
-1. Collect the candidate terms: names of parts, tools, materials, systems,
-   places, units, people's roles, documents, and the processes of a subject
-   field (drill, solder, download).
-2. Declare a word only as a technical noun or a technical verb. Never
-   declare a general word to silence a finding: "utilize", "ensure", and
-   "perform" are not technical terms.
-3. Use a technical noun only as a noun and a technical verb only as a verb.
-4. Use one term for one item throughout, the shortest clear one. Keep a
-   multi-word noun to three words; write a longer technical noun in full
-   first, then shorten it or join it with hyphens.
-5. Before you declare a word, run `$R lookup WORD`. If the dictionary lists
-   it as unapproved, use the alternative unless the word is the name of a
-   thing in the user's field.
+1. Find the possible terms. Look for the names of parts, tools, materials,
+   systems, locations, units, persons, and documents. Also look for the
+   procedures of the work of the user, for example "drill" or "download".
+2. Write a word in the allow file only if it is a technical noun or a
+   technical verb. Do not write a general word there to stop an error.
+   "Utilize", "ensure", and "perform" are not technical nouns or technical
+   verbs.
+3. Use a technical noun only as a noun, and a technical verb only as a verb.
+4. Use one term for one item in all of the text. Select the shortest term
+   that is clear. Use a maximum of three words in a multi-word noun. Write a
+   longer technical noun in full one time. After that, make it shorter, or
+   connect its words with hyphens.
+5. Before you write a word in the allow file, use `$R lookup WORD` to find
+   it. If the dictionary shows that the word is not approved, use an
+   alternative. If the word is the name of an item in the user's work,
+   write it in the allow file.
 
-## Writing STE
+## Write STE
 
-* Choose each word's approved alternative by meaning, not by position: read
-  the entry's examples with `lookup` and take the alternative whose example
-  says what the sentence means. A form alternative ("fast (adj): faster")
-  names the form to write.
-* When no alternative fits word for word, change the sentence: make the
-  agent the subject, make the action a verb, or split the sentence.
-* Give each approved word only its approved part of speech and meaning.
-  CHECK is a noun, so "do a check of the valve", not "check the valve".
-* Procedures: one instruction per sentence, in the imperative; put a
-  condition first and end it with a comma ("If the light comes on, stop the
-  engine."); write a note for information only.
-* Descriptions: no imperatives; one topic per paragraph; the passive only
-  when the agent is unknown.
-* Split a long sentence at its clauses: one action, one condition, or one
-  fact per sentence. Keep the order of actions as they occur. Use a
-  vertical list for a series; each item counts as a sentence.
-* Write words in full: no contractions, no dropped articles, no semicolons.
-  Use the past participle only as an adjective, and no -ing word except a
-  technical noun or one the dictionary approves.
+* Select each alternative by its meaning, not by its position in the list.
+  Use `lookup` to read the examples of the entry. Use the alternative that
+  has an example with the same meaning as your sentence. In `choices`, each
+  alternative has its example. An alternative with a form ("fast (adj):
+  faster") tells you the form to write.
+* If no alternative can replace the word directly, write the sentence
+  differently. You can start with the person or the item that does the
+  work. You can use a verb for the step, or you can divide the sentence.
+* Use each approved word only in its approved part of speech and with its
+  approved meaning. For example, CHECK is a noun. Write "do a check of the
+  valve", not "check the valve".
+* In a procedure, write one instruction in each sentence, in the
+  imperative. Put a condition first, with a comma after it ("If the light
+  comes on, stop the engine."). Use a note only for information.
+* In a description, do not use the imperative. Write about one topic in
+  each paragraph. Use the passive only if you do not know which person or
+  which item does the work.
+* Divide a long sentence. Write one step, one condition, or one fact in each
+  sentence. Keep the steps in the sequence in which they occur. For a
+  sequence of items, use a vertical list. Each list item counts as a
+  sentence.
+* Write words in full. Do not use contractions or semicolons. Keep all
+  articles. Use a past participle only as an adjective. Use an -ing word
+  only if it is a technical noun or the dictionary shows it as approved.
 
 ## Procedure
 
 <procedure>
   <phase name="prepare">
-    <step>Decide the mode: `procedure` for instructions, `description` for text that gives information. Text that holds both is checked in two parts, each in its own mode.</step>
-    <step>Write the allow file from the text and the brief (Technical nouns and verbs).</step>
+    <step>Select the mode: `procedure` for instructions, or `description` for text that gives information.</step>
+    <step>If a text has instructions and information, examine each part in its applicable mode. For a Markdown file, use `--format markdown` and one `--section` for each part.</step>
+    <step>Write the allow file from the text and the brief (refer to Technical nouns and verbs).</step>
   </phase>
   <phase name="draft">
-    <step>`build`: draft from the brief in STE (Writing STE). `refactor`: draft from the source sentence by sentence, keeping every fact, number, condition, and warning. `review`: skip to the loop and edit nothing.</step>
+    <step>For `build`, write a draft from the brief in STE (refer to Write STE).</step>
+    <step>For `refactor`, write a draft from the source, one sentence at a time. Keep all facts, numbers, conditions, and warnings.</step>
+    <step>For `review`, go to the loop. Do not change the text.</step>
   </phase>
   <phase name="loop">
-    <step>Run `$R check --text:file draft.txt --allow:file terms.txt --mode MODE`.</step>
-    <step>Fix every finding: replace each `not_approved` word with an alternative or a new construction, split each long sentence, divide each long paragraph, remove each contraction and semicolon.</step>
-    <step>Weigh every signal and fix the true ones.</step>
-    <step>Run the check again. Stop when `ok` is true, or when every remaining finding is a technical noun or verb the allow file missed: declare those, rerun, and stop.</step>
+    <step>Use the command `$R check --text:file draft.txt --allow:file terms.txt --mode MODE`.</step>
+    <step>Replace each `not_approved` word with an alternative, or write the sentence differently.</step>
+    <step>Divide each sentence that is too long. Divide each paragraph that is too long.</step>
+    <step>Remove each contraction and each semicolon.</step>
+    <step>Examine each signal. If a signal is correct, correct the text.</step>
+    <step>Do the check again. Stop when `ok` is `true`.</step>
+    <step>If each error that stays is a technical noun or a technical verb, write it in the allow file. Do the check one more time. Then stop.</step>
   </phase>
   <phase name="deliver">
-    <step>Read the final text for meaning against the source or brief: same facts, same order of actions, same warnings.</step>
-    <step>Return the text and the last report's `ok`, counts, and signals you kept. For `refactor`, list each place where STE forced a change of meaning or detail. For `review`, return the report as a list of fixes with sentence numbers, plus what `skipped` names.</step>
+    <step>Compare the meaning of the last draft with the source or the brief. Make sure that the facts, the sequence of steps, and the warnings are the same.</step>
+    <step>Give the text. From the last report, give `ok`, the counts, and the signals that you did not correct.</step>
+    <step>For `refactor`, give a list of each location where STE changed the meaning or removed information.</step>
+    <step>For `review`, give the report as a list of corrections with line numbers. Also give the items in `skipped`.</step>
   </phase>
 </procedure>
 
-## Help
+## The `help` card
 
 <template for="help">
 asd-ste100: build, refactor, or review text in ASD-STE100 STE (Issue 9).
-  build    <brief>   new STE text, checked until clean
-  refactor <file>    existing text into STE, meaning preserved
-  review   <file>    report only; changes nothing
-  help               this card
-Declare technical nouns and verbs first; ok: true is necessary, not sufficient.
+  build    <brief>   write new STE text until the report shows no errors
+  refactor <file>    change a text into STE, and keep its meaning
+  review   <file>    give only the report, and do not change the text
+  help               show this card
+Write the technical nouns and verbs first. ok: true is necessary, but not sufficient.
 </template>
 
-## Gotchas
+## Possible problems
 
-* A capitalized word in mixed-case text passes as a label and is signaled;
-  in all-capitals text (a warning) every word is checked.
-* The allow file passes a word in every sentence. A word you declare as a
-  noun still passes where you used it as a verb; read the
-  `part_of_speech` signals and the text for that.
-* Meaning is not checked. "Fall" is approved only for movement by gravity,
-  not for a decrease; `lookup` shows each approved meaning.
+* If a text is not all in capital letters, the checker accepts a word in
+  capital letters as a label. It gives an `abbreviation` signal for that
+  word. If a text is all in capital letters, for example a warning, the
+  checker examines each word.
+* The allow file accepts a term in all sentences. If you write a term as a
+  noun, the checker also accepts it where you use it as a verb. Read the
+  text for this error.
+* The checker does not examine meaning. For example, "fall" is approved
+  only for movement by gravity, not for a value that decreases. `lookup`
+  shows each approved meaning.
+* The alternatives in `lookup` are for the meanings that the specification
+  gives. If your meaning is different, no alternative is correct. For
+  example, the alternatives for "fix" are for "attach" and "repair", not for
+  "correct an error". Then find an approved word for your meaning, here
+  `correct (v)`.
+* The checker does not examine text in quotation marks. Use quotation marks
+  only for the text on a label or for a word that you write about. Read each
+  `quotation` signal.
+* Put each command, flag, key, and file name in an inline code span. Then it
+  counts as one word, and the checker does not examine it.
+* If one section has instructions and information, examine it in
+  `description` mode. Keep each instruction in it to the `procedure` limit.
 
-## Completion checks
+## Checks before you stop
 
 <checklist>
-  <item>Technical nouns and verbs were declared before the first check, and no general word was declared to silence a finding.</item>
-  <item>The final report has `ok: true`, or each remaining finding is explained.</item>
-  <item>Every signal was weighed; the kept ones are reported.</item>
-  <item>The text keeps every fact, number, condition, and warning of its source or brief.</item>
-  <item>No claim of compliance rests on `ok` alone, and none is made when the check could not run.</item>
+  <item>The allow file had all the terms before the first check, and it contains only technical nouns and technical verbs.</item>
+  <item>The last report has `ok: true`, or the result gives the cause of each error that stays.</item>
+  <item>You examined each signal, and the result gives the signals that you did not correct.</item>
+  <item>The text keeps all facts, numbers, conditions, and warnings of its source or brief.</item>
+  <item>You do not tell the user that a text agrees with STE only because of `ok`. If the check did not occur, you do not tell the user that the text agrees with STE.</item>
 </checklist>
