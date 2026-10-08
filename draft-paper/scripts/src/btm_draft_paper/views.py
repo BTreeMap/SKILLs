@@ -57,6 +57,8 @@ def _within(state: RunState, stage: int) -> str:
                 )
             case Standing.OPEN:
                 return f"finish stage {stage}, then note gate-requested {gate}"
+            case Standing.APPROVED if stage < state.meta.stages()[1]:
+                return f"the {gate} gate passed; note stage-entered {stage + 1}"
     if stage < state.meta.stages()[1]:
         return f"finish stage {stage}, then note stage-entered {stage + 1}"
     if gate is not None and state.gates[gate] is Standing.APPROVED:

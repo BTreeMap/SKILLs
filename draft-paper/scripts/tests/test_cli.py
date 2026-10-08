@@ -223,6 +223,21 @@ class TestGates:
         )
         assert note(session, capsys, stage(3))[0] == 0
 
+    def test_an_approved_gate_points_to_the_next_stage(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        code, document, _ = note(
+            session,
+            capsys,
+            stage(2),
+            SUPPORTED,
+            request("ledger"),
+            decide("ledger", "approve"),
+        )
+        assert code == 0
+        assert document["next"] == "the ledger gate passed; note stage-entered 3"
+
     def test_a_decision_needs_a_pending_request(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:

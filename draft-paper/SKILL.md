@@ -199,6 +199,10 @@ Three gates: `plan` closes stage 1, `ledger` closes stage 2, `draft` closes
 stage 8. A run has the gates whose stage its verb runs. The script refuses
 `stage-entered` past a gate the human has not approved.
 
+A gate's standing in `status` and `check` is `open` (not yet requested),
+`pending` (requested, awaiting the human), `approved`, `revise`, or
+`rejected`.
+
 1. When the gated stage's work is done, note `gate-requested`. The script
    refuses the request while a blocker stands: the `ledger` gate needs at
    least one claim; the `draft` gate needs every live claim `supported` or
