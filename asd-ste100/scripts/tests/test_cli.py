@@ -25,7 +25,7 @@ def run(argv, capsys):
 class TestCheck:
     def test_an_empty_cache_fetches_first_and_says_so(self, served, capsys):
         code, report, err = run(["check", "--text", "Remove the test."], capsys)
-        assert code == 0 and report["ok"] and report["version"] == "v0.1.1"
+        assert code == 0 and report["ok"] and report["version"] == "v0.1.2"
         assert "fetching it first" in err
 
     def test_the_allow_file_declares_terms(self, served, tmp_path, capsys):
@@ -61,7 +61,7 @@ class TestCheck:
     ):
         monkeypatch.setattr(cli, "client_for", lambda *_a, **_k: make_client({}))
         code, _, err = run(["check", "--text", "Remove the test."], capsys)
-        assert code == 2 and "ste-tax v0.1.1" in err
+        assert code == 2 and "ste-tax v0.1.2" in err
 
 
 class TestLookup:
