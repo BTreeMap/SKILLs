@@ -11,29 +11,30 @@ compatibility: >-
   network access to download the pinned dictionary and rules; later runs
   read the cache.
 metadata:
-  argument-hint: "[write|rewrite|check|help] [file-or-text]"
+  argument-hint: "[build|refactor|review|help] [file-or-text]"
 ---
 
 # ASD-STE100
 
-Write new text, rewrite existing text, or check text in ASD-STE100
+Write new text, rewrite existing text, or review text in ASD-STE100
 Simplified Technical English (STE), Issue 9. The deliverable is the STE text
-plus the checker's last report, or the report alone for `check`.
+plus the checker's last report, or the report alone for `review`.
 
 ## Verbs
 
 Choose the verb by, in order: an explicit verb; the request shape below;
-otherwise `check` when the user supplies text and asks nothing else.
+otherwise `review` when the user supplies text and asks nothing else.
 
 | Verb | Request shape | Deliverable |
 | --- | --- | --- |
-| `write` | New text from a brief, notes, or facts | STE text and a clean report |
-| `rewrite` | Existing text into STE, meaning kept | STE text, a clean report, and a list of meaning changes |
-| `check` | Judge text, change nothing | The report, read out as fixes |
+| `build` | New text from a brief, notes, or facts | STE text and a clean report |
+| `refactor` | Existing text into STE, meaning preserved | STE text, a clean report, and a list of meaning changes |
+| `review` | Judge text, change nothing | The report, read out as fixes named by rule |
 | `help` | What this skill does | The card under Help |
 
-`check` never edits the text. `write` and `rewrite` edit only the draft they
-produce; a named file changes only when the user asked for an in-place edit.
+`review` never edits the text. `build` and `refactor` edit only the draft
+they produce; a named file changes only when the user asked for an in-place
+edit.
 
 ## Commands
 
@@ -145,7 +146,7 @@ the allow file before the first check.
     <step>Write the allow file from the text and the brief (Technical nouns and verbs).</step>
   </phase>
   <phase name="draft">
-    <step>`write`: draft from the brief in STE (Writing STE). `rewrite`: draft from the source sentence by sentence, keeping every fact, number, condition, and warning. `check`: skip to the loop and edit nothing.</step>
+    <step>`build`: draft from the brief in STE (Writing STE). `refactor`: draft from the source sentence by sentence, keeping every fact, number, condition, and warning. `review`: skip to the loop and edit nothing.</step>
   </phase>
   <phase name="loop">
     <step>Run `$R check --text:file draft.txt --allow:file terms.txt --mode MODE`.</step>
@@ -155,18 +156,18 @@ the allow file before the first check.
   </phase>
   <phase name="deliver">
     <step>Read the final text for meaning against the source or brief: same facts, same order of actions, same warnings.</step>
-    <step>Return the text and the last report's `ok`, counts, and signals you kept. For `rewrite`, list each place where STE forced a change of meaning or detail. For `check`, return the report as a list of fixes with sentence numbers, plus what `skipped` names.</step>
+    <step>Return the text and the last report's `ok`, counts, and signals you kept. For `refactor`, list each place where STE forced a change of meaning or detail. For `review`, return the report as a list of fixes with sentence numbers, plus what `skipped` names.</step>
   </phase>
 </procedure>
 
 ## Help
 
 <template for="help">
-asd-ste100: write, rewrite, or check text in ASD-STE100 STE (Issue 9).
-  write   <brief>   new STE text, checked until clean
-  rewrite <file>    existing text into STE, meaning kept
-  check   <file>    report only; changes nothing
-  help              this card
+asd-ste100: build, refactor, or review text in ASD-STE100 STE (Issue 9).
+  build    <brief>   new STE text, checked until clean
+  refactor <file>    existing text into STE, meaning preserved
+  review   <file>    report only; changes nothing
+  help               this card
 Declare technical nouns and verbs first; ok: true is necessary, not sufficient.
 </template>
 
