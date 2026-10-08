@@ -115,7 +115,8 @@ $R clean
     it, and the `alternatives` for a headword that is not approved. For a
     form of that headword, it also gives the `headword`. If the
     specification gives an instruction for the headword, `help` shows it.
-    For a word with "re-", read `help`.
+    For a word with "re-", read `help`. The report gives one `not_approved`
+    item for each different word, not for each time the word occurs.
   * `ing_form` gives the verb of the -ing word.
   * `contraction` gives the word. `punctuation` gives the mark, which is a
     semicolon.
