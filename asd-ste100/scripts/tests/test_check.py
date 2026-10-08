@@ -16,6 +16,7 @@ from btm_asd_ste100.check import (
     vocabulary,
     word_count,
 )
+from btm_asd_ste100.layout import Cut, Format
 from btm_asd_ste100.records import Lexicon, Rules
 from btm_corekit import CommandError, parse_model
 
@@ -25,8 +26,13 @@ def run(lexicon_doc, rules_doc):
     vocab = vocabulary(parse_model(Lexicon, lexicon_doc, "lexicon"))
     rules = parse_model(Rules, rules_doc, "rules")
 
-    def go(text: str, mode: Mode = Mode.PROCEDURE, allow: str | None = None) -> dict:
-        return check(text, mode, vocab, limits(rules, mode), allow_terms(allow))
+    def go(
+        text: str,
+        mode: Mode = Mode.PROCEDURE,
+        allow: str | None = None,
+        how: Cut = Cut(),  # noqa: B008 - frozen, so one shared default is safe
+    ) -> dict:
+        return check(text, vocab, limits(rules, mode), allow_terms(allow), how)
 
     return go
 
@@ -60,6 +66,9 @@ class TestSplitter:
         got = sentences("Do these steps:\n- Remove the test\n- Install the test")
         assert len(got) == 3
 
+    def test_a_code_span_after_a_period_starts_a_sentence(self, run):
+        assert run("Remove the test. `x` is done.")["counts"]["sentences"] == 2
+
     def test_a_colon_at_a_wrapped_line_end_ends_nothing(self):
         assert len(sentences("Use the form (fast:\nfaster) here.")) == 1
 
@@ -80,6 +89,7 @@ class TestWordCount:
             ("Clean it with a soap-and-water solution.", 6),
             ("Drain 2 liters and 6 mm of oil.", 6),
             ('Set the switch to "TEST MODE ON".', 5),
+            ("Run `$R check --text:file draft.txt` again.", 3),
         ],
     )
     def test_rule_8_groups_count_as_one_word(self, sentence, words):
@@ -134,11 +144,14 @@ class TestFindings:
         report = run("Don't remove the test; do the test.")
         assert {"contraction", "punctuation"} <= set(kinds(report))
 
+    def test_a_code_span_is_not_checked(self, run):
+        assert run("Remove the `frobnicate --utilize` test.")["ok"]
+
     def test_quoted_text_is_a_technical_noun_and_a_signal(self, run):
         report = run('Do not remove the "utilize" test.')
         assert report["ok"]
         (s,) = [s for s in report["signals"] if s["kind"] == "quotation"]
-        assert (s["text"], s["sentences"]) == ('"utilize"', [0])
+        assert (s["text"], s["lines"]) == ('"utilize"', [1])
 
     def test_an_inflected_unapproved_word_carries_its_alternatives(self, run):
         (f,) = run("Remove the ensured test.")["findings"]
@@ -160,6 +173,16 @@ class TestFindings:
     def test_alternatives_are_listed_once(self, run):
         (f,) = run("Return the test.")["findings"]
         assert f["alternatives"] == ["do (v)"]
+
+    def test_each_finding_names_its_source_line(self, run):
+        report = run("Remove the test.\n\nRemove the pump.\nInstall the pump.")
+        (f,) = report["findings"]
+        assert (f["sentences"], f["lines"]) == ([1, 2], [3, 4])
+
+    def test_the_summary_counts_by_kind_and_names_the_words(self, run):
+        summary = run("Ensure the pump.")["summary"]
+        assert summary["findings"] == {"not_approved": 2}
+        assert summary["words"] == ["Ensure", "pump"]
 
     def test_a_multi_word_approved_term_passes_whole(self, run):
         assert run("Make sure that the test is done.")["ok"]
@@ -204,6 +227,7 @@ class TestSignals:
             ["v"],
         )
         assert s["sentences"] == [0]  # once per sentence, however often
+        assert s["context"] == ["Test", "the test"]  # the word before is evidence
 
     def test_capitals_in_mixed_text_pass_as_a_label(self, run):
         report = run("Remove the EMER opening.")
@@ -231,3 +255,75 @@ class TestLimits:
         )
         with pytest.raises(CommandError, match="lacks a parameter"):
             limits(rules, Mode.PROCEDURE)
+
+
+MARKDOWN = """---
+name: x
+---
+
+# Remove
+
+Remove the test. Install
+the test.
+
+* Remove the pump.
+* Install the test.
+
+| Test | Do |
+| --- | --- |
+| `build` | Remove the test. Install the test. |
+
+```
+utilize the frobnicator
+```
+
+<commands for="surface">
+$R utilize --ensure
+</commands>
+
+<procedure>
+  <step>Remove the [test](https://example.org/utilize).</step>
+</procedure>
+
+## Install
+
+Install the pump.
+"""
+
+
+class TestMarkdown:
+    def report(self, run, section: str | None = None) -> dict:
+        return run(MARKDOWN, Mode.DESCRIPTION, how=Cut(Format.MARKDOWN, section))
+
+    def test_code_front_matter_and_payloads_are_not_prose(self, run):
+        words = self.report(run)["summary"]["words"]
+        assert words == ["pump"]
+
+    def test_blocks_are_headings_items_rows_and_tag_lines(self, run):
+        report = self.report(run)
+        assert report["counts"] == {"paragraphs": 9, "sentences": 12, "words": 28}
+        (f,) = report["findings"]
+        assert f["lines"] == [10, 31]
+
+    def test_a_table_cell_is_a_sentence(self, run):
+        cell = run("| Remove the test | Install the test |", how=Cut(Format.MARKDOWN))
+        assert cell["counts"]["sentences"] == 2
+
+    def test_a_section_runs_to_the_next_heading(self, run):
+        report = self.report(run, "install")
+        assert report["counts"]["sentences"] == 2 and report["section"] == "install"
+        lead = self.report(run, "Remove")  # a level-1 heading stops at a level 2
+        assert lead["counts"]["sentences"] == 10
+
+    def test_a_section_title_may_hold_code(self, run):
+        page = "# The `help` card\n\nRemove the pump.\n"
+        report = run(page, how=Cut(Format.MARKDOWN, "The `help` card"))
+        assert report["summary"]["words"] == ["card", "pump"]
+
+    def test_an_unknown_section_names_the_headings(self, run):
+        with pytest.raises(CommandError, match="headings: Remove, Install"):
+            self.report(run, "Fix")
+
+    def test_a_section_needs_markdown(self, run):
+        with pytest.raises(CommandError, match="--format markdown"):
+            run("Remove it.", how=Cut(section="Remove"))

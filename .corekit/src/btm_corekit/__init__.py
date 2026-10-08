@@ -94,6 +94,7 @@ from btm_corekit.store.sessions import (
 from btm_corekit.text import (
     ASCII_WORD,
     ascii_words,
+    blanked,
     bracketed,
     collapse_whitespace,
     digit_run,
@@ -146,6 +147,7 @@ __all__ = [
     "append_jsonl",
     "arxiv",
     "ascii_words",
+    "blanked",
     "bracketed",
     "build_client",
     "cache_slot",

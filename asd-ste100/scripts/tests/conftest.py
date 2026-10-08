@@ -253,6 +253,23 @@ DICTIONARY = {
             "page": "2-1-E5",
         },
         {
+            "word": "return",
+            "pos": "v",
+            "qualifier": None,
+            "forms": [],
+            "status": {
+                "kind": "unapproved",
+                "alternatives": [
+                    {"kind": "word", "word": "DO", "pos": "v", "context": None},
+                ],
+                "help": None,
+                "note": None,
+            },
+            "ste_example": "DO THE TEST AGAIN.",
+            "nonste_example": "Return to the test.",
+            "page": "2-1-R7",
+        },
+        {
             "word": "REMOVE",
             "pos": "v",
             "qualifier": None,

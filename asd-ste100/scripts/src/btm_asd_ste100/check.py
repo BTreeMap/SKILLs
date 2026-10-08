@@ -9,7 +9,7 @@ passive voice candidates (3.6), a second instruction in one sentence
 (5.2), an approved word that is also an unapproved headword (1.2), an
 all-caps token passed as an abbreviation. Number words pass as technical
 nouns (1.5, category 9), and quoted text (1.5, category 10) is signaled,
-not checked.
+not checked. Every finding and signal names its source line.
 
 Cost: n tokens. Splitting and tokenizing are compiled patterns with one
 class per quantifier, linear in characters and run in C; every lookup is
@@ -27,6 +27,7 @@ from enum import StrEnum
 from itertools import pairwise
 from typing import Any
 
+from btm_asd_ste100.layout import PARAGRAPH, Cut, layout
 from btm_asd_ste100.records import Lexicon, Rules, spelled
 from btm_corekit import CommandError
 
@@ -38,21 +39,21 @@ class Mode(StrEnum):
 
 Phrases = dict[str, tuple[tuple[str, ...], ...]]  # first word -> phrases, longest first
 
-PARAGRAPH = re.compile(r"\n[ \t]*\n")
 # A sentence ends at . ! ? before whitespace and a capital, digit, or
-# opening mark, or at the end; at a colon before a list item, and before the
-# item itself (rule 8.4: each item is a sentence). A colon at a wrapped line
-# end inside prose ends nothing.
+# opening mark, or before an inline code span, or at the end; at a colon
+# before a list item, and before the item itself (rule 8.4: each item is a
+# sentence). A colon at a wrapped line end inside prose ends nothing.
 LIST_ITEM = r"\n(?=[ \t]*(?:[-*•]|\(?[0-9a-z]{1,3}[.)])[ \t])"
 SENTENCE_END = re.compile(
-    r"[.!?]+(?=\s+[\"'“(\[]?[A-Z0-9])"
+    r"[.!?]+(?=\s+(?:`|[\"'“(\[]?[A-Z0-9]))"
     r"|[.!?]+\s*$"
     rf"|:[ \t]*(?={LIST_ITEM})"
     rf"|{LIST_ITEM}"
 )
 WORD = re.compile(r"[^\W_]+(?:['\-][^\W_]+)*")
-# A parenthesized or quoted group counts as one word (rules 8.5, 8.6).
-GROUPED = re.compile(r"\([^()]*\)|\"[^\"]*\"|“[^”]*”")
+# A parenthesized or quoted group counts as one word (rules 8.5, 8.6), and
+# so does an inline code span, a name the reader copies whole.
+GROUPED = re.compile(r"\([^()]*\)|\"[^\"]*\"|“[^”]*”|`[^`\n]*`")
 # Quoted text is a technical noun (rule 1.5, category 10): counted, not checked.
 QUOTED = re.compile(r"\"[^\"]*\"|“[^”]*”")
 NOTE = re.compile(r"\s*note\s*:", re.IGNORECASE)
@@ -192,10 +193,12 @@ ING_MIN = 5  # shorter words ending in -ing (bring, sing) are not -ing forms
 DOUBLED = 3  # a stem this long may end in a doubled consonant (running)
 PARTICIPLE_MIN = 5  # shorter words ending in -ed (bed, red) are not participles
 PASSIVE_REACH = 2  # tokens between a form of BE and its participle, at most
+CONTEXTS = 8  # distinct contexts a part-of-speech signal shows, at most
 
 
 @dataclass(frozen=True, slots=True)
 class Limits:
+    mode: Mode
     sentence_words: int
     note_words: int | None
     paragraph_sentences: int | None
@@ -227,6 +230,7 @@ def limits(rules: Rules, mode: Mode) -> Limits:
             f"rules.json gives {len(sentence)} sentence limits for {mode}"
         )
     return Limits(
+        mode=mode,
         sentence_words=sentence[0],
         note_words=notes[0] if notes else None,
         paragraph_sentences=paragraph[0] if paragraph else None,
@@ -339,18 +343,22 @@ def paragraphs(text: str) -> list[str]:
     return [p for p in PARAGRAPH.split(text) if p.strip()]
 
 
-def sentences(paragraph: str) -> list[str]:
-    """Split one paragraph; the pieces, in order, hold every word of it."""
-    out, start = [], 0
-    for m in SENTENCE_END.finditer(paragraph):
-        piece = paragraph[start : m.end()].strip()
+def sentence_spans(segment: str) -> list[tuple[int, str]]:
+    """Split one segment; the pieces, in order, hold every word of it, each
+    with its offset in the segment."""
+    out: list[tuple[int, str]] = []
+    start = 0
+    for end in [*(m.end() for m in SENTENCE_END.finditer(segment)), len(segment)]:
+        raw = segment[start:end]
+        piece = raw.strip()
         if WORD.search(piece):
-            out.append(piece)
-        start = m.end()
-    tail = paragraph[start:].strip()
-    if WORD.search(tail):
-        out.append(tail)
+            out.append((start + len(raw) - len(raw.lstrip()), piece))
+        start = end
     return out
+
+
+def sentences(paragraph: str) -> list[str]:
+    return [piece for _, piece in sentence_spans(paragraph)]
 
 
 def word_count(sentence: str) -> int:
@@ -365,6 +373,8 @@ def word_count(sentence: str) -> int:
         after_number = bool(DIGIT.search(tok))
     return count
 
+
+PLAIN = Cut()
 
 # ---- the report --------------------------------------------------------------
 
@@ -384,49 +394,65 @@ class Report:
     signals: list[dict[str, Any]] = field(default_factory=list)
     words: dict[str, dict[str, Any]] = field(default_factory=dict)  # by token
     per_word: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
+    lines: list[int] = field(default_factory=list)  # sentence index -> line
 
 
 def check(
-    text: str, mode: Mode, vocab: Vocabulary, lim: Limits, allowed: Allowed
+    text: str, vocab: Vocabulary, lim: Limits, allowed: Allowed, how: Cut = PLAIN
 ) -> dict[str, Any]:
     """One report. `ok` is true only when no decidable finding remains."""
     text = text.replace(CURLY_APOSTROPHE, "'")
-    shouting = sum(c.isupper() for c in text) > sum(c.islower() for c in text)
+    mode = lim.mode
+    cut = layout(text, how)
+    prose = cut.masked
+    shouting = sum(c.isupper() for c in prose) > sum(c.islower() for c in prose)
     ctx = Context(mode, vocab, lim, allowed, shouting)
     report = Report()
-    n_sentences = n_words = 0
-    paras = paragraphs(text)
-    for p_index, para in enumerate(paras):
-        sents = sentences(para)
+    n_words = 0
+    for p_index, block in enumerate(cut.blocks):
+        sents = [
+            (start + offset, piece)
+            for start, end in block
+            for offset, piece in sentence_spans(cut.masked[start:end])
+        ]
         if lim.paragraph_sentences is not None and len(sents) > lim.paragraph_sentences:
             report.findings.append({
                 "rule": "6.6", "kind": "paragraph_length", "paragraph": p_index,
-                "sentences": len(sents), "limit": lim.paragraph_sentences,
+                "line": cut.line(sents[0][0]), "sentences": len(sents),
+                "limit": lim.paragraph_sentences,
             })  # fmt: skip
-        for sent in sents:
-            n_words += measure(sent, n_sentences, p_index, ctx, report)
-            scan(sent, n_sentences, ctx, report)
-            n_sentences += 1
+        for offset, sent in sents:
+            index = len(report.lines)
+            report.lines.append(cut.line(offset))
+            shown = text[offset : offset + len(sent)]
+            n_words += measure((sent, shown), (index, p_index), ctx, report)
+            scan(sent, index, ctx, report)
     report.findings.extend(report.words.values())
     report.signals.extend(report.per_word.values())
+    for item in (*report.findings, *report.signals):
+        locate(item, report.lines)
     skipped = [
         "meaning (1.3) and part of speech (1.2) are not decided; read the signals",
         "technical nouns and technical verbs pass only when --allow declares them",
         "text in parentheses counts as one word, not as a sentence of its own",
+        "an inline code span counts as one word and its words are not checked",
     ]
     if lim.paragraph_sentences is None:
         skipped.append(f"paragraph length (6.6) does not apply in {mode} mode")
     return {
         "mode": mode.value,
+        "format": how.fmt.value,
+        **({"section": how.section} if how.section is not None else {}),
         "ok": not report.findings,
+        "summary": summary(report),
         "limits": {
             "sentence_words": lim.sentence_words,
             "note_words": lim.note_words,
             "paragraph_sentences": lim.paragraph_sentences,
         },
         "counts": {
-            "paragraphs": len(paras),
-            "sentences": n_sentences,
+            "paragraphs": len(cut.blocks),
+            "sentences": len(report.lines),
             "words": n_words,
         },
         "findings": report.findings,
@@ -435,8 +461,38 @@ def check(
     }
 
 
-def measure(sent: str, index: int, p_index: int, ctx: Context, report: Report) -> int:
-    """Sentence length and forbidden punctuation; returns the word count."""
+def locate(item: dict[str, Any], lines: list[int]) -> None:
+    """Name the source line of each sentence an item cites."""
+    if "sentence" in item:
+        item["line"] = lines[item["sentence"]]
+    elif isinstance(item.get("sentences"), list):
+        item["lines"] = sorted({lines[i] for i in item["sentences"]})
+
+
+def summary(report: Report) -> dict[str, Any]:
+    """The report at a glance: counts by kind, and each word to replace."""
+
+    def by_kind(items: list[dict[str, Any]]) -> dict[str, int]:
+        out: dict[str, int] = {}
+        for item in items:
+            out[item["kind"]] = out.get(item["kind"], 0) + 1
+        return out
+
+    return {
+        "findings": by_kind(report.findings),
+        "signals": by_kind(report.signals),
+        "words": [f["token"] for f in report.words.values()],
+    }
+
+
+def measure(
+    text: tuple[str, str], where: tuple[int, int], ctx: Context, report: Report
+) -> int:
+    """Sentence length and forbidden punctuation; returns the word count.
+    `text` is the masked sentence and the source it shows; `where` is the
+    sentence index and the paragraph index."""
+    sent, shown = text
+    index, p_index = where
     words = word_count(sent)
     limit = ctx.lim.sentence_words
     if ctx.lim.note_words is not None and NOTE.match(sent):
@@ -445,7 +501,7 @@ def measure(sent: str, index: int, p_index: int, ctx: Context, report: Report) -
         report.findings.append({
             "rule": "5.1" if ctx.mode is Mode.PROCEDURE else "6.3",
             "kind": "sentence_length", "sentence": index, "paragraph": p_index,
-            "words": words, "limit": limit, "text": sent[:120],
+            "words": words, "limit": limit, "text": shown[:120],
         })  # fmt: skip
     for mark in ctx.lim.forbidden:
         if mark in sent:
@@ -493,7 +549,8 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
         if base in ctx.allowed.words:
             continue
         if approved(base, ctx.vocab):
-            pos_signal(base, index, ctx.vocab, report)
+            before = tokens[i - 1] if i else ""
+            pos_signal(base, (index, f"{before} {orig}".strip()), ctx.vocab, report)
         elif compound(base, ctx):
             continue
         elif not ctx.shouting and orig.isupper() and len(orig) > 1:
@@ -610,12 +667,19 @@ def unique(items: Iterable[str]) -> list[str]:
     return list(dict.fromkeys(items))
 
 
-def pos_signal(tok: str, index: int, vocab: Vocabulary, report: Report) -> None:
+def pos_signal(
+    tok: str, where: tuple[int, str], vocab: Vocabulary, report: Report
+) -> None:
     """An approved form that is also an unapproved headword may be used in
-    the part of speech that is not approved: CHECK (n) against check (v)."""
+    the part of speech that is not approved: CHECK (n) against check (v).
+    `where` is the sentence index and the word with the one before it, the
+    evidence for the part of speech."""
+    index, context = where
     seen = report.per_word.get(("part_of_speech", tok))
     if seen is not None:
         cited(seen, index)
+        if context not in seen["context"] and len(seen["context"]) < CONTEXTS:
+            seen["context"].append(context)
         return
     poses = vocab.approved_pos.get(tok, frozenset())
     hints = [h for h in vocab.unapproved.get(tok, ()) if h.pos not in poses]
@@ -625,6 +689,7 @@ def pos_signal(tok: str, index: int, vocab: Vocabulary, report: Report) -> None:
             "approved_as": sorted(p for p in poses if p),
             "not_approved_as": sorted({h.pos or "" for h in hints}),
             "alternatives": unique(a for h in hints for a in h.alternatives),
+            "context": [context],
         })  # fmt: skip
 
 

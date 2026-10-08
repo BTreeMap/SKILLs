@@ -48,14 +48,20 @@ R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-asd-
 
 <commands for="surface">
 $R fetch [--version TAG]
-$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description]
-$R lookup WORD
+$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING]
+$R lookup WORD [WORD ...]
 $R clean
 </commands>
 
 * `check` takes the text in a named slot: `--text` inline, `--text:file
   PATH`, `--text:stdin`, or the pipe when no flag claims it. Put more than
   one sentence in a file. An empty text is a rejection.
+* `--format markdown` skips front matter, fenced code, and the payload of a
+  `<commands>` or `<template>` element; each heading, list item, table row,
+  and line opening with a tag is a paragraph, and each table cell a
+  sentence. `--section HEADING` keeps one heading and its lines, up to the
+  next heading of any level. In either format an inline code span counts as
+  one word and its words are not checked.
 * `--allow:file PATH` names the declared technical nouns and technical
   verbs, one term per line, `#` for comments. A one-word term passes, and
   so does a declared noun's regular plural and possessive. A multi-word term
@@ -65,9 +71,13 @@ $R clean
   note limit for sentences that start `NOTE:`; `--mode description` sets the
   descriptive sentence limit and the paragraph limit. The report's `limits`
   echoes the numbers in force.
-* `lookup` prints every dictionary entry whose headword or form is `WORD`,
-  with its approved meaning or its alternatives and the spec's examples. An
-  empty `entries` means the word is not in the dictionary.
+* `lookup` takes one or more words and returns one item in `words` per
+  word: every dictionary entry whose headword or form is the word, with its
+  approved meaning or its alternatives and the spec's examples. A regular
+  inflection of an unapproved headword resolves to it under `headword`.
+  When the spec gives one example per alternative, `choices` pairs each
+  alternative with its STE sentence and the sentence it replaces. An empty
+  `entries` means the word is not in the dictionary.
 * `fetch` downloads the pinned release and verifies each file's digest.
   `check` and `lookup` fetch on their own when the cache is empty and say so
   in a `signal:` line. `clean` drops the cache; the next run fetches again.
@@ -79,10 +89,13 @@ $R clean
 
 ## Reading the report
 
+* `summary` counts findings and signals by kind and lists each word to
+  replace; read it first on a long text.
 * `ok` is true only when no decidable finding remains. It is necessary, not
   sufficient: the checker cannot see meaning, so text with `ok: true` can
   still break STE.
-* `findings` are decidable, each with its `rule`. `sentence_length` gives
+* `findings` are decidable, each with its `rule` and the source `line` or
+  `lines` it occurs on. `sentence_length` gives
   the sentence index, its word count, and the limit. `paragraph_length`
   gives the paragraph's sentence count. `not_approved` gives the token, every
   sentence it occurs in, and `alternatives` when the word is an unapproved
@@ -93,13 +106,15 @@ $R clean
   is right. `passive_candidate` shows the words and whether an agent follows
   with "by". `second_instruction` shows "and" or "then" before a verb.
   `part_of_speech` marks an approved word that is also an unapproved
-  headword in another part of speech, with what to use for that one.
+  headword in another part of speech, with what to use for that one and,
+  in `context`, each use with the word before it.
   `abbreviation` marks an all-capitals token that passed as a label.
   `quotation` marks quoted text, which passes as a technical noun (rule 1.5)
   and is not checked word by word.
 * `skipped` lists what this run did not decide. Read it before you report.
-* Word count follows the spec: text in parentheses, a quotation, a
-  hyphenated word, and a number with its unit each count as one word.
+* Word count follows the spec: text in parentheses, a quotation, an inline
+  code span, a hyphenated word, and a number with its unit each count as
+  one word.
 
 ## Technical nouns and verbs
 

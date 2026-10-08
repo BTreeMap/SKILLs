@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import re
 from collections.abc import Sequence
+from typing import Any
 
 import btm_asd_ste100
 from btm_asd_ste100.artifacts import (
@@ -16,8 +18,17 @@ from btm_asd_ste100.artifacts import (
     slot_of,
     tag,
 )
-from btm_asd_ste100.check import Mode, allow_terms, check, limits, vocabulary
-from btm_asd_ste100.records import Dictionary, Lexicon, Rules, spelled
+from btm_asd_ste100.check import (
+    Mode,
+    allow_terms,
+    check,
+    limits,
+    stems,
+    unique,
+    vocabulary,
+)
+from btm_asd_ste100.layout import Cut, Format
+from btm_asd_ste100.records import Dictionary, Entry, Lexicon, Rules, spelled
 from btm_corekit import (
     Commands,
     Optional,
@@ -32,6 +43,7 @@ from btm_corekit import (
 )
 
 TEXT = Required("text")
+STOP = re.compile(r"(?<=[.!?])\s+")
 ALLOW = Optional("allow", inline=False)
 
 
@@ -62,40 +74,94 @@ def cmd_check(args: argparse.Namespace) -> int:
     lexicon = load(manifest, args.version, "lexicon.json", Lexicon)
     rules = load(manifest, args.version, "rules.json", Rules)
     lim = limits(rules, args.mode)
-    report = check(body, args.mode, vocabulary(lexicon), lim, allowed)
+    how = Cut(args.format, args.section)
+    report = check(body, vocabulary(lexicon), lim, allowed, how)
     emit({"version": args.version, **report, "allowed": allowed.terms})
     return 0
 
 
 def cmd_lookup(args: argparse.Namespace) -> int:
-    word = args.word.strip().lower()
     manifest = ensure(client_for(SKILL, read_timeout=None), args.version)
     dictionary = load(manifest, args.version, "dictionary.json", Dictionary)
     lexicon = load(manifest, args.version, "lexicon.json", Lexicon)
     resolved = {
-        (u.word, u.pos): [spelled(a) for a in u.alternatives]
+        (u.word, u.pos): unique(map(spelled, u.alternatives))
         for u in lexicon.unapproved
     }
-    hits = []
+    by_form: dict[str, list[Entry]] = {}
     for e in dictionary.entries:
-        if word != e.word.lower() and word not in (f.lower() for f in e.forms):
-            continue
-        row = e.model_dump(exclude_none=True)
-        if e.status.get("kind") == "unapproved":
-            row["alternatives"] = resolved.get((e.word.lower(), e.pos), [])
-        else:  # alternatives for the meanings that are not approved
-            row["alternatives"] = [
-                other_meaning(a) for a in e.status.get("alternatives", [])
-            ]
-        hits.append(row)
-    document = {"version": args.version, "word": word, "entries": hits}
+        for form in dict.fromkeys([e.word.lower(), *(f.lower() for f in e.forms)]):
+            by_form.setdefault(form, []).append(e)
+    words = [lookup_one(w, by_form, resolved) for w in args.words]
+    emit({"version": args.version, "words": words})
+    return 0
+
+
+def lookup_one(
+    raw: str,
+    by_form: dict[str, list[Entry]],
+    resolved: dict[tuple[str, str | None], list[str]],
+) -> dict[str, Any]:
+    """Every entry whose headword or form is the word; failing that, the
+    unapproved headword a regular inflection of it comes from."""
+    word = raw.strip().lower()
+    entries, headword = by_form.get(word, []), None
+    if not entries:
+        headword = next((b for b in stems(word) if b in by_form), None)
+        entries = [
+            e
+            for e in by_form.get(headword or "", [])
+            if e.status.get("kind") == "unapproved"
+        ]
+        headword = headword if entries else None
+    hits = [entry_row(e, resolved) for e in entries]
+    document: dict[str, Any] = {"word": word, "entries": hits}
+    if headword:
+        document["headword"] = headword
     if not hits:
         document["next"] = (
             "not in the dictionary: rephrase with approved words, or declare it "
             "if it is a technical noun or technical verb"
         )
-    emit(document)
-    return 0
+    return document
+
+
+def entry_row(
+    e: Entry, resolved: dict[tuple[str, str | None], list[str]]
+) -> dict[str, Any]:
+    row = e.model_dump(exclude_none=True)
+    if e.status.get("kind") == "unapproved":
+        row["alternatives"] = resolved.get((e.word.lower(), e.pos), [])
+        choices = paired(row["alternatives"], e.ste_example, e.nonste_example)
+        if choices:
+            row["choices"] = choices
+            row.pop("ste_example", None)
+            row.pop("nonste_example", None)
+    else:  # alternatives for the meanings that are not approved
+        row["alternatives"] = [
+            other_meaning(a) for a in e.status.get("alternatives", [])
+        ]
+    return row
+
+
+def paired(
+    alternatives: list[str], ste: str | None, nonste: str | None
+) -> list[dict[str, str]]:
+    """Each alternative beside the spec's STE sentence that uses it and the
+    sentence it replaces, when the spec gives one of each per alternative,
+    in order; otherwise nothing, and the raw examples stay."""
+    shown = example_sentences(ste)
+    replaced = example_sentences(nonste)
+    if not alternatives or not len(alternatives) == len(shown) == len(replaced):
+        return []
+    return [
+        {"use": alt, "ste": s, "not_ste": n}
+        for alt, s, n in zip(alternatives, shown, replaced, strict=True)
+    ]
+
+
+def example_sentences(text: str | None) -> list[str]:
+    return [s for s in STOP.split(text.strip()) if s] if text else []
 
 
 def other_meaning(alt: dict[str, str]) -> str:
@@ -145,13 +211,30 @@ def build_parser() -> argparse.ArgumentParser:
         default=Mode.PROCEDURE,
         help="sets the sentence limit; default procedure",
     )
+    checker.add_argument(
+        "--format",
+        type=Format,
+        choices=list(Format),
+        default=Format.TEXT,
+        help="markdown skips front matter, code, and command payloads, and "
+        "reads each heading, list item, and table row as a paragraph and each "
+        "table cell as a sentence; default text",
+    )
+    checker.add_argument(
+        "--section",
+        metavar="HEADING",
+        help="with --format markdown, check only this heading and its lines, "
+        "up to the next heading of any level",
+    )
     add_version(checker)
 
     looker = commands.add_parser(
-        "lookup", help="a dictionary entry and its alternatives"
+        "lookup", help="dictionary entries and their alternatives"
     )
     looker.set_defaults(func=cmd_lookup)
-    looker.add_argument("word", help="a headword or one of its forms")
+    looker.add_argument(
+        "words", nargs="+", metavar="WORD", help="a headword or one of its forms"
+    )
     add_version(looker)
 
     cleaner = commands.add_parser("clean", help="drop the artifact cache")
