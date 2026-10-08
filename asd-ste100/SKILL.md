@@ -57,9 +57,10 @@ $R clean
   PATH`, `--text:stdin`, or the pipe when no flag claims it. Put more than
   one sentence in a file. An empty text is a rejection.
 * `--allow:file PATH` names the declared technical nouns and technical
-  verbs, one term per line, `#` for comments. Each word of a term passes,
-  a declared noun's regular plural passes, and a multi-word term matches
-  whole.
+  verbs, one term per line, `#` for comments. A one-word term passes, and
+  so does a declared noun's regular plural and possessive. A multi-word term
+  passes only whole: its words alone are still checked. A hyphenated word
+  passes when each part is approved, declared, or a number.
 * `--mode procedure` (the default) sets the procedural sentence limit and a
   note limit for sentences that start `NOTE:`; `--mode description` sets the
   descriptive sentence limit and the paragraph limit. The report's `limits`
@@ -85,7 +86,8 @@ $R clean
   the sentence index, its word count, and the limit. `paragraph_length`
   gives the paragraph's sentence count. `not_approved` gives the token, every
   sentence it occurs in, and `alternatives` when the word is an unapproved
-  headword. `ing_form` names the verb it inflects. `contraction` and
+  headword, with the `headword` when the word is a regular inflection of
+  one. `ing_form` names the verb it inflects. `contraction` and
   `punctuation` (a semicolon) name the token or mark.
 * `signals` are heuristic; weigh each one, and change the text only when it
   is right. `passive_candidate` shows the words and whether an agent follows
@@ -93,6 +95,8 @@ $R clean
   `part_of_speech` marks an approved word that is also an unapproved
   headword in another part of speech, with what to use for that one.
   `abbreviation` marks an all-capitals token that passed as a label.
+  `quotation` marks quoted text, which passes as a technical noun (rule 1.5)
+  and is not checked word by word.
 * `skipped` lists what this run did not decide. Read it before you report.
 * Word count follows the spec: text in parentheses, a quotation, a
   hyphenated word, and a number with its unit each count as one word.

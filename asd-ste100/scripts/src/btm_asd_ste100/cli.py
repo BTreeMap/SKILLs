@@ -63,7 +63,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     rules = load(manifest, args.version, "rules.json", Rules)
     lim = limits(rules, args.mode)
     report = check(body, args.mode, vocabulary(lexicon), lim, allowed)
-    emit({"version": args.version, **report, "allowed": len(allowed.words)})
+    emit({"version": args.version, **report, "allowed": allowed.terms})
     return 0
 
 

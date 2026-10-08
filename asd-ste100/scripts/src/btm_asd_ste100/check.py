@@ -8,7 +8,8 @@ not approved and not allowed (1.1), an -ing form outside the approved few
 passive voice candidates (3.6), a second instruction in one sentence
 (5.2), an approved word that is also an unapproved headword (1.2), an
 all-caps token passed as an abbreviation. Number words pass as technical
-nouns (1.5, category 9).
+nouns (1.5, category 9), and quoted text (1.5, category 10) is signaled,
+not checked.
 
 Cost: n tokens. Splitting and tokenizing are compiled patterns with one
 class per quantifier, linear in characters and run in C; every lookup is
@@ -20,6 +21,7 @@ lexicon index, built once in O(lexicon).
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from itertools import pairwise
@@ -38,17 +40,21 @@ Phrases = dict[str, tuple[tuple[str, ...], ...]]  # first word -> phrases, longe
 
 PARAGRAPH = re.compile(r"\n[ \t]*\n")
 # A sentence ends at . ! ? before whitespace and a capital, digit, or
-# opening mark, or at the end; at a colon that ends a line (rule 8.4); or
-# before a list item (rule 8.4: each item is a sentence).
+# opening mark, or at the end; at a colon before a list item, and before the
+# item itself (rule 8.4: each item is a sentence). A colon at a wrapped line
+# end inside prose ends nothing.
+LIST_ITEM = r"\n(?=[ \t]*(?:[-*•]|\(?[0-9a-z]{1,3}[.)])[ \t])"
 SENTENCE_END = re.compile(
     r"[.!?]+(?=\s+[\"'“(\[]?[A-Z0-9])"
     r"|[.!?]+\s*$"
-    r"|:[ \t]*(?=\n)"
-    r"|\n(?=[ \t]*(?:[-*•]|\(?[0-9a-z]{1,3}[.)])[ \t])"
+    rf"|:[ \t]*(?={LIST_ITEM})"
+    rf"|{LIST_ITEM}"
 )
 WORD = re.compile(r"[^\W_]+(?:['\-][^\W_]+)*")
 # A parenthesized or quoted group counts as one word (rules 8.5, 8.6).
 GROUPED = re.compile(r"\([^()]*\)|\"[^\"]*\"|“[^”]*”")
+# Quoted text is a technical noun (rule 1.5, category 10): counted, not checked.
+QUOTED = re.compile(r"\"[^\"]*\"|“[^”]*”")
 NOTE = re.compile(r"\s*note\s*:", re.IGNORECASE)
 DIGIT = re.compile(r"[0-9]")
 CURLY_APOSTROPHE = "\u2019"
@@ -292,24 +298,29 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
 
 @dataclass(frozen=True, slots=True)
 class Allowed:
-    """Declared technical nouns and verbs: every word of a term passes, and
-    a multi-word term also matches as a phrase."""
+    """Declared technical nouns and verbs. A one-word term passes alone; a
+    multi-word term passes only whole, so its words stay checked elsewhere."""
 
     words: frozenset[str]
     phrases: Phrases
+    terms: int
 
 
 def allow_terms(raw: str | None) -> Allowed:
-    """One term per line; `#` starts a comment."""
+    """One term per line; `#` starts a comment. A declared noun's regular
+    plural passes too, on the last word of a multi-word term."""
     words: set[str] = set()
     multi: dict[str, set[tuple[str, ...]]] = {}
+    terms = 0
     for line in (raw or "").replace(CURLY_APOSTROPHE, "'").splitlines():
         tokens = tuple(WORD.findall(line.split("#", 1)[0].lower()))
-        words.update(tokens)
-        words.update(map(plural, tokens[-1:]))  # a declared noun's plural
-        if len(tokens) > 1:
-            multi.setdefault(tokens[0], set()).add(tokens)
-    return Allowed(frozenset(words), longest_first(multi))
+        terms += bool(tokens)
+        if len(tokens) == 1:
+            words.update((tokens[0], plural(tokens[0])))
+        elif tokens:
+            first = multi.setdefault(tokens[0], set())
+            first.update((tokens, (*tokens[:-1], plural(tokens[-1]))))
+    return Allowed(frozenset(words), longest_first(multi), terms)
 
 
 def plural(noun: str) -> str:
@@ -371,8 +382,8 @@ class Context:
 class Report:
     findings: list[dict[str, Any]] = field(default_factory=list)
     signals: list[dict[str, Any]] = field(default_factory=list)
-    unknown: dict[str, dict[str, Any]] = field(default_factory=dict)
-    pos: dict[str, dict[str, Any]] = field(default_factory=dict)
+    words: dict[str, dict[str, Any]] = field(default_factory=dict)  # by token
+    per_word: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
 
 
 def check(
@@ -396,8 +407,8 @@ def check(
             n_words += measure(sent, n_sentences, p_index, ctx, report)
             scan(sent, n_sentences, ctx, report)
             n_sentences += 1
-    report.findings.extend(report.unknown.values())
-    report.signals.extend(report.pos.values())
+    report.findings.extend(report.words.values())
+    report.signals.extend(report.per_word.values())
     skipped = [
         "meaning (1.3) and part of speech (1.2) are not decided; read the signals",
         "technical nouns and technical verbs pass only when --allow declares them",
@@ -458,7 +469,12 @@ def covered(tokens: list[str], tables: tuple[Phrases, ...]) -> set[int]:
 
 def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     """Each token, once, against the vocabulary rules; then the signals."""
-    originals = WORD.findall(sent)
+    for quote in QUOTED.findall(sent):
+        per_word(report, "quotation", quote, index, {
+            "rule": "1.5", "text": quote,
+            "evidence": "passed as quoted text, a technical noun",
+        })  # fmt: skip
+    originals = WORD.findall(QUOTED.sub(" ", sent))
     tokens = [t.lower() for t in originals]
     inside = covered(tokens, (ctx.vocab.phrases, ctx.allowed.phrases))
     after_number = False
@@ -474,11 +490,15 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
             )
             continue
         base = tok.removesuffix(POSSESSIVE)
+        if base in ctx.allowed.words:
+            continue
         if approved(base, ctx.vocab):
             pos_signal(base, index, ctx.vocab, report)
+        elif compound(base, ctx):
+            continue
         elif not ctx.shouting and orig.isupper() and len(orig) > 1:
-            report.signals.append({
-                "kind": "abbreviation", "token": orig, "sentence": index,
+            per_word(report, "abbreviation", orig, index, {
+                "token": orig,
                 "evidence": "all capitals in mixed-case text; passed as a label",
             })  # fmt: skip
         elif base not in ctx.lim.ing_approved:
@@ -486,6 +506,23 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     passive(tokens, index, ctx.vocab, report)
     if ctx.mode is Mode.PROCEDURE:
         instructions(tokens, index, ctx.vocab, report)
+
+
+def cited(item: dict[str, Any], index: int) -> None:
+    """Add a sentence to an item's list once."""
+    if item["sentences"][-1] != index:
+        item["sentences"].append(index)
+
+
+def per_word(
+    report: Report, kind: str, key: str, index: int, body: dict[str, Any]
+) -> None:
+    """One signal per word and kind, citing every sentence it occurs in."""
+    seen = report.per_word.get((kind, key))
+    if seen is not None:
+        cited(seen, index)
+    else:
+        report.per_word[(kind, key)] = {"kind": kind, **body, "sentences": [index]}
 
 
 def approved(tok: str, vocab: Vocabulary) -> bool:
@@ -497,6 +534,19 @@ def approved(tok: str, vocab: Vocabulary) -> bool:
     return len(parts) > 1 and all(p in vocab.approved for p in parts)
 
 
+def compound(tok: str, ctx: Context) -> bool:
+    """A hyphenated word whose every part is approved, declared, or a
+    number (rule 8.2: words that belong together)."""
+    parts = tok.split("-")
+    return len(parts) > 1 and all(
+        p in ctx.vocab.approved
+        or p in ctx.allowed.words
+        or p in NUMBERS
+        or bool(DIGIT.search(p))
+        for p in parts
+    )
+
+
 def ing_base(tok: str, vocab: Vocabulary) -> str | None:
     """The verb headword an -ing token inflects, if any."""
     if len(tok) < ING_MIN or not tok.endswith("ing"):
@@ -506,24 +556,46 @@ def ing_base(tok: str, vocab: Vocabulary) -> str | None:
     return next((b for b in (stem, stem + "e", undoubled) if b in vocab.verbs), None)
 
 
+def stems(tok: str) -> tuple[str, ...]:
+    """Candidate headwords a regular -s, -es, -ies, -ed, or -ied form comes
+    from, most specific first; the spec lists no forms of unapproved words."""
+    out: list[str] = []
+    if tok.endswith("ies") or tok.endswith("ied"):
+        out.append(tok[:-3] + "y")
+    if tok.endswith("es") or tok.endswith("ed"):
+        out.append(tok[:-2])
+        if len(tok) > DOUBLED + 2 and tok[-3] == tok[-4] and tok.endswith("ed"):
+            out.append(tok[:-3])  # planned -> plan
+    if tok.endswith(("s", "d")) and not tok.endswith("ss"):
+        out.append(tok[:-1])
+    return tuple(out)
+
+
 def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) -> None:
     """Record one occurrence of a word that is not approved; repeats of a
-    word share one finding."""
-    seen = report.unknown.get(tok)
+    word share one finding. A word that is itself an unapproved headword
+    is reported under 1.1 with its alternatives, even when it ends in -ing."""
+    seen = report.words.get(tok)
     if seen is not None:
-        seen["sentences"].append(index)
+        cited(seen, index)
         return
-    verb = ing_base(tok, vocab)
     hints = vocab.unapproved.get(tok, ())
+    verb = None if hints else ing_base(tok, vocab)
+    base = None
+    if not hints and not verb:
+        base = next((b for b in stems(tok) if b in vocab.unapproved), None)
+        hints = vocab.unapproved.get(base, ()) if base else ()
     entry: dict[str, Any] = {
         "rule": "3.5" if verb else "1.1",
         "kind": "ing_form" if verb else "not_approved",
         "token": orig,
         "sentences": [index],
-        "alternatives": [a for h in hints for a in h.alternatives],
+        "alternatives": unique(a for h in hints for a in h.alternatives),
     }
     if verb:
         entry["verb"] = verb
+    if base:
+        entry["headword"] = base
     notes = [h.note for h in hints if h.note]
     if notes:
         entry["note"] = " ".join(notes)
@@ -531,25 +603,29 @@ def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) 
         entry["next"] = (
             "not in the dictionary: rephrase, or declare it as a technical term"
         )
-    report.unknown[tok] = entry
+    report.words[tok] = entry
+
+
+def unique(items: Iterable[str]) -> list[str]:
+    return list(dict.fromkeys(items))
 
 
 def pos_signal(tok: str, index: int, vocab: Vocabulary, report: Report) -> None:
     """An approved form that is also an unapproved headword may be used in
     the part of speech that is not approved: CHECK (n) against check (v)."""
-    seen = report.pos.get(tok)
+    seen = report.per_word.get(("part_of_speech", tok))
     if seen is not None:
-        seen["sentences"].append(index)
+        cited(seen, index)
         return
     poses = vocab.approved_pos.get(tok, frozenset())
     hints = [h for h in vocab.unapproved.get(tok, ()) if h.pos not in poses]
     if hints:
-        report.pos[tok] = {
-            "rule": "1.2", "kind": "part_of_speech", "token": tok, "sentences": [index],
+        per_word(report, "part_of_speech", tok, index, {
+            "rule": "1.2", "token": tok,
             "approved_as": sorted(p for p in poses if p),
             "not_approved_as": sorted({h.pos or "" for h in hints}),
-            "alternatives": [a for h in hints for a in h.alternatives],
-        }  # fmt: skip
+            "alternatives": unique(a for h in hints for a in h.alternatives),
+        })  # fmt: skip
 
 
 def passive(tokens: list[str], index: int, vocab: Vocabulary, report: Report) -> None:
@@ -574,8 +650,8 @@ def instructions(
     tokens: list[str], index: int, vocab: Vocabulary, report: Report
 ) -> None:
     """An approved verb right after 'and' or 'then' may open a second
-    instruction (rule 5.2)."""
-    for tok, nxt in pairwise(tokens):
+    instruction (rule 5.2); a sentence that opens with 'then' has one."""
+    for tok, nxt in pairwise(tokens[1:] if tokens[:1] == ["then"] else tokens):
         if tok in ("and", "then") and nxt in vocab.verbs and nxt in vocab.approved:
             report.signals.append({
                 "rule": "5.2", "kind": "second_instruction", "sentence": index,

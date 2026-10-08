@@ -33,7 +33,7 @@ class TestCheck:
         allow.write_text("pump\n", encoding="utf-8")
         argv = ["check", "--text", "Remove the pump.", "--allow:file", str(allow)]
         code, report, _ = run(argv, capsys)
-        assert code == 0 and report["ok"] and report["allowed"] == 2
+        assert code == 0 and report["ok"] and report["allowed"] == 1
 
     def test_an_empty_text_is_exit_one(self, served, capsys):
         code, _, err = run(["check", "--text", "  "], capsys)
