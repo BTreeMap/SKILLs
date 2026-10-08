@@ -7,6 +7,7 @@ import tempfile
 
 import pytest
 from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from btm_corekit.store.cache import cache_dir
 from btm_read_pdf.cli import main
@@ -51,6 +52,45 @@ class TestExtraction:
     def test_stdout_is_the_default_sink(self, blank_pdf, capsys):
         assert main([str(blank_pdf)]) == 0
         assert "## PDF page 1" in capsys.readouterr().out
+
+
+def text_pdf(path, text: str) -> None:
+    """A one-page PDF whose content stream draws `text` in Helvetica."""
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=300, height=100)
+    font = DictionaryObject(
+        {
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/Type1"),
+            NameObject("/BaseFont"): NameObject("/Helvetica"),
+        }
+    )
+    page[NameObject("/Resources")] = DictionaryObject(
+        {
+            NameObject("/Font"): DictionaryObject(
+                {NameObject("/F1"): writer._add_object(font)}
+            )
+        }
+    )
+    stream = DecodedStreamObject()
+    stream.set_data(f"BT /F1 12 Tf 20 40 Td ({text}) Tj ET".encode())
+    page[NameObject("/Contents")] = writer._add_object(stream)
+    writer.encrypt(user_password="hunter2", algorithm="AES-256")
+    with path.open("wb") as handle:
+        writer.write(handle)
+
+
+class TestEncrypted:
+    def test_an_aes_pdf_opens_with_the_password_env(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """AES needs the cryptography package at read time; without it pypdf
+        fails with a missing-module error instead of extracting."""
+        path = tmp_path / "aes.pdf"
+        text_pdf(path, "Remove the panel.")
+        monkeypatch.setenv("PDF_PW", "hunter2")
+        assert main([str(path), "--password-env", "PDF_PW"]) == 0
+        assert "Remove the panel." in capsys.readouterr().out
 
 
 class TestRefusals:
