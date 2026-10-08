@@ -1,0 +1,583 @@
+"""The checker: text in, one report out. Pure; the shell supplies the
+lexicon, the rules, and the allow list.
+
+Decidable findings: sentence over the word limit (5.1 or 6.3; a note in a
+procedure 25, under 5.1), paragraph over the sentence limit (6.6), a word
+not approved and not allowed (1.1), an -ing form outside the approved few
+(3.5), a contraction (4.2), a semicolon (8.1). Signals, never findings:
+passive voice candidates (3.6), a second instruction in one sentence
+(5.2), an approved word that is also an unapproved headword (1.2), an
+all-caps token passed as an abbreviation. Number words pass as technical
+nouns (1.5, category 9).
+
+Cost: n tokens. Splitting and tokenizing are compiled patterns with one
+class per quantifier, linear in characters and run in C; every lookup is
+a set or dict probe; the approved-phrase match tries a bounded number of
+phrases of bounded length per token. O(n) time and space, plus the
+lexicon index, built once in O(lexicon).
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from enum import StrEnum
+from itertools import pairwise
+from typing import Any
+
+from btm_asd_ste100.records import Lexicon, Rules, spelled
+from btm_corekit import CommandError
+
+
+class Mode(StrEnum):
+    PROCEDURE = "procedure"
+    DESCRIPTION = "description"
+
+
+Phrases = dict[str, tuple[tuple[str, ...], ...]]  # first word -> phrases, longest first
+
+PARAGRAPH = re.compile(r"\n[ \t]*\n")
+# A sentence ends at . ! ? before whitespace and a capital, digit, or
+# opening mark, or at the end; at a colon that ends a line (rule 8.4); or
+# before a list item (rule 8.4: each item is a sentence).
+SENTENCE_END = re.compile(
+    r"[.!?]+(?=\s+[\"'“(\[]?[A-Z0-9])"
+    r"|[.!?]+\s*$"
+    r"|:[ \t]*(?=\n)"
+    r"|\n(?=[ \t]*(?:[-*•]|\(?[0-9a-z]{1,3}[.)])[ \t])"
+)
+WORD = re.compile(r"[^\W_]+(?:['\-][^\W_]+)*")
+# A parenthesized or quoted group counts as one word (rules 8.5, 8.6).
+GROUPED = re.compile(r"\([^()]*\)|\"[^\"]*\"|“[^”]*”")
+NOTE = re.compile(r"\s*note\s*:", re.IGNORECASE)
+DIGIT = re.compile(r"[0-9]")
+CURLY_APOSTROPHE = "\u2019"
+
+UNITS = frozenset(
+    [
+        "mm",
+        "cm",
+        "m",
+        "km",
+        "in",
+        "ft",
+        "yd",
+        "mi",
+        "lb",
+        "lbs",
+        "oz",
+        "kg",
+        "g",
+        "mg",
+        "t",
+        "n",
+        "nm",
+        "kn",
+        "kpa",
+        "mpa",
+        "pa",
+        "psi",
+        "bar",
+        "mbar",
+        "v",
+        "mv",
+        "kv",
+        "ma",
+        "w",
+        "kw",
+        "hz",
+        "khz",
+        "mhz",
+        "ghz",
+        "s",
+        "ms",
+        "min",
+        "h",
+        "hr",
+        "l",
+        "ml",
+        "gal",
+        "qt",
+        "c",
+        "f",
+        "k",
+        "deg",
+        "rpm",
+        "kt",
+        "kts",
+        "liter",
+        "liters",
+        "meter",
+        "meters",
+        "inch",
+        "inches",
+        "foot",
+        "feet",
+        "pound",
+        "pounds",
+        "degree",
+        "degrees",
+        "second",
+        "seconds",
+        "minute",
+        "minutes",
+        "hour",
+        "hours",
+        "percent",
+    ]
+)
+# Number words are technical nouns (rule 1.5, category 9) and one word
+# each (rule 8.6).
+NUMBERS = frozenset(
+    [
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "sixty",
+        "seventy",
+        "eighty",
+        "ninety",
+        "hundred",
+        "thousand",
+        "million",
+        "billion",
+        "half",
+        "quarter",
+        "first",
+        "second",
+        "third",
+        "fourth",
+        "fifth",
+        "sixth",
+        "seventh",
+        "eighth",
+        "ninth",
+        "tenth",
+    ]
+)
+BE_FORMS = frozenset(["am", "is", "are", "was", "were", "be", "been", "being"])
+CONTRACTED = ("n't", "'re", "'ve", "'ll", "'d", "'m")
+S_CONTRACTIONS = frozenset(
+    f"{w}'s" for w in ("it", "that", "there", "here", "what", "let", "who")
+)
+POSSESSIVE = "'s"
+ING_MIN = 5  # shorter words ending in -ing (bring, sing) are not -ing forms
+DOUBLED = 3  # a stem this long may end in a doubled consonant (running)
+PARTICIPLE_MIN = 5  # shorter words ending in -ed (bed, red) are not participles
+PASSIVE_REACH = 2  # tokens between a form of BE and its participle, at most
+
+
+@dataclass(frozen=True, slots=True)
+class Limits:
+    sentence_words: int
+    note_words: int | None
+    paragraph_sentences: int | None
+    ing_approved: frozenset[str]
+    forbidden: tuple[str, ...]
+
+
+def limits(rules: Rules, mode: Mode) -> Limits:
+    """The parameters this mode enforces, read from rules.json. A rule
+    whose parameters name a mode applies in that mode only."""
+    params = [r.parameters for r in rules.rules]
+    by_id = {r.id: r.parameters for r in rules.rules}
+
+    def values(key: str) -> list[int]:
+        return [p[key] for p in params if key in p and p.get("mode") in (None, mode)]
+
+    sentence = values("max_words_per_sentence")
+    paragraph = values("max_sentences_per_paragraph")
+    notes = values("notes_max_words_per_sentence")
+    try:
+        ing = by_id["3.5"]["ing_approved"]
+        forbidden = by_id["8.1"]["forbidden_punctuation"]
+    except KeyError as err:
+        raise CommandError(
+            f"rules.json lacks a parameter the checker reads: {err}"
+        ) from err
+    if len(sentence) != 1:
+        raise CommandError(
+            f"rules.json gives {len(sentence)} sentence limits for {mode}"
+        )
+    return Limits(
+        sentence_words=sentence[0],
+        note_words=notes[0] if notes else None,
+        paragraph_sentences=paragraph[0] if paragraph else None,
+        ing_approved=frozenset(i.split(" (")[0] for i in ing),
+        forbidden=tuple(forbidden),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Hint:
+    """An unapproved headword a token matches, with what to write instead."""
+
+    word: str
+    pos: str | None
+    alternatives: tuple[str, ...]
+    note: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class Vocabulary:
+    approved: frozenset[str]
+    approved_pos: dict[str, frozenset[str]]
+    phrases: Phrases
+    unapproved: dict[str, tuple[Hint, ...]]
+    verbs: frozenset[str]  # base form of every verb headword, approved or not
+    participles: frozenset[str]
+
+
+def longest_first(table: dict[str, set[tuple[str, ...]]]) -> Phrases:
+    return {k: tuple(sorted(v, key=len, reverse=True)) for k, v in table.items()}
+
+
+def vocabulary(lexicon: Lexicon) -> Vocabulary:
+    """Index the lexicon once: O(lexicon)."""
+    approved: set[str] = set()
+    pos_of: dict[str, set[str]] = {}
+    multi: dict[str, set[tuple[str, ...]]] = {}
+    verbs: set[str] = set()
+    participles: set[str] = set()
+    for a in lexicon.approved:
+        for form in [*a.forms, *([a.plural] if a.plural else [])]:
+            if "..." in form or "…" in form:
+                continue  # a template such as "as ... as"
+            words = tuple(form.split())
+            if len(words) > 1:
+                multi.setdefault(words[0], set()).add(words)
+            else:
+                approved.add(form)
+                pos_of.setdefault(form, set()).add(a.pos or "")
+        if a.pos == "v":
+            verbs.add(a.word)
+            participles.update(f for f in a.forms[2:] if " " not in f)
+    unapproved: dict[str, list[Hint]] = {}
+    for u in lexicon.unapproved:
+        hint = Hint(u.word, u.pos, tuple(map(spelled, u.alternatives)), u.note)
+        for key in dict.fromkeys([u.word, *u.forms]):
+            unapproved.setdefault(key, []).append(hint)
+        if u.pos == "v":
+            verbs.add(u.word)
+    return Vocabulary(
+        approved=frozenset(approved),
+        approved_pos={k: frozenset(v) for k, v in pos_of.items()},
+        phrases=longest_first(multi),
+        unapproved={k: tuple(v) for k, v in unapproved.items()},
+        verbs=frozenset(verbs),
+        participles=frozenset(participles),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Allowed:
+    """Declared technical nouns and verbs: every word of a term passes, and
+    a multi-word term also matches as a phrase."""
+
+    words: frozenset[str]
+    phrases: Phrases
+
+
+def allow_terms(raw: str | None) -> Allowed:
+    """One term per line; `#` starts a comment."""
+    words: set[str] = set()
+    multi: dict[str, set[tuple[str, ...]]] = {}
+    for line in (raw or "").replace(CURLY_APOSTROPHE, "'").splitlines():
+        tokens = tuple(WORD.findall(line.split("#", 1)[0].lower()))
+        words.update(tokens)
+        words.update(map(plural, tokens[-1:]))  # a declared noun's plural
+        if len(tokens) > 1:
+            multi.setdefault(tokens[0], set()).add(tokens)
+    return Allowed(frozenset(words), longest_first(multi))
+
+
+def plural(noun: str) -> str:
+    """Regular English plural, the rule the lexicon's derived plurals use."""
+    if noun.endswith(("s", "x", "z", "ch", "sh")):
+        return noun + "es"
+    if noun.endswith("y") and noun[-2:-1] not in ("a", "e", "i", "o", "u"):
+        return noun[:-1] + "ies"
+    return noun + "s"
+
+
+# ---- splitting ---------------------------------------------------------------
+
+
+def paragraphs(text: str) -> list[str]:
+    return [p for p in PARAGRAPH.split(text) if p.strip()]
+
+
+def sentences(paragraph: str) -> list[str]:
+    """Split one paragraph; the pieces, in order, hold every word of it."""
+    out, start = [], 0
+    for m in SENTENCE_END.finditer(paragraph):
+        piece = paragraph[start : m.end()].strip()
+        if WORD.search(piece):
+            out.append(piece)
+        start = m.end()
+    tail = paragraph[start:].strip()
+    if WORD.search(tail):
+        out.append(tail)
+    return out
+
+
+def word_count(sentence: str) -> int:
+    """Rule 8: a parenthesized or quoted group is one word, a hyphenated
+    word is one word, a number with its unit is one word."""
+    count, after_number = len(GROUPED.findall(sentence)), False
+    for tok in WORD.findall(GROUPED.sub(" ", sentence)):
+        if after_number and tok.lower() in UNITS:
+            after_number = False
+            continue
+        count += 1
+        after_number = bool(DIGIT.search(tok))
+    return count
+
+
+# ---- the report --------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Context:
+    mode: Mode
+    vocab: Vocabulary
+    lim: Limits
+    allowed: Allowed
+    shouting: bool  # mostly capitals, as in a warning: no abbreviation pass
+
+
+@dataclass(slots=True)
+class Report:
+    findings: list[dict[str, Any]] = field(default_factory=list)
+    signals: list[dict[str, Any]] = field(default_factory=list)
+    unknown: dict[str, dict[str, Any]] = field(default_factory=dict)
+    pos: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+
+def check(
+    text: str, mode: Mode, vocab: Vocabulary, lim: Limits, allowed: Allowed
+) -> dict[str, Any]:
+    """One report. `ok` is true only when no decidable finding remains."""
+    text = text.replace(CURLY_APOSTROPHE, "'")
+    shouting = sum(c.isupper() for c in text) > sum(c.islower() for c in text)
+    ctx = Context(mode, vocab, lim, allowed, shouting)
+    report = Report()
+    n_sentences = n_words = 0
+    paras = paragraphs(text)
+    for p_index, para in enumerate(paras):
+        sents = sentences(para)
+        if lim.paragraph_sentences is not None and len(sents) > lim.paragraph_sentences:
+            report.findings.append({
+                "rule": "6.6", "kind": "paragraph_length", "paragraph": p_index,
+                "sentences": len(sents), "limit": lim.paragraph_sentences,
+            })  # fmt: skip
+        for sent in sents:
+            n_words += measure(sent, n_sentences, p_index, ctx, report)
+            scan(sent, n_sentences, ctx, report)
+            n_sentences += 1
+    report.findings.extend(report.unknown.values())
+    report.signals.extend(report.pos.values())
+    skipped = [
+        "meaning (1.3) and part of speech (1.2) are not decided; read the signals",
+        "technical nouns and technical verbs pass only when --allow declares them",
+        "text in parentheses counts as one word, not as a sentence of its own",
+    ]
+    if lim.paragraph_sentences is None:
+        skipped.append(f"paragraph length (6.6) does not apply in {mode} mode")
+    return {
+        "mode": mode.value,
+        "ok": not report.findings,
+        "limits": {
+            "sentence_words": lim.sentence_words,
+            "note_words": lim.note_words,
+            "paragraph_sentences": lim.paragraph_sentences,
+        },
+        "counts": {
+            "paragraphs": len(paras),
+            "sentences": n_sentences,
+            "words": n_words,
+        },
+        "findings": report.findings,
+        "signals": report.signals,
+        "skipped": skipped,
+    }
+
+
+def measure(sent: str, index: int, p_index: int, ctx: Context, report: Report) -> int:
+    """Sentence length and forbidden punctuation; returns the word count."""
+    words = word_count(sent)
+    limit = ctx.lim.sentence_words
+    if ctx.lim.note_words is not None and NOTE.match(sent):
+        limit = ctx.lim.note_words
+    if words > limit:
+        report.findings.append({
+            "rule": "5.1" if ctx.mode is Mode.PROCEDURE else "6.3",
+            "kind": "sentence_length", "sentence": index, "paragraph": p_index,
+            "words": words, "limit": limit, "text": sent[:120],
+        })  # fmt: skip
+    for mark in ctx.lim.forbidden:
+        if mark in sent:
+            report.findings.append(
+                {"rule": "8.1", "kind": "punctuation", "mark": mark, "sentence": index}
+            )
+    return words
+
+
+def covered(tokens: list[str], tables: tuple[Phrases, ...]) -> set[int]:
+    """Indices inside an approved or allowed multi-word term, longest first."""
+    out: set[int] = set()
+    for i, tok in enumerate(tokens):
+        for table in tables:
+            for phrase in table.get(tok, ()):
+                if tuple(tokens[i : i + len(phrase)]) == phrase:
+                    out.update(range(i, i + len(phrase)))
+                    break
+    return out
+
+
+def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
+    """Each token, once, against the vocabulary rules; then the signals."""
+    originals = WORD.findall(sent)
+    tokens = [t.lower() for t in originals]
+    inside = covered(tokens, (ctx.vocab.phrases, ctx.allowed.phrases))
+    after_number = False
+    for i, (orig, tok) in enumerate(zip(originals, tokens, strict=True)):
+        number = bool(DIGIT.search(tok))
+        passes = number or tok in NUMBERS or (after_number and tok in UNITS)
+        after_number = number
+        if passes or i in inside or tok in ctx.allowed.words:
+            continue
+        if tok.endswith(CONTRACTED) or tok in S_CONTRACTIONS:
+            report.findings.append(
+                {"rule": "4.2", "kind": "contraction", "token": orig, "sentence": index}
+            )
+            continue
+        base = tok.removesuffix(POSSESSIVE)
+        if approved(base, ctx.vocab):
+            pos_signal(base, index, ctx.vocab, report)
+        elif not ctx.shouting and orig.isupper() and len(orig) > 1:
+            report.signals.append({
+                "kind": "abbreviation", "token": orig, "sentence": index,
+                "evidence": "all capitals in mixed-case text; passed as a label",
+            })  # fmt: skip
+        elif base not in ctx.lim.ing_approved:
+            unknown(orig, base, index, ctx.vocab, report)
+    passive(tokens, index, ctx.vocab, report)
+    if ctx.mode is Mode.PROCEDURE:
+        instructions(tokens, index, ctx.vocab, report)
+
+
+def approved(tok: str, vocab: Vocabulary) -> bool:
+    """A form of an approved word; a hyphenated word passes when the whole
+    is approved or every part is."""
+    if tok in vocab.approved:
+        return True
+    parts = tok.split("-")
+    return len(parts) > 1 and all(p in vocab.approved for p in parts)
+
+
+def ing_base(tok: str, vocab: Vocabulary) -> str | None:
+    """The verb headword an -ing token inflects, if any."""
+    if len(tok) < ING_MIN or not tok.endswith("ing"):
+        return None
+    stem = tok[:-3]
+    undoubled = stem[:-1] if len(stem) >= DOUBLED and stem[-1] == stem[-2] else ""
+    return next((b for b in (stem, stem + "e", undoubled) if b in vocab.verbs), None)
+
+
+def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) -> None:
+    """Record one occurrence of a word that is not approved; repeats of a
+    word share one finding."""
+    seen = report.unknown.get(tok)
+    if seen is not None:
+        seen["sentences"].append(index)
+        return
+    verb = ing_base(tok, vocab)
+    hints = vocab.unapproved.get(tok, ())
+    entry: dict[str, Any] = {
+        "rule": "3.5" if verb else "1.1",
+        "kind": "ing_form" if verb else "not_approved",
+        "token": orig,
+        "sentences": [index],
+        "alternatives": [a for h in hints for a in h.alternatives],
+    }
+    if verb:
+        entry["verb"] = verb
+    notes = [h.note for h in hints if h.note]
+    if notes:
+        entry["note"] = " ".join(notes)
+    if not hints and not verb:
+        entry["next"] = (
+            "not in the dictionary: rephrase, or declare it as a technical term"
+        )
+    report.unknown[tok] = entry
+
+
+def pos_signal(tok: str, index: int, vocab: Vocabulary, report: Report) -> None:
+    """An approved form that is also an unapproved headword may be used in
+    the part of speech that is not approved: CHECK (n) against check (v)."""
+    seen = report.pos.get(tok)
+    if seen is not None:
+        seen["sentences"].append(index)
+        return
+    poses = vocab.approved_pos.get(tok, frozenset())
+    hints = [h for h in vocab.unapproved.get(tok, ()) if h.pos not in poses]
+    if hints:
+        report.pos[tok] = {
+            "rule": "1.2", "kind": "part_of_speech", "token": tok, "sentences": [index],
+            "approved_as": sorted(p for p in poses if p),
+            "not_approved_as": sorted({h.pos or "" for h in hints}),
+            "alternatives": [a for h in hints for a in h.alternatives],
+        }  # fmt: skip
+
+
+def passive(tokens: list[str], index: int, vocab: Vocabulary, report: Report) -> None:
+    """A form of BE followed, within two tokens, by a participle."""
+    for i, tok in enumerate(tokens):
+        if tok not in BE_FORMS:
+            continue
+        for j in range(i + 1, min(i + 1 + PASSIVE_REACH, len(tokens))):
+            nxt = tokens[j]
+            if nxt in vocab.participles or (
+                nxt.endswith("ed") and len(nxt) >= PARTICIPLE_MIN
+            ):
+                report.signals.append({
+                    "rule": "3.6", "kind": "passive_candidate", "sentence": index,
+                    "evidence": " ".join(tokens[i : j + 1]),
+                    "agent_named": "by" in tokens[j + 1 :],
+                })  # fmt: skip
+                break
+
+
+def instructions(
+    tokens: list[str], index: int, vocab: Vocabulary, report: Report
+) -> None:
+    """An approved verb right after 'and' or 'then' may open a second
+    instruction (rule 5.2)."""
+    for tok, nxt in pairwise(tokens):
+        if tok in ("and", "then") and nxt in vocab.verbs and nxt in vocab.approved:
+            report.signals.append({
+                "rule": "5.2", "kind": "second_instruction", "sentence": index,
+                "evidence": f"{tok} {nxt}",
+            })  # fmt: skip

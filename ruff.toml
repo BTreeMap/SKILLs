@@ -55,6 +55,7 @@ ignore = []
 # than letting ruff sort them with third-party packages.
 known-first-party = [
   "btm_corekit",
+  "btm_asd_ste100",
   "btm_ponder",
   "btm_lit_review",
   "btm_peer_review",

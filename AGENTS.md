@@ -40,6 +40,9 @@ Current skills:
 * `aesthete/` - Designs, builds, and reviews web interfaces that meet WCAG
   2.2, honor a supplied brand or design system, and avoid the templated look
   of generated UI.
+* `asd-ste100/` - Writes, rewrites, and checks text in ASD-STE100 Simplified
+  Technical English, naming each unapproved word with its approved
+  alternatives.
 * `author-skill/` - Turns a task history, workflow, or procedure into a
   reusable SKILL.md that another agent can follow with no memory of the
   original session.

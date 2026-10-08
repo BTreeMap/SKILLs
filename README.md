@@ -13,6 +13,7 @@ submodule.
 | --- | --- |
 | [advisor](advisor/SKILL.md) | Reads a research project like a principal investigator: what it combines, what is outdated, what your lab can afford, and the cheapest experiment that settles each claim. |
 | [aesthete](aesthete/SKILL.md) | Designs, builds, and reviews web interfaces that meet WCAG 2.2, honor a supplied brand or design system, and avoid the templated look of generated UI. |
+| [asd-ste100](asd-ste100/SKILL.md) | Writes, rewrites, and checks text in ASD-STE100 Simplified Technical English, naming each unapproved word with its approved alternatives. |
 | [author-skill](author-skill/SKILL.md) | Turns a task history, workflow, or procedure into a reusable SKILL.md that another agent can follow with no memory of the original session. |
 | [caveman](caveman/SKILL.md) | Compresses replies into terse phrasing that keeps every technical fact, and can rewrite a prose file in place. |
 | [draft-paper](draft-paper/SKILL.md) | Drafts conference, workshop, journal, survey, or demo papers and answers reviews, tracing each empirical claim to an artifact and each citation to a retrieved record. |
