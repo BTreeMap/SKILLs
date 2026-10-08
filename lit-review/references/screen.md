@@ -17,6 +17,9 @@ fit. If the criteria feel wrong while screening, record an amendment.
    stores the rule with its matched keys in the notebook, so a vocabulary
    cut is recorded as one judgment. Decided papers stay untouched: make the
    individual judgments that must survive a broad cut before running it.
+   Every match takes the rule's one reason, so first list the matches with
+   `show --status candidate --match <regex> --on <field>` and decide by
+   hand any paper the reason misdescribes.
 3. Re-run `digest` after each cut; its kinds are relative to the undecided
    set.
 4. Drop to `show --status candidate` for the residue and for records you

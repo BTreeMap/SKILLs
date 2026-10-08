@@ -387,11 +387,15 @@ def cmd_status(args: argparse.Namespace) -> int:
         paper.read_level for paper in papers.values() if paper.status is Status.INCLUDED
     )
     current_hash = criteria_hash(protocol)
-    logged_hashes = {entry.get("criteria_hash") for entry in log}
-    if logged_hashes and logged_hashes != {current_hash}:
+    logged_hashes = {entry.get("criteria_hash") for entry in log} - {None}
+    # One criteria version per distinct hash; each version after the first
+    # needs its amendment. Only an unexplained change is drift.
+    changes = len(logged_hashes | {current_hash}) - 1
+    if logged_hashes and len(protocol.amendments) < changes:
         signal(
-            "criteria changed after searches ran; record the change in "
-            "protocol.json amendments"
+            f"criteria changed {changes} time(s) after searches ran but "
+            f"protocol.json records {len(protocol.amendments)} amendment(s); "
+            "append one per change"
         )
     pending = unextracted(session.root, papers)
     undecided = by_status.get(Status.CANDIDATE, 0)

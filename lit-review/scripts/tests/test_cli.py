@@ -328,6 +328,23 @@ class TestStatus:
         _, _, err = run(["status", str(session.root)], capsys)
         assert "below the full band" in err
 
+    def _drift(self, session, amendments):
+        """Log one search under other criteria, then record the amendments."""
+        session.log_path.write_text('{"id": "s1", "criteria_hash": "000000000000"}\n')
+        protocol = json.loads(session.protocol_path.read_text())
+        protocol["amendments"] = amendments
+        session.protocol_path.write_text(json.dumps(protocol))
+
+    def test_an_unexplained_criteria_change_is_flagged(self, session, capsys):
+        self._drift(session, [])
+        _, _, err = run(["status", str(session.root)], capsys)
+        assert "criteria changed 1 time(s)" in err
+
+    def test_an_amended_criteria_change_is_not_flagged(self, session, capsys):
+        self._drift(session, [{"date": "2026-10-08", "change": "c", "reason": "r"}])
+        _, _, err = run(["status", str(session.root)], capsys)
+        assert "criteria changed" not in err
+
 
 class TestUpdateEnvelope:
     def test_update_rejects_bad_json_in_the_shared_envelope(
