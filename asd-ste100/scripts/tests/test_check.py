@@ -226,6 +226,22 @@ class TestPhrases:
         got = {f["token"]: f["alternatives"] for f in report["findings"]}
         assert got == {"a few": ["do (v)"], "few": ["small number"]}
 
+    def test_a_qualifier_with_a_form_of_the_headword_is_the_phrase(self, run):
+        """long (no longer): the qualifier holds "longer", not "long"."""
+        (f,) = run("The test is no longer fast.")["findings"]
+        assert (f["token"], f["alternatives"]) == ("no longer", ["not (adv)"])
+
+    def test_a_phrase_after_an_article_is_a_noun_phrase(self, run):
+        """'the rear of the unit' uses REAR (n), not rear of (prep)."""
+        assert run("Remove the rear of the test.")["ok"]
+        (f,) = run("Install the test rear of the opening.")["findings"]
+        assert f["token"] == "rear of"
+
+    def test_a_phrase_that_overlaps_an_approved_one_is_found(self, run):
+        """'Get away from': get away starts first; away from is approved."""
+        report = run("Get away from the test.")
+        assert [f["token"] for f in report["findings"]] == ["Get away"]
+
     def test_an_unapproved_hyphenated_headword_is_found(self, run):
         """Every part is declared, but the whole is a headword."""
         (f,) = run("Hand-tighten the test.", allow="hand\ntighten")["findings"]

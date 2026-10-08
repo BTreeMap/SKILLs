@@ -186,6 +186,7 @@ NUMBERS = frozenset(
         "tenth",
     ]
 )
+ARTICLES = frozenset(["a", "an", "the"])
 BE_FORMS = frozenset(["am", "is", "are", "was", "were", "be", "been", "being"])
 CONTRACTED = ("n't", "'re", "'ve", "'ll", "'d", "'m")
 S_CONTRACTIONS = frozenset(
@@ -317,14 +318,13 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
 
 def phrase_of(word: str, qualifier: str | None) -> tuple[str, ...]:
     """The words a headword stands for in text. A qualifier that holds the
-    headword is the phrase ("few", "a few"); one that does not follows it
-    ("so", "that": "so that")."""
+    headword, or a form of it, is the phrase ("few", "a few"; "long", "no
+    longer"); one that does not follows it ("so", "that": "so that")."""
     words = tuple(word.lower().split())
     if not qualifier:
         return words
     q = tuple(qualifier.lower().split())
-    inside = any(q[i : i + len(words)] == words for i in range(len(q)))
-    return q if inside else words + q
+    return q if " ".join(words) in " ".join(q) else words + q
 
 
 @dataclass(frozen=True, slots=True)
@@ -623,13 +623,14 @@ def bad_phrases(
     tokens: list[str], inside: set[int], table: Phrases
 ) -> dict[int, tuple[str, int]]:
     """Start index -> (headword, length) of each unapproved multi-word
-    headword, outside approved and allowed terms. The first word may carry
-    a regular ending: "turned off" is "turn off"."""
+    headword. The first word may carry a regular ending: "turned off" is
+    "turn off". No match starts inside an approved or allowed term, or
+    after an article: "the rear of the unit" uses the noun REAR."""
     out: dict[int, tuple[str, int]] = {}
     i = 0
     while i < len(tokens):
         hit = None
-        if i not in inside:
+        if i not in inside and (i == 0 or tokens[i - 1] not in ARTICLES):
             firsts = dict.fromkeys(
                 (tokens[i], *stems(tokens[i]), *ing_stems(tokens[i]))
             )
@@ -639,7 +640,6 @@ def bad_phrases(
                     for first in firsts
                     for p in table.get(first, ())
                     if tuple(tokens[i + 1 : i + len(p)]) == p[1:]
-                    and not inside.intersection(range(i, i + len(p)))
                 ),
                 None,
             )
