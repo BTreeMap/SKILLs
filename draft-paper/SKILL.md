@@ -74,7 +74,7 @@ run `status`.
 
 | Verb | Starts from | Runs stages | Delivers |
 | --- | --- | --- | --- |
-| `design` | spark or shaped idea | 1-2 | positioned research plan |
+| `design` | spark or shaped idea | 1 | positioned research plan with its prospective ledger |
 | `build` | shaped idea, partial or full results | 2-8 (1-8 from a shaped idea) | complete draft |
 | `refactor` | existing draft | 3-8, abbreviated | draft retargeted to a new format or venue, claims preserved |
 | `rebut` | reviews received | 9 | rebuttal or revision letter |
@@ -205,9 +205,10 @@ A gate's standing in `status` and `check` is `open` (not yet requested),
 `rejected`.
 
 1. When the gated stage's work is done, note `gate-requested`. The script
-   refuses the request while a blocker stands: the `ledger` gate needs at
-   least one claim; the `draft` gate needs every live claim `supported` or
-   `exploratory` with its artifact on disk.
+   refuses the request while a blocker stands: the `ledger` gate, and the
+   `plan` gate of a `design` run, need at least one claim; the `draft` gate
+   needs every live claim `supported` or `exploratory` with its artifact on
+   disk.
 2. Run `check` and present to the human: the artifact under review (plan,
    ledger, or draft); the events in `since_last_decision`; at the `draft`
    gate, the claims in `claims_changed_since_ledger`, which the human
@@ -259,8 +260,9 @@ and signals the evidenced claims whose artifacts the new root lacks.
 - Cut an unsupported claim or run its experiment; never soften it to
   "plausible" in prose.
 - For `design`, the ledger is prospective: every falsifiable claim is
-  `to-run` with its planned path, and the gate approves the mapping, not
-  measured numbers.
+  `to-run` with its planned path, noted in stage 1 so `check` renders the
+  ledger into the plan. The `plan` gate approves the mapping with the plan,
+  not measured numbers; a `design` run has no `ledger` gate.
 
 Render `check`'s `ledger` rows for the human with this template:
 
@@ -283,9 +285,11 @@ A skipped stage is admitted with a signal, but its work is still owed: a
    with `/lit-review`, analyze the gap, argue novelty from retrieved full
    text, state falsifiable claims, and write a pre-registration-style
    experiment plan. Write the design plan from `design-plan-template`; its
-   award section is filled from `award-assessment`. Gate: `plan`.
-2. Evidence: note one claim per empirical claim, per the evidence ledger
-   above. Gate: `ledger`.
+   award section is filled from `award-assessment`. In a `design` run, note
+   each falsifiable claim as `to-run` before requesting the gate. Gate:
+   `plan`.
+2. Evidence (`build`): note one claim per empirical claim, per the evidence
+   ledger above. Gate: `ledger`.
 3. Outline: rank 2-3 framings in the pad; freeze one against the outline
    template and the format's structure in `section-guide`. Freeze the
    one-sentence key insight and the arc (problem, limits of current

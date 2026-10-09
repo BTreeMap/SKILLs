@@ -51,7 +51,9 @@ plan back for revision).
 ## Prospective evidence ledger
 
 Map every falsifiable claim to the artifact path its experiment will write.
-Stage 2 notes each as a `to-run` claim.
+A `design` run notes each as a `to-run` claim before requesting the `plan`
+gate and renders this section from `check`; a `build` run notes them in
+stage 2.
 
 ## Award assessment
 

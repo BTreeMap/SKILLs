@@ -313,14 +313,25 @@ class TestGates:
         assert code == 1
         assert "does not exist" in document["rejected"][0]["fix"]
 
-    def test_a_design_run_approves_a_prospective_ledger(
+    def test_a_design_run_approves_its_prospective_ledger_at_the_plan_gate(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         session = opened(capsys, artifacts, verb="design", state="spark")
-        note(session, capsys, stage(1), request("plan"), decide("plan", "approve"))
-        code, document, _ = note(session, capsys, stage(2), PLANNED, request("ledger"))
+        code, document, _ = note(session, capsys, stage(1), request("plan"))
+        assert code == 1
+        assert "as to-run" in document["rejected"][0]["fix"]
+        code, document, _ = note(
+            session,
+            capsys,
+            stage(1),
+            PLANNED,
+            request("plan"),
+            decide("plan", "approve"),
+        )
         assert code == 0
-        assert document["gates"] == {"plan": "approved", "ledger": "pending"}
+        assert document["gates"] == {"plan": "approved"}
+        assert document["next"] == "deliver per the output contract"
+        assert note(session, capsys, stage(2))[0] == 1
 
 
 class TestViews:

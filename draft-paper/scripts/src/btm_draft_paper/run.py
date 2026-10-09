@@ -87,10 +87,11 @@ class RunMeta(Model):
 
     def stages(self) -> tuple[int, int]:
         """First and last stage the verb runs; build validates a shaped
-        idea's positioning before its evidence."""
+        idea's positioning before its evidence. Design ends at the plan gate,
+        which approves the prospective ledger with the plan."""
         match self.verb:
             case Verb.DESIGN:
-                return 1, 2
+                return 1, 1
             case Verb.BUILD:
                 return (1 if self.state is InputState.SHAPED else 2), 8
             case Verb.REFACTOR:

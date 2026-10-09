@@ -35,6 +35,7 @@ from btm_draft_paper.run import (
     TRACE,
     Gate,
     RunMeta,
+    Verb,
 )
 
 Stage = Annotated[Positive, Field(le=9)]
@@ -226,6 +227,10 @@ class RunState:
 def blockers(state: RunState, gate: Gate) -> list[str]:
     """What the trace alone says stands between a gate and its request."""
     match gate:
+        case Gate.PLAN if state.meta.verb is Verb.DESIGN and not state.claims:
+            return [
+                "note each falsifiable claim as to-run: the plan carries the ledger"
+            ]
         case Gate.PLAN:
             return []
         case Gate.LEDGER:
