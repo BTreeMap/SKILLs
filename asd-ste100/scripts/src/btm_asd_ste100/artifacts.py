@@ -5,6 +5,9 @@ from an immutable git tag. Each artifact sits in the kernel cache under a
 slot keyed by `<tag>/<path>`; the manifest is written last, so its presence
 marks a complete fetch. Every load re-hashes the file: a mismatch deletes
 it and fails with exit 2, so the next run refetches and heals.
+
+A local `data/` directory (`--data DIR`) is the other origin: the user owns
+it, so a defect there is exit 1 and nothing in it is deleted.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeVar
 
@@ -38,6 +42,29 @@ MANIFEST_CAP = 64 * 1024
 TAG = re.compile(r"v\d+\.\d+\.\d+")
 
 W = TypeVar("W", bound=Model)
+
+
+@dataclass(frozen=True, slots=True)
+class Cached:
+    """The release `version`, in the cache slots the CDN fills."""
+
+    version: str
+
+    def echo(self) -> dict[str, str]:
+        return {"version": self.version}
+
+
+@dataclass(frozen=True, slots=True)
+class Local:
+    """A ste-tax `data/` directory: `manifest.json` beside the artifacts."""
+
+    data: Path
+
+    def echo(self) -> dict[str, str]:
+        return {"data": str(self.data)}
+
+
+Origin = Cached | Local
 
 
 def tag(raw: str) -> str:
@@ -125,11 +152,60 @@ def ensure(client: httpx.Client, version: str) -> Manifest:
         raise UpstreamError(why) from err
 
 
-def load(manifest: Manifest, version: str, name: str, model: type[W]) -> W:
+def opened(data: Path) -> Manifest:
+    """The manifest of a local `data/` directory, once it and every artifact
+    it lists exist; every missing file is named in one rejection."""
+    slot = data / "manifest.json"
+    if not slot.is_file():
+        raise CommandError(
+            f"--data {data} holds no manifest.json; name the data/ directory "
+            "of a ste-tax checkout"
+        )
+    try:
+        doc = json.loads(slot.read_bytes())
+    except ValueError as err:
+        raise CommandError(f"{slot} is not JSON: {err}") from err
+    manifest = parse_model(Manifest, doc, str(slot))
+    missing = [a.path for a in manifest.artifacts if not local_of(data, a).is_file()]
+    if missing:
+        raise CommandError(
+            f"--data {data} lacks {', '.join(missing)}, which its manifest lists"
+        )
+    return manifest
+
+
+def local_of(data: Path, artifact: Artifact) -> Path:
+    return data / artifact.path.removeprefix("data/")
+
+
+def matched(data: Path, artifact: Artifact) -> bytes:
+    """A local artifact's bytes when size and SHA-256 match its manifest. The
+    user owns the file, so a mismatch is exit 1 and the file stays."""
+    blob = local_of(data, artifact).read_bytes()
+    if (
+        len(blob) != artifact.bytes
+        or hashlib.sha256(blob).hexdigest() != artifact.sha256
+    ):
+        raise CommandError(
+            f"--data {data}: {artifact.path} differs from its manifest; "
+            "rebuild or restore the release (nothing was deleted)"
+        )
+    return blob
+
+
+def load(manifest: Manifest, origin: Origin, name: str, model: type[W]) -> W:
     """Decode one listed artifact after re-checking its digest."""
     path = f"data/{name}"
     artifact = next((a for a in manifest.artifacts if a.path == path), None)
-    if artifact is None:
-        raise UpstreamError(f"{version} manifest lists no {path}")
-    blob = verified(slot_of(version, path), artifact, version)
-    return parse_model(model, json.loads(blob), f"{version} {path}")
+    match origin:
+        case Cached(version=version):
+            if artifact is None:
+                raise UpstreamError(f"{version} manifest lists no {path}")
+            blob = verified(slot_of(version, path), artifact, version)
+            what = f"{version} {path}"
+        case Local(data=data):
+            if artifact is None:
+                raise CommandError(f"--data {data}: its manifest lists no {path}")
+            blob = matched(data, artifact)
+            what = f"--data {data}: {path}"
+    return parse_model(model, json.loads(blob), what)

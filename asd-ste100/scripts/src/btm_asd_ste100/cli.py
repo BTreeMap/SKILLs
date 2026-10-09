@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 
 import btm_asd_ste100
@@ -12,9 +13,13 @@ from btm_asd_ste100.artifacts import (
     BASE,
     SKILL,
     VERSION,
+    Cached,
+    Local,
+    Origin,
     ensure,
     fetch,
     load,
+    opened,
     slot_of,
     tag,
 )
@@ -28,7 +33,7 @@ from btm_asd_ste100.check import (
     vocabulary,
 )
 from btm_asd_ste100.layout import Cut, Format
-from btm_asd_ste100.records import Dictionary, Entry, Lexicon, Rules, spelled
+from btm_asd_ste100.records import Dictionary, Entry, Lexicon, Manifest, Rules, spelled
 from btm_corekit import (
     Commands,
     Optional,
@@ -70,23 +75,32 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def release(args: argparse.Namespace) -> tuple[Origin, Manifest]:
+    """`--data DIR` reads that directory and never the network; otherwise the
+    cached `--version`, fetched first when absent."""
+    if args.data is not None:
+        return Local(args.data), opened(args.data)
+    manifest = ensure(client_for(SKILL, read_timeout=None), args.version)
+    return Cached(args.version), manifest
+
+
 def cmd_check(args: argparse.Namespace) -> int:
     body = text(TEXT, args)
     allowed = allow_terms(text(ALLOW, args))
-    manifest = ensure(client_for(SKILL, read_timeout=None), args.version)
-    lexicon = load(manifest, args.version, "lexicon.json", Lexicon)
-    rules = load(manifest, args.version, "rules.json", Rules)
+    origin, manifest = release(args)
+    lexicon = load(manifest, origin, "lexicon.json", Lexicon)
+    rules = load(manifest, origin, "rules.json", Rules)
     lim = limits(rules, args.mode)
     how = Cut(args.format, args.section)
     report = check(body, vocabulary(lexicon), lim, allowed, how)
-    emit({"version": args.version, **report, "allowed": allowed.terms})
+    emit({**origin.echo(), **report, "allowed": allowed.terms})
     return 0
 
 
 def cmd_lookup(args: argparse.Namespace) -> int:
-    manifest = ensure(client_for(SKILL, read_timeout=None), args.version)
-    dictionary = load(manifest, args.version, "dictionary.json", Dictionary)
-    lexicon = load(manifest, args.version, "lexicon.json", Lexicon)
+    origin, manifest = release(args)
+    dictionary = load(manifest, origin, "dictionary.json", Dictionary)
+    lexicon = load(manifest, origin, "lexicon.json", Lexicon)
     resolved = {
         (u.word, u.pos, u.qualifier): unique(map(spelled, u.alternatives))
         for u in lexicon.unapproved
@@ -105,7 +119,7 @@ def cmd_lookup(args: argparse.Namespace) -> int:
         if plural and e.status.get("kind") == "approved":
             by_plural.setdefault(plural, []).append(e)
     words = [lookup_one(w, by_form, resolved, by_plural) for w in args.words]
-    emit({"version": args.version, "words": words})
+    emit({**origin.echo(), "words": words})
     return 0
 
 
@@ -197,13 +211,26 @@ def cmd_clean(args: argparse.Namespace) -> int:
     return 0
 
 
-def add_version(parser: argparse.ArgumentParser) -> None:
+def add_version(parser: argparse._ActionsContainer) -> None:  # a parser or group
     parser.add_argument(
         "--version",
         type=tag,
         default=VERSION,
         metavar="TAG",
         help=f"ste-tax release tag, default {VERSION}",
+    )
+
+
+def add_release(parser: argparse.ArgumentParser) -> None:
+    """`--version` or `--data`, never both: two releases for one run."""
+    group = parser.add_mutually_exclusive_group()
+    add_version(group)
+    group.add_argument(
+        "--data",
+        type=Path,
+        metavar="DIR",
+        help="read a local ste-tax data/ directory (manifest.json and the "
+        "artifacts it lists) instead of the cache, with no network",
     )
 
 
@@ -241,7 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="with --format markdown, check only this heading and its lines, "
         "up to the next heading of any level",
     )
-    add_version(checker)
+    add_release(checker)
 
     looker = commands.add_parser(
         "lookup", help="dictionary entries and their alternatives"
@@ -250,7 +277,7 @@ def build_parser() -> argparse.ArgumentParser:
     looker.add_argument(
         "words", nargs="+", metavar="WORD", help="a headword or one of its forms"
     )
-    add_version(looker)
+    add_release(looker)
 
     cleaner = commands.add_parser("clean", help="drop the artifact cache")
     cleaner.set_defaults(func=cmd_clean)

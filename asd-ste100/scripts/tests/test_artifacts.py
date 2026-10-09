@@ -55,10 +55,11 @@ class TestSelfHeal:
         slot = artifacts.slot_of(V, "data/lexicon.json")
         slot.write_bytes(slot.read_bytes() + b" ")
         with pytest.raises(UpstreamError, match="rerun to refetch"):
-            artifacts.load(manifest, V, "lexicon.json", Lexicon)
+            artifacts.load(manifest, artifacts.Cached(V), "lexicon.json", Lexicon)
         assert not slot.exists()
         healed = artifacts.ensure(client, V)
-        assert artifacts.load(healed, V, "lexicon.json", Lexicon).approved
+        origin = artifacts.Cached(V)
+        assert artifacts.load(healed, origin, "lexicon.json", Lexicon).approved
 
     def test_a_missing_release_names_the_version_and_exits_two(
         self, cache, make_client

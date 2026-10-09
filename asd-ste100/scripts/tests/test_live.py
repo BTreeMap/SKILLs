@@ -21,11 +21,10 @@ def test_the_pinned_release_downloads_verifies_and_decodes(tmp_path, monkeypatch
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
     client = build_client(artifacts.SKILL, read_timeout=None)
     manifest = artifacts.fetch(client, artifacts.VERSION)
-    lexicon = artifacts.load(manifest, artifacts.VERSION, "lexicon.json", Lexicon)
-    rules = artifacts.load(manifest, artifacts.VERSION, "rules.json", Rules)
-    dictionary = artifacts.load(
-        manifest, artifacts.VERSION, "dictionary.json", Dictionary
-    )
+    origin = artifacts.Cached(artifacts.VERSION)
+    lexicon = artifacts.load(manifest, origin, "lexicon.json", Lexicon)
+    rules = artifacts.load(manifest, origin, "rules.json", Rules)
+    dictionary = artifacts.load(manifest, origin, "dictionary.json", Dictionary)
     assert len(rules.rules) == 53
     assert any(a.word == "make sure" for a in lexicon.approved)
     assert any(u.word == "whose" and u.help for u in lexicon.unapproved)

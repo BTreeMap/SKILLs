@@ -9,7 +9,7 @@ license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. The first run needs
   network access to download the pinned dictionary and rules; later runs
-  read the cache.
+  read the cache. `--data DIR` reads a local release with no network.
 metadata:
   argument-hint: "[build|refactor|review|help] [file-or-text]"
 ---
@@ -51,8 +51,8 @@ R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-asd-
 
 <commands for="surface">
 $R fetch [--version TAG]
-$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING]
-$R lookup WORD [WORD ...]
+$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--version TAG | --data DIR]
+$R lookup WORD [WORD ...] [--version TAG | --data DIR]
 $R clean
 </commands>
 
@@ -90,13 +90,20 @@ $R clean
   the digest of each file is correct. If the cache is empty, `check` and
   `lookup` do a `fetch` first and tell you in a `signal:` line. `clean`
   removes the cache, and the next command downloads the release again.
+* `--data DIR` gives a local release: the `data/` directory of a ste-tax
+  checkout, with `manifest.json` and the files that it shows. Then `check`
+  and `lookup` read only that directory, and do not use the network or the
+  cache. The report gives `data` and not `version`. If a file is missing or
+  its digest is not correct, the exit is 1 and the command does not remove
+  the file. Do not use `--data` together with `--version`.
 * Each command writes one JSON document to `stdout`. The `signal:` lines on
   `stderr` give information only.
 * Exit 0: the command is completed. Exit 1: correct the input and send it
   again. Exit 2: the download did not occur, or a file in the cache was not
   correct and the command removed it. Then do the same command again.
-* With no network, exit 2 gives the release that is necessary. Then tell the
-  user that the check did not occur. Do not tell the user that a text agrees
+* With no network, exit 2 gives the release that is necessary. If you have
+  a local release, use `--data DIR`. If not, tell the user that the check
+  did not occur. Do not tell the user that a text agrees
   with STE if you do not have a report.
 
 ## The report

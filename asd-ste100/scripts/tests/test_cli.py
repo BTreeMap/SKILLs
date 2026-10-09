@@ -152,3 +152,54 @@ class TestFetchAndClean:
         assert code == 0 and receipt["bytes_freed"] > 0
         _, again, _ = run(["clean", "--all"], capsys)
         assert again == {"removed": None, "bytes_freed": 0}
+
+
+@pytest.fixture
+def local(cache, monkeypatch, tmp_path, make_release):
+    """A ste-tax checkout's data/ directory, and a client that must not run."""
+
+    def offline(*_a, **_k):
+        raise AssertionError("--data must not build an HTTP client")
+
+    monkeypatch.setattr(cli, "client_for", offline)
+    root = tmp_path / "ste-tax"
+    for path, body in make_release().items():
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        (root / path).write_bytes(body)
+    return root / "data"
+
+
+class TestLocalData:
+    def test_check_reads_the_directory_and_not_the_cache(self, local, cache, capsys):
+        argv = ["check", "--text", "Remove the test.", "--data", str(local)]
+        code, report, err = run(argv, capsys)
+        assert code == 0 and report["ok"] and report["data"] == str(local)
+        assert "version" not in report and err == ""
+        assert not cache.exists(), "a local release fills no cache"
+
+    def test_lookup_reads_the_directory(self, local, capsys):
+        code, doc, _ = run(["lookup", "ensure", "--data", str(local)], capsys)
+        ((entry,),) = [w["entries"] for w in doc["words"]]
+        assert code == 0 and entry["alternatives"] == ["make sure (v)"]
+
+    def test_a_file_off_its_digest_is_exit_one_and_kept(self, local, capsys):
+        lexicon = local / "lexicon.json"
+        lexicon.write_bytes(lexicon.read_bytes() + b" ")
+        code, _, err = run(["lookup", "ensure", "--data", str(local)], capsys)
+        assert code == 1 and "data/lexicon.json differs" in err
+        assert lexicon.exists(), "the user owns the directory: nothing deleted"
+
+    def test_every_missing_artifact_is_named_at_once(self, local, capsys):
+        (local / "lexicon.json").unlink()
+        (local / "rules.json").unlink()
+        code, _, err = run(["check", "--text", "x", "--data", str(local)], capsys)
+        assert code == 1 and "data/lexicon.json, data/rules.json" in err
+
+    def test_a_directory_without_a_manifest_is_exit_one(self, local, capsys):
+        code, _, err = run(["lookup", "x", "--data", str(local.parent)], capsys)
+        assert code == 1 and "no manifest.json" in err
+
+    def test_data_and_version_together_is_exit_one(self, local, capsys):
+        argv = ["lookup", "x", "--data", str(local), "--version", "v0.1.2"]
+        code, _, err = run(argv, capsys)
+        assert code == 1 and "not allowed with" in err
