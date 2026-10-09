@@ -1,13 +1,12 @@
 # Answer: sweep, check, draft
 
-Load once no material question stays open, then run the steps in order.
+Load once no material question stays open; run steps in order.
 
 ## 1. Rival sweep
 
-Sweep once for the strongest contrary account: folk belief, older
-explanation, or competing mechanism. Record scope, candidates, and survivors
-as a `sweeps` entry. An empty scoped sweep establishes absence and is a
-valid result.
+Sweep once for strongest contrary account: folk belief, older explanation,
+or competing mechanism. Record scope, candidates, survivors as `sweeps`
+entry. Empty scoped sweep establishes absence; valid result.
 
 ## 2. Check
 
@@ -15,45 +14,43 @@ valid result.
 $R check "$S"
 </commands>
 
-At the default `draft` view, `check` returns the derived `sections`; a
-`scaffold` holding each close's stored premise and detail keyed by marker;
-`violations`, with lite-demoted ones under `advisories`; `hedges`; and the
-`markers` table, `S1` onward, with class, title, and url. It exits 0 even
-with violations: read them, and resolve every violation and every `open`
-leaf before drafting. In lite mode an open leaf may remain; disclose it in
-the Open section.
+At default `draft` view, `check` returns derived `sections`; `scaffold`
+holding each close's stored premise and detail keyed by marker;
+`violations`, lite-demoted ones under `advisories`; `hedges`; `markers`
+table, `S1` onward, with class, title, url. Exits 0 even with violations:
+read them; resolve every violation and every `open` leaf before drafting.
+Lite mode: open leaf may remain; disclose it in Open section.
 
 ## 3. Draft once
 
-The lead drafts once by transforming the scaffold's rows; reuse the premise
-and detail written into closes. Render the derived sections and add Boundary
-when the answer flips within scope.
+Lead drafts once by transforming scaffold's rows; reuse premise and detail
+written into closes. Render derived sections; add Boundary when answer flips
+within scope.
 
 | Section | Carries |
 | --- | --- |
-| Answer | The claim, first, in the question's own register, from `retrieved` leaves |
-| Chain | The reasoning path through `retrieved` leaves when it exceeds a few links; else it collapses into the answer's sentences |
+| Answer | Claim, first, in question's own register, from `retrieved` leaves |
+| Chain | Reasoning path through `retrieved` leaves when it exceeds a few links; else collapses into answer's sentences |
 | Rival | Every `refuted` premise and every sweep survivor, stated at its strongest |
-| Boundary | Where the answer flips within scope (band, version, workload) |
+| Boundary | Where answer flips within scope (band, version, workload) |
 | Open | Each `unresolved` leaf with what was tried or why it was passed over |
-| Sources | The check's table: marker, class, title, url |
+| Sources | Check's table: marker, class, title, url |
 
-Omit `retired` leaves. An absent Rival records an empty sweep.
+Omit `retired` leaves. Absent Rival records empty sweep.
 
-Bind markers to the claims the answer depends on; leave connective prose
-bare.
+Bind markers to claims answer depends on; leave connective prose bare.
 
-- `[Sn]` marks a claim settled by its numbered ledger source.
-- `[~]` marks a conclusion composed from leaves.
-- Hedge every leaf the check lists under `hedges`, and name the class by
-  stating the claim as attributed evidence: "benchmarks report [S4]",
-  "practitioner accounts hold [S6]".
-- The strongest source in a close sets the leaf's entry in `hedges`: a close
-  holding a `constitutive` or `attested` source, or two `measured` ones, is
-  never listed, whatever else it holds. Apply the same rule to each sentence
-  by its own markers: hedge a sentence and name its class unless its markers
-  include a `constitutive` or `attested` source or two `measured` ones, even
-  inside a leaf that `hedges` does not list.
+- `[Sn]` marks claim settled by its numbered ledger source.
+- `[~]` marks conclusion composed from leaves.
+- Hedge every leaf check lists under `hedges`; name class by stating claim
+  as attributed evidence: "benchmarks report [S4]", "practitioner accounts
+  hold [S6]".
+- Strongest source in close sets leaf's entry in `hedges`: close holding
+  `constitutive` or `attested` source, or two `measured` ones, never listed,
+  whatever else it holds. Same rule per sentence by its own markers: hedge
+  sentence and name its class unless its markers include `constitutive` or
+  `attested` source or two `measured` ones, even inside leaf `hedges` does
+  not list.
 
 <template for="answer">
 ## Answer

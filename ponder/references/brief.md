@@ -1,15 +1,15 @@
 # Brief: what a search delegate is told
 
-Load only when composing one bundle's brief under `/summon fanout`. Fill the
-parts below; summon supplies the rest, including the budget.
+Load only when composing one bundle's brief under `/summon fanout`. Fill
+parts below; summon supplies rest, including budget.
 
 | Part | Content |
 | --- | --- |
-| Objective | The bundle's leaf questions verbatim, plus the session question for scope |
-| Evidence | The retrieval tools (web search and fetch, else `/search-web`; `/lit-review` for scholarly corpora; `/read-pdf` for PDFs) and any probe source the bundle builds on |
-| Rules | The `rules` template below |
-| Contract | The `contract` template below |
-| Bounds | The other bundles |
+| Objective | Bundle's leaf questions verbatim, plus session question for scope |
+| Evidence | Retrieval tools (web search and fetch, else `/search-web`; `/lit-review` for scholarly corpora; `/read-pdf` for PDFs) and any probe source bundle builds on |
+| Rules | `rules` template below |
+| Contract | `contract` template below |
+| Bounds | Other bundles |
 
 <template for="rules">
 RULES

@@ -1,9 +1,9 @@
 # Explore: frame, leaves, rounds, stopping
 
-Load when the probe leaves material questions open. Build a frame from the
-question and the probe's records, register its leaves, then run rounds until
-the stop rules send you to `answer`. Compose the moves below into a frame
-around governing mechanisms; most queries mix several modes.
+Load when probe leaves material questions open. Build frame from question
+and probe's records, register its leaves, then run rounds until stop rules
+send you to `answer`. Compose moves below into frame around governing
+mechanisms; most queries mix several modes.
 
 ## Moves and the ready frame
 
@@ -13,32 +13,31 @@ registering leaves.
 | Move | Trigger | Frame field it fills |
 | --- | --- | --- |
 | `clarify` | Two readings invoke different mechanisms or evidence | One user question, or explicit branches |
-| `bind-scope` | The answer changes across context | scope: time, place, jurisdiction, version, population, workload, platform, and stakeholder boundaries that can change the answer |
-| `audit-premise` | The query embeds a statistic, history, comparison, or causal claim | premises: every embedded factual or causal claim marked for confirmation or refutation, as a premise leaf that may close `refuted` |
-| `split-modes` | Facts, causes, values, interpretations, feasibility, or implementation are mixed | modes: factual, causal, normative, interpretive, feasibility, or implementation claims separated where their evidence and warrants differ |
-| `name-mechanisms` | Topic nouns conceal what determines the answer | mechanisms: the laws, incentives, protocols, physical processes, or cost drivers that decide the question |
-| `bridge-vocabulary` | The idea may exist under specialist terminology | Search terms and prior-art families |
-| `route-evidence` | A claim lacks a natural retrieval target | evidence routes: the expected artifact and source class, per the spine's class table, for each retrievable claim |
-| `pose-rival` | The strongest contrary account lives outside the query's own premises | rival: the strongest plausible premise or account that could reverse the emerging answer, with a leaf that may close `refuted` |
-| `compile-leaves` | Scope and mechanisms are stable | leaves, below |
+| `bind-scope` | Answer changes across context | scope: time, place, jurisdiction, version, population, workload, platform, stakeholder boundaries that can change answer |
+| `audit-premise` | Query embeds statistic, history, comparison, or causal claim | premises: every embedded factual or causal claim marked for confirmation or refutation, as premise leaf that may close `refuted` |
+| `split-modes` | Facts, causes, values, interpretations, feasibility, or implementation mixed | modes: factual, causal, normative, interpretive, feasibility, or implementation claims separated where their evidence and warrants differ |
+| `name-mechanisms` | Topic nouns conceal what determines answer | mechanisms: laws, incentives, protocols, physical processes, or cost drivers deciding question |
+| `bridge-vocabulary` | Idea may exist under specialist terminology | Search terms and prior-art families |
+| `route-evidence` | Claim lacks natural retrieval target | evidence routes: expected artifact and source class, per spine's class table, for each retrievable claim |
+| `pose-rival` | Strongest contrary account lives outside query's own premises | rival: strongest plausible premise or account that could reverse emerging answer, with leaf that may close `refuted` |
+| `compile-leaves` | Scope and mechanisms stable | leaves, below |
 
-For critical ambiguity, ask one focused question. If clarification is
-unavailable, branch each plausible reading and use the branch point as
-Boundary material. Re-run `clarify` when evidence exposes a new
-interpretation.
+Critical ambiguity: ask one focused question. Clarification unavailable:
+branch each plausible reading, use branch point as Boundary material. Re-run
+`clarify` when evidence exposes new interpretation.
 
 ## Leaves
 
 Turn open work into independent questions, each settled by one retrieval
-act. Decompose by governing principle: each leaf names a mechanism and a
-retrievable claim, and the leaves group by mechanism.
+act. Decompose by governing principle: each leaf names mechanism and
+retrievable claim; leaves group by mechanism.
 
-- Put dependent sub-questions in the draft's `[~]` chain, so ledger leaves
-  and fan-out stay independent.
-- 3 to 10 leaves covers the worked range. Past 10, fold near-duplicates
-  before searching; below 3 still works.
-- Register leaves as `leaves` entries in the round's `note` batch: keywords,
-  question, origin. Reference them by the identifiers the output echoes.
+- Put dependent sub-questions in draft's `[~]` chain, so ledger leaves and
+  fan-out stay independent.
+- 3 to 10 leaves covers worked range. Past 10, fold near-duplicates before
+  searching; below 3 still works.
+- Register leaves as `leaves` entries in round's `note` batch: keywords,
+  question, origin. Reference them by identifiers output echoes.
 
 ## Worked frames
 
@@ -185,54 +184,51 @@ retrievable claim, and the leaves group by mechanism.
 
 ## Frame checks
 
-Before bundling the leaves, verify:
+Before bundling leaves, verify:
 
 <checklist>
-  <item>Every critical ambiguous term is resolved or branched.</item>
-  <item>Every embedded premise supports a `refuted` close while the frame remains valid, and the frame names evidence that could refute it.</item>
-  <item>Factual, causal, normative, interpretive, feasibility, and implementation claims use distinct warrants where needed.</item>
+  <item>Every critical ambiguous term resolved or branched.</item>
+  <item>Every embedded premise supports `refuted` close while frame stays valid; frame names evidence that could refute it.</item>
+  <item>Factual, causal, normative, interpretive, feasibility, implementation claims use distinct warrants where needed.</item>
   <item>Every leaf names one governing mechanism and one plausible evidence route.</item>
-  <item>Leaves are independent, jointly cover the material question, and use mechanism-level names.</item>
-  <item>The rival premise and answer-flipping boundaries are explicit.</item>
+  <item>Leaves independent, jointly cover material question, use mechanism-level names.</item>
+  <item>Rival premise and answer-flipping boundaries explicit.</item>
 </checklist>
 
 ## Bundle and delegate
 
-Delegation starts here, after round one; the lead retains the comprehensive
-view. Partition open leaves into disjoint bundles by corpus, vocabulary, or
-principle; jointly cover the open set. Prefer fewer, fuller bundles.
+Delegation starts here, after round one; lead retains comprehensive view.
+Partition open leaves into disjoint bundles by corpus, vocabulary, or
+principle; jointly cover open set. Prefer fewer, fuller bundles.
 
-Delegate through `/summon fanout`, one delegate per bundle, with the brief
-`brief` lays out. Summon's mode table decides when a bundle runs inline
-instead; the ledger state is the same either way, and delegate identity
-stays outside it.
+Delegate through `/summon fanout`, one delegate per bundle, with brief
+`brief` lays out. Summon's mode table decides when bundle runs inline
+instead; ledger state same either way; delegate identity stays outside it.
 
-Delegates read source pages and return closure proposals; they write
-nothing. The lead judges each return under summon's review and checks
-inflated source-class tags against the class table in the spine.
+Delegates read source pages, return closure proposals; they write nothing.
+Lead judges each return under summon's review, checks inflated source-class
+tags against class table in spine.
 
 ## Admit a round
 
 1. Deduplicate sources.
-2. Judge each close. Use anomalous evidence to test the frame. Before a
+2. Judge each close. Use anomalous evidence to test frame. Before
    `retrieved` close, name its falsifier. Close contradicted premises as
    `refuted`; they feed Rival. Close deliberately abandoned leaves as
    `unresolved` with reason `not_pursued` and its explanation.
-3. Adapt the leaf set: add delegate discoveries as `"origin": "spawned"` and
-   retire superseded leaves.
-4. Admit spawned leaves, sources, closes, and a `checkpoints` entry as one
-   `note` batch. The checkpoint carries the round's declared search count
-   (the sum of delegates' `searches_spent`); the same output returns the
-   updated yield table. On rejection, apply every listed fix and resend
-   once.
+3. Adapt leaf set: add delegate discoveries as `"origin": "spawned"`; retire
+   superseded leaves.
+4. Admit spawned leaves, sources, closes, `checkpoints` entry as one `note`
+   batch. Checkpoint carries round's declared search count (sum of
+   delegates' `searches_spent`); same output returns updated yield table. On
+   rejection, apply every listed fix, resend once.
 
 ## Stop or continue
 
-Falling yield prompts a reframe-or-stop decision. Apply these bounds:
+Falling yield prompts reframe-or-stop decision. Bounds:
 
 - Two unproductive rounds: stop, close remaining open leaves as
-  `unresolved`, and draft. One authoritative source can complete a
-  productive round.
-- Begin saturation judgment one round past the declared focus.
-- Run one to three rounds. A fourth-round need triggers reframing and
-  folding.
+  `unresolved`, draft. One authoritative source can complete productive
+  round.
+- Begin saturation judgment one round past declared focus.
+- Run one to three rounds. Fourth-round need triggers reframing and folding.
