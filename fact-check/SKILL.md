@@ -7,6 +7,8 @@ description: >-
   correction. Use when asked to fact-check a document, verify claims, specs,
   statistics, or version numbers, or update outdated facts.
 license: MIT
+compatibility: >-
+  The report renderer requires uv and a full SKILLs repository checkout.
 metadata:
   argument-hint: "[file-or-section]"
 ---
@@ -129,8 +131,23 @@ directory. It holds the pinned `constraints` (a copy of the Invariants), the
 claim inventory, one verdict record per claim as each completes, and each
 claim's approval status (`pending | approved | user-rejected | applied`),
 and the side findings under `side_findings`. The state file is the source of
-truth: a long run resumes from it, and the comparison table is regenerated
-from it.
+truth: a long run resumes from it, and the report is regenerated from it.
+Write it in this shape; each `claims` entry is the verdict record of Step 2
+plus `status`, holding only `id`, `claim`, `span`, and `type` until its
+verdict completes.
+
+<template for="state">
+{
+  "constraints": ["Invariant 1 text", "..."],
+  "file": "path of the checked document",
+  "claim_time": "YYYY-MM-DD or null",
+  "branch": "parallel | sequential",
+  "cost": "approximate tokens, or null",
+  "claims": [{"id": "c-07", "...": "verdict record fields",
+              "status": "pending"}],
+  "side_findings": [{"finding": "text", "evidence": ["evidence entries"]}]
+}
+</template>
 
 ## Step 2: Verify
 
@@ -191,10 +208,26 @@ only in the cost and latency metadata.
 
 ## Step 3: Report
 
-Render the evidence-first report from the template below. Per issue: source
-span, then evidence quotes (including counter-evidence), then verdict and
-proposed correction. Evidence precedes verdict so the user judges the
-evidence itself.
+Render the evidence-first report from the state file. Bind the renderer once
+per shell; `realpath` is required. Read its output; source reading belongs
+to user-instructed troubleshooting.
+
+<commands for="render">
+R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-fact-check"
+$R render --state:file factcheck-state.json
+</commands>
+
+`render` writes nothing. Exit 0 returns `report`, the filled template
+below, with `claims` and per-verdict `verdicts` counts; present `report` to
+the user as Markdown. Exit 1 returns `rejected`, every problem at once with
+its field path (a claim missing its verdict, a correction the Abstention
+rules in `verification` forbid, a correction short of Invariant 4's
+sources); fix the state file and rerun. If uv is unavailable, fill the
+template by hand from the state file.
+
+Per issue: source span, then evidence quotes (including counter-evidence),
+then verdict and proposed correction. Evidence precedes verdict so the user
+judges the evidence itself.
 
 <template for="report">
 ## Fact-Check Report
@@ -212,11 +245,15 @@ Document says:
 Evidence:
 - "<VERBATIM QUOTE>" (<PUBLISHER>, published <DATE>, accessed <DATE>, <URL>)
 - "<VERBATIM QUOTE>" (<SECOND INDEPENDENT SOURCE>)
-  or, for a live service: live probe <METHOD URL> returned <STATUS>, keys
-  <KEYS> (accessed <DATE>); rests on the owner plus the live probe
 Counter-evidence or caveats: <QUOTE-OR-NONE>
 Verdict: <VERDICT>. Proposed replacement:
 > <CORRECTION TEXT>
+
+#### c-08 (spec, confidence <BAND>) <FILE>:<LINES>
+...as above, with a live probe in place of the second source:
+- live probe <METHOD URL> returned <STATUS>, keys <KEYS> (accessed <DATE>)
+Rests on the owner plus the live probe.
+...
 
 ### Needs your judgment (conflicting / abstained)
 #### c-12 ...both sources quoted, no correction proposed...

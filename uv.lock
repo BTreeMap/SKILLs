@@ -13,6 +13,7 @@ members = [
     "btm-caveman",
     "btm-corekit",
     "btm-draft-paper",
+    "btm-fact-check",
     "btm-lit-review",
     "btm-peer-review",
     "btm-ponder",
@@ -245,6 +246,17 @@ requires-dist = [
 name = "btm-draft-paper"
 version = "1.0.0"
 source = { editable = "draft-paper/scripts" }
+dependencies = [
+    { name = "btm-corekit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "btm-corekit", editable = ".corekit" }]
+
+[[package]]
+name = "btm-fact-check"
+version = "1.0.0"
+source = { editable = "fact-check/scripts" }
 dependencies = [
     { name = "btm-corekit" },
 ]

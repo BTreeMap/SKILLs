@@ -1,0 +1,17 @@
+[project]
+name = "btm-fact-check"
+version = "1.0.0"
+description = "Render the fact-check report from its state file"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["btm-corekit"]
+
+[project.scripts]
+btm-fact-check = "btm_fact_check.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }
