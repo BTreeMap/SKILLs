@@ -69,16 +69,21 @@ tour, no restatement of what code plainly does.
 
 ## Completion checks
 
-<checklist>
-  <item>Repository inventoried first; everything reusable reused; nothing forked silently.</item>
-  <item>Tokens defined before components; no component hardcodes value belonging to scale.</item>
-  <item>Variants and asynchronous states closed sets eliminated exhaustively; imports point downward; domain types at or above pattern layer.</item>
-  <item>Hierarchy reads correctly with color and decoration removed.</item>
-  <item>Every interactive element and data container ships every state `interaction` defines.</item>
-  <item>Stack, library, tokens match repository; no undeclared dependency imported.</item>
-  <item>Interactivity isolated to leaf components; continuous values bypass render state.</item>
-  <item>Native semantic elements used wherever they suffice, full keyboard contracts on any custom control.</item>
-  <item>Space reserved for every asynchronous element; effects torn down.</item>
-  <item>Assets real, generated, or honestly slotted, never fabricated.</item>
-  <item>Both themes, keyboard-only, reduced-motion, narrow viewport verified.</item>
-</checklist>
+- Repository inventoried first; everything reusable reused; nothing forked
+  silently.
+- Tokens defined before components; no component hardcodes value belonging
+  to scale.
+- Variants and asynchronous states closed sets eliminated exhaustively;
+  imports point downward; domain types at or above pattern layer.
+- Hierarchy reads correctly with color and decoration removed.
+- Every interactive element and data container ships every state
+  `interaction` defines.
+- Stack, library, tokens match repository; no undeclared dependency
+  imported.
+- Interactivity isolated to leaf components; continuous values bypass render
+  state.
+- Native semantic elements used wherever they suffice, full keyboard
+  contracts on any custom control.
+- Space reserved for every asynchronous element; effects torn down.
+- Assets real, generated, or honestly slotted, never fabricated.
+- Both themes, keyboard-only, reduced-motion, narrow viewport verified.

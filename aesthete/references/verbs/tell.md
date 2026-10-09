@@ -39,11 +39,9 @@ without asking. Calibrate to audience; never lecture.
 
 ## Completion checks
 
-<checklist>
-  <item>Audience identified; explanation calibrated to it.</item>
-  <item>User consequence stated concretely.</item>
-  <item>Any principle cited applies and is stated accurately.</item>
-  <item>Counterfactual and boundary condition both given.</item>
-  <item>Length matches scope of question.</item>
-  <item>Preference labeled as preference.</item>
-</checklist>
+- Audience identified; explanation calibrated to it.
+- User consequence stated concretely.
+- Any principle cited applies and is stated accurately.
+- Counterfactual and boundary condition both given.
+- Length matches scope of question.
+- Preference labeled as preference.

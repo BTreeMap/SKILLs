@@ -4,14 +4,16 @@
 
 Replace wind-up with direct form:
 
-<template for="swaps">
+**Template: swaps**
+
+```text
 "In order to achieve this goal" → "To achieve this"
 "Due to the fact that it was raining" → "Because it was raining"
 "At this point in time" → "Now"
 "In the event that you need help" → "If you need help"
 "The system has the ability to process" → "The system can process"
 "It is important to note that the data shows" → "The data shows"
-</template>
+```
 
 ### 24. Too many qualifiers
 
@@ -22,23 +24,25 @@ arguably, in some cases it may, this is an inference
 uncertain. Keep qualifier only when source supports it and meaning needs it.
 Remove caveats that only repair earlier overstatement.
 
-<examples>
-  <example>
-    <before>It could potentially possibly be argued that the policy might have some effect on outcomes.</before>
-    <after>The policy may affect outcomes.</after>
-  </example>
-</examples>
+**Example**
+
+Before: It could potentially possibly be argued that the policy might have
+some effect on outcomes.
+
+After: The policy may affect outcomes.
 
 ### 25. Generic positive endings
 
 **Problem:** Vague optimism instead of last useful fact.
 
-<examples>
-  <example>
-    <before>The future looks bright for the company. Exciting times lie ahead as they continue their journey toward excellence. This represents a major step in the right direction.</before>
-    <after>(Cut the paragraph. End on the last concrete fact instead of a send-off. If the source states real plans, use those.)</after>
-  </example>
-</examples>
+**Example**
+
+Before: The future looks bright for the company. Exciting times lie ahead as
+they continue their journey toward excellence. This represents a major step
+in the right direction.
+
+After: (Cut the paragraph. End on the last concrete fact instead of a
+send-off. If the source states real plans, use those.)
 
 ### 26. Too many hyphenated word pairs
 
@@ -49,9 +53,12 @@ decision-making, well-known, high-quality, real-time, long-term, end-to-end
 grammar needs it, as in "a high-quality report". Drop it after noun, as in
 "the report is high quality".
 
-<examples>
-  <example>
-    <before>The cross-functional team delivered a high-quality, data-driven report. The team is cross-functional, the report is high-quality, and the methodology is data-driven.</before>
-    <after>The cross-functional team delivered a high-quality, data-driven report. The team is cross functional, the report is high quality, and the methodology is data driven.</after>
-  </example>
-</examples>
+**Example**
+
+Before: The cross-functional team delivered a high-quality, data-driven
+report. The team is cross-functional, the report is high-quality, and the
+methodology is data-driven.
+
+After: The cross-functional team delivered a high-quality, data-driven
+report. The team is cross functional, the report is high quality, and the
+methodology is data driven.

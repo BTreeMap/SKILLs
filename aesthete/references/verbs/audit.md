@@ -36,7 +36,7 @@ plan": refactor decision with its own verb.
 
 ## Deliverable
 
-<template for="audit">
+```markdown
 ## Scope
 {surfaces audited}; excluded: {what and why}
 
@@ -66,16 +66,14 @@ Leverage: {why this rank}
 
 ## Not fixed by this plan
 {structural problems requiring a refactor decision}
-</template>
+```
 
 ## Completion checks
 
-<checklist>
-  <item>Scope and exclusions stated.</item>
-  <item>Implicit system extracted from code with distinct-value counts per scale.</item>
-  <item>Findings clustered by cause, with instance counts.</item>
-  <item>Ranked by leverage; token layer examined first.</item>
-  <item>Deliberate documented deviations excluded from findings.</item>
-  <item>Plan split into now, next, later; names what it does not fix.</item>
-  <item>Accessibility failures clustered separately with criterion each violates.</item>
-</checklist>
+- Scope and exclusions stated.
+- Implicit system extracted from code with distinct-value counts per scale.
+- Findings clustered by cause, with instance counts.
+- Ranked by leverage; token layer examined first.
+- Deliberate documented deviations excluded from findings.
+- Plan split into now, next, later; names what it does not fix.
+- Accessibility failures clustered separately with criterion each violates.

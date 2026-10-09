@@ -78,10 +78,10 @@ Material supplied at level 2 or 3: load `brief` before anything else.
 
 Before producing anything, state read in one line:
 
-<template for="design-read">
+```text
 Reading this as: {surface} for {audience}, optimizing for {primary goal},
 with a {aesthetic family} language, built on {system or stack}.
-</template>
+```
 
 Infer it from these signals, descending authority: quiet constraints
 (regulated, safety-critical, accessibility-critical); surface and its job;
@@ -250,14 +250,14 @@ it; absent: state install command before writing code against it.
 Verb files add their own. Load `preflight`, mechanical gate, before
 declaring done.
 
-<checklist>
-  <item>Read stated in one line; dials set with reasons.</item>
-  <item>Precedence applied in order; every conflict it resolved reported.</item>
-  <item>Exactly one verb file, one surface profile, verb's mandatory references, and only on-demand owners work touched loaded.</item>
-  <item>No owned enumeration, threshold, or value resolved from memory in place of its owner.</item>
-  <item>Every element can name user goal it serves.</item>
-  <item>Obligations hold, verified against their owners.</item>
-  <item>Zero U+2014 in user-visible strings; nothing fabricated.</item>
-  <item>Stack and tokens derived from repository or supplied material.</item>
-  <item>Friction budget to primary goal counted and reported.</item>
-</checklist>
+- Read stated in one line; dials set with reasons.
+- Precedence applied in order; every conflict it resolved reported.
+- Exactly one verb file, one surface profile, verb's mandatory references,
+  and only on-demand owners work touched loaded.
+- No owned enumeration, threshold, or value resolved from memory in place of
+  its owner.
+- Every element can name user goal it serves.
+- Obligations hold, verified against their owners.
+- Zero U+2014 in user-visible strings; nothing fabricated.
+- Stack and tokens derived from repository or supplied material.
+- Friction budget to primary goal counted and reported.

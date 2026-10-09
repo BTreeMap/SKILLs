@@ -28,11 +28,11 @@ Rate each finding on Severity scale in `signs`.
 
 ## Finding format
 
-<template for="finding">
+```markdown
 **{severity}** {location}: {one-sentence defect}
 Fails when: {concrete input, state, or viewport, and what the user sees}
 Fix: {the specific change, not a principle}
-</template>
+```
 
 ## Rules
 
@@ -47,12 +47,12 @@ Fix: {the specific change, not a principle}
 
 ## Completion checks
 
-<checklist>
-  <item>Intended read reconstructed and stated before any finding.</item>
-  <item>Flow walked; built friction budget counted.</item>
-  <item>All five sweeps ran in order; whole-surface consistency checked beyond diff.</item>
-  <item>Repository checked for existing implementation of anything diff re-implements.</item>
-  <item>Every finding carries concrete failure scenario and specific fix.</item>
-  <item>Findings ranked by severity; preferences dropped.</item>
-  <item>Coverage limits stated; nothing modified.</item>
-</checklist>
+- Intended read reconstructed and stated before any finding.
+- Flow walked; built friction budget counted.
+- All five sweeps ran in order; whole-surface consistency checked beyond
+  diff.
+- Repository checked for existing implementation of anything diff
+  re-implements.
+- Every finding carries concrete failure scenario and specific fix.
+- Findings ranked by severity; preferences dropped.
+- Coverage limits stated; nothing modified.

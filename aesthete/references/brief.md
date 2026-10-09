@@ -100,7 +100,7 @@ Supplied documents govern appearance; function still applies.
 
 Emit before building.
 
-<template for="supplied-material">
+```markdown
 ## Adopted
 {tokens and rules taken as given}
 
@@ -119,16 +119,17 @@ Resolution: {which derivation, and the resulting value}
 
 ## Unresolved
 {what the document must decide}
-</template>
+```
 
 ## Completion checks
 
 Run with `preflight` before declaring done.
 
-<checklist>
-  <item>Precedence applied in order: palette overrode document's colors, document overrode this skill's defaults, accessibility floor overrode everything.</item>
-  <item>Every supplied token pairing used measured for contrast, including secondary text on tinted surfaces.</item>
-  <item>Every floor conflict resolved by derivation and reported, brand preserved wherever threshold allowed.</item>
-  <item>Document's accessibility claims verified against specification.</item>
-  <item>Gaps document left derived from its own logic and reported.</item>
-</checklist>
+- Precedence applied in order: palette overrode document's colors, document
+  overrode this skill's defaults, accessibility floor overrode everything.
+- Every supplied token pairing used measured for contrast, including
+  secondary text on tinted surfaces.
+- Every floor conflict resolved by derivation and reported, brand preserved
+  wherever threshold allowed.
+- Document's accessibility claims verified against specification.
+- Gaps document left derived from its own logic and reported.

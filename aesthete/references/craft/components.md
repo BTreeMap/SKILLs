@@ -44,36 +44,47 @@ compose instead of adding prop.
 adding flag that switches structure internally. Component whose props
 control which subtree renders is several components sharing a name.
 
-<examples for="god-component">
-  <example>
-    <context>Props list grown to cover every call site: twelve booleans admit 4096 combinations, handful rendered, none tested. Fix by composition: Card renders what it is given.</context>
-    <before>
-      <Card
-        showHeader showFooter showAvatar showBadge compact bordered
-        elevated clickable headerAlign footerVariant ... />
-    </before>
-    <after>
-      <Card>
-        <Card.Header>...</Card.Header>
-        <Card.Body>...</Card.Body>
-      </Card>
-    </after>
-    <context>Axes remaining as props are genuinely one axis each: closed `variant`, closed `size`.</context>
-  </example>
-</examples>
+**Example: god-component**
+
+Context: Props list grown to cover every call site: twelve booleans admit
+4096 combinations, handful rendered, none tested. Fix by composition: Card
+renders what it is given.
+
+Before:
+
+```jsx
+<Card
+  showHeader showFooter showAvatar showBadge compact bordered
+  elevated clickable headerAlign footerVariant ... />
+```
+
+After:
+
+```jsx
+<Card>
+  <Card.Header>...</Card.Header>
+  <Card.Body>...</Card.Body>
+</Card>
+```
+
+Context: Axes remaining as props are genuinely one axis each: closed
+`variant`, closed `size`.
 
 ## Prop APIs that exclude the invalid
 
 **Model variants as one closed set.** Independent flags multiply into
 meaningless combinations; each is a state someone will eventually pass.
 
-<examples for="variants">
-  <example>
-    <before>{ primary?: bool; secondary?: bool; danger?: bool; large?: bool; small?: bool }</before>
-    <after>{ variant: 'primary' | 'secondary' | 'danger'; size: 'sm' | 'md' | 'lg' }</after>
-    <context>First admits nonsense (primary and danger simultaneously, large and small); second is closed and total.</context>
-  </example>
-</examples>
+**Example: variants**
+
+Before: { primary?: bool; secondary?: bool; danger?: bool; large?: bool;
+small?: bool }
+
+After: { variant: 'primary' | 'secondary' | 'danger'; size: 'sm' | 'md' |
+'lg' }
+
+Context: First admits nonsense (primary and danger simultaneously, large and
+small); second is closed and total.
 
 **Model asynchronous collections as one closed set.** Encode container union
 `interaction` defines, not bag of flags such as
@@ -132,21 +143,26 @@ in URL.
 
 Treat lookup inside loop as nested loop.
 
-<examples for="render-cost">
-  <example>
-    <before>
-      rows.map(row => {
-        const owner = users.find(u => u.id === row.ownerId)   // O(n) per row
-        ...
-      })
-    </before>
-    <after>
-      const byId = new Map(users.map(u => [u.id, u]))
-      rows.map(row => { const owner = byId.get(row.ownerId) ... })
-    </after>
-    <context>First is quadratic in number of rows, re-runs every render; building index once makes loop linear.</context>
-  </example>
-</examples>
+**Example: render-cost**
+
+Before:
+
+```javascript
+rows.map(row => {
+  const owner = users.find(u => u.id === row.ownerId)   // O(n) per row
+  ...
+})
+```
+
+After:
+
+```javascript
+const byId = new Map(users.map(u => [u.id, u]))
+rows.map(row => { const owner = byId.get(row.ownerId) ... })
+```
+
+Context: First is quadratic in number of rows, re-runs every render;
+building index once makes loop linear.
 
 * Keys come from stable identity. Array index as key corrupts state and
   animation once list is reordered, filtered, or prepended to.
@@ -165,12 +181,11 @@ Treat lookup inside loop as nested loop.
 Name by concept. Appearance names go stale first time design changes;
 location names discourage reuse component exists for.
 
-<examples for="naming">
-  <example>
-    <before>BlueButton, SmallCard, HomepageHero, SettingsPageTable, NewModal2</before>
-    <after>Button, Card, Hero, DataTable, ConfirmDialog</after>
-  </example>
-</examples>
+**Example: naming**
+
+Before: BlueButton, SmallCard, HomepageHero, SettingsPageTable, NewModal2
+
+After: Button, Card, Hero, DataTable, ConfirmDialog
 
 One concept, one name, one spelling in code, design files, conversation.
 Divergent vocabulary between design and code is how two implementations of

@@ -12,12 +12,15 @@ landscape, focal point, indelible mark, deeply rooted
 **Problem:** Ordinary details claimed to mark major change, prove legacy, or
 reflect broad trend.
 
-<examples>
-  <example>
-    <before>The Statistical Institute of Catalonia was officially established in 1989, marking a pivotal moment in the evolution of regional statistics in Spain. This initiative was part of a broader movement across Spain to decentralize administrative functions and enhance regional governance.</before>
-    <after>The Statistical Institute of Catalonia was established in 1989, part of a wider decentralization of administrative functions in Spain.</after>
-  </example>
-</examples>
+**Example**
+
+Before: The Statistical Institute of Catalonia was officially established in
+1989, marking a pivotal moment in the evolution of regional statistics in
+Spain. This initiative was part of a broader movement across Spain to
+decentralize administrative functions and enhance regional governance.
+
+After: The Statistical Institute of Catalonia was established in 1989, part
+of a wider decentralization of administrative functions in Spain.
 
 ### 2. Name-dropping to prove importance
 
@@ -30,12 +33,13 @@ person matters, with no useful context.
 **Exceptions:** Source explains what person said and where: keep that
 citation.
 
-<examples>
-  <example>
-    <before>Her views have been cited in The New York Times, BBC, Financial Times, and The Hindu. She maintains an active social media presence with over 500,000 followers.</before>
-    <after>Her views have been cited in The New York Times and the BBC.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Her views have been cited in The New York Times, BBC, Financial
+Times, and The Hindu. She maintains an active social media presence with
+over 500,000 followers.
+
+After: Her views have been cited in The New York Times and the BBC.
 
 ### 3. Shallow analysis with -ing phrases
 
@@ -46,12 +50,15 @@ encompassing..., showcasing...
 **Problem:** -ing phrase bolted onto simple fact to make it sound deeper
 than it is.
 
-<examples>
-  <example>
-    <before>The temple's color palette of blue, green, and gold resonates with the region's natural beauty, symbolizing Texas bluebonnets, the Gulf of Mexico, and the diverse Texan landscapes, reflecting the community's deep connection to the land.</before>
-    <after>The temple is painted blue, green, and gold, colors meant to evoke Texas bluebonnets and the Gulf of Mexico.</after>
-  </example>
-</examples>
+**Example**
+
+Before: The temple's color palette of blue, green, and gold resonates with
+the region's natural beauty, symbolizing Texas bluebonnets, the Gulf of
+Mexico, and the diverse Texan landscapes, reflecting the community's deep
+connection to the land.
+
+After: The temple is painted blue, green, and gold, colors meant to evoke
+Texas bluebonnets and the Gulf of Mexico.
 
 ### 4. Sales language
 
@@ -63,12 +70,13 @@ stunning
 **Problem:** Advertisement tone, especially describing places, culture,
 products, organizations.
 
-<examples>
-  <example>
-    <before>Nestled within the breathtaking region of Gonder in Ethiopia, Alamata Raya Kobo stands as a vibrant town with a rich cultural heritage and stunning natural beauty.</before>
-    <after>Alamata Raya Kobo is a town in the Gonder region of Ethiopia.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Nestled within the breathtaking region of Gonder in Ethiopia,
+Alamata Raya Kobo stands as a vibrant town with a rich cultural heritage and
+stunning natural beauty.
+
+After: Alamata Raya Kobo is a town in the Gonder region of Ethiopia.
 
 ### 5. Vague sources
 
@@ -88,16 +96,22 @@ Otherwise remove unsupported claim. Never invent source.
 targets invented observation doing citation's job; autobiography surrounding
 text supports stays.
 
-<examples>
-  <example>
-    <before>Due to its unique characteristics, the Haolai River is of interest to researchers and conservationists. Experts believe it plays a crucial role in the regional ecosystem.</before>
-    <after>Researchers and conservationists study the Haolai River for its unusual characteristics.</after>
-  </example>
-  <example for="first person and familiarity">
-    <before>Most people I've talked to have hit this bug. It is famously hard to reproduce, as anyone who has run a cluster knows.</before>
-    <after>The bug is hard to reproduce. (Keep the first-person report only when the writer has that experience and the text shows it.)</after>
-  </example>
-</examples>
+**Example**
+
+Before: Due to its unique characteristics, the Haolai River is of interest
+to researchers and conservationists. Experts believe it plays a crucial role
+in the regional ecosystem.
+
+After: Researchers and conservationists study the Haolai River for its
+unusual characteristics.
+
+**Example: first person and familiarity**
+
+Before: Most people I've talked to have hit this bug. It is famously hard to
+reproduce, as anyone who has run a cluster knows.
+
+After: The bug is hard to reproduce. (Keep the first-person report only when
+the writer has that experience and the text shows it.)
 
 ### 6. Formulaic challenges and outlook sections
 
@@ -108,9 +122,11 @@ challenges, Challenges and Legacy, Future Outlook
 growth repeating vague claims instead of adding facts. Add details such as
 dates or public actions only when they come from source or user.
 
-<examples>
-  <example>
-    <before>Despite its industrial prosperity, Korattur faces challenges typical of urban areas, including traffic congestion and water scarcity. Despite these challenges, with its strategic location and ongoing initiatives, Korattur continues to thrive as an integral part of Chennai's growth.</before>
-    <after>Korattur has recurring traffic congestion and water shortages.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Despite its industrial prosperity, Korattur faces challenges typical
+of urban areas, including traffic congestion and water scarcity. Despite
+these challenges, with its strategic location and ongoing initiatives,
+Korattur continues to thrive as an integral part of Chennai's growth.
+
+After: Korattur has recurring traffic congestion and water shortages.

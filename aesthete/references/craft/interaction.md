@@ -42,14 +42,14 @@ Independent boolean flags cannot express them: flags admit loading together
 with error, cannot distinguish "none exist" from "none match the filter".
 Encode as one closed set, so omitting state fails build:
 
-<template for="container-states">
-  | { status: 'loading' }
-  | { status: 'error'; error: LoadError; retry: () => void }
-  | { status: 'empty' }                                  // none exist yet
-  | { status: 'filtered'; clearFilter: () => void }      // none match
-  | { status: 'partial'; items: Item[]; loadMore: () => void }
-  | { status: 'ready'; items: Item[] }
-</template>
+```typescript
+| { status: 'loading' }
+| { status: 'error'; error: LoadError; retry: () => void }
+| { status: 'empty' }                                  // none exist yet
+| { status: 'filtered'; clearFilter: () => void }      // none match
+| { status: 'partial'; items: Item[]; loadMore: () => void }
+| { status: 'ready'; items: Item[] }
+```
 
 `empty` and `filtered`: pair most often collapsed into one; they need
 different copy and different actions.

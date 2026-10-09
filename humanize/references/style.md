@@ -11,50 +11,66 @@ dash and double-hyphen forms; em dash behaves identically.
 As evidence, em dashes count only when paired with formulaic sales-y rhythm;
 many editors and journalists use them often.
 
-<examples>
-  <example>
-    <before>The term is primarily promoted by Dutch institutions – not by the people themselves. The changes -- long overdue according to critics -- will take effect immediately.</before>
-    <after>The term is primarily promoted by Dutch institutions, not by the people themselves. The changes, long overdue according to critics, will take effect immediately.</after>
-  </example>
-</examples>
+**Example**
+
+Before: The term is primarily promoted by Dutch institutions – not by the
+people themselves. The changes -- long overdue according to critics -- will
+take effect immediately.
+
+After: The term is primarily promoted by Dutch institutions, not by the
+people themselves. The changes, long overdue according to critics, will take
+effect immediately.
 
 ### 15. Too much bold text
 
 **Problem:** Words and phrases bolded without clear reason.
 
-<examples>
-  <example>
-    <before>It blends **OKRs (Objectives and Key Results)**, **KPIs (Key Performance Indicators)**, and visual strategy tools such as the **Business Model Canvas (BMC)** and **Balanced Scorecard (BSC)**.</before>
-    <after>It blends OKRs, KPIs, and visual strategy tools like the Business Model Canvas and Balanced Scorecard.</after>
-  </example>
-</examples>
+**Example**
+
+Before:
+
+```markdown
+It blends **OKRs (Objectives and Key Results)**, **KPIs (Key Performance Indicators)**, and visual strategy tools such as the **Business Model Canvas (BMC)** and **Balanced Scorecard (BSC)**.
+```
+
+After: It blends OKRs, KPIs, and visual strategy tools like the Business
+Model Canvas and Balanced Scorecard.
 
 ### 16. Lists with bold mini-headings
 
 **Problem:** Vertical lists where every item starts with bold label and
 colon.
 
-<examples>
-  <example>
-    <before>
+**Example**
+
+Before:
+
+```markdown
 - **User Experience:** The user experience has been significantly improved with a new interface.
 - **Performance:** Performance has been enhanced through optimized algorithms.
 - **Security:** Security has been strengthened with end-to-end encryption.
-    </before>
-    <after>The update improves the interface, speeds up load times through optimized algorithms, and adds end-to-end encryption.</after>
-  </example>
-</examples>
+```
+
+After: The update improves the interface, speeds up load times through
+optimized algorithms, and adds end-to-end encryption.
 
 ### 17. Title case in headings
 
 **Problem:** Every main word of heading capitalized.
 
-<examples>
-  <example>
-    <before>## Strategic Negotiations And Global Partnerships</before>
-    <after>## Strategic negotiations and global partnerships</after>
-  </example>
-</examples>
+**Example**
+
+Before:
+
+```markdown
+## Strategic Negotiations And Global Partnerships
+```
+
+After:
+
+```markdown
+## Strategic negotiations and global partnerships
+```
 
 ### 18. Emojis and decorative rules
 
@@ -65,17 +81,24 @@ break already separates them.
 **Exceptions:** Front matter delimiters, required thematic break, rule
 inside template.
 
-<examples>
-  <example>
-    <before>
+**Example**
+
+Before:
+
+```markdown
 🚀 **Launch Phase:** The product launches in Q3
 💡 **Key Insight:** Users prefer simplicity
 ✅ **Next Steps:** Schedule follow-up meeting
-    </before>
-    <after>The product launches in Q3. User research showed a preference for simplicity. Next step: schedule a follow-up meeting.</after>
-  </example>
-  <example for="rules as dividers">
-    <before>
+```
+
+After: The product launches in Q3. User research showed a preference for
+simplicity. Next step: schedule a follow-up meeting.
+
+**Example: rules as dividers**
+
+Before:
+
+```markdown
 ## Setup
 
 Install the package.
@@ -85,8 +108,11 @@ Install the package.
 ## Usage
 
 Run the command.
-    </before>
-    <after>
+```
+
+After:
+
+```markdown
 ## Setup
 
 Install the package.
@@ -94,9 +120,7 @@ Install the package.
 ## Usage
 
 Run the command.
-    </after>
-  </example>
-</examples>
+```
 
 ### 19. Curly quotation marks
 
@@ -106,9 +130,8 @@ straight quotes ("...").
 As evidence, curly quotes count only when stacked with other signs; macOS,
 Word, Google Docs, and most CMSes auto-curl by default.
 
-<examples>
-  <example>
-    <before>He said “the project is on track” but others disagreed.</before>
-    <after>He said "the project is on track" but others disagreed.</after>
-  </example>
-</examples>
+**Example**
+
+Before: He said “the project is on track” but others disagreed.
+
+After: He said "the project is on track" but others disagreed.

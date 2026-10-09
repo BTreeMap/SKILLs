@@ -78,13 +78,12 @@ them:
 
 ## Completion checks
 
-<checklist>
-  <item>Mode detected and stated before any change.</item>
-  <item>Audit completed and recorded, including current dials and discoverability baseline.</item>
-  <item>Brand tokens extracted and honored ahead of any default.</item>
-  <item>Levers applied in order, stopped at brief.</item>
-  <item>Missing interaction states added.</item>
-  <item>Nothing on never-change-silently list modified without approval.</item>
-  <item>No accessibility behavior regressed.</item>
-  <item>Changes reported per lever with before and after.</item>
-</checklist>
+- Mode detected and stated before any change.
+- Audit completed and recorded, including current dials and discoverability
+  baseline.
+- Brand tokens extracted and honored ahead of any default.
+- Levers applied in order, stopped at brief.
+- Missing interaction states added.
+- Nothing on never-change-silently list modified without approval.
+- No accessibility behavior regressed.
+- Changes reported per lever with before and after.

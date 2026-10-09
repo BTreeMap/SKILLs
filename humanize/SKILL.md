@@ -67,12 +67,13 @@ Hold in every mode. Each outranks any pattern fix.
    "evidence suggests". Restore lost strength with only, can, may, suggests,
    or equivalent.
 
-   <checklist for="modality">
-     <item>necessary became sufficient: restore "only", "requires", "unless"</item>
-     <item>evidential became assertive: restore "suggests", "reports", "found"</item>
-     <item>possible became actual: restore "can", "may", "sometimes"</item>
-     <item>comparative became absolute: restore "more than", "than the alternative"</item>
-   </checklist>
+   **Checklist: modality**
+
+   - necessary became sufficient: restore "only", "requires", "unless"
+   - evidential became assertive: restore "suggests", "reports", "found"
+   - possible became actual: restore "can", "may", "sometimes"
+   - comparative became absolute: restore "more than", "than the
+     alternative"
 
 ## Output modes
 

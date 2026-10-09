@@ -38,7 +38,7 @@ whose answer would flip it.
 
 ## Deliverable
 
-<template for="design">
+```markdown
 ## Design read
 {one line}
 
@@ -74,17 +74,16 @@ Icons: {family and weight}
 
 ## Risks
 {decision}: wrong if {falsifier}; fallback is {alternative}
-</template>
+```
 
 ## Completion checks
 
-<checklist>
-  <item>Primary goal is one sentence; surface optimizes for it.</item>
-  <item>Friction budget counted, itemized, reduced where possible.</item>
-  <item>Foundation choice names repository's existing stack or stated reason to depart from it.</item>
-  <item>Every token scale fixed once, with rule, before composition.</item>
-  <item>Adjacent sections or regions differ structurally, carry distinct jobs.</item>
-  <item>Kill list non-empty, names replacements.</item>
-  <item>Mobile behavior and accessibility posture decided.</item>
-  <item>Exactly one direction committed to.</item>
-</checklist>
+- Primary goal is one sentence; surface optimizes for it.
+- Friction budget counted, itemized, reduced where possible.
+- Foundation choice names repository's existing stack or stated reason to
+  depart from it.
+- Every token scale fixed once, with rule, before composition.
+- Adjacent sections or regions differ structurally, carry distinct jobs.
+- Kill list non-empty, names replacements.
+- Mobile behavior and accessibility posture decided.
+- Exactly one direction committed to.
