@@ -159,14 +159,13 @@ inline spelling, and an empty one is a rejection.
 
 `note` stamps each event with the time `t` and the run identifier and
 appends it to the run's trace, an append-only JSONL log in the session
-directory; position in the file is the order. Never write the trace by
-hand. Events apply in array order, so one batch may approve a gate and
-enter the next stage, and a later event may cite a claim minted earlier in
-the batch. A rejected batch names every problem at once with its field path
-and changes nothing: apply every fix and resend. Write each batch to a file,
-so a retry is one edit. Copy claim identifiers from the `minted` receipt; a
-recovered keyword ref works but signals, so write full identifiers in the
-next batch.
+directory; position in the file is the order. Never write the trace by hand.
+Events apply in array order, so one batch may approve a gate and enter the
+next stage, and a later event may cite a claim minted earlier in the batch.
+A rejected batch names every problem at once with its field path and changes
+nothing: apply every fix and resend. Write each batch to a file, so a retry
+is one edit. Copy claim identifiers from the `minted` receipt; a recovered
+keyword ref works but signals, so write full identifiers in the next batch.
 
 <template for="note-batch">
 {"events": [
@@ -189,10 +188,10 @@ and stay under the event cap. A line that fails stops the command with exit
 1 and names the line; show the user the error and stop.
 
 The pad is free working memory beside the trace: `jot` admits any JSON
-object (or prose with `--prose`) and never rejects content; `recall`
-filters it by kind, regex, id, or count. Suggested kinds: `framing`
-(candidate framings), `punch` (punch-list items), `concern` (reviewer
-concerns), `thread` (open threads).
+object (or prose with `--prose`) and never rejects content; `recall` filters
+it by kind, regex, id, or count. Suggested kinds: `framing` (candidate
+framings), `punch` (punch-list items), `concern` (reviewer concerns),
+`thread` (open threads).
 
 ## Gates
 
@@ -222,10 +221,10 @@ A gate's standing in `status` and `check` is `open` (not yet requested),
 | `revise` | The gate stays shut. Revise at the gate's stage per the notes, then request the gate again. |
 | `reject` | The run closes and the script admits nothing more. If the human redirects the work, `init` a new run; its trace starts empty, so re-note the claims the redirected work keeps. |
 
-The agent never decides a gate itself, and silence is never approval. If
-the reply does not say which outcome it is, ask once. Re-entering a gated
-stage reopens its gate, so fixing a number in stage 2 after approval needs
-the `ledger` gate again.
+The agent never decides a gate itself, and silence is never approval. If the
+reply does not say which outcome it is, ask once. Re-entering a gated stage
+reopens its gate, so fixing a number in stage 2 after approval needs the
+`ledger` gate again.
 
 ## Evidence ledger
 
@@ -247,8 +246,7 @@ missing in `check` and blocks the `draft` gate.
 | `to-run` | A planned experiment; the artifact path is where its output will land. | path named; blocks the `draft` gate |
 | `unsupported` | No artifact backs the claim. | blocks the `draft` gate |
 
-- Resolve numbers in prose, tables, figures, and captions to the same
-  claim.
+- Resolve numbers in prose, tables, figures, and captions to the same claim.
 - Give a reduced, narrowed, or failed campaign a claim describing what ran.
   Revise a claim's status when its experiment lands; drop a claim the draft
   no longer makes, with the reason.
@@ -271,8 +269,8 @@ Render `check`'s `ledger` rows for the human with this template:
 A skipped stage is admitted with a signal, but its work is still owed: a
 `refactor` that jumps from stage 3 to 8 has skipped citation verification.
 
-0. Intake: detect state and verb, confirm the format, and ask for the
-   target venue if it is unknown. Run `init`. Study the current CFP per
+0. Intake: detect state and verb, confirm the format, and ask for the target
+   venue if it is unknown. Run `init`. Study the current CFP per
    `venue-standards`, file the venue brief from its template, and fetch the
    venue's LaTeX template now.
 1. Positioning (`design`; `build` from a shaped idea): sweep the literature
@@ -283,8 +281,8 @@ A skipped stage is admitted with a signal, but its work is still owed: a
 2. Evidence: note one claim per empirical claim, per the evidence ledger
    above. Gate: `ledger`.
 3. Outline: rank 2-3 framings in the pad; freeze one against the outline
-   template and the format's structure in `section-guide`. Freeze
-   the one-sentence key insight and the arc (problem, limits of current
+   template and the format's structure in `section-guide`. Freeze the
+   one-sentence key insight and the arc (problem, limits of current
    practice, insight, contributions, headline results) before drafting
    prose.
 4. Drafting: write section by section in the venue's LaTeX template, with
@@ -306,9 +304,9 @@ A skipped stage is admitted with a signal, but its work is still owed: a
    `award-assessment`.
 8. Bundle and venue statements: assemble the reproducibility bundle (code
    and data pointers, seeds, logs, figure scripts; anonymized for
-   double-blind). Compile the venue template and fix every error and
-   warning that touches the submission. Write only the venue statements the
-   CFP requires, per `venue-standards`. Gate: `draft`.
+   double-blind). Compile the venue template and fix every error and warning
+   that touches the submission. Write only the venue statements the CFP
+   requires, per `venue-standards`. Gate: `draft`.
 9. Rebuttal and camera-ready (`rebut`), per `rebuttal-playbook`, which
    defines the reviews input. A `rebut` run is its own session
    (`--verb rebut --state reviews`); claims from the drafting run do not

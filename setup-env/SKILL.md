@@ -68,11 +68,11 @@ env -u VIRTUAL_ENV uv run --project "$(realpath <skill-dir>/scripts)" btm-setup-
 
 Every verb is named outright; a bare tag list is rejected. The examples
 below abbreviate the invocation above as `btm-setup-env`. `--project`
-defaults to the nearest ancestor of the working directory containing
-`.git`. The environment root is derived from the project path, under the
-system temp dir; override the base with `DENV_HOME`, or the exact root with
-`--root` or `DENV_ROOT`, the flag winning. A root under the temp dir is ephemeral: after a
-reboot, re-run provision.
+defaults to the nearest ancestor of the working directory containing `.git`.
+The environment root is derived from the project path, under the system temp
+dir; override the base with `DENV_HOME`, or the exact root with `--root` or
+`DENV_ROOT`, the flag winning. A root under the temp dir is ephemeral: after
+a reboot, re-run provision.
 
 <commands for="examples">
 
@@ -97,9 +97,10 @@ btm-setup-env design haskell csharp
 </commands>
 
 Each verb writes one JSON record to stdout and nothing else; progress and
-warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true. A failed
-probe still exits 0, with `ok` false and a `next` line naming the repair;
-exit 1 means an argument needs fixing, never that a toolchain is broken.
+warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true. A
+failed probe still exits 0, with `ok` false and a `next` line naming the
+repair; exit 1 means an argument needs fixing, never that a toolchain is
+broken.
 
 Every verb except `list` takes `--project` and `--root`.
 
@@ -150,8 +151,8 @@ generated, ignored file (`local.properties` for Android). Nothing reads the
 caller's HOME, dotfiles, or global toolchains; nothing writes outside the
 root and the project.
 
-Falsifier: run a build through `env -i` carrying only the activation
-script. A pass proves independence from caller state.
+Falsifier: run a build through `env -i` carrying only the activation script.
+A pass proves independence from caller state.
 
 <checklist for="isolation">
 
@@ -182,5 +183,5 @@ Some publishers ship a build tool for exactly one platform:
 ## Gotchas
 
 - A bare ubuntu:24.04 image with uv works: uv is the only assumption.
-- Never hand-install into `<root>/conda/host` with a second call: the
-  prefix create step replaces the whole prefix.
+- Never hand-install into `<root>/conda/host` with a second call: the prefix
+  create step replaces the whole prefix.

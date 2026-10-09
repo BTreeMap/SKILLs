@@ -67,9 +67,8 @@ fun describe(result: PortResult): String = when (result) {
 ]]></example>
 
 Taste: private value-class construction refines the integer, the sealed
-result names expected failure, and exhaustive `when` eliminates both
-states. Check boxing on the actual backend before calling the value class
-zero-cost.
+result names expected failure, and exhaustive `when` eliminates both states.
+Check boxing on the actual backend before calling the value class zero-cost.
 
 ## Cost Guard
 

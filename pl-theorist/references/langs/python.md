@@ -97,8 +97,8 @@ def valid_emails(raw_values: Iterable[str]) -> Iterator[str]:
 Taste: untrusted strings cross one smart-constructor boundary; absence is
 explicit; the result streams. Named functions preserve type narrowing and
 domain meaning; point-free cleverness would make this version worse.
-`__post_init__` also protects direct construction because Python cannot
-hide the constructor.
+`__post_init__` also protects direct construction because Python cannot hide
+the constructor.
 
 ## Cost Guard
 

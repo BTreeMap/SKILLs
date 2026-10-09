@@ -110,22 +110,22 @@ link per entry.
    `crossref_title_match`, or an `identity` note for DOI-less records). Fix
    a broken DOI (usually a mangled key: re-search the paper), or remove the
    citation and its dependent claims. A Crossref title-mismatch signal is a
-   possible retraction or erratum: check the landing page before keeping
-   the citation.
+   possible retraction or erratum: check the landing page before keeping the
+   citation.
 2. Run `cite-check --draft:file <file>`. Fix every problem it lists (markers
    never assigned, citations of excluded or unread papers), resolve the
-   at-risk findings it echoes, and rerun until clean. Unused included
-   papers are a coverage question to settle deliberately.
+   at-risk findings it echoes, and rerun until clean. Unused included papers
+   are a coverage question to settle deliberately.
 3. Walk each report citation back to its corpus record and read level;
    rewrite or relabel a full-text-sounding claim on an abstract-level
    record.
-4. Check the flow counts against `status` output; numbers in the report
-   must equal numbers in state.
+4. Check the flow counts against `status` output; numbers in the report must
+   equal numbers in state.
 
 ## Prose rules
 
-Write concrete subjects, plain verbs, reported numbers with units, and
-named papers doing named things. The banned vocabulary in SKILL.md applies.
+Write concrete subjects, plain verbs, reported numbers with units, and named
+papers doing named things. The banned vocabulary in SKILL.md applies.
 
 - No "not X but Y" framing, no forced triads, no rhetorical questions, no
   sentence that announces what the next sentence will say.

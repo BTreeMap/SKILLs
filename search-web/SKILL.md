@@ -84,25 +84,25 @@ and says so; `clean` drops the cache.
 - `scholar`: `--source` picks the index. `openalex` spans every field and is
   the default, `crossref` is the DOI registry, `arxiv` is preprints and
   ranks a fielded query such as `all:"exact phrase"` far better than a bare
-  one, `semanticscholar` spans every field with its own citation counts,
-  and `firecrawl` ranks arXiv, PubMed, bioRxiv, and medRxiv abstracts by
-  meaning and returns no year or citation count. Space out a long run
-  rather than parallelizing it; the indexes are metered per address, and
-  some refuse for the rest of the day.
+  one, `semanticscholar` spans every field with its own citation counts, and
+  `firecrawl` ranks arXiv, PubMed, bioRxiv, and medRxiv abstracts by meaning
+  and returns no year or citation count. Space out a long run rather than
+  parallelizing it; the indexes are metered per address, and some refuse for
+  the rest of the day.
 - `passages`: takes one paper as a DOI, an arXiv id in any written form, or
-  the index's own id, and returns passages from its full text ranked
-  against `--query`, each with a `score`. Without `--query` it returns the
-  abstract as one unscored passage. `--source` lists only the indexes that
-  hold full text. The output's `ref` is the reference as parsed; a paper
-  the index does not hold is a rejection.
-- `fetch`: takes one http or https URL and returns an article. A PDF, a
-  raw data file such as JSONL or CSV, a listing, or a paywall comes back
-  refused, not empty. A page rendered by JavaScript comes back refused or
-  as a few characters of menu text, never its content. With `--out PATH`
-  it extracts nothing: it writes the body unchanged to `PATH`, a file that
-  must not exist yet, and returns its `path`, `bytes`, and `sha256`. Pin a
-  data file or a PDF this way, quoting the digest. A raw fetch is never
-  cached and is capped at 512 MiB.
+  the index's own id, and returns passages from its full text ranked against
+  `--query`, each with a `score`. Without `--query` it returns the abstract
+  as one unscored passage. `--source` lists only the indexes that hold full
+  text. The output's `ref` is the reference as parsed; a paper the index
+  does not hold is a rejection.
+- `fetch`: takes one http or https URL and returns an article. A PDF, a raw
+  data file such as JSONL or CSV, a listing, or a paywall comes back
+  refused, not empty. A page rendered by JavaScript comes back refused or as
+  a few characters of menu text, never its content. With `--out PATH` it
+  extracts nothing: it writes the body unchanged to `PATH`, a file that must
+  not exist yet, and returns its `path`, `bytes`, and `sha256`. Pin a data
+  file or a PDF this way, quoting the digest. A raw fetch is never cached
+  and is capped at 512 MiB.
 
 ## Reading results
 
@@ -110,8 +110,8 @@ Each row carries `title`, `url`, `snippet`, and `source`, and omits what it
 does not have. Judge a row by its `source`:
 
 - `scholar`: names a real record; a DOI, where present, resolves.
-- `passages`: the paper's own words, citable at the read level of full
-  text for that passage alone.
+- `passages`: the paper's own words, citable at the read level of full text
+  for that passage alone.
 - `wiki`: a tertiary summary, good for orientation and never a citation.
 - `web`: whatever ranked; open it with `fetch` before relying on it.
 

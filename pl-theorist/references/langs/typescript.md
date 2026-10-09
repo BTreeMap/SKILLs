@@ -74,8 +74,8 @@ failure, and consumers eliminate both variants.
 2. Replace a runtime monadic wrapper with an erased/native union when it
    carries no behavior unavailable from functions.
 3. If a callback chain creates measured intermediate cost, fuse one level.
-4. If a type-level encoding degrades compiler responsiveness or
-   diagnostics, simplify to explicit named unions and functions.
+4. If a type-level encoding degrades compiler responsiveness or diagnostics,
+   simplify to explicit named unions and functions.
 5. Preserve JavaScript evaluation, identity, and async ordering semantics,
    abort propagation, and runtime decoding at external boundaries.
 

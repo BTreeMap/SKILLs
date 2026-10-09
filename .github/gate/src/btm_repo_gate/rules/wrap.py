@@ -54,16 +54,21 @@ class Fence:
 
 
 @dataclass(frozen=True, slots=True)
+class Markup:
+    """Inside the element a line opened. Only tags of that one name move the
+    depth, so a placeholder such as `<skill-root>` or a tag quoted in a code
+    span cannot hold the block open past its closing tag."""
+
+    name: str
+    depth: int  # open `name` elements; the block ends when it returns to zero
+
+
+@dataclass(frozen=True, slots=True)
 class Raw:
     """Inside CDATA or a comment, where even tags are text."""
 
     closer: str
-    depth: int  # markup depth to restore when the span closes
-
-
-@dataclass(frozen=True, slots=True)
-class Markup:
-    depth: int  # open tags; the block ends when it returns to zero
+    resume: Text | Markup  # the state to restore when the span closes
 
 
 Scan = Text | Fence | Raw | Markup
@@ -102,24 +107,35 @@ def _is_thematic_break(stripped: str) -> bool:
     return len(marks) >= _BREAK_MARKS and len(set(marks)) == 1 and marks[0] in "-*_"
 
 
-def _markup(line: str, depth: int) -> Scan:
+def _markup(line: str, outer: Text | Markup) -> Scan:
     """The state after a markup line: a raw span if one opens and does not
-    close on the line, else the tag depth with void and self-closing tags
-    ignored."""
+    close on the line, else the element state the line's tags leave."""
     for opener, closer in _RAW_SPANS:
         head, found, tail = line.partition(opener)
         if found and closer not in tail:
-            return Raw(closer, _tag_depth(head, depth))
-    depth = _tag_depth(line, depth)
-    return Markup(depth) if depth else Text()
+            return Raw(closer, _element(head, outer))
+    return _element(line, outer)
 
 
-def _tag_depth(line: str, depth: int) -> int:
-    for closing, name, self_closing in _TAG.findall(line):
-        if self_closing or name.lower() in _VOID_TAGS:
-            continue
-        depth = max(0, depth - 1) if closing else depth + 1
-    return depth
+def _element(line: str, outer: Text | Markup) -> Text | Markup:
+    """Outside markup, the line's first tag names the element it opens; a
+    closing, self-closing, or void first tag opens none. Inside, only tags
+    of the open element's name move its depth."""
+    tags = _TAG.findall(line)
+    match outer:
+        case Markup(name, depth):
+            pass
+        case Text():
+            if not tags:
+                return outer
+            closing, name, self_closing = tags[0]
+            if closing or self_closing or name.lower() in _VOID_TAGS:
+                return outer
+            depth = 0
+    for closing, tag, self_closing in tags:
+        if tag == name and not self_closing:
+            depth = max(0, depth - 1) if closing else depth + 1
+    return Markup(name, depth) if depth else Text()
 
 
 def _step(state: Scan, line: str) -> tuple[Scan, bool]:
@@ -127,18 +143,18 @@ def _step(state: Scan, line: str) -> tuple[Scan, bool]:
     line verbatim."""
     stripped = line.lstrip()
     match state:
-        case Raw(closer, depth):
-            closed: Scan = Markup(depth) if depth else Text()
-            return (state if closer not in line else closed), True
+        case Raw(closer, resume):
+            _, found, tail = line.partition(closer)
+            return (_markup(tail, resume) if found else state), True
         case Fence(marker):
             return (Text() if stripped.startswith(marker) else state), True
-        case Markup(depth):
-            return _markup(line, depth), True
+        case Markup():
+            return _markup(line, state), True
         case Text():
             if stripped.startswith(_FENCES):
                 return Fence(stripped[:3]), True
             if stripped.startswith("<"):
-                return _markup(line, 0), True
+                return _markup(line, state), True
             return state, False
 
 

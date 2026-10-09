@@ -219,13 +219,13 @@ R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-fact
 $R render --state:file factcheck-state.json
 </commands>
 
-`render` writes nothing. Exit 0 returns `report`, the filled template
-below, with `claims` and per-verdict `verdicts` counts; present `report` to
-the user as Markdown. Exit 1 returns `rejected`, every problem at once with
-its field path (a claim missing its verdict, a correction the Abstention
-rules in `verification` forbid, a correction short of Invariant 4's
-sources); fix the state file and rerun. If uv is unavailable, fill the
-template by hand from the state file.
+`render` writes nothing. Exit 0 returns `report`, the filled template below,
+with `claims` and per-verdict `verdicts` counts; present `report` to the
+user as Markdown. Exit 1 returns `rejected`, every problem at once with its
+field path (a claim missing its verdict, a correction the Abstention rules
+in `verification` forbid, a correction short of Invariant 4's sources); fix
+the state file and rerun. If uv is unavailable, fill the template by hand
+from the state file.
 
 Per issue: source span, then evidence quotes (including counter-evidence),
 then verdict and proposed correction. Evidence precedes verdict so the user
@@ -297,8 +297,8 @@ tier, never one blanket yes.
   unchanged.
 - Partial approval is normal; apply exactly the approved subset.
 
-Rejection is first-class: record each rejected verdict as `user-rejected`
-in the state file and leave its text untouched.
+Rejection is first-class: record each rejected verdict as `user-rejected` in
+the state file and leave its text untouched.
 
 ## Step 5: Edit
 

@@ -57,8 +57,8 @@ R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-read
 
 The extracted text is the whole of standard output; everything else,
 including the note that selected pages have no extractable text (a likely
-scanned document), is a `signal:` line on stderr. An owner-locked PDF
-(empty user password) opens without asking.
+scanned document), is a `signal:` line on stderr. An owner-locked PDF (empty
+user password) opens without asking.
 
 <template for="extraction">
 # Extracted from document.pdf
@@ -89,9 +89,9 @@ Read the exit code before acting:
 
 Pass a URL directly as the document argument; the extractor's own fetch
 caches, caps, and cites it as provenance. A URL downloads once into a
-digest-keyed file under the system temp directory's `btm-read-pdf/`; a
-rerun reuses it and says so on stderr. A response without PDF magic bytes,
-such as a paywall's HTML page, is refused and left uncached.
+digest-keyed file under the system temp directory's `btm-read-pdf/`; a rerun
+reuses it and says so on stderr. A response without PDF magic bytes, such as
+a paywall's HTML page, is refused and left uncached.
 
 `$R clean` removes the cache and emits one JSON document,
 `{"removed", "bytes_freed"}`, where `removed` is null when there was no
@@ -100,14 +100,13 @@ cache is this skill's only state.
 
 ## Procedure
 
-1. Locate the requested PDF: confirm a file path exists; pass an http(s)
-   URL as is.
-2. Run the extractor. If it reports encryption, do
-   not ask the user to disclose or paste a password into chat: instruct the
-   user to set a local environment variable directly in their terminal,
-   then rerun with `--password-env` and only that variable's name. If it
-   cannot decrypt with the supplied variable, report that access was
-   unavailable.
+1. Locate the requested PDF: confirm a file path exists; pass an http(s) URL
+   as is.
+2. Run the extractor. If it reports encryption, do not ask the user to
+   disclose or paste a password into chat: instruct the user to set a local
+   environment variable directly in their terminal, then rerun with
+   `--password-env` and only that variable's name. If it cannot decrypt with
+   the supplied variable, report that access was unavailable.
 3. Keep the `## PDF page N` markers in the extracted text; they are the
    evidence anchors.
 4. Inspect the extracted page text before answering. For a specific

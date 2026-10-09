@@ -237,8 +237,8 @@ that should hold the absent item), or the report cannot place it.
 - Each claim's verdict: `contested` by a grounded fatal or major objection,
   `questioned`, `standing`.
 - The echo ratio.
-- The recommendation by severity rule (fatal: reject; major: major
-  revision; minor: minor revision; else no objection stands).
+- The recommendation by severity rule (fatal: reject; major: major revision;
+  minor: minor revision; else no objection stands).
 - Bank coverage (unwalked banks for the level, corpus linked, pages) with a
   confidence band.
 - The report scaffold.

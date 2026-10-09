@@ -97,6 +97,6 @@ sealed ADT.
 
 ## Validation
 
-Run formatting, build, and analyzers. Test multiple enumeration,
-nullability boundaries, cancellation, disposal, exception timing, and async
-stream termination. Benchmark before replacing readable LINQ in a hot path.
+Run formatting, build, and analyzers. Test multiple enumeration, nullability
+boundaries, cancellation, disposal, exception timing, and async stream
+termination. Benchmark before replacing readable LINQ in a hot path.

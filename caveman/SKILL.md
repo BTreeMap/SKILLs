@@ -119,9 +119,9 @@ Pattern: `[thing] [action] [reason]. [next step].`
 
 ## Verbs
 
-On `/caveman <verb>` or matching trigger phrase, load ONLY file
-registered under that verb, follow it, report. Active level untouched.
-Reference files load only this way or through wenyan level.
+On `/caveman <verb>` or matching trigger phrase, load ONLY file registered
+under that verb, follow it, report. Active level untouched. Reference files
+load only this way or through wenyan level.
 
 | Verb | What it does |
 | --- | --- |

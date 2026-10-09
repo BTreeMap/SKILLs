@@ -50,13 +50,13 @@ every quoted anchor and prior-work key was verified by its script.
 
 ## Rules
 
-- One paragraph per objection: what is wrong, where (page and quoted
-  anchor, or the missing item and its expected place), and a concrete
-  resolving action: a table, a run, a citation, a restated scope.
+- One paragraph per objection: what is wrong, where (page and quoted anchor,
+  or the missing item and its expected place), and a concrete resolving
+  action: a table, a run, a citation, a restated scope.
 - Order within a severity by the claim it contests, main claim first.
 - The Summary is descriptive. Strengths appear only where a later objection
-  needs the contrast ("the ablation in Table 3 isolates the encoder; no
-  such ablation covers the router").
+  needs the contrast ("the ablation in Table 3 isolates the encoder; no such
+  ablation covers the router").
 - Numbers come from the paper or the corpus and carry their page or key.
 - No author names, affiliations, or venue guesses anywhere.
 - Hedge by evidence class: a `question` reads as a question; an objection

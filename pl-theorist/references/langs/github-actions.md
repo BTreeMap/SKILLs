@@ -115,8 +115,8 @@ environment variable; the logic is in a ShellCheck-able script.
 4. Cache with keys derived from lockfiles and restore-keys ordered from
    exact to acceptable; measure hit rate before trusting the cache.
 5. Escape threshold: nontrivial logic in `run:` strings or `if:` expressions
-   moves to a script file in the repository (testable, lintable,
-   reviewable) or a small composite action.
+   moves to a script file in the repository (testable, lintable, reviewable)
+   or a small composite action.
 
 ## Validation
 

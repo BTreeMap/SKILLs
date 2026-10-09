@@ -89,8 +89,8 @@ makes expected failure explicit.
 
 ## Validation
 
-Build under the configured Java release. Run formatters and static
-analysis. Test every sealed/result variant, null boundary, resource closure,
+Build under the configured Java release. Run formatters and static analysis.
+Test every sealed/result variant, null boundary, resource closure,
 interrupt/cancellation path, stream ordering, transaction path, and async
 failure. Use JMH or an existing benchmark before making hot-path stream
 claims.

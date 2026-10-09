@@ -17,10 +17,9 @@ R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-cave
 </commands>
 
 The command surface is `prepare`, `apply`, `restore`, and `clean`, used as
-the steps below show. Invoke the script and read its output; read its
-source only when the user instructs troubleshooting. Every subcommand
-prints one JSON record on stdout; advisories arrive on stderr as `signal:`
-lines.
+the steps below show. Invoke the script and read its output; read its source
+only when the user instructs troubleshooting. Every subcommand prints one
+JSON record on stdout; advisories arrive on stderr as `signal:` lines.
 
 ## Procedure
 
@@ -32,12 +31,11 @@ $R prepare <absolute-filepath>
 
    A refusal exits 1 with `error: <reason>` having changed nothing. Refusals
    are hard invariants: report the reason and stop; trust them and never
-   bypass one with a manual write. The script refuses exact credential,
-   key, and secret filenames; paths inside a known private directory;
-   backup artifacts and any path inside the backup tree (backups live
-   outside the tree so skill auto-loaders never re-ingest them); a file
-   that already has a backup; empty files; files over 500KB; and non-UTF-8
-   files.
+   bypass one with a manual write. The script refuses exact credential, key,
+   and secret filenames; paths inside a known private directory; backup
+   artifacts and any path inside the backup tree (backups live outside the
+   tree so skill auto-loaders never re-ingest them); a file that already has
+   a backup; empty files; files over 500KB; and non-UTF-8 files.
 
    On success the record carries the `backup` and `body` paths,
    `frontmatter` saying whether one was split off (it is preserved
@@ -57,8 +55,8 @@ $R prepare <absolute-filepath>
    script signals that its checks assume Markdown; those headings and code
    blocks are unprotected, so preserve structure manually.
 
-3. Apply. The compressed body reaches the script through its own slot,
-   never as an argument:
+3. Apply. The compressed body reaches the script through its own slot, never
+   as an argument:
 
 <commands for="apply">
 $R apply <absolute-filepath> --body:file <compressed-body-file>
@@ -69,9 +67,9 @@ $R apply <absolute-filepath> --body:file <compressed-body-file>
    instead: each entry under `rejected` names the failed check in `where`
    and the problem in `fix`, and `unchanged` confirms the target file was
    never written. Fix ONLY the listed problems in the scratch file by
-   restoring the missing content from the backup (never recompress
-   untouched sections) and re-apply. After two failed fix rounds, stop and
-   report; the target file is still untouched.
+   restoring the missing content from the backup (never recompress untouched
+   sections) and re-apply. After two failed fix rounds, stop and report; the
+   target file is still untouched.
 
 4. To undo a completed compression: `$R restore <filepath>`.
 

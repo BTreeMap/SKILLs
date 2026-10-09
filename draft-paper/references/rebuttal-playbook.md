@@ -83,10 +83,10 @@ Rules:
 ## Discussion window
 
 - Submit mid-window, leaving room for discussion [plausible].
-- Stay in multi-turn discussion. Reply to follow-ups. In the ICLR 2025
-  data, reviews whose score rose averaged 2.21 conversation turns with
-  95.7% author participation, against 1.47 turns and 65.9% for reviews
-  whose score held [established].
+- Stay in multi-turn discussion. Reply to follow-ups. In the ICLR 2025 data,
+  reviews whose score rose averaged 2.21 conversation turns with 95.7%
+  author participation, against 1.47 turns and 65.9% for reviews whose score
+  held [established].
 - Confirm score updates when a reviewer agrees in text to raise; agreed
   updates sometimes never land on the official score [plausible].
 

@@ -120,6 +120,27 @@ class TestShapes:
         text = "<br>\n\n" + "word " * 30 + "\n"
         assert reflow(text, 40) != text
 
+    def test_a_placeholder_in_markup_does_not_hold_the_block_open(self):
+        # A `<skill-root>` placeholder never closes; counted as a tag, it kept
+        # every later line verbatim, so a long nested item passed the gate.
+        nested = f"  - A nested item that runs {LONG}"
+        text = (
+            '<commands for="bind">\n'
+            'R="uv run --project $(realpath <skill-root>/scripts) tool"\n'
+            "</commands>\n\n- Outer item.\n" + nested + "\n"
+        )
+        out = reflow(text)
+        assert nested not in out
+        assert all(len(line) <= 76 for line in out.split("\n"))
+
+    def test_a_tag_after_a_cdata_closer_closes_the_block(self):
+        text = "<example>\n<![CDATA[\ncode\n]]></example>\n\n" + "word " * 30 + "\n"
+        assert reflow(text, 40) != text
+
+    def test_a_same_name_child_keeps_the_block_open(self):
+        text = "<a>\n<a>\n</a>\n" + "word " * 30 + "\n</a>\n"
+        assert reflow(text, 40) == text
+
 
 class TestRule:
     def test_only_changed_markdown_is_reported_with_its_repair(self):

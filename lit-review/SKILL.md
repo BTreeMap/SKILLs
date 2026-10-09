@@ -161,10 +161,10 @@ hand. Every other write goes through one of two paths:
   paper `key` counts toward extraction coverage; `map`, `open`, and `lore`
   are suggested kinds; `--lore` reads and writes a cross-session pad for
   facts worth keeping between reviews.
-- The gate is what the script later judges: `update` and `screen` move
-  paper statuses, and `note` admits findings and gaps. A rejected batch
-  names every problem at once and changes nothing, so apply all the fixes
-  and resend. A DOI or arXiv id resolves as a key.
+- The gate is what the script later judges: `update` and `screen` move paper
+  statuses, and `note` admits findings and gaps. A rejected batch names
+  every problem at once and changes nothing, so apply all the fixes and
+  resend. A DOI or arXiv id resolves as a key.
 
 Output and input conventions:
 
@@ -174,10 +174,10 @@ Output and input conventions:
   revisiting an earlier phase is normal.
 - Free-form content fills a named slot: `--<slot>` carries a short value,
   `--<slot>:file PATH` reads a file, `--<slot>:stdin` reads the pipe, and
-  the required slot reads the pipe when no flag claims it. One slot per
-  call may claim the pipe. A JSON body has no inline spelling. A value is
-  never reinterpreted, so a regex needs no escape, and an empty one is a
-  rejection rather than a fallback.
+  the required slot reads the pipe when no flag claims it. One slot per call
+  may claim the pipe. A JSON body has no inline spelling. A value is never
+  reinterpreted, so a regex needs no escape, and an empty one is a rejection
+  rather than a fallback.
 - Write a batch to a file: a retry then costs one edit.
 - Put downloaded PDFs and other heavy artifacts in the scratch directory.
 

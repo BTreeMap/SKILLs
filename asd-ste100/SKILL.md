@@ -97,8 +97,8 @@ $R clean
   shows that the word is not in the dictionary.
 * Each item in `entries` has the same fields: `word`, `pos`, `qualifier`,
   `forms`, `status`, `ste_example`, `nonste_example`, `page`,
-  `alternatives`, and `choices`. If the specification does not give a
-  value, the field is `null`. For example, `pos` is `null` for "such as".
+  `alternatives`, and `choices`. If the specification does not give a value,
+  the field is `null`. For example, `pos` is `null` for "such as".
   `status.kind` is `approved` or `unapproved`, and `status.meaning` gives
   the approved meaning. Read the alternatives in `alternatives`, not in
   `status`. If `choices` is not empty, `ste_example` and `nonste_example`
@@ -110,27 +110,27 @@ $R clean
 * `--data DIR` gives a local release: the `data/` directory of a ste-tax
   checkout, with `manifest.json` and the files that it shows. Then `check`
   and `lookup` read only that directory, and do not use the network or the
-  cache. The report gives `null` in `version`. If a file is missing or
-  its digest is not correct, the exit is 1 and the command does not remove
-  the file. Do not use `--data` together with `--version`.
+  cache. The report gives `null` in `version`. If a file is missing or its
+  digest is not correct, the exit is 1 and the command does not remove the
+  file. Do not use `--data` together with `--version`.
 * Each command writes one JSON document to `stdout`. The `signal:` lines on
   `stderr` give information only.
 * Exit 0: the command is completed. Exit 1: correct the input and send it
   again. Exit 2: the download did not occur, or a file in the cache was not
   correct and the command removed it. Then do the same command again.
-* With no network, exit 2 gives the release that is necessary. If you have
-  a local release, use `--data DIR`. If not, tell the user that the check
-  did not occur. Do not tell the user that a text agrees
-  with STE if you do not have a report.
+* With no network, exit 2 gives the release that is necessary. If you have a
+  local release, use `--data DIR`. If not, tell the user that the check did
+  not occur. Do not tell the user that a text agrees with STE if you do not
+  have a report.
 
 ## The report
 
 * The `check` report gives these fields: `schema_version`, `version`,
-  `data`, `mode`, `format`, `ok`, `summary`, `limits`, `counts`,
-  `findings`, `signals`, `skipped`, and `allowed`. With `--section`, it
-  also gives `section`. The `lookup` report gives `schema_version`,
-  `version`, `data`, and `words`. These fields, and the other fields that
-  this section and Commands name, change only if `schema_version` changes.
+  `data`, `mode`, `format`, `ok`, `summary`, `limits`, `counts`, `findings`,
+  `signals`, `skipped`, and `allowed`. With `--section`, it also gives
+  `section`. The `lookup` report gives `schema_version`, `version`, `data`,
+  and `words`. These fields, and the other fields that this section and
+  Commands name, change only if `schema_version` changes.
 * `version` gives the release in the cache. `data` gives the `--data`
   directory. The other field is `null`.
 * `allowed` gives the number of terms in the allow file.
@@ -166,18 +166,17 @@ $R clean
   * `second_instruction` shows "and" or "then" before a verb.
   * `part_of_speech` shows an approved word that is also a headword that is
     not approved in a different part of speech. It gives the alternatives
-    for that part of speech. Its `context` shows the word with the word
-    that comes before it. This is usually sufficient to find the part of
-    speech.
+    for that part of speech. Its `context` shows the word with the word that
+    comes before it. This is usually sufficient to find the part of speech.
   * `abbreviation` shows a word in capital letters that the checker accepted
     as a label.
-  * `quotation` shows text in quotation marks, which the checker accepts as a
-    technical noun.
-* `skipped` gives the checks that the command did not do. Read it before
-  you give the report.
-* The word count obeys the specification. Text in parentheses, a
-  quotation, an inline code span, a word with a hyphen, and a number with
-  its unit each count as one word.
+  * `quotation` shows text in quotation marks, which the checker accepts as
+    a technical noun.
+* `skipped` gives the checks that the command did not do. Read it before you
+  give the report.
+* The word count obeys the specification. Text in parentheses, a quotation,
+  an inline code span, a word with a hyphen, and a number with its unit each
+  count as one word.
 
 ## Technical nouns and verbs
 
@@ -200,8 +199,8 @@ the first check, write them in the allow file.
    connect its words with hyphens.
 5. Before you write a word in the allow file, use `$R lookup WORD` to find
    it. If the dictionary shows that the word is not approved, use an
-   alternative. If the word is the name of an item in the user's work,
-   write it in the allow file.
+   alternative. If the word is the name of an item in the user's work, write
+   it in the allow file.
 
 ## Write STE
 
@@ -211,17 +210,17 @@ the first check, write them in the allow file.
   alternative has its example. An alternative with a form ("fast (adj):
   faster") tells you the form to write.
 * If no alternative can replace the word directly, write the sentence
-  differently. You can start with the person or the item that does the
-  work. You can use a verb for the step, or you can divide the sentence.
+  differently. You can start with the person or the item that does the work.
+  You can use a verb for the step, or you can divide the sentence.
 * Use each approved word only in its approved part of speech and with its
   approved meaning. For example, CHECK is a noun. Write "do a check of the
   valve", not "check the valve".
-* In a procedure, write one instruction in each sentence, in the
-  imperative. Put a condition first, with a comma after it ("If the light
-  comes on, stop the engine."). Use a note only for information.
-* In a description, do not use the imperative. Write about one topic in
-  each paragraph. Use the passive only if you do not know which person or
-  which item does the work.
+* In a procedure, write one instruction in each sentence, in the imperative.
+  Put a condition first, with a comma after it ("If the light comes on, stop
+  the engine."). Use a note only for information.
+* In a description, do not use the imperative. Write about one topic in each
+  paragraph. Use the passive only if you do not know which person or which
+  item does the work.
 * Divide a long sentence. Write one step, one condition, or one fact in each
   sentence. Keep the steps in the sequence in which they occur. For a
   sequence of items, use a vertical list. Each list item counts as a
@@ -283,9 +282,9 @@ Write the technical nouns and verbs first. ok: true is necessary, but not suffic
 * The allow file accepts a term in all sentences. If you write a term as a
   noun, the checker also accepts it where you use it as a verb. Read the
   text for this error.
-* The checker does not examine meaning. For example, "fall" is approved
-  only for movement by gravity, not for a value that decreases. `lookup`
-  shows each approved meaning.
+* The checker does not examine meaning. For example, "fall" is approved only
+  for movement by gravity, not for a value that decreases. `lookup` shows
+  each approved meaning.
 * The alternatives in `lookup` are for the meanings that the specification
   gives. If your meaning is different, no alternative is correct. For
   example, the alternatives for "fix" are for "attach" and "repair", not for

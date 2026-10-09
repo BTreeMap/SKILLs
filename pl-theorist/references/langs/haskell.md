@@ -81,8 +81,8 @@ reason construction failed; `maybe` eliminates absence totally.
    established base effect or an explicit interpreter.
 5. Require profiling evidence before asserting fusion or allocation
    behavior.
-6. Preserve bracketed resources and strictness/productivity under the
-   chosen effect interpreter.
+6. Preserve bracketed resources and strictness/productivity under the chosen
+   effect interpreter.
 
 ## Validation
 
