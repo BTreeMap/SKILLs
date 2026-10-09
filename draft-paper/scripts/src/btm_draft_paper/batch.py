@@ -24,23 +24,23 @@ from btm_corekit import (
 from btm_draft_paper.run import Gate
 from btm_draft_paper.trace import (
     EVIDENCED,
-    ArtifactsRepinned,
+    ArtifactsMoved,
     CitationAdded,
     Claim,
-    ClaimDropped,
-    ClaimRevised,
+    ClaimChanged,
+    ClaimRemoved,
     Decision,
     GateDecided,
     GateRequested,
     Outcome,
     RunState,
-    StageEntered,
+    StageStarted,
     Status,
     apply,
 )
 
 SCHEMA: dict[str, str] = {
-    "stage-entered": '{"event": "stage-entered", "stage": 1-9}',
+    "stage-started": '{"event": "stage-started", "stage": 1-9}',
     "gate-requested": '{"event": "gate-requested", "gate": "' + "|".join(Gate) + '"}',
     "gate-decided": '{"event": "gate-decided", "gate": "'
     + "|".join(Gate)
@@ -52,10 +52,10 @@ SCHEMA: dict[str, str] = {
     + "|".join(Status)
     + '", "artifact": "path, relative to the artifact root", '
     '"location": "where in the artifact (supported and exploratory)"}',
-    "claim-revised": '{"event": "claim-revised", "claim": "<ref>", '
+    "claim-changed": '{"event": "claim-changed", "claim": "<ref>", '
     'plus any of "text", "status", "artifact", "location"}',
-    "claim-dropped": '{"event": "claim-dropped", "claim": "<ref>", "reason": "..."}',
-    "artifacts-repinned": '{"event": "artifacts-repinned", '
+    "claim-removed": '{"event": "claim-removed", "claim": "<ref>", "reason": "..."}',
+    "artifacts-moved": '{"event": "artifacts-moved", '
     '"root": "the artifact tree\'s new directory"}',
     "citation-added": '{"event": "citation-added", '
     '"ref": "corpus key, DOI, or arXiv id", "sentence": "the citing sentence"}',
@@ -71,13 +71,13 @@ class ClaimEntry(Claim, Named):
 
 
 ROWS: dict[str, type[Model]] = {
-    "stage-entered": StageEntered,
+    "stage-started": StageStarted,
     "gate-requested": GateRequested,
     "gate-decided": GateDecided,
     "claim-added": ClaimEntry,
-    "claim-revised": ClaimRevised,
-    "claim-dropped": ClaimDropped,
-    "artifacts-repinned": ArtifactsRepinned,
+    "claim-changed": ClaimChanged,
+    "claim-removed": ClaimRemoved,
+    "artifacts-moved": ArtifactsMoved,
     "citation-added": CitationAdded,
     "decision": Decision,
 }
@@ -144,10 +144,10 @@ class _Expansion(Acceptance):
                     "id": claim_id,
                     **{key: fields[key] for key in Claim.model_fields if key in fields},
                 }
-            case ClaimRevised() | ClaimDropped():
+            case ClaimChanged() | ClaimRemoved():
                 full = self.resolve_ref(entry.claim, self.claims, f"{where}.claim")
                 return None if full is None else {**dump(entry), "claim": full}
-            case ArtifactsRepinned():
+            case ArtifactsMoved():
                 root = self.directory(entry.root, f"{where}.root")
                 return None if root is None else {**dump(entry), "root": root}
             case Decision():
@@ -177,11 +177,11 @@ class _Expansion(Acceptance):
                 self.fail(where, str(err), SCHEMA[kind])
                 continue
             self.events.append(event)
-            if kind == "stage-entered":
+            if kind == "stage-started":
                 self.skipped(before, event["stage"], where)
-            if kind in ("claim-added", "claim-revised"):
+            if kind in ("claim-added", "claim-changed"):
                 self.artifact_exists(event.get("id") or event["claim"], where)
-            if kind == "artifacts-repinned":
+            if kind == "artifacts-moved":
                 self.lost_under_root(where)
             if kind == "gate-requested" and event["gate"] == Gate.DRAFT:
                 for claim_id in self.state.claims:
@@ -196,7 +196,7 @@ class _Expansion(Acceptance):
             self.fail(
                 where,
                 f"claim {claim_id}'s artifact {path} does not exist: fix the "
-                "path, mark the claim to-run or unsupported, or drop it",
+                "path, mark the claim to-run or unsupported, or remove it",
             )
 
     def lost_under_root(self, where: str) -> None:
@@ -218,10 +218,10 @@ class _Expansion(Acceptance):
     def skipped(self, before: int | None, stage: int, where: str) -> None:
         first = self.state.meta.stages()[0] if before is None else before + 1
         if stage == first + 1:
-            self.advisories.append(f"{where} enters stage {stage}, skipping {first}")
+            self.advisories.append(f"{where} starts stage {stage}, skipping {first}")
         elif stage > first:
             self.advisories.append(
-                f"{where} enters stage {stage}, skipping {first}-{stage - 1}"
+                f"{where} starts stage {stage}, skipping {first}-{stage - 1}"
             )
 
 

@@ -95,7 +95,7 @@ loads exactly reference of its name; `firewall` loads with every bank;
 | investigate | Walk level's banks in Levels except `claims` and `novelty`, `limitations` last, with `firewall`; record objections per bank, then `walks` entry |
 | literature | Build corpus per `novelty`; `attach` it; walk novelty bank |
 | verdict | Run `check`; withdraw what re-read defeats; resolve every signal |
-| report | Draft from scaffold per `report`; `cite-check` draft |
+| report | Draft from structure per `report`; `cite-check` draft |
 
 Investigate may fan out through `/summon fanout`, one delegate per bank at
 most. Each brief: evidence is extraction file, bank's reference file,
@@ -175,7 +175,7 @@ JSON
 S="<the session identifier the start output echoed>"
 $R ingest "$S" --extraction:file <extraction.txt>
 $R schema
-$R record "$S" --batch:file <round.json> && $R check "$S"
+$R record "$S" --batch:file <cycle.json> && $R check "$S"
 $R attach "$S" --corpus <lit-review session id or path>
 $R cite <corpus key, DOI, or arXiv id> [--session "$S" | --corpus <lit-review session id or path>]
 $R status "$S"
@@ -241,7 +241,7 @@ absent item), or report cannot place it.
   minor: minor revision; else no objection stands).
 - Bank coverage (unwalked banks for level, corpus attached, pages) with
   confidence band.
-- Report scaffold.
+- Report structure.
 
 Re-ingesting revised version keeps ledger, re-derives every standing; expect
 `unanchored` objections; withdraw or re-anchor them.

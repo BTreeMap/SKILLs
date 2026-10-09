@@ -57,25 +57,25 @@ from btm_lit_review.session import Session, load_papers, open_session
 SCHEMA: dict[str, str] = {
     "findings": '{"claim": "...", "support": ["<paper key>" or {"key": "...", '
     '"needs": "abstract|full-text"}], "from": ["<pad id>"], '
-    '"supersedes": "<finding id>"}',
-    "gaps": '{"statement": "the absence claimed", "probes": ["<search log id>"], '
-    '"watch": "word|phrase|... matched literally in title+abstract", '
-    '"from": ["<pad id>"], "supersedes": "<gap id>"}',
+    '"replaces": "<finding id>"}',
+    "gaps": '{"statement": "the absence claimed", "probes": ["<find log id>"], '
+    '"monitor": "word|phrase|... matched literally in title+abstract", '
+    '"from": ["<pad id>"], "replaces": "<gap id>"}',
 }
 ID_PREFIX = {"finding": "f", "gap": "g", "rule": "r"}
-WATCH_MAX = 200  # a watch is a few words; brief scans it per paper
+MONITOR_MAX = 200  # a monitor is a few words; brief scans it per paper
 
-S = TypeVar("S", bound="Superseding")
-
-
-def _has_terms(watch: str) -> str:
-    if not watch_terms(watch):
-        raise ValueError("write the watch as words separated by |")
-    return watch
+S = TypeVar("S", bound="Replacing")
 
 
-Watch = Annotated[
-    str, StringConstraints(max_length=WATCH_MAX), AfterValidator(_has_terms)
+def _has_terms(monitor: str) -> str:
+    if not monitor_terms(monitor):
+        raise ValueError("write the monitor as words separated by |")
+    return monitor
+
+
+Monitor = Annotated[
+    str, StringConstraints(max_length=MONITOR_MAX), AfterValidator(_has_terms)
 ]
 
 
@@ -106,7 +106,7 @@ class Linked(Model):
     """What both record types carry: provenance and the record they replace."""
 
     from_: tuple[str, ...] = Field(default=(), alias="from")
-    supersedes: str | None = None
+    replaces: str | None = None
 
 
 class FindingEntry(Linked):
@@ -117,7 +117,7 @@ class FindingEntry(Linked):
 class GapEntry(Linked):
     statement: NonEmpty
     probes: tuple[str, ...] = ()
-    watch: Watch | None = None
+    monitor: Monitor | None = None
 
 
 class Recorded(Model):
@@ -127,11 +127,11 @@ class Recorded(Model):
     t: str = ""
 
 
-class Superseding(Recorded):
+class Replacing(Recorded):
     """A record a later one may replace, carrying where it came from."""
 
     from_: tuple[str, ...] = Field(default=(), alias="from")
-    supersedes: str | None = None
+    replaces: str | None = None
 
 
 class SupportRow(Model):
@@ -139,18 +139,18 @@ class SupportRow(Model):
     needs: ReadLevel
 
 
-class FindingRecord(Superseding):
+class FindingRecord(Replacing):
     e: Literal["finding"]
     claim: NonEmpty
     support: tuple[SupportRow, ...] = Field(min_length=1)
 
 
-class GapRecord(Superseding):
+class GapRecord(Replacing):
     e: Literal["gap"]
     statement: NonEmpty
     probes: tuple[str, ...] = ()
     seen: Count = 0
-    watch: str | None = None
+    monitor: str | None = None
 
 
 class RuleRecord(Recorded):
@@ -181,20 +181,22 @@ class RecordBatch(Model):
     gaps: Rows = ()
 
 
-def watch_terms(watch: str) -> list[str]:
-    """The literal terms of a watch: `|`-separated, trimmed, non-empty, and
-    casefolded here so `watch_hits` can never be handed unfolded terms."""
-    return [folded for term in watch.split("|") if (folded := term.strip().casefold())]
+def monitor_terms(monitor: str) -> list[str]:
+    """The literal terms of a monitor: `|`-separated, trimmed, non-empty, and
+    casefolded here so `monitor_hits` can never be handed unfolded terms."""
+    return [
+        folded for term in monitor.split("|") if (folded := term.strip().casefold())
+    ]
 
 
-def watch_hits(terms: Sequence[str], folded: str) -> bool:
+def monitor_hits(terms: Sequence[str], folded: str) -> bool:
     """Substring test per term against an already-folded haystack: each `in`
     is one C-level two-way search, and neither side is folded per call."""
     return any(term in folded for term in terms)
 
 
 def arrivals_of(papers: Mapping[str, Paper]) -> dict[str, tuple[int, str]]:
-    """Per paper, the log round it arrived in and the folded text a watch
+    """Per paper, the log cycle it arrived in and the folded text a monitor
     reads; folded once per brief and shared by every gap view."""
     return {
         key: (
@@ -219,18 +221,18 @@ def next_id(records: Sequence[NotebookRecord], kind: str) -> str:
 
 
 def live(records: Sequence[NotebookRecord], kind: type[S]) -> dict[str, S]:
-    """Latest-wins fold of the supersede chains; ids are never reused."""
+    """Latest-wins fold of the replace chains; ids are never reused."""
     alive: dict[str, S] = {}
     for record in records:
         if not isinstance(record, kind):
             continue
         alive[record.id] = record
-        alive.pop(record.supersedes or "", None)
+        alive.pop(record.replaces or "", None)
     return alive
 
 
 def first_log_number(paper: Paper) -> int:
-    """The search-log round that first brought the paper in; 0 when unknown."""
+    """The find-log cycle that first brought the paper in; 0 when unknown."""
     for stamp in paper.found_by[:1]:
         if (number := prefixed_number(stamp, "s")) is not None:
             return number
@@ -253,7 +255,7 @@ def finding_view(record: FindingRecord, papers: Mapping[str, Paper]) -> dict[str
         "id": record.id,
         "claim": record.claim,
         "support": [dump(row) for row in record.support],
-        "state": "supported" if not issues else "at-risk",
+        "status": "supported" if not issues else "at-risk",
     }
     return view | ({"issues": issues} if issues else {})
 
@@ -261,20 +263,20 @@ def finding_view(record: FindingRecord, papers: Mapping[str, Paper]) -> dict[str
 def gap_view(
     record: GapRecord, arrivals: Mapping[str, tuple[int, str]]
 ) -> dict[str, JSON]:
-    """A gap is challenged by papers that arrived after it and match its watch."""
+    """A gap is challenged by papers that arrived after it and match its monitor."""
     hits: list[str] = []
-    if record.watch:
-        terms = watch_terms(record.watch)
+    if record.monitor:
+        terms = monitor_terms(record.monitor)
         hits = [
             key
             for key, (arrived, folded) in arrivals.items()
-            if arrived > record.seen and watch_hits(terms, folded)
+            if arrived > record.seen and monitor_hits(terms, folded)
         ]
     view: dict[str, JSON] = {
         "id": record.id,
         "statement": record.statement,
         "probes": list(record.probes),
-        "state": "standing" if not hits else "challenged",
+        "status": "standing" if not hits else "challenged",
     }
     return view | ({"hits": hits} if hits else {})
 
@@ -340,18 +342,18 @@ class _Acceptance(Acceptance):
             f"replace '{token}': no corpus paper matches it",
             hint=f"did you mean: {', '.join(near)}"
             if near
-            else "show --keys lists exact keys; search brings the paper in first",
+            else "show --keys lists exact keys; find brings the paper in first",
         )
         return None
 
     def take_links(self, entry: Linked, kind: str, where: str) -> bool:
         clean = self.pad_links(entry.from_, where)
-        if entry.supersedes:
+        if entry.replaces:
             known = self.ids[kind]
-            if entry.supersedes not in known:
+            if entry.replaces not in known:
                 self.fail(
-                    f"{where}.supersedes",
-                    f"replace '{entry.supersedes}': no {kind} has this id",
+                    f"{where}.replaces",
+                    f"replace '{entry.replaces}': no {kind} has this id",
                     hint=f"existing {kind} ids: {', '.join(sorted(known)) or 'none'}",
                 )
                 clean = False
@@ -369,8 +371,8 @@ class _Acceptance(Acceptance):
             **fields,
             "from": list(entry.from_),
         }
-        if entry.supersedes:
-            record["supersedes"] = entry.supersedes
+        if entry.replaces:
+            record["replaces"] = entry.replaces
         self.records.append(record)
         self.accepted[f"{kind}s"].append(new_id)
 
@@ -431,19 +433,19 @@ class _Acceptance(Acceptance):
                     "probes": list(entry.probes),
                     "seen": self.log_count,
                 }
-                if entry.watch:
-                    record["watch"] = entry.watch
+                if entry.monitor:
+                    record["monitor"] = entry.monitor
                 self.accept("gap", record, entry)
 
     def probes(self, probes: Sequence[str], where: str) -> bool:
-        """Every probe names a search the log actually holds."""
+        """Every probe names a find the log actually holds."""
         clean = True
         for index, probe in enumerate(probes):
             number = prefixed_number(probe, "s")
             if number is None or not 1 <= number <= self.log_count:
                 self.fail(
                     f"{where}.probes[{index}]",
-                    f"replace '{probe}': no search log entry has this id",
+                    f"replace '{probe}': no find log entry has this id",
                     hint=f"the log holds s1..s{self.log_count}",
                 )
                 clean = False

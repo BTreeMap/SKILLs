@@ -23,7 +23,7 @@ reconciles them.
 ## Method
 
 Searches ran on 2026-08-28 against OpenAlex (31 queries), Crossref (7
-queries), and six OpenAlex snowball rounds (backward and forward) seeded
+queries), and six OpenAlex snowball cycles (backward and forward) seeded
 from Braun & Clarke 2006 [6], McDonald et al. 2019 [22], and Gale et al.
 2013 [11]. That date is review's as-of point. Session script logged every
 query; every search returned result set truncated against upstream totals in
@@ -32,13 +32,13 @@ enumeration of field.
 
 Criteria fixed before first search. Inclusion required methodological
 contribution to thematic analysis: proposing, codifying, critiquing, or
-comparing named approach, its procedure, or its quality criteria. One
-amendment recorded mid-review, after requester specified target application
-is user feedback and HCI-style qualitative data, not psychology-default
-methodology. Amendment added inclusion criterion for methodologically
-reflective work on user feedback, tickets, app reviews, and HCI, CSCW, or
-software-engineering qualitative data, and triggered further search round
-and full re-screen under amended criteria.
+comparing named approach, its procedure, or its quality criteria. One change
+recorded mid-review, after requester specified target application is user
+feedback and HCI-style qualitative data, not psychology-default methodology.
+Change added inclusion criterion for methodologically reflective work on
+user feedback, tickets, app reviews, and HCI, CSCW, or software-engineering
+qualitative data, and triggered further find cycle and full re-screen under
+changed criteria.
 
 | Flow | N |
 | --- | --- |
@@ -53,7 +53,7 @@ distinct contribution to thematic analysis (190); substantive empirical
 studies with no methodological commentary (67 plus 27 applications of
 thematic analysis and 24 domain studies); term collisions where "analysis",
 "taxonomy", or "classification" matched natural-science and algorithmic work
-(38). Seven of 37 included papers entered through snowball rounds, not
+(38). Seven of 37 included papers entered through snowball cycles, not
 keyword search, concentrated in intercoder reliability and rapid-analysis
 strands.
 

@@ -13,7 +13,7 @@ from btm_peer_review.views import (
     echo_ratio,
     objection_views,
     recommendation,
-    scaffold,
+    structure,
 )
 
 
@@ -136,7 +136,7 @@ class TestRules:
 
     def test_scaffold_groups_grounded_by_severity(self, paper_text, corpus_dir):
         _, _, _, objections, claims = derive(paper_text, corpus_dir)
-        shape = scaffold(claims, objections)
+        shape = structure(claims, objections)
         assert shape["major"] == ["O1", "O3"] and shape["minor"] == ["O2"]
         assert shape["unanchored"] == ["O4"] and shape["fatal"] == []
 

@@ -13,7 +13,7 @@ from btm_ponder.state import (
     Open,
     Refuted,
     Retrieved,
-    Sweep,
+    Scan,
     Unresolved,
 )
 
@@ -40,7 +40,7 @@ class TestAddLeaf:
         ledger = Ledger()
         apply(ledger, {"e": "add_leaf", "id": "leaf-a", "q": "question"})
         assert ledger.leaves["leaf-a"] == Leaf(
-            question="question", origin="frame", state=Open()
+            question="question", origin="frame", status=Open()
         )
 
     @pytest.mark.parametrize(
@@ -99,15 +99,15 @@ class TestCloses:
             {
                 "e": "close",
                 "leaf": "leaf-a",
-                "state": "retrieved",
+                "status": "retrieved",
                 "sources": ["src-a"],
             },
         )
-        assert ledger.leaves["leaf-a"].state == Retrieved(sources=("src-a",))
+        assert ledger.leaves["leaf-a"].status == Retrieved(sources=("src-a",))
 
     def test_retrieved_without_a_source_is_refused(self):
         with pytest.raises(CommandError, match="sources"):
-            apply(seeded(), {"e": "close", "leaf": "leaf-a", "state": "retrieved"})
+            apply(seeded(), {"e": "close", "leaf": "leaf-a", "status": "retrieved"})
 
     def test_refuted_requires_the_contradicted_premise(self):
         with pytest.raises(CommandError, match=r"refuted\.premise"):
@@ -116,7 +116,7 @@ class TestCloses:
                 {
                     "e": "close",
                     "leaf": "leaf-a",
-                    "state": "refuted",
+                    "status": "refuted",
                     "sources": ["src-a"],
                 },
             )
@@ -128,8 +128,8 @@ class TestCloses:
                 {
                     "e": "close",
                     "leaf": "leaf-a",
-                    "state": "unresolved",
-                    "reason": "searched",
+                    "status": "unresolved",
+                    "reason": "found",
                 },
             )
 
@@ -140,13 +140,13 @@ class TestCloses:
             {
                 "e": "close",
                 "leaf": "leaf-a",
-                "state": "unresolved",
-                "reason": "searched",
+                "status": "unresolved",
+                "reason": "found",
                 "detail": "no source found",
             },
         )
-        assert ledger.leaves["leaf-a"].state == Unresolved(
-            reason="searched", detail="no source found"
+        assert ledger.leaves["leaf-a"].status == Unresolved(
+            reason="found", detail="no source found"
         )
 
     def test_close_on_unknown_leaf_is_refused(self):
@@ -158,7 +158,7 @@ class TestCloses:
                 {
                     "e": "close",
                     "leaf": "absent",
-                    "state": "retrieved",
+                    "status": "retrieved",
                     "sources": ["src-a"],
                 },
             )
@@ -170,7 +170,7 @@ class TestCloses:
                 {
                     "e": "close",
                     "leaf": "leaf-a",
-                    "state": "retrieved",
+                    "status": "retrieved",
                     "sources": ["ghost"],
                 },
             )
@@ -184,40 +184,16 @@ class TestFolds:
             {
                 "e": "close",
                 "leaf": "leaf-a",
-                "state": "retrieved",
+                "status": "retrieved",
                 "sources": ["src-a"],
             },
         )
         apply(ledger, {"e": "add_leaf", "id": "leaf-b", "q": "second"})
         apply(
             ledger,
-            {"e": "close", "leaf": "leaf-b", "state": "folded", "into": "leaf-a"},
+            {"e": "close", "leaf": "leaf-b", "status": "folded", "into": "leaf-a"},
         )
-        assert ledger.leaves["leaf-b"].state == Folded(into="leaf-a")
-
-    def test_legacy_retired_folded_events_still_replay(self):
-        ledger = seeded()
-        apply(
-            ledger,
-            {
-                "e": "close",
-                "leaf": "leaf-a",
-                "state": "retrieved",
-                "sources": ["src-a"],
-            },
-        )
-        apply(ledger, {"e": "add_leaf", "id": "leaf-b", "q": "second"})
-        apply(
-            ledger,
-            {
-                "e": "close",
-                "leaf": "leaf-b",
-                "state": "retired",
-                "reason": "folded",
-                "detail": "leaf-a",
-            },
-        )
-        assert ledger.leaves["leaf-b"].state == Folded(into="leaf-a")
+        assert ledger.leaves["leaf-b"].status == Folded(into="leaf-a")
 
     def test_fold_into_an_open_leaf_is_refused(self):
         ledger = seeded()
@@ -225,33 +201,33 @@ class TestFolds:
         with pytest.raises(CommandError, match="fold target must be retrieved"):
             apply(
                 ledger,
-                {"e": "close", "leaf": "leaf-b", "state": "folded", "into": "leaf-a"},
+                {"e": "close", "leaf": "leaf-b", "status": "folded", "into": "leaf-a"},
             )
 
     def test_fold_into_a_missing_leaf_is_refused(self):
         with pytest.raises(CommandError, match="fold target does not exist"):
             apply(
                 seeded(),
-                {"e": "close", "leaf": "leaf-a", "state": "folded", "into": "ghost"},
+                {"e": "close", "leaf": "leaf-a", "status": "folded", "into": "ghost"},
             )
 
     def test_retired_requires_the_conclusion_it_leaves_standing(self):
         with pytest.raises(CommandError, match=r"retired\.detail"):
             apply(
                 seeded(),
-                {"e": "close", "leaf": "leaf-a", "state": "retired"},
+                {"e": "close", "leaf": "leaf-a", "status": "retired"},
             )
 
 
 class TestTransitionLegality:
-    def closed(self, state: str, **extra) -> Ledger:
+    def closed(self, status: str, **extra) -> Ledger:
         ledger = seeded()
         apply(
             ledger,
             {
                 "e": "close",
                 "leaf": "leaf-a",
-                "state": state,
+                "status": status,
                 "sources": ["src-a"],
                 **extra,
             },
@@ -265,12 +241,12 @@ class TestTransitionLegality:
             {
                 "e": "close",
                 "leaf": "leaf-a",
-                "state": "refuted",
+                "status": "refuted",
                 "sources": ["src-a"],
                 "premise": "late contrary evidence",
             },
         )
-        assert isinstance(ledger.leaves["leaf-a"].state, Refuted)
+        assert isinstance(ledger.leaves["leaf-a"].status, Refuted)
 
     def test_refuted_is_terminal(self):
         ledger = self.closed("refuted", premise="assumed exact length")
@@ -280,7 +256,7 @@ class TestTransitionLegality:
                 {
                     "e": "close",
                     "leaf": "leaf-a",
-                    "state": "retrieved",
+                    "status": "retrieved",
                     "sources": ["src-a"],
                 },
             )
@@ -293,55 +269,55 @@ class TestTransitionLegality:
                 {
                     "e": "close",
                     "leaf": "leaf-a",
-                    "state": "unresolved",
-                    "reason": "searched",
+                    "status": "unresolved",
+                    "reason": "found",
                     "detail": "d",
                 },
             )
 
 
-class TestSweepAndCheckpoint:
-    def test_a_sweep_is_kept_with_its_candidates_and_survivors(self):
+class TestScanAndCheckpoint:
+    def test_a_scan_is_kept_with_its_candidates_and_survivors(self):
         ledger = Ledger()
         apply(
             ledger,
-            {"e": "sweep", "checked": "rivals", "candidates": [], "survivors": []},
+            {"e": "scan", "checked": "rivals", "candidates": [], "survivors": []},
         )
-        assert ledger.swept is True
+        assert ledger.scanned is True
 
     def test_survivors_must_be_a_subset_of_candidates(self):
         with pytest.raises(CommandError, match="subset of candidates"):
             apply(
                 Ledger(),
-                {"e": "sweep", "checked": "x", "candidates": [], "survivors": ["a"]},
+                {"e": "scan", "checked": "x", "candidates": [], "survivors": ["a"]},
             )
 
-    def test_sweep_requires_what_was_checked(self):
+    def test_scan_requires_what_was_checked(self):
         # The model holds it now, so the rejection names the field.
         with pytest.raises(
             CommandError, match="checked: Value should have at least 1 item"
         ):
-            apply(Ledger(), {"e": "sweep", "checked": "  "})
+            apply(Ledger(), {"e": "scan", "checked": "  "})
 
     def test_checkpoint_requires_a_non_negative_count(self):
-        with pytest.raises(CommandError, match="searches"):
-            apply(Ledger(), {"e": "checkpoint", "searches": -1})
+        with pytest.raises(CommandError, match="queries"):
+            apply(Ledger(), {"e": "checkpoint", "queries": -1})
 
     def test_a_boolean_is_not_a_search_count(self):
         """`bool` is an `int` in Python, so `true` counted as one search."""
-        with pytest.raises(CommandError, match="searches"):
-            apply(Ledger(), {"e": "checkpoint", "searches": True})
+        with pytest.raises(CommandError, match="queries"):
+            apply(Ledger(), {"e": "checkpoint", "queries": True})
 
 
 class TestReplay:
     def test_replay_is_a_left_fold_over_the_log(self):
         events = [
             {"e": "add_leaf", "id": "a", "q": "q"},
-            {"e": "sweep", "checked": "x", "candidates": [], "survivors": []},
+            {"e": "scan", "checked": "x", "candidates": [], "survivors": []},
         ]
         ledger = replay(events)
         assert ledger.events == 2
-        assert ledger.swept is True
+        assert ledger.scanned is True
 
     def test_empty_log_replays_to_an_empty_ledger(self):
         assert replay([]).leaves == {}
@@ -366,34 +342,34 @@ class TestReplay:
             apply(ledger, {"e": "add_leaf", "id": "a", "q": "q"})
 
 
-class TestSweepRecord:
-    """A sweep is kept, not reduced to a bit: the Rival section is written
+class TestScanRecord:
+    """A scan is kept, not reduced to a bit: the Rival section is written
     from its survivors, so the ledger has to still hold them."""
 
-    def test_a_sweep_keeps_what_it_checked_and_what_survived(self):
+    def test_a_scan_keeps_what_it_checked_and_what_survived(self):
         ledger = Ledger()
         apply(
             ledger,
             {
-                "e": "sweep",
+                "e": "scan",
                 "checked": "rival accounts",
                 "candidates": ["alt one", "alt two"],
                 "survivors": ["alt two"],
             },
         )
-        [sweep] = ledger.sweeps
-        assert sweep.checked == "rival accounts"
-        assert sweep.survivors == ("alt two",)
-        assert sweep.candidates == ("alt one", "alt two")
+        [scan] = ledger.scans
+        assert scan.checked == "rival accounts"
+        assert scan.survivors == ("alt two",)
+        assert scan.candidates == ("alt one", "alt two")
 
     def test_swept_is_derived_from_the_records_it_holds(self):
         ledger = Ledger()
-        assert ledger.swept is False
-        ledger.sweeps.append(Sweep(checked="x", candidates=("a",), survivors=()))
-        assert ledger.swept is True
+        assert ledger.scanned is False
+        ledger.scans.append(Scan(checked="x", candidates=("a",), survivors=()))
+        assert ledger.scanned is True
 
-    def test_an_empty_sweep_is_still_a_sweep(self):
+    def test_an_empty_scan_is_still_a_scan(self):
         """Finding no rival is a valid result the draft may cite."""
         ledger = Ledger()
-        apply(ledger, {"e": "sweep", "checked": "x", "candidates": [], "survivors": []})
-        assert ledger.swept is True
+        apply(ledger, {"e": "scan", "checked": "x", "candidates": [], "survivors": []})
+        assert ledger.scanned is True

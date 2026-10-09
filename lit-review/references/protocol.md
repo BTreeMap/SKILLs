@@ -59,6 +59,6 @@ non-empty.
 
 ## Seed papers
 
-User names papers they already trust: record them first. Search each by
+User names papers they already trust: record them first. `find` each by
 title or DOI so it enters corpus as record, then mark included with reason
 "user-supplied seed". Seeds anchor snowballing, leave framing untested.

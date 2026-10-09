@@ -69,7 +69,7 @@ from btm_peer_review.views import (
     echo_ratio,
     objection_views,
     recommendation,
-    scaffold,
+    structure,
 )
 
 PAPER = Required("paper", inline=False)
@@ -217,7 +217,7 @@ class Review(TypedDict):
     echo: dict[str, JSON]
     claims: list[ClaimView]
     objections: list[ObjectionView]
-    scaffold: dict[str, JSON]
+    structure: dict[str, JSON]
 
 
 def _derive(directory: Path, meta: Meta) -> Review:
@@ -235,7 +235,7 @@ def _derive(directory: Path, meta: Meta) -> Review:
         "echo": echo_ratio(objections, paper),
         "claims": claims,
         "objections": objections,
-        "scaffold": scaffold(claims, objections),
+        "structure": structure(claims, objections),
     }
 
 
@@ -278,7 +278,7 @@ def next_step(meta: Meta, ledger: Ledger) -> str:
         return f"walk the remaining banks: {' '.join(unwalked)}"
     if not ledger.objections:
         return "no objection stands; check, then draft the recommendation"
-    return "check, then draft from the scaffold and cite-check it"
+    return "check, then draft from the structure and cite-check it"
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -360,7 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
     record.add_argument("session")
     add_slot(record, BATCH, "claims, objections, walks, withdraws")
     check = commands.add_parser(
-        "check", help="derive standings and the report scaffold"
+        "check", help="derive standings and the report structure"
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("session")

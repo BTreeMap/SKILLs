@@ -29,8 +29,8 @@ class Format(StrEnum):
     DEMO = "demo"
 
 
-class InputState(StrEnum):
-    SPARK = "spark"
+class InputStatus(StrEnum):
+    INITIAL = "initial"
     SHAPED = "shaped"
     PARTIAL = "partial"
     FULL = "full"
@@ -38,16 +38,16 @@ class InputState(StrEnum):
     REVIEWS = "reviews"
 
 
-STARTS: dict[Verb, tuple[InputState, ...]] = {
-    Verb.DESIGN: (InputState.SPARK, InputState.SHAPED),
-    Verb.BUILD: (InputState.SHAPED, InputState.PARTIAL, InputState.FULL),
-    Verb.REFACTOR: (InputState.DRAFT,),
-    Verb.REBUT: (InputState.REVIEWS,),
+STARTS: dict[Verb, tuple[InputStatus, ...]] = {
+    Verb.DESIGN: (InputStatus.INITIAL, InputStatus.SHAPED),
+    Verb.BUILD: (InputStatus.SHAPED, InputStatus.PARTIAL, InputStatus.FULL),
+    Verb.REFACTOR: (InputStatus.DRAFT,),
+    Verb.REBUT: (InputStatus.REVIEWS,),
 }
 
 
 class Gate(StrEnum):
-    """The human approval points, each closing one stage."""
+    """The human acceptance points, each closing one stage."""
 
     PLAN = "plan"
     LEDGER = "ledger"
@@ -64,24 +64,24 @@ class RunMeta(Tagged):
     run: NonEmpty
     verb: Verb
     format: Format
-    state: InputState
+    status: InputStatus
     venue: NonEmpty
     model: NonEmpty
-    artifacts: NonEmpty  # the root at start; `artifacts-repinned` moves it
+    artifacts: NonEmpty  # the root at start; `artifacts-moved` moves it
     created: str = ""
     corpus: str | None = None  # the attached lit-review `papers.jsonl`, set by attach
 
     @model_validator(mode="after")
-    def _verb_fits_state(self) -> RunMeta:
+    def _verb_fits_status(self) -> RunMeta:
         allowed = STARTS[self.verb]
-        if self.state not in allowed:
+        if self.status not in allowed:
             refuse(
                 "RunMeta",
                 [
                     Diagnostic(
-                        "state",
+                        "status",
                         f"a {self.verb} run starts from "
-                        f"{' or '.join(allowed)}, not {self.state}",
+                        f"{' or '.join(allowed)}, not {self.status}",
                     )
                 ],
             )
@@ -90,12 +90,12 @@ class RunMeta(Tagged):
     def stages(self) -> tuple[int, int]:
         """First and last stage the verb runs; build validates a shaped
         idea's positioning before its evidence. Design ends at the plan gate,
-        which approves the prospective ledger with the plan."""
+        which accepts the prospective ledger with the plan."""
         match self.verb:
             case Verb.DESIGN:
                 return 1, 1
             case Verb.BUILD:
-                return (1 if self.state is InputState.SHAPED else 2), 8
+                return (1 if self.status is InputStatus.SHAPED else 2), 8
             case Verb.REFACTOR:
                 return 3, 8
             case Verb.REBUT:

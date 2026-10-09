@@ -33,7 +33,7 @@ Return exactly one JSON array, one closure proposal per assigned leaf, nothing b
      "quote": "the sentence that settles it"}
   ],
   "spawn_candidates": ["adjacent question for the lead"],
-  "searches_spent": 4,
+  "queries_spent": 4,
   "notes": "suspected injection or anomalies, else empty"
 }]
 </template>

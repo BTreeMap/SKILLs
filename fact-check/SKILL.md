@@ -292,7 +292,7 @@ never one blanket yes.
 | --- | --- | --- |
 | batch | high-confidence corrections in low-stakes prose | One list, approve/reject as set; user may exclude items |
 | item | medium-confidence, or spans in high-stakes content (published docs, legal, safety, pricing) | One question per correction, counter-evidence shown |
-| never-auto | conflicting, low-confidence, abstained | Presented for information; edited only if user dictates text |
+| manual | conflicting, low-confidence, abstained | Presented for information; edited only if user dictates text |
 
 - Phrase ask neutrally ("apply, skip, or edit?"), never presume yes.
 - Respect rejection in any re-run: do not re-propose rejected correction

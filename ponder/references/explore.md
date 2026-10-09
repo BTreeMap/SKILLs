@@ -1,7 +1,7 @@
-# Explore: frame, leaves, rounds, stopping
+# Explore: frame, leaves, cycles, stopping
 
 Load when probe leaves material questions open. Build frame from question
-and probe's records, register its leaves, then run rounds until stop rules
+and probe's records, register its leaves, then run cycles until stop rules
 send you to `answer`. Compose moves below into frame around governing
 mechanisms; most queries mix several modes.
 
@@ -36,7 +36,7 @@ retrievable claim; leaves group by mechanism.
   fan-out stay independent.
 - 3 to 10 leaves covers worked range. Past 10, fold near-duplicates before
   searching; below 3 still works.
-- Register leaves as `leaves` entries in round's `record` batch: keywords,
+- Register leaves as `leaves` entries in cycle's `record` batch: keywords,
   question, origin. Reference them by identifiers output echoes.
 
 ## Worked frames
@@ -124,7 +124,7 @@ retrievable claim; leaves group by mechanism.
 <example for="agent-ensemble-benefit">
 <context for="query">Do multi-agent ensembles beat one strong model at matched compute?</context>
 <variant for="moves">audit-premise, bind-scope, pose-rival, route-evidence</variant>
-<variant for="leaves">Bind task family, compute accounting, evaluation; retrieve published results on both sides; separate framework marketing from measured matched-compute comparison; expect real survivors from the sweep.</variant>
+<variant for="leaves">Bind task family, compute accounting, evaluation; retrieve published results on both sides; separate framework marketing from measured matched-compute comparison; expect real survivors from the scan.</variant>
 </example>
 
 <example for="experiment-vocabulary">
@@ -197,7 +197,7 @@ Before bundling leaves, verify:
 
 ## Bundle and delegate
 
-Delegation starts here, after round one; lead retains comprehensive view.
+Delegation starts here, after cycle one; lead retains comprehensive view.
 Partition open leaves into disjoint bundles by corpus, vocabulary, or
 principle; jointly cover open set. Prefer fewer, fuller bundles.
 
@@ -209,7 +209,7 @@ Delegates read source pages, return closure proposals; they write nothing.
 Lead judges each return under summon's review, checks inflated source-class
 tags against class table in spine.
 
-## Accept a round
+## Accept a cycle
 
 1. Deduplicate sources.
 2. Judge each close. Use anomalous evidence to test frame. Before
@@ -219,16 +219,16 @@ tags against class table in spine.
 3. Adapt leaf set: add delegate discoveries as `"origin": "spawned"`; retire
    superseded leaves.
 4. Accept spawned leaves, sources, closes, `checkpoints` entry as one
-   `record` batch. Checkpoint carries round's declared search count (sum of
-   delegates' `searches_spent`); same output returns updated yield table. On
+   `record` batch. Checkpoint carries cycle's declared query count (sum of
+   delegates' `queries_spent`); same output returns updated yield table. On
    rejection, apply every listed fix, resend once.
 
 ## Stop or continue
 
 Falling yield prompts reframe-or-stop decision. Bounds:
 
-- Two unproductive rounds: stop, close remaining open leaves as
+- Two unproductive cycles: stop, close remaining open leaves as
   `unresolved`, draft. One authoritative source can complete productive
-  round.
-- Begin saturation judgment one round past declared focus.
-- Run one to three rounds. Fourth-round need triggers reframing and folding.
+  cycle.
+- Begin saturation judgment one cycle past declared focus.
+- Run one to three cycles. Fourth-cycle need triggers reframing and folding.

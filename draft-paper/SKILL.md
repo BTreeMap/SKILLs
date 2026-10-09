@@ -19,7 +19,7 @@ metadata:
 
 Turn research at any stage into submittable paper draft, or answer its
 reviews. Verb picks stages a run covers, format picks paper's shape; human
-approves plan, evidence ledger, final draft before run moves past each.
+accepts plan, evidence ledger, final draft before run moves past each.
 
 ## Registry
 
@@ -58,7 +58,7 @@ Hold at every stage. After context compaction, re-open this file and run
 6. Keep load-bearing claims and key numbers in main body; reviewers are not
    required to read appendices.
 7. LLM self-review improves prose; never certifies integrity. Integrity gate
-   is human-approved evidence ledger plus provenance.
+   is human-accepted evidence ledger plus provenance.
 8. Back adjectives like "significant", "best", "SOTA" with statistical or
    evidential support, or cut them.
 9. Follow venue's style files exactly. Human names no venue: start with
@@ -72,7 +72,7 @@ Hold at every stage. After context compaction, re-open this file and run
 
 | Verb | Starts from | Runs stages | Delivers |
 | --- | --- | --- | --- |
-| `design` | spark or shaped idea | 1 | positioned research plan with its prospective ledger |
+| `design` | initial or shaped idea | 1 | positioned research plan with its prospective ledger |
 | `build` | shaped idea, partial or full results | 2-8 (1-8 from a shaped idea) | complete draft |
 | `refactor` | existing draft | 3-8, abbreviated | draft retargeted to new format or venue, claims preserved |
 | `rebut` | reviews received | 9 | rebuttal or revision letter |
@@ -81,14 +81,14 @@ Hold at every stage. After context compaction, re-open this file and run
 Dispatch by explicit verb, then request shape (rough idea: `design`;
 results: `build`; reviews: `rebut`), then default verb `build`.
 
-## Input states
+## Input status
 
-State pinned at `start`; script refuses state verb does not start from.
-State ambiguous: ask exactly one question.
+Status pinned at `start`; script refuses status verb does not start from.
+Status ambiguous: ask exactly one question.
 
-| State | Means | Verbs |
+| Status | Means | Verbs |
 | --- | --- | --- |
-| `spark` | few sentences of idea | `design` positions it; nothing written as fact |
+| `initial` | few sentences of idea | `design` positions it; nothing written as fact |
 | `shaped` | hypothesis plus literature context or early evidence | `design` sharpens plan; `build` validates positioning in stage 1, then starts ledger |
 | `partial` | some experiments done | `build` ledgers what exists, notes rest `to-run`, states only what ran |
 | `full` | complete artifact set | `build` runs full pipeline |
@@ -99,7 +99,7 @@ State ambiguous: ask exactly one question.
 
 Each format's section structure is its section in `section-guide`. Format
 unknown: ask exactly one question. Defaults: `full` for results, `short` for
-spark with strong contradiction.
+initial idea with strong contradiction.
 
 | Format | Typical shape |
 | --- | --- |
@@ -119,7 +119,7 @@ read source only when user asks for troubleshooting.
 
 <commands>
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-draft-paper"
-$R start "<two or three keywords>" --verb build --format full --state partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>] [--project <name>]
+$R start "<two or three keywords>" --verb build --format full --status partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>] [--project <name>]
 S="<the session identifier the start output echoed>"
 $R schema
 $R record "$S" --batch:file <events.json> && $R status "$S"
@@ -141,7 +141,7 @@ counts four keywords and signals; pass `tail-latency study` instead.
 
 | Command | Contract |
 | --- | --- |
-| `start` | Takes two or three keywords, or directory path as session location. Makes session, pins verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), artifact root claim paths resolve against (default: current directory; `artifacts-repinned` event moves it). `--project NAME` tags run with free project name shared across skills. |
+| `start` | Takes two or three keywords, or directory path as session location. Makes session, pins verb, format, input status, venue, backbone model version (reliability assumptions do not transfer across models), artifact root claim paths resolve against (default: current directory; `artifacts-moved` event moves it). `--project NAME` tags run with free project name shared across skills. |
 | `schema` | Prints every event shape. |
 | `record` | Accepts one batch of events to trace. |
 | `status` | Cheap continue view: project, connections, stage, gate standings, claim counts, live artifact root, attached corpus, pad tail, advisory `next`. |
@@ -162,27 +162,27 @@ it. JSON body has no inline spelling; empty one is rejection.
 `record` stamps each event with time `t` and run identifier, appends it to
 run's trace, append-only JSONL log in session directory; position in file is
 order. Never write trace by hand. Events apply in array order: one batch may
-approve gate and enter next stage; later event may cite claim made earlier
-in batch. Rejected batch names every problem at once with field path,
-changes nothing: apply every fix, resend. Write each batch to file so retry
-is one edit. Copy claim identifiers from `new` receipt; recovered keyword
-ref works but signals, so write full identifiers in next batch.
+accept gate and start next stage; later event may cite claim made earlier in
+batch. Rejected batch names every problem at once with field path, changes
+nothing: apply every fix, resend. Write each batch to file so retry is one
+edit. Copy claim identifiers from `new` receipt; recovered keyword ref works
+but signals, so write full identifiers in next batch.
 
 <template for="record-batch">
 {"events": [
-  {"event": "stage-entered", "stage": 2},
+  {"event": "stage-started", "stage": 2},
   {"event": "claim-added", "kw": ["p99", "drop"], "text": "p99 latency drops 30% under load", "status": "supported", "artifact": "runs/load/metrics.json", "location": "summary.p99, seeds 0-2"},
-  {"event": "claim-revised", "claim": "<ref>", "status": "exploratory"},
-  {"event": "claim-dropped", "claim": "<ref>", "reason": "the campaign did not run"},
-  {"event": "artifacts-repinned", "root": "<the artifact tree's new directory>"},
+  {"event": "claim-changed", "claim": "<ref>", "status": "exploratory"},
+  {"event": "claim-removed", "claim": "<ref>", "reason": "the campaign did not run"},
+  {"event": "artifacts-moved", "root": "<the artifact tree's new directory>"},
   {"event": "citation-added", "ref": "doi:10.1145/3600006.3613165", "sentence": "<the citing sentence>"},
   {"event": "decision", "what": "lead with the contradiction framing", "why": "the closest prior work assumes the opposite", "from": ["j3"]},
   {"event": "gate-requested", "gate": "ledger"},
-  {"event": "gate-decided", "gate": "ledger", "outcome": "approve", "reply": "<the human's reply, verbatim>"}
+  {"event": "gate-decided", "gate": "ledger", "outcome": "accept", "reply": "<the human's reply, verbatim>"}
 ]}
 </template>
 
-Record `stage-entered` when stage starts, `decision` for each major choice
+Record `stage-started` when stage starts, `decision` for each major choice
 with reason; `from` lists pad ids, each checked to exist. Trace makes no
 integrity claim beyond append-only log with timestamps. Every command
 replays it: each line must parse, carry kind from closed vocabulary with
@@ -200,10 +200,10 @@ procedure relies on `framing`, `task`, `objection`, `injection`.
 
 Three gates: `plan` closes stage 1, `ledger` closes stage 2, `draft` closes
 stage 8. Run has gates whose stage its verb runs. Script refuses
-`stage-entered` past gate human has not approved.
+`stage-started` past gate human has not accepted.
 
 Gate's standing in `status` and `check`: `open` (not yet requested),
-`pending` (requested, awaiting human), `approved`, `revise`, or `rejected`.
+`pending` (requested, awaiting human), `accepted`, `change`, or `rejected`.
 
 1. Gated stage's work done: record `gate-requested`. Script refuses request
    while blocker stands: `ledger` gate, and `plan` gate of `design` run,
@@ -213,19 +213,19 @@ Gate's standing in `status` and `check`: `open` (not yet requested),
    draft); events in `since_last_decision`; at `draft` gate, claims in
    `claims_changed_since_ledger`, which human re-checks there, and every
    `task` entry left open after review, from pad; one question naming
-   decision: approve, revise with notes, or reject. Human sees only what
-   this presentation shows.
+   decision: accept, change with notes, or reject. Human sees only what this
+   presentation shows.
 3. Record `gate-decided` with outcome and human's reply verbatim.
 
 | Outcome | Effect on the run |
 | --- | --- |
-| `approve` | Gate passes; stages past it open. |
-| `revise` | Gate stays shut. Revise at gate's stage per notes, then request gate again. |
+| `accept` | Gate passes; stages past it open. |
+| `change` | Gate stays shut. Change at gate's stage per notes, then request gate again. |
 | `reject` | Run closes; script accepts nothing more. Human redirects work: `start` new run; its trace starts empty, so re-record claims redirected work keeps. |
 
-Agent never decides gate itself; silence is never approval. Reply does not
-say which outcome: ask once. Re-entering gated stage reopens its gate, so
-fixing number in stage 2 after approval needs `ledger` gate again.
+Agent never decides gate itself; silence is never acceptance. Reply does not
+say which outcome: ask once. Restarting gated stage reopens its gate, so
+fixing number in stage 2 after acceptance needs `ledger` gate again.
 
 ## Evidence ledger
 
@@ -236,10 +236,10 @@ derives ledger. Whether artifact backs claim as written (same metric, split,
 baseline) is agent's judgment, and human's at gate.
 
 Artifact paths resolve against latest artifact root: one pinned at `start`,
-or one last `artifacts-repinned` event names. Absolute claim path stands as
+or one last `artifacts-moved` event names. Absolute claim path stands as
 given. Moving artifact tree marks every evidenced claim missing in `check`,
 blocks `draft` gate. Tree moves (worktree removed after merge, renamed
-directory): record `artifacts-repinned` with new directory; script resolves
+directory): record `artifacts-moved` with new directory; script resolves
 relative `root` against current directory, refuses one that is not a
 directory, signals evidenced claims whose artifacts new root lacks.
 
@@ -251,14 +251,14 @@ directory, signals evidenced claims whose artifacts new root lacks.
 | `unsupported` | No artifact backs claim. | blocks `draft` gate |
 
 - Resolve numbers in prose, tables, figures, captions to same claim.
-- Reduced, narrowed, or failed campaign: claim describing what ran. Revise
-  claim's status when its experiment lands; drop claim draft no longer
+- Reduced, narrowed, or failed campaign: claim describing what ran. Change
+  claim's status when its experiment lands; remove claim draft no longer
   makes, with reason.
 - Cut unsupported claim or run its experiment; never soften it to
   "plausible" in prose.
 - `design`: ledger is prospective: every falsifiable claim `to-run` with
   planned path, noted in stage 1 so `check` renders ledger into plan. `plan`
-  gate approves mapping with plan, not measured numbers; `design` run has no
+  gate accepts mapping with plan, not measured numbers; `design` run has no
   `ledger` gate.
 
 Render `check`'s `ledger` rows for human with this template:
@@ -274,7 +274,7 @@ Render `check`'s `ledger` rows for human with this template:
 Skipped stage accepted with signal, but its work still owed: `refactor`
 jumping from stage 3 to 8 has skipped citation verification.
 
-0. Intake: detect state and verb, confirm format, ask for target venue if
+0. Intake: detect status and verb, confirm format, ask for target venue if
    unknown. Run `start`. Study current CFP per `venue-standards`, file venue
    brief from its template, fetch venue's LaTeX template now. Human has not
    chosen venue for `design` run: start with `--venue undecided`, record
@@ -317,7 +317,7 @@ jumping from stage 3 to 8 has skipped citation verification.
    captions describe what is shown, prose numbers match their claims'
    artifacts.
 7. Adversarial review: run review loop in `reviewer-checklist`, which
-   defines its rounds and stopping rule. Then apply best-paper lens in
+   defines its cycles and stopping rule. Then apply best-paper lens in
    `award-assessment`.
 8. Bundle and venue statements: assemble reproducibility bundle (code and
    data pointers, seeds, logs, figure scripts; anonymized for double-blind).
@@ -326,7 +326,7 @@ jumping from stage 3 to 8 has skipped citation verification.
    `draft`.
 9. Rebuttal and camera-ready (`rebut`), per `rebuttal-playbook`, which
    defines reviews input. `rebut` run is own session
-   (`--verb rebut --state reviews`); claims from drafting run do not carry
+   (`--verb rebut --status reviews`); claims from drafting run do not carry
    over, so record there claims rebuttal relies on, plus claim for each
    artifact requested experiment produces. After acceptance, run
    camera-ready tail in `rebuttal-playbook`.
@@ -356,12 +356,12 @@ verb, artifact to pass. Invoke none unasked.
   file.
 - Prose reads machine-written after stage 8: `/humanize` on draft file.
 - Reviews arrive: `/draft-paper rebut` with reviews text; new run
-  `--verb rebut --state reviews`, same `--project`.
+  `--verb rebut --status reviews`, same `--project`.
 
 ## Completion checks
 
 <checklist>
-  <item>`status` shows verb's last gate approved (for `rebut`, stage 9 entered); `next` names delivery.</item>
+  <item>`status` shows verb's last gate accepted (for `rebut`, stage 9 started); `next` names delivery.</item>
   <item>Every empirical claim about work's own results maps to live claim in `check`'s ledger; no live claim in `build` or `refactor` deliverable is `to-run` or `unsupported`.</item>
   <item>Every citation has report row naming retrieved record behind it; each unverifiable one stands as `[CITATION NEEDED]`.</item>
   <item>Venue brief carries cycle year and source URL per fact, or every venue fact in draft flagged unverified.</item>

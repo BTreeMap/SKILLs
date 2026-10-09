@@ -4,7 +4,7 @@ Phase takes candidate corpus; returns every candidate decided: included, or
 excluded with reason. Apply protocol criteria exactly as written.
 Relevance-ranked sources return off-topic candidates; screening exists to
 remove them, so never widen criteria to make noisy results fit. Criteria
-feel wrong while screening: record amendment.
+feel wrong while screening: record change.
 
 ## Pass 1: title and abstract
 
@@ -23,7 +23,7 @@ feel wrong while screening: record amendment.
 3. Re-run `digest` after each cut; its types are relative to undecided set.
 4. Drop to `show --status candidate` for residue and for records you need in
    full, most-cited first. `--match` with `--on title|abstract` narrows by
-   vocabulary, `--on key` by key prefix, `--found-by` by search that fetched
+   vocabulary, `--on key` by key prefix, `--found-by` by `find` that fetched
    paper; `--fields` with `--format tsv` keeps long listings cheap.
 5. Decide each remaining paper include, exclude, or unsure from title,
    venue, year, abstract alone, judging against criteria list item by item.
@@ -32,10 +32,10 @@ feel wrong while screening: record amendment.
    abstract is data gap: run `fill` to look it up in other indexes; none has
    it: keep paper, screen on title plus landing page, or leave unsure for
    pass 2.
-6. Write decisions to JSON file, apply with `update`. Script rejects
-   exclusion without reason. Give each exclusion `stage` of pass that made
-   it, `title-abstract` here; `status` counts exclusions by stage for
-   report's flow counts; `screen` sets stage itself.
+6. Write decisions to JSON file, apply with `set`. Script rejects exclusion
+   without reason. Give each exclusion `stage` of pass that made it,
+   `title-abstract` here; `status` counts exclusions by stage for report's
+   flow counts; `screen` sets stage itself.
 
 <example for="decisions">
 {
@@ -71,7 +71,7 @@ Before excluding paper as inaccessible, run `fill` on its key.
 Lite: 5 to 10 papers. Full: 10 to 25. Ultra: whatever criteria admit;
 exceeds roughly 40: say so, agree with user on tighter criteria or longer
 run before proceeding. Fewer than 5 included papers usually means search
-coverage failed: reopen search before concluding field is empty.
+coverage failed: reopen find before concluding field is empty.
 
 ## Bias sweep
 

@@ -27,10 +27,10 @@ from btm_corekit import (
 )
 from btm_ponder.state import (
     Checkpoint,
-    CloseState,
+    CloseStatus,
     Folded,
     Leaf,
-    LeafState,
+    LeafStatus,
     Ledger,
     Open,
     Origin,
@@ -38,9 +38,9 @@ from btm_ponder.state import (
     Refuted,
     Retired,
     Retrieved,
+    Scan,
     Source,
     SourceClass,
-    Sweep,
     Unresolved,
 )
 
@@ -69,7 +69,7 @@ class AddSource(Stamped):
 
 
 class Closing(Stamped):
-    """What every close carries; the state decides the rest."""
+    """What every close carries; the status decides the rest."""
 
     e: Literal["close"]
     leaf: Slug
@@ -77,76 +77,61 @@ class Closing(Stamped):
 
 
 class RetrievedClose(Closing):
-    state: Literal[CloseState.RETRIEVED]
+    status: Literal[CloseStatus.RETRIEVED]
     sources: tuple[Slug, ...] = Field(min_length=1)
     premise: Prose = ""
     detail: Prose = ""
 
 
 class RefutedClose(Closing):
-    state: Literal[CloseState.REFUTED]
+    status: Literal[CloseStatus.REFUTED]
     sources: tuple[Slug, ...] = Field(min_length=1)
     premise: NonEmpty
     detail: Prose = ""
 
 
 class UnresolvedClose(Closing):
-    state: Literal[CloseState.UNRESOLVED]
+    status: Literal[CloseStatus.UNRESOLVED]
     reason: Reason
     detail: NonEmpty
 
 
 class RetiredClose(Closing):
-    state: Literal[CloseState.RETIRED]
+    status: Literal[CloseStatus.RETIRED]
     detail: NonEmpty
 
 
 class FoldedClose(Closing):
-    state: Literal[CloseState.FOLDED]
+    status: Literal[CloseStatus.FOLDED]
     into: Slug
-
-
-def _legacy_fold(raw: Any) -> Any:
-    """Logs written before `folded` became a state spell it as a retired close
-    whose reason is folded."""
-    if not isinstance(raw, dict) or raw.get("state") != CloseState.RETIRED:
-        return raw
-    if raw.get("reason") != "folded":
-        return raw
-    lifted = {k: v for k, v in raw.items() if k not in ("reason", "detail")}
-    return {
-        **lifted,
-        "state": CloseState.FOLDED,
-        "into": raw.get("into") or raw.get("detail"),
-    }
 
 
 CloseEvent = (
     RetrievedClose | RefutedClose | UnresolvedClose | RetiredClose | FoldedClose
 )
 CLOSE: TypeAdapter[CloseEvent] = TypeAdapter(
-    Annotated[CloseEvent, Field(discriminator="state")]
+    Annotated[CloseEvent, Field(discriminator="status")]
 )
 
 
 # A projection names every field it reads, so the envelope cannot smuggle
 # one in; the record it builds owns its own law.
-def _sweep(raw: dict[str, Any]) -> Sweep:
+def _scan(raw: dict[str, Any]) -> Scan:
     return parse_model(
-        Sweep,
+        Scan,
         {
             "checked": raw.get("checked"),
             "candidates": tuple(raw.get("candidates") or ()),
             "survivors": tuple(raw.get("survivors") or ()),
         },
-        "sweep event",
+        "scan event",
     )
 
 
 def _checkpoint(raw: dict[str, Any]) -> Checkpoint:
     return parse_model(
         Checkpoint,
-        {"label": raw.get("label", ""), "searches": raw.get("searches")},
+        {"label": raw.get("label", ""), "queries": raw.get("queries")},
         "checkpoint event",
     )
 
@@ -156,7 +141,7 @@ def _known(sources: tuple[str, ...], ledger: Ledger) -> None:
         require(source_id in ledger.sources, f"unknown source id: {source_id}")
 
 
-def _state_of(event: CloseEvent, ledger: Ledger) -> LeafState:
+def _status_of(event: CloseEvent, ledger: Ledger) -> LeafStatus:
     """The variant this close names. Shape is already parsed; what is checked
     here is what only the ledger knows."""
     match event:
@@ -175,26 +160,26 @@ def _state_of(event: CloseEvent, ledger: Ledger) -> LeafState:
                 ledger.leaves.get(into), f"fold target does not exist: {into}"
             )
             require(
-                isinstance(target.state, Retrieved),
+                isinstance(target.status, Retrieved),
                 f"fold target must be retrieved: {into}",
             )
             return Folded(into=into)
 
 
 def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:
-    event = parse_with(CLOSE, _legacy_fold(raw), "close event")
+    event = parse_with(CLOSE, raw, "close event")
     leaf = demand(ledger.leaves.get(event.leaf), f"unknown leaf id: {event.leaf}")
-    new_state = _state_of(event, ledger)
-    legal = isinstance(leaf.state, Open) or (
-        isinstance(leaf.state, Retrieved) and isinstance(new_state, Refuted)
+    new_status = _status_of(event, ledger)
+    legal = isinstance(leaf.status, Open) or (
+        isinstance(leaf.status, Retrieved) and isinstance(new_status, Refuted)
     )
     require(
         legal,
-        f"illegal transition on {event.leaf}: {type(leaf.state).__name__} -> "
-        f"{type(new_state).__name__} (only Open -> any, Retrieved -> Refuted)",
+        f"illegal transition on {event.leaf}: {type(leaf.status).__name__} -> "
+        f"{type(new_status).__name__} (only Open -> any, Retrieved -> Refuted)",
     )
     ledger.leaves[event.leaf] = Leaf(
-        question=leaf.question, origin=leaf.origin, state=new_state
+        question=leaf.question, origin=leaf.origin, status=new_status
     )
 
 
@@ -210,7 +195,7 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             event = parse_model(AddLeaf, raw, "add_leaf event")
             require(event.id not in ledger.leaves, f"duplicate leaf id: {event.id}")
             ledger.leaves[event.id] = Leaf(
-                question=event.q, origin=event.origin, state=Open()
+                question=event.q, origin=event.origin, status=Open()
             )
         case "add_source":
             source = parse_model(AddSource, raw, "add_source event")
@@ -232,8 +217,8 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             ledger.source_order.append(source.id)
         case "close":
             _apply_close(ledger, raw)
-        case "sweep":
-            ledger.sweeps.append(_sweep(raw))
+        case "scan":
+            ledger.scans.append(_scan(raw))
         case "checkpoint":
             _checkpoint(raw)
         case kind:

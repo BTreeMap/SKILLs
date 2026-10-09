@@ -294,7 +294,7 @@ def coverage(
     }
 
 
-def scaffold(
+def structure(
     claims: list[ClaimView], objections: list[ObjectionView]
 ) -> dict[str, JSON]:
     """The report's sections, derived: grounded objections by severity, the

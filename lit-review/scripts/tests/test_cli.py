@@ -83,7 +83,7 @@ def session(tmp_path, capsys):
     ]
     save_papers(built, {p.key: p for p in corpus})
     built.log_path.write_text(
-        '{"id": "s1", "command": "search"}\n{"id": "s2", "command": "search"}\n'
+        '{"id": "s1", "command": "find"}\n{"id": "s2", "command": "find"}\n'
     )
     return built
 
@@ -119,7 +119,7 @@ class TestCountFlags:
     @pytest.mark.parametrize(
         "argv",
         [
-            ["search", "s", "--source", "openalex", "--limit", "0"],
+            ["find", "s", "--source", "openalex", "--limit", "0"],
             ["snowball", "s", "--seed", "k", "--direction", "forward", "--limit", "-3"],
             ["show", "s", "--limit", "0"],
             ["digest", "s", "--clusters", "-3"],
@@ -134,11 +134,11 @@ class TestCountFlags:
     def test_a_negative_offset_is_refused_where_it_is_written(self):
         with pytest.raises(CommandError, match="names no rank"):
             build_parser().parse_args(
-                ["search", "s", "--source", "openalex", "--offset", "-1"]
+                ["find", "s", "--source", "openalex", "--offset", "-1"]
             )
 
     def test_a_fetch_limit_above_the_cap_clamps_out_loud(self, capsys):
-        argv = ["search", "s", "--source", "openalex", "--limit", str(MAX_LIMIT + 5)]
+        argv = ["find", "s", "--source", "openalex", "--limit", str(MAX_LIMIT + 5)]
         assert build_parser().parse_args(argv).limit == MAX_LIMIT
         assert (
             f"--limit {MAX_LIMIT + 5} capped to {MAX_LIMIT}" in capsys.readouterr().err
@@ -146,7 +146,7 @@ class TestCountFlags:
 
 
 class TestShow:
-    def test_found_by_keeps_what_one_search_fetched(self, session, capsys):
+    def test_found_by_keeps_what_one_find_fetched(self, session, capsys):
         code, document, _ = run(
             ["show", str(session.root), "--status", "included", "--found-by", "s2"],
             capsys,
@@ -162,7 +162,7 @@ class TestShow:
     def test_a_found_by_id_the_log_lacks_is_refused(self, session, capsys):
         code, _, err = run(["show", str(session.root), "--found-by", "s9"], capsys)
         assert code == 1
-        assert "no search log entry s9" in err
+        assert "no find log entry s9" in err
 
     def test_on_key_matches_a_key_prefix(self, session, capsys):
         code, document, _ = run(
@@ -209,7 +209,7 @@ BATCH = {
         {
             "statement": "nothing combines them",
             "probes": ["s2"],
-            "watch": "combined",
+            "monitor": "combined",
         }
     ],
 }
@@ -217,7 +217,7 @@ BATCH = {
 
 class TestNoteAndBrief:
     def accept(self, session, tmp_path, capsys):
-        batch_file = tmp_path / "round.json"
+        batch_file = tmp_path / "cycle.json"
         batch_file.write_text(json.dumps(BATCH))
         return run(
             ["record", str(session.root), "--batch:file", str(batch_file)], capsys
@@ -245,7 +245,7 @@ class TestNoteAndBrief:
         code, first, _ = run(["brief", str(session.root)], capsys)
         assert code == 0
         assert first["drift"] == {"since": None}
-        assert first["findings"][0]["state"] == "supported"
+        assert first["findings"][0]["status"] == "supported"
         assert first["unextracted"] == ["doi:10.1/b"]
         late = paper("Combined system", "10.1/d", abstract="combined", found_by=("s9",))
         papers = load_papers(session)
@@ -253,7 +253,7 @@ class TestNoteAndBrief:
         save_papers(session, papers)
         code, second, err = run(["brief", str(session.root)], capsys)
         assert second["drift"]["new_papers"] == ["doi:10.1/d"]
-        assert second["gaps"][0]["state"] == "challenged"
+        assert second["gaps"][0]["status"] == "challenged"
         assert "challenged gaps: g1" in err
 
     def test_an_unreadable_snapshot_is_recomputed_not_refused(self, session, capsys):
@@ -295,7 +295,7 @@ class TestSchema:
     def test_every_record_shape_is_printed(self, capsys):
         code, document, _ = run(["schema"], capsys)
         assert code == 0
-        assert {"paper", "record_batch", "pad", "search_log", "exit_codes"} <= set(
+        assert {"paper", "record_batch", "pad", "find_log", "exit_codes"} <= set(
             document
         )
 
@@ -309,9 +309,9 @@ class TestSchema:
         assert all(name in card["show"] for name in shown["papers"][0])
 
 
-class TestUpdate:
+class TestSet:
     def applied(self, session, capsys, decisions):
-        return run(["update", str(session.root)], capsys, stdin=json.dumps(decisions))
+        return run(["set", str(session.root)], capsys, stdin=json.dumps(decisions))
 
     def test_decisions_move_statuses_and_report_the_counts(self, session, capsys):
         code, document, _ = self.applied(
@@ -371,7 +371,7 @@ class TestStatus:
             stdin='{"match": "cooking", "reason": "off topic"}',
         )
         run(
-            ["update", str(session.root)],
+            ["set", str(session.root)],
             capsys,
             stdin=json.dumps(
                 {
@@ -393,18 +393,18 @@ class TestStatus:
 
     def test_the_band_advisory_fires_on_a_thin_corpus(self, session, capsys):
         run(
-            ["update", str(session.root)],
+            ["set", str(session.root)],
             capsys,
             stdin=json.dumps({"doi:10.1/a": {"status": "included"}}),
         )
         _, _, err = run(["status", str(session.root)], capsys)
         assert "below the full band" in err
 
-    def _drift(self, session, amendments):
-        """Log one search under other criteria, then record the amendments."""
+    def _drift(self, session, changes):
+        """Log one find under other criteria, then record the changes."""
         session.log_path.write_text('{"id": "s1", "criteria_hash": "000000000000"}\n')
         protocol = json.loads(session.protocol_path.read_text())
-        protocol["amendments"] = amendments
+        protocol["changes"] = changes
         session.protocol_path.write_text(json.dumps(protocol))
 
     def test_an_unexplained_criteria_change_is_flagged(self, session, capsys):
@@ -412,18 +412,18 @@ class TestStatus:
         _, _, err = run(["status", str(session.root)], capsys)
         assert "criteria changed 1 time(s)" in err
 
-    def test_an_amended_criteria_change_is_not_flagged(self, session, capsys):
+    def test_a_recorded_criteria_change_is_not_flagged(self, session, capsys):
         self._drift(session, [{"date": "2026-10-08", "change": "c", "reason": "r"}])
         _, _, err = run(["status", str(session.root)], capsys)
         assert "criteria changed" not in err
 
 
-class TestUpdateEnvelope:
-    def test_update_rejects_bad_json_in_the_shared_envelope(
+class TestSetEnvelope:
+    def test_set_rejects_bad_json_in_the_shared_envelope(
         self, session, capsys, monkeypatch
     ):
         code, document, _ = run(
-            ["update", str(session.root)], capsys, stdin="{", monkeypatch=monkeypatch
+            ["set", str(session.root)], capsys, stdin="{", monkeypatch=monkeypatch
         )
         assert code == 1
         assert document["unchanged"] == "papers"

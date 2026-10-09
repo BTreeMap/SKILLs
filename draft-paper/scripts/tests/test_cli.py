@@ -47,7 +47,7 @@ def opened(
     capsys: pytest.CaptureFixture[str],
     artifacts: Path,
     verb: str = "build",
-    state: str = "partial",
+    status: str = "partial",
 ) -> str:
     code, document, err = run(
         [
@@ -57,8 +57,8 @@ def opened(
             verb,
             "--format",
             "full",
-            "--state",
-            state,
+            "--status",
+            status,
             "--venue",
             "NSDI 2027",
             "--model",
@@ -102,7 +102,7 @@ PLANNED = {
 
 
 def stage(n: int) -> dict[str, Any]:
-    return {"event": "stage-entered", "stage": n}
+    return {"event": "stage-started", "stage": n}
 
 
 def request(gate: str) -> dict[str, Any]:
@@ -114,29 +114,29 @@ def decide(gate: str, outcome: str) -> dict[str, Any]:
 
 
 class TestInit:
-    def test_a_verb_and_input_state_that_do_not_fit_are_refused(
+    def test_a_verb_and_input_status_that_do_not_fit_are_refused(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         code, _, err = run(
             [
                 *("start", "a b", "--verb", "design", "--format", "short"),
-                *("--state", "full", "--venue", "v", "--model", "m"),
+                *("--status", "full", "--venue", "v", "--model", "m"),
                 *("--artifacts", str(artifacts)),
             ],
             capsys,
         )
         assert code == 1
-        assert "a design run starts from spark or shaped" in err
+        assert "a design run starts from initial or shaped" in err
 
     def test_a_fresh_run_points_at_its_first_stage(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
-        session = opened(capsys, artifacts, state="shaped")
+        session = opened(capsys, artifacts, status="shaped")
         code, document, _ = run(["status", session], capsys)
         assert code == 0
         assert document["stages"] == [1, 8]
         assert document["gates"] == {"plan": "open", "ledger": "open", "draft": "open"}
-        assert document["next"] == "record stage-entered 1"
+        assert document["next"] == "record stage-started 1"
 
 
 class TestNote:
@@ -190,19 +190,19 @@ class TestNote:
         code, _, _ = record(session, capsys, PLANNED)  # a plan is not checked
         assert code == 0
 
-    def test_a_revision_that_breaks_the_claim_law_is_refused(
+    def test_a_change_that_breaks_the_claim_law_is_refused(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         session = opened(capsys, artifacts)
         record(session, capsys, PLANNED)
-        revised = {"event": "claim-revised", "claim": "scale", "status": "supported"}
-        code, document, _ = record(session, capsys, revised)
+        changed = {"event": "claim-changed", "claim": "scale", "status": "supported"}
+        code, document, _ = record(session, capsys, changed)
         assert code == 1
         assert "location" in document["rejected"][0]["fix"]
 
 
 class TestRepin:
-    def test_a_repin_moves_the_root_that_claims_resolve_against(
+    def test_a_move_moves_the_root_that_claims_resolve_against(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, tmp_path: Path
     ) -> None:
         session = opened(capsys, artifacts)
@@ -210,26 +210,26 @@ class TestRepin:
         moved = artifacts.rename(tmp_path / "merged")
         _, document, _ = run(["check", session], capsys)
         assert len(document["missing_artifacts"]) == 1
-        repin = {"event": "artifacts-repinned", "root": str(moved)}
-        assert record(session, capsys, repin)[0] == 0
+        move = {"event": "artifacts-moved", "root": str(moved)}
+        assert record(session, capsys, move)[0] == 0
         _, document, _ = run(["check", session], capsys)
         assert document["ledger"][0]["exists"] is True
         assert document["missing_artifacts"] == []
         _, document, _ = run(["status", session], capsys)
         assert document["artifacts"] == str(moved)
 
-    def test_a_repin_to_a_missing_directory_is_refused(
+    def test_a_move_to_a_missing_directory_is_refused(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, tmp_path: Path
     ) -> None:
         session = opened(capsys, artifacts)
-        repin = {"event": "artifacts-repinned", "root": str(tmp_path / "gone")}
-        code, document, _ = record(session, capsys, repin)
+        move = {"event": "artifacts-moved", "root": str(tmp_path / "gone")}
+        code, document, _ = record(session, capsys, move)
         assert code == 1
         assert document["rejected"][0]["where"] == "events[0].root"
 
 
 class TestGates:
-    def test_no_stage_past_a_gate_until_the_human_approves(
+    def test_no_stage_past_a_gate_until_the_human_accepts(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         session = opened(capsys, artifacts)
@@ -239,18 +239,18 @@ class TestGates:
         assert (
             "past the ledger gate, which is pending" in document["rejected"][0]["fix"]
         )
-        code, document, _ = record(session, capsys, decide("ledger", "revise"))
+        code, document, _ = record(session, capsys, decide("ledger", "change"))
         assert code == 0
-        assert document["gates"]["ledger"] == "revise"
-        assert document["next"].startswith("revise the evidence ledger")
+        assert document["gates"]["ledger"] == "change"
+        assert document["next"].startswith("change the evidence ledger")
         assert record(session, capsys, stage(3))[0] == 1
         assert (
-            record(session, capsys, request("ledger"), decide("ledger", "approve"))[0]
+            record(session, capsys, request("ledger"), decide("ledger", "accept"))[0]
             == 0
         )
         assert record(session, capsys, stage(3))[0] == 0
 
-    def test_an_approved_gate_points_to_the_next_stage(
+    def test_an_accepted_gate_points_to_the_next_stage(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         session = opened(capsys, artifacts)
@@ -260,27 +260,27 @@ class TestGates:
             stage(2),
             SUPPORTED,
             request("ledger"),
-            decide("ledger", "approve"),
+            decide("ledger", "accept"),
         )
         assert code == 0
-        assert document["next"] == "the ledger gate passed; record stage-entered 3"
+        assert document["next"] == "the ledger gate passed; record stage-started 3"
 
     def test_a_decision_needs_a_pending_request(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         session = opened(capsys, artifacts)
         code, document, _ = record(
-            session, capsys, stage(2), decide("ledger", "approve")
+            session, capsys, stage(2), decide("ledger", "accept")
         )
         assert code == 1
         assert "no pending request" in document["rejected"][0]["fix"]
 
-    def test_reentering_a_gated_stage_reopens_its_gate(
+    def test_restarting_a_gated_stage_reopens_its_gate(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
         session = opened(capsys, artifacts)
         record(session, capsys, stage(2), SUPPORTED, request("ledger"))
-        record(session, capsys, decide("ledger", "approve"), stage(3), stage(2))
+        record(session, capsys, decide("ledger", "accept"), stage(3), stage(2))
         _, document, _ = run(["status", session], capsys)
         assert document["gates"]["ledger"] == "open"
         assert record(session, capsys, stage(3))[0] == 1
@@ -304,21 +304,25 @@ class TestGates:
     ) -> None:
         session = opened(capsys, artifacts)
         record(session, capsys, stage(2), SUPPORTED, PLANNED, request("ledger"))
-        record(session, capsys, decide("ledger", "approve"), stage(8))
+        record(session, capsys, decide("ledger", "accept"), stage(8))
         code, document, _ = record(session, capsys, request("draft"))
         assert code == 1
         assert "is to-run" in document["rejected"][0]["fix"]
-        drop = {"event": "claim-dropped", "claim": "scale out", "reason": "no budget"}
-        assert record(session, capsys, drop)[0] == 0
+        removal = {
+            "event": "claim-removed",
+            "claim": "scale out",
+            "reason": "no budget",
+        }
+        assert record(session, capsys, removal)[0] == 0
         (artifacts / "runs" / "metrics.json").unlink()
         code, document, _ = record(session, capsys, request("draft"))
         assert code == 1
         assert "does not exist" in document["rejected"][0]["fix"]
 
-    def test_a_design_run_approves_its_prospective_ledger_at_the_plan_gate(
+    def test_a_design_run_accepts_its_prospective_ledger_at_the_plan_gate(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path
     ) -> None:
-        session = opened(capsys, artifacts, verb="design", state="spark")
+        session = opened(capsys, artifacts, verb="design", status="initial")
         code, document, _ = record(session, capsys, stage(1), request("plan"))
         assert code == 1
         assert "as to-run" in document["rejected"][0]["fix"]
@@ -328,10 +332,10 @@ class TestGates:
             stage(1),
             PLANNED,
             request("plan"),
-            decide("plan", "approve"),
+            decide("plan", "accept"),
         )
         assert code == 0
-        assert document["gates"] == {"plan": "approved"}
+        assert document["gates"] == {"plan": "accepted"}
         assert document["next"] == "deliver per the output contract"
         assert record(session, capsys, stage(2))[0] == 1
 
@@ -349,7 +353,7 @@ class TestViews:
         assert len(document["missing_artifacts"]) == 1
         assert document["gate"]["name"] == "ledger"
         assert [row["event"] for row in document["since_last_decision"]] == [
-            "stage-entered",
+            "stage-started",
             "claim-added",
         ]
 
@@ -366,10 +370,10 @@ class TestReplay:
             ("{not json", "not JSON"),
             (STAMP + '"event": "nap"}', "trace event 2"),
             (
-                STAMP.replace("RUN", "other") + '"event": "stage-entered", "stage": 3}',
+                STAMP.replace("RUN", "other") + '"event": "stage-started", "stage": 3}',
                 "run is 'other'",
             ),
-            (STAMP + '"event": "stage-entered", "stage": 8}', "past the ledger gate"),
+            (STAMP + '"event": "stage-started", "stage": 8}', "past the ledger gate"),
         ],
     )
     def test_a_hand_edited_line_is_an_authoritative_defect(
@@ -446,7 +450,7 @@ class TestCorpus:
         code, document, err = run(
             [
                 *("start", "tail latency", "--verb", "build", "--format", "full"),
-                *("--state", "partial", "--venue", "v", "--model", "m"),
+                *("--status", "partial", "--venue", "v", "--model", "m"),
                 *("--artifacts", str(artifacts), "--project", "ste-tax"),
             ],
             capsys,

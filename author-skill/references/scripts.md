@@ -16,7 +16,7 @@ Place each responsibility by first row it matches.
 | --- | --- |
 | Existence, size, encoding, digests, schemas, structural equality, cross-record links | Whether claim supported, paper relevant, sentence clear |
 | Session files, ledgers, new identifiers, accepted records | Which rung, school, level, or sibling fits |
-| Derived scaffolds and `next` advisory | Every draft, rewrite, brief; retrieved text read as data |
+| Derived structures and `next` advisory | Every draft, rewrite, brief; retrieved text read as data |
 | HTTP with retries and rate limits; wire decoding | Weighing signal against user's request |
 | Idempotent repairs; witnessed effects | Decision to take irreversible step |
 
@@ -37,13 +37,13 @@ Place each responsibility by first row it matches.
   JSON object or prose under script-stamped envelope, never rejecting
   content. Gated record may cite pad ids as provenance, each checked to
   exist.
-* Store claim's inputs (support keys, probes, watch regex, log position);
+* Store claim's inputs (support keys, probes, monitor regex, log position);
   derive its verdict on every read. Branch on structure (variant keyed by
   field presence), never on vocabulary value. Make append-only what must
-  never move (citation marks). Surface contradiction candidate (watch hit);
-  leave judgment to agent.
+  never move (citation marks). Surface contradiction candidate (monitor
+  hit); leave judgment to agent.
 * Design for agent's loop, not pipeline: give evolving beliefs objects and
-  verbs (findings, gaps, open threads) with supersede chains; record bulk
+  verbs (findings, gaps, open threads) with replace chains; record bulk
   judgment as one rule with its matched keys; keep zero-result search in log
   as evidence of absence; ship continue view (`brief`, `status`) re-entering
   loop after compaction with derived verdicts, drift since last snapshot,
@@ -72,7 +72,7 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
 
 * Document full command surface and output conventions in `SKILL.md`, with
   one line beside commands reserving source reading for user-instructed
-  troubleshooting. Show round's calls chained with `&&`, so rejection stops
+  troubleshooting. Show cycle's calls chained with `&&`, so rejection stops
   chain; instruct agent to bind command and session identifier to shell
   variables.
 * Keep surface uniform: one record is batch of one; sibling record kinds
@@ -85,7 +85,7 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
 | `start` | Make session from two or three keywords |
 | `schema` | Print every record shape |
 | `record` | Accept one batch through gate |
-| `check` | Derive verdicts and drafting scaffold from live state |
+| `check` | Derive verdicts and drafting structure from live state |
 | `status` | Cheap continue view, with advisory `next` |
 | `write`, `read` | Write to and read from pad |
 | `clean` | Remove one target or `--all`, reporting bytes freed |

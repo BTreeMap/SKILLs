@@ -50,7 +50,7 @@ class TestRead:
     def test_bad_filters_are_the_only_rejections(self, tmp_path):
         self.seed(tmp_path)
         with pytest.raises(CommandError, match="j12"):
-            pad_read(tmp_path, since="round-1")
+            pad_read(tmp_path, since="cycle-1")
         with pytest.raises(CommandError, match="--match"):
             pad_read(tmp_path, match="[")
 

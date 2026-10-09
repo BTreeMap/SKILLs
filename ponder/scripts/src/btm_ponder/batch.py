@@ -30,7 +30,7 @@ from btm_corekit import (
 from btm_ponder.ledger import apply
 from btm_ponder.state import (
     Checkpoint,
-    CloseState,
+    CloseStatus,
     Ledger,
     Origin,
     Reason,
@@ -45,14 +45,14 @@ SCHEMA: dict[str, str] = {
     '"url": "...", "doi": "...", "arxiv": "..." (url, doi, arxiv: any of them; '
     "authors, year, venue optional, copied from a cite record)}",
     "closes": '{"leaf": "<ref>", '
-    '"state": "retrieved|refuted|unresolved|retired|folded", '
+    '"status": "retrieved|refuted|unresolved|retired|folded", '
     '"sources": ["<ref>"], "premise": "the claim, one line", '
     '"detail": "supporting note; retired: why immaterial", '
-    '"reason": "searched|not_pursued (unresolved only)", '
+    '"reason": "found|not_pursued (unresolved only)", '
     '"into": "<leaf ref> (folded only)", "from": ["<pad id>"] (optional)}',
-    "sweeps": '{"checked": "...", "candidates": ["prose", "..."], '
+    "scans": '{"checked": "...", "candidates": ["prose", "..."], '
     '"survivors": [0, 2]} (survivors are zero-based indexes into candidates)',
-    "checkpoints": '{"label": "round-1", "searches": 5}',
+    "checkpoints": '{"label": "cycle-1", "queries": 5}',
 }
 
 
@@ -99,11 +99,11 @@ class SourceEntry(Named):
 
 
 class CloseEntry(Model):
-    """References are unresolved here; which fields each state needs is the
+    """References are unresolved here; which fields each status needs is the
     event's law, reported when the close is simulated."""
 
     leaf: NonEmpty
-    state: CloseState
+    status: CloseStatus
     sources: tuple[NonEmpty, ...] = ()
     premise: str = ""
     detail: str = ""
@@ -112,7 +112,7 @@ class CloseEntry(Model):
     from_: tuple[str, ...] = Field(default=(), alias="from")
 
 
-class SweepEntry(Model):
+class ScanEntry(Model):
     checked: NonEmpty
     candidates: tuple[str, ...] = ()
     survivors: tuple[int | str, ...] = ()
@@ -131,7 +131,7 @@ class RecordBatch(Model):
     leaves: Rows = ()
     sources: Rows = ()
     closes: Rows = ()
-    sweeps: Rows = ()
+    scans: Rows = ()
     checkpoints: Rows = ()
 
 
@@ -277,7 +277,7 @@ class _Expansion(Acceptance):
             event: dict[str, Any] = {
                 "e": "close",
                 "leaf": leaf,
-                "state": entry.state,
+                "status": entry.status,
                 "from": list(entry.from_),
             }
             if entry.sources:
@@ -293,17 +293,17 @@ class _Expansion(Acceptance):
                 event["reason"] = entry.reason
             if entry.detail:
                 event["detail"] = entry.detail
-            if entry.state is CloseState.FOLDED or entry.into:
+            if entry.status is CloseStatus.FOLDED or entry.into:
                 into = self.lookup(entry.into or "", self.leaves, f"{where}.into")
                 broken = broken or into is None
                 event["into"] = into
             if not broken:
                 self.staged.append((where, event))
 
-    def take_sweeps(self, rows: Rows) -> None:
+    def take_scans(self, rows: Rows) -> None:
         for index, row in enumerate(rows):
-            where = f"sweeps[{index}]"
-            entry = self.decode(SweepEntry, row, where, SCHEMA["sweeps"])
+            where = f"scans[{index}]"
+            entry = self.decode(ScanEntry, row, where, SCHEMA["scans"])
             if entry is None:
                 continue
             candidates = list(entry.candidates)
@@ -314,7 +314,7 @@ class _Expansion(Acceptance):
                 (
                     where,
                     {
-                        "e": "sweep",
+                        "e": "scan",
                         "checked": entry.checked,
                         "candidates": candidates,
                         "survivors": survivors,
@@ -381,7 +381,7 @@ def expand_batch(
 ) -> RecordResult:
     """Expand one record batch into events, collecting every problem.
 
-    Acceptance order: leaves, sources, closes, sweeps, checkpoints, so later
+    Acceptance order: leaves, sources, closes, scans, checkpoints, so later
     entries may reference ids made earlier in the batch. Events from clean
     entries are simulated against the passed ledger (which is mutated); on a
     non-empty problem list the caller discards ledger and events alike.
@@ -392,7 +392,7 @@ def expand_batch(
     expansion.take_leaves(record.leaves)
     expansion.take_sources(record.sources)
     expansion.take_closes(record.closes)
-    expansion.take_sweeps(record.sweeps)
+    expansion.take_scans(record.scans)
     expansion.take_checkpoints(record.checkpoints)
     if not expansion.staged and expansion.clean:
         expansion.fail("$", "add at least one entry: the batch records nothing")

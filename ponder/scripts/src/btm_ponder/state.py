@@ -1,4 +1,4 @@
-"""The leaf-state sum, the records built on it, and the ledger value."""
+"""The leaf-status sum, the records built on it, and the ledger value."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ class Reason(StrEnum):
     """Why a leaf stayed unresolved: looked and found nothing, or never
     pursued. The distinction is what a gap probe cites."""
 
-    SEARCHED = "searched"
+    FOUND = "found"
     NOT_PURSUED = "not_pursued"
 
 
@@ -48,9 +48,8 @@ class Level(StrEnum):
     LITE = "lite"
 
 
-class CloseState(StrEnum):
-    """How a leaf ends. The close decoder also accepts a legacy `retired`
-    shape with reason `folded` as this state."""
+class CloseStatus(StrEnum):
+    """How a leaf ends."""
 
     RETRIEVED = "retrieved"
     REFUTED = "refuted"
@@ -66,49 +65,49 @@ CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 # Each variant names itself, so a count or a view reads the tag rather than
 # rebuilding a dict to look at one key.
 class Open(Model):
-    state: Literal["open"] = "open"
+    status: Literal["open"] = "open"
 
 
 class Retrieved(Model):
-    state: Literal[CloseState.RETRIEVED] = CloseState.RETRIEVED
+    status: Literal[CloseStatus.RETRIEVED] = CloseStatus.RETRIEVED
     sources: tuple[Slug, ...] = Field(min_length=1)
-    premise: str = ""  # the claim, one line; comes back in the check scaffold
+    premise: str = ""  # the claim, one line; comes back in the check structure
     detail: str = ""
 
 
 class Refuted(Model):
-    state: Literal[CloseState.REFUTED] = CloseState.REFUTED
+    status: Literal[CloseStatus.REFUTED] = CloseStatus.REFUTED
     sources: tuple[Slug, ...] = Field(min_length=1)
     premise: NonEmpty  # what the leaf assumed that evidence contradicts
     detail: str = ""
 
 
 class Unresolved(Model):
-    state: Literal[CloseState.UNRESOLVED] = CloseState.UNRESOLVED
+    status: Literal[CloseStatus.UNRESOLVED] = CloseStatus.UNRESOLVED
     reason: Reason
     detail: NonEmpty
 
 
 class Retired(Model):
-    state: Literal[CloseState.RETIRED] = CloseState.RETIRED
+    status: Literal[CloseStatus.RETIRED] = CloseStatus.RETIRED
     detail: NonEmpty  # why the leaf fails to change the conclusion
 
 
 class Folded(Model):
-    state: Literal[CloseState.FOLDED] = CloseState.FOLDED
+    status: Literal[CloseStatus.FOLDED] = CloseStatus.FOLDED
     into: Slug  # the retrieved leaf that absorbed this one
 
 
-LeafState = Open | Retrieved | Refuted | Unresolved | Retired | Folded
+LeafStatus = Open | Retrieved | Refuted | Unresolved | Retired | Folded
 
 
 class Leaf(Model):
     question: NonEmpty
     origin: Origin
-    state: LeafState
+    status: LeafStatus
 
 
-class Sweep(Model):
+class Scan(Model):
     """Held by its decoder: `survivors` is a subset of `candidates`, so a
     Rival section renders from the ledger, not from the agent's memory."""
 
@@ -117,9 +116,9 @@ class Sweep(Model):
     survivors: tuple[str, ...]
 
     @model_validator(mode="after")
-    def _survivors_came_from_the_candidates(self) -> Sweep:
+    def _survivors_came_from_the_candidates(self) -> Scan:
         if not set(self.survivors) <= set(self.candidates):
-            raise ValueError("sweep survivors must be a subset of candidates")
+            raise ValueError("scan survivors must be a subset of candidates")
         return self
 
 
@@ -139,10 +138,10 @@ class Source(Model):
 
 
 class Checkpoint(Model):
-    """One round's declared search count; `label` names it in the yield table."""
+    """One cycle's declared query count; `label` names it in the yield table."""
 
     label: str = ""
-    searches: Count
+    queries: Count
 
 
 @dataclass(slots=True)
@@ -152,10 +151,10 @@ class Ledger:
     leaves: dict[str, Leaf] = field(default_factory=dict)
     sources: dict[str, Source] = field(default_factory=dict)
     source_order: list[str] = field(default_factory=list)
-    sweeps: list[Sweep] = field(default_factory=list)
+    scans: list[Scan] = field(default_factory=list)
     events: int = 0
 
     @property
-    def swept(self) -> bool:
-        """Derived, never stored: a sweep happened exactly when one is held."""
-        return bool(self.sweeps)
+    def scanned(self) -> bool:
+        """Derived, never stored: a scan happened exactly when one is held."""
+        return bool(self.scans)

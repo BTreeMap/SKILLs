@@ -16,7 +16,7 @@ from btm_lit_review.http import client
 def fetch(
     source: str, query: str, limit: int, window: Window, offset: int
 ) -> tuple[list[Paper], int | None]:
-    """One logged search's papers from rank `offset`; linear in the works the
+    """One logged find's papers from rank `offset`; linear in the works the
     index returns."""
     found = search(
         INDEXES[source], client(), RESPONSE_CAP_BYTES, query, limit, window, offset

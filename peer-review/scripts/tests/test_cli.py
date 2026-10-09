@@ -42,7 +42,7 @@ def started(capsys, paper_file, level="full") -> str:
 
 
 def batch(tmp_path, payload) -> str:
-    path = tmp_path / "round.json"
+    path = tmp_path / "cycle.json"
     path.write_text(json.dumps(payload))
     return str(path)
 

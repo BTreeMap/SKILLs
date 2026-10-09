@@ -1,13 +1,13 @@
 # Adversarial review checklist
 
-Review draft as hostile reviewer would, in at most two rounds.
+Review draft as hostile reviewer would, in at most two cycles.
 
-1. Round one: run five passes below separately, `write` each finding as
+1. Cycle one: run five passes below separately, `write` each finding as
    `task` entry, then revise draft against task list.
-2. Round one found nothing: stop. Otherwise round two: five passes again on
+2. Cycle one found nothing: stop. Otherwise cycle two: five passes again on
    revised draft.
-3. Stop after round two: fix what it found; list every finding left unfixed
-   at `draft` gate for human to decide. Run no third round.
+3. Stop after cycle two: fix what it found; list every finding left unfixed
+   at `draft` gate for human to decide. Run no third cycle.
 
 ## Pass 1: Novelty and related work
 

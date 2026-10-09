@@ -73,13 +73,13 @@ class TestLabels:
             matching = [i for i in CORPUS if pattern.search(i.text.lower())]
             assert len(matching) >= cluster.size
 
-    def test_exemplars_are_the_highest_ranked_and_bounded(self):
+    def test_examples_are_the_highest_ranked_and_bounded(self):
         [seeding] = [c for c in digest(CORPUS).clusters if c.label == "cloud"]
         assert seeding.size == 3
-        assert len(seeding.exemplars) <= 2 + 1
-        assert seeding.exemplars[0].key == "a1"  # rank 9.0 leads
+        assert len(seeding.examples) <= 2 + 1
+        assert seeding.examples[0].key == "a1"  # rank 9.0 leads
         assert [
-            item.key for item in digest(CORPUS, exemplars=1).clusters[0].exemplars
+            item.key for item in digest(CORPUS, examples=1).clusters[0].examples
         ] == ["a1"]
 
     def test_the_cluster_count_never_exceeds_the_cap(self):

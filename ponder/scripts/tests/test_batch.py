@@ -42,25 +42,25 @@ FULL_BATCH = {
     "closes": [
         {
             "leaf": "rent length",
-            "state": "retrieved",
+            "status": "retrieved",
             "sources": ["bcl"],
             "premise": "Rent guarantees at-least length",
             "detail": "exact length needs the exact overload",
         },
         {
             "leaf": "pool clear",
-            "state": "refuted",
+            "status": "refuted",
             "sources": ["folk"],
             "premise": "assumed exact-length",
         },
         {
             "leaf": "memory",
-            "state": "folded",
+            "status": "folded",
             "into": "rent length",
         },
     ],
-    "sweeps": [{"checked": "rival accounts", "candidates": ["folk"], "survivors": []}],
-    "checkpoints": [{"label": "round-1", "searches": 4}],
+    "scans": [{"checked": "rival accounts", "candidates": ["folk"], "survivors": []}],
+    "checkpoints": [{"label": "cycle-1", "queries": 4}],
 }
 
 
@@ -89,7 +89,7 @@ class TestExpansion:
 
     def test_into_carries_the_fold_target(self, loaded):
         _, result = loaded
-        fold = next(e for e in result.events if e.get("state") == "folded")
+        fold = next(e for e in result.events if e.get("status") == "folded")
         assert fold["into"].startswith("rent-length-")
 
     def test_origin_passes_through(self, loaded):
@@ -99,13 +99,13 @@ class TestExpansion:
 
     def test_retrieved_close_keeps_premise_and_detail(self, loaded):
         ledger, _ = loaded
-        state = next(
-            leaf.state
+        status = next(
+            leaf.status
             for leaf in ledger.leaves.values()
-            if isinstance(leaf.state, Retrieved)
+            if isinstance(leaf.status, Retrieved)
         )
-        assert state.premise == "Rent guarantees at-least length"
-        assert state.detail == "exact length needs the exact overload"
+        assert status.premise == "Rent guarantees at-least length"
+        assert status.detail == "exact length needs the exact overload"
 
 
 class TestRecovery:
@@ -142,7 +142,7 @@ class TestRecovery:
         ledger, _ = loaded
         batch = {
             "closes": [
-                {"leaf": "rent length", "state": "retrieved", "sources": ["gile"]}
+                {"leaf": "rent length", "status": "retrieved", "sources": ["gile"]}
             ]
         }
         result = expand_batch(ledger, batch, fixed_maker)
@@ -161,9 +161,9 @@ class TestTotalRejection:
         ledger, _ = loaded
         batch = {
             "closes": [
-                {"leaf": "rent length", "state": "retrieved", "sources": ["gile"]}
+                {"leaf": "rent length", "status": "retrieved", "sources": ["gile"]}
             ],
-            "sweeps": [
+            "scans": [
                 {
                     "checked": "x",
                     "candidates": ["a claim"],
@@ -174,7 +174,7 @@ class TestTotalRejection:
         result = expand_batch(ledger, batch, fixed_maker)
         wheres = {problem.where for problem in result.problems}
         assert "closes[0].sources[0]" in wheres
-        assert "sweeps[0].survivors[0]" in wheres
+        assert "scans[0].survivors[0]" in wheres
 
     def test_a_malformed_family_never_hides_a_problem_in_its_siblings(self, loaded):
         """One family of the wrong shape once swallowed the whole batch, so a
@@ -182,7 +182,7 @@ class TestTotalRejection:
         ledger, _ = loaded
         batch = {
             "leaves": {"kw": ["rent", "length"], "q": "a leaf, not a list of them"},
-            "closes": [{"leaf": "rent length", "state": "retrieved", "from": ["p9"]}],
+            "closes": [{"leaf": "rent length", "status": "retrieved", "from": ["p9"]}],
         }
         result = expand_batch(ledger, batch, fixed_maker, pad=["p1"])
         wheres = {problem.where for problem in result.problems}
@@ -192,7 +192,7 @@ class TestTotalRejection:
         """Both checks run: `or` would skip the pad links whenever the leaf
         reference is the problem."""
         batch = {
-            "closes": [{"leaf": "nope nope", "state": "retrieved", "from": ["p9"]}]
+            "closes": [{"leaf": "nope nope", "status": "retrieved", "from": ["p9"]}]
         }
         result = expand_batch(Ledger(), batch, fixed_maker, pad=["p1"])
         wheres = {problem.where for problem in result.problems}
@@ -200,7 +200,7 @@ class TestTotalRejection:
 
     def test_a_rejected_batch_stages_no_event_for_the_broken_entry(self, loaded):
         ledger, _ = loaded
-        batch = {"closes": [{"leaf": "nope nope", "state": "retrieved"}]}
+        batch = {"closes": [{"leaf": "nope nope", "status": "retrieved"}]}
         result = expand_batch(ledger, batch, fixed_maker)
         assert result.events == []
         assert result.problems
@@ -234,10 +234,10 @@ class TestTotalRejection:
         assert any("vary one keyword" in p.fix for p in result.problems)
 
 
-class TestSweepSurvivors:
+class TestScanSurvivors:
     def test_indexes_resolve_into_candidates(self):
         batch = {
-            "sweeps": [
+            "scans": [
                 {"checked": "x", "candidates": ["first", "second"], "survivors": [1]}
             ]
         }
@@ -246,13 +246,13 @@ class TestSweepSurvivors:
         assert result.events[0]["survivors"] == ["second"]
 
     def test_an_out_of_range_index_is_a_problem(self):
-        batch = {"sweeps": [{"checked": "x", "candidates": ["only"], "survivors": [3]}]}
+        batch = {"scans": [{"checked": "x", "candidates": ["only"], "survivors": [3]}]}
         result = expand_batch(Ledger(), batch, fixed_maker)
         assert any("out of range" in p.fix for p in result.problems)
 
     def test_a_verbatim_string_still_works(self):
         batch = {
-            "sweeps": [{"checked": "x", "candidates": ["kept"], "survivors": ["kept"]}]
+            "scans": [{"checked": "x", "candidates": ["kept"], "survivors": ["kept"]}]
         }
         result = expand_batch(Ledger(), batch, fixed_maker)
         assert result.problems == []
@@ -311,11 +311,11 @@ class TestCheckpoints:
     def test_a_checkpoint_records_its_round(self):
         result = expand_batch(
             Ledger(),
-            {"checkpoints": [{"label": "round-1", "searches": 5}]},
+            {"checkpoints": [{"label": "cycle-1", "queries": 5}]},
             fixed_maker,
         )
         assert not result.problems
-        assert result.events == [{"e": "checkpoint", "label": "round-1", "searches": 5}]
+        assert result.events == [{"e": "checkpoint", "label": "cycle-1", "queries": 5}]
 
 
 class TestCitedSources:

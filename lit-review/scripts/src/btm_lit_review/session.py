@@ -41,7 +41,7 @@ class Protocol(Tagged):
     level: Level = Level.FULL
     criteria: Criteria = Criteria()
     created: str = ""
-    amendments: tuple[Any, ...] = ()  # free-form: the agent states each change
+    changes: tuple[Any, ...] = ()  # free-form: the agent states each change
 
     @property
     def ready(self) -> bool:
@@ -62,7 +62,7 @@ class Session:
 
     @property
     def log_path(self) -> Path:
-        return self.root / "search_log.jsonl"
+        return self.root / "find.jsonl"
 
     @property
     def notebook_path(self) -> Path:

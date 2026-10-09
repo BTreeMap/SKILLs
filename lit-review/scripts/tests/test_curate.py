@@ -43,7 +43,7 @@ class TestNextStep:
         ("state", "expected"),
         [
             ((False, 9, 9, 9, ["k"]), "fill criteria"),
-            ((True, 0, 9, 9, ["k"]), "run the first search"),
+            ((True, 0, 9, 9, ["k"]), "run the first find"),
             ((True, 1, 3, 9, ["k"]), "screen 3 undecided"),
             ((True, 1, 0, 0, []), "nothing is included yet"),
             ((True, 1, 0, 2, ["k", "j"]), "extract 2 included papers"),

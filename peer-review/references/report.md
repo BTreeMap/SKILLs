@@ -2,7 +2,7 @@
 
 Draft once from `check` output, sweep draft with `/humanize` in embedded
 mode, then `cite-check` file. Every objection in draft is mark `[On]` from
-scaffold's `fatal`, `major`, `minor`, or `questions` lists; every claim is
+structure's `fatal`, `major`, `minor`, or `questions` lists; every claim is
 `[Cn]`. Withdrawn, unanchored, undated records stay out.
 
 ## Template
@@ -68,4 +68,4 @@ After delivery, offer next step whose condition holds. Invoke none unasked.
 
 - Paper is user's own and review answers it: `/draft-paper rebut` with
   review file as reviews input; start its run with
-  `--verb rebut --state reviews`.
+  `--verb rebut --status reviews`.

@@ -38,7 +38,7 @@ from btm_draft_paper.run import (
     STORE,
     TRACE,
     Format,
-    InputState,
+    InputStatus,
     RunMeta,
     Verb,
 )
@@ -46,8 +46,8 @@ from btm_draft_paper.trace import Outcome, RunState, Status, load
 from btm_draft_paper.views import check_view, next_step, status_view
 
 OUTCOMES = {
-    Outcome.APPROVE: "the gate passes; stages past it open",
-    Outcome.REVISE: "the gate stays closed; revise at its stage, then request it again",
+    Outcome.ACCEPT: "the gate passes; stages past it open",
+    Outcome.CHANGE: "the gate stays closed; change at its stage, then request it again",
     Outcome.REJECT: "the run closes; nothing more is accepted",
 }
 STATUSES = {
@@ -71,7 +71,7 @@ def cmd_start(args: argparse.Namespace) -> int:
             "run": made.directory.name,
             "verb": args.verb,
             "format": args.format,
-            "state": args.state,
+            "status": args.status,
             "venue": args.venue,
             "model": args.model,
             "artifacts": str(artifacts),
@@ -180,7 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--verb", type=Verb, choices=list(Verb), required=True)
     start.add_argument("--format", type=Format, choices=list(Format), required=True)
     start.add_argument(
-        "--state", type=InputState, choices=list(InputState), required=True
+        "--status", type=InputStatus, choices=list(InputStatus), required=True
     )
     start.add_argument("--venue", required=True, help="target venue and track")
     start.add_argument("--model", required=True, help="backbone model version")

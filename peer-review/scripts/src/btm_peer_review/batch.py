@@ -217,7 +217,7 @@ class _Acceptance(Acceptance):
             self.fail(
                 f"{where}.prior",
                 "a novelty objection names the prior work as corpus keys",
-                "search it with lit-review, then cite its key",
+                "find it with lit-review, then cite its key",
             )
             return False
         corpus = self.context.corpus

@@ -49,8 +49,8 @@ from btm_ponder.views import (
     hedges,
     leaf_view,
     mark_table,
-    scaffold,
     sections,
+    structure,
     violations,
     yield_table,
 )
@@ -100,19 +100,19 @@ def cmd_record(args: argparse.Namespace) -> int:
             "open": [
                 leaf_id
                 for leaf_id, leaf in ledger.leaves.items()
-                if isinstance(leaf.state, Open)
+                if isinstance(leaf.status, Open)
             ],
             "yield": yield_table(events + result.events),
         }
         if args.view.covers(View.DRAFT):
-            # Only a later batch referencing these ids needs them; a round that
+            # Only a later batch referencing these ids needs them; a cycle that
             # makes and consumes in one batch pays 2.5 KB for nothing.
             document["new"] = result.new
         if result.merged:
             document["merged"] = result.merged
         if args.view.covers(View.FULL):
             document["leaves"] = {
-                leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
+                leaf_id: {"question": leaf.question, **leaf_view(leaf.status)}
                 for leaf_id, leaf in ledger.leaves.items()
             }
         return document
@@ -145,9 +145,9 @@ def cmd_check(args: argparse.Namespace) -> int:
         "level": level,
         "question": meta.question,
         "sections": sections(ledger),
-        # Scaffold before marks: the mark table serves only the Sources
+        # Structure before marks: the mark table serves only the Sources
         # section, so putting it first would cost a second read to draft.
-        "scaffold": scaffold(ledger, marks, args.view),
+        "structure": structure(ledger, marks, args.view),
         "violations": blocking,
         "advisories": demoted,
         "hedges": hedges(ledger),
@@ -157,7 +157,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         document["marks"] = mark_table(ledger, marks)
     if args.view.covers(View.FULL):
         document["leaves"] = {
-            leaf_id: {"question": leaf.question, **leaf_view(leaf.state)}
+            leaf_id: {"question": leaf.question, **leaf_view(leaf.status)}
             for leaf_id, leaf in ledger.leaves.items()
         }
     emit(document)
@@ -173,7 +173,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
     emit(
         {
             "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
-            "sequence": "leaves, sources, closes, sweeps, checkpoints; later entries "
+            "sequence": "leaves, sources, closes, scans, checkpoints; later entries "
             "may reference ids made earlier in the same batch",
             "refs": REFS_SCHEMA + "; receipts echo every new id",
             "pad": PAD_SCHEMA,
@@ -199,14 +199,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     wire_project(start)
     record = commands.add_parser(
-        "record", help="accept one round of leaves, sources, and closes"
+        "record", help="accept one cycle of leaves, sources, and closes"
     )
     record.set_defaults(func=cmd_record)
     record.add_argument("session", help="session identifier")
-    add_slot(record, BATCH, "leaves, sources, closes, sweeps, checkpoints")
+    add_slot(record, BATCH, "leaves, sources, closes, scans, checkpoints")
     wire_view(record, "the new-id table")
     check = commands.add_parser(
-        "check", help="derive the drafting scaffold and any violations"
+        "check", help="derive the drafting structure and any violations"
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("session", help="session identifier")

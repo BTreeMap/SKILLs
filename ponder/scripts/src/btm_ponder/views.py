@@ -1,4 +1,4 @@
-"""Derived views: the drafting scaffold read off a replayed ledger."""
+"""Derived views: the drafting structure read off a replayed ledger."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ from btm_ponder.state import (
     CHAIN_MIN_LINKS,
     SETTLING,
     Folded,
-    LeafState,
+    LeafStatus,
     Ledger,
     Open,
     Refuted,
     Retired,
     Retrieved,
+    Scan,
     SourceClass,
-    Sweep,
     Unresolved,
 )
 
@@ -36,36 +36,36 @@ def stated(classes: list[SourceClass]) -> str:
 def sections(ledger: Ledger) -> list[str]:
     """The five derivable sections; Boundary stays an agent judgment."""
     derived = ["answer"]
-    states = [leaf.state for leaf in ledger.leaves.values()]
-    if sum(isinstance(s, Retrieved) for s in states) > CHAIN_MIN_LINKS:
+    statuses = [leaf.status for leaf in ledger.leaves.values()]
+    if sum(isinstance(s, Retrieved) for s in statuses) > CHAIN_MIN_LINKS:
         derived.append("chain")
-    if any(isinstance(s, Refuted) for s in states) or ledger.swept:
+    if any(isinstance(s, Refuted) for s in statuses) or ledger.scanned:
         derived.append("rival")
-    if any(isinstance(s, Unresolved) for s in states):
+    if any(isinstance(s, Unresolved) for s in statuses):
         derived.append("open")
     derived.append("sources")
     return derived
 
 
 OPEN_LEAF = "open leaf blocks draft"
-NO_SWEEP = "no sweep recorded"
-LITE_DEMOTED = (OPEN_LEAF, NO_SWEEP)  # advisories, not blockers, at lite
+NO_SCAN = "no scan recorded"
+LITE_DEMOTED = (OPEN_LEAF, NO_SCAN)  # advisories, not blockers, at lite
 
 
 def violations(ledger: Ledger) -> list[str]:
     found = [
         f"{OPEN_LEAF}: {leaf_id} ({leaf.question})"
         for leaf_id, leaf in ledger.leaves.items()
-        if isinstance(leaf.state, Open)
+        if isinstance(leaf.status, Open)
     ]
-    if not ledger.swept:
-        found.append(f"{NO_SWEEP}: run the rival sweep before drafting")
+    if not ledger.scanned:
+        found.append(f"{NO_SCAN}: run the rival scan before drafting")
     for leaf_id, leaf in ledger.leaves.items():
-        if isinstance(leaf.state, Folded):
-            target = ledger.leaves.get(leaf.state.into)
-            if target is None or not isinstance(target.state, Retrieved):
+        if isinstance(leaf.status, Folded):
+            target = ledger.leaves.get(leaf.status.into)
+            if target is None or not isinstance(target.status, Retrieved):
                 found.append(
-                    f"fold broken: {leaf_id} folded into {leaf.state.into}, "
+                    f"fold broken: {leaf_id} folded into {leaf.status.into}, "
                     "which is no longer retrieved; reopen or re-close the fold"
                 )
     return found
@@ -75,8 +75,8 @@ def hedges(ledger: Ledger) -> list[str]:
     """Advisory: leaves whose evidence class earns hedged wording."""
     lines = []
     for leaf_id, leaf in ledger.leaves.items():
-        if isinstance(leaf.state, (Retrieved, Refuted)):
-            classes = [ledger.sources[sid].cls for sid in leaf.state.sources]
+        if isinstance(leaf.status, (Retrieved, Refuted)):
+            classes = [ledger.sources[sid].cls for sid in leaf.status.sources]
             if stated(classes) == "hedged":
                 lines.append(
                     f"{leaf_id} rests on {'/'.join(sorted(set(classes)))} "
@@ -93,35 +93,35 @@ def yield_table(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if raw.get("e") == "add_source":
             new_sources += 1
         elif raw.get("e") == "checkpoint":
-            searches = raw.get("searches", 0)
+            queries = raw.get("queries", 0)
             rows.append(
                 {
-                    "label": raw.get("label") or f"round-{len(rows) + 1}",
-                    "searches": searches,
+                    "label": raw.get("label") or f"cycle-{len(rows) + 1}",
+                    "queries": queries,
                     "new_sources": new_sources,
-                    "yield": round(new_sources / searches, 2) if searches else None,
+                    "yield": round(new_sources / queries, 2) if queries else None,
                 }
             )
             new_sources = 0
     return rows
 
 
-def leaf_view(state: LeafState) -> dict[str, Any]:
-    match state:
+def leaf_view(status: LeafStatus) -> dict[str, Any]:
+    match status:
         case Open():
-            return {"state": "open"}
+            return {"status": "open"}
         case Retrieved(sources=sources, premise=premise, detail=detail):
-            view = {"state": "retrieved", "sources": list(sources)}
+            view = {"status": "retrieved", "sources": list(sources)}
             return view | _prose(premise, detail)
         case Refuted(sources=sources, premise=premise, detail=detail):
-            view = {"state": "refuted", "sources": list(sources), "premise": premise}
+            view = {"status": "refuted", "sources": list(sources), "premise": premise}
             return view | _prose("", detail)
         case Unresolved(reason=reason, detail=detail):
-            return {"state": "unresolved", "reason": reason, "detail": detail}
+            return {"status": "unresolved", "reason": reason, "detail": detail}
         case Retired(detail=detail):
-            return {"state": "retired", "detail": detail}
+            return {"status": "retired", "detail": detail}
         case Folded(into=into):
-            return {"state": "folded", "into": into}
+            return {"status": "folded", "into": into}
 
 
 def _no_prose(premise: str, detail: str) -> dict[str, str]:
@@ -138,16 +138,16 @@ def _prose(premise: str, detail: str) -> dict[str, str]:
     return fields
 
 
-def _sweep_row(sweep: Sweep, view: View) -> dict[str, Any]:
-    """What a sweep contributes to the Rival section: the survivors, and the
+def _scan_row(scan: Scan, view: View) -> dict[str, Any]:
+    """What a scan contributes to the Rival section: the survivors, and the
     set difference the section reports as eliminated. Hashing the survivors
-    keeps it O(candidates) rather than a scan per candidate."""
-    row: dict[str, Any] = {"checked": sweep.checked}
+    keeps it O(candidates) rather than a pass per candidate."""
+    row: dict[str, Any] = {"checked": scan.checked}
     if not view.covers(View.DRAFT):
         return row
-    survived = frozenset(sweep.survivors)
-    row["survivors"] = list(sweep.survivors)
-    row["eliminated"] = [name for name in sweep.candidates if name not in survived]
+    survived = frozenset(scan.survivors)
+    row["survivors"] = list(scan.survivors)
+    row["eliminated"] = [name for name in scan.candidates if name not in survived]
     return row
 
 
@@ -169,7 +169,7 @@ def mark_table(ledger: Ledger, mark_of: dict[str, str]) -> dict[str, JSON]:
     return table
 
 
-def scaffold(
+def structure(
     ledger: Ledger, mark_of: dict[str, str], view: View = View.DRAFT
 ) -> dict[str, list[dict[str, Any]]]:
     """The stored close prose keyed by mark, grouped into the derived sections.
@@ -180,7 +180,7 @@ def scaffold(
     prose = _prose if view.covers(View.DRAFT) else _no_prose
     body: dict[str, list[dict[str, Any]]] = {"answer": [], "rival": [], "open": []}
     for leaf_id, leaf in ledger.leaves.items():
-        match leaf.state:
+        match leaf.status:
             case Retrieved(sources=sources, premise=premise, detail=detail):
                 classes = [ledger.sources[sid].cls for sid in sources]
                 body["answer"].append(
@@ -212,10 +212,10 @@ def scaffold(
                 )
             case Open() | Retired() | Folded():
                 pass
-    body["sweeps"] = [_sweep_row(sweep, view) for sweep in ledger.sweeps]
+    body["scans"] = [_scan_row(scan, view) for scan in ledger.scans]
     return {section: rows for section, rows in body.items() if rows}
 
 
 def counts_of(ledger: Ledger) -> dict[str, int]:
     """Each variant names itself, so this reads the tag."""
-    return dict(Counter(leaf.state.state for leaf in ledger.leaves.values()))
+    return dict(Counter(leaf.status.status for leaf in ledger.leaves.values()))

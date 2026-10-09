@@ -116,7 +116,7 @@ def cite_check(
         and paper.status is Status.INCLUDED
         and number not in used
     )
-    at_risk = [view for view in findings if view["state"] == "at-risk"]
+    at_risk = [view for view in findings if view["status"] == "at-risk"]
     return {
         "citations": len(used),
         "problems": problems,

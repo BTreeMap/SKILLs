@@ -136,14 +136,14 @@ def cmd_brief(args: argparse.Namespace) -> int:
     ]
     arrivals = arrivals_of(papers)
     gaps = [gap_view(record, arrivals) for record in live(records, GapRecord).values()]
-    challenged = [str(gap["id"]) for gap in gaps if gap["state"] == "challenged"]
+    challenged = [str(gap["id"]) for gap in gaps if gap["status"] == "challenged"]
     at_risk = [
-        str(finding["id"]) for finding in findings if finding["state"] == "at-risk"
+        str(finding["id"]) for finding in findings if finding["status"] == "at-risk"
     ]
     if at_risk:
-        signal(f"at-risk findings: {', '.join(at_risk)}; re-affirm or supersede")
+        signal(f"at-risk findings: {', '.join(at_risk)}; re-affirm or replace")
     if challenged:
-        signal(f"challenged gaps: {', '.join(challenged)}; re-affirm or supersede")
+        signal(f"challenged gaps: {', '.join(challenged)}; re-affirm or replace")
     marks = refresh_marks(session, papers)
     entries = pad_entries(session.root)
     last = load_snapshot(session)
@@ -190,18 +190,18 @@ def cmd_schema(args: argparse.Namespace) -> int:
             f"{'|'.join(STATUSES)}, decision_stage in {'|'.join(STAGES)} or null, "
             f"read_level in {'|'.join(READ_LEVELS)}",
             "decision": '{"<key>": {"status": "...", "reason": "...", '
-            '"stage": "...", "read_level": "..."}} on stdin to update; a status '
+            '"stage": "...", "read_level": "..."}} on stdin to set; a status '
             "sent without a stage leaves the stage null",
             "record_batch": SCHEMA,
             "pad": PAD_SCHEMA + PAD_RECOGNIZED,
-            "search_log": "search: {id, command, source, query, from_year, to_year, "
+            "find_log": "find: {id, command, source, query, from_year, to_year, "
             "limit, offset, criteria_hash, time, got, new, total_matches, "
             "truncated}; snowball carries seed and direction in place of query "
             "and offset; "
             f"sources: {', '.join(SOURCES)}; "
             f"snowball sources: {', '.join(GRAPH_SOURCES)}; "
             "total_matches is null where a source reports no count; the "
-            "envelope adds corpus_size, and search --show adds hits: "
+            "envelope adds corpus_size, and find --show adds hits: "
             "[{key, title, year, status}]",
             "show": '{"total": n, "papers": [row]}; total counts every match '
             "before --limit; a row is key title year authors (first "
@@ -210,7 +210,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "exactly the --fields named; --format tsv prints a header line and "
             "one line per paper instead",
             "fill": '{"tried": n, "filled": {"<key>": "<source>"}, '
-            '"still_missing": [keys], "failed": [{key, source, error}], '
+            '"missing": [keys], "errors": [{key, source, error}], '
             '"sources": [names asked, in order]}',
             "verify": '{"checked": n, "broken_dois": [...], "results": [{key, '
             "title, doi_resolves, doi_http_status, crossref_title_match}]}",
@@ -232,4 +232,4 @@ def recognize_extraction(args: argparse.Namespace, body: Mapping[str, Any]) -> N
         hint = f"; did you mean: {', '.join(near)}" if near else ""
         signal(f"extraction key '{key}' is not a corpus paper{hint}")
     elif papers[key].read_level is ReadLevel.NONE:
-        signal(f"{key} has read_level none; record the read level via update")
+        signal(f"{key} has read_level none; record the read level via set")

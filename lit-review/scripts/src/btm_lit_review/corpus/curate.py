@@ -114,7 +114,7 @@ def cmd_screen(args: argparse.Namespace) -> int:
             "action": action,
             "matched": len(matched),
             "sample": matched[:5],
-            "candidates_left": sum(
+            "remaining": sum(
                 paper.status is Status.CANDIDATE for paper in papers.values()
             ),
         }
@@ -200,7 +200,7 @@ class Screening(Acceptance):
                 self.updates[key] = decision_updates(parsed)
 
 
-def cmd_update(args: argparse.Namespace) -> int:
+def cmd_set(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
 
@@ -317,7 +317,7 @@ def cmd_show(args: argparse.Namespace) -> int:
         logged = {entry.get("id") for entry in read_jsonl(session.log_path)}
         if unknown := sorted(fetched_by - logged):
             raise CommandError(
-                f"no search log entry {', '.join(unknown)}; "
+                f"no find log entry {', '.join(unknown)}; "
                 f"the log holds {len(logged)} entries, s1 onward"
             )
         matching = [
@@ -361,7 +361,7 @@ LEVEL_BANDS = {
 
 def next_step(
     criteria_ready: bool,
-    searches: int,
+    queries: int,
     undecided: int,
     included: int,
     unextracted: list[str],
@@ -372,8 +372,8 @@ def next_step(
     would otherwise redo by hand."""
     if not criteria_ready:
         return "fill criteria.include and criteria.exclude in protocol.json"
-    if not searches:
-        return "run the first search"
+    if not queries:
+        return "run the first find"
     if undecided:
         return f"screen {undecided} undecided: digest, then screen per cluster"
     if not included:
@@ -411,12 +411,12 @@ def cmd_status(args: argparse.Namespace) -> int:
     current_hash = criteria_hash(protocol)
     logged_hashes = {entry.get("criteria_hash") for entry in log} - {None}
     # One criteria version per distinct hash; each version after the first
-    # needs its amendment. Only an unexplained change is drift.
-    changes = len(logged_hashes | {current_hash}) - 1
-    if logged_hashes and len(protocol.amendments) < changes:
+    # needs its change. Only an unexplained change is drift.
+    edits = len(logged_hashes | {current_hash}) - 1
+    if logged_hashes and len(protocol.changes) < edits:
         signal(
-            f"criteria changed {changes} time(s) after searches ran but "
-            f"protocol.json records {len(protocol.amendments)} amendment(s); "
+            f"criteria changed {edits} time(s) after searches ran but "
+            f"protocol.json records {len(protocol.changes)} change(s); "
             "append one per change"
         )
     excluded_at = Counter(
@@ -438,7 +438,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             "level": protocol.level,
             "criteria_ready": protocol.ready,
             "criteria_hash": current_hash,
-            "searches": len(log),
+            "queries": len(log),
             "papers": {status.value: n for status, n in by_status.items()},
             "included_read_levels": {level.value: n for level, n in by_read.items()},
             "excluded_by_stage": {

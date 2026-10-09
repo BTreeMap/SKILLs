@@ -48,21 +48,21 @@ support.
 
 Promote each theme conclusion into notebook with `record`: finding carries
 claim, supporting keys, read level each citation needs; gap carries absence
-claimed, null-search log ids proving it, and watch: `|`-separated words a
+claimed, null-search log ids proving it, and monitor: `|`-separated words a
 challenger would use in title or abstract, matched literally. `brief`
 re-derives their verdicts against live corpus: excluded or under-read
-support flags finding at-risk; later paper matching gap's watch flags gap
-challenged, cue to re-read claim written earlier. Supersede record when
-field model moves. Keep forming hypotheses on pad as `hunch` or `open`
-entries until they earn support.
+support flags finding at-risk; later paper matching gap's monitor flags gap
+challenged, cue to re-read claim written earlier. Replace record when field
+model moves. Keep forming hypotheses on pad as `hunch` or `open` entries
+until they earn support.
 
 ## Report template
 
 Assemble, verify, then deliver. Fill sections in order; drop bracketed ones
 where level says so. Take flow counts from state: `status` gives per-status
 counts and exclusions by screening stage; log gives per-search totals.
-Exclusions `status` counts as `unstated` carry no stage: set it with
-`update` before counting.
+Exclusions `status` counts as `unstated` carry no stage: set it with `set`
+before counting.
 
 <template for="report">
 # Literature review: <question>
@@ -74,7 +74,7 @@ below.
 
 ## Method
 Sources searched with dates and logged query counts; criteria (and
-amendments, at ultra); flow counts: identified N, after dedup N, excluded
+changes, at ultra); flow counts: identified N, after dedup N, excluded
 at title/abstract N, excluded at full-text N, included N. State the search
 dates as the review's as-of point, and note truncated searches as ranked
 samples with their upstream totals.
@@ -106,8 +106,8 @@ link per entry.
    `broken_dois` (keys whose DOI failed to resolve), `results` (one record
    per paper: `key`, `title`, `doi_resolves`, `doi_http_status`,
    `crossref_title_match`, or `identity` note for DOI-less records). Fix
-   broken DOI (usually mangled key: re-search paper), or remove citation and
-   its dependent claims. Crossref title-mismatch signal is possible
+   broken DOI (usually mangled key: `find` paper again), or remove citation
+   and its dependent claims. Crossref title-mismatch signal is possible
    retraction or erratum: check landing page before keeping citation.
 2. Run `cite-check --draft:file <file>`. Fix every problem it lists (marks
    never assigned, citations of excluded or unread papers), resolve at-risk

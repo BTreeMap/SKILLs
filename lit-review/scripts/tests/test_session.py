@@ -28,7 +28,7 @@ def session(tmp_path):
         json.dumps({"question": "q", "level": "full", "criteria": {}}), encoding="utf-8"
     )
     (root / "papers.jsonl").touch()
-    (root / "search_log.jsonl").touch()
+    (root / "find.jsonl").touch()
     return Session(root=root)
 
 

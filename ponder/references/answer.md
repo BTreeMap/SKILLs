@@ -1,12 +1,12 @@
-# Answer: sweep, check, draft
+# Answer: scan, check, draft
 
 Load once no material question stays open; run steps in order.
 
-## 1. Rival sweep
+## 1. Rival scan
 
-Sweep once for strongest contrary account: folk belief, older explanation,
-or competing mechanism. Record scope, candidates, survivors as `sweeps`
-entry. Empty scoped sweep establishes absence; valid result.
+Scan once for strongest contrary account: folk belief, older explanation, or
+competing mechanism. Record scope, candidates, survivors as `scans` entry.
+Empty scoped scan establishes absence; valid result.
 
 ## 2. Check
 
@@ -14,7 +14,7 @@ entry. Empty scoped sweep establishes absence; valid result.
 $R check "$S"
 </commands>
 
-At default `draft` view, `check` returns derived `sections`; `scaffold`
+At default `draft` view, `check` returns derived `sections`; `structure`
 holding each close's stored premise and detail keyed by mark; `violations`,
 lite-demoted ones under `advisories`; `hedges`; `marks` table, `S1` onward,
 with class, title, url, plus `doi`, `arxiv_id`, `authors`, `year`, `venue`
@@ -24,7 +24,7 @@ leaf may remain; disclose it in Open section.
 
 ## 3. Draft once
 
-Lead drafts once by transforming scaffold's rows; reuse premise and detail
+Lead drafts once by transforming structure's rows; reuse premise and detail
 written into closes. Render derived sections; add Boundary when answer flips
 within scope.
 
@@ -32,12 +32,12 @@ within scope.
 | --- | --- |
 | Answer | Claim, first, in question's own register, from `retrieved` leaves |
 | Chain | Reasoning path through `retrieved` leaves when it exceeds a few links; else collapses into answer's sentences |
-| Rival | Every `refuted` premise and every sweep survivor, stated at its strongest |
+| Rival | Every `refuted` premise and every scan survivor, stated at its strongest |
 | Boundary | Where answer flips within scope (band, version, workload) |
 | Open | Each `unresolved` leaf with what was tried or why it was passed over |
 | Sources | Check's table: mark, class, title, url; authors, year, venue where present |
 
-Omit `retired` leaves. Absent Rival records empty sweep.
+Omit `retired` leaves. Absent Rival records empty scan.
 
 Bind marks to claims answer depends on; leave connective prose bare.
 

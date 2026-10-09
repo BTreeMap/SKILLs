@@ -1,4 +1,4 @@
-"""Corpus growth: opening a review, searching sources, snowballing citations."""
+"""Corpus growth: opening a review, finding papers in sources, snowballing citations."""
 
 from __future__ import annotations
 
@@ -68,9 +68,9 @@ def record_fetch(
     *,
     show: bool = False,
 ) -> None:
-    """Shared tail of search and snowball: absorb, log, report. A total the
+    """Shared tail of find and snowball: absorb, log, report. A total the
     index did not report is logged as null and never reads as truncation; a
-    search skipped `offset` ranks, which the truncation check counts. `show`
+    find skipped `offset` ranks, which the truncation check counts. `show`
     lists the corpus records this call touched, one O(corpus) pass."""
     log_id = f"s{count_lines(session.log_path) + 1}"
     papers = load_papers(session)
@@ -151,7 +151,7 @@ def cmd_start(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_search(args: argparse.Namespace) -> int:
+def cmd_find(args: argparse.Namespace) -> int:
     asked = content(Query, QUERY, args).query
     session = open_session(args.session)
     protocol = load_protocol(session)
@@ -160,7 +160,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     window = Window(args.from_year, args.to_year)
     fetched, total = fetch(args.source, asked, limit, window, args.offset)
     entry = {
-        "command": "search",
+        "command": "find",
         "source": args.source,
         "query": asked,
         "from_year": args.from_year,
@@ -199,7 +199,7 @@ def resolve_ref(
         arxiv_id = normalize_arxiv_id(token)
         key = index.get(f"doi:{doi}") or index.get(f"arxiv:{arxiv_id}")
     if key is None:
-        raise CommandError(f"no corpus paper matches {token!r}; search for it first")
+        raise CommandError(f"no corpus paper matches {token!r}; find it first")
     ref = ref_for(papers[key], source)
     if ref is None:
         raise CommandError(
@@ -254,7 +254,7 @@ def ask(paper: Paper, sources: tuple[str, ...]) -> tuple[Paper, str | None, list
     """The paper with every gap the chain filled, the index that supplied the
     abstract (None if none did), and the lookups that failed upstream. Stops
     at the first abstract; an index that cannot name the paper is skipped."""
-    failed: list[JSON] = []
+    errors: list[JSON] = []
     for source in sources:
         ref = ref_for(paper, source)
         if paper.abstract or ref is None:
@@ -262,13 +262,13 @@ def ask(paper: Paper, sources: tuple[str, ...]) -> tuple[Paper, str | None, list
         try:
             found = lookup(INDEXES[source], client(), RESPONSE_CAP_BYTES, ref)
         except UpstreamError as err:
-            failed.append({"key": paper.key, "source": source, "error": str(err)})
+            errors.append({"key": paper.key, "source": source, "error": str(err)})
             continue
         if found is not None:
             paper = merge_papers(paper, paper_from(found))
             if paper.abstract:
-                return paper, source, failed
-    return paper, None, failed
+                return paper, source, errors
+    return paper, None, errors
 
 
 def cmd_fill(args: argparse.Namespace) -> int:
@@ -289,16 +289,16 @@ def cmd_fill(args: argparse.Namespace) -> int:
         signal(f"{len(wanted) - len(chosen)} more papers not tried; raise --limit")
     sources = (args.source,) if args.source else LOOKUP_SOURCES
     filled: dict[str, str] = {}
-    failed: list[JSON] = []
+    errors: list[JSON] = []
     for key in chosen:
         papers[key], source, failures = ask(papers[key], sources)
-        failed.extend(failures)
+        errors.extend(failures)
         if source is not None:
             filled[key] = source
     save_papers(session, papers)
     still = [key for key in chosen if not papers[key].abstract]
-    if failed:
-        signal(f"{len(failed)} lookups failed upstream; rerun fill for those keys")
+    if errors:
+        signal(f"{len(errors)} lookups failed upstream; rerun fill for those keys")
     if still:
         signal(
             f"{len(still)} papers have no abstract in any index asked; screen "
@@ -308,8 +308,8 @@ def cmd_fill(args: argparse.Namespace) -> int:
         {
             "tried": len(chosen),
             "filled": filled,
-            "still_missing": still,
-            "failed": failed,
+            "missing": still,
+            "errors": errors,
             "sources": list(sources),
         }
     )

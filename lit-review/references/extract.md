@@ -1,8 +1,8 @@
 # Extract: reading, records, appraisal
 
 Phase takes included papers; returns, for each, one extraction record on pad
-and `read_level` set with `update`. Synthesis reads records; anything
-missing from them needs re-read later.
+and `read_level` set with `set`. Synthesis reads records; anything missing
+from them needs re-read later.
 
 ## Reading order and depth
 
@@ -11,8 +11,8 @@ missing from them needs re-read later.
   claim locations in extraction record. No PDF reachable: fall back to
   landing page's HTML text, then abstract as floor.
 - After each paper, set its `read_level` (`abstract` or `full-text`) with
-  `update`. Invariant 5 makes this label the ceiling for how its claims
-  appear in report.
+  `set`. Invariant 5 makes this label the ceiling for how its claims appear
+  in report.
 - Read survey among included papers for its own claims and reference list;
   per invariant 5, cite its summaries of other papers as survey's
   characterization, never as those papers.
@@ -60,5 +60,5 @@ Delegate through `/summon fanout`, one delegate per included paper. Each
 brief: evidence is paper's corpus entry and its `pdf_url`; rules are reading
 order and depth above, `/read-pdf` as reader; contract is extraction
 template, returned as JSON object alone. Delegates write no session state;
-lead judges each return, then runs `write` and `update` itself, so branch
+lead judges each return, then runs `write` and `set` itself, so branch
 leaves no trace in deliverable.

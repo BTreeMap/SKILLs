@@ -34,13 +34,13 @@ from btm_lit_review.corpus.curate import (
     SORTS,
     cmd_digest,
     cmd_screen,
+    cmd_set,
     cmd_show,
     cmd_status,
-    cmd_update,
 )
 from btm_lit_review.corpus.gather import (
     cmd_fill,
-    cmd_search,
+    cmd_find,
     cmd_snowball,
     cmd_start,
 )
@@ -60,7 +60,7 @@ SHOW_FIELDS = (*MATCH_FIELDS, "key")
 
 
 def rank_offset(raw: str) -> int:
-    """How many ranked matches a search skips. Below 0 names no rank, so argv
+    """How many ranked matches a find skips. Below 0 names no rank, so argv
     refuses it where it is written rather than reading it as 0."""
     try:
         value = int(raw)
@@ -86,26 +86,26 @@ def wire_gather(commands: Commands) -> None:
     wire_project(start)
     start.set_defaults(func=cmd_start)
 
-    search = commands.add_parser("search", help="run one logged search")
-    add_common(search)
-    add_slot(search, QUERY, '{"query": "the search string"}')
-    search.add_argument("--source", choices=SOURCES, required=True)
-    wire_limit(search, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
-    search.add_argument(
+    find = commands.add_parser("find", help="run one logged search")
+    add_common(find)
+    add_slot(find, QUERY, '{"query": "the search string"}')
+    find.add_argument("--source", choices=SOURCES, required=True)
+    wire_limit(find, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
+    find.add_argument(
         "--offset",
         type=rank_offset,
         default=0,
         metavar="N",
         help="ranked matches to skip before fetching, default 0",
     )
-    search.add_argument(
+    find.add_argument(
         "--show",
         action="store_true",
         help="list each hit's key, title, year, and status in the envelope",
     )
-    search.add_argument("--from-year", type=int, default=None)
-    search.add_argument("--to-year", type=int, default=None)
-    search.set_defaults(func=cmd_search)
+    find.add_argument("--from-year", type=int, default=None)
+    find.add_argument("--to-year", type=int, default=None)
+    find.set_defaults(func=cmd_find)
 
     snowball = commands.add_parser(
         "snowball", help="follow citations of a corpus paper through an index"
@@ -166,7 +166,7 @@ def wire_curate(commands: Commands) -> None:
     show.add_argument(
         "--found-by",
         metavar="IDS",
-        help="comma-separated search log ids; keeps the papers they fetched",
+        help="comma-separated find log ids; keeps the papers they fetched",
     )
     show.add_argument("--fields", help="comma-separated paper fields")
     show.add_argument("--sort", choices=tuple(SORTS), default="citations")
@@ -174,14 +174,14 @@ def wire_curate(commands: Commands) -> None:
     wire_limit(show, what="papers to show", default=DEFAULT_LIMIT)
     show.set_defaults(func=cmd_show)
 
-    update = commands.add_parser("update", help="apply screening decisions")
-    add_common(update)
+    setter = commands.add_parser("set", help="apply screening decisions")
+    add_common(setter)
     add_slot(
-        update,
+        setter,
         DECISIONS,
         '{"<key>": {"status": ..., "reason": ..., "stage": ..., "read_level": ...}}',
     )
-    update.set_defaults(func=cmd_update)
+    setter.set_defaults(func=cmd_set)
 
 
 def wire_notebook(commands: Commands) -> None:

@@ -2,7 +2,7 @@
 An agent screening a few hundred candidates needs to know what types of
 thing are there and accept or reject a type in one move, not read every
 row. `digest` computes that partition in C-backed passes and returns one
-label, count, selecting rule, and a few exemplars per type."""
+label, count, selecting rule, and a few examples per type."""
 
 from __future__ import annotations
 
@@ -15,9 +15,9 @@ from btm_corekit.report.invariants import require
 from btm_corekit.text import ascii_words
 
 CLUSTER_CAP = 20  # how many types an agent can weigh in one pass
-EXEMPLARS = 2  # enough rows to judge a label, not enough to read the corpus
+EXAMPLES = 2  # enough rows to judge a label, not enough to read the corpus
 CLUSTER_SIZE_MIN = 2  # one item is that item, not a type worth a rule
-TEXT_CHARS = 90  # an exemplar identifies its cluster; it is not the record
+TEXT_CHARS = 90  # an example identifies its cluster; it is not the record
 RESIDUE_CAP = 25
 LABEL_CHARS_MIN = 3  # shorter tokens are articles and initials, never types
 LABEL_SHARE_MAX = 0.3  # a term in a third of items is the query, not a type
@@ -111,14 +111,14 @@ class Cluster:
     label: str
     size: int
     rule: str
-    exemplars: tuple[Item, ...]
+    examples: tuple[Item, ...]
 
     def view(self) -> dict[str, Any]:
         return {
             "label": self.label,
             "size": self.size,
             "rule": self.rule,
-            "exemplars": [brief(item) for item in self.exemplars],
+            "examples": [brief(item) for item in self.examples],
         }
 
 
@@ -187,7 +187,7 @@ def digest(
     items: list[Item],
     *,
     cap: int = CLUSTER_CAP,
-    exemplars: int = EXEMPLARS,
+    examples: int = EXAMPLES,
     residue_cap: int = RESIDUE_CAP,
 ) -> Digest:
     """Partition `items` by their most distinguishing shared term. One
@@ -219,7 +219,7 @@ def digest(
                 label=term,
                 size=len(members),
                 rule=f"\\b{term}\\b",
-                exemplars=tuple(nlargest(exemplars, members, key=rank_of)),
+                examples=tuple(nlargest(examples, members, key=rank_of)),
             )
         )
     return Digest(

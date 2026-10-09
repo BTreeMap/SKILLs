@@ -44,8 +44,8 @@ Stage = Annotated[Positive, Field(le=9)]
 class Outcome(StrEnum):
     """What the human may answer at a gate."""
 
-    APPROVE = "approve"
-    REVISE = "revise"
+    ACCEPT = "accept"
+    CHANGE = "change"
     REJECT = "reject"
 
 
@@ -69,20 +69,20 @@ class Standing(StrEnum):
 
     OPEN = "open"
     PENDING = "pending"
-    APPROVED = "approved"
-    REVISE = "revise"
+    ACCEPTED = "accepted"
+    CHANGE = "change"
     REJECTED = "rejected"
 
 
 DECIDED = {
-    Outcome.APPROVE: Standing.APPROVED,
-    Outcome.REVISE: Standing.REVISE,
+    Outcome.ACCEPT: Standing.ACCEPTED,
+    Outcome.CHANGE: Standing.CHANGE,
     Outcome.REJECT: Standing.REJECTED,
 }
 
 
 class Claim(Model):
-    """One ledger row. The artifact law lives here, so a revision that breaks
+    """One ledger row. The artifact law lives here, so a change that breaks
     it is refused like an addition that does."""
 
     text: NonEmpty
@@ -108,8 +108,8 @@ class Claim(Model):
         return self
 
 
-class StageEntered(Model):
-    event: Literal["stage-entered"]
+class StageStarted(Model):
+    event: Literal["stage-started"]
     stage: Stage
 
 
@@ -130,8 +130,8 @@ class ClaimAdded(Claim):
     id: Slug
 
 
-class ClaimRevised(Model):
-    event: Literal["claim-revised"]
+class ClaimChanged(Model):
+    event: Literal["claim-changed"]
     claim: NonEmpty
     text: NonEmpty | None = None
     status: Status | None = None
@@ -139,10 +139,10 @@ class ClaimRevised(Model):
     location: NonEmpty | None = None
 
     @model_validator(mode="after")
-    def _changes_something(self) -> ClaimRevised:
+    def _changes_something(self) -> ClaimChanged:
         if not self.changes():
             refuse(
-                "ClaimRevised",
+                "ClaimChanged",
                 [Diagnostic("claim", "add a text, status, artifact, or location")],
             )
         return self
@@ -153,16 +153,16 @@ class ClaimRevised(Model):
         }
 
 
-class ClaimDropped(Model):
-    event: Literal["claim-dropped"]
+class ClaimRemoved(Model):
+    event: Literal["claim-removed"]
     claim: NonEmpty
     reason: NonEmpty
 
 
-class ArtifactsRepinned(Model):
+class ArtifactsMoved(Model):
     """The artifact tree moved; claim paths resolve against `root` from here."""
 
-    event: Literal["artifacts-repinned"]
+    event: Literal["artifacts-moved"]
     root: NonEmpty
 
 
@@ -183,13 +183,13 @@ class Decision(Model):
 
 
 Event = (
-    StageEntered
+    StageStarted
     | GateRequested
     | GateDecided
     | ClaimAdded
-    | ClaimRevised
-    | ClaimDropped
-    | ArtifactsRepinned
+    | ClaimChanged
+    | ClaimRemoved
+    | ArtifactsMoved
     | CitationAdded
     | Decision
 )
@@ -218,7 +218,7 @@ class RunState:
     stage: int | None = None
     closed: Gate | None = None
     claims: dict[str, Claim] = field(default_factory=dict)
-    dropped: dict[str, str] = field(default_factory=dict)
+    removed: dict[str, str] = field(default_factory=dict)
     citations: list[CitationAdded] = field(default_factory=list)
     events: int = 0
 
@@ -248,14 +248,14 @@ def blockers(state: RunState, gate: Gate) -> list[str]:
             return [] if state.claims else ["add at least one claim to the ledger"]
         case Gate.DRAFT:
             return [
-                f"claim {claim_id} is {claim.status}: run it and revise the "
-                "claim, or drop it"
+                f"claim {claim_id} is {claim.status}: run it and change the "
+                "claim, or remove it"
                 for claim_id, claim in state.claims.items()
                 if claim.status in UNSHIPPABLE
             ]
 
 
-def _enter(state: RunState, stage: int) -> None:
+def _start(state: RunState, stage: int) -> None:
     first, last = state.meta.stages()
     require(
         first <= stage <= last,
@@ -263,12 +263,12 @@ def _enter(state: RunState, stage: int) -> None:
     )
     for gate, standing in state.gates.items():
         require(
-            GATE_STAGE[gate] >= stage or standing is Standing.APPROVED,
+            GATE_STAGE[gate] >= stage or standing is Standing.ACCEPTED,
             f"stage {stage} lies past the {gate} gate, which is {standing}; "
-            "the human approves it first",
+            "the human accepts it first",
         )
     if (here := state.gate_at(stage)) is not None:
-        state.gates[here] = Standing.OPEN  # re-entering a stage reopens its gate
+        state.gates[here] = Standing.OPEN  # restarting a stage reopens its gate
     state.stage = stage
 
 
@@ -285,7 +285,7 @@ def _request(state: RunState, gate: Gate) -> None:
     )
     standing = state.gates[gate]
     require(
-        standing not in (Standing.PENDING, Standing.APPROVED),
+        standing not in (Standing.PENDING, Standing.ACCEPTED),
         f"the {gate} gate is already {standing}",
     )
     found = blockers(state, gate)
@@ -304,8 +304,8 @@ def _decide(state: RunState, event: GateDecided) -> None:
 
 
 def _live(state: RunState, claim_id: str) -> Claim:
-    dropped = " (dropped)" if claim_id in state.dropped else ""
-    return demand(state.claims.get(claim_id), f"no live claim {claim_id}{dropped}")
+    removed = " (removed)" if claim_id in state.removed else ""
+    return demand(state.claims.get(claim_id), f"no live claim {claim_id}{removed}")
 
 
 def apply(state: RunState, raw: Mapping[str, Any]) -> None:
@@ -319,8 +319,8 @@ def apply(state: RunState, raw: Mapping[str, Any]) -> None:
     )
     event = parse_with(EVENT, raw, "event")
     match event:
-        case StageEntered(stage=stage):
-            _enter(state, stage)
+        case StageStarted(stage=stage):
+            _start(state, stage)
         case GateRequested(gate=gate):
             _request(state, gate)
         case GateDecided():
@@ -330,16 +330,16 @@ def apply(state: RunState, raw: Mapping[str, Any]) -> None:
             state.claims[claim_id] = Claim.model_validate(
                 {key: getattr(event, key) for key in Claim.model_fields}
             )
-        case ClaimRevised(claim=claim_id):
+        case ClaimChanged(claim=claim_id):
             old = _live(state, claim_id)
             state.claims[claim_id] = parse_model(
                 Claim, {**dump(old), **event.changes()}, f"claim {claim_id}"
             )
-        case ClaimDropped(claim=claim_id, reason=reason):
+        case ClaimRemoved(claim=claim_id, reason=reason):
             _live(state, claim_id)
             del state.claims[claim_id]
-            state.dropped[claim_id] = reason
-        case ArtifactsRepinned(root=root):
+            state.removed[claim_id] = reason
+        case ArtifactsMoved(root=root):
             require(Path(root).is_absolute(), f"artifact root {root!r} is not absolute")
             state.root = root
         case CitationAdded():

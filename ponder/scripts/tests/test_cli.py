@@ -100,12 +100,12 @@ class TestNoteAndCheck:
                     }
                 ],
                 "closes": [
-                    {"leaf": "rent length", "state": "retrieved", "sources": ["bcl"]}
+                    {"leaf": "rent length", "status": "retrieved", "sources": ["bcl"]}
                 ],
-                "sweeps": [
+                "scans": [
                     {"checked": "rivals", "candidates": ["folk"], "survivors": []}
                 ],
-                "checkpoints": [{"label": "round-1", "searches": 4}],
+                "checkpoints": [{"label": "cycle-1", "queries": 4}],
             }
         )
 
@@ -118,7 +118,7 @@ class TestNoteAndCheck:
         assert document["counts"] == {"retrieved": 1}
         assert document["open"] == []
 
-    def test_check_derives_the_scaffold_from_the_ledger(self, capsys, monkeypatch):
+    def test_check_derives_the_structure_from_the_ledger(self, capsys, monkeypatch):
         session = opened(capsys)
         run(["record", session], capsys, stdin=self.batch(), monkeypatch=monkeypatch)
         code, document, _ = run(["check", session], capsys)
@@ -126,9 +126,9 @@ class TestNoteAndCheck:
         assert document["sections"] == ["answer", "rival", "sources"]
         assert document["violations"] == []
         assert document["marks"]["S1"]["title"] == "BCL source"
-        assert document["scaffold"]["answer"][0]["marks"] == ["S1"]
+        assert document["structure"]["answer"][0]["marks"] == ["S1"]
 
-    def test_check_on_an_unswept_session_reports_the_violation(
+    def test_check_on_an_unscanned_session_reports_the_violation(
         self, capsys, monkeypatch
     ):
         session = opened(capsys)
@@ -136,7 +136,7 @@ class TestNoteAndCheck:
         run(["record", session], capsys, stdin=batch, monkeypatch=monkeypatch)
         code, document, err = run(["check", session], capsys)
         assert code == 0  # advisory: violations never block the command
-        assert any("no sweep recorded" in line for line in document["violations"])
+        assert any("no scan recorded" in line for line in document["violations"])
         assert any("open leaf blocks draft" in line for line in document["violations"])
         assert "signal:" in err
 
@@ -164,7 +164,7 @@ class TestNoteAndCheck:
         bad = json.dumps(
             {
                 "leaves": [{"kw": ["a", "b"], "q": ""}],
-                "sweeps": [{"checked": "x", "candidates": ["c"], "survivors": [9]}],
+                "scans": [{"checked": "x", "candidates": ["c"], "survivors": [9]}],
             }
         )
         code, document, _ = run(
@@ -172,7 +172,7 @@ class TestNoteAndCheck:
         )
         assert code == 1
         wheres = {problem["where"] for problem in document["rejected"]}
-        assert {"leaves[0].q", "sweeps[0].survivors[0]"} <= wheres
+        assert {"leaves[0].q", "scans[0].survivors[0]"} <= wheres
 
     def test_note_reads_a_batch_file(self, capsys, tmp_path, monkeypatch):
         session = opened(capsys)
@@ -210,12 +210,12 @@ class TestStatusAndSchema:
         assert document["open"] == [
             {"id": document["open"][0]["id"], "q": "still open", "sources": 1}
         ]
-        assert document["swept"] is False
+        assert document["scanned"] is False
 
     def test_schema_prints_the_batch_shape(self, capsys):
         code, document, _ = run(["schema"], capsys)
         assert code == 0
-        assert "survivors" in document["record_batch"]["sweeps"]
+        assert "survivors" in document["record_batch"]["scans"]
 
 
 class TestLiteLevel:
@@ -232,7 +232,7 @@ class TestLiteLevel:
         assert code == 0
         assert document["violations"] == []
         assert any("open leaf" in line for line in document["advisories"])
-        assert any("no sweep" in line for line in document["advisories"])
+        assert any("no scan" in line for line in document["advisories"])
 
 
 class TestPad:
@@ -335,18 +335,18 @@ class TestViewChain:
                 "closes": [
                     {
                         "leaf": "rent length",
-                        "state": "retrieved",
+                        "status": "retrieved",
                         "sources": ["bcl"],
                         "premise": "Rent guarantees at-least length",
                         "detail": "the exact overload is the other one",
                     }
                 ],
-                "sweeps": [{"checked": "rivals", "candidates": [], "survivors": []}],
+                "scans": [{"checked": "rivals", "candidates": [], "survivors": []}],
             }
         )
 
     def noted(self, capsys) -> str:
-        """One session with one closed round, reusable across views."""
+        """One session with one closed cycle, reusable across views."""
         session = opened(capsys)
         run(["record", session], capsys, stdin=self.batch())
         return session
@@ -369,7 +369,7 @@ class TestViewChain:
 
     def test_a_richer_view_only_ever_adds(self, capsys):
         """The chain law where it bites, and it is structural, not top-level:
-        `scaffold` is a shared key whose rows themselves grow. A richer view
+        `structure` is a shared key whose rows themselves grow. A richer view
         adds fields at some depth and rewrites none, so a caller can trust
         what a cheaper view already told it. Row cardinality is preserved:
         a view projects fields, never filters records."""
@@ -384,12 +384,12 @@ class TestViewChain:
         """premise and detail are the agent's own words; echoing them back
         into the window that wrote them is the cost this level removes."""
         document = self.checked(capsys, "plan")
-        answer = document["scaffold"]["answer"][0]
+        answer = document["structure"]["answer"][0]
         assert "premise" not in answer
         assert "detail" not in answer
 
     def test_plan_keeps_the_marker_refs_that_carry_the_derivation(self, capsys):
-        answer = self.checked(capsys, "plan")["scaffold"]["answer"][0]
+        answer = self.checked(capsys, "plan")["structure"]["answer"][0]
         assert answer["marks"] == ["S1"]
         assert answer["stated"] == "plain"
 
@@ -402,7 +402,7 @@ class TestViewChain:
 
     def test_draft_carries_the_prose_and_the_table(self, capsys):
         document = self.checked(capsys, "draft")
-        assert document["scaffold"]["answer"][0]["premise"].startswith("Rent")
+        assert document["structure"]["answer"][0]["premise"].startswith("Rent")
         assert document["marks"]["S1"]["title"] == "BCL source"
 
     def test_the_marker_table_drops_the_minted_id(self, capsys):
@@ -414,9 +414,9 @@ class TestViewChain:
             "url",
         }
 
-    def test_the_scaffold_is_emitted_before_the_table(self, capsys):
+    def test_the_structure_is_emitted_before_the_table(self, capsys):
         keys = list(self.checked(capsys, "draft"))
-        assert keys.index("scaffold") < keys.index("marks")
+        assert keys.index("structure") < keys.index("marks")
 
     def test_full_adds_the_record_dump(self, capsys):
         assert "leaves" in self.checked(capsys, "full")
@@ -476,7 +476,7 @@ class TestViewChain:
 
 
 class TestProseWithheldUniformly:
-    """One rule across every scaffold row kind, checked against all four.
+    """One rule across every structure row kind, checked against all four.
 
     A row carries its identity and its derivation at every level, and the
     agent's own findings only from `draft`. Before this was uniform, `rival`
@@ -512,28 +512,28 @@ class TestProseWithheldUniformly:
                 "closes": [
                     {
                         "leaf": "kept one",
-                        "state": "retrieved",
+                        "status": "retrieved",
                         "sources": ["src a"],
                         "premise": "RETRIEVED PREMISE",
                         "detail": "RETRIEVED DETAIL",
                     },
                     {
                         "leaf": "dead two",
-                        "state": "refuted",
+                        "status": "refuted",
                         "sources": ["src b"],
                         "premise": "REFUTED PREMISE",
                         "detail": "REFUTED DETAIL",
                     },
                     {
                         "leaf": "open three",
-                        "state": "unresolved",
-                        "reason": "searched",
+                        "status": "unresolved",
+                        "reason": "found",
                         "detail": "UNRESOLVED DETAIL",
                     },
                 ],
-                "sweeps": [
+                "scans": [
                     {
-                        "checked": "SWEEP SUBJECT",
+                        "checked": "SCAN SUBJECT",
                         "candidates": ["SURVIVING RIVAL", "ELIMINATED RIVAL"],
                         "survivors": [0],
                     }
@@ -541,28 +541,28 @@ class TestProseWithheldUniformly:
             }
         )
 
-    def scaffold(self, capsys, view: str) -> dict:
+    def structure(self, capsys, view: str) -> dict:
         session = opened(capsys)
         run(["record", session], capsys, stdin=self.batch())
         code, document, _ = run(["check", session, "--view", view], capsys)
         assert code == 0
-        return document["scaffold"]
+        return document["structure"]
 
     def test_every_row_kind_is_present_to_judge(self, capsys):
-        assert set(self.scaffold(capsys, "draft")) == {
+        assert set(self.structure(capsys, "draft")) == {
             "answer",
             "rival",
             "open",
-            "sweeps",
+            "scans",
         }
 
     def test_plan_withholds_a_finding_from_every_row_kind(self, capsys):
-        for section, rows in self.scaffold(capsys, "plan").items():
+        for section, rows in self.structure(capsys, "plan").items():
             leaked = self.FINDINGS & set(rows[0])
             assert not leaked, f"{section} leaks {leaked} at plan"
 
     def test_plan_keeps_identity_and_derivation_in_every_row_kind(self, capsys):
-        for section, rows in self.scaffold(capsys, "plan").items():
+        for section, rows in self.structure(capsys, "plan").items():
             keys = set(rows[0])
             assert keys & self.IDENTITY, f"{section} has no identity at plan"
             assert not keys - (self.IDENTITY | self.DERIVED), f"{section} has extras"
@@ -599,12 +599,12 @@ class TestProseWithheldUniformly:
         ):
             assert authored in rendered, f"draft lost {authored}"
 
-    def test_a_sweep_keeps_its_subject_and_drops_its_candidates(self, capsys):
-        plan = self.scaffold(capsys, "plan")["sweeps"][0]
-        assert plan == {"checked": "SWEEP SUBJECT"}
+    def test_a_scan_keeps_its_subject_and_drops_its_candidates(self, capsys):
+        plan = self.structure(capsys, "plan")["scans"][0]
+        assert plan == {"checked": "SCAN SUBJECT"}
 
-    def test_the_sweep_set_difference_is_derived_at_draft(self, capsys):
-        draft = self.scaffold(capsys, "draft")["sweeps"][0]
+    def test_the_scan_set_difference_is_derived_at_draft(self, capsys):
+        draft = self.structure(capsys, "draft")["scans"][0]
         assert draft["survivors"] == ["SURVIVING RIVAL"]
         assert draft["eliminated"] == ["ELIMINATED RIVAL"]
 

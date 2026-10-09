@@ -1,4 +1,4 @@
-"""Search and snowball over the registry, against mocked transports."""
+"""Find and snowball over the registry, against mocked transports."""
 
 from __future__ import annotations
 
@@ -113,9 +113,9 @@ FIRECRAWL = {
 }
 
 
-class TestSearch:
+class TestFind:
     def test_any_registered_index_is_a_source(self):
-        args = build_parser().parse_args(["search", "s", "--source", "firecrawl"])
+        args = build_parser().parse_args(["find", "s", "--source", "firecrawl"])
         assert args.source == "firecrawl"
 
     def test_an_index_with_no_total_logs_null_and_no_truncation(
@@ -123,7 +123,7 @@ class TestSearch:
     ):
         seen = upstream(FIRECRAWL)
         code, document, err = run(
-            ["search", str(session.root), "--source", "firecrawl", "--limit", "5"],
+            ["find", str(session.root), "--source", "firecrawl", "--limit", "5"],
             capsys,
             stdin='{"query": "attention"}',
         )
@@ -139,7 +139,7 @@ class TestSearch:
     ):
         upstream('<feed xmlns="http://www.w3.org/2005/Atom"></feed>')
         _, _, err = run(
-            ["search", str(session.root), "--source", "arxiv", "--from-year", "2020"],
+            ["find", str(session.root), "--source", "arxiv", "--from-year", "2020"],
             capsys,
             stdin='{"query": "ti:x"}',
         )
@@ -150,7 +150,7 @@ class TestSearch:
     ):
         upstream({"meta": {"count": 90}, "results": [{"id": "W5", "title": "T"}]})
         _, document, err = run(
-            ["search", str(session.root), "--source", "openalex"],
+            ["find", str(session.root), "--source", "openalex"],
             capsys,
             stdin='{"query": "q"}',
         )
@@ -167,7 +167,7 @@ class TestSearch:
         seen = upstream({"meta": {"count": 105}, "results": tail})
         code, document, err = run(
             [
-                "search",
+                "find",
                 str(session.root),
                 "--source",
                 "openalex",
@@ -187,7 +187,7 @@ class TestSearch:
 
     def test_show_lists_each_hit_under_its_corpus_key(self, session, capsys, upstream):
         """A hit already in the corpus is listed under the key it merged
-        into, with its status, so one search call replaces a show call."""
+        into, with its status, so one find call replaces a show call."""
         upstream(
             {
                 "meta": {"count": 2},
@@ -197,7 +197,7 @@ class TestSearch:
                 ],
             }
         )
-        argv = ["search", str(session.root), "--source", "openalex"]
+        argv = ["find", str(session.root), "--source", "openalex"]
         _, quiet, _ = run(argv, capsys, stdin='{"query": "q"}')
         assert "hits" not in quiet, "without --show the envelope stays counts only"
         _, document, _ = run([*argv, "--show"], capsys, stdin='{"query": "q"}')
@@ -239,7 +239,7 @@ class TestResolveRef:
             resolve_ref({seed.key: seed}, seed.key, "semanticscholar")
 
     def test_a_token_matching_no_paper_is_refused(self):
-        with pytest.raises(CommandError, match="search for it first"):
+        with pytest.raises(CommandError, match="find it first"):
             resolve_ref({}, "10.9/x", "openalex")
 
 
@@ -369,7 +369,7 @@ class TestFill:
             "api.crossref.org",
         ]
         assert document["filled"] == {"doi:10.1/a": "crossref"}
-        assert document["still_missing"] == ["title:only a title"]
+        assert document["missing"] == ["title:only a title"]
         assert "1 papers have no abstract" in err
         filled = load_papers(gapped)["doi:10.1/a"]
         assert filled.abstract == "Found it."
@@ -388,7 +388,7 @@ class TestFill:
             ["fill", str(gapped.root), "--keys", "doi:10.1/a"], capsys
         )
         assert code == 0
-        assert document["failed"] == [
+        assert document["errors"] == [
             {"key": "doi:10.1/a", "source": "openalex", "error": "openalex is down"}
         ]
         assert document["filled"] == {"doi:10.1/a": "crossref"}

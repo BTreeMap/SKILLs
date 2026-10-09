@@ -8,7 +8,7 @@ from btm_corekit import Work
 from btm_lit_review.constants import ReadLevel, Status
 from btm_lit_review.corpus.paper import paper_from
 from btm_lit_review.findings.notebook import (
-    WATCH_MAX,
+    MONITOR_MAX,
     FindingRecord,
     GapRecord,
     arrivals_of,
@@ -16,9 +16,9 @@ from btm_lit_review.findings.notebook import (
     finding_view,
     gap_view,
     live,
+    monitor_hits,
+    monitor_terms,
     next_id,
-    watch_hits,
-    watch_terms,
 )
 
 
@@ -90,7 +90,7 @@ class TestAdmission:
         result = expand(
             {
                 "findings": [{"claim": "", "support": ["doi:10.9/ghost"]}],
-                "gaps": [{"statement": "x", "probes": ["s9"], "watch": " | "}],
+                "gaps": [{"statement": "x", "probes": ["s9"], "monitor": " | "}],
                 "extra": [],
             },
             papers,
@@ -100,7 +100,7 @@ class TestAdmission:
             "findings[0].claim",
             "findings[0].support[0]",
             "gaps[0].probes[0]",
-            "gaps[0].watch",
+            "gaps[0].monitor",
             "extra",
         } <= wheres
         assert result.records == []
@@ -144,7 +144,7 @@ class TestAdmission:
         assert result.problems == []
         assert any("probe evidence" in line for line in result.advisories)
 
-    def test_dangling_pad_and_supersede_refs_are_refused(self, papers):
+    def test_dangling_pad_and_replace_refs_are_refused(self, papers):
         result = expand(
             {
                 "findings": [
@@ -152,7 +152,7 @@ class TestAdmission:
                         "claim": "c",
                         "support": ["doi:10.1/bandit"],
                         "from": ["j9"],
-                        "supersedes": "f7",
+                        "replaces": "f7",
                     }
                 ]
             },
@@ -160,7 +160,7 @@ class TestAdmission:
             pad={"j1"},
         )
         wheres = {problem.where for problem in result.problems}
-        assert wheres == {"findings[0].from[0]", "findings[0].supersedes"}
+        assert wheres == {"findings[0].from[0]", "findings[0].replaces"}
 
     def test_an_empty_batch_records_nothing(self, papers):
         result = expand({}, papers)
@@ -177,7 +177,7 @@ class TestDerivedVerdicts:
         )
 
     def test_supported_while_the_corpus_agrees(self, papers):
-        assert finding_view(self.finding(), papers)["state"] == "supported"
+        assert finding_view(self.finding(), papers)["status"] == "supported"
 
     def test_at_risk_when_support_is_excluded(self, papers):
         papers = dict(papers)
@@ -185,7 +185,7 @@ class TestDerivedVerdicts:
             status=Status.EXCLUDED, decision_reason="off topic"
         )
         view = finding_view(self.finding(), papers)
-        assert view["state"] == "at-risk"
+        assert view["status"] == "at-risk"
         assert "excluded" in view["issues"][0]
 
     def test_at_risk_when_read_below_the_floor(self, papers):
@@ -196,53 +196,55 @@ class TestDerivedVerdicts:
         view = finding_view(self.finding(), papers)
         assert "needs full-text" in view["issues"][0]
 
-    def test_a_gap_is_challenged_by_a_later_watch_hit(self, papers):
-        gap = GapRecord(e="gap", id="g1", statement="s", seen=2, watch="gflownet")
+    def test_a_gap_is_challenged_by_a_later_monitor_hit(self, papers):
+        gap = GapRecord(e="gap", id="g1", statement="s", seen=2, monitor="gflownet")
         view = gap_view(gap, arrivals_of(papers))
-        assert view["state"] == "challenged"
+        assert view["status"] == "challenged"
         assert view["hits"] == ["arxiv:2501.00001"]
 
     def test_papers_seen_before_the_gap_never_challenge_it(self, papers):
         gap = GapRecord(
-            e="gap", id="g1", statement="s", seen=3, watch="gflownet|bandit"
+            e="gap", id="g1", statement="s", seen=3, monitor="gflownet|bandit"
         )
-        assert gap_view(gap, arrivals_of(papers))["state"] == "standing"
+        assert gap_view(gap, arrivals_of(papers))["status"] == "standing"
 
 
-def found(ident, supersedes=None):
+def found(ident, replaces=None):
     return FindingRecord(
         e="finding",
         id=ident,
         claim="c",
         support=[{"key": "k", "needs": "abstract"}],
-        supersedes=supersedes,
+        replaces=replaces,
     )
 
 
-class TestSupersedeChains:
+class TestReplaceChains:
     def test_live_keeps_the_latest_of_a_chain(self):
         records = [
             found("f1"),
-            found("f2", supersedes="f1"),
+            found("f2", replaces="f1"),
             GapRecord(e="gap", id="g1", statement="s"),
         ]
         assert set(live(records, FindingRecord)) == {"f2"}
         assert set(live(records, GapRecord)) == {"g1"}
 
     def test_ids_count_every_record_ever_minted(self):
-        records = [found("f1"), found("f2", supersedes="f1")]
+        records = [found("f1"), found("f2", replaces="f1")]
         assert next_id(records, "finding") == "f3"
         assert next_id(records, "rule") == "r1"
 
 
-def test_an_overlong_watch_is_refused():
-    batch = {"gaps": [{"statement": "s", "probes": [], "watch": "a" * (WATCH_MAX + 1)}]}
+def test_an_overlong_monitor_is_refused():
+    batch = {
+        "gaps": [{"statement": "s", "probes": [], "monitor": "a" * (MONITOR_MAX + 1)}]
+    }
     result = expand_records(batch, {}, 0, set(), [])
     assert result.records == []
-    assert result.problems[0].where == "gaps[0].watch"
+    assert result.problems[0].where == "gaps[0].monitor"
 
 
-def test_a_watch_matches_its_words_literally():
-    terms = [term.casefold() for term in watch_terms("retrieval augmented | a+b")]
-    assert watch_hits(terms, "a retrieval augmented sampler".casefold())
-    assert watch_hits(terms, "uses a+b") and not watch_hits(terms, "uses aab")
+def test_a_monitor_matches_its_words_literally():
+    terms = [term.casefold() for term in monitor_terms("retrieval augmented | a+b")]
+    assert monitor_hits(terms, "a retrieval augmented sampler".casefold())
+    assert monitor_hits(terms, "uses a+b") and not monitor_hits(terms, "uses aab")

@@ -40,14 +40,14 @@ class SessionMeta(Tagged):
 def next_step(ledger: Ledger, open_leaves: int) -> str:
     """The cheapest legal next action, derived from live ledger state.
 
-    Advisory only: how many rounds a question deserves is judgment. What the
-    script owes is the arithmetic over leaves, sources, and the sweep."""
+    Advisory only: how many cycles a question deserves is judgment. What the
+    script owes is the arithmetic over leaves, sources, and the scan."""
     if not ledger.leaves:
         return "register the frame leaves for this question"
     if open_leaves:
         return f"close {open_leaves} open leaves: add sources, then a close each"
-    if not ledger.swept:
-        return "run the rival sweep, then record it"
+    if not ledger.scanned:
+        return "run the rival scan, then record it"
     return "draft from check output"
 
 
@@ -60,7 +60,7 @@ def orient(directory: Path) -> dict[str, Any]:
     open_leaves = [
         {"id": leaf_id, "q": leaf.question, "sources": attached[leaf_id]}
         for leaf_id, leaf in ledger.leaves.items()
-        if isinstance(leaf.state, Open)
+        if isinstance(leaf.status, Open)
     ]
     return {
         "session": directory.name,
@@ -71,7 +71,7 @@ def orient(directory: Path) -> dict[str, Any]:
         "level": meta.level,
         "counts": counts_of(ledger),
         "sources": len(ledger.sources),
-        "swept": ledger.swept,
+        "scanned": ledger.scanned,
         "open": open_leaves,
         "last_checkpoint": next(
             (

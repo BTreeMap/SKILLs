@@ -1,6 +1,6 @@
 """Session engine for literature reviews over OpenAlex, arXiv, and Crossref.
 
-Owns the exact half of a review: session state, search logging, identity
+Owns the exact half of a review: session state, find logging, identity
 resolution, deduplication, decision bookkeeping, and citation checks. The
 agent owns every judgment call: criteria, screening, reading, synthesis.
 Subcommands print one JSON document to stdout; advisory `signal:` lines go

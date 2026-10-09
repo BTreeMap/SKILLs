@@ -43,7 +43,7 @@ def next_step(state: RunState) -> str:
             "with the human's reply verbatim"
         )
     if state.stage is None:
-        return f"record stage-entered {state.meta.stages()[0]}"
+        return f"record stage-started {state.meta.stages()[0]}"
     return _within(state, state.stage)
 
 
@@ -51,18 +51,18 @@ def _within(state: RunState, stage: int) -> str:
     gate = state.gate_at(stage)
     if gate is not None:
         match state.gates[gate]:
-            case Standing.REVISE:
+            case Standing.CHANGE:
                 return (
-                    f"revise the {ARTIFACT[gate]} per the human's notes, then "
+                    f"change the {ARTIFACT[gate]} per the human's notes, then "
                     f"record gate-requested {gate}"
                 )
             case Standing.OPEN:
                 return f"finish stage {stage}, then record gate-requested {gate}"
-            case Standing.APPROVED if stage < state.meta.stages()[1]:
-                return f"the {gate} gate passed; record stage-entered {stage + 1}"
+            case Standing.ACCEPTED if stage < state.meta.stages()[1]:
+                return f"the {gate} gate passed; record stage-started {stage + 1}"
     if stage < state.meta.stages()[1]:
-        return f"finish stage {stage}, then record stage-entered {stage + 1}"
-    if gate is not None and state.gates[gate] is Standing.APPROVED:
+        return f"finish stage {stage}, then record stage-started {stage + 1}"
+    if gate is not None and state.gates[gate] is Standing.ACCEPTED:
         return "deliver per the output contract"
     return f"finish stage {stage}, then deliver per the output contract"
 
@@ -77,7 +77,7 @@ def status_view(run: Run) -> dict[str, Any]:
         "connections": [dump(connection) for connection in run.meta.connections],
         "verb": run.meta.verb,
         "format": run.meta.format,
-        "state": run.meta.state,
+        "status": run.meta.status,
         "venue": run.meta.venue,
         "model": run.meta.model,
         "artifacts": state.root,
@@ -86,7 +86,7 @@ def status_view(run: Run) -> dict[str, Any]:
         "stage": state.stage,
         "gates": dict(state.gates),
         "claims": dict(Counter(claim.status for claim in state.claims.values())),
-        "dropped": len(state.dropped),
+        "removed": len(state.removed),
         "events": state.events,
         "pad": {"total": len(pad), "tail": pad[-PAD_TAIL:]},
         "next": next_step(state),
@@ -112,13 +112,13 @@ def _since_last_decision(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _changed_since_ledger(rows: list[dict[str, Any]]) -> list[str]:
-    """Claims touched after the last ledger approval, for the draft gate."""
+    """Claims touched after the last ledger acceptance, for the draft gate."""
     start = None
     for index, row in enumerate(rows):
         if (
             row.get("event") == "gate-decided"
             and row.get("gate") == Gate.LEDGER
-            and row.get("outcome") == "approve"
+            and row.get("outcome") == "accept"
         ):
             start = index + 1
     if start is None:
@@ -162,9 +162,9 @@ def check_view(run: Run) -> dict[str, Any]:
             )
     document["since_last_decision"] = _since_last_decision(run.rows)
     document["ledger"] = ledger
-    document["dropped"] = [
+    document["removed"] = [
         {"claim": claim_id, "reason": reason}
-        for claim_id, reason in state.dropped.items()
+        for claim_id, reason in state.removed.items()
     ]
     document["missing_artifacts"] = missing
     document["citations"] = citations_view(run)

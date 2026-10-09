@@ -89,7 +89,7 @@ class TestCiteCheck:
         assert report["unused_included"] == ["[2]"]
 
     def test_at_risk_findings_ride_along(self, papers):
-        views = [{"id": "f1", "state": "at-risk"}, {"id": "f2", "state": "supported"}]
+        views = [{"id": "f1", "status": "at-risk"}, {"id": "f2", "status": "supported"}]
         report = cite_check("[1]", assign_marks({}, papers), papers, views)
         assert [f["id"] for f in report["at_risk_findings"]] == ["f1"]
 
