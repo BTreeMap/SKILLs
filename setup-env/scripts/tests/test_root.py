@@ -10,9 +10,9 @@ from btm_corekit import CommandError
 from btm_setup_env.model import Layout, detect_host
 from btm_setup_env.shell.root import (
     Ctx,
+    Installed,
     Manifest,
-    Provisioned,
-    Unprovisioned,
+    NotInstalled,
     manifest_of,
     read_root,
 )
@@ -29,21 +29,21 @@ def written(layout: Layout, **fields: object) -> None:
 
 
 class TestReadRoot:
-    def test_nothing_there_is_unprovisioned(self, layout):
-        assert read_root(layout) == Unprovisioned()
+    def test_nothing_there_is_not_installed(self, layout):
+        assert read_root(layout) == NotInstalled()
 
-    def test_a_manifest_naming_a_project_is_provisioned(self, layout):
+    def test_a_manifest_naming_a_project_is_installed(self, layout):
         written(layout, project="/w/app", spec=["python"], host="linux-64")
         root = read_root(layout)
-        assert isinstance(root, Provisioned)
+        assert isinstance(root, Installed)
         assert root.manifest.project == "/w/app"
         assert root.manifest.spec == ("python",)
 
-    def test_a_manifest_naming_no_project_is_unprovisioned(self, layout):
+    def test_a_manifest_naming_no_project_is_not_installed(self, layout):
         """The empty manifest used to be the stand-in for absence, so this is
         the case the sum has to keep answering the same way."""
         written(layout, spec=["python"])
-        assert read_root(layout) == Unprovisioned()
+        assert read_root(layout) == NotInstalled()
 
     def test_an_unreadable_manifest_is_not_absence(self, layout):
         """Reading it as absent would tell an agent to reinstall a root that
@@ -55,7 +55,7 @@ class TestReadRoot:
 
     def test_a_field_a_later_version_added_is_read_anyway(self, layout):
         written(layout, project="/w/app", invented_next_year=1)
-        assert isinstance(read_root(layout), Provisioned)
+        assert isinstance(read_root(layout), Installed)
 
 
 class TestSaveManifest:
@@ -71,13 +71,13 @@ class TestSaveManifest:
         ctx.save_manifest()
         ctx.record(project="/w/other")
         ctx.save_manifest()
-        assert read_root(layout) == Provisioned(Manifest(project="/w/other"))
+        assert read_root(layout) == Installed(Manifest(project="/w/other"))
 
 
 class TestManifestOf:
     def test_a_fresh_root_starts_from_an_empty_manifest(self):
-        assert manifest_of(Unprovisioned()) == Manifest()
+        assert manifest_of(NotInstalled()) == Manifest()
 
     def test_an_existing_root_builds_on_what_it_recorded(self):
         held = Manifest(project="/w/app", uv_python="3.12")
-        assert manifest_of(Provisioned(held)) is held
+        assert manifest_of(Installed(held)) is held

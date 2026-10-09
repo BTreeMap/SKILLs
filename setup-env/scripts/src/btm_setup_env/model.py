@@ -356,7 +356,7 @@ def default_root(project: Path, host: Host) -> Path:
 
 # --- Env deltas ---
 #
-# One merged EnvDelta feeds shell renderers and probe verification.
+# One merged EnvDelta feeds shell renderers and test verification.
 
 
 @dataclass(frozen=True, slots=True)

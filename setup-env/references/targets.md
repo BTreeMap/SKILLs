@@ -8,14 +8,14 @@ bare `android` for `java:android`.
 | --- | --- | --- |
 | `python` | uv | Managed CPython plus a seeded venv; `UV_PYTHON_PREFERENCE=only-managed` keeps a host python from leaking in. uv itself is linked into the root so it survives activation. |
 | `javascript` | conda-forge | nodejs + npm; npm cache redirected. Global installs land in the prefix, which is writable and disposable. |
-| `typescript` | conda-forge | nodejs + the tsc compiler as a conda package; no npm involvement at provision time. |
+| `typescript` | conda-forge | nodejs + the tsc compiler as a conda package; no npm involvement at install time. |
 | `go` | conda-forge | `GOTOOLCHAIN=local` pins the running toolchain; GOPATH and build cache live under the root. |
 | `go:cgo` | conda-forge | Adds the C toolchain and exports `CGO_ENABLED=1` and `CC`. A flavor because it changes the toolchain. |
 | `rust` | conda-forge | rustc + cargo + a C toolchain, because a rustc that cannot link is not a toolchain. `CARGO_HOME` under the root. |
 | `c`, `cpp` | conda-forge | `c-compiler`/`cxx-compiler` metapackages resolve to gcc on linux, clang on macos. `CC`/`CXX` point at fixed-name shims, so plans never mention a compiler triple. Not on windows (MSVC needs its own activation). |
 | `java` | conda-forge | A JDK; `JAVA_HOME` points inside the prefix at `lib/jvm`, never at the prefix itself. |
 | `kotlin` | conda-forge | kotlinc for generic JVM work; the solver brings a JDK, one solve keeps them consistent. |
-| `kotlin:android`, `java:android` | Google + conda-forge | JDK + cmdline-tools + platform, build-tools, platform-tools for the API level given as `@version`. Installs no gradle and no kotlin: the project's gradlew and plugins are authoritative. Writes `sdk.dir` into `local.properties` only when the project has gradle files. On linux/arm64, provisions an emulated aapt2, registered through `android.aapt2FromMavenOverride` in the isolated `gradle.properties`. |
+| `kotlin:android`, `java:android` | Google + conda-forge | JDK + cmdline-tools + platform, build-tools, platform-tools for the API level given as `@version`. Installs no gradle and no kotlin: the project's gradlew and plugins are authoritative. Writes `sdk.dir` into `local.properties` only when the project has gradle files. On linux/arm64, installs an emulated aapt2, registered through `android.aapt2FromMavenOverride` in the isolated `gradle.properties`. |
 | `kotlin:native` | JetBrains + conda-forge | Prebuilt Kotlin/Native plus a JDK; `KONAN_DATA_DIR` under the root. Closed host set (linux-64, osx-64, osx-arm64, win-64): JetBrains publishes no linux/arm64 host prebuilt, and the error says so. |
 | `gradle`, `maven`, `cmake`, `ninja` | conda-forge | Standalone build tools for projects without a committed wrapper. |
 | `csharp` | conda-forge | .NET SDK; the conda package ships no bin wrapper, so the recipe exports `DOTNET_ROOT` and puts it on PATH. Telemetry opted out. |

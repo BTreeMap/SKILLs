@@ -1,4 +1,4 @@
-"""Backup slots: deterministic, injective, total, and identity-checked."""
+"""Copy slots: deterministic, injective, total, and identity-checked."""
 
 from __future__ import annotations
 
@@ -26,10 +26,10 @@ def isolated_state(tmp_path, monkeypatch):
 
 
 def planted(target: Path, meta: str | None) -> Path:
-    """A slot holding a backup, and the meta.json text given (none if None)."""
+    """A slot holding a copy, and the meta.json text given (none if None)."""
     slot = slot_for(target.resolve())
     slot.directory.mkdir(parents=True)
-    slot.backup_path.write_text("body", encoding="utf-8")
+    slot.copy_path.write_text("body", encoding="utf-8")
     if meta is not None:
         slot.meta_path.write_text(meta, encoding="utf-8")
     return target.resolve()
@@ -53,7 +53,7 @@ class TestSlotDerivation:
         assert re.fullmatch(r"[A-Za-z0-9._-]+", name)
         assert len(name.encode()) <= SLOT_NAME_LIMIT
 
-    def test_the_backup_root_lives_under_the_library_namespace(self):
+    def test_the_copy_root_lives_under_the_library_namespace(self):
         assert STORE.root().parts[-3:] == ("btm-skills", "caveman", "sessions")
 
 
@@ -70,11 +70,11 @@ class TestMeta:
 
 
 class TestLoadSlot:
-    def test_a_missing_backup_refuses(self, tmp_path):
+    def test_a_missing_copy_refuses(self, tmp_path):
         with pytest.raises(CommandError, match="run prepare first"):
             load_slot(tmp_path / "absent.md")
 
-    def test_a_backup_without_metadata_refuses(self, tmp_path):
+    def test_a_copy_without_metadata_refuses(self, tmp_path):
         target = planted(tmp_path / "notes.md", None)
         with pytest.raises(CommandError, match="metadata missing"):
             load_slot(target)

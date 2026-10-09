@@ -11,9 +11,9 @@ docstring:
     model -> steps -> catalog -> plan -> render/execute -> cli
 
 Everything through `plan` is pure: `btm-setup-env design` prints exactly
-what `provision` would do, no network, no filesystem writes; that property
-is the test seam. `execute` and rest of shell package hold every effect;
-`cli` only parses and reports.
+what `install` would do, no network, no filesystem writes; that property is
+the test seam. `execute` and rest of shell package hold every effect; `cli`
+only parses and reports.
 
 ## Laws
 
@@ -26,7 +26,7 @@ is the test seam. `execute` and rest of shell package hold every effect;
    path unions against manifest for same reason.
 3. Env merge is checked monoid. Recipes contribute `EnvDelta` values;
    duplicate variables must agree, PATH entries dedupe preserving first
-   occurrence. One merged delta rendered to activate.sh, activate.ps1, probe
+   occurrence. One merged delta rendered to activate.sh, activate.ps1, test
    process environment, so what verification proved is what activation
    grants.
 4. Emulation is total and central. `emulation(host, platform)` in `model` is
@@ -54,7 +54,7 @@ is the test seam. `execute` and rest of shell package hold every effect;
 3. Write `Recipe` in `catalog`: requirements as existing step values when
    possible (new step type in `steps` plus one executor in `execute` only
    for new machinery), env as `EnvDelta` of redirections under root, at
-   least one probe per user-visible tool. Reject unsupported hosts inside
+   least one test per user-visible tool. Reject unsupported hosts inside
    `requirements` with message naming alternative.
 4. Redirect every cache or config variable tool honors (its HOME-dwelling
    dotdir already covered by HOME redirect). Tool's wrapper scripts expect
@@ -70,13 +70,13 @@ On at least one linux host, ideally both architectures:
 
 - `btm-setup-env design <tag>`: steps and env look right, twice for
   determinism.
-- `btm-setup-env provision <tag>`: record's `ok` true, every probe passes;
+- `btm-setup-env install <tag>`: record's `ok` true, every test passes;
   re-run completes in under a second changing nothing.
 - Isolation falsifier from `SKILL.md`: `env -i` shell sourcing activate.sh
   compiles and runs hello program end to end, link steps included; compiler
-  that cannot link passes --version probes and still fails users.
-- `btm-setup-env provision` with tag removed: conda prefix reshapes to
-  smaller set.
-- `btm-setup-env clean`, then fresh provision from nothing.
+  that cannot link passes --version tests and still fails users.
+- `btm-setup-env install` with tag removed: conda prefix reshapes to smaller
+  set.
+- `btm-setup-env clean`, then fresh install from nothing.
 
 Record in `targets` what was validated per platform; claim nothing untested.

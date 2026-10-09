@@ -1,4 +1,4 @@
-"""btm-setup-env: a typed, userspace, per-project dev-environment provisioner.
+"""btm-setup-env: a typed, userspace, per-project dev-environment installer.
 
 Layered one-directional: `model` (pure domain), `steps` (the plan-step ADT),
 `catalog` (recipes), `plan` (Spec x Host -> Plan), `render` (EnvDelta ->

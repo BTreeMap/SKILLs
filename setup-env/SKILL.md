@@ -1,7 +1,7 @@
 ---
 name: setup-env
 description: >-
-  Provisions a project's development toolchain in userspace: no sudo, no
+  Installs a project's development toolchain in userspace: no sudo, no
   docker, nothing assumed but uv, all under one disposable root leaving HOME
   and caches untouched. Tags such as python@3.12, kotlin:android, or rust
   name what project needs; tools built for another CPU architecture still
@@ -16,13 +16,13 @@ compatibility: >-
   environment root, depending on targets. The first run builds the `.venv`
   at the checkout root that every skill's scripts share, about 225 MB.
 metadata:
-  argument-hint: "[provision|design|status|shim|clean|list] [tags...]"
+  argument-hint: "[install|design|status|shim|clean|list] [tags...]"
 ---
 
 # Setup Env
 
-One command provisions everything project needs into one disposable root:
-run it, source printed activation script, build. Re-run to repair.
+One command installs everything project needs into one disposable root: run
+it, source printed activation script, build. Re-run to repair.
 
 ## Registry
 
@@ -56,7 +56,7 @@ build; `<root>/manifest.json` records chosen versions. `list` prints every
 known tag. Toolchains pinned by project (gradlew, package.json, Cargo.toml)
 stay authoritative.
 
-## Provision
+## Install
 
 Bind command to `R` once per shell; re-bind after reset; `realpath` and both
 `env -u` flags required:
@@ -65,7 +65,7 @@ Bind command to `R` once per shell; re-bind after reset; `realpath` and both
 
 ```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-setup-env"
-$R provision <tags> --project <project-root>
+$R install <tags> --project <project-root>
 ```
 
 </commands>
@@ -75,23 +75,23 @@ abbreviate `$R` as `btm-setup-env`. `--project` defaults to nearest ancestor
 of working directory containing `.git`. Environment root derived from
 project path, under system temp dir; override base with `DENV_HOME`, or
 exact root with `--root` or `DENV_ROOT`, flag winning. Root under temp dir
-is ephemeral: after reboot, re-run provision.
+is ephemeral: after reboot, re-run install.
 
 <commands for="examples">
 
 ```bash
 # A python + go + typescript monorepo, python pinned
-btm-setup-env provision python@3.12 go typescript
+btm-setup-env install python@3.12 go typescript
 
 # Android work on any host, including arm64; API level as the version
-btm-setup-env provision kotlin:android@35
+btm-setup-env install kotlin:android@35
 
 # Generic kotlin (JVM), or kotlin compiled to native binaries
-btm-setup-env provision kotlin
-btm-setup-env provision kotlin:native
+btm-setup-env install kotlin
+btm-setup-env install kotlin:native
 
 # Systems work: cgo needs a C toolchain, so it is a flavor
-btm-setup-env provision go:cgo rust cmake
+btm-setup-env install go:cgo rust cmake
 
 # Preview the plan without executing anything
 btm-setup-env design haskell csharp
@@ -101,16 +101,16 @@ btm-setup-env design haskell csharp
 
 Each verb writes one JSON record to stdout, nothing else; progress and
 warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true.
-Failed probe still exits 0, with `ok` false and `next` line naming repair;
+Failed test still exits 0, with `ok` false and `next` line naming repair;
 exit 1 means argument needs fixing, never that toolchain is broken.
 
 Every verb except `list` takes `--project` and `--root`.
 
 | Verb | Record on stdout | Refuses |
 | --- | --- | --- |
-| `provision <tags>` | `ok`, `root`, `activate_sh`, `activate_ps1`, `env`, `probes` (one per probe: `command`, `ok`, `output`), and `next` when a probe failed | A conflict listed under Guarantees |
-| `design <tags>` | `root`, `steps`, `env`, `path`, `probes`; nothing is installed | As `provision` |
-| `status` | what `provision` emits, with the probes re-run | A root with no environment |
+| `install <tags>` | `ok`, `root`, `activate_sh`, `activate_ps1`, `env`, `tests` (one per test: `command`, `ok`, `output`), and `next` when a test failed | A conflict listed under Guarantees |
+| `design <tags>` | `root`, `steps`, `env`, `path`, `tests`; nothing is installed | As `install` |
+| `status` | what `install` emits, with the tests re-run | A root with no environment |
 | `shim <binary> [--platform P]` | `shim`: the wrapper path; `P` is one of `linux-64` (default), `linux-aarch64`, `osx-64`, `osx-arm64`, `win-64` | A missing binary, a platform this host runs natively, a host with no emulation |
 | `clean` | `removed`, `bytes_freed` | A root carrying no manifest this tool wrote, and `--all` |
 | `list` | `targets`: one row of `tag`, `summary`, `version` each | Nothing |
@@ -139,9 +139,9 @@ activated shell. Build and test there; commit from normal shell.
   this host all fail during planning with precise message, never
   mid-download.
 - Idempotent: interrupted or failed run is repaired by re-running same
-  command. `provision` with different tag set reshapes conda prefix to
-  exactly that set but leaves stale publisher downloads under
-  `<root>/tools`; run `clean` and re-provision for byte-exact minimal root.
+  command. `install` with different tag set reshapes conda prefix to exactly
+  that set but leaves stale publisher downloads under `<root>/tools`; run
+  `clean` and re-install for byte-exact minimal root.
 
 ## Isolation
 

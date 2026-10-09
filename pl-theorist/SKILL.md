@@ -325,8 +325,8 @@ linter, focused tests, plus loaded profile's Validation items. Its tests
 cover every sum-type variant and every smart-constructor rejection path.
 Claimed hot-path improvement cites existing benchmark or profiler run, or is
 labeled unmeasured. Validation step blocked by missing toolchain still runs:
-provision toolchain in userspace with `/setup-env`, or name unavailable
-check; never skip it silently.
+install toolchain in userspace with `/setup-env`, or name unavailable check;
+never skip it silently.
 
 ## Language Profiles
 

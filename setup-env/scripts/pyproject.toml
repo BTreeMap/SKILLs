@@ -1,7 +1,7 @@
 [project]
 name = "btm-setup-env"
 version = "1.0.0"
-description = "Typed, userspace, per-project development environment provisioner"
+description = "Typed, userspace, per-project development environment installer"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["btm-corekit", "certifi", "httpx[brotli,http2,socks,zstd]>=0.28,<1"]

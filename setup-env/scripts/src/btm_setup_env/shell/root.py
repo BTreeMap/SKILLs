@@ -1,7 +1,7 @@
 """The environment root: what it records about itself, and reading it back.
 
 The manifest is the root's own account of the project and tags it holds.
-Every executor writes through one context, so status and provision cannot
+Every executor writes through one context, so status and install cannot
 disagree about what is installed."""
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from btm_setup_env.model import (
 
 
 class Manifest(Model):
-    """What a provisioned root records about itself. One reading, so status
+    """What an installed root records about itself. One reading, so status
     and the executors cannot disagree about which project it belongs to; an
     older manifest missing a field is read, not rejected."""
 
@@ -76,41 +76,41 @@ class Ctx:
 
 
 @dataclass(frozen=True, slots=True)
-class Unprovisioned:
+class NotInstalled:
     """No manifest here, or one naming no project. Either way this tool made
     nothing at this root."""
 
 
 @dataclass(frozen=True, slots=True)
-class Provisioned:
+class Installed:
     manifest: Manifest
 
 
-Root = Unprovisioned | Provisioned
+Root = NotInstalled | Installed
 
 
 def read_root(layout: Layout) -> Root:
     """What stands at this root. A root with no manifest was never
-    provisioned; one that fails to parse is not the same thing, so it errors
+    installed; one that fails to parse is not the same thing, so it errors
     instead of reading as absent and forcing a reinstall."""
     try:
         raw = layout.manifest.read_text()
     except OSError:
-        return Unprovisioned()
+        return NotInstalled()
     try:
         manifest = parse_model(Manifest, json.loads(raw), str(layout.manifest))
     except ValueError as err:
         raise CommandError(f"unreadable {layout.manifest}: {err}") from err
-    return Provisioned(manifest) if manifest.project else Unprovisioned()
+    return Installed(manifest) if manifest.project else NotInstalled()
 
 
 def manifest_of(root: Root) -> Manifest:
     """The manifest to build on. A fresh root starts from an empty one, which
     is a beginning rather than a stand-in for absence."""
     match root:
-        case Provisioned(manifest):
+        case Installed(manifest):
             return manifest
-        case Unprovisioned():
+        case NotInstalled():
             return Manifest()
 
 

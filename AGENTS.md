@@ -71,8 +71,8 @@ Current skills:
   with costed routes and evidence that would prove it wrong.
 * `search-web/` - Searches web, Wikipedia, scholarly record when harness has
   no search tool; pulls readable text out of a page.
-* `setup-env/` - Provisions a project's development toolchain in userspace:
-  no sudo, no docker, nothing assumed present but uv.
+* `setup-env/` - Installs a project's development toolchain in userspace: no
+  sudo, no docker, nothing assumed present but uv.
 * `summon/` - Hands work to another agent: whether to delegate, what to tell
   the delegate, how to keep parallel agents apart, how to judge what comes
   back.

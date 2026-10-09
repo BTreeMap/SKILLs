@@ -8,7 +8,7 @@ import json
 import pytest
 
 from btm_setup_env.cli import _build_plan, _report, main
-from btm_setup_env.shell.commands import ProbeResult
+from btm_setup_env.shell.commands import Outcome
 
 
 def record(capsys) -> dict:
@@ -18,7 +18,7 @@ def record(capsys) -> dict:
 
 
 @pytest.fixture
-def provisioned(tmp_path):
+def installed(tmp_path):
     """A root clean will accept: a manifest plus one measurable file."""
     root = tmp_path / "denv"
     root.mkdir()
@@ -42,21 +42,19 @@ class TestClean:
         assert "no manifest.json" in capsys.readouterr().err
         assert root.exists()
 
-    def test_removal_reports_the_root_and_the_bytes(
-        self, provisioned, tmp_path, capsys
-    ):
-        assert clean(provisioned, tmp_path) == 0
+    def test_removal_reports_the_root_and_the_bytes(self, installed, tmp_path, capsys):
+        assert clean(installed, tmp_path) == 0
         document = record(capsys)
-        assert document["removed"] == str(provisioned)
+        assert document["removed"] == str(installed)
         assert document["bytes_freed"] >= 100
-        assert not provisioned.exists()
+        assert not installed.exists()
 
     def test_all_is_refused_because_no_registry_of_roots_exists(
-        self, provisioned, tmp_path, capsys
+        self, installed, tmp_path, capsys
     ):
-        assert clean(provisioned, tmp_path, "--all") == 1
+        assert clean(installed, tmp_path, "--all") == 1
         assert "no registry of roots" in capsys.readouterr().err
-        assert provisioned.exists()
+        assert installed.exists()
 
 
 class TestVerbs:
@@ -74,7 +72,7 @@ class TestVerbs:
         )
         document = record(capsys)
         assert document["root"] == str(root)
-        assert document["steps"] and document["probes"]
+        assert document["steps"] and document["tests"]
         assert not root.exists()
 
     def test_list_names_every_target(self, capsys):
@@ -96,7 +94,7 @@ class TestVerbs:
             )
             == 1
         )
-        assert "run provision first" in capsys.readouterr().err
+        assert "run install first" in capsys.readouterr().err
 
 
 class TestReport:
@@ -105,23 +103,23 @@ class TestReport:
     def plan(self, tmp_path):
         return _build_plan(tmp_path, tmp_path / "denv", ["python"])
 
-    def test_every_probe_passing_is_ok(self, tmp_path, capsys):
-        results = [ProbeResult(("python", "--version"), True, "Python 3.12.0")]
+    def test_every_test_passing_is_ok(self, tmp_path, capsys):
+        results = [Outcome(("python", "--version"), True, "Python 3.12.0")]
         assert _report(self.plan(tmp_path), results) == 0
         document = record(capsys)
         assert document["ok"] is True
         assert "next" not in document
 
-    def test_a_failed_probe_names_the_repair_and_still_exits_zero(
+    def test_a_failed_test_names_the_repair_and_still_exits_zero(
         self, tmp_path, capsys
     ):
         results = [
-            ProbeResult(("python", "--version"), True, "Python 3.12.0"),
-            ProbeResult(("uv", "--version"), False, "not found on PATH"),
+            Outcome(("python", "--version"), True, "Python 3.12.0"),
+            Outcome(("uv", "--version"), False, "not found on PATH"),
         ]
         assert _report(self.plan(tmp_path), results) == 0
         captured = capsys.readouterr()
         document = json.loads(captured.out)
         assert document["ok"] is False
-        assert "re-run provision" in document["next"]
-        assert "1 of 2 probes failed" in captured.err
+        assert "re-run install" in document["next"]
+        assert "1 of 2 tests failed" in captured.err

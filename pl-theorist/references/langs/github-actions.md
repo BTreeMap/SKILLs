@@ -117,7 +117,7 @@ variable; logic is in ShellCheck-able script.
 ## Validation
 
 Run `actionlint` and security scanner such as `zizmor`. No `/setup-env` tag
-provisions either; run both through uv, which `/setup-env` already assumes:
+installs either; run both through uv, which `/setup-env` already assumes:
 
 <commands for="workflow-lint">
 uvx --from actionlint-py actionlint
@@ -125,7 +125,7 @@ uvx zizmor .github/workflows
 </commands>
 
 `actionlint` ShellChecks embedded `run:` blocks only when `shellcheck` is on
-PATH; provision it with `/setup-env provision bash`. Grep workflow set for
+PATH; install it with `/setup-env install bash`. Grep workflow set for
 missing `permissions`, missing `timeout-minutes`, unpinned third-party
 `uses:`, `${{` inside `run:`. Exercise `workflow_call` with invalid input to
 prove boundary rejects it. Behavior must be seen to be trusted: trigger

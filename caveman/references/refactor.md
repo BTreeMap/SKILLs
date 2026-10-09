@@ -3,7 +3,7 @@
 Rewrite natural-language file (CLAUDE.md, notes, todos, preferences) in
 caveman style in place to cut input-token cost. Agent compresses prose;
 bundled guard script deterministically handles rest: classification,
-sensitive-file refusal, verified out-of-tree backup, structural validation,
+sensitive-file refusal, verified out-of-tree copy, structural validation,
 atomic writes. Script never writes target file until validation passes.
 
 ## Script
@@ -14,7 +14,7 @@ Bind guard command once per shell; re-bind after reset; `realpath` required:
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-caveman"
 </commands>
 
-Command surface: `prepare`, `apply`, `restore`, `clean`, used as steps below
+Command surface: `prepare`, `apply`, `replace`, `clean`, used as steps below
 show. Invoke script, read its output; read its source only when user
 instructs troubleshooting. Every subcommand prints one JSON record on
 stdout; advisories arrive on stderr as `signal:` lines.
@@ -30,21 +30,20 @@ $R prepare <absolute-filepath> [--project <name>]
    Refusal exits 1 with `error: <reason>`, nothing changed. Refusals are
    hard invariants: report reason and stop; trust them, never bypass one
    with manual write. Script refuses exact credential, key, and secret
-   filenames; paths inside known private directory; backup artifacts and any
-   path inside backup tree (backups live outside tree so skill auto-loaders
-   never re-ingest them); file already having backup; empty files; files
-   over 500KB; non-UTF-8 files.
+   filenames; paths inside known private directory; copy artifacts and any
+   path inside copy tree (copies live outside tree so skill auto-loaders
+   never re-ingest them); file already having copy; empty files; files over
+   500KB; non-UTF-8 files.
 
-   On success record carries `backup` and `body` paths, `frontmatter` saying
+   On success record carries `copy` and `body` paths, `frontmatter` saying
    whether one was split off (preserved verbatim), body's `chars`, `project`
-   (`--project NAME` tags backup with free project name shared across
-   skills).
+   (`--project NAME` tags copy with free project name shared across skills).
 
    `signal:` lines are advisory heuristics for you to weigh: content
    assessed as code, config, or inconclusive, with observed ratios; filename
    that merely reads sensitive. Signal saying code, config, or sensitive
    filename stops run unless user explicitly named this exact file; then
-   proceed, since verified backup makes it undoable.
+   proceed, since verified copy makes it undoable.
 
 2. Compress. Read `body` file, rewrite its prose per rules below, write
    result to scratch file. Do not touch fenced code, inline code, URLs, or
@@ -65,17 +64,17 @@ $R apply <absolute-filepath> --body:file <compressed-body-file>
    `chars_after`, `percent_smaller`. Exit 1 returns rejection record
    instead: each entry under `rejected` names failed check in `where` and
    problem in `fix`; `unchanged` confirms target file never written. Fix
-   ONLY listed problems in scratch file by restoring missing content from
-   backup (never recompress untouched sections), re-apply. After two failed
+   ONLY listed problems in scratch file by putting back missing content from
+   copy (never recompress untouched sections), re-apply. After two failed
    fix rounds, stop and report; target file still untouched.
 
-4. To undo completed compression: `$R restore <filepath>`.
+4. To undo completed compression: `$R replace <filepath>`.
 
 ## Cleanup
 
-`$R clean` with no argument lists backups held, with sizes and projects,
+`$R clean` with no argument lists copies held, with sizes and projects,
 writes nothing; `--project NAME` keeps one project's. Only when user
-EXPLICITLY asks to clear compression backups (never unprompted, never as
+EXPLICITLY asks to clear compression copies (never unprompted, never as
 routine tidying), run one of:
 
 <commands for="clean">
@@ -83,8 +82,8 @@ $R clean <filepath>
 $R clean --all
 </commands>
 
-First removes one file's backup; second removes every backup this tool ever
-made. Each reports `removed` and `bytes_freed`. Removed backup destroys only
+First removes one file's copy; second removes every copy this tool ever
+made. Each reports `removed` and `bytes_freed`. Removed copy destroys only
 undo for its compression: confirm intent first when request is ambiguous.
 
 ## Compression Rules

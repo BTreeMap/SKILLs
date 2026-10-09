@@ -24,8 +24,8 @@ from btm_setup_env.model import (
 )
 from btm_setup_env.plan import Plan, make_plan
 from btm_setup_env.render import path_value
-from btm_setup_env.shell.commands import ProbeResult, make_shim, provision, verify
-from btm_setup_env.shell.root import Provisioned, ensure_dirs, read_root
+from btm_setup_env.shell.commands import Outcome, install, make_shim, verify
+from btm_setup_env.shell.root import Installed, ensure_dirs, read_root
 from btm_setup_env.steps import CondaEnv, Fetch
 from btm_setup_env.tags import resolve_tag
 
@@ -63,18 +63,18 @@ def cmd_design(args: argparse.Namespace) -> int:
             "steps": [_describe_step(s) for s in plan.steps],
             "env": dict(plan.env.vars),
             "path": [str(p) for p in plan.env.path],
-            "probes": [" ".join(p) for p in plan.probes],
+            "tests": [" ".join(t) for t in plan.tests],
         }
     )
     return 0
 
 
-def _report(plan: Plan, results: list[ProbeResult]) -> int:
-    """A failed probe is a finished run reporting a broken toolchain, not a
-    malformed request: the record says which probe broke and exit 0 stands,
+def _report(plan: Plan, results: list[Outcome]) -> int:
+    """A failed test is a finished run reporting a broken toolchain, not a
+    malformed request: the record says which test broke and exit 0 stands,
     because exit 1 means the caller can fix its own input."""
     failed = [r for r in results if not r.ok]
-    repair = "re-run provision; the failed probe names what to repair"
+    repair = "re-run install; the failed test names what to repair"
     document: dict[str, Any] = {
         "ok": not failed,
         "root": str(plan.layout.root),
@@ -84,30 +84,30 @@ def _report(plan: Plan, results: list[ProbeResult]) -> int:
             **dict(plan.env.vars),
             "PATH": path_value(plan.env, plan.host),
         },
-        "probes": [
+        "tests": [
             {"command": " ".join(r.command), "ok": r.ok, "output": r.output}
             for r in results
         ],
     }
     if failed:
         document["next"] = repair
-        signal(f"{len(failed)} of {len(results)} probes failed; {repair}")
+        signal(f"{len(failed)} of {len(results)} tests failed; {repair}")
     emit(document)
     return 0
 
 
-def cmd_provision(args: argparse.Namespace) -> int:
+def cmd_install(args: argparse.Namespace) -> int:
     plan = _build_plan(args.project, args.root, args.tags)
-    return _report(plan, provision(plan))
+    return _report(plan, install(plan))
 
 
 def cmd_status(args: argparse.Namespace) -> int:
     _, _, layout = _resolve(args.project, args.root, [])
     match read_root(layout):
-        case Provisioned(manifest):
+        case Installed(manifest):
             pass
         case _:
-            raise CommandError(f"no environment at {layout.root}; run provision first")
+            raise CommandError(f"no environment at {layout.root}; run install first")
     plan = _build_plan(Path(manifest.project), layout.root, list(manifest.spec))
     return _report(plan, verify(plan))
 
@@ -119,7 +119,7 @@ def cmd_clean(args: argparse.Namespace) -> int:
     if not layout.manifest.exists():
         raise CommandError(
             f"refusing to delete {layout.root}: no manifest.json; "
-            "was this directory provisioned by btm-setup-env?"
+            "was this directory installed by btm-setup-env?"
         )
     emit(remove_tree(layout.root))
     return 0
@@ -152,7 +152,7 @@ def cmd_list(args: argparse.Namespace) -> int:
 def _parser() -> argparse.ArgumentParser:
     p = Parser(
         prog="btm-setup-env",
-        description="Provision an isolated, userspace, per-project dev "
+        description="Install an isolated, userspace, per-project dev "
         "environment. Tags: family[:flavor][@version], "
         "e.g. python@3.12 kotlin:android go:cgo.",
     )
@@ -173,10 +173,10 @@ def _parser() -> argparse.ArgumentParser:
         )
 
     for verb, summary, handler in (
-        ("provision", "install the toolchains these tags name", cmd_provision),
+        ("install", "install the toolchains these tags name", cmd_install),
         (
             "design",
-            "show what provision would install, and install nothing",
+            "show what install would do, and install nothing",
             cmd_design,
         ),
     ):
@@ -185,7 +185,7 @@ def _parser() -> argparse.ArgumentParser:
         sp.add_argument("tags", nargs="+", metavar="TAG")
         common(sp)
     status = sub.add_parser(
-        "status", help="report what is installed and whether each probe passes"
+        "status", help="report what is installed and whether each test passes"
     )
     status.set_defaults(func=cmd_status)
     common(status)

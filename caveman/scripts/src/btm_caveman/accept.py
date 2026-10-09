@@ -11,7 +11,7 @@ from btm_caveman.sensitive import is_sensitive, name_reads_sensitive
 from btm_caveman.store import STORE, read_utf8
 
 # Guidance the agent receives alongside a non-prose assessment. Advisory:
-# the agent weighs it against user intent; the backup keeps either call safe.
+# the agent weighs it against user intent; the copy keeps either call safe.
 KIND_GUIDANCE = {
     FileKind.CODE: (
         "assessed as CODE: compress only when the user named this exact file"
@@ -41,7 +41,7 @@ def accept(path: Path) -> Accepted:  # noqa: PLR0911
             " secrets, or a known private path). Rename it if this is a false positive."
         )
     if path.name.endswith(".original.md") or STORE.root().resolve() in path.parents:
-        return Refusal("Refusing to compress a backup file")
+        return Refusal("Refusing to compress a copy")
     if path.stat().st_size > MAX_FILE_SIZE:
         return Refusal(f"File exceeds {MAX_FILE_SIZE // 1000}KB; split it first")
     text = read_utf8(path)

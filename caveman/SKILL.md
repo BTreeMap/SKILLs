@@ -127,7 +127,7 @@ load only this way or through wenyan level.
 | --- | --- |
 | commit | Terse commit message, why over what; format from `/git-commit`. |
 | examine | One-line findings: location, tag, problem, fix. |
-| refactor | Rewrite prose file `<file>` in caveman style in place, code untouched, backup kept. Script commands live in `refactor`. |
+| refactor | Rewrite prose file `<file>` in caveman style in place, code untouched, copy kept. Script commands live in `refactor`. |
 | measure | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
 | help | Quick-reference card for levels and verbs. |
 

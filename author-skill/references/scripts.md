@@ -143,7 +143,7 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
 
 | State | Location |
 | --- | --- |
-| Durable and light (backups, logs, sessions) | `${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/<skill-name>/` (`%LOCALAPPDATA%\btm-skills\` on Windows), in purpose-named subdirectories |
+| Durable and light (copies, logs, sessions) | `${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/<skill-name>/` (`%LOCALAPPDATA%\btm-skills\` on Windows), in purpose-named subdirectories |
 | Heavy or regenerable (downloads, toolchains, caches) | Temporary space, under directory named for its owner |
 | Logs | JSONL, one timestamped record per line, capped at write time |
 

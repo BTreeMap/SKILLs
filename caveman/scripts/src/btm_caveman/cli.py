@@ -62,33 +62,33 @@ def cmd_prepare(args: argparse.Namespace) -> int:
     meta = read_meta(slot)
     if meta is not None and meta.source != str(plan.path):
         raise CommandError(
-            f"backup slot collision: {slot.directory} records {meta.source};"
-            " refusing to touch another file's backup"
+            f"copy slot collision: {slot.directory} records {meta.source};"
+            " refusing to touch another file's copy"
         )
-    if slot.backup_path.exists():
+    if slot.copy_path.exists():
         raise CommandError(
-            f"backup already exists: {slot.backup_path}; remove or restore it"
+            f"copy already exists: {slot.copy_path}; remove or replace it"
             " first, refusing to overwrite a prior original"
         )
-    # Identity before content: a backup must never exist anonymously.
+    # Identity before content: a copy must never exist anonymously.
     meta = SlotMeta(source=str(plan.path), project=args.project)
     STORE.write_meta(slot.directory, meta)
-    write_atomic(slot.backup_path, plan.original)
-    if read_utf8(slot.backup_path) != plan.original:
-        slot.backup_path.unlink(missing_ok=True)
-        raise CommandError("backup readback mismatch; aborting before any change")
+    write_atomic(slot.copy_path, plan.original)
+    if read_utf8(slot.copy_path) != plan.original:
+        slot.copy_path.unlink(missing_ok=True)
+        raise CommandError("copy readback mismatch; aborting before any change")
     write_atomic(slot.body_path, plan.body)
     # The heuristic evidence, handed over as advice: it never blocks.
     for note in plan.notes:
         signal(note)
     if plan.notes:
-        signal("signals advise; the user's request decides (restore undoes everything)")
+        signal("signals advise; the user's request decides (replace undoes everything)")
     warn_format(plan.path)
     emit(
         {
             "file": str(plan.path),
             "project": meta.project,
-            "backup": str(slot.backup_path),
+            "copy": str(slot.copy_path),
             "body": str(slot.body_path),
             "frontmatter": bool(plan.frontmatter),
             "chars": len(plan.body),
@@ -104,7 +104,7 @@ def cmd_apply(args: argparse.Namespace) -> int:
     slot = load_slot(path)
     # An empty body is rejected by the slot itself, before anything is read.
     compressed_body = text(BODY, args)
-    original = read_utf8(slot.backup_path)
+    original = read_utf8(slot.copy_path)
     frontmatter, original_body = split_frontmatter(original)
     if compressed_body.strip() == original_body.strip():
         raise CommandError("output identical to input; file may already be compressed")
@@ -122,7 +122,7 @@ def cmd_apply(args: argparse.Namespace) -> int:
     emit(
         {
             "file": str(path),
-            "backup": str(slot.backup_path),
+            "copy": str(slot.copy_path),
             "chars_before": len(original),
             "chars_after": len(candidate),
             "percent_smaller": percent,
@@ -131,24 +131,24 @@ def cmd_apply(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_restore(args: argparse.Namespace) -> int:
+def cmd_replace(args: argparse.Namespace) -> int:
     path = Path(args.file).resolve()
     slot = load_slot(path)
-    write_atomic(path, read_utf8(slot.backup_path))
-    emit({"file": str(path), "backup": str(slot.backup_path)})
+    write_atomic(path, read_utf8(slot.copy_path))
+    emit({"file": str(path), "copy": str(slot.copy_path)})
     return 0
 
 
 def cmd_clean(args: argparse.Namespace) -> int:
-    """List the backups, or delete some. Deletion destroys the undo, so it
+    """List the copies, or delete some. Deletion destroys the undo, so it
     runs only on an explicit request."""
     if args.file is None:
         listing = STORE.clean(None, args.all, args.project)
-        # A slot is addressed by the file it backs up, never by its own name.
+        # A slot is addressed by the file it copies, never by its own name.
         emit(
             listing
             if args.all
-            else listing | {"next": "pass a file path to remove its backup, or --all"}
+            else listing | {"next": "pass a file path to remove its copy, or --all"}
         )
         return 0
     target = Path(args.file).resolve()
@@ -171,10 +171,10 @@ def build_parser() -> argparse.ArgumentParser:
     for verb, summary, run in (
         (
             "prepare",
-            "back the file up and split its body out for rewriting",
+            "copy the file and split its body out for rewriting",
             cmd_prepare,
         ),
-        ("restore", "put the backed-up original back", cmd_restore),
+        ("replace", "put the copied original back", cmd_replace),
     ):
         sub = commands.add_parser(verb, help=summary)
         sub.set_defaults(func=run)
@@ -187,12 +187,12 @@ def build_parser() -> argparse.ArgumentParser:
     applier.add_argument("file")
     add_slot(applier, BODY, "the compressed body, frontmatter excluded")
     cleaner = commands.add_parser(
-        "clean", help="list backups with sizes; remove one file's or --all"
+        "clean", help="list copies with sizes; remove one file's or --all"
     )
     cleaner.set_defaults(func=cmd_clean)
     cleaner.add_argument("file", nargs="?")
     cleaner.add_argument("--all", action="store_true")
-    wire_project(cleaner, "list only backups tagged NAME")
+    wire_project(cleaner, "list only copies tagged NAME")
     return parser
 
 

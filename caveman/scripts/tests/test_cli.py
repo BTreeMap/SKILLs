@@ -1,4 +1,4 @@
-"""The verbs end to end: accept, prepare, apply, restore, clean."""
+"""The verbs end to end: accept, prepare, apply, replace, clean."""
 
 from __future__ import annotations
 
@@ -89,7 +89,7 @@ class TestAccept:
 
 
 class TestRoundTrip:
-    def test_prepare_then_apply_then_restore(self, note, capsys):
+    def test_prepare_then_apply_then_replace(self, note, capsys):
         assert main(["prepare", str(note)]) == 0
         prepared = record(capsys)
         assert prepared["frontmatter"] is False
@@ -101,8 +101,8 @@ class TestRoundTrip:
         assert applied["chars_before"] == len(PROSE)
         assert applied["chars_after"] < applied["chars_before"]
 
-        assert main(["restore", str(note)]) == 0
-        assert record(capsys)["backup"] == prepared["backup"]
+        assert main(["replace", str(note)]) == 0
+        assert record(capsys)["copy"] == prepared["copy"]
         assert note.read_text(encoding="utf-8") == PROSE
 
     def test_every_validation_error_arrives_in_one_verdict(self, tmp_path, capsys):
@@ -138,8 +138,8 @@ class TestRoundTrip:
     def test_apply_without_prepare_refuses(self, note):
         assert apply(note, "x\n") == 1
 
-    def test_restore_without_a_backup_refuses(self, note):
-        assert main(["restore", str(note)]) == 1
+    def test_replace_without_a_copy_refuses(self, note):
+        assert main(["replace", str(note)]) == 1
 
 
 class TestClean:
@@ -156,7 +156,7 @@ class TestClean:
         capsys.readouterr()
         assert main(["clean", str(note)]) == 0
         assert record(capsys)["bytes_freed"] > 0
-        assert main(["restore", str(note)]) == 1  # the undo is gone
+        assert main(["replace", str(note)]) == 1  # the undo is gone
 
     def test_clean_refuses_a_slot_recording_another_file(
         self, note, tmp_path, monkeypatch, capsys
@@ -168,7 +168,7 @@ class TestClean:
         shared = caveman_cli.slot_for(note.resolve())
         monkeypatch.setattr(caveman_cli, "slot_for", lambda path: shared)
         assert main(["clean", str(other)]) == 1
-        assert shared.backup_path.is_file()
+        assert shared.copy_path.is_file()
 
     def test_clean_all_reports_an_empty_tree(self, capsys):
         assert main(["clean", "--all"]) == 0
@@ -176,16 +176,16 @@ class TestClean:
 
 
 class TestRefusals:
-    def test_prepare_refuses_to_overwrite_an_existing_backup(self, note, capsys):
+    def test_prepare_refuses_to_overwrite_an_existing_copy(self, note, capsys):
         """The witness gating destruction: a second prepare must not replace
-        the original the first one saved, or restore returns the compressed
+        the original the first one saved, or replace returns the compressed
         text and the real original is gone."""
         assert main(["prepare", str(note)]) == 0
         note.write_text("# Notes\n\nedited since the first prepare.\n")
         capsys.readouterr()
         assert main(["prepare", str(note)]) == 1
-        assert "backup already exists" in capsys.readouterr().err
-        assert main(["restore", str(note)]) == 0
+        assert "copy already exists" in capsys.readouterr().err
+        assert main(["replace", str(note)]) == 0
         assert "reasonably long sentence" in note.read_text(encoding="utf-8")
 
     def test_prepare_refuses_a_slot_recording_another_file(
@@ -214,7 +214,7 @@ class TestRefusals:
 
 
 class TestProject:
-    def test_prepare_tags_the_backup_and_clean_filters_by_it(self, note, capsys):
+    def test_prepare_tags_the_copy_and_clean_filters_by_it(self, note, capsys):
         assert main(["prepare", str(note), "--project", "ste-tax"]) == 0
         assert record(capsys)["project"] == "ste-tax"
         assert main(["clean", "--project", "ste-tax"]) == 0

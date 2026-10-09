@@ -1,4 +1,4 @@
-"""What a verb does: provision a plan, write its activation, probe it, or
+"""What a verb does: install a plan, write its activation, test it, or
 shim one binary. The command surface calls nothing else in this package."""
 
 from __future__ import annotations
@@ -28,13 +28,13 @@ from btm_setup_env.steps import (
 
 
 @dataclass(frozen=True, slots=True)
-class ProbeResult:
+class Outcome:
     command: tuple[str, ...]
     ok: bool
     output: str
 
 
-def provision(plan: Plan) -> list[ProbeResult]:
+def install(plan: Plan) -> list[Outcome]:
     layout = plan.layout
     ensure_dirs(layout)
     ctx = Ctx(layout, plan.host, manifest_of(read_root(layout)))
@@ -63,15 +63,15 @@ def write_activation(plan: Plan) -> None:
         path.chmod(0o755)
 
 
-def verify(plan: Plan) -> list[ProbeResult]:
-    """Run every recipe's probes inside the realized activation environment:
+def verify(plan: Plan) -> list[Outcome]:
+    """Run every recipe's tests inside the realized activation environment:
     what these prove is exactly what a sourced activate.sh grants."""
     env = realize(plan.env, plan.host)
     results = []
-    for command in plan.probes:
+    for command in plan.tests:
         argv0 = shutil.which(command[0], path=env.get("PATH"))
         if argv0 is None:
-            results.append(ProbeResult(command, False, "not found on PATH"))
+            results.append(Outcome(command, False, "not found on PATH"))
             continue
         try:
             proc = subprocess.run(
@@ -81,15 +81,15 @@ def verify(plan: Plan) -> list[ProbeResult]:
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                check=False,  # Report failed probes as results.
+                check=False,  # Report failed tests as results.
             )
         except subprocess.TimeoutExpired:
-            results.append(ProbeResult(command, False, "probe timed out"))
+            results.append(Outcome(command, False, "test timed out"))
             continue
         first = next(
             (line for line in (proc.stdout or "").splitlines() if line.strip()), ""
         )
-        results.append(ProbeResult(command, proc.returncode == 0, first))
+        results.append(Outcome(command, proc.returncode == 0, first))
     return results
 
 

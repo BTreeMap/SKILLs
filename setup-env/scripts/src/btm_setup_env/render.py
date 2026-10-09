@@ -1,8 +1,8 @@
 """Pure renderers: one EnvDelta, three consumers.
 
 The same value becomes activate.sh (POSIX), activate.ps1 (PowerShell), and
-the literal process environment used for verification probes. Because all
-three come from one merged delta, the environment the probes proved is the
+the literal process environment used for verification tests. Because all
+three come from one merged delta, the environment the tests proved is the
 environment activation grants; the renderers cannot drift apart.
 """
 
@@ -60,7 +60,7 @@ def render_ps1(delta: EnvDelta, host: Host) -> str:
 
 
 def realize(delta: EnvDelta, host: Host) -> dict[str, str]:
-    """The probe environment: what a shell would hold after sourcing the
+    """The test environment: what a shell would hold after sourcing the
     activation script, built directly rather than through a shell."""
     if host.os is OS.WINDOWS:
         # Windows normalizes environment keys; preserve inherited PATH spelling.

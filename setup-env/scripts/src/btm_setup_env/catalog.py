@@ -2,7 +2,7 @@
 
 A recipe answers three questions, as pure data or a pure function: which
 steps materialize the toolchain, which environment delta activates it, and
-which probes prove it works. The catalog alone knows suppliers and URLs.
+which tests prove it works. The catalog alone knows suppliers and URLs.
 
 Suppliers, each the only sensible one for what it provides:
   uv           CPython interpreters and venvs (the skill is all-in on uv)
@@ -145,7 +145,7 @@ def qemu_steps(emu: QemuUser) -> tuple[CondaEnv, CondaEnv]:
 
 def _no_windows(host: Host, what: str) -> None:
     if host.os is OS.WINDOWS:
-        raise CommandError(f"{what} is not provisionable on windows; use WSL")
+        raise CommandError(f"{what} is not installable on windows; use WSL")
 
 
 def _venv_bin(layout: Layout, host: Host) -> Path:
@@ -194,7 +194,7 @@ class Recipe:
     version_doc: str | None  # @version help text; None means no version
     requirements: Callable[[Host, str | None], tuple[Step, ...]]
     env: Callable[[Layout, Host], EnvDelta]
-    probes: tuple[tuple[str, ...], ...]
+    tests: tuple[tuple[str, ...], ...]
 
 
 def _conda_only(tool: str, host: Host, version: str | None) -> tuple[Step, ...]:
@@ -441,7 +441,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
             ),
         )
 
-    android_probes = (("sdkmanager", "--version"),)
+    android_tests = (("sdkmanager", "--version"),)
     for family in ("kotlin", "java"):
         r.append(
             Recipe(
@@ -451,7 +451,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
                 f"Android API level (default {DEFAULT_ANDROID_API})",
                 _android_req,
                 _android_env,
-                android_probes,
+                android_tests,
             )
         )
 
@@ -532,7 +532,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
         triple = GHCUP_TRIPLE.get((host.os, host.arch))
         if triple is None:
             raise CommandError(
-                "haskell via ghcup is not provisionable on windows; use WSL"
+                "haskell via ghcup is not installable on windows; use WSL"
             )
         url = (
             f"https://downloads.haskell.org/~ghcup/{GHCUP_VERSION}/"
@@ -600,7 +600,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
     )
 
     # Standalone build tools
-    for tool, probe in (
+    for tool, test in (
         ("cmake", ("cmake", "--version")),
         ("ninja", ("ninja", "--version")),
     ):
@@ -611,7 +611,7 @@ def _recipes() -> dict[RecipeKey, Recipe]:  # noqa: PLR0915
                 f"{tool} version",
                 partial(_conda_only, tool),
                 lambda layout, host: EnvDelta(),
-                (probe,),
+                (test,),
             )
         )
 

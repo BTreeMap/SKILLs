@@ -28,7 +28,7 @@ submodule.
 | [read-pdf](read-pdf/SKILL.md) | Extracts text and metadata from a PDF and answers questions about it with page-cited evidence, without OCR. |
 | [reframe](reframe/SKILL.md) | Turns a planning discussion into a testable direction judgment with costed routes and the evidence that would prove it wrong. |
 | [search-web](search-web/SKILL.md) | Searches the web, Wikipedia, and the scholarly record when the harness has no search tool, and pulls the readable text out of a page. |
-| [setup-env](setup-env/SKILL.md) | Provisions a project's development toolchain in userspace, with no sudo, no docker, and nothing assumed present but uv. |
+| [setup-env](setup-env/SKILL.md) | Installs a project's development toolchain in userspace, with no sudo, no docker, and nothing assumed present but uv. |
 | [summon](summon/SKILL.md) | Hands work to another agent: whether to delegate, what to tell the delegate, how to keep parallel agents apart, and how to judge what comes back. |
 | [thematic-analysis](thematic-analysis/SKILL.md) | Develops themes from qualitative text under one named school, each theme backed by verbatim extracts and counts. |
 

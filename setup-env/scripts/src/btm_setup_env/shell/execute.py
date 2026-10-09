@@ -2,7 +2,7 @@
 
 Every executor is idempotent: it checks its own postcondition and returns
 without work when the step is already satisfied. That is what makes
-re-running provision the repair action rather than a reinstall."""
+re-running install the repair action rather than a fresh start."""
 
 from __future__ import annotations
 
@@ -455,7 +455,7 @@ def do_bind_gradle(ctx: Ctx, step: BindGradleProject) -> None:
 
 def execute(ctx: Ctx, step: Step) -> None:
     """Exhaustive over the closed sum, so a new variant is a type error here
-    rather than a KeyError partway through a provision."""
+    rather than a KeyError partway through an install."""
     match step:
         case CondaEnv():
             conda_create(ctx, step)

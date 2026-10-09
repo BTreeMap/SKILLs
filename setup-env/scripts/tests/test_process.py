@@ -16,7 +16,7 @@ class TestRunLogged:
         """Build tools put the sentence worth reading at the end."""
         with pytest.raises(CommandError, match="the last line"):
             run_logged(
-                "probe",
+                "test",
                 [sys.executable, "-c", "print('the last line'); raise SystemExit(1)"],
                 dict(os.environ),
             )
@@ -24,7 +24,7 @@ class TestRunLogged:
     def test_a_stuck_command_is_retryable(self):
         with pytest.raises(UpstreamError, match="produced no exit"):
             run_logged(
-                "probe",
+                "test",
                 [sys.executable, "-c", "import time; time.sleep(30)"],
                 dict(os.environ),
                 timeout=0.5,

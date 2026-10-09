@@ -1,8 +1,8 @@
 """Pure planner: Spec x Host -> Plan.
 
 The plan is a value: a deterministic, sorted, deduplicated tuple of steps
-plus the merged activation delta and the probe set. Planning performs no
-effects, so `btm-setup-env design` can print exactly what `provision` would do, and
+plus the merged activation delta and the test set. Planning performs no
+effects, so `btm-setup-env design` can print exactly what `install` would do, and
 tests can assert on plans without a network.
 """
 
@@ -30,7 +30,7 @@ class Plan:
     layout: Layout
     steps: tuple[Step, ...]
     env: EnvDelta  # merged, host-resolved delta
-    probes: tuple[tuple[str, ...], ...]  # unique, stable-order probes
+    tests: tuple[tuple[str, ...], ...]  # unique, stable-order tests
 
 
 def _base_env(layout: Layout, host: Host, spec: Spec) -> EnvDelta:
@@ -110,6 +110,6 @@ def make_plan(spec: Spec, host: Host, layout: Layout) -> Plan:
     env = merge_deltas(deltas)
 
     # First occurrence wins, order kept: dict.fromkeys is the O(n) dedupe.
-    probes = dict.fromkeys(probe for recipe, _ in recipes for probe in recipe.probes)
+    tests = dict.fromkeys(test for recipe, _ in recipes for test in recipe.tests)
 
-    return Plan(spec, host, layout, steps, env, tuple(probes))
+    return Plan(spec, host, layout, steps, env, tuple(tests))

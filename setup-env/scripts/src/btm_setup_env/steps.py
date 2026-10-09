@@ -76,7 +76,7 @@ class GhcupToolchain:
 
 @dataclass(frozen=True, slots=True)
 class AndroidSdk:
-    """sdkmanager-driven SDK provisioning: licenses, platform, build-tools."""
+    """sdkmanager-driven SDK install: licenses, platform, build-tools."""
 
     api: int
 

@@ -1,7 +1,7 @@
 """The pure planner: Spec x Host -> Plan.
 
 Planning performs no effects, so every law below is checkable without a
-network, a toolchain, or a filesystem. These are the invariants provisioning
+network, a toolchain, or a filesystem. These are the invariants installing
 relies on before it starts deleting and downloading anything.
 """
 
@@ -46,7 +46,7 @@ def env_of(plan) -> dict[str, str]:
 class TestPurity:
     def test_planning_twice_yields_an_equal_plan(self):
         """The plan is a value, which is what lets `plan` print exactly what
-        `provision` would do."""
+        `install` would do."""
         assert planned("python", "go") == planned("python", "go")
 
     def test_target_order_does_not_change_the_plan(self):
@@ -135,11 +135,11 @@ class TestIsolationFloor:
         assert planned("python").layout.shims in planned("python").env.path
 
 
-class TestProbes:
-    def test_probes_keep_first_occurrence_order_without_repeats(self):
-        probes = planned("c", "cpp", "cmake").probes
-        assert len(probes) == len(set(probes))
-        assert probes[0] in planned("c").probes
+class TestTests:
+    def test_tests_keep_first_occurrence_order_without_repeats(self):
+        tests = planned("c", "cpp", "cmake").tests
+        assert len(tests) == len(set(tests))
+        assert tests[0] in planned("c").tests
 
 
 class TestConflict:
@@ -154,7 +154,7 @@ class TestConflict:
             version_doc=None,
             requirements=lambda host, v: (CondaEnv("conda/host", platform, (name,)),),
             env=lambda layout, host: EnvDelta(),
-            probes=(),
+            tests=(),
         )
 
     def test_one_prefix_claimed_for_two_platforms_is_refused(self, monkeypatch):
