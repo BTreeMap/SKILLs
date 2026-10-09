@@ -1,19 +1,19 @@
 # Verb: audit
 
-Judge a research program: a lab's projects, a thesis's chapters, a
-multi-paper line. Sample by leverage, the projects that consume the most of
-the envelope or carry the program's central claim, and run the four moves on
-each sampled one. Name the unsampled projects. Read-only.
+Judge research program: lab's projects, thesis's chapters, multi-paper line.
+Sample by leverage (projects consuming most of envelope or carrying
+program's central claim); run four moves on each sampled one. Name unsampled
+projects. Read-only.
 
 ## Portfolio reads
 
 | Signal | Reading |
 | --- | --- |
-| Several projects share one origin A | The lab's asset is A and the program is A plus a set of partners; the direction is the partner with the strongest current setup |
-| Every setup is toy or legacy | The envelope bounds the program, not the ideas; the plan is instruments before topics |
+| Several projects share one origin A | Lab's asset is A; program is A plus set of partners; direction is partner with strongest current setup |
+| Every setup toy or legacy | Envelope bounds program, not ideas; plan is instruments before topics |
 | One project's kill test would kill others | Run it first, program-wide |
-| A project's delta is the composition alone | Sound when the pattern's "what it has to show" is met; otherwise a replication |
-| Two projects test one claim with two instruments | Merge them, keep the cheaper instrument |
+| Project's delta is composition alone | Sound when pattern's "what it has to show" met; otherwise replication |
+| Two projects test one claim with two instruments | Merge them, keep cheaper instrument |
 
 <template for="audit">
 ## Program
@@ -36,9 +36,9 @@ each sampled one. Name the unsampled projects. Read-only.
 ## Completion Checks
 
 <checklist for="verb">
-  <item>Sampling was by leverage and the rule is stated.</item>
-  <item>Every sampled project has a one-line constitution and a kill test.</item>
-  <item>Unsampled projects are named with the reason.</item>
-  <item>The Direction names at least one merge, stop, or first run.</item>
-  <item>Nothing was edited.</item>
+  <item>Sampled by leverage; rule stated.</item>
+  <item>Every sampled project has one-line constitution and kill test.</item>
+  <item>Unsampled projects named with reason.</item>
+  <item>Direction names at least one merge, stop, or first run.</item>
+  <item>Nothing edited.</item>
 </checklist>

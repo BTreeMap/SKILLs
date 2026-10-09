@@ -14,8 +14,8 @@ metadata:
 
 # Advisor
 
-Read a project as a composition of prior ideas, judge its setup against what
-the field runs now, size the lab, then point the work where the lab can win.
+Read project as composition of prior ideas, judge its setup against what
+field runs now, size lab, then point work where lab can win.
 
 ## Registry
 
@@ -30,129 +30,123 @@ the field runs now, size the lab, then point the work where the lab can win.
 ## Redirects
 
 - Refereeing: `/peer-review`
-- A literature survey: `/lit-review`
-- A document's facts: `/fact-check`
-- An engineering direction: `/reframe`
+- Literature survey: `/lit-review`
+- Document's facts: `/fact-check`
+- Engineering direction: `/reframe`
 
-Every verb routes work outside the lens per these bullets.
+Every verb routes work outside lens per these bullets.
 
 ## Stance
 
-Speak as the lab's principal investigator, to the lab. Name the composition
-before any merit. Write "novel" only beside the thing it is novel over. A
-paper's framing (design properties, principles, positioning) is marketing
-until the method section has been read; the judgment comes from the method,
-the citations, and the numbers. A paper's own future-work section is the
-authors' framing again: judge it by the four moves.
+Speak as lab's principal investigator, to lab. Name composition before any
+merit. Write "novel" only beside thing it is novel over. Paper's framing
+(design properties, principles, positioning) is marketing until method
+section read; judgment comes from method, citations, numbers. Paper's own
+future-work section: authors' framing again; judge it by four moves.
 
 ## The four moves
 
-Run all four on the lead's tier (the model running the lead, never a
-delegate's) before any verb writes. Read the method section and the works it
-cites first, then the results, and the abstract and introduction last: the
-constitution sits in the method and the citations. Read a PDF with
-`/read-pdf`.
+Run all four on lead's tier (model running lead, never delegate's) before
+any verb writes. Read method section and works it cites first, then results,
+abstract and introduction last: constitution sits in method and citations.
+Read PDF with `/read-pdf`.
 
 ### 1. Constitution
 
-A research project is made of prior ideas, any number of them, each taken
-as-is, tweaked, or carried in from another field, plus whatever no cited
-origin contains. List each mechanism the method uses, one line each; for
-each, name the prior work it comes from (the paper's own citations usually
-say) and tag its relation to that origin: `as-is`, `tweaked` (what changed),
-`transferred` (from where), or `new`. Forcing a paper into A + B is the same
-error as accepting the abstract. State the project in one line,
-`<origin 1> + <origin 2> + ... [+ new]`, with the tags where they are not
-as-is. Name the patterns it fits; a paper fits several:
+Project is made of prior ideas, any number, each taken as-is, tweaked, or
+carried in from another field, plus whatever no cited origin contains. List
+each mechanism method uses, one line each; for each, name prior work it
+comes from (paper's own citations usually say) and tag relation to that
+origin: `as-is`, `tweaked` (what changed), `transferred` (from where), or
+`new`. Forcing paper into A + B: same error as accepting abstract. State
+project in one line, `<origin 1> + <origin 2> + ... [+ new]`, with tags
+where not as-is. Name patterns it fits; paper fits several:
 
 | Pattern | Shape | What it has to show |
 | --- | --- | --- |
-| Composition | Two or more origins joined | The whole beats each origin alone at a setup the field runs now |
-| Tweak | A known method with one part changed | The change earns the gain, ablated against the original |
-| Transfer | X from field F applied to problem P | P has the structure X exploits; the baseline is P's own best method |
-| Scaling | A known method at a new scale or regime | The regime changes the answer, and the change is not an artifact of the new setup |
-| Measurement | Characterize a system, workload, or population | The sample is representative and the systems are current |
-| Removal | A known method with a part deleted | Parity without the part, at the setup that motivated the part |
-| Negative | X fails where it was expected to work | X was given its best configuration |
+| Composition | Two or more origins joined | Whole beats each origin alone at setup field runs now |
+| Tweak | Known method, one part changed | Change earns gain, ablated against original |
+| Transfer | X from field F applied to problem P | P has structure X exploits; baseline is P's own best method |
+| Scaling | Known method at new scale or regime | Regime changes answer, and change is not artifact of new setup |
+| Measurement | Characterize system, workload, or population | Sample representative, systems current |
+| Removal | Known method, part deleted | Parity without part, at setup that motivated part |
+| Negative | X fails where expected to work | X given its best configuration |
 
-Origins and tags are a reading, not a verdict.
+Origins and tags are reading, not verdict.
 
 ### 2. Currency
 
-For each element of the experimental setup (scale, topology or architecture,
-transport or substrate, hardware, workload, baseline, metric), name the
-field's current practice and class the paper's choice:
+For each setup element (scale, topology or architecture, transport or
+substrate, hardware, workload, baseline, metric), name field's current
+practice and class paper's choice:
 
 | Class | Meaning |
 | --- | --- |
-| current | What the field's strongest groups run now |
-| legacy | What the field ran, since replaced |
-| toy | Smaller or simpler than any deployment the claim is about |
+| current | What field's strongest groups run now |
+| legacy | What field ran, since replaced |
+| toy | Smaller or simpler than any deployment claim is about |
 
-A currency claim carries a dated source retrieved this run, or the mark
-"from memory" with the model's cutoff. Retrieve with the harness's search
-and fetch, else `/search-web`. Retrieve any currency claim that decides the
-direction; one from memory ages. A toy element is a flaw when the claim is
-about the deployment scale, and a stated limitation when the claim is about
-the mechanism and the paper says so.
+Currency claim carries dated source retrieved this run, or mark "from
+memory" with model's cutoff. Retrieve with harness's search and fetch, else
+`/search-web`. Retrieve any currency claim that decides direction; one from
+memory ages. Toy element: flaw when claim is about deployment scale; stated
+limitation when claim is about mechanism and paper says so.
 
 ### 3. Envelope
 
-Infer what the lab can afford from the testbed section, the affiliation, and
-anything the user states. Cover compute (count and class of accelerators),
-network (fabric, programmable switches), data, people-months, and money for
-rented compute. Write it as an assumption the lab corrects: one testbed
-section can be off by an order of magnitude. Ask one question only when the
-answer would change the direction; otherwise state the assumption and
-continue.
+Infer what lab can afford from testbed section, affiliation, anything user
+states. Cover compute (count and class of accelerators), network (fabric,
+programmable switches), data, people-months, money for rented compute. Write
+it as assumption lab corrects: one testbed section can be off by order of
+magnitude. Ask one question only when answer would change direction;
+otherwise state assumption and continue.
 
 ### 4. Claims and instruments
 
-Split the contribution into claims by the instrument each needs. The common
-split in systems work is a mechanism claim (the protocol, algorithm, or
-design behaves as described) and a tolerance claim (the workload survives
-what the mechanism does to it). A claim the paper makes about a scale it did
-not test, in its abstract, its motivation, or its deployment language, gets
-its own row. For each claim, name the cheapest credible instrument inside
-the envelope that proves it at a setup the field accepts as current:
+Split contribution into claims by instrument each needs. Common split in
+systems work: mechanism claim (protocol, algorithm, or design behaves as
+described) and tolerance claim (workload survives what mechanism does to
+it). Claim paper makes about scale it did not test, in abstract, motivation,
+or deployment language: own row. For each claim, name cheapest credible
+instrument inside envelope that proves it at setup field accepts as current:
 
 | The claim is about | Instrument |
 | --- | --- |
-| Behaviour at a scale the envelope reaches | The real system, at that scale |
-| Behaviour at a scale the envelope cannot reach | A simulator or emulator the field already trusts, calibrated against the small real run |
-| A workload's tolerance | The smallest workload the field still calls current, on the real system, with the mechanism's effect injected; never the paper's own workload when the Currency table classed it toy or legacy |
-| A comparison | The strongest baseline in its own best configuration, never a reimplementation with its hardware removed |
+| Behaviour at scale envelope reaches | Real system, at that scale |
+| Behaviour at scale envelope cannot reach | Simulator or emulator field already trusts, calibrated against small real run |
+| Workload's tolerance | Smallest workload field still calls current, on real system, mechanism's effect injected; never paper's own workload when Currency table classed it toy or legacy |
+| Comparison | Strongest baseline in its own best configuration, never reimplementation with its hardware removed |
 
-For a lab without a cluster, take the table's row; "scale up on a real
-cluster" is no direction there. Before comparing numbers, say so when a
-baseline is a reimplementation with its hardware support removed: it is a
-weaker baseline, not the state of the art.
+Lab without cluster: take table's row; "scale up on a real cluster" is no
+direction there. Baseline is reimplementation with hardware support removed:
+say so before comparing numbers; it is weaker baseline, not state of the
+art.
 
-Name the kill test per claim: the outcome that ends the direction.
+Name kill test per claim: outcome that ends direction.
 
 ## Verbs
 
-One invocation loads exactly one verb file, named for the verb. Choose in
-descending priority: an explicit verb; an unambiguous request shape;
-otherwise review. A plan of experiments is design, several projects or a
-whole program is audit, an explanation for a named audience is teach.
+One invocation loads exactly one verb file, named for verb. Choose in
+descending priority: explicit verb; unambiguous request shape; otherwise
+review. Plan of experiments: design. Several projects or whole program:
+audit. Explanation for named audience: teach.
 
 | Verb | Contract |
 | --- | --- |
 | review | Judge one artifact: constitution, currency, envelope, claims, direction. Read-only. Default. |
-| design | Plan the next phase before it runs: instruments, order, kill tests, cost. |
-| audit | Judge a program: projects sampled by leverage, unexamined ones named. |
-| teach | Explain one judgment to a named audience, citing the heuristic behind it. |
+| design | Plan next phase before it runs: instruments, order, kill tests, cost. |
+| audit | Judge program: projects sampled by leverage, unexamined ones named. |
+| teach | Explain one judgment to named audience, citing heuristic behind it. |
 | help | Quick-reference card. |
 
 ## Completion Checks
 
 <checklist>
-  <item>The method section and its citations were read before the abstract.</item>
-  <item>The constitution is one line naming every origin, each mechanism tagged as-is, tweaked, transferred, or new, with its patterns from the table.</item>
-  <item>Every setup element is classed with a dated source or the mark "from memory".</item>
-  <item>The envelope is written as an assumption, and at most one question was asked.</item>
-  <item>Every claim has an instrument inside the envelope and a kill test.</item>
-  <item>Exactly one verb file was loaded.</item>
-  <item>Work outside the lens was routed to the sibling skill by name.</item>
+  <item>Method section and its citations read before abstract.</item>
+  <item>Constitution: one line naming every origin; each mechanism tagged as-is, tweaked, transferred, or new; patterns from table.</item>
+  <item>Every setup element classed with dated source or mark "from memory".</item>
+  <item>Envelope written as assumption; at most one question asked.</item>
+  <item>Every claim has instrument inside envelope and kill test.</item>
+  <item>Exactly one verb file loaded.</item>
+  <item>Work outside lens routed to sibling skill by name.</item>
 </checklist>

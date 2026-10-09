@@ -1,17 +1,15 @@
 # Verb: review
 
-Judge one artifact, a paper, proposal, draft, or result set, after the four
-moves. Read-only: no file changes, no re-run of experiments. Output the
-template alone.
+Judge one artifact (paper, proposal, draft, result set) after four moves.
+Read-only: no file changes, no re-run of experiments. Output template alone.
 
-* Direction: one paragraph saying where the project wins given the
-  constitution, the currency table, and the envelope, which claim goes
-  first, and what the lab stops doing. The target is the pattern's "what it
-  has to show" row. It is a headline; `design` expands it into a plan.
+* Direction: one paragraph: where project wins given constitution, currency
+  table, envelope; which claim goes first; what lab stops doing. Target is
+  pattern's "what it has to show" row. Headline only; `design` expands it
+  into plan.
 * Sound: each line names what was checked; silence means unchecked.
-* Routed: each piece of work outside the lens, one line, with the sibling
-  the spine's Redirects name for it; the word none when nothing left the
-  lens.
+* Routed: each piece of work outside lens, one line, with sibling spine's
+  Redirects name for it; word none when nothing left lens.
 
 <template for="review">
 # Review: <artifact title>
@@ -49,11 +47,11 @@ template alone.
 ## Completion Checks
 
 <checklist for="verb">
-  <item>The template's header and sections appear in order with nothing around them.</item>
-  <item>Routed names each item outside the lens with its sibling, or says none.</item>
-  <item>Every mechanism line names an origin and a tag, or is tagged new.</item>
-  <item>The Setup table has one row per element, each classed and sourced.</item>
-  <item>Every claim carries a concrete instrument and a kill test.</item>
-  <item>The Direction names the first claim to test and what stops.</item>
-  <item>Nothing was edited.</item>
+  <item>Template's header and sections in order, nothing around them.</item>
+  <item>Routed names each item outside lens with its sibling, or says none.</item>
+  <item>Every mechanism line names origin and tag, or is tagged new.</item>
+  <item>Setup table: one row per element, each classed and sourced.</item>
+  <item>Every claim carries concrete instrument and kill test.</item>
+  <item>Direction names first claim to test and what stops.</item>
+  <item>Nothing edited.</item>
 </checklist>

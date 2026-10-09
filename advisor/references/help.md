@@ -1,7 +1,7 @@
 # Verb: help
 
-Print the card, nothing else, and load no other file. Where the user asked
-something specific, answer in one line above the card.
+Print card, nothing else; load no other file. User asked something specific:
+answer in one line above card.
 
 <template for="help">
 advisor - read a project the way its principal investigator would
