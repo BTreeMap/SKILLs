@@ -1,0 +1,95 @@
+# Technical nouns and technical verbs of asd-ste100/SKILL.md, for its
+# self-check. Each group says why its terms are technical (rule 1.5); a
+# general word does not go here to stop an error.
+
+# The specification and its grammar: the names of what STE regulates.
+Simplified Technical English
+Issue
+dictionary
+specification
+rule
+headword
+form
+meaning
+text
+word
+one-word
+multi-word
+term
+sentence
+paragraph
+topic
+noun
+verb
+technical noun
+technical verb
+adjective
+article
+imperative
+passive
+past participle
+part of speech
+plural
+contraction
+description
+note
+warning
+quotation
+ing
+
+# Punctuation and typography: marks and letters the rules name.
+comma
+semicolon
+hyphen
+parentheses
+letter
+capital letter
+label
+
+# Markdown structure: the parts of a file that `--format markdown` reads.
+Markdown
+front matter
+fenced
+heading
+section
+list
+table
+cell
+line
+inline code span
+element
+document
+
+# The command line and the release: names of files, programs, and data.
+skill
+command
+flag
+default
+shell
+pipe
+file
+allow file
+directory
+checkout
+cache
+network
+digest
+key
+field
+comment
+ste-tax
+checker
+signal
+card
+user
+
+# Technical verbs of the shell and the network.
+bind
+download
+
+# Inputs of the work: a brief and a draft are named documents.
+brief
+draft
+
+# A physical quantity the text names as an example meaning of "fall".
+gravity

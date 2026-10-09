@@ -82,7 +82,20 @@ rejected without review of the rest.
   gate. A new or longer description needs an equal trim elsewhere, listed in
   the return.
 - Text in `asd-ste100/SKILL.md` passes its own checker; run it after any
-  edit there.
+  edit there. Check each section in its mode, `procedure` for "Procedure"
+  and `description` for every other section, with the committed allow file;
+  every report must give `"ok": true`. A new technical term goes in
+  `asd-ste100/terms.txt` under the group that justifies it.
+
+```
+R="env -u VIRTUAL_ENV uv run --project $(realpath asd-ste100/scripts) btm-asd-ste100"
+grep -E '^#+ ' asd-ste100/SKILL.md | sed -E 's/^#+ //' | while read -r h; do
+  m=description; [ "$h" = Procedure ] && m=procedure
+  $R check --text:file asd-ste100/SKILL.md --format markdown --section "$h" \
+    --mode "$m" --allow:file asd-ste100/terms.txt | grep -q '"ok": true' \
+    || echo "not ok: $h"
+done
+```
 
 ## 4. How to do the work
 
