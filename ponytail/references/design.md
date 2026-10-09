@@ -1,20 +1,20 @@
 # Ponytail Design Verb
 
-Decide what not to build before code exists. Read the requirements, trace
-what the codebase already does, then run the ladder over the plan itself.
-Produces a plan; edits nothing.
+Decide what not to build before code exists. Read requirements, trace what
+codebase already does, then run ladder over plan itself. Produces a plan;
+edits nothing.
 
 ## Output
 
-The kill list, then the build list, one line per requirement:
+Kill list, then build list, one line per requirement:
 
 - `skip:` speculative need, nothing depends on it today. (YAGNI)
-- `covered:` the codebase, stdlib, platform, or an installed dependency
-  already does it. Name the thing.
-- `build:` survives; name the ladder rung it sits on and the minimum shape.
+- `covered:` codebase, stdlib, platform, or installed dependency already
+  does it. Name the thing.
+- `build:` survives; name ladder rung it sits on and minimum shape.
 
-End with the shape of the whole: files touched, new files (fewest possible),
-new dependencies (target: zero).
+End with shape of the whole: files touched, new files (fewest possible), new
+dependencies (target: zero).
 
 <example for="design" request="Design a notification system: email, SMS, push, user preferences, retry queues, analytics.">
 skip: SMS, push. No sender and no consumer today; add a channel when one exists.

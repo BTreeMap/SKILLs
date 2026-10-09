@@ -1,10 +1,10 @@
 # Ponytail Review Verb
 
-Judge the diff for smuggled complexity, and only that.
+Judge diff for smuggled complexity, and only that.
 
 ## Format
 
-One line per finding, tagged with a cut tag from SKILL.md:
+One line per finding, tagged with cut tag from SKILL.md:
 `L<line>: <tag> <what>. <replacement>.`, or `<file>:L<line>: ...` for
 multi-file diffs.
 
