@@ -18,7 +18,7 @@ and never from examples in this file.
    unverified.
 2. Answer every question in the CFP checklist below before outlining, and
    file the answers as the venue brief, each with its source URL and the
-   cycle year. The brief is part of the paper's provenance.
+   cycle year.
 3. Re-verify the brief at camera-ready time; limits and artifact deadlines
    move between cycles.
 
@@ -65,8 +65,6 @@ File the answers in this brief, one line per checklist question:
 </template>
 
 ## Venue-family archetypes
-
-Stable structural shapes; details change per cycle, shapes rarely do.
 
 - ML conferences (NeurIPS/ICML/ICLR): fixed page cap on the main body;
   references and appendices outside it; double-blind; author rebuttal with a

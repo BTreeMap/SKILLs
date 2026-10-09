@@ -7,8 +7,7 @@
   associative arrays require bash 4+ (macOS ships bash 3.2 by default).
 - Process spawn dominates every other cost. Each command substitution `$()`
   and each external command forks; a per-item `$()` inside a loop is the
-  quadratic-allocation disaster of shell. One `awk` pass beats a thousand
-  forks.
+  quadratic-allocation disaster of shell.
 - Word splitting and glob expansion run after parameter expansion: every
   unquoted expansion is an injection and corruption surface. Quoting is the
   parse boundary.

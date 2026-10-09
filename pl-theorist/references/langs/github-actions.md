@@ -116,8 +116,7 @@ environment variable; the logic is in a ShellCheck-able script.
    exact to acceptable; measure hit rate before trusting the cache.
 5. Escape threshold: nontrivial logic in `run:` strings or `if:` expressions
    moves to a script file in the repository (testable, lintable,
-   reviewable) or a small composite action. YAML coordinates, scripts
-   compute.
+   reviewable) or a small composite action.
 
 ## Validation
 

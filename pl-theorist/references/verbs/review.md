@@ -1,7 +1,7 @@
 # Verb: review
 
 Judge a change: read-only PL-lens review of a diff, PR, or file set, total
-over its scope. This lens hunts unsound domain modeling and unsound cost.
+over its scope.
 
 ## Pipeline
 

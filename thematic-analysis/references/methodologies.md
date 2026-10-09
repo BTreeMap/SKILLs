@@ -275,13 +275,12 @@ publisher records and secondary methodological summaries. That is weaker
 than reading the primary text, and those step lists should be checked
 against the originals before they are hard-coded into a skill.
 
-Coverage limits. Beyond the truncation noted under Method, Nowell et al.'s
-2017 paper on trustworthiness criteria for thematic analysis, which is
-frequently cited in this area, was not retrieved by any query, so it is
-absent from the corpus and uncited here. Books are indexed unevenly:
-Boyatzis [3] carries no DOI and entered under a title key, and Miles &
-Huberman [1] carries a journal venue in its record that is an indexing
-artefact.
+Beyond the truncation noted under Method, Nowell et al.'s 2017 paper on
+trustworthiness criteria for thematic analysis, which is frequently cited in
+this area, was not retrieved by any query, so it is absent from the corpus
+and uncited here. Books are indexed unevenly: Boyatzis [3] carries no DOI
+and entered under a title key, and Miles & Huberman [1] carries a journal
+venue in its record that is an indexing artefact.
 
 One verification flag was not cleared. The record at [16] resolves through a
 DOI redirect to a Springer reissue, and its Crossref title match is 0.33

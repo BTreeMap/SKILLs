@@ -1,11 +1,10 @@
 # Award assessment
 
 Fill this in during `design` (pipeline stage 1) and revisit it in the
-best-paper lens (stage 7). It is a diagnostic: it surfaces blocking
-weaknesses, the strongest differentiators, and evidence gaps. It carries no
-total, no kill threshold, and no award-probability estimate; direct causal
-evidence on what wins awards is too sparse to support any of them (evidence
-section 6). Never quote an award probability.
+best-paper lens (stage 7). It carries no total, no kill threshold, and no
+award-probability estimate; direct causal evidence on what wins awards is
+too sparse to support any of them (evidence section 6). Never quote an
+award probability.
 
 ## Threshold dimensions: must hold before anything else
 
@@ -174,8 +173,7 @@ model "bland"; the masked-diffusion paper conceding task diversity
 complicates its theory. Honest limitation discussion is explicitly rewarded
 and buys credibility for the headline claims.
 
-Drafting rule: name weaknesses plainly and specifically. A disclosed
-weakness reads as honesty; a discovered one as concealment.
+Drafting rule: name weaknesses plainly and specifically.
 
 ### 6. What the award literature says [evidence review]
 
@@ -242,6 +240,5 @@ not the position: the closest competitor must recognize itself.
 - Survivorship: winners only; the same traits may appear in rejected papers.
   The checklist raises the ceiling without guaranteeing acceptance.
 - Committees reward other things too (timeliness, taste, community service).
-  These patterns cover craft, not politics.
 - Revisit after each new batch of readings; cut patterns that fail to
   replicate.

@@ -54,8 +54,7 @@ Review the draft as a hostile reviewer would, in at most two rounds.
   Each needs statistical or evidential backing or must be cut.
 - [ ] Do abstract/intro claims exceed the experimental scope?
 - [ ] Are generality claims supported beyond a toy or single-domain result?
-- [ ] Are negative or null results reported, or only wins? (Cherry-picked
-  baselines and concealed gaps are manipulation, not persuasion.)
+- [ ] Are negative or null results reported, or only wins?
 - [ ] Does the limitations section name the weaknesses a hostile reviewer
   would raise? If you can think of a harsher one, add it.
 

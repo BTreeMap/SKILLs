@@ -131,11 +131,10 @@ non-experts in the opening, impress experts in the body.
 
 ### Related work
 
-Positioning, not a laundry list. Organize by approach or problem facet, not
-by paper. Per thread: what it does, what it cannot do that motivates this
-work, with citations. End with an explicit novelty paragraph naming what
-differs and the closest prior art. Write it so the closest competitor
-recognizes itself.
+Organize by approach or problem facet, not by paper. Per thread: what it
+does, what it cannot do that motivates this work, with citations. End with
+an explicit novelty paragraph naming what differs and the closest prior
+art. Write it so the closest competitor recognizes itself.
 
 ### Method
 
@@ -163,11 +162,10 @@ implementer would otherwise guess at.
 
 ### Limitations
 
-Expected and rewarded when honest. Name where the method fails, what the
-experiments do not cover, threats to validity, compute or data constraints,
-negative societal impacts where applicable. Make each limitation specific
-enough to preempt the reviewer's harsher version. A disclosed weakness reads
-as honesty; a discovered one as concealment.
+Name where the method fails, what the experiments do not cover, threats to
+validity, compute or data constraints, negative societal impacts where
+applicable. Make each limitation specific enough to preempt the reviewer's
+harsher version.
 
 ### Conclusion
 
