@@ -208,6 +208,9 @@ def cmd_schema(args: argparse.Namespace) -> int:
             f"read_level abstract (cut at {ABSTRACT_SHOW_LIMIT} characters), or "
             "exactly the --fields named; --format tsv prints a header line and "
             "one line per paper instead",
+            "fill": '{"tried": n, "filled": {"<key>": "<source>"}, '
+            '"still_missing": [keys], "failed": [{key, source, error}], '
+            '"sources": [names asked, in order]}',
             "verify": '{"checked": n, "broken_dois": [...], "results": [{key, '
             "title, doi_resolves, doi_http_status, crossref_title_match}]}",
             "exit_codes": "0 done (stderr signals are advisory); 1 fix the input "

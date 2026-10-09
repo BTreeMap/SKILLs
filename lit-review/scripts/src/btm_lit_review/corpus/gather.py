@@ -16,20 +16,34 @@ from btm_corekit import (
     Model,
     NonEmpty,
     Ref,
+    UpstreamError,
     Window,
     append_jsonl,
     citations,
     content,
     count_lines,
     emit,
+    lookup,
     normalize_arxiv_id,
     normalize_doi,
     now_iso,
     references,
     signal,
+    text,
 )
-from btm_lit_review.constants import MAX_LIMIT, RESPONSE_CAP_BYTES
-from btm_lit_review.corpus.paper import Paper, absorb, paper_aliases, paper_from
+from btm_lit_review.constants import (
+    LOOKUP_SOURCES,
+    MAX_LIMIT,
+    RESPONSE_CAP_BYTES,
+    Status,
+)
+from btm_lit_review.corpus.paper import (
+    Paper,
+    absorb,
+    merge_papers,
+    paper_aliases,
+    paper_from,
+)
 from btm_lit_review.corpus.sources import fetch
 from btm_lit_review.http import client
 from btm_lit_review.session import (
@@ -43,7 +57,7 @@ from btm_lit_review.session import (
     require_criteria,
     save_papers,
 )
-from btm_lit_review.slots import FRAMING, QUERY
+from btm_lit_review.slots import FRAMING, KEYS, QUERY, key_list
 
 
 def record_fetch(
@@ -181,16 +195,24 @@ def resolve_ref(
         key = index.get(f"doi:{doi}") or index.get(f"arxiv:{arxiv_id}")
     if key is None:
         raise CommandError(f"no corpus paper matches {token!r}; search for it first")
-    paper = papers[key]
+    ref = ref_for(papers[key], source)
+    if ref is None:
+        raise CommandError(
+            f"paper {key} has no {source} id, DOI, or arXiv id; snowball needs one"
+        )
+    return key, ref
+
+
+def ref_for(paper: Paper, source: str) -> Ref | None:
+    """How `source` names the paper: its own id where the paper carries one,
+    else the DOI, else the arXiv id; None for a title-only record."""
     if native := NATIVE_IDS.get(source, _no_native)(paper):
-        return key, ByNative(native)
+        return ByNative(native)
     if paper.doi:
-        return key, ByDoi(paper.doi)
+        return ByDoi(paper.doi)
     if paper.arxiv_id:
-        return key, ByArxiv(paper.arxiv_id)
-    raise CommandError(
-        f"paper {key} has no {source} id, DOI, or arXiv id; snowball needs one"
-    )
+        return ByArxiv(paper.arxiv_id)
+    return None
 
 
 def cmd_snowball(args: argparse.Namespace) -> int:
@@ -216,4 +238,74 @@ def cmd_snowball(args: argparse.Namespace) -> int:
         "criteria_hash": criteria_hash(protocol),
     }
     record_fetch(session, entry, list(map(paper_from, found.works)), found.total)
+    return 0
+
+
+def lacks_abstract(paper: Paper) -> bool:
+    return paper.status is not Status.EXCLUDED and not paper.abstract
+
+
+def ask(paper: Paper, sources: tuple[str, ...]) -> tuple[Paper, str | None, list[JSON]]:
+    """The paper with every gap the chain filled, the index that supplied the
+    abstract (None if none did), and the lookups that failed upstream. Stops
+    at the first abstract; an index that cannot name the paper is skipped."""
+    failed: list[JSON] = []
+    for source in sources:
+        ref = ref_for(paper, source)
+        if paper.abstract or ref is None:
+            continue
+        try:
+            found = lookup(INDEXES[source], client(), RESPONSE_CAP_BYTES, ref)
+        except UpstreamError as err:
+            failed.append({"key": paper.key, "source": source, "error": str(err)})
+            continue
+        if found is not None:
+            paper = merge_papers(paper, paper_from(found))
+            if paper.abstract:
+                return paper, source, failed
+    return paper, None, failed
+
+
+def cmd_fill(args: argparse.Namespace) -> int:
+    """Ask each index in turn for a paper's missing abstract and merge what
+    comes back into the gaps; decisions never move. At most one lookup per
+    paper per index: `limit` papers times five indexes."""
+    session = open_session(args.session)
+    papers = load_papers(session)
+    keys = text(KEYS, args)
+    if keys:
+        wanted = key_list(keys)
+        if missing := [key for key in wanted if key not in papers]:
+            raise CommandError(f"no corpus paper for: {', '.join(missing)}")
+    else:
+        wanted = [key for key, paper in papers.items() if lacks_abstract(paper)]
+    chosen = wanted[: args.limit]
+    if len(wanted) > len(chosen):
+        signal(f"{len(wanted) - len(chosen)} more papers not tried; raise --limit")
+    sources = (args.source,) if args.source else LOOKUP_SOURCES
+    filled: dict[str, str] = {}
+    failed: list[JSON] = []
+    for key in chosen:
+        papers[key], source, failures = ask(papers[key], sources)
+        failed.extend(failures)
+        if source is not None:
+            filled[key] = source
+    save_papers(session, papers)
+    still = [key for key in chosen if not papers[key].abstract]
+    if failed:
+        signal(f"{len(failed)} lookups failed upstream; rerun fill for those keys")
+    if still:
+        signal(
+            f"{len(still)} papers have no abstract in any index asked; screen "
+            "them on title plus landing page, or keep them unsure for pass 2"
+        )
+    emit(
+        {
+            "tried": len(chosen),
+            "filled": filled,
+            "still_missing": still,
+            "failed": failed,
+            "sources": list(sources),
+        }
+    )
     return 0

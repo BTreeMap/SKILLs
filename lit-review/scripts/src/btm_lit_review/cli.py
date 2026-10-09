@@ -23,6 +23,7 @@ from btm_lit_review.constants import (
     DIRECTIONS,
     GRAPH_SOURCES,
     LEVELS,
+    LOOKUP_SOURCES,
     MAX_LIMIT,
     SOURCES,
     STATUSES,
@@ -37,6 +38,7 @@ from btm_lit_review.corpus.curate import (
     cmd_update,
 )
 from btm_lit_review.corpus.gather import (
+    cmd_fill,
     cmd_init,
     cmd_search,
     cmd_snowball,
@@ -113,6 +115,25 @@ def wire_gather(commands: Commands) -> None:
     snowball.add_argument("--source", choices=GRAPH_SOURCES, default=GRAPH_SOURCES[0])
     wire_limit(snowball, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
     snowball.set_defaults(func=cmd_snowball)
+
+    fill = commands.add_parser(
+        "fill", help="look up missing abstracts in the other indexes"
+    )
+    add_common(fill)
+    add_slot(
+        fill,
+        KEYS,
+        "comma-separated keys; default every undecided or "
+        "included paper with no abstract",
+    )
+    fill.add_argument(
+        "--source",
+        choices=LOOKUP_SOURCES,
+        default=None,
+        help="ask this index alone; default every index in turn",
+    )
+    wire_limit(fill, what="papers to try", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
+    fill.set_defaults(func=cmd_fill)
 
 
 def wire_curate(commands: Commands) -> None:

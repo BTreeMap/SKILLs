@@ -64,5 +64,7 @@ STAGES = tuple(Stage)
 SOURCES = tuple(INDEXES)
 GRAPH_SOURCES = tuple(dict.fromkeys(having("references") + having("citations")))
 """The indexes a snowball can walk, in registry order; openalex leads."""
+LOOKUP_SOURCES = having("lookup")
+"""The indexes `fill` asks, in registry order."""
 DIRECTIONS = ("backward", "forward")
 REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})

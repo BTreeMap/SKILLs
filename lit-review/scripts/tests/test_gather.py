@@ -9,7 +9,7 @@ import sys
 import httpx
 import pytest
 
-from btm_corekit import ByArxiv, ByDoi, ByNative, CommandError, Work
+from btm_corekit import ByArxiv, ByDoi, ByNative, CommandError, UpstreamError, Work
 from btm_corekit.indexes import arxiv, semanticscholar
 from btm_lit_review.cli import build_parser, main
 from btm_lit_review.corpus import gather, sources
@@ -334,3 +334,67 @@ class TestSnowball:
         )
         assert document["fetched"] == 0
         assert "openalex lists no references for doi:10.1/a" in err
+
+
+class TestFill:
+    @pytest.fixture
+    def gapped(self, session):
+        """The seed plus a title-only record, both without an abstract, and a
+        paper that already has one."""
+        papers = load_papers(session)
+        title_only = paper_from(work(title="Only a title"))
+        held = paper_from(work(title="Held", doi="10.1/h", abstract="known"))
+        papers |= {title_only.key: title_only, held.key: held}
+        save_papers(session, papers)
+        return session
+
+    def test_the_chain_stops_at_the_first_index_with_an_abstract(
+        self, gapped, capsys, upstream
+    ):
+        """The ledger case: OpenAlex holds the record without its abstract;
+        the next index that has one fills the gap, and no later index is
+        asked."""
+
+        def answer(request):
+            if request.url.host == "api.openalex.org":
+                return {"id": "W1", "display_name": "Seed"}
+            assert request.url.host == "api.crossref.org", request.url
+            return {"message": {"DOI": "10.1/a", "abstract": "<p>Found it.</p>"}}
+
+        seen = upstream(answer)
+        code, document, err = run(["fill", str(gapped.root)], capsys)
+        assert code == 0
+        assert [request.url.host for request in seen] == [
+            "api.openalex.org",
+            "api.crossref.org",
+        ]
+        assert document["filled"] == {"doi:10.1/a": "crossref"}
+        assert document["still_missing"] == ["title:only a title"]
+        assert "1 papers have no abstract" in err
+        filled = load_papers(gapped)["doi:10.1/a"]
+        assert filled.abstract == "Found it."
+        assert filled.status.value == "candidate", "decisions never move"
+
+    def test_an_upstream_failure_is_reported_and_the_chain_goes_on(
+        self, gapped, capsys, monkeypatch
+    ):
+        def lookup(index, client, cap, ref):
+            if index.name == "openalex":
+                raise UpstreamError("openalex is down")
+            return work(title="Seed", doi="10.1/a", abstract="From S2")
+
+        monkeypatch.setattr(gather, "lookup", lookup)
+        code, document, err = run(
+            ["fill", str(gapped.root), "--keys", "doi:10.1/a"], capsys
+        )
+        assert code == 0
+        assert document["failed"] == [
+            {"key": "doi:10.1/a", "source": "openalex", "error": "openalex is down"}
+        ]
+        assert document["filled"] == {"doi:10.1/a": "crossref"}
+        assert "1 lookups failed upstream" in err
+
+    def test_an_unknown_key_is_refused(self, gapped, capsys):
+        code, _, err = run(["fill", str(gapped.root), "--keys", "doi:10.9/x"], capsys)
+        assert code == 1
+        assert "no corpus paper for: doi:10.9/x" in err

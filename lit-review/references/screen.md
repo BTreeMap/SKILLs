@@ -31,7 +31,8 @@ fit. If the criteria feel wrong while screening, record an amendment.
    venue, year, and abstract alone, judging against the criteria list item
    by item. Unsure costs one full-text look later; wrongly excluded costs a
    missing paper forever, so keep unsure papers as candidates for pass 2. A
-   missing abstract is a data gap: keep the paper, screen it on title plus
+   missing abstract is a data gap: run `fill` to look it up in the other
+   indexes, and if none has it, keep the paper, screen it on title plus
    landing page, or leave it unsure for pass 2.
 6. Write the decisions to a JSON file and apply them with `update`. The
    script rejects an exclusion without a reason. Give each exclusion the
@@ -66,7 +67,8 @@ For the remaining unsure papers, fetch what the record links (`pdf_url`,
 `landing_url`), skim introduction and conclusions, and decide with
 `"stage": "full-text"` on each exclusion. Exclude a paper whose text is
 unreachable at all with reason "inaccessible" at lite and full; at ultra,
-note it in the report as identified but unassessed.
+note it in the report as identified but unassessed. Before excluding a paper
+as inaccessible, run `fill` on its key.
 
 ## Shortlist size
 
