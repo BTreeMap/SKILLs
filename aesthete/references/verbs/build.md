@@ -1,8 +1,8 @@
 # Verb: build
 
 Takes request for new interface work (default verb for it); returns working
-code. No design plan exists: first produce compressed one inline: primary
-goal, token spine, composition order.
+code. No design plan exists: first produce compressed one inline (primary
+goal, token spine, composition order).
 
 ## Order of work
 

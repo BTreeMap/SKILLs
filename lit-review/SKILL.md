@@ -93,9 +93,9 @@ under old criteria when change could flip their decision.
 
 Before protocol phase, check two conditions:
 
-- No network for script: first search cannot reach its API: stop and say so.
-  `/search-web` reaches same indexes without keeping corpus, so it scopes
-  question before review, never substitutes for one.
+- No network for script: if first search cannot reach its API, stop and say
+  so. `/search-web` reaches same indexes without keeping corpus, so it
+  scopes question before review, never substitutes for one.
 - Corpus user supplies (PDFs, BibTeX): skip search phase, record provenance
   as user-supplied in log's place, run remaining phases unchanged.
 

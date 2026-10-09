@@ -3,10 +3,10 @@
 Judge one artifact (paper, proposal, draft, result set) after four moves.
 Read-only: no file changes, no re-run of experiments. Output template alone.
 
-* Direction: one paragraph: where project wins given constitution, currency
-  table, envelope; which claim goes first; what lab stops doing. Target is
-  pattern's "what it has to show" row. Headline only; `design` expands it
-  into plan.
+* Direction: one paragraph saying where project wins given constitution,
+  currency table, envelope; which claim goes first; what lab stops doing.
+  Target is pattern's "what it has to show" row. Headline only; `design`
+  expands it into plan.
 * Sound: each line names what was checked; silence means unchecked.
 * Routed: each piece of work outside lens, one line, with sibling spine's
   Redirects name for it; word none when nothing left lens.

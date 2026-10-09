@@ -54,8 +54,8 @@ comprehension in seconds, then one action.
 * No data dumps. Long specification table, thirty-row list, or full pricing
   matrix belongs behind disclosure, on own page, or reshaped into comparison
   of three to five highlights.
-* Lists past about five items: different component: grouped columns, card
-  grid, tabs, disclosure, or horizontally scrolling set.
+* Lists past about five items: use different component (grouped columns,
+  card grid, tabs, disclosure, or horizontally scrolling set).
 * Quotes at most three lines; longer quote becomes case study. Attribution
   carries name and role, never bare first name.
 

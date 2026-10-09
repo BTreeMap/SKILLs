@@ -8,7 +8,7 @@ its own; split stays proposal until user accepts it.
 <procedure for="atomicity">
   <step>Inspect staged set with `git status --short` and `git diff --staged --stat`.</step>
   <step>Group staged files by concern: one logical change per commit. Feature, fix, rename, format pass are separate concerns.</step>
-  <step>More than one concern staged: propose split before drafting: name each commit-to-be with own subject and files it takes (`git reset` then stage per group, or `git add -p` for mixed files).</step>
+  <step>More than one concern staged: propose split before drafting; name each commit-to-be with own subject and files it takes (`git reset` then stage per group, or `git add -p` for mixed files).</step>
   <step>Never fold format-only or rename-only sweep into behavior change.</step>
 </procedure>
 
