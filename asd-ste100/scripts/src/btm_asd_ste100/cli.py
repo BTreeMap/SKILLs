@@ -251,19 +251,22 @@ def lookup_one(
 
 
 def entry_row(e: Entry, resolved: Resolved) -> dict[str, Any]:
-    row = e.model_dump(exclude_none=True)
+    """One shape for every entry: each `Entry` field, null when the spec
+    gives none, then `alternatives` and `choices`. Paired examples move into
+    `choices` and leave null behind."""
+    row = e.model_dump()
+    choices: list[dict[str, str]] = []
     if e.status.get("kind") == "unapproved":
         key = (e.word.lower(), e.pos, e.qualifier)
         row["alternatives"] = resolved.get(key, [])
         choices = paired(row["alternatives"], e.ste_example, e.nonste_example)
         if choices:
-            row["choices"] = choices
-            row.pop("ste_example", None)
-            row.pop("nonste_example", None)
+            row["ste_example"] = row["nonste_example"] = None
     else:  # alternatives for the meanings that are not approved
         row["alternatives"] = [
             other_meaning(a) for a in e.status.get("alternatives", [])
         ]
+    row["choices"] = choices
     return row
 
 

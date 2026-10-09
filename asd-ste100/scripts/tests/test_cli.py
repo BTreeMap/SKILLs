@@ -119,7 +119,7 @@ class TestLookup:
             "ste": "DO THE TEST AGAIN.",
             "not_ste": "Return to the test.",
         }
-        assert "ste_example" not in entry
+        assert (entry["ste_example"], entry["nonste_example"]) == (None, None)
 
     def test_each_qualifier_keeps_its_own_alternatives(self, served, capsys):
         _, doc, _ = run(["lookup", "few"], capsys)
@@ -130,7 +130,16 @@ class TestLookup:
     def test_unpaired_examples_stay_raw(self, served, capsys):
         _, doc, _ = run(["lookup", "ensure"], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
-        assert "choices" not in entry and entry["ste_example"]
+        assert entry["choices"] == [] and entry["ste_example"]
+
+    def test_every_entry_has_every_key_even_with_no_part_of_speech(
+        self, served, capsys
+    ):
+        _, doc, _ = run(["lookup", "such as", "ensure", "return", "test"], capsys)
+        rows = [e for w in doc["words"] for e in w["entries"]]
+        assert len({tuple(e) for e in rows}) == 1, "one key set, one order"
+        (phrase,) = doc["words"][0]["entries"]
+        assert (phrase["pos"], phrase["qualifier"]) == (None, None)
 
     def test_a_form_finds_its_headword(self, served, capsys):
         _, doc, _ = run(["lookup", "removed"], capsys)

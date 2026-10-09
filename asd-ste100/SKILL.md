@@ -93,6 +93,14 @@ $R clean
   example for each alternative, `choices` gives each alternative with its
   STE example and with the sentence that it replaces. An empty `entries`
   shows that the word is not in the dictionary.
+* Each item in `entries` has the same fields: `word`, `pos`, `qualifier`,
+  `forms`, `status`, `ste_example`, `nonste_example`, `page`,
+  `alternatives`, and `choices`. If the specification does not give a
+  value, the field is `null`. For example, `pos` is `null` for "such as".
+  `status.kind` is `approved` or `unapproved`, and `status.meaning` gives
+  the approved meaning. Read the alternatives in `alternatives`, not in
+  `status`. If `choices` is not empty, `ste_example` and `nonste_example`
+  are `null`, because `choices` contains the examples.
 * `fetch` downloads the release that this skill uses, and makes sure that
   the digest of each file is correct. If the cache is empty, `check` and
   `lookup` do a `fetch` first and tell you in a `signal:` line. `clean`

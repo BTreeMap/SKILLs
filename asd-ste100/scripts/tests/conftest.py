@@ -409,6 +409,25 @@ DICTIONARY = {
             "status": {"kind": "unapproved", "alternatives": [], "help": None},
             "page": "2-1-F3",
         },
+        {  # recorded from v0.1.2: a headword with no part of speech
+            "word": "such as",
+            "pos": None,
+            "qualifier": None,
+            "forms": [],
+            "status": {
+                "kind": "unapproved",
+                "alternatives": [
+                    {"kind": "phrase", "text": "FOR EXAMPLE", "context": None}
+                ],
+                "help": None,
+                "note": None,
+            },
+            "ste_example": "WHEN YOU REMOVE THE STUD, USE APPLICABLE TOOLS. "
+            "FOR EXAMPLE, USE A PLASTIC MALLET AND A PUNCH.",
+            "nonste_example": "When you remove the stud, use applicable tools "
+            "such as a plastic mallet and a punch.",
+            "page": "2-1-S28",
+        },
         {
             "word": "TEST",
             "pos": "n",
