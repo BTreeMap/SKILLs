@@ -12,10 +12,9 @@ metadata:
 
 # Author Skill
 
-Distill a procedure into a `SKILL.md` a fresh agent can follow, and review
-an existing skill against the Agent Skills standard. Minimize loaded tokens
-while preserving reliable execution; correctness, safety, and clarity
-outrank brevity.
+Distill procedure into `SKILL.md` fresh agent can follow; review existing
+skill against Agent Skills standard. Minimize loaded tokens, keep execution
+reliable; correctness, safety, clarity outrank brevity.
 
 ## Registry
 
@@ -23,73 +22,68 @@ outrank brevity.
 | --- | --- |
 | `scripts` | [references/scripts.md](references/scripts.md) |
 
-Before writing or reviewing a skill that bundles code, load `scripts`.
+Skill bundles code: load `scripts` before writing or reviewing it.
 
 ## Frontmatter
 
-Restrict the header to Agent Skills spec fields (agentskills.io), in this
-order; put any agent-specific hint under `metadata` as a quoted string.
+Restrict header to Agent Skills spec fields (agentskills.io), in this order;
+put agent-specific hint under `metadata` as quoted string.
 
 | Field | Rule |
 | --- | --- |
-| `name` | Equals the directory of `<name>/SKILL.md`: 1-64 lowercase letters, digits, hyphens, none leading, trailing, or doubled. A task skill is the imperative a user would speak (`fact-check`); a persona is one noun (`caveman`). No filler noun (`-helper`). |
-| `description` | `>-` folded, 1-1024 characters, third person: what the skill does and delivers, one or two guarantees a reader can hold it to, its search terms; then triggers starting "Use when". Names no internal record, phase, file, library, verb, or level. 100 to 150 tokens; the library's descriptions total under 7,000 characters. |
+| `name` | Equals directory of `<name>/SKILL.md`: 1-64 lowercase letters, digits, hyphens; none leading, trailing, or doubled. Task skill: imperative user would speak (`fact-check`); persona: one noun (`caveman`). No filler noun (`-helper`). |
+| `description` | `>-` folded, 1-1024 characters, third person: what skill does and delivers, one or two guarantees reader can hold it to, search terms; then triggers starting "Use when". Names no internal record, phase, file, library, verb, or level. 100 to 150 tokens; library's descriptions total under 7,000 characters. |
 | `license` | `MIT`. |
-| `compatibility` | Only for runtimes, system packages, network access, or a full repository checkout; at most 500 characters. Where a run builds an environment, name its location and its size on disk. |
-| `metadata.argument-hint` | The invocation grammar, spelled here only: one bracket group per independent choice in typing order (`"[lite|full|ultra] [design|review|help]"`); a skill with no vocabulary names its subject (`"[file-or-section]"`). Update on any verb, level, or mode change. |
-| `allowed-tools` | Last, only when a harness needs it. |
+| `compatibility` | Only for runtimes, system packages, network access, or full repository checkout; at most 500 characters. Run builds environment: name its location and size on disk. |
+| `metadata.argument-hint` | Invocation grammar, spelled here only: one bracket group per independent choice, in typing order (`"[lite|full|ultra] [design|review|help]"`); skill with no vocabulary names its subject (`"[file-or-section]"`). Update on any verb, level, or mode change. |
+| `allowed-tools` | Last, only when harness needs it. |
 
 ## Layout
 
-Order sections by execution, each heading naming a task, decision, contract,
-or reference topic.
+Order sections by execution; each heading names task, decision, contract, or
+reference topic.
 
-1. Opening paragraph under the title: one to three sentences, the task and
-   the deliverable, naming no sibling.
-2. `## Registry`, first `##`, only where files are bundled: one row per
-   file, name to path. A name is the basename without `.md`, in backticks; a
-   file no run loads says so in its first line.
-3. `## Redirects`, only where something is redirected: one bullet per task,
-   the condition, a colon, then the sibling in slash form or, with no
-   sibling, the plain action to take instead. Where two personas pair verb
-   for verb, route from the spine per verb ("`/pl-theorist`, same verb").
+1. Opening paragraph under title: one to three sentences, task and
+   deliverable, no sibling named.
+2. `## Registry`, first `##`, only where files bundled: one row per file,
+   name to path. Name: basename without `.md`, in backticks. File no run
+   loads says so in its first line.
+3. `## Redirects`, only where something redirected: one bullet per task:
+   condition, colon, then sibling in slash form or, with no sibling, plain
+   action to take instead. Two personas pair verb for verb: route from spine
+   per verb ("`/pl-theorist`, same verb").
 4. Invariants, procedure, reference material, gotchas, completion checks.
 
-* Keep `SKILL.md` near 500 lines of core contracts, routing, and
-  indispensable judgments; the cap never moves out text every run reads.
-  Move bulky material some run skips to `references/`, loaded under a stated
-  condition, one level deep: a reference cites a sibling by name and never
-  links to it.
-* Split a file out only where the split pays: it costs a Registry row, a
-  load sentence, headings, and cross-citations that can drift, and pays only
-  when some invocation never loads the file or a long run loads it late
-  enough that reloading it near its use beats carrying it from the start.
-  Fold into the spine what every run loads at its start, and merge files
-  that always load together at the same moment. Keep a split only where it
-  spares some run text it does not need, judged by expected words loaded per
-  invocation.
-* Define each topic in one file. Where a second file would restate a value,
-  threshold, or enumeration, cite the owner instead, and only when that
-  owner is in context when the copy is read (the spine, or a kernel loaded
-  with it); a file loaded alone keeps its own copy.
-* Outside the Registry, use a name alone, as the object of a word that says
-  what it is ("load `brief`", "the template in `report`"); keep literal
-  paths only in runnable commands.
-* When a table is keyed by verb, mode, or level and each row loads the file
-  of that name, say so once above the table and drop the column, naming any
-  row that deviates.
-* Number a list when order matters; bullet it otherwise; use a table only
-  when shared columns make lookup cheaper.
-* Command a sibling skill's capability in slash form as an unconditional
-  step ("read PDFs with `/read-pdf`"). Answer an environment condition (no
-  network, unreachable file) with a fallback chain that names the degraded
-  path.
-* Use an example only to resolve a likely mistake; make every positive
-  example conform to this standard and label an intentional counterexample.
-* Wrap every example, template, and payload in XML from this closed set; a
-  tag names the kind of block and `for` carries the subject. Write tags in
-  kebab-case, leave a blank line before an opening tag, and open `<![CDATA[`
-  on its own line inside a tag whose payload a formatter would rewrap.
+* Keep `SKILL.md` near 500 lines: core contracts, routing, indispensable
+  judgments. Cap never moves out text every run reads. Move bulky material
+  some run skips to `references/`, loaded under stated condition, one level
+  deep: reference cites sibling by name, never links to it.
+* Split file out only where split pays. Cost: Registry row, load sentence,
+  headings, cross-citations that can drift. Pays only when some invocation
+  never loads file, or long run loads it late enough that reloading near use
+  beats carrying it from start. Judge by expected words loaded per
+  invocation. Fold into spine what every run loads at start; merge files
+  always loaded together at same moment.
+* Define each topic in one file. Second file would restate value, threshold,
+  or enumeration: cite owner instead, only when owner is in context when
+  copy is read (spine, or kernel loaded with it). File loaded alone keeps
+  own copy.
+* Outside Registry, use name alone, as object of word saying what it is
+  ("load `brief`", "the template in `report`"); literal paths only in
+  runnable commands.
+* Table keyed by verb, mode, or level, each row loading file of that name:
+  say so once above table, drop column, name any row that deviates.
+* Number list when order matters; bullet otherwise; table only when shared
+  columns make lookup cheaper.
+* Command sibling skill's capability in slash form as unconditional step
+  ("read PDFs with `/read-pdf`"). Answer environment condition (no network,
+  unreachable file) with fallback chain naming degraded path.
+* Use example only to resolve likely mistake. Every positive example
+  conforms to this standard; label intentional counterexample.
+* Wrap every example, template, payload in XML from this closed set; tag
+  names kind of block, `for` carries subject. Tags in kebab-case; blank line
+  before opening tag; open `<![CDATA[` on own line inside tag whose payload
+  formatter would rewrap.
 
 | Container | Children |
 | --- | --- |
@@ -101,77 +95,72 @@ or reference topic.
 
 ## Content
 
-* Carry only what changes what the agent does: the contract (what a verb
-  takes, returns, and refuses), the routing, and the judgments the agent
-  owns. Leave out which library or endpoint implements a verb, policy and
-  licensing framing, and anything the script states at the moment it matters
-  (a `signal:` line, a rejection hint, a `next` field).
+* Carry only what changes what agent does: contract (what verb takes,
+  returns, refuses), routing, judgments agent owns. Leave out which library
+  or endpoint implements verb, policy and licensing framing, anything script
+  states at moment it matters (`signal:` line, rejection hint, `next`
+  field).
 * Define success by observable outputs or checks.
-* State a prerequisite before the step that needs it; state branches,
-  fallbacks, and stopping conditions at the step they apply to.
-* Give judgment criteria, not persona labels such as "expert". Mark a
-  recommendation apart from a guarantee and an observation apart from a
-  requirement. Name a required assumption, or say how the agent resolves it.
+* State prerequisite before step needing it; state branches, fallbacks,
+  stopping conditions at step they apply to.
+* Give judgment criteria, not persona labels ("expert"). Mark recommendation
+  apart from guarantee, observation apart from requirement. Name required
+  assumption, or say how agent resolves it.
 * Parameterize every project-specific value (paths, scopes, hostnames,
-  service and package names) or derive it from the consuming repository at
-  runtime. Tie a skill to a language, framework, or layout only when that
-  ecosystem is its purpose, stated in the description.
-* When distilling from a session, keep only verified tool calls and
-  successful commands; write the current rule, and keep a failure only as an
-  actionable gotcha.
+  service and package names) or derive it from consuming repository at
+  runtime. Tie skill to language, framework, or layout only when that
+  ecosystem is its purpose, stated in description.
+* Distilling from session: keep only verified tool calls and successful
+  commands; write current rule; keep failure only as actionable gotcha.
 
 ## Writing
 
-* Draft under `/caveman lite`; sweep with `/humanize` and treat its patterns
-  as signals.
-* Write direct, neutral instructions. Lead with the verb; put a condition
-  before its dependent action ("If X, do Y"). Name the actor where
-  responsibility could be ambiguous; keep "it", "this", and "the latter"
-  locally unambiguous.
-* Split obligations that execute independently; keep clauses together when
-  splitting would hide their dependency. Use grammatical sentences in prose;
-  use a fragment only in a label, table, or checklist.
-* Use one term for one concept; define an unfamiliar term at first use;
-  introduce a label only when reusing it shortens the procedure. Mark
-  obligation with one word each: "must" for a requirement, "may" for
-  permission, "can" for a capability.
-* Make each sentence supply an action, a condition, a decision rule,
-  necessary context, or a useful example. Delete greetings, praise,
-  wind-ups, heading restatements, process history, summaries that add no
-  check, slogans, unsupported rankings, and claims of uniqueness. Replace a
-  slogan or metaphor with the action or condition it implies. Keep a
-  contrast only where it separates plausible choices or enforces a boundary.
-  Keep rationale only where it changes a decision or prevents a likely
-  error.
-* State the pattern to follow; name a banned form only where it must be
-  recognized (secrets, em-dashes, spec violations). Never emit an em-dash
-  (U+2014).
-* Remove unnecessary words before shortening meaningful ones; invent no
-  abbreviation and drop no grammar as a presumed saving. Preserve: negation,
+* Register: caveman full. Draft under `/caveman full`; sweep with
+  `/humanize`, its patterns as signals.
+* Drop articles and filler; fragments OK; short synonyms. Every instruction
+  imperative, verb first. Condition before dependent action ("If X, do Y").
+  Name actor where responsibility could be ambiguous; keep "it", "this",
+  "the latter" locally unambiguous.
+* Independent obligations: separate lines. Keep clauses together when
+  splitting hides their dependency.
+* One term per concept; define unfamiliar term at first use; introduce label
+  only when reuse shortens procedure. Obligation, one word each: "must"
+  requirement, "may" permission, "can" capability.
+* Each sentence supplies action, condition, decision rule, necessary
+  context, or useful example. Delete greetings, praise, wind-ups, heading
+  restatements, process history, summaries adding no check, slogans,
+  unsupported rankings, claims of uniqueness. Replace slogan or metaphor
+  with action or condition it implies. Keep contrast only where it separates
+  plausible choices or enforces boundary. Keep rationale only where it
+  changes decision or prevents likely error.
+* State pattern to follow; name banned form only where it must be recognized
+  (secrets, em-dashes, spec violations). Never emit em-dash (U+2014).
+* Cut unnecessary words before shortening meaningful ones; invent no
+  abbreviation. Never drop not, never, no, only, except. Preserve: negation,
   exception, exclusivity, scope, necessary versus sufficient, uncertainty
   and evidential strength, numbers, units, thresholds, execution order,
   stopping conditions, permissions, irreversible-action boundaries,
   commands, identifiers, literals, schemas, error strings, quotations,
   intentional bad examples. Cut only empty hedges.
-* Reject a shorter rewrite when a fresh, less capable agent would have to
-  guess. Claim a token reduction only when measured with a named tokenizer;
-  report word and character counts as such.
+* Readability floor: sentence follower would read twice keeps longer form.
+  Reject shorter rewrite when fresh, less capable agent would have to guess.
+* Claim token reduction only when measured with named tokenizer; report word
+  and character counts as such.
 
 ## Delegation
 
 Hand work to another agent through `/summon`, supplying only what its caller
-table asks for: the unit one delegate closes, the record it receives, the
-rules of this skill that unit can break, the return shape by registered
-name, the cap, and the gate the lead admits the return through. Leave mode,
-brief shape, bounds, sizing, trust, and review of the return to summon;
-carry no worker prompt, delegation threshold, or cost figure.
+table asks: unit one delegate closes, record it receives, rules of this
+skill that unit can break, return shape by registered name, cap, gate lead
+admits return through. Leave mode, brief shape, bounds, sizing, trust,
+return review to summon; carry no worker prompt, delegation threshold, or
+cost figure.
 
 ## Persona verbs
 
-Dispatch a persona through verbs: by explicit verb, then by unambiguous
-request shape, then by the persona's declared default verb. Implement from
-this table the verbs the lens can honor, each with the table's contract in
-every persona; vary only the lens.
+Dispatch persona through verbs: explicit verb, then unambiguous request
+shape, then persona's declared default verb. Implement from this table verbs
+lens can honor, each with table's contract in every persona; vary only lens.
 
 | Verb | Contract |
 | --- | --- |
@@ -184,39 +173,38 @@ every persona; vary only the lens.
 | teach | Explain a judgment, calibrated to audience |
 | help | Quick-reference card |
 
-* Apply changes only in `build` and `refactor`; keep every other verb
-  read-only.
-* In a read-only verb, name what is outside the lens and route it to the
-  sibling skill in slash form.
-* Load one verb file per invocation, registered under the verb's name.
-* Add verbs beyond the core freely (`ponytail` carries `debt` and `stats`);
-  give a verb name one meaning across the library, and reuse a name another
-  skill already carries with that skill's meaning.
-* Offer levels only where the lens needs them: `lite | full | ultra` (advise
-  / enforce, the default / maximalist). Persist a level until changed and
-  keep it orthogonal to verbs.
+* Apply changes only in `build` and `refactor`; every other verb read-only.
+* Read-only verb: name what is outside lens; route it to sibling skill in
+  slash form.
+* Load one verb file per invocation, registered under verb's name.
+* Add verbs beyond core freely (`ponytail` carries `debt` and `stats`). One
+  meaning per verb name across library; reuse name another skill carries
+  only with that skill's meaning.
+* Offer levels only where lens needs them: `lite | full | ultra` (advise /
+  enforce, the default / maximalist). Level persists until changed;
+  orthogonal to verbs.
 
 ## Output
 
-Before finalizing, check the edit for lost meaning, altered scope or order,
-weakened gates, and broken references. When a skill's value is a judgment (a
-persona, a review, a reading), also test the draft: brief a delegate through
-`/summon` with the draft and a held-out case, score the return against
-criteria fixed in advance, and change the text until it holds. Keep scores
-and runs out of the skill. Then write the finished `SKILL.md` into the
-codebase, or return it as one raw Markdown block with nothing around it.
+Before finalizing, check edit for lost meaning, altered scope or order,
+weakened gates, broken references. Skill's value is judgment (persona,
+review, reading): also test draft. Brief delegate through `/summon` with
+draft and held-out case, score return against criteria fixed in advance,
+change text until it holds. Keep scores and runs out of skill. Then write
+finished `SKILL.md` into codebase, or return it as one raw Markdown block
+with nothing around it.
 
 <checklist>
-  <item>Frontmatter holds only spec fields in canonical order; `name` matches the directory; the description follows the capability-then-"Use when" form and the library's descriptions total under 7,000 characters; the argument hint matches the body's verbs, levels, and modes.</item>
-  <item>The opening paragraph names task and deliverable; Registry is the first `##`; Redirects follows it with condition-colon-destination bullets.</item>
-  <item>Every bundled file is cited by registered name; examples, templates, and payloads sit in closed-set XML tags.</item>
-  <item>Every bundled file spares some invocation text it does not need; what every run loads at its start sits in the spine, and files that always load together are one file.</item>
-  <item>Every step names exact tools, flags, inputs, outputs, and stopping conditions; project-specific values are parameterized or derived.</item>
-  <item>Delegation, where any, goes through `/summon` with only the caller's unit, record, rules, return shape, cap, and gate.</item>
-  <item>Each sentence supplies an action, condition, rule, context, or example; a `/humanize` sweep finds no filler; negations, numbers, literals, and boundaries survived every cut.</item>
-  <item>Any bundled script follows `scripts` on responsibility placement, heuristic signals, skipped-check reporting, the member layout, and the request-origin chain, and no `SKILL.md` names `BTM_USER_AGENT` or `BTM_CONTACT`.</item>
-  <item>Gotchas hold non-obvious traps; no placeholder text remains outside templates.</item>
-  <item>A fresh agent can execute the skill from its text alone, with no session memory or clarifying question.</item>
+  <item>Frontmatter: only spec fields, canonical order; `name` matches directory; description in capability-then-"Use when" form; library's descriptions total under 7,000 characters; argument hint matches body's verbs, levels, modes.</item>
+  <item>Opening paragraph names task and deliverable; Registry first `##`; Redirects follows with condition-colon-destination bullets.</item>
+  <item>Every bundled file cited by registered name; examples, templates, payloads in closed-set XML tags.</item>
+  <item>Every bundled file spares some invocation text it does not need; what every run loads at start sits in spine; files always loaded together are one file.</item>
+  <item>Every step names exact tools, flags, inputs, outputs, stopping conditions; project-specific values parameterized or derived.</item>
+  <item>Delegation, where any, through `/summon` with only caller's unit, record, rules, return shape, cap, gate.</item>
+  <item>Each sentence supplies action, condition, rule, context, or example; `/humanize` sweep finds no filler; negations, numbers, literals, boundaries survived every cut.</item>
+  <item>Any bundled script follows `scripts` on responsibility placement, heuristic signals, skipped-check reporting, member layout, request-origin chain; no `SKILL.md` names `BTM_USER_AGENT` or `BTM_CONTACT`.</item>
+  <item>Gotchas hold non-obvious traps; no placeholder text outside templates.</item>
+  <item>Fresh agent can execute skill from its text alone, with no session memory or clarifying question.</item>
 </checklist>
 
 ## Examples
@@ -224,7 +212,7 @@ codebase, or return it as one raw Markdown block with nothing around it.
 <examples>
 
   <example for="distillation">
-    <context>Converting raw history into a reproducible step.</context>
+    <context>Raw history to reproducible step.</context>
     <before>I tried bumping the dependency directly, the lockfile drifted and CI failed, then I realized this repo regenerates the lock via `make lock`, so I ran that and CI passed.</before>
     <after>
       <procedure>
@@ -236,19 +224,19 @@ codebase, or return it as one raw Markdown block with nothing around it.
   </example>
 
   <example for="description">
-    <context>Writing a routing description.</context>
+    <context>Routing description.</context>
     <before>This skill helps format python code using black and flake8.</before>
     <after>Formats and lints Python code to the project's configured style, changing no behavior. Use when asked to format Python, lint a file, or fix style warnings.</after>
   </example>
 
   <example for="parameterization">
-    <context>Removing incidental project specifics.</context>
+    <context>Incidental project specifics removed.</context>
     <before>Run the build script located at `/users/joe/projects/manifold/scripts/build.sh`.</before>
     <after>Run the build script at `<repository-root>/scripts/build.sh`.</after>
   </example>
 
   <example for="xml-isolation">
-    <context>Fencing a payload so it reads as data.</context>
+    <context>Payload fenced so it reads as data.</context>
     <before>
       Your config file should look like this:
       { "port": 8080 }

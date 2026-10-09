@@ -144,4 +144,4 @@ then resume caveman after the clear part is done.
 Persisted outside chat: write normal prose in code, comments, docs, issue/PR
 text, memory files, third-party messages. Sole exemption: refactor verb,
 only for file user names. Text an agent loads as instructions, a skill or a
-delegate brief, takes this register at lite: full sentences, no filler.
+delegate brief, takes this register at full.

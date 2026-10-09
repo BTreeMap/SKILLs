@@ -28,8 +28,8 @@ In this order, in full, every time:
    convention. Never add a secret or project-internal data.
 2. `author-skill/SKILL.md`: the standard every skill is held to. Load its
    `scripts` reference when the item touches a script.
-3. `caveman/SKILL.md`: skill text is caveman lite (no filler, no hedging,
-   full sentences); commit bodies are caveman register.
+3. `caveman/SKILL.md`: skill text is caveman full (no articles, no filler,
+   fragments OK); commit bodies are caveman register.
 4. `pl-theorist/SKILL.md` with `references/langs/python.md` and the verb
    file for your task (`refactor` for an existing script, `build` for new
    code, `test` for tests): the engineering standard.
