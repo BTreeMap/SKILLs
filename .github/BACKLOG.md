@@ -125,8 +125,9 @@ done
 ## 5. Checks, run as a chain that stops on failure
 
 ```
-set -e
-ruff check --fix . && ruff format .
+set -eo pipefail
+ruff format .
+ruff check --fix .
 uv run --all-packages pytest -q -m 'not network'
 uv run --all-packages mypy
 uv run --project .github/gate btm-repo-gate fix
