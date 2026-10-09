@@ -6,11 +6,11 @@
 right!, Would you like..., Want me to...?, Want me to give examples?, Should
 I continue?, let me know, here is a...
 
-**Problem:** A chatbot's greeting, offer, or closing remains in standalone
+**Problem:** Chatbot's greeting, offer, or closing remains in standalone
 text.
 
-**Exceptions:** A letter-style opening or closing on a comment. Salutations
-and sign-offs predate ChatGPT by centuries.
+**Exceptions:** Letter-style opening or closing on comment. Salutations and
+sign-offs predate ChatGPT by centuries.
 
 <examples>
   <example>
@@ -27,10 +27,9 @@ available, maintains a low profile, keeps personal details private, prefers
 to stay out of the spotlight, likely [grew up/studied/began], it is believed
 that
 
-**Problem:** A model mentions its knowledge cutoff, or explains that it
-found no source and then fills the gap with a plausible guess. State what
-the source does not show, or remove the sentence. Never present a guess as
-fact.
+**Problem:** Model mentions its knowledge cutoff, or explains it found no
+source, then fills gap with plausible guess. State what source does not
+show, or remove sentence. Never present guess as fact.
 
 <examples>
   <example for="cutoff disclaimer">
@@ -45,7 +44,7 @@ fact.
 
 ### 22. Overly agreeable tone
 
-**Problem:** Praise or agreement before the answer.
+**Problem:** Praise or agreement before answer.
 
 <examples>
   <example>

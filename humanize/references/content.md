@@ -9,8 +9,8 @@ ongoing/enduring/lasting, contributing to the, setting the stage for,
 marking/shaping the, represents/marks a shift, key turning point, evolving
 landscape, focal point, indelible mark, deeply rooted
 
-**Problem:** Ordinary details claimed to mark a major change, prove a
-legacy, or reflect a broad trend.
+**Problem:** Ordinary details claimed to mark major change, prove legacy, or
+reflect broad trend.
 
 <examples>
   <example>
@@ -24,11 +24,11 @@ legacy, or reflect a broad trend.
 **Watch:** independent coverage, local/regional/national media outlets,
 written by a leading expert, active social media presence
 
-**Problem:** Well-known publications or follower counts listed to prove that
-a person matters, with no useful context.
+**Problem:** Well-known publications or follower counts listed to prove
+person matters, with no useful context.
 
-**Exceptions:** When the source explains what the person said and where,
-keep that citation.
+**Exceptions:** Source explains what person said and where: keep that
+citation.
 
 <examples>
   <example>
@@ -43,8 +43,8 @@ keep that citation.
 reflecting/symbolizing..., contributing to..., cultivating/fostering...,
 encompassing..., showcasing...
 
-**Problem:** An -ing phrase bolted onto a simple fact to make it sound
-deeper than it is.
+**Problem:** -ing phrase bolted onto simple fact to make it sound deeper
+than it is.
 
 <examples>
   <example>
@@ -61,7 +61,7 @@ heart of, groundbreaking (figurative), renowned, breathtaking, must-visit,
 stunning
 
 **Problem:** Advertisement tone, especially describing places, culture,
-products, or organizations.
+products, organizations.
 
 <examples>
   <example>
@@ -78,16 +78,15 @@ most people I've talked to, everyone I've worked with, a lot of folks, in my
 experience teams tend to, I keep seeing. Borrowed consensus: famously,
 notoriously, as we all know, it is well known that, the classic example is.
 
-**Problem:** A claim assigned to unnamed experts, critics, reports, or
-observers; the writer's own unverifiable experience doing a citation's job;
-or borrowed consensus, where either the fact is known, so state it, or it is
-not, so the appeal is the only evidence. Name a real source when the source
-text provides one. Otherwise remove the unsupported claim. Never invent a
-source.
+**Problem:** Claim assigned to unnamed experts, critics, reports, or
+observers; writer's own unverifiable experience doing citation's job; or
+borrowed consensus, where either fact is known (state it) or it is not
+(appeal is only evidence). Name real source when source text provides one.
+Otherwise remove unsupported claim. Never invent source.
 
-**Exceptions:** First-person experience the writer has. The first-person
-case targets invented observation doing a citation's job; autobiography that
-the surrounding text supports stays.
+**Exceptions:** First-person experience writer has. First-person case
+targets invented observation doing citation's job; autobiography surrounding
+text supports stays.
 
 <examples>
   <example>
@@ -105,10 +104,9 @@ the surrounding text supports stays.
 **Watch:** Despite its... faces several challenges..., Despite these
 challenges, Challenges and Legacy, Future Outlook
 
-**Problem:** A stock section about challenges, future prospects, or
-continued growth that repeats vague claims instead of adding facts. Add
-details such as dates or public actions only when they come from the source
-or the user.
+**Problem:** Stock section about challenges, future prospects, or continued
+growth repeating vague claims instead of adding facts. Add details such as
+dates or public actions only when they come from source or user.
 
 <examples>
   <example>

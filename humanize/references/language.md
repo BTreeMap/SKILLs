@@ -11,17 +11,17 @@ showcase, tapestry (abstract noun), testament, underscore (verb), valuable,
 vibrant
 
 **Problem:** AI writing uses these words far more often than people do,
-especially in groups. Count a cluster, never a single word; placement
-metaphors such as load-bearing belong to §37 in `register`.
+especially in groups. Count cluster, never single word; placement metaphors
+such as load-bearing belong to §37 in `register`.
 
 **Exceptions:**
 
-- Formal or academic words. Only the words listed above count as tells. Do
-  not simplify every formal word.
+- Formal or academic words. Only words listed above count as tells. Do not
+  simplify every formal word.
 - Common transition words in isolation. Additionally, moreover, consequently
   are AI-coded only when piled up. One however is not a tell.
-- Claude-favored words in isolation. Genuine, latent, settled, seam, and
-  quietly are everyday words.
+- Claude-favored words in isolation. Genuine, latent, settled, seam, quietly
+  are everyday words.
 
 <examples>
   <example>
@@ -35,8 +35,7 @@ metaphors such as load-bearing belong to §37 in `register`.
 **Watch:** serves as/stands as/marks/represents [a], boasts/features/offers
 [a]
 
-**Problem:** Simple verbs such as is, are, and has replaced with longer
-phrases.
+**Problem:** Simple verbs such as is, are, has replaced with longer phrases.
 
 <examples>
   <example>
@@ -48,11 +47,10 @@ phrases.
 ### 9. Not X but Y and clipped negative endings
 
 **Problem:** Overused "Not only...but..." and "It's not just X, it's Y"
-frames, clipped endings such as "no guessing" where a clear clause belongs,
-and staccato negation. The staccato form carries no "not just", so a scan
-for the phrase misses it: watch for two or more sentences in a row that
-begin with No or Not a. Cutting the negated half can change what the
-sentence claims; apply invariant 5.
+frames, clipped endings such as "no guessing" where clear clause belongs,
+staccato negation. Staccato form carries no "not just", so scan for phrase
+misses it: watch for two or more sentences in a row beginning with No or Not
+a. Cutting negated half can change what sentence claims; apply invariant 5.
 
 <examples>
   <example>
@@ -82,16 +80,16 @@ sentence claims; apply invariant 5.
 
 ### 11. Changing names and repeating sentence openings
 
-**Problem:** Repetition handled by rule instead of by ear: the same person
-or thing keeps getting renamed, or several sentences open with the same
-subject, often she or he. Use one clear name for one subject. For repeated
-openings, merge sentences, change the subject when that helps, or begin with
-the action. Fix the repeated sentence pattern, not the repeated word: the
-remaining sentence may still start with "She."
+**Problem:** Repetition handled by rule instead of by ear: same person or
+thing keeps getting renamed, or several sentences open with same subject,
+often she or he. One clear name for one subject. Repeated openings: merge
+sentences, change subject when that helps, or begin with action. Fix
+repeated sentence pattern, not repeated word: remaining sentence may still
+start with "She."
 
-**Exceptions:** Deliberate repeated openings. Writers repeat an opening to
+**Exceptions:** Deliberate repeated openings. Writers repeat opening to
 build rhythm or pressure, as in "She came. She saw. She conquered." Change
-it only when the repetition adds nothing.
+only when repetition adds nothing.
 
 <examples>
   <example for="synonym cycling">
@@ -117,8 +115,8 @@ it only when the repetition adds nothing.
 
 ### 13. Passive voice and missing subjects
 
-**Problem:** The actor hidden or the subject dropped. Use active voice when
-it makes the actor and action clearer.
+**Problem:** Actor hidden or subject dropped. Use active voice when it makes
+actor and action clearer.
 
 <examples>
   <example>

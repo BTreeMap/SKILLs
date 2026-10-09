@@ -2,12 +2,11 @@
 
 ### 14. Em and en dashes
 
-**Rule:** The final rewrite must not contain an em dash (U+2014) or an en
-dash (U+2013) unless the writer's sample uses them; then match the sample's
-rate. Replace each with a period, comma, colon, or parentheses, or rewrite
-the sentence. Also catch a spaced hyphen and a double hyphen used as dashes.
-The example below uses the en dash and double-hyphen forms; the em dash
-behaves identically.
+**Rule:** Final rewrite must not contain em dash (U+2014) or en dash
+(U+2013) unless writer's sample uses them; then match sample's rate. Replace
+each with period, comma, colon, or parentheses, or rewrite sentence. Also
+catch spaced hyphen and double hyphen used as dashes. Example below uses en
+dash and double-hyphen forms; em dash behaves identically.
 
 As evidence, em dashes count only when paired with formulaic sales-y rhythm;
 many editors and journalists use them often.
@@ -21,7 +20,7 @@ many editors and journalists use them often.
 
 ### 15. Too much bold text
 
-**Problem:** Words and phrases bolded without a clear reason.
+**Problem:** Words and phrases bolded without clear reason.
 
 <examples>
   <example>
@@ -32,8 +31,8 @@ many editors and journalists use them often.
 
 ### 16. Lists with bold mini-headings
 
-**Problem:** Vertical lists in which every item starts with a bold label and
-a colon.
+**Problem:** Vertical lists where every item starts with bold label and
+colon.
 
 <examples>
   <example>
@@ -48,7 +47,7 @@ a colon.
 
 ### 17. Title case in headings
 
-**Problem:** Every main word of a heading capitalized.
+**Problem:** Every main word of heading capitalized.
 
 <examples>
   <example>
@@ -59,12 +58,12 @@ a colon.
 
 ### 18. Emojis and decorative rules
 
-**Problem:** Emojis added to headings and list items as decoration, and
-horizontal rules (`---`) placed between sections where a heading or a
-paragraph break already separates them.
+**Problem:** Emojis added to headings and list items as decoration;
+horizontal rules (`---`) placed between sections where heading or paragraph
+break already separates them.
 
-**Exceptions:** Front matter delimiters, a required thematic break, and a
-rule inside a template.
+**Exceptions:** Front matter delimiters, required thematic break, rule
+inside template.
 
 <examples>
   <example>
@@ -101,7 +100,7 @@ Run the command.
 
 ### 19. Curly quotation marks
 
-**Problem:** Curly quotes (“...”) where the writer or target format uses
+**Problem:** Curly quotes (“...”) where writer or target format uses
 straight quotes ("...").
 
 As evidence, curly quotes count only when stacked with other tells; macOS,

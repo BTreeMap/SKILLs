@@ -2,7 +2,7 @@
 
 ### 23. Filler phrases
 
-Replace the wind-up with the direct form:
+Replace wind-up with direct form:
 
 <template for="swaps">
 "In order to achieve this goal" → "To achieve this"
@@ -19,8 +19,8 @@ Replace the wind-up with the direct form:
 arguably, in some cases it may, this is an inference
 
 **Problem:** Repeated editing stacks qualifiers until every claim sounds
-uncertain. Keep a qualifier only when the source supports it and the meaning
-needs it. Remove caveats that only repair an earlier overstatement.
+uncertain. Keep qualifier only when source supports it and meaning needs it.
+Remove caveats that only repair earlier overstatement.
 
 <examples>
   <example>
@@ -31,7 +31,7 @@ needs it. Remove caveats that only repair an earlier overstatement.
 
 ### 25. Generic positive endings
 
-**Problem:** Vague optimism instead of the last useful fact.
+**Problem:** Vague optimism instead of last useful fact.
 
 <examples>
   <example>
@@ -45,9 +45,9 @@ needs it. Remove caveats that only repair an earlier overstatement.
 **Watch:** third-party, cross-functional, client-facing, data-driven,
 decision-making, well-known, high-quality, real-time, long-term, end-to-end
 
-**Problem:** These pairs hyphenated everywhere. Keep the hyphen before a
-noun when grammar needs it, as in "a high-quality report". Drop it after the
-noun, as in "the report is high quality".
+**Problem:** These pairs hyphenated everywhere. Keep hyphen before noun when
+grammar needs it, as in "a high-quality report". Drop it after noun, as in
+"the report is high quality".
 
 <examples>
   <example>

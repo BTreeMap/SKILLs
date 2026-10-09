@@ -14,11 +14,11 @@ metadata:
 
 # Humanize
 
-Rewrite AI-sounding text so it reads like its writer, replacing the generic
-with the specific. §1-35 come from Wikipedia's ["Signs of AI
+Rewrite AI-sounding text so it reads like its writer, replacing generic with
+specific. §1-35 come from Wikipedia's ["Signs of AI
 writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
-§36-40 and added cases in older entries cover tells that survive a
-vocabulary scrub.
+§36-40 and added cases in older entries cover tells that survive vocabulary
+scrub.
 
 ## Registry
 
@@ -38,35 +38,35 @@ vocabulary scrub.
 
 ## Invariants
 
-Hold these in every mode. Each outranks any pattern fix.
+Hold in every mode. Each outranks any pattern fix.
 
 1. **Keep every claim.** Shorten dull parts, expand useful parts, merge or
-   split paragraphs, but keep the information.
+   split paragraphs, but keep information.
 2. **Invent no facts.** Add no fact, name, number, date, quote, or citation
-   the source or user did not supply. When a sentence needs a missing
-   detail, ask for it or write a simpler sentence. An opinion or reaction is
-   allowed where the writer's voice calls for one; a factual claim is not.
-   Fiction is exempt: invented detail is the task.
-3. **Match the voice.** Formal, casual, or technical to fit the text. Read
-   any supplied sample first: note sentence length, word choice, paragraph
-   openings, punctuation, repeated phrases, and transitions. Keep casual
-   words casual and deliberate quirks intact. A personal style file (voice
-   guide, style document, explicit voice instructions) or sample outranks
-   every pattern here: load it before any owner file, and where it permits a
-   construction a pattern flags (an em-dash habit, personification of
-   systems, candid asides, placement verbs), keep the construction without
-   asking. A sample full of em dashes keeps its rate, so §14 is not a ban.
-4. **Personality only where it fits.** In blog posts, essays, opinion, and
-   personal writing, keep the writer's opinions, uncertainty, mixed
-   feelings, humor, asides, and uneven rhythm. Keep reference, technical,
-   legal, and factual text neutral.
-5. **Preserve logical strength.** Cutting a negation, a hedge, or a
-   comparative can change what a sentence claims. After any such cut,
-   re-read the claim: a criterion stays a criterion, evidence stays
-   evidence, a possibility stays possible. "Passes not when X but when Y"
-   becomes "passes only when Y", never "passes when Y"; "there is evidence
-   that A and B pull apart" keeps "evidence suggests". Restore lost strength
-   with only, can, may, suggests, or an equivalent.
+   source or user did not supply. Sentence needs missing detail: ask for it
+   or write simpler sentence. Opinion or reaction allowed where writer's
+   voice calls for one; factual claim is not. Fiction exempt: invented
+   detail is the task.
+3. **Match the voice.** Formal, casual, or technical to fit text. Read any
+   supplied sample first: note sentence length, word choice, paragraph
+   openings, punctuation, repeated phrases, transitions. Keep casual words
+   casual, deliberate quirks intact. Personal style file (voice guide, style
+   document, explicit voice instructions) or sample outranks every pattern
+   here: load it before any owner file; where it permits construction a
+   pattern flags (em-dash habit, personification of systems, candid asides,
+   placement verbs), keep construction without asking. Sample full of em
+   dashes keeps its rate, so §14 is not a ban.
+4. **Personality only where it fits.** Blog posts, essays, opinion, personal
+   writing: keep writer's opinions, uncertainty, mixed feelings, humor,
+   asides, uneven rhythm. Keep reference, technical, legal, factual text
+   neutral.
+5. **Preserve logical strength.** Cutting negation, hedge, or comparative
+   can change what sentence claims. After any such cut, re-read claim:
+   criterion stays criterion, evidence stays evidence, possibility stays
+   possible. "Passes not when X but when Y" becomes "passes only when Y",
+   never "passes when Y"; "there is evidence that A and B pull apart" keeps
+   "evidence suggests". Restore lost strength with only, can, may, suggests,
+   or equivalent.
 
    <checklist for="modality">
      <item>necessary became sufficient: restore "only", "requires", "unless"</item>
@@ -77,57 +77,56 @@ Hold these in every mode. Each outranks any pattern fix.
 
 ## Output modes
 
-The procedure is the same in every mode.
+Procedure same in every mode.
 
 | Mode | Takes | Returns |
 | --- | --- | --- |
-| Pasted text (default) | Text in the conversation | Draft, short list of remaining AI patterns, final rewrite |
-| File | A file the user names | Only the final text, written to the file with prose changed only (code blocks, YAML metadata, data, and link targets kept); then a short summary |
-| Embedded | Text from another task that invokes the skill (PR text, commit message, docs) | Final text only |
+| Pasted text (default) | Text in conversation | Draft, short list of remaining AI patterns, final rewrite |
+| File | File user names | Only final text, written to file with prose changed only (code blocks, YAML metadata, data, link targets kept); then short summary |
+| Embedded | Text from another task invoking skill (PR text, commit message, docs) | Final text only |
 
 ## Procedure
 
-1. Load the personal style file or voice sample first when one exists
-   (invariant 3).
-2. Scan the input against the detection index and collect suspected hits.
-3. Zero hits: return the text unchanged per output mode, state that no AI
-   patterns were found (Embedded: say nothing), and load nothing.
-4. Otherwise load exactly the owner files of the hits.
+1. Load personal style file or voice sample first when one exists (invariant
+   3).
+2. Scan input against detection index; collect suspected hits.
+3. Zero hits: return text unchanged per output mode, state no AI patterns
+   found (Embedded: say nothing), load nothing.
+4. Otherwise load exactly owner files of hits.
 5. Check §14-19 mechanically: search for U+2014, U+2013, `**`, heading case,
-   emoji, curly quotes, ` -- `, and `---` lines. Measure §36 with the
-   command in `register` on prose over about 40 sentences, before and after
-   the rewrite.
-6. Mark each pattern instance from the scan and confirm it against its owner
-   file. Drop the false positives that the entry's exceptions and the False
-   positives section name; keep what Details to keep lists.
-7. Draft. Read it aloud for rhythm, concrete detail, simple verbs, and the
-   right formality. State each point fresh rather than patching flagged
-   phrases one at a time: a word swap leaves the shape, and a word list
-   applied as a ban flattens prose, removing ordinary English while the
-   suppressed term tends to resurface. When a sentence stays awkward,
-   rewrite the paragraph around its main point.
-8. Self-check three questions, treating a yes to any as an error to fix:
+   emoji, curly quotes, ` -- `, `---` lines. Measure §36 with command in
+   `register` on prose over about 40 sentences, before and after rewrite.
+6. Mark each pattern instance from scan, confirm against owner file. Drop
+   false positives entry's exceptions and False positives section name; keep
+   what Details to keep lists.
+7. Draft. Read aloud for rhythm, concrete detail, simple verbs, right
+   formality. State each point fresh instead of patching flagged phrases one
+   at a time: word swap leaves shape; word list applied as ban flattens
+   prose, removing ordinary English while suppressed term tends to
+   resurface. Sentence stays awkward: rewrite paragraph around its main
+   point.
+8. Self-check three questions; yes to any is error to fix:
    - What still sounds AI-generated?
-   - Did the rewrite add or drop any fact, name, number, date, quote,
-     citation, or ranking?
-   - Did removing a negation, hedge, or comparative strengthen a claim
+   - Did rewrite add or drop any fact, name, number, date, quote, citation,
+     or ranking?
+   - Did removing negation, hedge, or comparative strengthen claim
      (invariant 5)?
-9. Sweep the final text for U+2014 and U+2013 per §14, and re-measure §36
-   where it applied.
+9. Sweep final text for U+2014 and U+2013 per §14; re-measure §36 where it
+   applied.
 
 ## Detection index
 
 40 patterns, owned by contiguous range: §1-6 `content`, §7-13 `language`,
 §14-19 `style`, §20-22 `chatbot`, §23-26 `filler`, §27-35 `rhetoric`, §36-40
-`register`. The cues below route only; each owner file holds its patterns'
-watch-lists, problem statements, exceptions, and before/after examples.
+`register`. Cues below route only; each owner file holds its patterns'
+watch-lists, problem statements, exceptions, before/after examples.
 
-Every entry occurs in human writing; a hit is a style signal, never proof of
-authorship. Structural and rhetorical entries are diagnostic alone or in
-pairs; lexical entries (§7, §37) count only in clusters or above the density
-the owner file states. When unsure, look for several patterns together:
-several stock patterns in one passage are stronger evidence than any one.
-Vocabulary tells drift by model and year; structural ones last.
+Every entry occurs in human writing; hit is style signal, never proof of
+authorship. Structural and rhetorical entries diagnostic alone or in pairs;
+lexical entries (§7, §37) count only in clusters or above density owner file
+states. Unsure: look for several patterns together; several stock patterns
+in one passage are stronger evidence than any one. Vocabulary tells drift by
+model and year; structural ones last.
 
 | § | Cue |
 | --- | --- |
@@ -174,13 +173,13 @@ Vocabulary tells drift by model and year; structural ones last.
 
 ## False positives
 
-Beyond each entry's own exceptions, a person may show any of the following;
-treat none as evidence by itself:
+Beyond each entry's own exceptions, person may show any of following; treat
+none as evidence by itself:
 
 - **Perfect grammar and consistent style.** Many writers are professionals
   or have been edited.
-- **Mixed casual and formal styles.** This can reflect the writer's field,
-  age, or personal habits.
+- **Mixed casual and formal styles.** Can reflect writer's field, age, or
+  personal habits.
 - **"Bland" or "robotic" prose.** AI prose has specific tells. Generic
   dryness without those tells is just dry writing.
 - **Unsourced claims.** Most of the web is unsourced.
@@ -192,24 +191,23 @@ treat none as evidence by itself:
 ## Details to keep
 
 - **Useful limits and disclaimers.** Scope statements, legal and safety
-  notices, real corrections, named objections, replies, and FAQ answers.
+  notices, real corrections, named objections, replies, FAQ answers.
 - **Secondhand text.** Do not rewrite watched phrases inside quotations,
-  titles, proper names, or examples where the phrase is discussed rather
-  than used.
+  titles, proper names, or examples where phrase is discussed, not used.
 
-Keep these human details unless they hurt the meaning; they often carry the
-writer's voice:
+Keep these human details unless they hurt meaning; they often carry writer's
+voice:
 
-- **Specific, unusual details.** A real address, an odd quote, a phrase such
-  as "the lawyer who used to work upstairs from my dentist."
+- **Specific, unusual details.** Real address, odd quote, phrase such as
+  "the lawyer who used to work upstairs from my dentist."
 - **Mixed feelings and unresolved tension.** Lines such as "I think this is
   mostly good, but it bothers me, and I can't fully explain why."
-- **Dated, era-bound references.** Slang, memes, or in-jokes that map to a
+- **Dated, era-bound references.** Slang, memes, or in-jokes mapping to
   specific year and subculture. Models lag by a year or more.
-- **Deliberate first-person choices.** A cut or word choice the writer can
+- **Deliberate first-person choices.** Cut or word choice writer can
   explain.
 - **Variety in sentence length.** Real writing alternates short and long. AI
-  writing tends toward an even, mid-length cadence.
+  writing tends toward even, mid-length cadence.
 - **Genuine asides, parentheticals, self-corrections.** "(I keep wanting to
   say 'almost' here, but it really was certain.)" Models rarely interrupt
   themselves like this.

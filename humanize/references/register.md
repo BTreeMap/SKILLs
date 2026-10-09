@@ -2,25 +2,24 @@
 
 ### 36. Uniform sentence rhythm
 
-**Measure:** the coefficient of variation of sentence length, standard
-deviation over mean, in words, per block of about 40 sentences of running
-prose. Human prose runs 0.55 to 0.75 with a block floor near 0.4; unedited
-model output sits near 0.2 to 0.3. Flag a block under 0.45, then read it
-aloud: the number is a prompt, and the writer's own baseline replaces it
-when a sample exists.
+**Measure:** coefficient of variation of sentence length, standard deviation
+over mean, in words, per block of about 40 sentences of running prose. Human
+prose runs 0.55 to 0.75 with block floor near 0.4; unedited model output
+sits near 0.2 to 0.3. Flag block under 0.45, then read it aloud: number is a
+prompt; writer's own baseline replaces it when sample exists.
 
 <commands for="measure">
 python3 -c "import re,sys,statistics as s;t=re.sub(r'\s+',' ',open(sys.argv[1]).read());n=[len(x.split()) for x in re.split(r'(?<=[.!?])\s+(?=[A-Z\"(])',t) if 3<=len(x.split())<=120];print([round(s.pstdev(b)/s.mean(b),2) for b in (n[i:i+40] for i in range(0,len(n)-39,40))])" <file>
 </commands>
 
-**Problem:** Every sentence lands at the same middle length.
+**Problem:** Every sentence lands at same middle length.
 
-**Fix:** Merge two adjacent sentences that share a subject; split one
-sentence carrying two independent claims. Adding a short sentence for effect
-produces §31.
+**Fix:** Merge two adjacent sentences sharing subject; split one sentence
+carrying two independent claims. Adding short sentence for effect produces
+§31.
 
-**Exceptions:** Even rhythm in a list, a spec, or a table caption.
-Enumerations and reference entries are uniform by design.
+**Exceptions:** Even rhythm in list, spec, or table caption. Enumerations
+and reference entries uniform by design.
 
 <examples>
   <example>
@@ -35,14 +34,14 @@ Enumerations and reference entries are uniform by design.
 hands you, surfaces (verb), reaches for, does the work, load-bearing, the
 engine of, the seam
 
-**Problem:** Abstract nouns given a place, a weight, or hands, in volume.
-Human prose uses these verbs literally and rarely; model prose uses them
+**Problem:** Abstract nouns given place, weight, or hands, in volume. Human
+prose uses these verbs literally and rarely; model prose uses them
 figuratively at twenty times the rate. Flag figurative instances above two
 per thousand words, or three in one paragraph.
 
-**Exceptions:** Anything below that threshold, and any instance the writer's
-own sample uses. "The risk sits in the handoff" is ordinary English; one
-placement verb is often the best sentence on the page.
+**Exceptions:** Anything below that threshold, and any instance writer's own
+sample uses. "The risk sits in the handoff" is ordinary English; one
+placement verb is often best sentence on page.
 
 <examples>
   <example>
@@ -57,11 +56,11 @@ placement verb is often the best sentence on the page.
 if I had to pick one, the most interesting part, where this matters most,
 the best one is, precisely the X you
 
-**Problem:** A ranking the writer never made, used to steer attention the
-content should steer by itself.
+**Problem:** Ranking writer never made, used to steer attention content
+should steer by itself.
 
-**Exceptions:** A superlative the text earns. After four numbers, "the
-largest" is a fact; a comparison the reader can check stays.
+**Exceptions:** Superlative text earns. After four numbers, "the largest" is
+fact; comparison reader can check stays.
 
 <examples>
   <example>
@@ -72,16 +71,16 @@ largest" is a fact; a comparison the reader can check stays.
 
 ### 39. Compressed jargon
 
-**Problem:** Nouns stacked as modifiers, coined hyphen compounds, and
-half-sentences with no connective tissue: the register a coding agent drifts
-into over a long session, precise for the engineer already in context and
-opaque to everyone else. Heuristic: three or more nouns in a row with no
-determiner or preposition between them, or two invented hyphen compounds in
-one sentence. Expand each stack into the sentence it abbreviates.
+**Problem:** Nouns stacked as modifiers, coined hyphen compounds,
+half-sentences with no connective tissue: register coding agent drifts into
+over long session, precise for engineer already in context, opaque to
+everyone else. Heuristic: three or more nouns in a row with no determiner or
+preposition between them, or two invented hyphen compounds in one sentence.
+Expand each stack into sentence it abbreviates.
 
-**Exceptions:** Jargon the audience shares. A noun stack in a message
-between two engineers who share the context is compression that works; the
-pattern targets the same register reaching a reader who lacks the context.
+**Exceptions:** Jargon audience shares. Noun stack in message between two
+engineers sharing context is compression that works; pattern targets same
+register reaching reader who lacks context.
 
 <examples>
   <example>
@@ -96,15 +95,15 @@ pattern targets the same register reaching a reader who lacks the context.
 because, does not survive contact with, the prior runs the other way, what
 holds up / what was wrong, here is the smoking gun, that is precisely the X
 
-**Problem:** Prose written as an audit of an earlier draft the reader never
-saw. The model's checking voice spilled into the answer: verdicts on
-corrections, refutations of claims nobody made, a case argued to itself.
-Near §30 and §35 (drafting residue) and §34 (unraised objections). State the
-finding; delete the trial.
+**Problem:** Prose written as audit of earlier draft reader never saw.
+Model's checking voice spilled into answer: verdicts on corrections,
+refutations of claims nobody made, case argued to itself. Near §30 and §35
+(drafting residue) and §34 (unraised objections). State finding; delete
+trial.
 
-**Exceptions:** Corrections in a document about change. A changelog, a
-review, or an erratum states what was wrong; the pattern targets the
-checking voice inside a document that is presenting a finding.
+**Exceptions:** Corrections in document about change. Changelog, review, or
+erratum states what was wrong; pattern targets checking voice inside
+document presenting finding.
 
 <examples>
   <example>

@@ -9,10 +9,9 @@ question that keeps coming up, here is where I landed, what I keep running
 into, the thing that got me, what struck me hardest, I can't stop thinking
 about, keep arriving at.
 
-**Problem:** An ordinary point dressed as a hidden truth. At paragraph
-scale, a record of thinking that did not happen, spent to make an ordinary
-claim feel earned: keep the personal detail; drop the performance of having
-reflected on it.
+**Problem:** Ordinary point dressed as hidden truth. At paragraph scale,
+record of thinking that did not happen, spent to make ordinary claim feel
+earned: keep personal detail; drop performance of having reflected on it.
 
 <examples>
   <example>
@@ -32,13 +31,12 @@ you need to know, now let's look at, without further ado, heads up, quick
 note, before I forget, there are two things here, three things to know, let
 me give you four reasons, I'm going to make three points
 
-**Problem:** The next point announced instead of stated, by topic or by
-count. A casual phrase such as "one thing that bit me" can do the same.
-Remove the announcement, keeping the content.
+**Problem:** Next point announced instead of stated, by topic or by count.
+Casual phrase such as "one thing that bit me" can do same. Remove
+announcement, keep content.
 
-**Exceptions:** A count the reader must hold. The count case targets
-decoration; a count that helps the reader track items across intervening
-text is navigation.
+**Exceptions:** Count reader must hold. Count case targets decoration; count
+helping reader track items across intervening text is navigation.
 
 <examples>
   <example>
@@ -57,9 +55,9 @@ text is navigation.
 
 ### 29. A heading or question repeated in the first sentence
 
-**Problem:** A heading followed by a one-line paragraph that restates it, or
-an answer that opens by repeating the question it was asked, common in prose
-that began as a chat reply. Remove the repeated sentence.
+**Problem:** Heading followed by one-line paragraph restating it, or answer
+opening by repeating question it was asked, common in prose that began as
+chat reply. Remove repeated sentence.
 
 <examples>
   <example>
@@ -85,8 +83,8 @@ When users hit a slow page, they leave.
 ### 30. Writing about the previous version
 
 **Problem:** Documentation and comments should describe current behavior.
-Mention the previous version only in change logs, release notes, migration
-guides, and other documents about change.
+Mention previous version only in change logs, release notes, migration
+guides, other documents about change.
 
 <examples>
   <example>
@@ -97,7 +95,7 @@ guides, and other documents about change.
 
 ### 31. Forced punchlines and dramatic fragments
 
-**Problem:** Every sentence turned into a dramatic closing line.
+**Problem:** Every sentence turned into dramatic closing line.
 
 **Exceptions:** One short sentence for emphasis. Flag dramatic fragments
 only when several appear in a row.
@@ -116,15 +114,14 @@ the language of, the currency of, the architecture of. Coined labels:
 paradox, trap, creep, divide, vacuum, inversion, tax, or debt appended to a
 domain word.
 
-**Problem:** An ordinary claim turned into a saying that sounds deep but
-adds no detail. Replace the saying with the specific claim. A coined label
-presented as established vocabulary makes an observation read as a known
-result.
+**Problem:** Ordinary claim turned into saying that sounds deep but adds no
+detail. Replace saying with specific claim. Coined label presented as
+established vocabulary makes observation read as known result.
 
 **Exceptions:** Real terms of art and defined coinages. Technical debt,
-scope creep, and a label the writer defines and then uses are vocabulary;
-the coined-label case targets an undefined label posing as one. A suffix
-match alone is weak: tax, debt, and trap are ordinary literal words.
+scope creep, label writer defines and then uses are vocabulary; coined-label
+case targets undefined label posing as one. Suffix match alone is weak: tax,
+debt, trap are ordinary literal words.
 
 <examples>
   <example>
@@ -144,14 +141,14 @@ Real talk, as standalone hooks or fake-candid pauses before an ordinary
 point; the honest version, honest caveat, the honest read, the honest
 limitation, I'll be candid, candidly, anywhere in a sentence
 
-**Problem:** A staged pause or claim of honesty before a routine point.
-Marking one statement as honest implies the others were not, and the
-qualifier never survives removal; unlike §24 it hedges the writer's
-sincerity, not the claim's strength. State the point directly.
+**Problem:** Staged pause or claim of honesty before routine point. Marking
+one statement honest implies others were not; qualifier never survives
+removal; unlike §24 it hedges writer's sincerity, not claim's strength.
+State point directly.
 
 **Exceptions:** "Honestly" or "look" mid-sentence in casual writing, and
-quoted speech, stay. The tell is the standalone theatrical opener, or the
-writer marking their own claim as the honest one.
+quoted speech, stay. Tell is standalone theatrical opener, or writer marking
+own claim as the honest one.
 
 <examples>
   <example>
@@ -170,14 +167,13 @@ writer marking their own claim as the honest one.
 to, To be clear, Don't get me wrong, This is not to say, You could
 argue/frame this differently but, Some might say... but
 
-**Problem:** An objection answered that appears nowhere in the text. Watch
-for an unattributed statement about what the writer does not mean,
-especially when the topic appears nowhere else. Remove only the unsupported
-defense. If it contains a real claim, state that claim directly.
+**Problem:** Objection answered that appears nowhere in text. Watch for
+unattributed statement about what writer does not mean, especially when
+topic appears nowhere else. Remove only unsupported defense. Contains real
+claim: state that claim directly.
 
-**Exceptions:** Keep an objection when the text names its source or answers
-it in full. A direct claim such as "the API is not thread-safe" is not this
-pattern.
+**Exceptions:** Keep objection when text names its source or answers it in
+full. Direct claim such as "the API is not thread-safe" is not this pattern.
 
 <examples>
   <example>
@@ -192,16 +188,15 @@ pattern.
 obvious approach would be, You might think... but, It would be easy to just,
 Some would suggest
 
-**Problem:** An option no reader would consider, introduced only to be
-rejected in a clause, often residue of an earlier draft. Remove the fake
-option and state the real constraint directly. Ask what new information each
-sentence adds; if it only records an earlier edit, rewrite the paragraph
-around its main point.
+**Problem:** Option no reader would consider, introduced only to be rejected
+in a clause, often residue of earlier draft. Remove fake option, state real
+constraint directly. Ask what new information each sentence adds; only
+records earlier edit: rewrite paragraph around its main point.
 
-**Exceptions:** Real alternatives. Keep options a reader may consider in a
-design document, tutorial, or argument; remove only an unlikely option the
-text dismisses and never uses again. One rejected option may be valid;
-several short, unrelated rejections are a stronger sign.
+**Exceptions:** Real alternatives. Keep options reader may consider in
+design document, tutorial, or argument; remove only unlikely option text
+dismisses and never uses again. One rejected option may be valid; several
+short, unrelated rejections are stronger sign.
 
 <examples>
   <example>
