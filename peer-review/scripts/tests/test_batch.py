@@ -133,7 +133,7 @@ class TestObjections:
             "objections[0].anchors[0]",
         }
 
-    def test_novelty_needs_a_linked_corpus_and_dated_prior(self, admit, corpus_dir):
+    def test_novelty_needs_a_attached_corpus_and_dated_prior(self, admit, corpus_dir):
         base = {
             "kw": ["not", "first"],
             "kind": "first",
@@ -156,7 +156,7 @@ class TestObjections:
         assert (
             "postdates" in fixes
             and "no year" in fixes
-            and "not in the linked corpus" in fixes
+            and "not in the attached corpus" in fixes
         )
         ledger, result = admit(
             {"objections": [{**base, "prior": ["DOI:10.1/a"]}]},

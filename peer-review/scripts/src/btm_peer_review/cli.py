@@ -146,12 +146,12 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_link(args: argparse.Namespace) -> int:
+def cmd_attach(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
     papers = LIT_REVIEW_SESSIONS.dir_of(args.corpus) / LIT_REVIEW_CORPUS
     corpus = load_corpus(papers)
-    linked = meta.with_(corpus=str(papers)).with_link(corpus_link(papers))
-    STORE.write_meta(directory, linked)
+    attached = meta.with_(corpus=str(papers)).with_link(corpus_link(papers))
+    STORE.write_meta(directory, attached)
     later = sum(1 for r in corpus.records if r.year is not None and r.year > meta.year)
     emit(
         {
@@ -169,7 +169,7 @@ def cmd_link(args: argparse.Namespace) -> int:
     return 0
 
 
-def linked_corpus(session: str) -> Path | None:
+def attached_corpus(session: str) -> Path | None:
     _, meta = _session(session)
     return Path(meta.corpus) if meta.corpus else None
 
@@ -343,10 +343,12 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.set_defaults(func=cmd_ingest)
     ingest.add_argument("session")
     add_slot(ingest, EXTRACTION, "a read-pdf extraction with page markers")
-    link = commands.add_parser("link", help="attach a lit-review corpus as prior work")
-    link.set_defaults(func=cmd_link)
-    link.add_argument("session")
-    link.add_argument("--corpus", required=True, help="lit-review session id or path")
+    attach = commands.add_parser(
+        "attach", help="attach a lit-review corpus as prior work"
+    )
+    attach.set_defaults(func=cmd_attach)
+    attach.add_argument("session")
+    attach.add_argument("--corpus", required=True, help="lit-review session id or path")
     note = commands.add_parser("note", help="admit one JSON batch")
     note.set_defaults(func=cmd_note)
     note.add_argument("session")
@@ -370,7 +372,7 @@ def build_parser() -> argparse.ArgumentParser:
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, STORE)
-    wire_cite(commands, STORE.skill, linked_corpus)
+    wire_cite(commands, STORE.skill, attached_corpus)
     wire_clean(commands, STORE)
     return parser
 

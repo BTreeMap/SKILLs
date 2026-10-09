@@ -8,7 +8,7 @@ citation key in draft.
 Take every entry's fields (authors, year, venue, title, DOI) from retrieved
 record, in this order:
 
-1. `check`'s `citations` row with `key`: linked corpus holds record; copy
+1. `check`'s `citations` row with `key`: attached corpus holds record; copy
    its `record` fields, retrieve nothing.
 2. Ref under `unresolved`: `cite <ref>` asks corpus, then indexes; copy
    returned record, its `source` and `retrieved` date.

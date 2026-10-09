@@ -1,5 +1,5 @@
 """Derived views: every standing, ratio, and recommendation is a function of
-the ledger, the live paper text, and the linked corpus. Nothing here is stored.
+the ledger, the live paper text, and the attached corpus. Nothing here is stored.
 """
 
 from __future__ import annotations

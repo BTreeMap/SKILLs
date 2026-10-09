@@ -532,19 +532,19 @@ CITE_TIMEOUT_SECONDS = 30
 CorpusOf = Callable[[str], Path | None]
 
 
-def wire_cite(commands: Commands, skill: str, linked: CorpusOf | None = None) -> None:
+def wire_cite(commands: Commands, skill: str, attached: CorpusOf | None = None) -> None:
     """Add `cite`: one citable record for a corpus key, DOI, or arXiv id, the
-    named corpus or the session's linked one answering before any index.
-    `linked` maps the member's session to its linked `papers.jsonl`; given,
+    named corpus or the session's attached one answering before any index.
+    `attached` maps the member's session to its attached `papers.jsonl`; given,
     it adds `--session`."""
 
     def cmd_cite(args: argparse.Namespace) -> int:
         session = getattr(args, "session", None)
         path = corpus_path(args.corpus) if args.corpus else None
-        if path is None and session is not None and linked is not None:
-            path = linked(session)
+        if path is None and session is not None and attached is not None:
+            path = attached(session)
             if path is None:
-                signal(f"session {session} links no corpus; asking the indexes")
+                signal(f"session {session} has no attached corpus; asking the indexes")
         shelf = read_shelf(path) if path is not None else None
         client = client_for(skill, read_timeout=CITE_TIMEOUT_SECONDS)
         emit(dump(cite(args.ref, shelf, client)))
@@ -557,9 +557,9 @@ def wire_cite(commands: Commands, skill: str, linked: CorpusOf | None = None) ->
     citer.add_argument("ref", help="corpus key, DOI, or arXiv id")
     corpus = citer.add_mutually_exclusive_group()
     corpus.add_argument("--corpus", help="lit-review session id or path, asked first")
-    if linked is not None:
+    if attached is not None:
         corpus.add_argument(
-            "--session", help="this skill's session; its linked corpus is asked first"
+            "--session", help="this skill's session; its attached corpus is asked first"
         )
 
 

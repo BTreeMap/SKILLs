@@ -1,4 +1,4 @@
-"""The renderer end to end through `main`: placement, the Invariant 4
+"""The `report` command end to end through `main`: placement, the Invariant 4
 source rule, and the all-at-once rejection."""
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ def state(*claims: dict[str, Any], **fields: Any) -> dict[str, Any]:
 def run(tmp_path, capsys, document: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     path = tmp_path / "factcheck-state.json"
     path.write_text(json.dumps(document), encoding="utf-8")
-    code = main(["render", "--state:file", str(path)])
+    code = main(["report", "--state:file", str(path)])
     out = capsys.readouterr().out
     return code, json.loads(out) if out else {}
 
@@ -167,7 +167,7 @@ def test_every_problem_comes_back_in_one_verdict(tmp_path, capsys):
         "claims[2].correction",
         "claims[3].notes",
     ]
-    assert doc["unchanged"] == "nothing: render writes no state"
+    assert doc["unchanged"] == "nothing: report writes no state"
 
 
 def test_evidence_decodes_by_field_presence(tmp_path, capsys):
@@ -193,12 +193,12 @@ def test_side_findings_render_with_their_evidence(tmp_path, capsys):
 def test_malformed_json_is_a_rejection(tmp_path, capsys):
     path = tmp_path / "factcheck-state.json"
     path.write_text("{", encoding="utf-8")
-    assert main(["render", "--state:file", str(path)]) == 1
+    assert main(["report", "--state:file", str(path)]) == 1
     assert "make the state valid JSON" in capsys.readouterr().err
 
 
 def test_cite_gives_a_scholarly_source_one_citable_record(tmp_path, capsys):
-    """A named corpus answers without a request; render is untouched."""
+    """A named corpus answers without a request; report is untouched."""
     session = tmp_path / "lit"
     session.mkdir()
     (session / "papers.jsonl").write_text(

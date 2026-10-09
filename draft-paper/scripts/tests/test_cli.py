@@ -429,7 +429,7 @@ class TestCorpus:
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
     ) -> None:
         session = opened(capsys, artifacts)
-        code, document, _ = run(["link", session, "--corpus", str(corpus)], capsys)
+        code, document, _ = run(["attach", session, "--corpus", str(corpus)], capsys)
         assert code == 0
         assert document["records"] == 2
         _, status, _ = run(["status", session], capsys)
@@ -453,11 +453,11 @@ class TestCorpus:
         _, status, _ = run(["status", document["session"]], capsys)
         assert status["project"] == "ste-tax"
 
-    def test_check_resolves_each_citation_against_the_linked_corpus(
+    def test_check_resolves_each_citation_against_the_attached_corpus(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
     ) -> None:
         session = opened(capsys, artifacts)
-        run(["link", session, "--corpus", str(corpus)], capsys)
+        run(["attach", session, "--corpus", str(corpus)], capsys)
         code, _, err = note(
             session,
             capsys,
@@ -490,19 +490,19 @@ class TestCorpus:
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
     ) -> None:
         session = opened(capsys, artifacts)
-        run(["link", session, "--corpus", str(corpus)], capsys)
+        run(["attach", session, "--corpus", str(corpus)], capsys)
         note(session, capsys, cite_event("10.1/a"))
         (corpus / "papers.jsonl").unlink()
         code, document, err = run(["check", session], capsys)
         assert code == 0
-        assert "linked corpus unreadable" in err
+        assert "attached corpus unreadable" in err
         assert document["citations"]["unresolved"] == ["10.1/a"]
 
     def test_cite_reads_the_session_link_before_any_index(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
     ) -> None:
         session = opened(capsys, artifacts)
-        run(["link", session, "--corpus", str(corpus)], capsys)
+        run(["attach", session, "--corpus", str(corpus)], capsys)
         code, document, _ = run(["cite", "10.1/a", "--session", session], capsys)
         assert code == 0
         assert (document["key"], document["source"]) == ("doi:10.1/a", "lit")

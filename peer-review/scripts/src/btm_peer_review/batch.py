@@ -224,8 +224,8 @@ class _Admission(Admission):
         if corpus is None:
             self.fail(
                 f"{where}.prior",
-                "link a lit-review corpus before objecting on novelty",
-                "link <session> --corpus <lit-review session>",
+                "attach a lit-review corpus before objecting on novelty",
+                "attach <session> --corpus <lit-review session>",
             )
             return False
         ok = True
@@ -234,7 +234,7 @@ class _Admission(Admission):
             record = corpus.lookup(key)
             spot = f"{where}.prior[{p_index}]"
             if record is None:
-                self.fail(spot, f"'{key}' is not in the linked corpus")
+                self.fail(spot, f"'{key}' is not in the attached corpus")
                 ok = False
             elif record.year is None:
                 self.fail(spot, f"'{key}' has no year; an undated work cannot predate")

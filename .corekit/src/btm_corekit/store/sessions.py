@@ -208,5 +208,5 @@ LIT_REVIEW_SESSIONS = SessionStore(
 )
 LIT_REVIEW_CORPUS = "papers.jsonl"
 """lit-review's session layout, the one cross-member contract: lit-review
-writes its corpus here and peer-review links to it, so neither may restate
+writes its corpus here and peer-review attaches it, so neither may restate
 where it lives."""

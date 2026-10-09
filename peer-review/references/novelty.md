@@ -16,10 +16,10 @@ only place novelty objection can point.
    two most-cited references when reachable.
 4. Screen to works overlapping a claim. Read at abstract level; read full
    text for any work that would carry `major` objection.
-5. `link` lit-review session to this one. Every corpus key with year before
-   paper's is now citable as `prior`; later key is refused. Key sharing
-   paper's year passes with advisory; confirm prior work was public first
-   before keeping objection at major.
+5. `attach` lit-review session to this one. Every corpus key with year
+   before paper's is now citable as `prior`; later key is refused. Key
+   sharing paper's year passes with advisory; confirm prior work was public
+   first before keeping objection at major.
 6. Walk questions below; note `walks` entry for `novelty`.
 
 Ultra adds forward snowball from every key cited as `prior`, so rebuttal

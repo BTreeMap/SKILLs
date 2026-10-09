@@ -1,4 +1,4 @@
-"""Argument surface: `render` and `cite`, one JSON document out each."""
+"""Argument surface: `report` and `cite`, one JSON document out each."""
 
 from __future__ import annotations
 
@@ -24,10 +24,10 @@ from btm_fact_check.render import readiness, report
 from btm_fact_check.state import State, Verdict
 
 STATE = Required("state", inline=False)
-UNCHANGED = "nothing: render writes no state"
+UNCHANGED = "nothing: report writes no state"
 
 
-def cmd_render(args: argparse.Namespace) -> int:
+def cmd_report(args: argparse.Namespace) -> int:
     try:
         raw = json.loads(text(STATE, args))
     except json.JSONDecodeError as err:
@@ -56,11 +56,11 @@ def cmd_render(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = Parser(description=btm_fact_check.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    render = commands.add_parser(
-        "render", help="the evidence-first report, derived from the state file"
+    reporter = commands.add_parser(
+        "report", help="the evidence-first report, derived from the state file"
     )
-    render.set_defaults(func=cmd_render)
-    add_slot(render, STATE, "the factcheck-state.json object")
+    reporter.set_defaults(func=cmd_report)
+    add_slot(reporter, STATE, "the factcheck-state.json object")
     wire_cite(commands, "fact-check")
     return parser
 

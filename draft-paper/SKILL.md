@@ -124,7 +124,7 @@ S="<the session identifier the init output echoed>"
 $R schema
 $R note "$S" --batch:file <events.json> && $R status "$S"
 $R check "$S"
-$R link "$S" --corpus <lit-review session id or path>
+$R attach "$S" --corpus <lit-review session id or path>
 $R cite <corpus key, DOI, or arXiv id> [--session "$S" | --corpus <lit-review session id or path>]
 $R write "$S" [--prose] [--known] <<'JSON'
 {"kind": "task", ...}
@@ -144,10 +144,10 @@ counts four keywords and signals; pass `tail-latency study` instead.
 | `init` | Takes two or three keywords, or directory path as session location. Mints session, pins verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), artifact root claim paths resolve against (default: current directory; `artifacts-repinned` event moves it). `--project NAME` tags run with free project name shared across skills. |
 | `schema` | Prints every event shape. |
 | `note` | Admits one batch of events to trace. |
-| `status` | Cheap resume view: project, links, stage, gate standings, claim counts, live artifact root, linked corpus, pad tail, advisory `next`. |
+| `status` | Cheap resume view: project, links, stage, gate standings, claim counts, live artifact root, attached corpus, pad tail, advisory `next`. |
 | `check` | Derives gate summary, evidence ledger, `citations` block. |
-| `link` | Attaches `/lit-review` session's corpus to run and records link to that session; its records count as retrieved. Re-linking replaces it. |
-| `cite` | Returns one citable record for corpus key, DOI, or arXiv id: linked corpus (`--session`) or named one (`--corpus`) first, then indexes. Record carries `key` (corpus records only), `source` (corpus session or index), `retrieved` date. Exit 1 when nothing resolves. |
+| `attach` | Attaches `/lit-review` session's corpus to run and records link to that session; its records count as retrieved. Attaching again replaces it. |
+| `cite` | Returns one citable record for corpus key, DOI, or arXiv id: attached corpus (`--session`) or named one (`--corpus`) first, then indexes. Record carries `key` (corpus records only), `source` (corpus session or index), `retrieved` date. Exit 1 when nothing resolves. |
 | `write`, `read` | Write to and read from pad; `--known` uses skill's cross-session pad. |
 | `clean` | Lists sessions with sizes and projects (`--project NAME` keeps one project's); removes one or `--all`, reporting bytes freed. |
 
@@ -286,9 +286,9 @@ jumping from stage 3 to 8 has skipped citation verification.
 1. Positioning (`design`; `build` from shaped idea): sweep literature with
    `/lit-review`, analyze gap, argue novelty from retrieved full text, state
    falsifiable claims, write pre-registration-style experiment plan. If
-   `/lit-review` review of same question exists, `link` its session as
+   `/lit-review` review of same question exists, `attach` its session as
    sweep: its records count as retrieved and need no re-retrieval; note
-   `decision` naming session and `link`'s `as_of` date; sweep with
+   `decision` naming session and `attach`'s `as_of` date; sweep with
    `/lit-review` only claims its question does not cover. Write design plan
    from `design-plan-template`; its award section filled from
    `award-assessment`. `design` run: note each falsifiable claim as `to-run`
@@ -305,14 +305,14 @@ jumping from stage 3 to 8 has skipped citation verification.
    citation: `ref` (corpus key, DOI, or arXiv id) and citing sentence. Put
    each mechanism's worked numerical example beside prose explaining it.
 5. Citation verification: file report from `citation-report-template`;
-   `check`'s `citations` rows pre-fill it. Row with `key` resolved in linked
-   corpus: take record from row, retrieve nothing. Ref under `unresolved`:
-   `cite` it, fill row from returned record. Whether record supports
-   sentence stays your judgment. Fix, downgrade, or cut each failing
-   citation. Work splits by key. To delegate: hand each delegate batch of
-   keys with citing sentences through `/summon`, with invariant 3 as rule it
-   can break and `citation-report-template` rows as return shape; admit only
-   rows whose Source column names retrieved record.
+   `check`'s `citations` rows pre-fill it. Row with `key` resolved in
+   attached corpus: take record from row, retrieve nothing. Ref under
+   `unresolved`: `cite` it, fill row from returned record. Whether record
+   supports sentence stays your judgment. Fix, downgrade, or cut each
+   failing citation. Work splits by key. To delegate: hand each delegate
+   batch of keys with citing sentences through `/summon`, with invariant 3
+   as rule it can break and `citation-report-template` rows as return shape;
+   admit only rows whose Source column names retrieved record.
 6. Figure and table audit: every referenced figure and table exists,
    captions describe what is shown, prose numbers match their claims'
    artifacts.
@@ -350,7 +350,7 @@ After delivery, offer each next step whose condition holds; name sibling,
 verb, artifact to pass. Invoke none unasked.
 
 - Draft wants referee pass beyond stage 7: `/peer-review` on compiled PDF;
-  pass linked lit-review session to its `link <session> --corpus`.
+  pass attached lit-review session to its `attach <session> --corpus`.
 - Draft's claims need checking against sources: `/fact-check` on draft file.
 - Venue requires Simplified Technical English: `/asd-ste100 review` on draft
   file.

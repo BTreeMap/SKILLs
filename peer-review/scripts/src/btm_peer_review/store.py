@@ -1,4 +1,4 @@
-"""Session filesystem: meta, ledger, paper text, and the linked corpus."""
+"""Session filesystem: meta, ledger, paper text, and the attached corpus."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ backtracking engine stays linear."""
 
 
 class Meta(Tagged):
-    """Session facts fixed at init, extended by ingest and link."""
+    """Session facts fixed at init, extended by ingest and attach."""
 
     title: NonEmpty
     date: Date
@@ -57,7 +57,7 @@ class Meta(Tagged):
 
 
 class Record(Model):
-    """One linked corpus paper, as prior work may cite it. Another skill owns
+    """One attached corpus paper, as prior work may cite it. Another skill owns
     the file and writes a dozen more fields, so extras are ignored."""
 
     model_config = ConfigDict(frozen=True, extra="ignore")
@@ -72,7 +72,7 @@ class Record(Model):
 
 @dataclass(frozen=True, slots=True)
 class Corpus:
-    """The linked lit-review corpus: its records, indexed by every alias."""
+    """The attached lit-review corpus: its records, indexed by every alias."""
 
     path: Path
     records: tuple[Record, ...]
@@ -86,7 +86,7 @@ def load_corpus(path: Path) -> Corpus:
     """Another skill owns this file, so it is decoded, not assumed. Fields
     beyond the four this review reads are ignored."""
     if not path.is_file():
-        raise CommandError(f"no corpus at {path}: link a lit-review session")
+        raise CommandError(f"no corpus at {path}: attach a lit-review session")
     records = [
         parse_model(Record, raw, f"{path}: corpus record") for raw in read_jsonl(path)
     ]

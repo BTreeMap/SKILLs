@@ -1,4 +1,4 @@
-"""The session marker and the linked corpus, decoded rather than assumed."""
+"""The session marker and the attached corpus, decoded rather than assumed."""
 
 from __future__ import annotations
 

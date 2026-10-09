@@ -146,9 +146,9 @@ After delivery, offer each next step whose condition holds; name sibling,
 verb, artifact to pass. Invoke none unasked.
 
 - Review feeds paper: `/draft-paper build`; pass this session's identifier
-  to its `link <run> --corpus`, so corpus records need no re-retrieval.
+  to its `attach <run> --corpus`, so corpus records need no re-retrieval.
 - Paper to referee against this literature: `/peer-review`; pass this
-  session's identifier to its `link <session> --corpus`.
+  session's identifier to its `attach <session> --corpus`.
 - Question stays open past what corpus answers: `/ponder` with open
   question; its sources `cite --corpus <this session>` for corpus records.
 - Included papers carry qualitative evidence (interview excerpts, open

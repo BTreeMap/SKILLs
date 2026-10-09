@@ -64,7 +64,9 @@ class TestFlow:
         self, capsys, paper_file, corpus_dir, tmp_path
     ):
         session = started(capsys, paper_file)
-        code, document, _ = run(["link", session, "--corpus", str(corpus_dir)], capsys)
+        code, document, _ = run(
+            ["attach", session, "--corpus", str(corpus_dir)], capsys
+        )
         assert code == 0 and document["records"] == 3 and document["postdating"] == 1
         payload = {
             "claims": [
@@ -195,11 +197,11 @@ class TestFlow:
 
 
 class TestCite:
-    def test_cite_reads_the_linked_corpus_before_any_index(
+    def test_cite_reads_the_attached_corpus_before_any_index(
         self, capsys, paper_file, corpus_dir
     ):
         session = started(capsys, paper_file)
-        run(["link", session, "--corpus", str(corpus_dir)], capsys)
+        run(["attach", session, "--corpus", str(corpus_dir)], capsys)
         code, document, _ = run(["cite", "2401.00001", "--session", session], capsys)
         assert code == 0
         assert (document["key"], document["title"]) == ("doi:10.1/b", "Later work")
@@ -216,8 +218,8 @@ class TestProjectAndLinks:
         )
         assert code == 0
         session = opened["session"]
-        run(["link", session, "--corpus", str(corpus_dir)], capsys)
-        run(["link", session, "--corpus", str(corpus_dir)], capsys)
+        run(["attach", session, "--corpus", str(corpus_dir)], capsys)
+        run(["attach", session, "--corpus", str(corpus_dir)], capsys)
         _, document, _ = run(["status", session], capsys)
         assert document["project"] == "ste-tax"
         assert document["links"] == [

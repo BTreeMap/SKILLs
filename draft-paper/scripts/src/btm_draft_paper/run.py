@@ -58,7 +58,7 @@ GATE_STAGE: dict[Gate, int] = {Gate.PLAN: 1, Gate.LEDGER: 2, Gate.DRAFT: 8}
 
 
 class RunMeta(Tagged):
-    """Fixed at init but for the corpus and links `link` sets; the marker
+    """Fixed at init but for the corpus and links `attach` sets; the marker
     file that witnesses a session."""
 
     run: NonEmpty
@@ -69,7 +69,7 @@ class RunMeta(Tagged):
     model: NonEmpty
     artifacts: NonEmpty  # the root at init; `artifacts-repinned` moves it
     created: str = ""
-    corpus: str | None = None  # the linked lit-review `papers.jsonl`, set by link
+    corpus: str | None = None  # the attached lit-review `papers.jsonl`, set by attach
 
     @model_validator(mode="after")
     def _verb_fits_state(self) -> RunMeta:

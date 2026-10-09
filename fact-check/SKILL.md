@@ -8,7 +8,7 @@ description: >-
   version numbers, or update outdated facts.
 license: MIT
 compatibility: >-
-  The report renderer requires uv and a full SKILLs repository checkout. The
+  The `report` command requires uv and a full SKILLs repository checkout. The
   first run builds the `.venv` at the checkout root that every skill's
   scripts share, about 225 MB.
 metadata:
@@ -214,21 +214,21 @@ latency metadata.
 
 ## Step 3: Report
 
-Render evidence-first report from state file. Bind renderer once per shell;
-`realpath` required. Read its output; source reading belongs to
+Build evidence-first report from state file with `report`. Bind command once
+per shell; `realpath` required. Read its output; source reading belongs to
 user-instructed troubleshooting.
 
-<commands for="render">
+<commands for="report">
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-fact-check"
-$R render --state:file factcheck-state.json
+$R report --state:file factcheck-state.json
 </commands>
 
-`render` writes nothing. Exit 0 returns `report`, filled template below,
-with `claims` and per-verdict `verdicts` counts; present `report` to user as
-Markdown. Exit 1 returns `rejected`, every problem at once with field path
-(claim missing verdict, correction Abstention rules in `verification`
-forbid, correction short of Invariant 4's sources); fix state file, rerun.
-uv unavailable: fill template by hand from state file.
+`report` command writes nothing. Exit 0 returns field `report`, filled
+template below, with `claims` and per-verdict `verdicts` counts; present
+`report` to user as Markdown. Exit 1 returns `rejected`, every problem at
+once with field path (claim missing verdict, correction Abstention rules in
+`verification` forbid, correction short of Invariant 4's sources); fix state
+file, rerun. uv unavailable: fill template by hand from state file.
 
 Per issue: source span, then evidence quotes (including counter-evidence),
 then verdict and proposed correction. Evidence precedes verdict so user

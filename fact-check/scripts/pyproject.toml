@@ -1,7 +1,7 @@
 [project]
 name = "btm-fact-check"
 version = "1.0.0"
-description = "Render the fact-check report from its state file"
+description = "Build the fact-check report from its state file"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["btm-corekit"]

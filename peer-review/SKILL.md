@@ -47,8 +47,8 @@ replay state with `check`.
    quote to a page, or it names what paper omits under `missing`. Objection
    script rejects does not exist.
 2. Novelty objections name dated prior work. `prior`, `first`, `sota`,
-   `positioning` carry corpus keys from linked lit-review session whose year
-   precedes paper's; "not novel" without key is unrepresentable.
+   `positioning` carry corpus keys from attached lit-review session whose
+   year precedes paper's; "not novel" without key is unrepresentable.
 3. Claims come from paper's front and back only. Extract them from abstract,
    introduction, conclusion before reading related work or discussion.
 4. Authors' Limitations section is a floor. Objection anchored there
@@ -93,7 +93,7 @@ loads exactly reference of its name; `firewall` loads with every bank;
 | ingest | Extract paper with `/read-pdf`, `ingest` text, record its date |
 | claims | Note each contribution claim verbatim; load `firewall` |
 | investigate | Walk level's banks in Levels except `claims` and `novelty`, `limitations` last, with `firewall`; note objections per bank, then `walks` entry |
-| literature | Build corpus per `novelty`; `link` it; walk novelty bank |
+| literature | Build corpus per `novelty`; `attach` it; walk novelty bank |
 | verdict | Run `check`; withdraw what re-read defeats; resolve every signal |
 | report | Draft from scaffold per `report`; `cite-check` draft |
 
@@ -149,8 +149,8 @@ re-read or authors could settle it.
 | --- | --- |
 | `init` | Takes two or three keywords, or directory path to place session, plus paper's date and its title on pipe; mints session identifier, echoes it with directory. Keyword subset recovers lost identifier. `--project NAME` tags session with free project name shared across skills |
 | `ingest` | Splits extraction on `## PDF page N` lines into per-page anchors |
-| `link` | Attaches lit-review corpus as prior work; records link to its session, relinking replaces it |
-| `cite` | Returns one citable record for corpus key, DOI, or arXiv id: linked corpus (`--session`) first, then indexes; carries `key`, `source`, `retrieved` date; exit 1 when nothing resolves |
+| `attach` | Attaches lit-review corpus as prior work; records link to its session, attaching again replaces it |
+| `cite` | Returns one citable record for corpus key, DOI, or arXiv id: attached corpus (`--session`) first, then indexes; carries `key`, `source`, `retrieved` date; exit 1 when nothing resolves |
 | `status` | Project, links, ledger counts, banks walked, advisory `next`, never a gate |
 | `cite-check` | Requires every `[On]` and `[Cn]` in draft to resolve to grounded record and every grounded fatal or major objection to appear |
 | `schema` | Prints batch shape and each bank's kinds |
@@ -176,7 +176,7 @@ S="<the session identifier the init output echoed>"
 $R ingest "$S" --extraction:file <extraction.txt>
 $R schema
 $R note "$S" --batch:file <round.json> && $R check "$S"
-$R link "$S" --corpus <lit-review session id or path>
+$R attach "$S" --corpus <lit-review session id or path>
 $R cite <corpus key, DOI, or arXiv id> [--session "$S" | --corpus <lit-review session id or path>]
 $R status "$S"
 $R write "$S" [--prose] [--known] <<'JSON'
@@ -239,7 +239,7 @@ absent item), or report cannot place it.
 - Echo ratio.
 - Recommendation by severity rule (fatal: reject; major: major revision;
   minor: minor revision; else no objection stands).
-- Bank coverage (unwalked banks for level, corpus linked, pages) with
+- Bank coverage (unwalked banks for level, corpus attached, pages) with
   confidence band.
 - Report scaffold.
 

@@ -119,7 +119,7 @@ def cmd_note(args: argparse.Namespace) -> int:
     return gated(BATCH, args, "trace", expand, commit)
 
 
-def cmd_link(args: argparse.Namespace) -> int:
+def cmd_attach(args: argparse.Namespace) -> int:
     run = load(args.session)
     path = corpus_path(args.corpus)
     shelf = read_shelf(path)
@@ -137,7 +137,7 @@ def cmd_link(args: argparse.Namespace) -> int:
     return 0
 
 
-def linked_corpus(session: str) -> Path | None:
+def attached_corpus(session: str) -> Path | None:
     corpus = STORE.read_meta(STORE.directory(session), RunMeta).corpus
     return Path(corpus) if corpus else None
 
@@ -199,12 +199,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status.set_defaults(func=cmd_status)
     status.add_argument("session", help="session identifier or directory")
-    link = commands.add_parser(
-        "link", help="attach a lit-review corpus; its records need no re-retrieval"
+    attach = commands.add_parser(
+        "attach", help="attach a lit-review corpus; its records need no re-retrieval"
     )
-    link.set_defaults(func=cmd_link)
-    link.add_argument("session", help="session identifier or directory")
-    link.add_argument("--corpus", required=True, help="lit-review session id or path")
+    attach.set_defaults(func=cmd_attach)
+    attach.add_argument("session", help="session identifier or directory")
+    attach.add_argument("--corpus", required=True, help="lit-review session id or path")
     check = commands.add_parser(
         "check", help="the gate summary, the evidence ledger, and the citations"
     )
@@ -213,7 +213,7 @@ def build_parser() -> argparse.ArgumentParser:
     schema = commands.add_parser("schema", help="print every event shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, STORE)
-    wire_cite(commands, STORE.skill, linked_corpus)
+    wire_cite(commands, STORE.skill, attached_corpus)
     wire_clean(commands, STORE)
     return parser
 

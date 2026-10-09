@@ -191,9 +191,9 @@ class TestOrder:
 
 
 class TestWiring:
-    def built(self, linked=None) -> Parser:
+    def built(self, attached=None) -> Parser:
         parser = Parser()
-        wire_cite(parser.add_subparsers(dest="command", required=True), "t", linked)
+        wire_cite(parser.add_subparsers(dest="command", required=True), "t", attached)
         return parser
 
     def test_cite_emits_one_citation_from_a_named_corpus(self, corpus, capsys):
@@ -205,7 +205,7 @@ class TestWiring:
         assert document["key"] == "doi:10.48550/arxiv.2302.11957"
         assert document["source"] == "controlled-language-abc"
 
-    def test_a_session_reads_its_linked_corpus(self, corpus, capsys):
+    def test_a_session_reads_its_attached_corpus(self, corpus, capsys):
         parser = self.built(lambda session: corpus if session == "mine" else None)
         assert (
             run_cli(

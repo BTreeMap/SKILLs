@@ -42,7 +42,7 @@ run-to-run range if the spread is typical for this benchmark.
 
 ## Recommendation
 <the derived verdict verbatim from check>, confidence <band> (<walked
-banks>; corpus <linked or none>; echo ratio <r>).
+banks>; corpus <attached or none>; echo ratio <r>).
 
 This review was produced by an agent following the peer-review skill;
 every quoted anchor and prior-work key was verified by its script.

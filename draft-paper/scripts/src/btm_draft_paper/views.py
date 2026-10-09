@@ -177,14 +177,14 @@ RECORD_FIELDS = ("title", "authors", "year", "venue", "doi", "arxiv_id")
 
 
 def linked_shelf(run: Run) -> Shelf | None:
-    """The linked corpus, or None with a signal where it is gone or corrupt:
+    """The attached corpus, or None with a signal where it is gone or corrupt:
     lit-review owns that file, so its state is no defect of this run."""
     if run.meta.corpus is None:
         return None
     try:
         return read_shelf(Path(run.meta.corpus))
     except CommandError as err:
-        signal(f"linked corpus unreadable, every citation unresolved: {err}")
+        signal(f"attached corpus unreadable, every citation unresolved: {err}")
         return None
 
 
