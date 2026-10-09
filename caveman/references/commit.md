@@ -1,12 +1,12 @@
 # Caveman Commit Verb
 
-Write a terse, grammatical commit message with no filler, why over what: the
-diff already says what. Take every format rule (type, scope, subject, body,
-footer, length, wrapping) from `/git-commit`. Output the message ready to
-paste; do not stage, commit, or amend unless the user asks.
+Write terse, grammatical commit message, no filler, why over what: diff
+already says what. Take every format rule (type, scope, subject, body,
+footer, length, wrapping) from `/git-commit`. Output message ready to paste;
+do not stage, commit, or amend unless user asks.
 
-Never include "This commit does X", I/we/now/currently, a file name the
-scope already names, or emoji unless the project uses them.
+Never include "This commit does X", I/we/now/currently, file name scope
+already names, or emoji unless project uses them.
 
 ## Examples
 
