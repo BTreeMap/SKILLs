@@ -29,7 +29,10 @@ In this order, in full, every time:
 2. `author-skill/SKILL.md`: standard every skill is held to. Load its
    `scripts` reference when item touches a script.
 3. `caveman/SKILL.md`: skill text is caveman full (no articles, no filler,
-   fragments OK); commit bodies are caveman register.
+   fragments OK); commit bodies are caveman register. Every edit keeps that
+   terse, clear style and uses common words that are clear on their own.
+   Token efficiency is the optimization goal just below quality: a rewrite
+   that adds tokens needs a quality reason in the output.
 4. `pl-theorist/SKILL.md` with `references/langs/python.md` and verb file
    for your task (`refactor` for existing script, `write` for new code,
    `test` for tests): engineering standard.
