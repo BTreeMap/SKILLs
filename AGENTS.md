@@ -88,12 +88,10 @@ Current skills:
 `.github/workflows/gate.yml` runs on every push to `main` and on manual
 dispatch. It repairs what is mechanical, commits the repair to `main` as one
 GitHub-signed `style:` commit, and fails only on findings no fixer can
-settle. Run the same fixers before pushing and the gate has nothing to do:
+settle. Run the same chain before pushing and the gate has nothing to do:
 
 ```bash
-ruff check --fix . && ruff format .
-uv run --all-packages pytest
-uv run --project .github/gate btm-repo-gate fix
+.github/check.sh
 ```
 
 | Repaired automatically | Reported for a human |

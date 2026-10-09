@@ -125,22 +125,17 @@ done
 ## 5. Checks, run as a chain that stops on failure
 
 ```
-set -eo pipefail
-ruff format .
-ruff check --fix .
-uv run --all-packages pytest -q -m 'not network'
-uv run --all-packages mypy
-uv run --project .github/gate btm-repo-gate fix
-uv lock --check
-test -z "$(grep -rnP '\x{2014}|\x{2013}' --include=*.md --include=*.py . \
-  | grep -v '^./.venv' | grep -v 'humanize/references/style.md')"
+.github/check.sh
 ```
 
-Run the chain under `set -e -o pipefail`; without `pipefail` a check piped
-into `tail` or `grep -c` hides its status, and a hidden failure reached
-`main` once that way. Run the network-marked tests of any index you touched
-once (`-m network`) and paste the result; a 429 is a result. Include the
-gate's reflow in your commit; touch nothing else it changed.
+The script runs every fixer, then every assertion: ruff format and lint, the
+tests not marked `network`, mypy, the repository gate, the lock check, and
+the dash scan. It prints one line per passing check, stops at the first
+failure with that check's whole output, and exits 1. Paste its lines as your
+check tails. Run the network-marked tests of any index you touched once
+(`uv run --all-packages pytest -m network`) and paste the result; a 429 is a
+result. Include the gate's reflow in your commit; touch nothing else it
+changed.
 
 ## 6. Commit
 

@@ -122,7 +122,7 @@ jobs:
           # instead of letting the platform truncate a repair into corruption.
           size=$(wc -c < "${entries}")
           if [ "${size}" -gt 524288 ]; then
-            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with 'ruff check --fix . && ruff format . && uv run --project .github/gate btm-repo-gate fix'"
+            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with .github/check.sh"
             exit 1
           fi
 
@@ -144,8 +144,10 @@ jobs:
 
       - name: Assert what no fixer can settle
         # The sole judge, run against the repaired tree, so it reports only
-        # what a person must decide. Every check runs even after an earlier
-        # one fails: their findings are independent.
+        # what a person must decide. It is the chain contributors run before
+        # a commit, at this workflow's ruff pin. Its fixers find nothing left
+        # to repair; every check runs even after an earlier one fails, since
+        # their findings are independent.
         #
         # `uv lock --check` fails when a manifest moved without the lock: no
         # fixer relocks, because choosing versions is a person's call.
@@ -153,15 +155,10 @@ jobs:
         # mypy runs strict with the pydantic plugin, so a field name or type
         # that no longer matches its model fails here rather than as a
         # rejection an agent hits mid-session.
-        run: |
-          set -uo pipefail
-          rc=0
-          uvx "ruff@${RUFF_VERSION}" check --output-format=github . || rc=1
-          uv lock --check || rc=1
-          uv run --all-packages pytest -q -m 'not network' || rc=1
-          uv run mypy || rc=1
-          uv run --project .github/gate btm-repo-gate check || rc=1
-          exit "${rc}"
+        env:
+          # ruff writes its findings as annotations on the diff.
+          RUFF_OUTPUT_FORMAT: github
+        run: .github/check.sh --keep-going
 
       - name: Ask the real services whether they still answer as parsed
         # Advisory by construction. A mock proves our half of the contract:
