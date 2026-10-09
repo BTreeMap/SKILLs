@@ -229,30 +229,30 @@ class TestBatchAndWiring:
         wire_pad(commands, store)
         wire_clean(commands, store)
         monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "k"}'))
-        assert run_cli(built, ["jot", made.name]) == 0
-        assert json.loads(capsys.readouterr().out)["jotted"] == "j1"
-        assert run_cli(built, ["recall", made.name, "--kind", "k"]) == 0
+        assert run_cli(built, ["write", made.name]) == 0
+        assert json.loads(capsys.readouterr().out)["written"] == "j1"
+        assert run_cli(built, ["read", made.name, "--kind", "k"]) == 0
         assert json.loads(capsys.readouterr().out)["shown"] == 1
         assert run_cli(built, ["clean", made.name]) == 0
         assert json.loads(capsys.readouterr().out)["bytes_freed"] > 0
 
-    def test_lore_is_one_pad_per_skill_beside_its_sessions(
+    def test_known_is_one_pad_per_skill_beside_its_sessions(
         self, tmp_path, capsys, monkeypatch
     ):
-        """Every member's pad takes --lore; before, only lit-review's did."""
+        """Every member's pad takes --known; before, only lit-review's did."""
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
         store = SessionStore("beta", marker="meta.json", hint="run init first")
         built = Parser()
         wire_pad(built.add_subparsers(dest="command", required=True), store)
-        monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "lore", "x": 1}'))
-        assert run_cli(built, ["jot", "no-such-session", "--lore"]) == 0
+        monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "known", "x": 1}'))
+        assert run_cli(built, ["write", "no-such-session", "--known"]) == 0
         capsys.readouterr()
-        assert run_cli(built, ["recall", "anything", "--lore"]) == 0
-        recalled = json.loads(capsys.readouterr().out)
-        assert recalled["entries"][0]["body"] == {"kind": "lore", "x": 1}
-        assert (store.lore() / "scratch.jsonl").is_file()
-        assert store.ids() == [], "a lore jot makes no session"
+        assert run_cli(built, ["read", "anything", "--known"]) == 0
+        shown = json.loads(capsys.readouterr().out)
+        assert shown["entries"][0]["body"] == {"kind": "known", "x": 1}
+        assert (store.known() / "scratch.jsonl").is_file()
+        assert store.ids() == [], "a known write makes no session"
 
 
 class TestPadKinds:
@@ -299,7 +299,7 @@ class TestLimitGrammar:
         assert capsys.readouterr().err == ""
 
     @pytest.mark.parametrize("raw", ["0", "-1"])
-    def test_recall_refuses_a_limit_that_asks_for_nothing(
+    def test_read_refuses_a_limit_that_asks_for_nothing(
         self, raw, tmp_path, capsys, monkeypatch
     ):
         """Before, `--limit 0` sliced `entries[-0:]` and returned the whole
@@ -311,7 +311,7 @@ class TestLimitGrammar:
         store.write_meta(made.directory, Marker())
         built = Parser()
         wire_pad(built.add_subparsers(dest="command", required=True), store)
-        assert run_cli(built, ["recall", made.name, "--limit", raw]) == 1
+        assert run_cli(built, ["read", made.name, "--limit", raw]) == 1
         assert "pass 1 or more" in capsys.readouterr().err
 
 

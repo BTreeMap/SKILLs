@@ -265,7 +265,7 @@ class Admission:
                 self.fail(
                     f"{where}.from[{index}]",
                     f"replace '{pad_id}': no pad entry has this id",
-                    "recall lists pad ids",
+                    "read lists pad ids",
                 )
                 clean = False
         return clean

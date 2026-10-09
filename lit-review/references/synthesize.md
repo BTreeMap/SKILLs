@@ -25,8 +25,8 @@ theme: paragraph per paper makes annotated bibliography.
   resolve it: report says so.
 - **Single-paper claims are labeled.** Write "One study reports ...".
 - **Weight follows appraisal.** Read each record's `appraisal` with
-  `recall --kind extraction`. Weakly appraised paper can be mentioned;
-  cannot anchor theme's conclusion. Say why when weight differs.
+  `read --kind extraction`. Weakly appraised paper can be mentioned; cannot
+  anchor theme's conclusion. Say why when weight differs.
 - **Every synthesis sentence is traceable.** Each claim maps to named
   records (invariant 1); delete sentence no record supports.
 - **Trends come from the corpus.** Derive what is recent, growing, or
@@ -53,7 +53,7 @@ challenger would use in title or abstract, matched literally. `brief`
 re-derives their verdicts against live corpus: excluded or under-read
 support flags finding at-risk; later paper matching gap's watch flags gap
 challenged, cue to re-read claim written earlier. Supersede record when
-field model moves. Keep forming hypotheses on pad as `hunch` or `thread`
+field model moves. Keep forming hypotheses on pad as `hunch` or `open`
 entries until they earn support.
 
 ## Report template

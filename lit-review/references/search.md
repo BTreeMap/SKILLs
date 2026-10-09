@@ -67,5 +67,5 @@ Stop searching when last round of queries and snowballing returns only
 papers corpus already holds or papers screening rejects. Before stopping,
 check for misses: one query per major synonym set has run; each included
 paper's references either snowballed or read. Record stopping decision with
-`jot`; report states it. Zero-result query is evidence: cite later as gap
+`write`; report states it. Zero-result query is evidence: cite later as gap
 probe by its log id.

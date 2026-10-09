@@ -17,7 +17,7 @@ from btm_lit_review.session import Session, load_papers, save_papers
 
 @pytest.fixture(autouse=True)
 def isolated_state(tmp_path, monkeypatch):
-    """Every test owns its own state root, so none can see real lore."""
+    """Every test owns its own state root, so none can see real known pads."""
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
 
@@ -267,14 +267,14 @@ class TestNoteAndBrief:
 
 
 class TestPadAndDraft:
-    def test_extraction_jots_are_recognized_with_advisories(self, session, capsys):
+    def test_extraction_writes_are_recognized_with_advisories(self, session, capsys):
         code, receipt, err = run(
-            ["jot", str(session.root)],
+            ["write", str(session.root)],
             capsys,
             stdin='{"kind": "extraction", "key": "10.1/zzz"}',
         )
         assert code == 0
-        assert receipt["jotted"] == "j1"
+        assert receipt["written"] == "j1"
         assert "not a corpus paper" in err
 
     def test_cite_check_judges_the_draft(self, session, tmp_path, capsys):

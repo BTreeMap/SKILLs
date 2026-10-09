@@ -19,13 +19,13 @@ missing from them needs re-read later.
 
 ## Extraction record
 
-Jot one record per paper; `status` and `brief` list included papers with no
-extraction entry. Fill only what source states; write "not reported" for
+Write one record per paper; `status` and `brief` list included papers with
+no extraction entry. Fill only what source states; write "not reported" for
 rest. Body free beyond `kind` and `key`: add per-paper hypothesis-directed
 questions whenever argument needs them.
 
 <template for="extraction">
-$R jot "$S" <<'JSON'
+$R write "$S" <<'JSON'
 {"kind": "extraction", "key": "doi:10.1234/example.1",
  "claims": "the one to three findings the paper itself asserts, each with location",
  "method": "design, dataset or sample, baselines compared against",
@@ -60,5 +60,5 @@ Delegate through `/summon fanout`, one delegate per included paper. Each
 brief: evidence is paper's corpus entry and its `pdf_url`; rules are reading
 order and depth above, `/read-pdf` as reader; contract is extraction
 template, returned as JSON object alone. Delegates write no session state;
-lead judges each return, then runs `jot` and `update` itself, so branch
+lead judges each return, then runs `write` and `update` itself, so branch
 leaves no trace in deliverable.

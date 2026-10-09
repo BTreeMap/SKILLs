@@ -167,7 +167,7 @@ def cmd_brief(args: argparse.Namespace) -> int:
         "markers": marker_table(markers, papers),
         "unextracted": unextracted_in(entries, papers),
         "pad_tail": entries[-PAD_TAIL:],
-        "lore": [entry["body"] for entry in pad_entries(STORE.lore())],
+        "known": [entry["body"] for entry in pad_entries(STORE.known())],
     }
     emit(document)
     count = (last.n if last else 0) + 1
@@ -222,8 +222,8 @@ def cmd_schema(args: argparse.Namespace) -> int:
 
 
 def recognize_extraction(args: argparse.Namespace, body: Mapping[str, Any]) -> None:
-    """Advisories only: the jot stands whatever these say."""
-    if args.lore or body.get("kind") != "extraction":
+    """Advisories only: the write stands whatever these say."""
+    if args.known or body.get("kind") != "extraction":
         return
     papers = load_papers(open_session(args.session))
     key = str(body.get("key") or "")

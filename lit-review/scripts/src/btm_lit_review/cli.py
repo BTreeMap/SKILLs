@@ -190,7 +190,7 @@ def wire_notebook(commands: Commands) -> None:
     add_slot(note, BATCH, "findings and gaps")
     note.set_defaults(func=cmd_note)
 
-    wire_pad(commands, STORE, on_jot=recognize_extraction)
+    wire_pad(commands, STORE, on_write=recognize_extraction)
 
     brief = commands.add_parser(
         "brief", help="resume view: findings, gaps, drift, markers, pad tail"

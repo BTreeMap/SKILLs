@@ -236,27 +236,27 @@ class TestLiteLevel:
 
 
 class TestPad:
-    def test_jot_and_recall_round_trip(self, capsys):
+    def test_write_and_read_round_trip(self, capsys):
         session = opened(capsys)
         code, receipt, _ = run(
-            ["jot", session], capsys, stdin='{"kind": "hunch", "n": 1}'
+            ["write", session], capsys, stdin='{"kind": "hunch", "n": 1}'
         )
         assert code == 0
-        assert receipt["jotted"] == "j1"
-        code, view, _ = run(["recall", session, "--kind", "hunch"], capsys)
+        assert receipt["written"] == "j1"
+        code, view, _ = run(["read", session, "--kind", "hunch"], capsys)
         assert code == 0
         assert view["entries"][0]["body"] == {"kind": "hunch", "n": 1}
 
     def test_prose_is_stored_as_text_with_an_advisory(self, capsys):
         session = opened(capsys)
-        code, _, err = run(["jot", session], capsys, stdin="plain prose")
+        code, _, err = run(["write", session], capsys, stdin="plain prose")
         assert code == 0
         assert "not a JSON object" in err
-        _, view, _ = run(["recall", session], capsys)
+        _, view, _ = run(["read", session], capsys)
         assert view["entries"][0]["body"] == {"text": "plain prose"}
 
-    def test_jot_needs_an_existing_session(self, capsys):
-        code, _, err = run(["jot", "absent thing"], capsys, stdin="{}")
+    def test_write_needs_an_existing_session(self, capsys):
+        code, _, err = run(["write", "absent thing"], capsys, stdin="{}")
         assert code == 1
         assert "no session" in err
 

@@ -130,8 +130,9 @@ class SessionStore:
             json.dumps(dump(meta), indent=2, ensure_ascii=False) + "\n",
         )
 
-    def lore(self) -> Path:
-        """The skill's cross-session pad, beside its sessions."""
+    def known(self) -> Path:
+        """The skill's cross-session pad, beside its sessions. Directory keeps
+        its first name, `lore`, so pads written before the rename still read."""
         return state_root(self.skill) / "lore"
 
     def project_of(self, directory: Path) -> str | None:

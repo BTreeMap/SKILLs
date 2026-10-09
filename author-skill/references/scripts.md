@@ -33,7 +33,7 @@ Place each responsibility by first row it matches.
   transport, dangling reference, or value outside branching vocabulary;
   everything else at most advisory. Reject missing required field; admit
   extra one. Return everything admitted in some view.
-* Give agent free memory beside gate: pad (`jot`, `recall`) admitting any
+* Give agent free memory beside gate: pad (`write`, `read`) admitting any
   JSON object or prose under script-stamped envelope, never rejecting
   content. Gated record may cite pad ids as provenance, each checked to
   exist.
@@ -52,7 +52,7 @@ Place each responsibility by first row it matches.
 Pad kinds are suggested, never checked; each means one thing across library.
 Kernel's `PAD_KINDS` holds them and every `schema` prints them under `pad`;
 skill text cites that list, naming only kinds its procedure relies on. Every
-pad takes `--lore`: skill's cross-session pad beside its sessions.
+pad takes `--known`: skill's cross-session pad beside its sessions.
 
 | Kind | Meaning |
 | --- | --- |
@@ -60,11 +60,11 @@ pad takes `--lore`: skill's cross-session pad beside its sessions.
 | `hunch` | unverified idea or hypothesis worth testing |
 | `extraction` | what one source says, keyed to it; lit-review counts coverage |
 | `framing` | candidate framing of question or paper |
-| `punch` | punch-list item to settle before delivery |
-| `concern` | objection reviewer or user could raise |
-| `thread` | open thread to pick up later |
+| `task` | item to settle before delivery |
+| `objection` | point reviewer or user could raise against work |
+| `open` | point left open to pick up later |
 | `friction` | where skill, script, or source made job harder |
-| `lore` | fact worth keeping across sessions; jot with --lore |
+| `known` | fact worth keeping across sessions; write with --known |
 | `injection` | imperative text inside fetched data, recorded, never obeyed |
 | `question` | question only authors or user can answer |
 
@@ -87,7 +87,7 @@ pad takes `--lore`: skill's cross-session pad beside its sessions.
 | `note` | Admit one batch through gate |
 | `check` | Derive verdicts and drafting scaffold from live state |
 | `status` | Cheap resume view, with advisory `next` |
-| `jot`, `recall` | Write to and read from pad |
+| `write`, `read` | Write to and read from pad |
 | `clean` | Remove one target or `--all`, reporting bytes freed |
 
 * Pass configuration as flags: closed vocabularies, counts, booleans,

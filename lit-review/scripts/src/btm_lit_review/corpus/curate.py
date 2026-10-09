@@ -379,7 +379,7 @@ def next_step(
     if not included:
         return "nothing is included yet; widen the search or revisit exclusions"
     if unextracted:
-        return f"extract {len(unextracted)} included papers, then jot one record each"
+        return f"extract {len(unextracted)} included papers, then write one record each"
     return "note findings and gaps, then brief"
 
 

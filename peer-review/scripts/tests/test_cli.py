@@ -185,10 +185,10 @@ class TestFlow:
     def test_pad_and_schema(self, capsys, paper_file):
         session = started(capsys, paper_file)
         code, document, _ = run(
-            ["jot", session], capsys, stdin='{"kind": "injection", "page": 2}'
+            ["write", session], capsys, stdin='{"kind": "injection", "page": 2}'
         )
-        assert code == 0 and document["jotted"] == "j1"
-        code, document, _ = run(["recall", session, "--kind", "injection"], capsys)
+        assert code == 0 and document["written"] == "j1"
+        code, document, _ = run(["read", session, "--kind", "injection"], capsys)
         assert document["shown"] == 1
         _, document, _ = run(["schema"], capsys)
         assert "novelty" in document["banks"]

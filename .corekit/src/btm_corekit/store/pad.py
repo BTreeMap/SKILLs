@@ -1,4 +1,4 @@
-"""The pad: free working memory beside a skill's gated stores; a jotted body
+"""The pad: free working memory beside a skill's gated stores; a written body
 nests under its own key so it can't collide with the stamped envelope."""
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def compile_match(pattern: str) -> re.Pattern[str]:
 
 def pad_entries(directory: Path) -> list[dict[str, Any]]:
     """Rows the pad holds; a line appended by hand reads as a bare body.
-    Positional ids match jot's minting, so hand-written and jotted lines
+    Positional ids match write's minting, so hand-written and written lines
     never collide."""
     path = directory / SCRATCH
     if not path.exists():
@@ -42,7 +42,7 @@ def pad_entries(directory: Path) -> list[dict[str, Any]]:
 
 
 def _enveloped(number: int, row: dict[str, Any]) -> dict[str, Any]:
-    """A jotted row as written; anything else is a bare body under a
+    """A row `pad_write` appended, as is; anything else is a bare body under a
     positional id, so every entry carries the `j` that `pad_ids` reads."""
     if isinstance(row.get("j"), str) and isinstance(row.get("body"), dict):
         return row
@@ -53,7 +53,7 @@ def pad_ids(directory: Path) -> set[str]:
     return {entry["j"] for entry in pad_entries(directory)}
 
 
-def jot(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
+def pad_write(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
     """Append one entry; the receipt echoes the minted id.
 
     The id is the line count, so an append reads the file: O(entries) each
@@ -63,10 +63,10 @@ def jot(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
     count = count_lines(directory / SCRATCH) + 1
     record = {"j": f"j{count}", "t": now_iso(), "body": dict(body)}
     append_jsonl(directory / SCRATCH, [record])
-    receipt: dict[str, Any] = {"jotted": record["j"], "entries": count}
+    receipt: dict[str, Any] = {"written": record["j"], "entries": count}
     if count > PAD_SOFT_CAP:
         receipt["advisory"] = (
-            f"pad holds {count} entries; recall filters keep reads cheap"
+            f"pad holds {count} entries; read filters keep reads cheap"
         )
     return receipt
 
@@ -93,7 +93,7 @@ def _entry_number(entry_id: str) -> int:
     return number
 
 
-def recall(
+def pad_read(
     directory: Path,
     *,
     kind: str | None = None,

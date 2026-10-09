@@ -74,11 +74,11 @@ $R note "$S" --batch:file <round.json> && $R check "$S"
 $R check "$S" --view plan|draft|full
 $R note "$S" --batch:file <round.json> --view plan
 $R status "$S"
-$R jot "$S" [--prose] [--lore] <<'JSON'
+$R write "$S" [--prose] [--known] <<'JSON'
 {"kind": "quote", ...}
 JSON
-$R jot "$S" --entry:file <entry.json>
-$R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20] [--lore]
+$R write "$S" --entry:file <entry.json>
+$R read "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20] [--known]
 $R cite <DOI or arXiv id> [--corpus <lit-review session id or path>]
 $R clean ["$S" | --all | --project <name>]
 </commands>
@@ -90,8 +90,8 @@ $R clean ["$S" | --all | --project <name>]
 | `note` | One batch | Admitted counts, open leaves, yield table, `minted` receipt |
 | `check` | `--view` | Drafting scaffold, violations, hedges, read per `answer` |
 | `status` | Nothing | Project, links, counts, open leaves, yield table, advisory `next`: cheap mid-session view |
-| `jot` | Any JSON object, or prose with `--prose`; `--lore` writes skill's cross-session pad | Pad id; never rejects content |
-| `recall` | Filters; `--limit` takes 1 or more, default all; `--lore` reads cross-session pad | Matching pad entries |
+| `write` | Any JSON object, or prose with `--prose`; `--known` writes skill's cross-session pad | Pad id; never rejects content |
+| `read` | Filters; `--limit` takes 1 or more, default all; `--known` reads cross-session pad | Matching pad entries |
 | `cite` | No session: DOI or arXiv id; `--corpus` names `/lit-review` session asked first | One retrieved record with `source` and `retrieved` date; exit 1 when nothing resolves |
 | `clean` | Session optional; or `--all`; or `--project NAME` | Removes one session or all; with neither, lists sessions with sizes and projects, `--project` keeping one project's |
 
@@ -154,9 +154,9 @@ minted earlier in batch:
 - Contrary evidence may move `retrieved` to `refuted`; other closes final.
 
 Pad is free working memory beside ledger; only ledger events face gate. Park
-`quote`, `hunch`, `thread` entries there with `jot` while round is hot, then
-pull them back with `recall` at draft time; kinds come from shared
-vocabulary `schema` prints under `pad`.
+`quote`, `hunch`, `open` entries there with `write` while round is hot, then
+pull them back with `read` at draft time; kinds come from shared vocabulary
+`schema` prints under `pad`.
 
 Invoke this interface from skill; inspect source only for user-requested
 troubleshooting.

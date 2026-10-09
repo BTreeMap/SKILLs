@@ -2,8 +2,8 @@
 
 Review draft as hostile reviewer would, in at most two rounds.
 
-1. Round one: run five passes below separately, `jot` each finding as
-   `punch` entry, then revise draft against punch list.
+1. Round one: run five passes below separately, `write` each finding as
+   `task` entry, then revise draft against task list.
 2. Round one found nothing: stop. Otherwise round two: five passes again on
    revised draft.
 3. Stop after round two: fix what it found; list every finding left unfixed

@@ -22,8 +22,8 @@ any readable layout, one block per reviewer:
 ## Triage
 
 1. List every reviewer concern as quoted one-liner with reviewer and score;
-   `jot` each as `concern` entry; mapping below is filled from
-   `recall --kind concern`.
+   `write` each as `objection` entry; mapping below is filled from
+   `read --kind objection`.
 2. Classify each concern; respond by its class:
 
    | Class | Response |
