@@ -181,6 +181,12 @@ the rest stands:
 - Work on `main` directly; do not push. The lead reviews the commit and
   pushes it. Claim the issue with a comment naming "in-session" and the date
   instead of a branch.
+- The handoff prompt may name a bundle: several issues with one home, listed
+  in the order to work them. Read the standard and the skill once, then work
+  the issues in that order, one commit per issue, and hand back one return
+  with a section 7 block per issue. If an issue in the bundle cannot be
+  closed, say why in its block and continue with the next; a bundle never
+  stops at its first blocker.
 - The handback to the lead is the return, in the shape of section 7.
 - Disk on this machine is near full. Build no new environment: run uv from
   the workspace root only, never in a worktree, never with `uv sync` beyond
