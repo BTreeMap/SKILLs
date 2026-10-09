@@ -135,10 +135,11 @@ test -z "$(grep -rnP '\x{2014}|\x{2013}' --include=*.md --include=*.py . \
   | grep -v '^./.venv' | grep -v 'humanize/references/style.md')"
 ```
 
-Never pipe a check's status into `tail` or `grep -c`; a hidden failure
-reached `main` once that way. Run the network-marked tests of any index you
-touched once (`-m network`) and paste the result; a 429 is a result. Include
-the gate's reflow in your commit; touch nothing else it changed.
+Run the chain under `set -e -o pipefail`; without `pipefail` a check piped
+into `tail` or `grep -c` hides its status, and a hidden failure reached
+`main` once that way. Run the network-marked tests of any index you touched
+once (`-m network`) and paste the result; a 429 is a result. Include the
+gate's reflow in your commit; touch nothing else it changed.
 
 ## 6. Commit
 
@@ -146,10 +147,10 @@ One commit per issue unless two concerns are genuinely separable. Subject
 `type(scope): Imperative under 70 chars`, scope the skill name or `corekit`,
 type `fix` for behavior, `refactor` for structure, `docs` for text, `feat`
 for a capability, `test` for tests alone. Body in the caveman register: why
-over what, the issue number, the test that pins a fix. A documented flag or
-command that changes incompatibly carries a `BREAKING CHANGE:` footer with
-the migration path. End with your own attribution trailer as your harness
-provides it.
+over what, a line `Closes #N` so the push closes the issue with its commit,
+the test that pins a fix. A documented flag or command that changes
+incompatibly carries a `BREAKING CHANGE:` footer with the migration path.
+End with your own attribution trailer as your harness provides it.
 
 ## 7. The return
 
