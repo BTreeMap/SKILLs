@@ -141,7 +141,9 @@ minted earlier in the batch:
   `unresolved` closes; a `retired` close says in `detail` why the leaf
   changes nothing.
 - `from` lists the pad ids a close drew on, each checked to exist.
-- A source may take `"ref": "<name>"` in place of `kw` to name its ID.
+- A source may take `"ref": "<name>"` in place of `kw` to name its ID's
+  stem. A `ref` draws no keyword-count advisory; the minted ID still
+  carries the suffix, so copy it from the `minted` receipt.
 - `survivors` are zero-based indexes into `candidates`.
 - Contrary evidence may move `retrieved` to `refuted`; other closes are
   final.

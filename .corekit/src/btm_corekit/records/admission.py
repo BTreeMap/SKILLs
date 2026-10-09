@@ -235,7 +235,8 @@ class Admission:
         return None
 
     def mint_id(self, entry: Named, pool: Pool, where: str) -> str | None:
-        """Mint from the entry's own words; a batch may not name one twice."""
+        """Mint from the entry's own words; a batch may not name one twice. An
+        explicit `ref` is the stem as chosen, so only `kw` draws band advice."""
         if self.mint is None:
             raise CommandError("this admission mints nothing")
         words = entry.words
@@ -247,7 +248,7 @@ class Admission:
         if stem in pool.slugs:
             self.fail(where, f"vary one keyword: '{stem}' already minted in this batch")
             return None
-        if advice := band_signal(stem):
+        if entry.ref is None and (advice := band_signal(stem)):
             self.advisories.append(advice)
         full = self.mint(words)
         pool.slugs.add(stem)

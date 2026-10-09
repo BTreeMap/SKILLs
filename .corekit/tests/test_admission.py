@@ -109,6 +109,17 @@ class TestAdmission:
         assert "vary one keyword" in gate.problems[0].fix
         assert gate.mint_id(Entry(ref="explicit", q="x"), pool, "w") == "explicit-x"
 
+    def test_only_keywords_draw_the_keyword_count_advisory(self):
+        """An explicit `ref` is a stem the agent chose, so the advice to pick
+        two or three keywords does not apply to it; one keyword still draws
+        it."""
+        gate = Admission(mint=fake_mint)
+        pool = Pool("source", [])
+        gate.mint_id(Entry(ref="uwbench", q="x"), pool, "sources[0]")
+        assert gate.advisories == []
+        gate.mint_id(Entry(kw=["uwbench2"], q="x"), pool, "sources[1]")
+        assert gate.advisories == ["'uwbench2': two or three keywords resolve best"]
+
     def test_an_entry_that_names_itself_nothing_is_refused(self):
         gate = Admission(mint=fake_mint)
         assert gate.decode(Entry, {"q": "x"}, "leaves[0]") is None
