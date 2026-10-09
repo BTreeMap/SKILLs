@@ -206,6 +206,14 @@ LEXICON = {
             "note": None,
         },
         {
+            "word": "switch off",
+            "pos": "v",
+            "qualifier": None,
+            "forms": [],
+            "alternatives": [{"phrase": "set to off"}],
+            "note": None,
+        },
+        {
             "word": "hand-tighten",
             "pos": "v",
             "qualifier": None,

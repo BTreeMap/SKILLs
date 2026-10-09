@@ -209,13 +209,36 @@ class TestFindings:
 class TestPhrases:
     """Rule 1.1 for unapproved headwords of more than one word."""
 
-    def test_an_unapproved_phrase_of_approved_words_is_found(self, run):
-        (f,) = run("Turn off the test.")["findings"]
-        assert (f["token"], f["alternatives"]) == ("Turn off", ["set to off"])
+    def test_a_phrasal_verb_of_approved_words_is_a_signal(self, run):
+        """TURN (v) and OFF (adv) pass alone, so the words can be the verb and
+        a particle used apart: 'turn on the sleeves'."""
+        report = run("Turn off the test.")
+        assert report["ok"]
+        (s,) = [s for s in report["signals"] if s["kind"] == "phrasal_verb"]
+        assert (s["token"], s["headword"], s["alternatives"]) == (
+            "Turn off",
+            "turn off",
+            ["set to off"],
+        )
 
-    def test_an_inflected_phrase_names_its_headword(self, run):
-        (f,) = run("Then the test turned off.", allow="then")["findings"]
-        assert (f["token"], f["headword"]) == ("turned off", "turn off")
+    def test_an_inflected_phrasal_verb_names_its_headword(self, run):
+        report = run("Then the test turned off.", allow="then")
+        (s,) = [s for s in report["signals"] if s["kind"] == "phrasal_verb"]
+        assert (s["token"], s["headword"]) == ("turned off", "turn off")
+
+    def test_a_declared_word_passes_alone_in_a_phrasal_verb(self, run):
+        """'the test switch off the opening': SWITCH is a declared technical
+        noun, and the words read as SWITCH (TN) and OFF."""
+        text = "Remove the test switch off the opening."
+        assert not run(text)["ok"]
+        report = run(text, allow="switch")
+        assert report["ok"]
+        assert "phrasal_verb" in kinds(report, "signals")
+
+    def test_a_phrasal_verb_with_a_word_that_fails_alone_is_a_finding(self, run):
+        """AWAY is approved only in AWAY FROM, so 'get away' stays a finding."""
+        (f,) = run("Get away the test.")["findings"]
+        assert (f["kind"], f["token"]) == ("not_approved", "Get away")
 
     def test_the_words_of_the_phrase_alone_pass(self, run):
         assert run("Turn the test. Remove the test off.")["ok"]

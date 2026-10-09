@@ -155,7 +155,7 @@ $R clean
     write it in the allow file.
   * The report gives one `not_approved` item for each different word, not
     for each time the word occurs. A headword of two or more words, for
-    example "turn off" or "a few", is one item. Its `token` shows the words
+    example "carry out" or "a few", is one item. Its `token` shows the words
     of the text.
   * `ing_form` gives the verb of the -ing word.
   * `contraction` gives the word. `punctuation` gives the mark, which is a
@@ -171,6 +171,11 @@ $R clean
     A number word, for example "zero", is a technical noun. If it is also a
     word that is not approved in a different part of speech, this signal
     shows it.
+  * `phrasal_verb` shows a verb of two or more words that is not approved,
+    for example "turn off", if each of its words is an approved word. The
+    same words can be a verb and a preposition, for example in "turn on the
+    sleeves". It gives the `headword` and the alternatives. If the words are
+    the verb, replace them.
   * `abbreviation` shows a word in capital letters that the checker accepted
     as a label.
   * `quotation` shows text in quotation marks, which the checker accepts as

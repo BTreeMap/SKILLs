@@ -25,6 +25,7 @@ technical noun
 technical verb
 adjective
 article
+preposition
 imperative
 passive
 past participle

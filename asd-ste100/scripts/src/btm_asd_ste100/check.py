@@ -7,7 +7,8 @@ not approved and not allowed (1.1), an -ing form outside the approved few
 (3.5), a contraction (4.2), a semicolon (8.1). Signals, never findings:
 passive voice candidates (3.6), a second instruction in one sentence
 (5.2), an approved word that is also an unapproved headword (1.2), an
-all-caps token passed as an abbreviation. Number words pass as technical
+unapproved phrasal verb whose every word passes alone (1.1), an all-caps
+token passed as an abbreviation. Number words pass as technical
 nouns (1.5, category 9), signaled when also an unapproved headword (zero
 (v)), and quoted text (1.5, category 10) is signaled, not checked. Every
 finding and signal names its source line.
@@ -188,6 +189,7 @@ NUMBERS = frozenset(
     ]
 )
 TECHNICAL_NOUN = "tn"  # the part of speech rule 1.5 gives a number word
+PARTICLE_POS = frozenset(["prep", "adv"])  # what may close a phrasal verb
 ARTICLES = frozenset(["a", "an", "the"])
 BE_FORMS = frozenset(["am", "is", "are", "was", "were", "be", "been", "being"])
 CONTRACTED = ("n't", "'re", "'ve", "'ll", "'d", "'m")
@@ -266,6 +268,7 @@ class Vocabulary:
     unapproved_phrases: Phrases  # headwords of two or more words
     verbs: frozenset[str]  # base form of every verb headword, approved or not
     participles: frozenset[str]
+    particles: frozenset[str]  # one-word forms approved as a preposition or adverb
 
 
 def longest_first(table: dict[str, set[tuple[str, ...]]]) -> Phrases:
@@ -279,6 +282,7 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
     multi: dict[str, set[tuple[str, ...]]] = {}
     verbs: set[str] = set()
     participles: set[str] = set()
+    particles: set[str] = set()
     for a in lexicon.approved:
         for form in [*a.forms, *([a.plural] if a.plural else [])]:
             if "..." in form or "…" in form:
@@ -289,6 +293,8 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
             else:
                 approved.add(form)
                 pos_of.setdefault(form, set()).add(a.pos or "")
+                if a.pos in PARTICLE_POS:
+                    particles.add(form)
         if a.pos == "v":
             verbs.add(a.word)
             participles.update(f for f in a.forms[2:] if " " not in f)
@@ -315,6 +321,7 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
         unapproved_phrases=longest_first(bad_multi),
         verbs=frozenset(verbs),
         participles=frozenset(participles),
+        particles=frozenset(particles),
     )
 
 
@@ -563,7 +570,7 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     # checked, and a label in a mixed sentence passes in a shouted text.
     shouting = sum(c.isupper() for c in sent) > sum(c.islower() for c in sent)
     inside = covered(tokens, (ctx.vocab.phrases, ctx.allowed.phrases))
-    inside |= phrase_findings((originals, tokens), inside, index, ctx.vocab, report)
+    inside |= phrase_findings((originals, tokens), inside, index, ctx, report)
     after_number = False
     for i, (orig, tok) in enumerate(zip(originals, tokens, strict=True)):
         number = bool(DIGIT.search(tok))
@@ -606,23 +613,47 @@ def phrase_findings(
     words: tuple[list[str], list[str]],
     inside: set[int],
     index: int,
-    vocab: Vocabulary,
+    ctx: Context,
     report: Report,
 ) -> set[int]:
     """Report each unapproved multi-word headword in one sentence; return
-    the token indices it covers. `words` is the tokens as written and in
-    lowercase."""
+    the token indices it covers. A phrasal verb whose words all pass alone
+    is only a signal and covers nothing: "turn on the sleeves" is TURN (v)
+    and ON (prep). `words` is the tokens as written and in lowercase."""
     originals, tokens = words
+    vocab = ctx.vocab
     covers: set[int] = set()
     for start, (key, length) in bad_phrases(
         tokens, inside, vocab.unapproved_phrases
     ).items():
         shown = " ".join(originals[start : start + length])
+        if phrasal(key, tokens[start : start + length], ctx):
+            hints = vocab.unapproved[key]
+            per_word(report, "phrasal_verb", key, index, {
+                "rule": "1.1", "token": shown, "headword": key,
+                "alternatives": unique(a for h in hints for a in h.alternatives),
+                "evidence": "each word is approved alone; a verb and a "
+                "preposition can have the same spelling",
+            })  # fmt: skip
+            continue
         unknown(shown, key, index, vocab, report)
         if shown.lower() != key:
             report.words[key].setdefault("headword", key)
         covers.update(range(start, start + length))
     return covers
+
+
+def phrasal(key: str, words: list[str], ctx: Context) -> bool:
+    """An unapproved verb headword that ends in a particle, each word of
+    which is approved or declared alone; without parts of speech the
+    checker cannot tell the phrasal verb from the words used apart."""
+    hints = ctx.vocab.unapproved.get(key, ())
+    return (
+        bool(hints)
+        and all(h.pos == "v" for h in hints)
+        and words[-1] in ctx.vocab.particles
+        and all(approved(w, ctx.vocab) or w in ctx.allowed.words for w in words)
+    )
 
 
 def bad_phrases(
