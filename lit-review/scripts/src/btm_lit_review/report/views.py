@@ -22,6 +22,8 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_lit_review.constants import (
+    ABSTRACT_SHOW_LIMIT,
+    AUTHOR_SHOW_LIMIT,
     GRAPH_SOURCES,
     PAD_TAIL,
     READ_LEVELS,
@@ -197,6 +199,12 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "total_matches is null where a source reports no count; the "
             "envelope adds corpus_size, and search --show adds hits: "
             "[{key, title, year, status}]",
+            "show": '{"total": n, "papers": [row]}; total counts every match '
+            "before --limit; a row is key title year authors (first "
+            f"{AUTHOR_SHOW_LIMIT}) author_count venue citations status "
+            f"read_level abstract (cut at {ABSTRACT_SHOW_LIMIT} characters), or "
+            "exactly the --fields named; --format tsv prints a header line and "
+            "one line per paper instead",
             "verify": '{"checked": n, "broken_dois": [...], "results": [{key, '
             "title, doi_resolves, doi_http_status, crossref_title_match}]}",
             "exit_codes": "0 done (stderr signals are advisory); 1 fix the input "

@@ -271,6 +271,15 @@ class TestSchema:
             document
         )
 
+    def test_the_show_envelope_is_named_with_its_two_fields(self, session, capsys):
+        """A first parse once guessed `records`; the card names what show
+        really emits."""
+        _, card, _ = run(["schema"], capsys)
+        _, shown, _ = run(["show", str(session.root)], capsys)
+        assert set(shown) == {"total", "papers"}
+        assert all(f'"{field}"' in card["show"] for field in shown)
+        assert all(name in card["show"] for name in shown["papers"][0])
+
 
 class TestUpdate:
     def applied(self, session, capsys, decisions):
