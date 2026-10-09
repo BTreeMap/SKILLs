@@ -136,7 +136,10 @@ $R clean ["$S" | --all]
 
 Bind `R` and `S` per shell and re-bind after a reset; `realpath` is
 required. A unique keyword subset recovers a lost session identifier with a
-signal.
+signal. The script counts session and claim keywords as runs of letters and
+digits: a hyphen, underscore, or other punctuation splits a word, so
+`tail-latency p99 study` counts four keywords and signals; pass
+`tail-latency study` instead.
 
 | Command | Contract |
 | --- | --- |
