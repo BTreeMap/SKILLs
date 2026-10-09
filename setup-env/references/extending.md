@@ -1,7 +1,7 @@
 # Extending
 
-Maintainer file: not loaded during normal runs. Read it to add a target,
-change a recipe, or understand why the code is shaped as it is.
+Maintainer file: not loaded during normal runs. Read it to add target,
+change recipe, or understand why code is shaped as it is.
 
 ## Architecture
 
@@ -11,32 +11,32 @@ docstring:
     model -> steps -> catalog -> plan -> render/execute -> cli
 
 Everything through `plan` is pure: `btm-setup-env design` prints exactly
-what `provision` would do, with no network and no filesystem writes; that
-property is the test seam. `execute` and the rest of the shell package hold
-every effect; `cli` only parses and reports.
+what `provision` would do, no network, no filesystem writes; that property
+is the test seam. `execute` and rest of shell package hold every effect;
+`cli` only parses and reports.
 
 ## Laws
 
-1. Closed domain. Hosts, conda platforms, plan steps, and catalog keys are
+1. Closed domain. Hosts, conda platforms, plan steps, catalog keys are
    closed sets, so every conflict `SKILL.md` lists under Guarantees fails
-   during planning, before any effect, with a message naming the fix.
-2. One prefix, one create. micromamba `create` replaces a prefix. The
-   planner merges every host-bound package list into a single `CondaEnv`
-   step per prefix; executors never install into an existing prefix. The
-   standalone shim path unions against the manifest for the same reason.
-3. Env merge is a checked monoid. Recipes contribute `EnvDelta` values;
+   during planning, before any effect, with message naming fix.
+2. One prefix, one create. micromamba `create` replaces a prefix. Planner
+   merges every host-bound package list into single `CondaEnv` step per
+   prefix; executors never install into existing prefix. Standalone shim
+   path unions against manifest for same reason.
+3. Env merge is checked monoid. Recipes contribute `EnvDelta` values;
    duplicate variables must agree, PATH entries dedupe preserving first
-   occurrence. One merged delta is rendered to activate.sh, activate.ps1,
-   and the probe process environment, so what verification proved is what
-   activation grants.
+   occurrence. One merged delta rendered to activate.sh, activate.ps1, probe
+   process environment, so what verification proved is what activation
+   grants.
 4. Emulation is total and central. `emulation(host, platform)` in `model` is
-   the only place architecture reachability is decided, as a total function
-   of (host, needed platform). Recipes match on its variants; nothing
-   downstream inspects `uname` or branches on architecture. An emulated tool
-   is one executable at one path, registered where its consumer looks, and
-   its wrapper writes nothing to stdout.
+   only place architecture reachability is decided, as total function of
+   (host, needed platform). Recipes match on its variants; nothing
+   downstream inspects `uname` or branches on architecture. Emulated tool is
+   one executable at one path, registered where its consumer looks; its
+   wrapper writes nothing to stdout.
 5. Idempotence by postcondition. Every executor checks completion state
-   (manifest entry plus on-disk evidence) before working and downloads to a
+   (manifest entry plus on-disk evidence) before working, downloads to
    partial name, then renames.
 6. Determinism. Plans sort by (stage, type, repr); package sets sort before
    comparison; nothing reads clocks or randomness. Equal inputs yield equal
@@ -44,26 +44,25 @@ every effect; `cli` only parses and reports.
 
 ## Adding A Target
 
-1. Choose the key. New toolchain: new family. Same toolchain aimed at a
-   different platform or ABI: new flavor of an existing family. Never encode
-   a version in the name.
-2. Pick suppliers in order: conda-forge if it packages the tool well (verify
+1. Choose key. New toolchain: new family. Same toolchain aimed at different
+   platform or ABI: new flavor of existing family. Never encode version in
+   name.
+2. Pick suppliers in order: conda-forge if it packages tool well (verify
    with `micromamba search -c conda-forge --platform <each>` on all five
-   platforms); the publisher otherwise, pinned by version and sha256 when
-   the publisher offers no digest sidecar; never a curl-pipe-sh installer.
-3. Write the `Recipe` in `catalog`: requirements as existing step values
-   when possible (a new step type in `steps` plus one executor in `execute`
-   only for new machinery), env as an `EnvDelta` of redirections under the
-   root, at least one probe per user-visible tool. Reject unsupported hosts
-   inside `requirements` with a message naming the alternative.
-4. Redirect every cache or config variable the tool honors (its
-   HOME-dwelling dotdir is already covered by the HOME redirect). If the
-   tool's wrapper scripts expect a variable a normal activation would set,
-   export it in the recipe (never run foreign activation code); the
-   CONDA_PREFIX and DOTNET_ROOT cases in `plan` and `catalog` are the
-   precedents.
-5. Update `targets` (the per-target row and footprint) and, when the change
-   touches invariants, `SKILL.md`.
+   platforms); publisher otherwise, pinned by version and sha256 when
+   publisher offers no digest sidecar; never curl-pipe-sh installer.
+3. Write `Recipe` in `catalog`: requirements as existing step values when
+   possible (new step type in `steps` plus one executor in `execute` only
+   for new machinery), env as `EnvDelta` of redirections under root, at
+   least one probe per user-visible tool. Reject unsupported hosts inside
+   `requirements` with message naming alternative.
+4. Redirect every cache or config variable tool honors (its HOME-dwelling
+   dotdir already covered by HOME redirect). Tool's wrapper scripts expect
+   variable normal activation would set: export it in recipe (never run
+   foreign activation code); CONDA_PREFIX and DOTNET_ROOT cases in `plan`
+   and `catalog` are precedents.
+5. Update `targets` (per-target row and footprint) and, when change touches
+   invariants, `SKILL.md`.
 
 ## Testing Protocol
 
@@ -71,14 +70,13 @@ On at least one linux host, ideally both architectures:
 
 - `btm-setup-env design <tag>`: steps and env look right, twice for
   determinism.
-- `btm-setup-env provision <tag>`: the record's `ok` is true and every probe
-  passes; re-run completes in under a second changing nothing.
-- The isolation falsifier from `SKILL.md`: an `env -i` shell sourcing
-  activate.sh compiles and runs a hello program end to end, link steps
-  included; a compiler that cannot link passes --version probes and still
-  fails users.
-- `btm-setup-env provision` with the tag removed: the conda prefix reshapes
-  to the smaller set.
-- `btm-setup-env clean`, then a fresh provision from nothing.
+- `btm-setup-env provision <tag>`: record's `ok` true, every probe passes;
+  re-run completes in under a second changing nothing.
+- Isolation falsifier from `SKILL.md`: `env -i` shell sourcing activate.sh
+  compiles and runs hello program end to end, link steps included; compiler
+  that cannot link passes --version probes and still fails users.
+- `btm-setup-env provision` with tag removed: conda prefix reshapes to
+  smaller set.
+- `btm-setup-env clean`, then fresh provision from nothing.
 
 Record in `targets` what was validated per platform; claim nothing untested.

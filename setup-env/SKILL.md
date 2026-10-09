@@ -21,8 +21,8 @@ metadata:
 
 # Setup Env
 
-One command provisions everything a project needs into one disposable root:
-run it, source the printed activation script, build. Re-run to repair.
+One command provisions everything project needs into one disposable root:
+run it, source printed activation script, build. Re-run to repair.
 
 ## Registry
 
@@ -38,9 +38,9 @@ run it, source the printed activation script, build. Re-run to repair.
 | `targets` | [references/targets.md](references/targets.md) |
 | `extending` | [references/extending.md](references/extending.md) |
 
-Load `targets` before choosing a tag beyond the obvious or pinning a
-version; load `extending` only to add or change a recipe. Invoke the command
-and read its output; read source only for user-instructed troubleshooting.
+Load `targets` before choosing tag beyond the obvious or pinning version;
+load `extending` only to add or change recipe. Invoke command, read its
+output; read source only for user-instructed troubleshooting.
 
 ## Redirects
 
@@ -49,17 +49,17 @@ and read its output; read source only for user-instructed troubleshooting.
 
 ## Choose Tags
 
-Name as tags only the languages the project uses. The grammar is
-`family[:flavor][@version]`: family picks a toolchain, flavor picks what it
-builds for, version pins it. An unpinned version resolves to the newest
-available build; `<root>/manifest.json` records the chosen versions. `list`
-prints every known tag. Toolchains pinned by the project (gradlew,
-package.json, Cargo.toml) stay authoritative.
+Name as tags only languages project uses. Grammar is
+`family[:flavor][@version]`: family picks toolchain, flavor picks what it
+builds for, version pins it. Unpinned version resolves to newest available
+build; `<root>/manifest.json` records chosen versions. `list` prints every
+known tag. Toolchains pinned by project (gradlew, package.json, Cargo.toml)
+stay authoritative.
 
 ## Provision
 
-Bind the command to `R` once per shell, and re-bind after a reset;
-`realpath` and both `env -u` flags are required:
+Bind command to `R` once per shell; re-bind after reset; `realpath` and both
+`env -u` flags required:
 
 <commands for="setup">
 
@@ -70,13 +70,12 @@ $R provision <tags> --project <project-root>
 
 </commands>
 
-Every verb is named outright; a bare tag list is rejected. The examples
-below abbreviate `$R` as `btm-setup-env`. `--project` defaults to the
-nearest ancestor of the working directory containing `.git`. The environment
-root is derived from the project path, under the system temp dir; override
-the base with `DENV_HOME`, or the exact root with `--root` or `DENV_ROOT`,
-the flag winning. A root under the temp dir is ephemeral: after a reboot,
-re-run provision.
+Every verb named outright; bare tag list is rejected. Examples below
+abbreviate `$R` as `btm-setup-env`. `--project` defaults to nearest ancestor
+of working directory containing `.git`. Environment root derived from
+project path, under system temp dir; override base with `DENV_HOME`, or
+exact root with `--root` or `DENV_ROOT`, flag winning. Root under temp dir
+is ephemeral: after reboot, re-run provision.
 
 <commands for="examples">
 
@@ -100,11 +99,10 @@ btm-setup-env design haskell csharp
 
 </commands>
 
-Each verb writes one JSON record to stdout and nothing else; progress and
-warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true. A
-failed probe still exits 0, with `ok` false and a `next` line naming the
-repair; exit 1 means an argument needs fixing, never that a toolchain is
-broken.
+Each verb writes one JSON record to stdout, nothing else; progress and
+warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true.
+Failed probe still exits 0, with `ok` false and `next` line naming repair;
+exit 1 means argument needs fixing, never that toolchain is broken.
 
 Every verb except `list` takes `--project` and `--root`.
 
@@ -119,7 +117,7 @@ Every verb except `list` takes `--project` and `--root`.
 
 ## Activate And Work
 
-Once activated, every command is identical on every supported host:
+Once activated, every command identical on every supported host:
 
 <commands for="activate">
 
@@ -129,34 +127,32 @@ Once activated, every command is identical on every supported host:
 
 </commands>
 
-Activation redirects HOME, so git identity and ssh keys are absent inside an
-activated shell. Build and test there; commit from a normal shell.
+Activation redirects HOME, so git identity and ssh keys are absent inside
+activated shell. Build and test there; commit from normal shell.
 
 ## Guarantees
 
-- Exact toolset: the environment contains the union of what the named tags
-  require and nothing else.
-- Conflicts are errors before effects: two versions of one toolchain, an
-  unknown tag, a version handed to a versionless target, or a target
-  impossible on this host all fail during planning with a precise message,
-  never mid-download.
-- Idempotent: an interrupted or failed run is repaired by re-running the
-  same command. `provision` with a different tag set reshapes the conda
-  prefix to exactly that set but leaves stale publisher downloads under
-  `<root>/tools`; run `clean` and re-provision for a byte-exact minimal
-  root.
+- Exact toolset: environment contains union of what named tags require and
+  nothing else.
+- Conflicts are errors before effects: two versions of one toolchain,
+  unknown tag, version handed to versionless target, or target impossible on
+  this host all fail during planning with precise message, never
+  mid-download.
+- Idempotent: interrupted or failed run is repaired by re-running same
+  command. `provision` with different tag set reshapes conda prefix to
+  exactly that set but leaves stale publisher downloads under
+  `<root>/tools`; run `clean` and re-provision for byte-exact minimal root.
 
 ## Isolation
 
-Every mutable path lives under the root: HOME, TMPDIR, XDG dirs, and each
-toolchain's cache and config variables are redirected by the activation
-script. The project checkout is written only when a build tool demands a
-generated, ignored file (`local.properties` for Android). Nothing reads the
-caller's HOME, dotfiles, or global toolchains; nothing writes outside the
-root and the project.
+Every mutable path lives under root: HOME, TMPDIR, XDG dirs, each
+toolchain's cache and config variables redirected by activation script.
+Project checkout written only when build tool demands generated, ignored
+file (`local.properties` for Android). Nothing reads caller's HOME,
+dotfiles, or global toolchains; nothing writes outside root and project.
 
-Falsifier: run a build through `env -i` carrying only the activation script.
-A pass proves independence from caller state.
+Falsifier: run build through `env -i` carrying only activation script. Pass
+proves independence from caller state.
 
 <checklist for="isolation">
 
@@ -168,7 +164,7 @@ env -i /bin/sh -c '. <root>/activate.sh && cd <project> && <build-command>'
 
 ## Foreign-Architecture Binaries
 
-Some publishers ship a build tool for exactly one platform:
+Some publishers ship build tool for exactly one platform:
 
 | Host | Foreign linux-x86_64 binary runs via |
 | --- | --- |
@@ -179,13 +175,13 @@ Some publishers ship a build tool for exactly one platform:
 
 - macos/arm64 Android builds need Rosetta 2 once:
   `softwareupdate --install-rosetta --agree-to-license`.
-- Emulated tools run slower: minutes for a full Android resource pipeline
-  where native takes seconds. Correctness is unaffected.
-- To run any other foreign binary a build needs, wrap it with `shim` and
-  call the returned wrapper path.
+- Emulated tools run slower: minutes for full Android resource pipeline
+  where native takes seconds. Correctness unaffected.
+- To run any other foreign binary a build needs, wrap it with `shim`, call
+  returned wrapper path.
 
 ## Gotchas
 
-- A bare ubuntu:24.04 image with uv works: uv is the only assumption.
-- Never hand-install into `<root>/conda/host` with a second call: the prefix
-  create step replaces the whole prefix.
+- Bare ubuntu:24.04 image with uv works: uv is only assumption.
+- Never hand-install into `<root>/conda/host` with second call: prefix
+  create step replaces whole prefix.

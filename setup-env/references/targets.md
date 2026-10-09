@@ -1,6 +1,6 @@
 # Targets
 
-`catalog` holds the authoritative tag list; `list` prints it. Aliases:
+`catalog` holds authoritative tag list; `list` prints it. Aliases:
 `js`/`node`, `ts`, `py`, `golang`, `c++`, `cs`/`dotnet`, `sh`/`shell`, and
 bare `android` for `java:android`.
 
@@ -25,15 +25,15 @@ bare `android` for `java:android`.
 ## Version Semantics
 
 `@version` is recipe-defined (`list` shows it per target): conda-supplied
-targets take a conda version spec (`java@21`, `go@1.23`), `python` takes a
-uv interpreter spec, android flavors take an API level (`kotlin:android@35`
+targets take conda version spec (`java@21`, `go@1.23`), `python` takes uv
+interpreter spec, android flavors take API level (`kotlin:android@35`
 installs `platforms;android-35` + matching build-tools), `kotlin:native`
-takes a JetBrains release. Targets without a version axis (`c`, `cpp`)
-reject one at parse time.
+takes JetBrains release. Targets without version axis (`c`, `cpp`) reject
+one at parse time.
 
 ## Footprints
 
 Rough per-target root sizes, dominated by downloads: python or typescript
-0.3 GB; go, rust, or a JVM 0.5-1 GB; android 2 GB (plus 0.5 GB for the
-emulated toolchain on arm64); haskell 7 GB. Sizes add sublinearly within one
-conda prefix.
+0.3 GB; go, rust, or a JVM 0.5-1 GB; android 2 GB (plus 0.5 GB for emulated
+toolchain on arm64); haskell 7 GB. Sizes add sublinearly within one conda
+prefix.
