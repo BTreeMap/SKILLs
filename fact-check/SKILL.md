@@ -127,9 +127,10 @@ none exists, note "claim-time unknown".
 The state file is `factcheck-state.json` in the working or scratch
 directory. It holds the pinned `constraints` (a copy of the Invariants), the
 claim inventory, one verdict record per claim as each completes, and each
-claim's approval status (`pending | approved | user-rejected | applied`).
-The state file is the source of truth: a long run resumes from it, and the
-comparison table is regenerated from it.
+claim's approval status (`pending | approved | user-rejected | applied`),
+and the side findings under `side_findings`. The state file is the source of
+truth: a long run resumes from it, and the comparison table is regenerated
+from it.
 
 ## Step 2: Verify
 
@@ -225,10 +226,21 @@ c-01, c-03, c-05 (one line each: claim, top source)
 
 ### Unverifiable / insufficient evidence
 c-09: <CLAIM> (<REASON>)
+
+### Side findings
+- <FINDING> "<VERBATIM QUOTE>" (<PUBLISHER>, accessed <DATE>, <URL>)
 </template>
 
 All values above are illustrative placeholders; never copy concrete names,
 numbers, or URLs from this template into a real report.
+
+A side finding is a fact retrieved during Step 2 that bears on the document
+but matches no claim in the inventory, such as an omitted caveat or a gap
+the document leaves. Record each in the state file as `finding` plus
+`evidence` entries in the verdict record's evidence shape. A side finding
+gets no verdict and no correction. A delegate reports one in its verdict's
+`notes`; the lead moves it to `side_findings`. Omit the section when there
+are none.
 
 ## Step 4: Approve
 
