@@ -61,6 +61,9 @@ STOP = re.compile(r"(?<=[.!?])\s+")
 Resolved = dict[tuple[str, str | None, str | None], list[str]]
 ALLOW = Optional("allow", inline=False)
 UNCHANGED = "nothing: check writes no state"
+# The shape of the check and lookup documents; a change to a field that
+# SKILL.md names raises it.
+REPORT_SCHEMA = 1
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
@@ -81,6 +84,11 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         }
     )
     return 0
+
+
+def stamp(origin: Origin) -> dict[str, Any]:
+    """The head of every check and lookup document: one shape, any origin."""
+    return {"schema_version": REPORT_SCHEMA, **origin.echo()}
 
 
 def release(args: argparse.Namespace) -> tuple[Origin, Manifest]:
@@ -152,7 +160,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     vocab = vocabulary(lexicon)
     if batch is None:
         report = check(body, vocab, lim, allowed, how)
-        emit({**origin.echo(), **report, "allowed": allowed.terms})
+        emit({**stamp(origin), **report, "allowed": allowed.terms})
         return 0
     reports: list[dict[str, Any]] = []
     failed: dict[str, list[int]] = {}  # message -> lines, so one cause is one fix
@@ -173,7 +181,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         return 1
     emit(
         {
-            **origin.echo(),
+            **stamp(origin),
             "ok": all(r["ok"] for r in reports),
             "texts": len(reports),
             "allowed": allowed.terms,
@@ -205,7 +213,7 @@ def cmd_lookup(args: argparse.Namespace) -> int:
         if plural and e.status.get("kind") == "approved":
             by_plural.setdefault(plural, []).append(e)
     words = [lookup_one(w, by_form, resolved, by_plural) for w in args.words]
-    emit({**origin.echo(), "words": words})
+    emit({**stamp(origin), "words": words})
     return 0
 
 

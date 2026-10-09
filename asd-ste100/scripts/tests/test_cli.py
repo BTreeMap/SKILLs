@@ -78,6 +78,7 @@ class TestCheckJsonl:
         ]
         code, doc, _ = run(["check", "--jsonl", "--text", "\n".join(lines)], capsys)
         assert code == 0 and built == [1] and doc["version"] == "v0.1.2"
+        assert (doc["schema_version"], doc["data"]) == (1, None)
         assert (doc["ok"], doc["texts"], doc["allowed"]) == (False, 2, 0)
         first, second = doc["reports"]
         assert (first["line"], first["id"], first["ok"]) == (1, "a", True)
@@ -212,13 +213,21 @@ class TestLocalData:
         argv = ["check", "--text", "Remove the test.", "--data", str(local)]
         code, report, err = run(argv, capsys)
         assert code == 0 and report["ok"] and report["data"] == str(local)
-        assert "version" not in report and err == ""
+        assert report["version"] is None and err == ""
         assert not cache.exists(), "a local release fills no cache"
 
     def test_lookup_reads_the_directory(self, local, capsys):
         code, doc, _ = run(["lookup", "ensure", "--data", str(local)], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
         assert code == 0 and entry["alternatives"] == ["make sure (v)"]
+
+    def test_every_origin_gives_one_shape(self, local, served, capsys):
+        for argv in (["check", "--text", "Remove it."], ["lookup", "remove"]):
+            _, cached, _ = run(argv, capsys)
+            _, read, _ = run([*argv, "--data", str(local)], capsys)
+            assert list(cached) == list(read), "same keys in the same order"
+            assert (cached["schema_version"], cached["data"]) == (1, None)
+            assert (read["schema_version"], read["version"]) == (1, None)
 
     def test_a_file_off_its_digest_is_exit_one_and_kept(self, local, capsys):
         lexicon = local / "lexicon.json"

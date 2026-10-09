@@ -100,7 +100,7 @@ $R clean
 * `--data DIR` gives a local release: the `data/` directory of a ste-tax
   checkout, with `manifest.json` and the files that it shows. Then `check`
   and `lookup` read only that directory, and do not use the network or the
-  cache. The report gives `data` and not `version`. If a file is missing or
+  cache. The report gives `null` in `version`. If a file is missing or
   its digest is not correct, the exit is 1 and the command does not remove
   the file. Do not use `--data` together with `--version`.
 * Each command writes one JSON document to `stdout`. The `signal:` lines on
@@ -115,6 +115,15 @@ $R clean
 
 ## The report
 
+* The `check` report gives these fields: `schema_version`, `version`,
+  `data`, `mode`, `format`, `ok`, `summary`, `limits`, `counts`,
+  `findings`, `signals`, `skipped`, and `allowed`. With `--section`, it
+  also gives `section`. The `lookup` report gives `schema_version`,
+  `version`, `data`, and `words`. These fields, and the other fields that
+  this section and Commands name, change only if `schema_version` changes.
+* `version` gives the release in the cache. `data` gives the `--data`
+  directory. The other field is `null`.
+* `allowed` gives the number of terms in the allow file.
 * `summary` gives the number of errors and signals of each type, and each
   word to replace. In a long text, read it first.
 * `ok` is `true` only when `findings` is empty. This condition is necessary

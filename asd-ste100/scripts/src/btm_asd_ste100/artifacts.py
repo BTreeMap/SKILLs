@@ -7,7 +7,8 @@ marks a complete fetch. Every load re-hashes the file: a mismatch deletes
 it and fails with exit 2, so the next run refetches and heals.
 
 A local `data/` directory (`--data DIR`) is the other origin: the user owns
-it, so a defect there is exit 1 and nothing in it is deleted.
+it, so a defect there is exit 1 and nothing in it is deleted. Each origin
+echoes both `version` and `data`, the one it is not as null.
 """
 
 from __future__ import annotations
@@ -50,8 +51,8 @@ class Cached:
 
     version: str
 
-    def echo(self) -> dict[str, str]:
-        return {"version": self.version}
+    def echo(self) -> dict[str, str | None]:
+        return {"version": self.version, "data": None}
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,8 +61,8 @@ class Local:
 
     data: Path
 
-    def echo(self) -> dict[str, str]:
-        return {"data": str(self.data)}
+    def echo(self) -> dict[str, str | None]:
+        return {"version": None, "data": str(self.data)}
 
 
 Origin = Cached | Local
