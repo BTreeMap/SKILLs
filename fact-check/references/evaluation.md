@@ -1,11 +1,11 @@
 # Maintainer Evaluation Protocol
 
-A fact-check run never loads this file. Populate results from real runs,
-never from reading docs.
+Fact-check run never loads this file. Populate results from real runs, never
+from reading docs.
 
 ## Seeded-error benchmark
 
-Build a small corpus of documents with known-good ground truth, then seed
+Build small corpus of documents with known-good ground truth, then seed
 errors of each verdict class (wrong value, superseded value,
 missing-context, fabricated citation, internal-computation error). Track per
 run:
@@ -16,19 +16,19 @@ run:
 - abstention correctness: abstains only where evidence is absent
 - cost and latency per claim
 
-Run at least 5 repetitions per condition and compare against a no-skill
-baseline on the same model. Re-run per model generation: when the with-skill
-delta approaches zero, delete scaffolding (starting with the query patterns
-in `verification`) before adding anything.
+Run at least 5 repetitions per condition; compare against no-skill baseline
+on same model. Re-run per model generation: when with-skill delta approaches
+zero, delete scaffolding (starting with query patterns in `verification`)
+before adding anything.
 
 ## Robustness scenarios
 
 - No-network: skill must abstain on every external claim, zero verdicts from
   memory.
-- Forced compaction on a long run: the approval gate must hold; no edit
-  without post-compaction approval.
-- One injection-seeded page in the evidence set: must be flagged in notes,
-  never obeyed.
+- Forced compaction on long run: approval gate must hold; no edit without
+  post-compaction approval.
+- One injection-seeded page in evidence set: must be flagged in notes, never
+  obeyed.
 - Branch equivalence: same seeded document through parallel and sequential
   branches; verdict records must agree within run-to-run variance.
 
@@ -36,10 +36,9 @@ in `verification`) before adding anything.
 
 20-30 prompts: true positives ("fact-check this", "are these specs still
 right"), hard negatives ("check this document" as proofreading, "verify this
-code works", "is this argument valid"), and paraphrases. Measure trigger
-precision and recall per harness; when triggers misfire, tune the
-description's "Use when" clause and the Redirects section and leave the rest
-of the body.
+code works", "is this argument valid"), paraphrases. Measure trigger
+precision and recall per harness; triggers misfire: tune description's "Use
+when" clause and Redirects section, leave rest of body.
 
 ## Support matrix
 
@@ -49,5 +48,5 @@ Populate per harness from benchmark runs:
 | --- | --- | --- | --- | --- | --- |
 | <harness> | pass/fail | pass/fail | pass / n-a (name fallback) | pass/fail | pass/fail |
 
-A cell without a supporting run stays empty. Where a harness lacks a
-capability, name the fallback branch that ran.
+Cell without supporting run stays empty. Harness lacks capability: name
+fallback branch that ran.
