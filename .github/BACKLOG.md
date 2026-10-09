@@ -152,6 +152,10 @@ this shape, so shape it exactly:
    than it should be, as rows of skill, command, expected, happened, cost in
    tool calls, class (contract gap, text gap, script bug, design question).
    This is how the backlog refills; an empty table is suspect.
+8. Anything else worth improving, in your own words: this brief, a law that
+   fought the work, a check that cost more than it caught, a kernel helper
+   you wished existed, the issue's wording, the process. Nothing here is out
+   of bounds; a point raised here is read by the lead, not graded.
 
 ## 8. What the review checks, in order
 
