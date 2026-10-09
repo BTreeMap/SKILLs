@@ -13,16 +13,22 @@ about, keep arriving at.
 record of thinking that did not happen, spent to make ordinary claim feel
 earned: keep personal detail; drop performance of having reflected on it.
 
-<examples>
-  <example>
-    <before>The real question is whether teams can adapt. At its core, what really matters is organizational readiness.</before>
-    <after>The question is whether teams can adapt. That mostly depends on whether the organization is ready to change its habits.</after>
-  </example>
-  <example for="manufactured interiority">
-    <before>The rest came out over four more messages, which is what two months of turning something over without writing any of it down will do. I keep coming back to that.</before>
-    <after>The rest came out over four more messages. I had been thinking about it since July and had never written any of it down.</after>
-  </example>
-</examples>
+**Example**
+
+Before: The real question is whether teams can adapt. At its core, what
+really matters is organizational readiness.
+
+After: The question is whether teams can adapt. That mostly depends on
+whether the organization is ready to change its habits.
+
+**Example: manufactured interiority**
+
+Before: The rest came out over four more messages, which is what two months
+of turning something over without writing any of it down will do. I keep
+coming back to that.
+
+After: The rest came out over four more messages. I had been thinking about
+it since July and had never written any of it down.
 
 ### 28. Announcing the next point
 
@@ -38,20 +44,29 @@ announcement, keep content.
 **Exceptions:** Count reader must hold. Count case targets decoration; count
 helping reader track items across intervening text is navigation.
 
-<examples>
-  <example>
-    <before>Let's dive into how caching works in Next.js. Here's what you need to know.</before>
-    <after>Next.js caches data at multiple layers, including request memoization, the data cache, and the router cache.</after>
-  </example>
-  <example for="casual register">
-    <before>One thing that bit me hard, so pay attention to this part: the webpack dev server doesn't send the CORS header by default.</before>
-    <after>The webpack dev server doesn't send the CORS header by default.</after>
-  </example>
-  <example for="announcing the count">
-    <before>Two things still sit outside the proof. One is the trusted base. The other is the product decision nobody thought hard enough about.</before>
-    <after>The trusted base sits outside the proof: the kernel, the compiler, and the axioms you accept. So does the product decision nobody thought hard enough about.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Let's dive into how caching works in Next.js. Here's what you need
+to know.
+
+After: Next.js caches data at multiple layers, including request
+memoization, the data cache, and the router cache.
+
+**Example: casual register**
+
+Before: One thing that bit me hard, so pay attention to this part: the
+webpack dev server doesn't send the CORS header by default.
+
+After: The webpack dev server doesn't send the CORS header by default.
+
+**Example: announcing the count**
+
+Before: Two things still sit outside the proof. One is the trusted base. The
+other is the product decision nobody thought hard enough about.
+
+After: The trusted base sits outside the proof: the kernel, the compiler,
+and the axioms you accept. So does the product decision nobody thought hard
+enough about.
 
 ### 29. A heading or question repeated in the first sentence
 
@@ -59,26 +74,32 @@ helping reader track items across intervening text is navigation.
 opening by repeating question it was asked, common in prose that began as
 chat reply. Remove repeated sentence.
 
-<examples>
-  <example>
-    <before>
+**Example**
+
+Before:
+
+```markdown
 ## Performance
 
 Speed matters.
 
 When users hit a slow page, they leave.
-    </before>
-    <after>
+```
+
+After:
+
+```markdown
 ## Performance
 
 When users hit a slow page, they leave.
-    </after>
-  </example>
-  <example for="restated question">
-    <before>Whether the review burden actually shrinks is a good question. The review burden does shrink, because the reviewed artifact is smaller.</before>
-    <after>The review burden shrinks, because the reviewed artifact is smaller.</after>
-  </example>
-</examples>
+```
+
+**Example: restated question**
+
+Before: Whether the review burden actually shrinks is a good question. The
+review burden does shrink, because the reviewed artifact is smaller.
+
+After: The review burden shrinks, because the reviewed artifact is smaller.
 
 ### 30. Writing about the previous version
 
@@ -86,12 +107,13 @@ When users hit a slow page, they leave.
 Mention previous version only in change logs, release notes, migration
 guides, other documents about change.
 
-<examples>
-  <example>
-    <before>This function was added to replace the previous approach of iterating through all items, which caused O(n²) performance.</before>
-    <after>This function uses a hash map for O(1) lookups, avoiding the O(n²) cost of naive iteration.</after>
-  </example>
-</examples>
+**Example**
+
+Before: This function was added to replace the previous approach of
+iterating through all items, which caused O(n²) performance.
+
+After: This function uses a hash map for O(1) lookups, avoiding the O(n²)
+cost of naive iteration.
 
 ### 31. Forced punchlines and dramatic fragments
 
@@ -100,12 +122,13 @@ guides, other documents about change.
 **Exceptions:** One short sentence for emphasis. Flag dramatic fragments
 only when several appear in a row.
 
-<examples>
-  <example>
-    <before>Then AlphaEvolve arrived. It had no preference for symmetry. No aesthetic prior. No nostalgia for human taste. The old rules were gone.</before>
-    <after>AlphaEvolve changed the search because it did not favor symmetry or human-looking designs. That made some of the older assumptions less useful.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Then AlphaEvolve arrived. It had no preference for symmetry. No
+aesthetic prior. No nostalgia for human taste. The old rules were gone.
+
+After: AlphaEvolve changed the search because it did not favor symmetry or
+human-looking designs. That made some of the older assumptions less useful.
 
 ### 32. Formulaic sayings
 
@@ -123,16 +146,21 @@ scope creep, label writer defines and then uses are vocabulary; coined-label
 case targets undefined label posing as one. Suffix match alone is weak: tax,
 debt, trap are ordinary literal words.
 
-<examples>
-  <example>
-    <before>Symmetry is the language of trust. Efficiency becomes a trap when teams forget the human layer.</before>
-    <after>Symmetric layouts often feel more predictable to users. Teams can over-optimize workflows and miss how people actually use them.</after>
-  </example>
-  <example for="invented compound label">
-    <before>This is the specification vacuum, and it explains why the rollout stalled.</before>
-    <after>Nobody had written the specification down, which is why the rollout stalled.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Symmetry is the language of trust. Efficiency becomes a trap when
+teams forget the human layer.
+
+After: Symmetric layouts often feel more predictable to users. Teams can
+over-optimize workflows and miss how people actually use them.
+
+**Example: invented compound label**
+
+Before: This is the specification vacuum, and it explains why the rollout
+stalled.
+
+After: Nobody had written the specification down, which is why the rollout
+stalled.
 
 ### 33. Fake-candid openings and honesty qualifiers
 
@@ -150,16 +178,18 @@ State point directly.
 quoted speech, stay. Sign is standalone theatrical opener, or writer marking
 own claim as the honest one.
 
-<examples>
-  <example>
-    <before>Is it worth the price? Honestly? It depends on how often you'll use it.</before>
-    <after>Whether it's worth the price depends on how often you'll use it.</after>
-  </example>
-  <example for="honesty qualifier">
-    <before>The honest limitation: I cannot say whether either model would pass.</before>
-    <after>I cannot say whether either model would pass.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Is it worth the price? Honestly? It depends on how often you'll use
+it.
+
+After: Whether it's worth the price depends on how often you'll use it.
+
+**Example: honesty qualifier**
+
+Before: The honest limitation: I cannot say whether either model would pass.
+
+After: I cannot say whether either model would pass.
 
 ### 34. Answering objections no one raised
 
@@ -175,12 +205,13 @@ claim: state that claim directly.
 **Exceptions:** Keep objection when text names its source or answers it in
 full. Direct claim such as "the API is not thread-safe" is not this pattern.
 
-<examples>
-  <example>
-    <before>This isn't mainly about prompt length, and I'm not arguing that documentation doesn't matter. You could categorize the problem another way, but the issue is whether the agent can use the instruction when it acts.</before>
-    <after>The issue is whether the agent can use the instruction when it acts.</after>
-  </example>
-</examples>
+**Example**
+
+Before: This isn't mainly about prompt length, and I'm not arguing that
+documentation doesn't matter. You could categorize the problem another way,
+but the issue is whether the agent can use the instruction when it acts.
+
+After: The issue is whether the agent can use the instruction when it acts.
 
 ### 35. Rejecting fake alternatives
 
@@ -198,9 +229,12 @@ design document, tutorial, or argument; remove only unlikely option text
 dismisses and never uses again. One rejected option may be valid; several
 short, unrelated rejections are stronger sign.
 
-<examples>
-  <example>
-    <before>Session tokens are rotated every 24 hours. A tempting approach would be to rotate them by restarting the auth service on a cron job, but that would drop every active session. Rotation happens in place, and clients refresh transparently.</before>
-    <after>Session tokens are rotated every 24 hours, in place, and clients refresh transparently.</after>
-  </example>
-</examples>
+**Example**
+
+Before: Session tokens are rotated every 24 hours. A tempting approach would
+be to rotate them by restarting the auth service on a cron job, but that
+would drop every active session. Rotation happens in place, and clients
+refresh transparently.
+
+After: Session tokens are rotated every 24 hours, in place, and clients
+refresh transparently.

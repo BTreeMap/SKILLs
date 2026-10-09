@@ -59,7 +59,9 @@ Both loads happen, whatever register lead already writes in.
 
 ## 4. Hand it off
 
-<template for="brief">
+**Template: brief**
+
+```text
 TASK
 <one sentence naming the deliverable>
 
@@ -81,7 +83,7 @@ Output exactly:
 
 LIMIT
 <cap>. On hitting it, output what is settled and name what is open.
-</template>
+```
 
 ## 5. On output
 
@@ -89,11 +91,10 @@ Output arrives: judge it under `examine` before acting on it.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>All six fields present, each stated or marked not applicable with reason.</item>
-  <item>Every judgment delegate must make has its evidence resolved or its decision rule stated.</item>
-  <item>Rules field is excerpt of what this task can break, not pasted document.</item>
-  <item>Contract names one output shape, forbids anything around it.</item>
-  <item>Spawn permission stated.</item>
-  <item>Brief carries no hedge, pleasantry, or instruction that binds nothing.</item>
-</checklist>
+- All six fields present, each stated or marked not applicable with reason.
+- Every judgment delegate must make has its evidence resolved or its
+  decision rule stated.
+- Rules field is excerpt of what this task can break, not pasted document.
+- Contract names one output shape, forbids anything around it.
+- Spawn permission stated.
+- Brief carries no hedge, pleasantry, or instruction that binds nothing.

@@ -73,25 +73,23 @@ reference topic.
   runnable commands.
 * Table keyed by verb, mode, or level, each row loading file of that name:
   say so once above table, drop column, name any row that deviates.
-* Number list when order matters; bullet otherwise; table only when shared
-  columns make lookup cheaper.
 * Command sibling skill's capability in slash form as unconditional step
   ("read PDFs with `/read-pdf`"). Answer environment condition (no network,
   unreachable file) with fallback chain naming degraded path.
 * Use example only to resolve likely mistake. Every positive example
   conforms to this standard; label intentional counterexample.
-* Wrap every example, template, payload in XML from this closed set; tag
-  names kind of block, `for` carries subject. Tags in kebab-case; blank line
-  before opening tag; open `<![CDATA[` on own line inside tag whose payload
-  formatter would rewrap.
-
-| Container | Children |
-| --- | --- |
-| `instructions` | `rule` |
-| `checklist` | `item` |
-| `procedure` | `phase`, `step` |
-| `examples` | `example` holding `before`, `after`, `variant`, `context` |
-| `template`, `commands` | none |
+* Structure with Markdown only: heading per section, numbered list for
+  ordered steps, bullets for rules and checks, table only when shared
+  columns make lookup cheaper.
+* Fence every block agent copies, runs, or must read byte for byte
+  (template, command, code, multi-line example text); info string names
+  content (`markdown`, `text`, `bash`, or language). Body holds fence: four
+  backticks.
+* Block whose purpose heading above already names: no label. Otherwise one
+  bold label. Example: `**Example: subject**`, then `Context:`, `Before:`,
+  `After:`, `Variant:`, each opening own paragraph; part longer than one
+  line, or holding Markdown, goes in fence under its label.
+* No XML tag in skill text except literal skill emits or reads.
 
 ## Content
 
@@ -195,58 +193,89 @@ change text until it holds. Keep scores and runs out of skill. Then write
 finished `SKILL.md` into codebase, or return it as one raw Markdown block
 with nothing around it.
 
-<checklist>
-  <item>Frontmatter: only spec fields, canonical order; `name` matches directory; description in capability-then-"Use when" form; library's descriptions total under 7,000 characters; argument hint matches body's verbs, levels, modes.</item>
-  <item>Opening paragraph names task and deliverable; Registry first `##`; Redirects follows with condition-colon-destination bullets.</item>
-  <item>Every bundled file cited by registered name; examples, templates, payloads in closed-set XML tags.</item>
-  <item>Every bundled file spares some invocation text it does not need; what every run loads at start sits in spine; files always loaded together are one file.</item>
-  <item>Every step names exact tools, flags, inputs, outputs, stopping conditions; project-specific values parameterized or derived.</item>
-  <item>Delegation, where any, through `/summon` with only caller's unit, record, rules, output shape, cap, gate.</item>
-  <item>Each sentence supplies action, condition, rule, context, or example; `/humanize` sweep finds no filler; negations, numbers, literals, boundaries survived every cut.</item>
-  <item>Any bundled script follows `scripts` on responsibility placement, heuristic signals, skipped-check reporting, member layout, request-origin chain; no `SKILL.md` names `BTM_USER_AGENT` or `BTM_CONTACT`.</item>
-  <item>Gotchas hold non-obvious traps; no placeholder text outside templates.</item>
-  <item>Fresh agent can execute skill from its text alone, with no session memory or clarifying question.</item>
-</checklist>
+**Checklist**
+
+- Frontmatter: only spec fields, canonical order; `name` matches directory;
+  description in capability-then-"Use when" form; library's descriptions
+  total under 7,000 characters; argument hint matches body's verbs, levels,
+  modes.
+- Opening paragraph names task and deliverable; Registry first `##`;
+  Redirects follows with condition-colon-destination bullets.
+- Every bundled file cited by registered name; structure Markdown only;
+  copied or byte-exact blocks fenced with info string; no XML tag but
+  literal skill emits or reads.
+- Every bundled file spares some invocation text it does not need; what
+  every run loads at start sits in spine; files always loaded together are
+  one file.
+- Every step names exact tools, flags, inputs, outputs, stopping conditions;
+  project-specific values parameterized or derived.
+- Delegation, where any, through `/summon` with only caller's unit, record,
+  rules, output shape, cap, gate.
+- Each sentence supplies action, condition, rule, context, or example;
+  `/humanize` sweep finds no filler; negations, numbers, literals,
+  boundaries survived every cut.
+- Any bundled script follows `scripts` on responsibility placement,
+  heuristic signals, skipped-check reporting, member layout, request-origin
+  chain; no `SKILL.md` names `BTM_USER_AGENT` or `BTM_CONTACT`.
+- Gotchas hold non-obvious traps; no placeholder text outside templates.
+- Fresh agent can execute skill from its text alone, with no session memory
+  or clarifying question.
 
 ## Examples
 
-<examples>
+**Example: distillation**
 
-  <example for="distillation">
-    <context>Raw history to reproducible step.</context>
-    <before>I tried bumping the dependency directly, the lockfile drifted and CI failed, then I realized this repo regenerates the lock via `make lock`, so I ran that and CI passed.</before>
-    <after>
-      <procedure>
-        <step>Regenerate the lockfile with the repository's command: `make lock`.</step>
-        <step>Commit the manifest and the lockfile together.</step>
-      </procedure>
-      Gotcha: editing the lockfile by hand drifts CI; regenerate it.
-    </after>
-  </example>
+Context: Raw history to reproducible step.
 
-  <example for="description">
-    <context>Routing description.</context>
-    <before>This skill helps format python code using black and flake8.</before>
-    <after>Formats and lints Python code to the project's configured style, changing no behavior. Use when asked to format Python, lint a file, or fix style warnings.</after>
-  </example>
+Before: I tried bumping the dependency directly, the lockfile drifted and CI
+failed, then I realized this repo regenerates the lock via `make lock`, so I
+ran that and CI passed.
 
-  <example for="parameterization">
-    <context>Incidental project specifics removed.</context>
-    <before>Run the build script located at `/users/joe/projects/manifold/scripts/build.sh`.</before>
-    <after>Run the build script at `<repository-root>/scripts/build.sh`.</after>
-  </example>
+After:
 
-  <example for="xml-isolation">
-    <context>Payload fenced so it reads as data.</context>
-    <before>
-      Your config file should look like this:
-      { "port": 8080 }
-    </before>
-    <after>
-      Create the configuration file from this template:
-      <template for="config">
-      { "port": 8080 }
-      </template>
-    </after>
-  </example>
-</examples>
+```markdown
+1. Regenerate the lockfile with the repository's command: `make lock`.
+2. Commit the manifest and the lockfile together.
+
+Gotcha: editing the lockfile by hand drifts CI; regenerate it.
+```
+
+**Example: description**
+
+Context: Routing description.
+
+Before: This skill helps format python code using black and flake8.
+
+After: Formats and lints Python code to the project's configured style,
+changing no behavior. Use when asked to format Python, lint a file, or fix
+style warnings.
+
+**Example: parameterization**
+
+Context: Incidental project specifics removed.
+
+Before: Run the build script located at
+`/users/joe/projects/manifold/scripts/build.sh`.
+
+After: Run the build script at `<repository-root>/scripts/build.sh`.
+
+**Example: fenced payload**
+
+Context: Payload fenced so it reads as data.
+
+Before:
+
+```text
+Your config file should look like this:
+{ "port": 8080 }
+```
+
+After:
+
+````markdown
+Create the configuration file from this template:
+
+```json
+{ "port": 8080 }
+```
+````
