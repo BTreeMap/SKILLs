@@ -65,6 +65,44 @@ class TestCheck:
         assert code == 2 and "ste-tax v0.1.2" in err
 
 
+class TestCheckJsonl:
+    def test_one_report_per_line_from_one_lexicon_index(
+        self, served, monkeypatch, capsys
+    ):
+        built, index = [], cli.vocabulary
+        monkeypatch.setattr(cli, "vocabulary", lambda x: built.append(1) or index(x))
+        lines = [
+            json.dumps({"id": "a", "text": "Remove the test."}),
+            "",
+            json.dumps({"text": "Ensure the test."}),
+        ]
+        code, doc, _ = run(["check", "--jsonl", "--text", "\n".join(lines)], capsys)
+        assert code == 0 and built == [1] and doc["version"] == "v0.1.2"
+        assert (doc["ok"], doc["texts"], doc["allowed"]) == (False, 2, 0)
+        first, second = doc["reports"]
+        assert (first["line"], first["id"], first["ok"]) == (1, "a", True)
+        assert (second["line"], "id" in second, second["ok"]) == (3, False, False)
+
+    def test_every_bad_line_is_named_before_any_fetch(self, cache, monkeypatch, capsys):
+        def offline(*_a, **_k):
+            raise AssertionError("a rejected batch must not load a release")
+
+        monkeypatch.setattr(cli, "client_for", offline)
+        lines = ['{"text": "x"}', "not json", '{"txt": "y"}', '{"text": " "}']
+        code, doc, _ = run(["check", "--jsonl", "--text", "\n".join(lines)], capsys)
+        assert code == 1 and doc["unchanged"].startswith("nothing")
+        wheres = [r["where"] for r in doc["rejected"]]
+        assert wheres == ["line 2", "line 3.text", "line 3.txt", "line 4.text"]
+
+    def test_one_cause_on_many_lines_is_one_fix(self, served, capsys):
+        lines = [json.dumps({"text": "Remove it."})] * 2
+        argv = ["check", "--jsonl", "--section", "A", "--text", "\n".join(lines)]
+        code, doc, _ = run(argv, capsys)
+        ((problem,),) = [doc["rejected"]]
+        assert code == 1 and problem["where"] == "lines 1, 2"
+        assert "--format markdown" in problem["fix"]
+
+
 class TestLookup:
     def test_an_unapproved_word_comes_with_its_alternatives(self, served, capsys):
         code, doc, _ = run(["lookup", "Ensure"], capsys)

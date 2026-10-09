@@ -51,7 +51,7 @@ R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-asd-
 
 <commands for="surface">
 $R fetch [--version TAG]
-$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--version TAG | --data DIR]
+$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--jsonl] [--version TAG | --data DIR]
 $R lookup WORD [WORD ...] [--version TAG | --data DIR]
 $R clean
 </commands>
@@ -65,6 +65,13 @@ $R clean
   table cell is a sentence. `--section HEADING` keeps only that heading and
   its lines, until the next heading. With `--format text` (the default), an
   empty line ends a paragraph.
+* With `--jsonl`, each line of the text is one JSON object:
+  `{"text": "...", "id": "..."}`. The `id` is optional. `check` reads the
+  dictionary one time and gives one report for each line in `reports`, with
+  its `line` and its `id`. The `ok` at the top is `true` only when each
+  report has `ok: true`. Use `--jsonl` to examine many texts. If one line is
+  not correct, `check` gives the errors of all lines, with exit 1, and gives
+  no reports.
 * An inline code span counts as one word, and `check` does not examine the
   words in it. Text in quotation marks is a technical noun. It counts as one
   word, and the report shows it in a `quotation` signal.

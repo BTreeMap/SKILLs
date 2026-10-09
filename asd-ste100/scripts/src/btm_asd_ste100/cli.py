@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +37,11 @@ from btm_asd_ste100.check import (
 from btm_asd_ste100.layout import Cut, Format
 from btm_asd_ste100.records import Dictionary, Entry, Lexicon, Manifest, Rules, spelled
 from btm_corekit import (
+    Admission,
+    CommandError,
     Commands,
+    Diagnostic,
+    Model,
     Optional,
     Parser,
     Required,
@@ -43,6 +49,7 @@ from btm_corekit import (
     clean_cache,
     client_for,
     emit,
+    rejection,
     run_cli,
     text,
 )
@@ -53,6 +60,7 @@ STOP = re.compile(r"(?<=[.!?])\s+")
 # part of speech can carry two qualifiers ("few" and "a few").
 Resolved = dict[tuple[str, str | None, str | None], list[str]]
 ALLOW = Optional("allow", inline=False)
+UNCHANGED = "nothing: check writes no state"
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
@@ -84,16 +92,94 @@ def release(args: argparse.Namespace) -> tuple[Origin, Manifest]:
     return Cached(args.version), manifest
 
 
+class TextLine(Model):
+    """One `--jsonl` line: a text, and the caller's key for it, echoed."""
+
+    text: str
+    id: str | int | None = None
+
+
+Batch = list[tuple[int, TextLine]]  # (1-based line number, item), in input order
+
+
+@dataclass(frozen=True, slots=True)
+class Refused:
+    """Every problem of every line; one bad line rejects the whole batch."""
+
+    problems: list[Diagnostic]
+
+
+LINE_SHAPE = '{"text": "...", "id": "..."}'
+
+
+def items(raw: str) -> Batch | Refused:
+    """Each non-blank line of `raw` as a `TextLine`, or every problem at once."""
+    gate = Admission()
+    batch: Batch = []
+    for number, line in enumerate(raw.splitlines(), start=1):
+        if not line.strip():
+            continue
+        where = f"line {number}"
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as err:
+            gate.fail(where, f"make the line one JSON object: {err}", LINE_SHAPE)
+            continue
+        match gate.decode(TextLine, row, where, LINE_SHAPE):
+            case None:
+                pass
+            case TextLine(text=body) if not body.strip():
+                gate.fail(f"{where}.text", "give a text that is not empty")
+            case item:
+                batch.append((number, item))
+    return Refused(gate.problems) if gate.problems else batch
+
+
 def cmd_check(args: argparse.Namespace) -> int:
+    """One report, or with `--jsonl` one per line from one lexicon index:
+    O(lexicon) once, then O(n) per text (3,855 short texts: about 2 s)."""
     body = text(TEXT, args)
     allowed = allow_terms(text(ALLOW, args))
+    batch = items(body) if args.jsonl else None
+    if isinstance(batch, Refused):
+        emit(rejection(batch.problems, UNCHANGED, TEXT))
+        return 1
     origin, manifest = release(args)
     lexicon = load(manifest, origin, "lexicon.json", Lexicon)
     rules = load(manifest, origin, "rules.json", Rules)
     lim = limits(rules, args.mode)
     how = Cut(args.format, args.section)
-    report = check(body, vocabulary(lexicon), lim, allowed, how)
-    emit({**origin.echo(), **report, "allowed": allowed.terms})
+    vocab = vocabulary(lexicon)
+    if batch is None:
+        report = check(body, vocab, lim, allowed, how)
+        emit({**origin.echo(), **report, "allowed": allowed.terms})
+        return 0
+    reports: list[dict[str, Any]] = []
+    failed: dict[str, list[int]] = {}  # message -> lines, so one cause is one fix
+    for number, item in batch:
+        try:
+            report = check(item.text, vocab, lim, allowed, how)
+        except CommandError as err:
+            failed.setdefault(str(err), []).append(number)
+            continue
+        key = {} if item.id is None else {"id": item.id}
+        reports.append({"line": number, **key, **report})
+    if failed:
+        problems = [
+            Diagnostic(f"line{'s' * (len(ns) > 1)} {', '.join(map(str, ns))}", fix)
+            for fix, ns in failed.items()
+        ]
+        emit(rejection(problems, UNCHANGED, TEXT))
+        return 1
+    emit(
+        {
+            **origin.echo(),
+            "ok": all(r["ok"] for r in reports),
+            "texts": len(reports),
+            "allowed": allowed.terms,
+            "reports": reports,
+        }
+    )
     return 0
 
 
@@ -267,6 +353,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="HEADING",
         help="with --format markdown, check only this heading and its lines, "
         "up to the next heading of any level",
+    )
+    checker.add_argument(
+        "--jsonl",
+        action="store_true",
+        help='the text is JSON Lines, one {"text": ..., "id": ...} object per '
+        "line; one report per line under reports, the release loaded once",
     )
     add_release(checker)
 
