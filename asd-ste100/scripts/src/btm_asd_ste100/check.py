@@ -8,8 +8,9 @@ not approved and not allowed (1.1), an -ing form outside the approved few
 passive voice candidates (3.6), a second instruction in one sentence
 (5.2), an approved word that is also an unapproved headword (1.2), an
 all-caps token passed as an abbreviation. Number words pass as technical
-nouns (1.5, category 9), and quoted text (1.5, category 10) is signaled,
-not checked. Every finding and signal names its source line.
+nouns (1.5, category 9), signaled when also an unapproved headword (zero
+(v)), and quoted text (1.5, category 10) is signaled, not checked. Every
+finding and signal names its source line.
 
 Cost: n tokens. Splitting and tokenizing are compiled patterns with one
 class per quantifier, linear in characters and run in C; every lookup is
@@ -186,6 +187,7 @@ NUMBERS = frozenset(
         "tenth",
     ]
 )
+TECHNICAL_NOUN = "tn"  # the part of speech rule 1.5 gives a number word
 ARTICLES = frozenset(["a", "an", "the"])
 BE_FORMS = frozenset(["am", "is", "are", "was", "were", "be", "been", "being"])
 CONTRACTED = ("n't", "'re", "'ve", "'ll", "'d", "'m")
@@ -565,8 +567,12 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     after_number = False
     for i, (orig, tok) in enumerate(zip(originals, tokens, strict=True)):
         number = bool(DIGIT.search(tok))
-        passes = number or tok in NUMBERS or (after_number and tok in UNITS)
+        unit = after_number and tok in UNITS
+        passes = number or tok in NUMBERS or unit
         after_number = number
+        if tok in NUMBERS and not unit and i not in inside:
+            before = tokens[i - 1] if i else ""
+            pos_signal(tok, (index, f"{before} {orig}".strip()), ctx.vocab, report)
         if passes or i in inside or tok in ctx.allowed.words:
             continue
         if tok.endswith(CONTRACTED) or tok in S_CONTRACTIONS:
@@ -783,7 +789,8 @@ def pos_signal(
     """An approved form that is also an unapproved headword may be used in
     the part of speech that is not approved: CHECK (n) against check (v).
     `where` is the sentence index and the word with the one before it, the
-    evidence for the part of speech."""
+    evidence for the part of speech. A number word is also a technical noun
+    (zero (TN) against zero (v))."""
     index, context = where
     seen = report.per_word.get(("part_of_speech", tok))
     if seen is not None:
@@ -792,6 +799,8 @@ def pos_signal(
             seen["context"].append(context)
         return
     poses = vocab.approved_pos.get(tok, frozenset())
+    if tok in NUMBERS:
+        poses |= {TECHNICAL_NOUN}
     # 'tests' is the plural of TEST (n) and the -s form of test (v): the
     # spec lists no forms of unapproved words, so try the regular stems.
     own = vocab.unapproved.get(tok) or next(

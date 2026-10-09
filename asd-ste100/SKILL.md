@@ -168,6 +168,9 @@ $R clean
     not approved in a different part of speech. It gives the alternatives
     for that part of speech. Its `context` shows the word with the word that
     comes before it. This is usually sufficient to find the part of speech.
+    A number word, for example "zero", is a technical noun. If it is also a
+    word that is not approved in a different part of speech, this signal
+    shows it.
   * `abbreviation` shows a word in capital letters that the checker accepted
     as a label.
   * `quotation` shows text in quotation marks, which the checker accepts as

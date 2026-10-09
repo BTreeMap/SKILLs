@@ -298,6 +298,23 @@ class TestSignals:
             ["v"],
         )
 
+    def test_a_number_word_that_is_an_unapproved_verb_is_signaled(self, run):
+        """ZERO is a technical noun as a number (rule 1.5) and zero (v) is
+        not approved: 'Zero the opening.' passes but carries the signal."""
+        report = run("Zero the opening. Set the opening to zero.", allow="set\nto")
+        assert report["ok"]
+        (s,) = report["signals"]
+        assert (s["kind"], s["token"], s["approved_as"], s["not_approved_as"]) == (
+            "part_of_speech",
+            "zero",
+            ["tn"],
+            ["v"],
+        )
+        assert (s["alternatives"], s["context"]) == (["zero (TN)"], ["Zero", "to zero"])
+
+    def test_a_number_word_that_is_no_headword_is_not_signaled(self, run):
+        assert run("Remove two.")["signals"] == []
+
     def test_capitals_in_mixed_text_pass_as_a_label(self, run):
         report = run("Remove the EMER opening.")
         assert report["ok"] and kinds(report, "signals") == ["abbreviation"]

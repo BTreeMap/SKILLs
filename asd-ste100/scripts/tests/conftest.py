@@ -301,6 +301,14 @@ LEXICON = {
             "help": "Use AGAIN (adv) or BACK (adv) with the basic word.",
         },
         {
+            "word": "zero",
+            "pos": "v",
+            "qualifier": None,
+            "forms": [],
+            "alternatives": [{"technical": "zero", "class": "tn"}],
+            "note": None,
+        },
+        {
             "word": "utilize",
             "pos": "v",
             "qualifier": None,
