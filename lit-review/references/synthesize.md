@@ -151,3 +151,6 @@ verb, artifact to pass. Invoke none unasked.
   session's identifier to its `link <session> --corpus`.
 - Question stays open past what corpus answers: `/ponder` with open
   question; its sources `cite --corpus <this session>` for corpus records.
+- Included papers carry qualitative evidence (interview excerpts, open
+  responses) worth coding across studies: `/thematic-analysis` on extracted
+  passages, each unit keyed by paper key.

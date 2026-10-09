@@ -113,6 +113,14 @@ Apply as given; record user override in analysis header next to approach.
    figures under codebook school only; limitations, including Invariant 6's
    disclosure where it applies.
 
+## Handoffs
+
+After report, offer next step whose condition holds. Invoke none unasked.
+
+- Theme raises question this corpus cannot answer (cause, prevalence outside
+  sample, what research says): `/ponder` with question; pass theme's claim
+  and extracts as context, never as evidence beyond corpus.
+
 ## Gotchas
 
 - Saturation is incoherent stopping rationale for interpretive work. State

@@ -81,3 +81,5 @@ verb, artifact to pass. Invoke none unasked.
   `/lit-review` with question; pass DOIs from source records as seeds.
 - Answer became research plan: `/draft-paper design` with answer and its
   Sources section; pass this session's project to its `init --project`.
+- Answer rests on qualitative text (interviews, tickets, open responses)
+  read only in samples: `/thematic-analysis` on that corpus.
