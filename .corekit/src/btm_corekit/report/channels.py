@@ -1,4 +1,11 @@
-"""The two output channels: one JSON document on stdout, advisories on stderr."""
+"""The two output channels: one JSON document on stdout, advisories on stderr.
+
+The document is indented when stdout is a terminal, for a person reading
+it, and one line when stdout is a pipe or a file, for the agent parsing it:
+the line form drops the indentation, about a third of a batch report's
+bytes, and loses nothing. Both forms keep json's default `": "` separator,
+so a `grep '"ok": true'` matches either.
+"""
 
 from __future__ import annotations
 
@@ -16,7 +23,8 @@ JSON: TypeAlias = (
 
 
 def emit(document: Mapping[str, Any]) -> None:
-    print(json.dumps(document, indent=2, ensure_ascii=False))
+    indent = 2 if sys.stdout.isatty() else None
+    print(json.dumps(document, indent=indent, ensure_ascii=False))
 
 
 def signal(message: str) -> None:
