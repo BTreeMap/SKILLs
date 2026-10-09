@@ -1,28 +1,28 @@
 # Extract: reading, records, appraisal
 
-The phase takes the included papers and returns, for each, one extraction
-record on the pad and a `read_level` set with `update`. Synthesis reads the
-records; anything missing from them needs a re-read later.
+Phase takes included papers; returns, for each, one extraction record on pad
+and `read_level` set with `update`. Synthesis reads records; anything
+missing from them needs re-read later.
 
 ## Reading order and depth
 
-- Start with the anchor: the included paper most cited by the others.
-- Read each paper's `pdf_url` with `/read-pdf`; its page markers become the
-  claim locations in the extraction record. When no PDF is reachable, fall
-  back to the landing page's HTML text, then to the abstract as the floor.
+- Start with anchor: included paper most cited by the others.
+- Read each paper's `pdf_url` with `/read-pdf`; its page markers become
+  claim locations in extraction record. No PDF reachable: fall back to
+  landing page's HTML text, then abstract as floor.
 - After each paper, set its `read_level` (`abstract` or `full-text`) with
   `update`. Invariant 5 makes this label the ceiling for how its claims
-  appear in the report.
-- Read a survey among the included papers for its own claims and its
-  reference list; per invariant 5, cite its summaries of other papers as the
-  survey's characterization, never as those papers.
+  appear in report.
+- Read survey among included papers for its own claims and reference list;
+  per invariant 5, cite its summaries of other papers as survey's
+  characterization, never as those papers.
 
 ## Extraction record
 
 Jot one record per paper; `status` and `brief` list included papers with no
-extraction entry. Fill only what the source states and write "not reported"
-for the rest. The body is free beyond `kind` and `key`: add per-paper
-hypothesis-directed questions whenever the argument needs them.
+extraction entry. Fill only what source states; write "not reported" for
+rest. Body free beyond `kind` and `key`: add per-paper hypothesis-directed
+questions whenever argument needs them.
 
 <template for="extraction">
 $R jot "$S" <<'JSON'
@@ -39,27 +39,26 @@ JSON
 
 ## Quality appraisal
 
-Appraise while reading, one judgment per dimension, weighed together and
-never summed into one score:
+Appraise while reading, one judgment per dimension, weighed together, never
+summed into one score:
 
 | Dimension | Question |
 | --- | --- |
-| Method | Does the design test the claim? |
-| Data | Is the sample or dataset adequate and appropriate? |
+| Method | Does design test claim? |
+| Data | Sample or dataset adequate and appropriate? |
 | Review status | Peer-reviewed, or preprint (label, do not penalize)? |
 | Reproducibility | Code, data, or protocol available? |
-| Consistency | Do the numbers in text, tables, and abstract agree? |
-| Independence | Funding or affiliation that bears on the claim? |
+| Consistency | Numbers in text, tables, abstract agree? |
+| Independence | Funding or affiliation bearing on claim? |
 
-At full, appraisal shapes how much weight a paper carries in synthesis and
-is mentioned where it matters. At ultra, the report carries the table for
-every included paper.
+Full: appraisal shapes how much weight paper carries in synthesis, mentioned
+where it matters. Ultra: report carries table for every included paper.
 
 ## Parallel extraction
 
-Delegate through `/summon fanout`, one delegate per included paper. In each
-brief: the evidence is the paper's corpus entry and its `pdf_url`; the rules
-are the reading order and depth above, with `/read-pdf` as the reader; the
-contract is the extraction template, returned as the JSON object alone.
-Delegates write no session state; the lead judges each return, then runs
-`jot` and `update` itself, so the branch leaves no trace in the deliverable.
+Delegate through `/summon fanout`, one delegate per included paper. Each
+brief: evidence is paper's corpus entry and its `pdf_url`; rules are reading
+order and depth above, `/read-pdf` as reader; contract is extraction
+template, returned as JSON object alone. Delegates write no session state;
+lead judges each return, then runs `jot` and `update` itself, so branch
+leaves no trace in deliverable.
