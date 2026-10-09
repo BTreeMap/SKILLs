@@ -9,8 +9,14 @@ template alone.
   first, and what the lab stops doing. The target is the pattern's "what it
   has to show" row. It is a headline; `design` expands it into a plan.
 * Sound: each line names what was checked; silence means unchecked.
+* Routed: each piece of work outside the lens, one line, with the sibling
+  the spine's Redirects name for it; the word none when nothing left the
+  lens.
 
 <template for="review">
+# Review: <artifact title>
+<path, URL, or DOI>; read <YYYY-MM-DD>.
+
 ## Constitution
 <origin 1> + <origin 2> + ... [+ new]. Patterns: <rows from the spine's table>.
 <one line per mechanism: the mechanism, its origin with citation, and its tag: as-is, tweaked (what changed), transferred (from where), or new>
@@ -33,6 +39,9 @@ template alone.
 ## Sound
 <at most three lines>
 
+## Routed
+<one line per item: the work and its sibling skill in slash form, or the word none>
+
 ## Ask
 <the one question whose answer changes the direction, or the word none>
 </template>
@@ -40,7 +49,8 @@ template alone.
 ## Completion Checks
 
 <checklist for="verb">
-  <item>The template's sections appear in order with nothing around them.</item>
+  <item>The template's header and sections appear in order with nothing around them.</item>
+  <item>Routed names each item outside the lens with its sibling, or says none.</item>
   <item>Every mechanism line names an origin and a tag, or is tagged new.</item>
   <item>The Setup table has one row per element, each classed and sourced.</item>
   <item>Every claim carries a concrete instrument and a kill test.</item>
