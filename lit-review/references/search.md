@@ -27,8 +27,9 @@ hand with the same fields the script writes.
 - Decompose the question into two to four concepts; for each, list the
   synonyms and near terms the field uses. Different communities name one
   idea differently; missing a vocabulary misses its papers.
-- Run a pilot query per concept pair, skim the top results, refine terms,
-  then run the real queries. Pilot queries are logged like any other.
+- Run a pilot query per concept pair, skim the top results (`--show` lists
+  them in the search envelope), refine terms, then run the real queries.
+  Pilot queries are logged like any other.
 - Plain phrases work for openalex and crossref. arXiv ranks fielded queries
   far better: wrap phrases as `all:"retrieval"` and combine with operators,
   `cat:cs.CL AND all:"retrieval"`. The script passes queries containing `:`

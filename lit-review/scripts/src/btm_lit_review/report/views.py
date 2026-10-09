@@ -194,7 +194,9 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "and offset; "
             f"sources: {', '.join(SOURCES)}; "
             f"snowball sources: {', '.join(GRAPH_SOURCES)}; "
-            "total_matches is null where a source reports no count",
+            "total_matches is null where a source reports no count; the "
+            "envelope adds corpus_size, and search --show adds hits: "
+            "[{key, title, year, status}]",
             "verify": '{"checked": n, "broken_dois": [...], "results": [{key, '
             "title, doi_resolves, doi_http_status, crossref_title_match}]}",
             "exit_codes": "0 done (stderr signals are advisory); 1 fix the input "

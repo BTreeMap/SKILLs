@@ -185,6 +185,32 @@ class TestSearch:
         assert document["truncated"] is False and "matches upstream" not in err
         assert log(session)[0]["offset"] == 100
 
+    def test_show_lists_each_hit_under_its_corpus_key(self, session, capsys, upstream):
+        """A hit already in the corpus is listed under the key it merged
+        into, with its status, so one search call replaces a show call."""
+        upstream(
+            {
+                "meta": {"count": 2},
+                "results": [
+                    {"id": "W1", "doi": "https://doi.org/10.1/a", "title": "Seed"},
+                    {"id": "W9", "display_name": "Fresh", "publication_year": 2024},
+                ],
+            }
+        )
+        argv = ["search", str(session.root), "--source", "openalex"]
+        _, quiet, _ = run(argv, capsys, stdin='{"query": "q"}')
+        assert "hits" not in quiet, "without --show the envelope stays counts only"
+        _, document, _ = run([*argv, "--show"], capsys, stdin='{"query": "q"}')
+        assert document["hits"] == [
+            {"key": "doi:10.1/a", "title": "Seed", "year": None, "status": "candidate"},
+            {
+                "key": "title:fresh",
+                "title": "Fresh",
+                "year": 2024,
+                "status": "candidate",
+            },
+        ]
+
 
 class TestResolveRef:
     def test_openalex_takes_the_native_id_the_paper_carries(self):

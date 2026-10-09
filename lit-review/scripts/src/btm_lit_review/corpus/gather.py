@@ -8,6 +8,7 @@ from typing import Any
 
 from btm_corekit import (
     INDEXES,
+    JSON,
     ByArxiv,
     ByDoi,
     ByNative,
@@ -50,10 +51,13 @@ def record_fetch(
     entry: dict[str, Any],
     fetched: list[Paper],
     total: int | None,
+    *,
+    show: bool = False,
 ) -> None:
     """Shared tail of search and snowball: absorb, log, report. A total the
     index did not report is logged as null and never reads as truncation; a
-    search skipped `offset` ranks, which the truncation check counts."""
+    search skipped `offset` ranks, which the truncation check counts. `show`
+    lists the corpus records this call touched, one O(corpus) pass."""
     log_id = f"s{count_lines(session.log_path) + 1}"
     papers = load_papers(session)
     stamped = [paper.with_(found_by=(log_id,)) for paper in fetched]
@@ -80,7 +84,19 @@ def record_fetch(
             f"{total} matches upstream but only {len(fetched)} fetched{skipped}; "
             f"narrow the query or raise --limit (cap {MAX_LIMIT}){rerun}"
         )
-    emit({**entry, "corpus_size": len(papers)})
+    document: dict[str, JSON] = {**entry, "corpus_size": len(papers)}
+    if show:
+        document["hits"] = [
+            {
+                "key": paper.key,
+                "title": paper.title,
+                "year": paper.year,
+                "status": paper.status,
+            }
+            for paper in papers.values()
+            if log_id in paper.found_by
+        ]
+    emit(document)
 
 
 class Framing(Model):
@@ -134,7 +150,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         "offset": args.offset,
         "criteria_hash": criteria_hash(protocol),
     }
-    record_fetch(session, entry, fetched, total)
+    record_fetch(session, entry, fetched, total, show=args.show)
     return 0
 
 

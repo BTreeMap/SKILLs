@@ -94,6 +94,11 @@ def wire_gather(commands: Commands) -> None:
         metavar="N",
         help="ranked matches to skip before fetching, default 0",
     )
+    search.add_argument(
+        "--show",
+        action="store_true",
+        help="list each hit's key, title, year, and status in the envelope",
+    )
     search.add_argument("--from-year", type=int, default=None)
     search.add_argument("--to-year", type=int, default=None)
     search.set_defaults(func=cmd_search)
