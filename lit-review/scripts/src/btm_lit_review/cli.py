@@ -54,6 +54,7 @@ from btm_lit_review.session import STORE
 from btm_lit_review.slots import DECISIONS, DRAFT, FRAMING, KEYS, QUERY, RULE
 
 MATCH_FIELDS = ("title", "abstract", "venue")
+SHOW_FIELDS = (*MATCH_FIELDS, "key")
 
 
 def rank_offset(raw: str) -> int:
@@ -139,7 +140,12 @@ def wire_curate(commands: Commands) -> None:
     show.add_argument("--status", choices=STATUSES, default="candidate")
     add_slot(show, KEYS, "comma-separated keys; overrides --status")
     add_slot(show, MATCH, "case-insensitive regex over the field --on names")
-    show.add_argument("--on", choices=MATCH_FIELDS, default="title")
+    show.add_argument("--on", choices=SHOW_FIELDS, default="title")
+    show.add_argument(
+        "--found-by",
+        metavar="IDS",
+        help="comma-separated search log ids; keeps the papers they fetched",
+    )
     show.add_argument("--fields", help="comma-separated paper fields")
     show.add_argument("--sort", choices=tuple(SORTS), default="citations")
     show.add_argument("--format", choices=("json", "tsv"), default="json")

@@ -301,6 +301,17 @@ def cmd_show(args: argparse.Namespace) -> int:
         matching = [papers[key] for key in wanted if key in papers]
     else:
         matching = [paper for paper in papers.values() if paper.status == args.status]
+    if args.found_by:
+        fetched_by = set(key_list(args.found_by))
+        logged = {entry.get("id") for entry in read_jsonl(session.log_path)}
+        if unknown := sorted(fetched_by - logged):
+            raise CommandError(
+                f"no search log entry {', '.join(unknown)}; "
+                f"the log holds {len(logged)} entries, s1 onward"
+            )
+        matching = [
+            paper for paper in matching if not fetched_by.isdisjoint(paper.found_by)
+        ]
     if pattern_source:
         pattern = compile_match(pattern_source)
         matching = [

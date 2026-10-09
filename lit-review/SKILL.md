@@ -122,7 +122,7 @@ $R digest "$S" [--status candidate] [--on title] [--clusters 20]
 $R screen "$S" --on title --exclude <<'JSON'
 {"match": "<regex>", "reason": "..."}
 JSON
-$R show "$S" [--status candidate | --keys k1,k2] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv] [--limit 25]
+$R show "$S" [--status candidate | --keys k1,k2] [--found-by s3] [--match <regex> --on abstract] [--fields key,title,year] [--sort year] [--format tsv] [--limit 25]
 $R update "$S" --decisions:file <decisions.json>
 $R jot "$S" [--prose] [--lore] <<'JSON'
 {"kind": "extraction", "key": "<key>", ...}
@@ -142,7 +142,7 @@ $R clean ["$S" | --all]
 | `schema` | Prints every record shape; run it whenever a field name is in doubt. |
 | `search`, `snowball` | Fetch candidates and log each call with its date, source, parameters, and counts; both refuse while the criteria are empty. `snowball` follows citations through `--source`, OpenAlex by default. `--limit` takes 1 to 100, default 25. `search --offset N` skips the first N ranked matches, so a second call at the offset the truncation signal names fetches the ranks past the cap. `search --show` lists each hit's key, title, year, and status under `hits` in the envelope. A source that reports no match count logs `total_matches` as null. |
 | `digest` | Groups the undecided candidates into kinds, each with a label, a count, a selecting rule, and two exemplars; the cheapest screening entry point. |
-| `show` | Reads specific records by key, status, or regex. |
+| `show` | Reads specific records by key, status, or regex. `--found-by` keeps the papers the named search log ids fetched, and `--on key` runs the regex over keys (`^doi:10\.1007/` for one DOI prefix); both narrow the `--status` or `--keys` selection. |
 | `brief` | The resume view and the belief check: findings and gaps with verdicts derived from the live corpus, corpus drift since the previous brief, the citation marker table, unextracted papers, the pad tail, and lore. Run it after compaction and before drafting. |
 | `cite-check` | Checks every `[n]` in the draft against assigned markers. Numbers are append-only: a late inclusion extends the table and existing citations stand. |
 | `status` | The cheap resume view: per-status counts, criteria drift, advisories. |

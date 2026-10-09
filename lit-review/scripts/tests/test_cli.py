@@ -146,6 +146,32 @@ class TestCountFlags:
 
 
 class TestShow:
+    def test_found_by_keeps_what_one_search_fetched(self, session, capsys):
+        code, document, _ = run(
+            ["show", str(session.root), "--status", "included", "--found-by", "s2"],
+            capsys,
+        )
+        assert code == 0
+        assert [p["key"] for p in document["papers"]] == ["doi:10.1/b"]
+        _, none, _ = run(
+            ["show", str(session.root), "--status", "included", "--found-by", "s1"],
+            capsys,
+        )
+        assert none["total"] == 0
+
+    def test_a_found_by_id_the_log_lacks_is_refused(self, session, capsys):
+        code, _, err = run(["show", str(session.root), "--found-by", "s9"], capsys)
+        assert code == 1
+        assert "no search log entry s9" in err
+
+    def test_on_key_matches_a_key_prefix(self, session, capsys):
+        code, document, _ = run(
+            ["show", str(session.root), "--on", "key", "--match", r"^doi:10\.1/c"],
+            capsys,
+        )
+        assert code == 0
+        assert [p["key"] for p in document["papers"]] == ["doi:10.1/c"]
+
     def test_match_fields_and_tsv_compose(self, session, capsys):
         code = main(
             [

@@ -24,8 +24,9 @@ fit. If the criteria feel wrong while screening, record an amendment.
    set.
 4. Drop to `show --status candidate` for the residue and for records you
    need in full, most-cited first. `--match` with `--on title|abstract`
-   narrows by vocabulary; `--fields` with `--format tsv` keeps long listings
-   cheap.
+   narrows by vocabulary, `--on key` by key prefix, and `--found-by` by the
+   search that fetched the paper; `--fields` with `--format tsv` keeps long
+   listings cheap.
 5. Decide each remaining paper include, exclude, or unsure from title,
    venue, year, and abstract alone, judging against the criteria list item
    by item. Unsure costs one full-text look later; wrongly excluded costs a
