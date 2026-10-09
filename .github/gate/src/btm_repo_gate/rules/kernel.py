@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,19 +11,18 @@ from btm_repo_gate.conventions import KERNEL
 from btm_repo_gate.repairs import Finding, RemovePath
 from btm_repo_gate.snapshot import Absent, LinkFarm, Occupied, Repo, Symlink
 
-WORD_CHARS = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-)
+# A top-level `def` or `class` after a newline, the ASCII identifier it
+# introduces, and the `(` that marks a def as a function signature. One
+# quantifier over one class after a literal: linear. The leading `\n` lets the
+# engine skip to candidate lines in C; `^` under MULTILINE tries every
+# position and measured 5x slower over the library's 1 MB of Python. Python
+# iterates once per definition, never per character or line.
+_DEFINITION = re.compile(r"\n(def|class) ([A-Za-z0-9_]+)(\(?)")
 
 
-def _defined_name(line: str, keyword: str) -> str | None:
-    """The identifier a top-level `def`/`class` line introduces, else None."""
-    if not line.startswith(keyword):
-        return None
-    end = len(keyword)
-    while end < len(line) and line[end] in WORD_CHARS:
-        end += 1
-    return line[len(keyword) : end] or None
+def _definitions(text: str) -> list[tuple[str, str, str]]:
+    """Every top-level (keyword, name, paren) in `text`, in file order."""
+    return _DEFINITION.findall("\n" + text)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,11 +64,8 @@ def kernel_symbols(repo: Repo) -> Kernel:
             continue
         if path.name == "__init__.py" and path.parts[-2] == "btm_corekit":
             exported = exported_names(text)
-        for line in text.split("\n"):
-            if name := _defined_name(line, "def "):
-                functions.add(name)
-            elif name := _defined_name(line, "class "):
-                classes.add(name)
+        for keyword, name, _ in _definitions(text):
+            (functions if keyword == "def" else classes).add(name)
     return Kernel(
         frozenset(functions & exported),
         frozenset(classes & exported),
@@ -76,14 +73,11 @@ def kernel_symbols(repo: Repo) -> Kernel:
 
 
 def redefined_kernel_symbols(text: str, kernel: Kernel) -> Iterator[str]:
-    """Defs that shadow a kernel name; skips files with no def/class fast."""
-    if "def " not in text and "class " not in text:
-        return
-    for line in text.split("\n"):
-        if (name := _defined_name(line, "def ")) and name in kernel.functions:
-            if line[len("def ") + len(name) :].startswith("("):
-                yield f"def {name}("
-        elif (name := _defined_name(line, "class ")) and name in kernel.classes:
+    """Top-level defs and classes that shadow a kernel name, in file order."""
+    for keyword, name, paren in _definitions(text):
+        if keyword == "def" and paren and name in kernel.functions:
+            yield f"def {name}("
+        elif keyword == "class" and name in kernel.classes:
             yield f"class {name}"
 
 

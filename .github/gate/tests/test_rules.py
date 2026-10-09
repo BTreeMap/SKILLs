@@ -12,6 +12,7 @@ from btm_repo_gate.cli import find_root, repair_to_fixpoint
 from btm_repo_gate.repairs import _relative_target
 from btm_repo_gate.rules import audit
 from btm_repo_gate.rules.frontmatter import rule_description_budget
+from btm_repo_gate.rules.kernel import Kernel, redefined_kernel_symbols
 from btm_repo_gate.snapshot import snapshot
 
 SKILL = """---
@@ -234,6 +235,20 @@ class TestKernel:
         member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
         (member / "code.py").write_text("def _private(x):\n    return x\n", "utf-8")
         assert "kernel" not in rules_hit(repo)
+
+    def test_only_top_level_definitions_of_the_exact_name_shadow(self):
+        kernel = Kernel(frozenset({"mint"}), frozenset({"Exact"}))
+        text = (
+            "def mint(words):\n"
+            "    def mint(inner):\n"
+            "def minted(words):\n"
+            "def mint = 1\n"
+            "class Exact(Base):\n"
+            "class Exactly:\n"
+            "class Exact:\n"
+        )
+        found = list(redefined_kernel_symbols(text, kernel))
+        assert found == ["def mint(", "class Exact", "class Exact"]
 
     def test_a_legacy_kernel_symlink_is_swept(self, repo):
         (repo / "alpha" / ".corekit").symlink_to("../.corekit")
