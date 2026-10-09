@@ -15,9 +15,9 @@ extrapolation. Moves marked [established] recurred across sources;
 User supplies reviews as text: per reviewer, quoted concerns and score, in
 any readable layout, one block per reviewer:
 
-<template for="review-input">
+```markdown
 - Reviewer <id> (score <n>): <quoted concerns>
-</template>
+```
 
 ## Triage
 
@@ -90,11 +90,11 @@ Rules:
 
 One row per concern; class is its triage class.
 
-<template for="mapping">
+```markdown
 | Reviewer | Concern (quoted one-liner) | Class | Response location | Change made |
 |----------|----------------------------|-------|-------------------|-------------|
 | | | | | |
-</template>
+```
 
 Close rebuttal with AC-facing summary: per reviewer, score trajectory and
 what changed, every accepted point mapped to its revision location.

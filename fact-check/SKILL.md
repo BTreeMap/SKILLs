@@ -134,7 +134,7 @@ report is regenerated from it. Write it in this shape; each `claims` entry
 is Step 2's verdict record plus `status`, holding only `id`, `claim`,
 `span`, `type` until its verdict completes.
 
-<template for="state">
+```json
 {
   "constraints": ["Invariant 1 text", "..."],
   "file": "path of the checked document",
@@ -145,7 +145,7 @@ is Step 2's verdict record plus `status`, holding only `id`, `claim`,
               "status": "pending"}],
   "side_findings": [{"finding": "text", "evidence": ["evidence entries"]}]
 }
-</template>
+```
 
 ## Step 2: Verify
 
@@ -158,7 +158,7 @@ claims: process in batches with state flush between batches.
 Contract identical on every branch. Input: one decontextualized claim, its
 type, document's timestamp (claim-time). Output: one verdict record.
 
-<template for="verdict">
+```json
 {
   "id": "c-07",
   "claim": "decontextualized atomic claim text",
@@ -176,7 +176,7 @@ type, document's timestamp (claim-time). Output: one verdict record.
   "correction": "replacement span text, or null",
   "notes": "conflicts, suspected injection, temporal caveats"
 }
-</template>
+```
 
 Evidence entry is quoted source or, for `spec` claim about live service,
 live probe carrying `probe` (method and URL), `status`, `keys`, `accessed`
@@ -189,9 +189,11 @@ session to ask first). Take `publisher` from its `venue`, `url` from its
 proves paper exists; quote still comes from paper's text. Exit 1: no index
 holds identifier.
 
-<commands for="cite">
+**Commands: cite**
+
+```bash
 $R cite <DOI or arXiv id> [--corpus <lit-review session id or path>]
-</commands>
+```
 
 ### Orchestration
 
@@ -218,10 +220,12 @@ Build evidence-first report from state file with `report`. Bind command once
 per shell; `realpath` required. Read its output; source reading belongs to
 user-instructed troubleshooting.
 
-<commands for="report">
+**Commands: report**
+
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-fact-check"
 $R report --state:file factcheck-state.json
-</commands>
+```
 
 `report` command writes nothing. Exit 0 returns field `report`, filled
 template below, with `claims` and per-verdict `verdicts` counts; present
@@ -234,7 +238,9 @@ Per issue: source span, then evidence quotes (including counter-evidence),
 then verdict and proposed correction. Evidence precedes verdict so user
 judges evidence itself.
 
-<template for="report">
+**Template: report**
+
+```markdown
 ## Fact-Check Report
 
 Checked N claims from <FILE> (claim-time: <DATE-OR-UNKNOWN>).
@@ -271,7 +277,7 @@ c-09: <CLAIM> (<REASON>)
 
 ### Side findings
 - <FINDING> "<VERBATIM QUOTE>" (<PUBLISHER>, accessed <DATE>, <URL>)
-</template>
+```
 
 All values above are illustrative placeholders; never copy concrete names,
 numbers, or URLs from this template into real report.
@@ -318,11 +324,15 @@ follow-up.
 
 ## Completion checks
 
-<checklist>
-  <item>Step 0 probe ran; branch chosen matches actual capabilities and claim count; no verdict produced without retrieval.</item>
-  <item>Every claim in inventory has exactly one verdict record conforming to contract, flushed to state file.</item>
-  <item>Every correction cites two independent sources with verbatim quotes, URLs, access dates, or, for `spec` claim about live service, one tier-1 owner source and one recorded live probe, and report says so.</item>
-  <item>Constraints re-read from state file before every edit; only user-approved corrections applied.</item>
-  <item>Edited paragraphs re-read for coherence; secondary edits reported.</item>
-  <item>Final summary names verdict counts, branch, cost; no follow-up tool or skill auto-invoked.</item>
-</checklist>
+- Step 0 probe ran; branch chosen matches actual capabilities and claim
+  count; no verdict produced without retrieval.
+- Every claim in inventory has exactly one verdict record conforming to
+  contract, flushed to state file.
+- Every correction cites two independent sources with verbatim quotes, URLs,
+  access dates, or, for `spec` claim about live service, one tier-1 owner
+  source and one recorded live probe, and report says so.
+- Constraints re-read from state file before every edit; only user-approved
+  corrections applied.
+- Edited paragraphs re-read for coherence; secondary edits reported.
+- Final summary names verdict counts, branch, cost; no follow-up tool or
+  skill auto-invoked.

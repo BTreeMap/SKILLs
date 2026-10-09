@@ -117,7 +117,7 @@ verdict derived from it. Agent owns every draft and every judgment of
 whether artifact supports claim. Invoke commands below, read their output;
 read source only when user asks for troubleshooting.
 
-<commands>
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-draft-paper"
 $R start "<two or three keywords>" --verb write --format full --status partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>] [--project <name>]
 S="<the session identifier the start output echoed>"
@@ -131,7 +131,7 @@ $R write "$S" [--prose] [--known] <<'JSON'
 JSON
 $R read "$S" [--type task] [--match <regex>] [--since j9] [--limit 20] [--known]
 $R clean ["$S" | --all | --project <name>]
-</commands>
+```
 
 Bind `R` and `S` per shell; re-bind after reset; `realpath` required. Unique
 keyword subset recovers lost session identifier with signal. Script counts
@@ -168,7 +168,9 @@ nothing: apply every fix, resend. Write each batch to file so retry is one
 edit. Copy claim identifiers from `new` receipt; recovered keyword ref works
 but signals, so write full identifiers in next batch.
 
-<template for="record-batch">
+**Template: record-batch**
+
+```json
 {"events": [
   {"event": "stage-started", "stage": 2},
   {"event": "claim-added", "kw": ["p99", "drop"], "text": "p99 latency drops 30% under load", "status": "supported", "artifact": "runs/load/metrics.json", "location": "summary.p99, seeds 0-2"},
@@ -180,7 +182,7 @@ but signals, so write full identifiers in next batch.
   {"event": "gate-requested", "gate": "ledger"},
   {"event": "gate-decided", "gate": "ledger", "outcome": "accept", "reply": "<the human's reply, verbatim>"}
 ]}
-</template>
+```
 
 Record `stage-started` when stage starts, `decision` for each major choice
 with reason; `from` lists pad ids, each checked to exist. Trace makes no
@@ -263,11 +265,11 @@ directory, signals evidenced claims whose artifacts new root lacks.
 
 Render `check`'s `ledger` rows for human with this template:
 
-<template for="evidence-ledger">
+```markdown
 | Claim | Claim as stated in the draft | Status | Artifact | Location | Exists |
 | --- | --- | --- | --- | --- | --- |
 | p99-drop-... | p99 latency drops 30% under load | supported | `runs/load/metrics.json` | `summary.p99`, seeds 0-2 | yes |
-</template>
+```
 
 ## Pipeline
 
@@ -360,11 +362,15 @@ verb, artifact to pass. Invoke none unasked.
 
 ## Completion checks
 
-<checklist>
-  <item>`status` shows verb's last gate accepted (for `rebut`, stage 9 started); `next` names delivery.</item>
-  <item>Every empirical claim about work's own results maps to live claim in `check`'s ledger; no live claim in `write` or `refactor` deliverable is `to-run` or `unsupported`.</item>
-  <item>Every citation has report row naming retrieved record behind it; each unverifiable one stands as `[CITATION NEEDED]`.</item>
-  <item>Venue brief carries cycle year and source URL per fact, or every venue fact in draft flagged unverified.</item>
-  <item>Every deliverable output contract lists for verb exists.</item>
-  <item>Every gate decision in trace carries human's reply verbatim; trace written only through `record`.</item>
-</checklist>
+- `status` shows verb's last gate accepted (for `rebut`, stage 9 started);
+  `next` names delivery.
+- Every empirical claim about work's own results maps to live claim in
+  `check`'s ledger; no live claim in `write` or `refactor` deliverable is
+  `to-run` or `unsupported`.
+- Every citation has report row naming retrieved record behind it; each
+  unverifiable one stands as `[CITATION NEEDED]`.
+- Venue brief carries cycle year and source URL per fact, or every venue
+  fact in draft flagged unverified.
+- Every deliverable output contract lists for verb exists.
+- Every gate decision in trace carries human's reply verbatim; trace written
+  only through `record`.

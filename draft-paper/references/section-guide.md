@@ -10,8 +10,7 @@ formed: writing exposes what is not yet understood. Per subsection, at most
 two lines stating its purpose; per paragraph, one sentence stating its
 topic. Sentence does not fit: split paragraph.
 
-<template for="outline">
-<![CDATA[
+```markdown
 Title: _falsifiable and specific; no unbacked superlatives_
 
 Venue and page budget: _from the venue brief, not memory_
@@ -76,19 +75,22 @@ One-sentence contribution: _the claim a skeptic would try to refute_
 - Proofs:
 - Extra experiments:
 - Implementation details:
-]]>
-</template>
+```
 
 Before drafting, confirm every item:
 
-<checklist for="pre-draft">
-  <item>Scenario sketch from design plan survives in introduction in concrete form; reader from field recognizes setting in first two paragraphs.</item>
-  <item>Key insight reads as one sentence in introduction; cold reader can repeat it back.</item>
-  <item>Every contribution bullet maps to exhibit in Section 4.</item>
-  <item>Every exhibit maps to live ledger claim, or to planned experiment with failure criteria.</item>
-  <item>(Measurement papers) Key graphs chosen before drafting; each graph answers stated question.</item>
-  <item>Page budget fits venue limit.</item>
-</checklist>
+**Checklist: pre-draft**
+
+- Scenario sketch from design plan survives in introduction in concrete
+  form; reader from field recognizes setting in first two paragraphs.
+- Key insight reads as one sentence in introduction; cold reader can repeat
+  it back.
+- Every contribution bullet maps to exhibit in Section 4.
+- Every exhibit maps to live ledger claim, or to planned experiment with
+  failure criteria.
+- (Measurement papers) Key graphs chosen before drafting; each graph answers
+  stated question.
+- Page budget fits venue limit.
 
 ## Full-length papers
 

@@ -43,8 +43,9 @@ never from examples in this file.
 
 File answers in this brief, one line per checklist question:
 
-<template for="venue-brief">
-<![CDATA[
+**Template: venue-brief**
+
+```markdown
 - Venue and track:
 - Cycle year:
 - 1 Length:
@@ -59,8 +60,7 @@ File answers in this brief, one line per checklist question:
 ## Sources
 
 - <fact>: <URL> (<cycle year>)
-]]>
-</template>
+```
 
 ## Venue-family archetypes
 

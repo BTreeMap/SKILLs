@@ -42,7 +42,9 @@ non-empty.
 - Criterion agent cannot check against record ("high quality") does not
   belong here; extract appraises quality.
 
-<example for="criteria">
+**Example**
+
+```json
 "criteria": {
   "include": [
     "evaluates retrieval-augmented generation for factual accuracy",
@@ -55,7 +57,7 @@ non-empty.
     "not available in English"
   ]
 }
-</example>
+```
 
 ## Seed papers
 

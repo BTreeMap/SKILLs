@@ -18,11 +18,13 @@ record, in this order:
 Read cited passage with `/read-pdf` or `/search-web get`; corpus record
 proves paper exists, never what it says.
 
-<template for="citation-report">
+**Template: citation-report**
+
+```markdown
 | Key | Citing sentence (short) | Source | Exists | Fields match | Supports sentence | Action |
 |-----|-------------------------|--------|--------|--------------|-------------------|--------|
 | | | | | | | |
-</template>
+```
 
 ## Columns
 

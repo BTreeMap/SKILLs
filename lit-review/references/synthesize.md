@@ -64,7 +64,7 @@ counts and exclusions by screening stage; log gives per-search totals.
 Exclusions `status` counts as `unstated` carry no stage: set it with `set`
 before counting.
 
-<template for="report">
+```markdown
 # Literature review: <question>
 
 ## Summary
@@ -98,7 +98,7 @@ Corpus-relative gaps, phrased as Gaps requires.
 | [n] | title | authors | year | venue | read level | key |
 Rows follow the script's mark table; bibliography with DOI or arXiv
 link per entry.
-</template>
+```
 
 ## Verification before delivery
 

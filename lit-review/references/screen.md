@@ -37,7 +37,9 @@ feel wrong while screening: record change.
    `title-abstract` here; `status` counts exclusions by stage for report's
    flow counts; `screen` sets stage itself.
 
-<example for="decisions">
+**Example: decisions**
+
+```json
 {
   "doi:10.1234/example.1": {"status": "included"},
   "arxiv:2401.00001": {"status": "excluded",
@@ -47,7 +49,7 @@ feel wrong while screening: record change.
                                   "reason": "editorial, not a study",
                                   "stage": "title-abstract"}
 }
-</example>
+```
 
 ## Exclusion reasons
 

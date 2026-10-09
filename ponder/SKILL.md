@@ -63,7 +63,7 @@ let ledger state set presentation.
 Script `btm-ponder` owns ledger and its verification. Bind `R` and `S` per
 shell:
 
-<commands>
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-ponder"
 $R start "<two or three keywords>" [--level basic] [--project <name>] <<'JSON'
 {"question": "...", "focus": "..."}
@@ -81,7 +81,7 @@ $R write "$S" --entry:file <entry.json>
 $R read "$S" [--type quote] [--match <regex>] [--since j9] [--limit 20] [--known]
 $R cite <DOI or arXiv id> [--corpus <lit-review session id or path>]
 $R clean ["$S" | --all | --project <name>]
-</commands>
+```
 
 | Command | Takes after the session | Returns |
 | --- | --- | --- |
@@ -127,7 +127,9 @@ fixes, resend.
 `record` accepts optional arrays in schema sequence; later entries may use
 IDs made earlier in batch:
 
-<template for="record-batch">
+**Template: record-batch**
+
+```json
 {
   "leaves":      [{"kw": ["rent", "length"], "q": "...", "origin": "frame|spawned"}],
   "sources":     [{"kw": ["bcl", "rent"], "leaf": "<ref>", "cls": "constitutive|attested|measured|reported", "title": "...", "url": "...", "doi": "...", "arxiv": "...", "authors": ["..."], "year": 2024, "venue": "..."}],
@@ -135,7 +137,7 @@ IDs made earlier in batch:
   "scans":      [{"checked": "...", "candidates": ["..."], "survivors": [0]}],
   "checkpoints": [{"label": "cycle-1", "queries": 5}]
 }
-</template>
+```
 
 - `premise` (claim, one line) and `detail` (supporting note) stored on any
   close, come back in `check` structure keyed by mark.
@@ -196,10 +198,11 @@ first-page blog consensus.
 
 ## Completion checks
 
-<checklist>
-  <item>Every leaf reached terminal status or is disclosed in Open section; draft began from check output.</item>
-  <item>Every load-bearing claim carries mark resolving in Sources section; compositions carry derived mark.</item>
-  <item>Scan event exists in ledger; Rival section matches its survivors and refuted premises.</item>
-  <item>Hedge advisories from check honored in prose, naming source class.</item>
-  <item>Presentation sections match check derivation.</item>
-</checklist>
+- Every leaf reached terminal status or is disclosed in Open section; draft
+  began from check output.
+- Every load-bearing claim carries mark resolving in Sources section;
+  compositions carry derived mark.
+- Scan event exists in ledger; Rival section matches its survivors and
+  refuted premises.
+- Hedge advisories from check honored in prose, naming source class.
+- Presentation sections match check derivation.

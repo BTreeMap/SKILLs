@@ -107,7 +107,7 @@ after reset; `realpath` and both `env -u` flags required. Invoke script,
 read its output; read its source only when troubleshooting on user's
 instruction.
 
-<commands>
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
 $R start "<two or three keywords>" --level full [--project <name>] <<'JSON'
 {"question": "..."}
@@ -135,7 +135,7 @@ $R cite-check "$S" --draft:file report.md
 $R status "$S"
 $R verify "$S" [--keys k1,k2]
 $R clean ["$S" | --all | --project <name>]
-</commands>
+```
 
 | Command | Contract |
 | --- | --- |
@@ -183,14 +183,12 @@ Output and input conventions:
 Keep these words out of report and every intermediate note. One appearing in
 quoted source title stays inside quotation marks.
 
-<instructions for="banned-words">
 delve, tapestry, landscape (figurative), pivotal, crucial, seminal,
 groundbreaking, cutting-edge, state-of-the-art (unless a paper claims it,
 attributed), rapidly evolving, burgeoning, holistic, robust (outside a
 statistics term), comprehensive, seamless, leverage (verb), showcase,
 underscore, highlight (verb), testament, interplay, myriad, plethora,
 paradigm shift, in the realm of, it is important to note
-</instructions>
 
 ## Gotchas
 
@@ -199,11 +197,12 @@ paradigm shift, in the realm of, it is important to note
 
 ## Completion checks
 
-<checklist>
-  <item>Criteria in protocol.json before first logged search; any change logged in `changes`.</item>
-  <item>Every phase loaded only its assigned reference file.</item>
-  <item>Every excluded paper carries reason; flow counts derive from state files.</item>
-  <item>Every citation in deliverable resolves to corpus record, read level honest.</item>
-  <item>verify ran; broken DOIs fixed or their citations removed and disclosed.</item>
-  <item>Report names search dates, sources, counts, limits; prose follows rules in synthesize and banned vocabulary.</item>
-</checklist>
+- Criteria in protocol.json before first logged search; any change logged in
+  `changes`.
+- Every phase loaded only its assigned reference file.
+- Every excluded paper carries reason; flow counts derive from state files.
+- Every citation in deliverable resolves to corpus record, read level
+  honest.
+- verify ran; broken DOIs fixed or their citations removed and disclosed.
+- Report names search dates, sources, counts, limits; prose follows rules in
+  synthesize and banned vocabulary.

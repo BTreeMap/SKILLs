@@ -10,39 +10,39 @@ support any of them (evidence section 6). Never quote award probability.
 Failure here blocks submission readiness, independent of award merit. Fix
 these before polishing anything else.
 
-<template for="threshold-dimensions">
+```markdown
 | Dimension | Check | Status and evidence |
 |---|---|---|
 | Correctness | Claims, proofs, and experimental logic are right. | |
 | Evidence credibility | Every load-bearing claim traces to an artifact or a verified citation. | |
 | Claim calibration | The scope of each claim matches the scope of its evidence. | |
 | Venue compliance | Format, limits, anonymization, and required statements per the CFP. | |
-</template>
+```
 
 ## Differentiating dimensions: what separates winners
 
 Rank project's strongest two; they lead title, abstract, introduction.
 Ground each in retrieved literature or artifacts, not adjectives.
 
-<template for="differentiating-dimensions">
+```markdown
 | Dimension | The project's standing |
 |---|---|
 | Problem importance and taste | |
 | Distinctive insight | |
 | Novelty or surprise | |
 | Prospective reach (what this changes or opens up) | |
-</template>
+```
 
 ## Communication dimensions
 
-<template for="communication-dimensions">
+```markdown
 | Dimension | Check |
 |---|---|
 | Central coherence | One thesis organizes the paper; every section serves it. |
 | Accessibility | A non-specialist in the area can follow the argument. |
 | Elegance | The mechanism or argument is as simple as the claim allows. |
 | Completeness | Nothing load-bearing is deferred to future work or an appendix. |
-</template>
+```
 
 ## Venue-specific evidence currency
 
@@ -61,14 +61,12 @@ revision controls it.
 
 ## Decision
 
-<template for="decision">
-<![CDATA[
+```markdown
 - Blocking weaknesses: threshold failures to fix before submission.
 - Lead differentiators: the one or two dimensions the framing leads with, and where their evidence lives.
 - Evidence gaps: what would strengthen the differentiators, each with failure criteria for the proposed experiment.
 - Structural implication: which sections carry the differentiators; what gets cut or moved so they lead.
-]]>
-</template>
+```
 
 Paper with no clear differentiator can still be publishable; do not frame or
 venue-target it as award-seeking. Short papers: make differentiators visible
@@ -79,14 +77,12 @@ section 4.
 
 After review loop, revisit assessment against draft:
 
-<checklist for="best-paper-lens">
-  <item>Contradiction is sharp (section 1).</item>
-  <item>Experiments kill rival explanations (sections 2 and 3).</item>
-  <item>Evaluation layered in venue's currency (section 4).</item>
-  <item>Losses reported (section 5).</item>
-  <item>Threshold dimensions hold.</item>
-  <item>Lead differentiators frame paper.</item>
-</checklist>
+- Contradiction is sharp (section 1).
+- Experiments kill rival explanations (sections 2 and 3).
+- Evaluation layered in venue's currency (section 4).
+- Losses reported (section 5).
+- Threshold dimensions hold.
+- Lead differentiators frame paper.
 
 ## Evidence: what best-paper winners have in common
 

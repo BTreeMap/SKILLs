@@ -24,7 +24,7 @@ no extraction entry. Fill only what source states; write "not reported" for
 rest. Body free beyond `type` and `key`: add per-paper hypothesis-directed
 questions whenever argument needs them.
 
-<template for="extraction">
+```bash
 $R write "$S" <<'JSON'
 {"type": "extraction", "key": "doi:10.1234/example.1",
  "claims": "the one to three findings the paper itself asserts, each with location",
@@ -35,7 +35,7 @@ $R write "$S" <<'JSON'
  "quote": "at most one verbatim sentence worth citing exactly, with location",
  "appraisal": "one judgment per Quality appraisal dimension, never summed"}
 JSON
-</template>
+```
 
 ## Quality appraisal
 

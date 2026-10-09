@@ -10,9 +10,9 @@ Empty scoped scan establishes absence; valid result.
 
 ## 2. Check
 
-<commands for="answer">
+```bash
 $R check "$S"
-</commands>
+```
 
 At default `draft` view, `check` returns derived `sections`; `structure`
 holding each close's stored premise and detail keyed by mark; `violations`,
@@ -53,7 +53,9 @@ Bind marks to claims answer depends on; leave connective prose bare.
   `attested` source or two `measured` ones, even inside leaf `hedges` does
   not list.
 
-<template for="answer">
+**Template: answer**
+
+```markdown
 ## Answer
 <claim, plainly> [S1]. <derived conclusion> [~].
 
@@ -70,7 +72,7 @@ Below <threshold> the answer flips: <flipped claim> [S4].
 ## Sources
 - S1 (constitutive): <title>, <url>
 - S3 (reported): <title>, <url>
-</template>
+```
 
 ## Handoffs
 

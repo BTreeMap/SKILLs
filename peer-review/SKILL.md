@@ -167,7 +167,7 @@ reads pipe when no flag claims it; one slot per call may claim pipe. JSON
 body has no inline spelling. Value never reinterpreted, so regex needs no
 escape; empty one is rejection, not fallback.
 
-<commands>
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
 $R start "<two or three keywords>" --date 2026-03 [--level full] [--project <name>] <<'JSON'
 {"title": "..."}
@@ -186,7 +186,7 @@ $R write "$S" --entry:file <entry.json>
 $R read "$S" [--type hunch] [--match <regex>] [--since j9] [--limit 20] [--known]
 $R cite-check "$S" --draft:file review.md
 $R clean ["$S" | --all | --project <name>]
-</commands>
+```
 
 ## Pad and gate
 
@@ -212,7 +212,9 @@ usually crosses page break, hyphenated line end, or figure caption.
 Objection with `missing` needs `where` (table or section that should hold
 absent item), or report cannot place it.
 
-<template for="record-batch">
+**Template: record-batch**
+
+```json
 {
   "claims":     [{"kw": ["first", "combine"], "verbatim": "Our method is the first to combine X with Y."}],
   "objections": [{"kw": ["best", "run"], "type": "selective", "severity": "major",
@@ -226,7 +228,7 @@ absent item), or report cannot place it.
   "walks":      [{"bank": "design", "note": "seeds, baselines, splits checked"}],
   "withdraws":  [{"objection": "best run", "reason": "Appendix B reports the mean"}]
 }
-</template>
+```
 
 ## Check
 
@@ -248,12 +250,14 @@ Re-ingesting revised version keeps ledger, re-derives every standing; expect
 
 ## Completion checks
 
-<checklist>
-  <item>Claims noted before related work or discussion read; each resolves to page.</item>
-  <item>Every bank level requires has walk entry; check reports no unwalked bank.</item>
-  <item>Every objection in review grounded in check output; withdrawn and unanchored records absent from it.</item>
-  <item>Every novelty objection names corpus key dated before paper.</item>
-  <item>Echo ratio read; review's weight goes to objections outside authors' Limitations.</item>
-  <item>Recommendation and confidence are those check derived; cite-check passed on final draft.</item>
-  <item>Review names no author or affiliation, follows template in report.</item>
-</checklist>
+- Claims noted before related work or discussion read; each resolves to
+  page.
+- Every bank level requires has walk entry; check reports no unwalked bank.
+- Every objection in review grounded in check output; withdrawn and
+  unanchored records absent from it.
+- Every novelty objection names corpus key dated before paper.
+- Echo ratio read; review's weight goes to objections outside authors'
+  Limitations.
+- Recommendation and confidence are those check derived; cite-check passed
+  on final draft.
+- Review names no author or affiliation, follows template in report.

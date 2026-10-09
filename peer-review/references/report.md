@@ -7,7 +7,7 @@ structure's `fatal`, `major`, `minor`, or `questions` lists; every claim is
 
 ## Template
 
-<template for="review">
+```markdown
 # Review: <title>
 
 Version reviewed: <date>. Level: <level>. Reading: <pages> pages of
@@ -46,7 +46,7 @@ banks>; corpus <attached or none>; echo ratio <r>).
 
 This review was produced by an agent following the peer-review skill;
 every quoted anchor and prior-work key was verified by its script.
-</template>
+```
 
 ## Rules
 

@@ -10,12 +10,12 @@ concrete terms. Practitioner-recognition test: practitioner in the area
 reads sketch, recognizes setting as real. Would not: make scenario concrete
 enough to plan experiments around.
 
-<examples for="scenario-sketch">
-  <example>
-    <before>modern datacenters</before>
-    <after>a 128-GPU training job's all-reduce on a 4-spine fabric where one spine degrades 30%</after>
-  </example>
-</examples>
+**Example: scenario-sketch**
+
+Before: modern datacenters
+
+After: a 128-GPU training job's all-reduce on a 4-spine fabric where one
+spine degrades 30%
 
 ## Contradiction
 
