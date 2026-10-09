@@ -103,6 +103,9 @@ rejected without review of the rest.
   `--help` and compare it to the text.
 - State the cost of a non-trivial shape in its docstring: the bound in the
   domain's real sizes.
+- Before you give a member a new top-level class or function, grep
+  `.corekit/src/btm_corekit/__init__.py` for the name: the gate rejects a
+  member that redefines a kernel export, and it does so only at the end.
 - Keep the diff to the item. A drive-by fix you cannot resist is a separate
   issue you file, with the line it belongs to.
 
