@@ -1,10 +1,10 @@
 ---
 name: ponder
 description: >-
-  Answers an open question and shows its work: every load-bearing claim
-  carries a source, inferred conclusions are marked, the strongest rival
-  explanation is tested, and what stays unsettled is reported open. Use when
-  the user asks an open question needing a researched, sourced answer.
+  Answers open question and shows its work: every load-bearing claim carries
+  a source, inferred conclusions marked, strongest rival explanation tested,
+  what stays unsettled reported open. Use when user asks open question
+  needing researched, sourced answer.
 license: MIT
 compatibility: >-
   Requires uv, retrieval (the harness's web search and fetch, else

@@ -2,10 +2,10 @@
 name: fact-check
 description: >-
   Checks a document claim by claim against sources it retrieves, reporting
-  each verdict with verbatim quotes, URLs, and access dates. It never
-  verifies from memory and changes no text until the user approves that
-  correction. Use when asked to fact-check a document, verify claims, specs,
-  statistics, or version numbers, or update outdated facts.
+  each verdict with verbatim quotes, URLs, access dates. Never verifies from
+  memory; changes no text until user approves that correction. Use when
+  asked to fact-check a document, verify claims, specs, statistics, or
+  version numbers, or update outdated facts.
 license: MIT
 compatibility: >-
   The report renderer requires uv and a full SKILLs repository checkout. The

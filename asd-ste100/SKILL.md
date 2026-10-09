@@ -1,10 +1,10 @@
 ---
 name: asd-ste100
 description: >-
-  Writes, rewrites, and checks text in ASD-STE100 Simplified Technical
-  English against the Issue 9 dictionary and writing rules, naming each
-  unapproved word with its approved alternatives. Use when asked for STE,
-  controlled English, or an STE check.
+  Writes, rewrites, checks text in ASD-STE100 Simplified Technical English
+  against Issue 9 dictionary and writing rules, naming each unapproved word
+  with approved alternatives. Use when asked for STE, controlled English, or
+  an STE check.
 license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. The first run needs

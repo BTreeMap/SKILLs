@@ -1,12 +1,12 @@
 ---
 name: lit-review
 description: >-
-  Produces a literature review whose every citation traces to a paper
-  retrieved from OpenAlex, arXiv, or Crossref, never memory; criteria are
-  fixed before the first search, each exclusion keeps its reason, and
-  abstracts never pass as full text. Rigor ranges from a scoping pass to
-  PRISMA-style. Use when asked for a literature review, a survey, a
-  related-work section, or what research says about a topic.
+  Produces literature review whose every citation traces to a paper
+  retrieved from OpenAlex, arXiv, or Crossref, never memory; criteria fixed
+  before first search, each exclusion keeps its reason, abstracts never pass
+  as full text. Rigor ranges from scoping pass to PRISMA-style. Use when
+  asked for a literature review, survey, related-work section, or what
+  research says about a topic.
 license: MIT
 compatibility: >-
   Requires uv, network access, and a full SKILLs repository checkout. The

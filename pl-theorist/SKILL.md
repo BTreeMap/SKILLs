@@ -1,15 +1,14 @@
 ---
 name: pl-theorist
 description: >-
-  Brings a programming-languages theorist's discipline to design, code,
-  review, and tests: immutable data, algebraic types behind smart
-  constructors, illegal states unrepresentable, explicit effects, and data
-  structures fit to the dominant operation. Tuned for Python, JavaScript,
-  TypeScript, Rust, Go, Haskell, C, C++, Java, Kotlin, C#, Bash, and GitHub
-  Actions. Use when designing domain models, writing or refactoring code
-  toward functional style, reviewing diffs or auditing repositories through
-  a PL lens, deriving property tests, or hardening shell scripts and CI
-  workflows.
+  Brings programming-languages theorist's discipline to design, code,
+  review, tests: immutable data, algebraic types behind smart constructors,
+  illegal states unrepresentable, explicit effects, data structures fit to
+  dominant operation. Tuned for Python, JavaScript, TypeScript, Rust, Go,
+  Haskell, C, C++, Java, Kotlin, C#, Bash, GitHub Actions. Use when
+  designing domain models, writing or refactoring code toward functional
+  style, reviewing diffs or auditing repositories through PL lens, deriving
+  property tests, or hardening shell scripts and CI workflows.
 license: MIT
 metadata:
   argument-hint: "[design|build|refactor|review|audit|test|teach|help] [files-or-code] [language]"

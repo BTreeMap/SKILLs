@@ -2,11 +2,10 @@
 name: humanize
 description: >-
   Rewrites AI-sounding prose so it reads like its writer, keeping every
-  claim, number, and citation at its original strength and inventing
-  nothing. A writing sample or style file outranks its catalogue of AI
-  writing tells. Pasted text comes back rewritten; a named file is edited in
-  place. Use when asked to humanize, de-AI, or naturalize prose, or to
-  remove AI writing patterns.
+  claim, number, citation at original strength, inventing nothing. Writing
+  sample or style file outranks its catalogue of AI writing tells. Pasted
+  text comes back rewritten; named file edited in place. Use when asked to
+  humanize, de-AI, or naturalize prose, or remove AI writing patterns.
 license: MIT
 metadata:
   argument-hint: "[text-or-file]"

@@ -1,9 +1,9 @@
 ---
 name: draft-paper
 description: >-
-  Drafts conference, workshop, journal, survey, or demo papers and answers
-  reviews; each empirical claim traces to an artifact and each citation to a
-  retrieved record. Use when turning an idea or results into a draft,
+  Drafts conference, workshop, journal, survey, or demo papers, answers
+  reviews; each empirical claim traces to an artifact, each citation to a
+  retrieved record. Use when turning idea or results into a draft,
   retargeting one, or rebutting.
 license: MIT
 compatibility: >-

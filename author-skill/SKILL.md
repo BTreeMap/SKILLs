@@ -1,10 +1,10 @@
 ---
 name: author-skill
 description: >-
-  Turns a procedure or task history into a SKILL.md another agent can follow
-  with no memory of the original session, and reviews existing skills
-  against the Agent Skills standard. Use when asked to create, refactor,
-  review, or distill a skill.
+  Turns procedure or task history into a SKILL.md another agent can follow
+  with no memory of original session; reviews existing skills against Agent
+  Skills standard. Use when asked to create, refactor, review, or distill a
+  skill.
 license: MIT
 metadata:
   argument-hint: "[skill name or path]"

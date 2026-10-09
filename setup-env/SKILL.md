@@ -2,12 +2,12 @@
 name: setup-env
 description: >-
   Provisions a project's development toolchain in userspace: no sudo, no
-  docker, nothing assumed but uv, all under one disposable root that leaves
-  HOME and caches untouched. Tags such as python@3.12, kotlin:android, or
-  rust name what a project needs; tools built for another CPU architecture
-  still run. Use when a project must be built, tested, or linted on a
-  machine lacking its toolchains, without root or docker, or when several
-  languages must coexist reproducibly.
+  docker, nothing assumed but uv, all under one disposable root leaving HOME
+  and caches untouched. Tags such as python@3.12, kotlin:android, or rust
+  name what project needs; tools built for another CPU architecture still
+  run. Use when a project must be built, tested, or linted on a machine
+  lacking its toolchains, without root or docker, or when several languages
+  must coexist reproducibly.
 license: MIT
 compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout. Linux

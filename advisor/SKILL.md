@@ -1,12 +1,12 @@
 ---
 name: advisor
 description: >-
-  Reads a research project like a principal investigator: which prior ideas
-  it combines and what it adds, which parts of the setup are outdated, what
-  your lab can afford, and the cheapest experiment that proves or kills each
-  claim. Every claim about current practice carries a source or is marked as
-  memory. Use when the user shares a paper, proposal, draft, or results and
-  asks what it is made of, whether the setup holds up, or what to run next.
+  Reads research project like a principal investigator: which prior ideas it
+  combines and adds to, which setup parts are outdated, what your lab can
+  afford, cheapest experiment proving or killing each claim. Every
+  current-practice claim carries a source or is marked as memory. Use when
+  user shares a paper, proposal, draft, or results and asks what it is made
+  of, whether setup holds up, or what to run next.
 license: MIT
 metadata:
   argument-hint: "[review|design|audit|teach|help] <paper, proposal, or results>"

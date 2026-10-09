@@ -1,10 +1,9 @@
 ---
 name: search-web
 description: >-
-  Searches the web, Wikipedia, and the scholarly record, and pulls the
-  readable text out of a page; papers come with DOI, year, and citation
-  count. Use when the harness has no search or fetch tool of its own, or
-  when a question needs papers by DOI.
+  Searches web, Wikipedia, scholarly record; pulls readable text out of a
+  page; papers come with DOI, year, citation count. Use when harness has no
+  search or fetch tool of its own, or a question needs papers by DOI.
 license: MIT
 compatibility: >-
   Requires uv, network access, and a full SKILLs repository checkout. The

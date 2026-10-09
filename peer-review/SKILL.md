@@ -1,11 +1,11 @@
 ---
 name: peer-review
 description: >-
-  Reviews a paper as an adverse referee: contribution claims taken verbatim,
+  Reviews a paper as adverse referee: contribution claims taken verbatim,
   objections admitted only when they quote a page and cite dated prior work
-  from its own literature search, and a recommendation that follows from
-  what survives. Use when asked to review, referee, red-team, or find
-  weaknesses in a paper, manuscript, or thesis chapter.
+  from its own literature search, recommendation following from what
+  survives. Use when asked to review, referee, red-team, or find weaknesses
+  in a paper, manuscript, or thesis chapter.
 license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. The novelty bank needs

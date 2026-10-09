@@ -1,9 +1,9 @@
 ---
 name: git-commit
 description: >-
-  Drafts and reviews Conventional Commits messages, saying why over what,
-  and can commit and push in one step. Use when writing or reviewing a
-  commit message, or when asked to commit or push.
+  Drafts and reviews Conventional Commits messages, why over what; can
+  commit and push in one step. Use when writing or reviewing a commit
+  message, or asked to commit or push.
 license: MIT
 metadata:
   argument-hint: "[lite|full|ultra] [push]"

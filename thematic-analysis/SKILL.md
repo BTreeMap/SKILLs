@@ -1,12 +1,11 @@
 ---
 name: thematic-analysis
 description: >-
-  Develops themes from qualitative text under one named school, with the
-  choice recorded, every unit coded against a bounded codebook, and each
-  theme backed by verbatim extracts and counts. Defaults suit feedback,
-  tickets, reviews, usability sessions, and interviews. Use when asked to
-  find themes in qualitative data, code interviews or open responses, or
-  build a codebook.
+  Develops themes from qualitative text under one named school: choice
+  recorded, every unit coded against bounded codebook, each theme backed by
+  verbatim extracts and counts. Defaults suit feedback, tickets, reviews,
+  usability sessions, interviews. Use when asked to find themes in
+  qualitative data, code interviews or open responses, or build a codebook.
 license: MIT
 metadata:
   argument-hint: "[reflexive|codebook|template|framework|rapid|hybrid] <corpus>"

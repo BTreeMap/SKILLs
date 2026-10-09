@@ -1,11 +1,11 @@
 ---
 name: caveman
 description: >-
-  Compresses replies into terse phrasing that keeps every technical fact:
-  code, numbers, units, negations, and error strings stay exact. Terseness
-  ranges from tightened prose to one-word answers, in English or classical
-  Chinese. Use when the user asks for caveman mode, "be brief", fewer
-  tokens, or a longer-lived context.
+  Compresses replies into terse phrasing keeping every technical fact: code,
+  numbers, units, negations, error strings stay exact. Terseness ranges from
+  tightened prose to one-word answers, in English or classical Chinese. Use
+  when user asks for caveman mode, "be brief", fewer tokens, or longer-lived
+  context.
 license: MIT
 compatibility: >-
   The refactor verb requires uv and a full SKILLs repository checkout. The

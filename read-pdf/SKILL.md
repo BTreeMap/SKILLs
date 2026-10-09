@@ -1,10 +1,10 @@
 ---
 name: read-pdf
 description: >-
-  Extracts text and metadata from a PDF file or URL and answers questions
-  about it with page-cited evidence. It only reads, writes nothing, and has
-  no OCR, so a scanned page is reported as having no text. Use when asked to
-  read, summarize, search, quote, or answer questions about a PDF.
+  Extracts text and metadata from a PDF file or URL, answers questions about
+  it with page-cited evidence. Only reads, writes nothing, no OCR: scanned
+  page reported as having no text. Use when asked to read, summarize,
+  search, quote, or answer questions about a PDF.
 license: MIT
 compatibility: >-
   Requires uv, and a full SKILLs repository checkout. Network access is
