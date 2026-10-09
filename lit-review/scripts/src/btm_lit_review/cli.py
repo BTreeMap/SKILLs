@@ -21,6 +21,7 @@ from btm_corekit import (
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
     DIRECTIONS,
+    GRAPH_SOURCES,
     LEVELS,
     MAX_LIMIT,
     SOURCES,
@@ -79,11 +80,12 @@ def wire_gather(commands: Commands) -> None:
     search.set_defaults(func=cmd_search)
 
     snowball = commands.add_parser(
-        "snowball", help="follow citations of a corpus paper via OpenAlex"
+        "snowball", help="follow citations of a corpus paper through an index"
     )
     add_common(snowball)
     snowball.add_argument("--seed", required=True, help="paper key, DOI, or arXiv id")
     snowball.add_argument("--direction", choices=DIRECTIONS, required=True)
+    snowball.add_argument("--source", choices=GRAPH_SOURCES, default=GRAPH_SOURCES[0])
     wire_limit(snowball, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
     snowball.set_defaults(func=cmd_snowball)
 

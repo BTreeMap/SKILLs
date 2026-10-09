@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from btm_corekit import INDEXES, having
+
 TIMEOUT_SECONDS = 30
 RESPONSE_CAP_BYTES = (
     16 * 1024 * 1024
@@ -50,6 +52,8 @@ READ_RANK = {level: rank for rank, level in enumerate(ReadLevel)}
 LEVELS = tuple(Level)
 STATUSES = tuple(Status)
 READ_LEVELS = tuple(ReadLevel)
-SOURCES = ("openalex", "arxiv", "crossref")
+SOURCES = tuple(INDEXES)
+GRAPH_SOURCES = tuple(dict.fromkeys(having("references") + having("citations")))
+"""The indexes a snowball can walk, in registry order; openalex leads."""
 DIRECTIONS = ("backward", "forward")
 REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})

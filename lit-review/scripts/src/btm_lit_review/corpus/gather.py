@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import argparse
-import urllib.parse
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from btm_corekit import (
     INDEXES,
+    ByArxiv,
+    ByDoi,
     ByNative,
     CommandError,
     Model,
     NonEmpty,
+    Ref,
     Window,
     append_jsonl,
     citations,
@@ -22,7 +24,6 @@ from btm_corekit import (
     normalize_arxiv_id,
     normalize_doi,
     now_iso,
-    openalex,
     references,
     signal,
 )
@@ -48,15 +49,16 @@ def record_fetch(
     session: Session,
     entry: dict[str, Any],
     fetched: list[Paper],
-    total: int,
+    total: int | None,
 ) -> None:
-    """Shared tail of search and snowball: absorb, log, report."""
+    """Shared tail of search and snowball: absorb, log, report. A total the
+    index did not report is logged as null and never reads as truncation."""
     log_id = f"s{count_lines(session.log_path) + 1}"
     papers = load_papers(session)
     stamped = [paper.with_(found_by=(log_id,)) for paper in fetched]
     papers, new_count = absorb(papers, stamped)
     save_papers(session, papers)
-    truncated = total > len(fetched)
+    truncated = total is not None and total > len(fetched)
     entry.update(
         {
             "id": log_id,
@@ -130,8 +132,23 @@ def cmd_search(args: argparse.Namespace) -> int:
     return 0
 
 
-def resolve_openalex_id(papers: Mapping[str, Paper], token: str) -> tuple[str, str]:
-    """Return (paper key, OpenAlex work id) for a key, DOI, or arXiv id."""
+def _no_native(paper: Paper) -> str | None:
+    return None
+
+
+NATIVE_IDS: Mapping[str, Callable[[Paper], str | None]] = {
+    "openalex": lambda paper: paper.openalex_id,
+}
+"""The index ids a Paper carries, by index; any other index is reached by
+DOI or arXiv id."""
+
+
+def resolve_ref(
+    papers: Mapping[str, Paper], token: str, source: str
+) -> tuple[str, Ref]:
+    """(paper key, how `source` names it) for a key, DOI, or arXiv id: the
+    index's own id where the paper carries one, else its DOI, else its arXiv
+    id."""
     index = {
         alias: key for key, paper in papers.items() for alias in paper_aliases(paper)
     }
@@ -143,16 +160,14 @@ def resolve_openalex_id(papers: Mapping[str, Paper], token: str) -> tuple[str, s
     if key is None:
         raise CommandError(f"no corpus paper matches {token!r}; search for it first")
     paper = papers[key]
-    if paper.openalex_id:
-        return key, paper.openalex_id
+    if native := NATIVE_IDS.get(source, _no_native)(paper):
+        return key, ByNative(native)
     if paper.doi:
-        work = openalex.work(
-            client(), RESPONSE_CAP_BYTES, f"doi:{urllib.parse.quote(paper.doi)}"
-        )
-        if work.key:
-            return key, work.key
+        return key, ByDoi(paper.doi)
+    if paper.arxiv_id:
+        return key, ByArxiv(paper.arxiv_id)
     raise CommandError(
-        f"paper {key} has no OpenAlex id or DOI; snowball needs one of them"
+        f"paper {key} has no {source} id, DOI, or arXiv id; snowball needs one"
     )
 
 
@@ -162,24 +177,21 @@ def cmd_snowball(args: argparse.Namespace) -> int:
     require_criteria(protocol)
     limit = args.limit
     papers = load_papers(session)
-    seed_key, work_id = resolve_openalex_id(papers, args.seed)
+    seed_key, ref = resolve_ref(papers, args.seed, args.source)
     walk = references if args.direction == "backward" else citations
-    found = walk(
-        INDEXES["openalex"], client(), RESPONSE_CAP_BYTES, ByNative(work_id), limit
-    )
-    total = found.total or 0
-    if args.direction == "backward" and not total:
+    found = walk(INDEXES[args.source], client(), RESPONSE_CAP_BYTES, ref, limit)
+    if args.direction == "backward" and not found.works and not found.total:
         signal(
-            f"OpenAlex lists no references for {seed_key}: upstream metadata "
+            f"{args.source} lists no references for {seed_key}: upstream metadata "
             "gap; snowball another seed or read the paper's own reference list"
         )
-    fetched = list(map(paper_from, found.works))
     entry = {
         "command": "snowball",
+        "source": args.source,
         "seed": seed_key,
         "direction": args.direction,
         "limit": limit,
         "criteria_hash": criteria_hash(protocol),
     }
-    record_fetch(session, entry, fetched, total)
+    record_fetch(session, entry, list(map(paper_from, found.works)), found.total)
     return 0

@@ -22,6 +22,7 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_lit_review.constants import (
+    GRAPH_SOURCES,
     PAD_TAIL,
     READ_LEVELS,
     SOURCES,
@@ -189,8 +190,10 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "pad": PAD_SCHEMA,
             "search_log": "search: {id, command, source, query, from_year, to_year, "
             "limit, criteria_hash, time, fetched, new, total_matches, truncated}; "
-            "snowball carries seed and direction in place of source and query; "
-            f"sources: {', '.join(SOURCES)}",
+            "snowball carries seed and direction in place of query; "
+            f"sources: {', '.join(SOURCES)}; "
+            f"snowball sources: {', '.join(GRAPH_SOURCES)}; "
+            "total_matches is null where a source reports no count",
             "verify": '{"checked": n, "broken_dois": [...], "results": [{key, '
             "title, doi_resolves, doi_http_status, crossref_title_match}]}",
             "exit_codes": "0 done (stderr signals are advisory); 1 fix the input "

@@ -114,10 +114,10 @@ $R init "<two or three keywords>" --level full <<'JSON'
 JSON
 S="<the session identifier the init output echoed>"
 $R schema
-$R search "$S" --source openalex --limit 25 --from-year 2020 [--to-year 2025] <<'JSON'
+$R search "$S" --source openalex|crossref|arxiv|semanticscholar|firecrawl --limit 25 --from-year 2020 [--to-year 2025] <<'JSON'
 {"query": "..."}
 JSON
-$R snowball "$S" --seed <key> --direction backward [--limit 25]
+$R snowball "$S" --seed <key> --direction backward [--source openalex|semanticscholar] [--limit 25]
 $R digest "$S" [--status candidate] [--on title] [--clusters 20]
 $R screen "$S" --on title --exclude <<'JSON'
 {"match": "<regex>", "reason": "..."}
@@ -140,7 +140,7 @@ $R clean ["$S" | --all]
 | --- | --- |
 | `init` | Takes two or three keywords and the question; mints the session identifier and echoes it with its directory. A keyword subset recovers a lost identifier; a directory path in place of an identifier puts the session there. |
 | `schema` | Prints every record shape; run it whenever a field name is in doubt. |
-| `search`, `snowball` | Fetch candidates and log each call with its date, parameters, and counts; both refuse while the criteria are empty. `snowball` follows citations through OpenAlex. `--limit` takes 1 to 100, default 25. |
+| `search`, `snowball` | Fetch candidates and log each call with its date, source, parameters, and counts; both refuse while the criteria are empty. `snowball` follows citations through `--source`, OpenAlex by default. `--limit` takes 1 to 100, default 25. A source that reports no match count logs `total_matches` as null. |
 | `digest` | Groups the undecided candidates into kinds, each with a label, a count, a selecting rule, and two exemplars; the cheapest screening entry point. |
 | `show` | Reads specific records by key, status, or regex. |
 | `brief` | The resume view and the belief check: findings and gaps with verdicts derived from the live corpus, corpus drift since the previous brief, the citation marker table, unextracted papers, the pad tail, and lore. Run it after compaction and before drafting. |
