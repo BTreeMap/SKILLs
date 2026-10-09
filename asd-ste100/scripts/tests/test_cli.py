@@ -29,12 +29,12 @@ class TestCheck:
         assert code == 0 and report["ok"] and report["version"] == "v0.1.2"
         assert "fetching it first" in err
 
-    def test_the_allow_file_declares_terms(self, served, tmp_path, capsys):
-        allow = tmp_path / "terms.txt"
-        allow.write_text("pump\n", encoding="utf-8")
-        argv = ["check", "--text", "Remove the pump.", "--allow:file", str(allow)]
+    def test_the_accept_file_declares_terms(self, served, tmp_path, capsys):
+        accept = tmp_path / "terms.txt"
+        accept.write_text("pump\n", encoding="utf-8")
+        argv = ["check", "--text", "Remove the pump.", "--accept:file", str(accept)]
         code, report, _ = run(argv, capsys)
-        assert code == 0 and report["ok"] and report["allowed"] == 1
+        assert code == 0 and report["ok"] and report["accepted"] == 1
 
     def test_markdown_section_and_lines(self, served, tmp_path, capsys):
         page = tmp_path / "page.md"
@@ -78,8 +78,8 @@ class TestCheckJsonl:
         ]
         code, doc, _ = run(["check", "--jsonl", "--text", "\n".join(lines)], capsys)
         assert code == 0 and built == [1] and doc["version"] == "v0.1.2"
-        assert (doc["schema_version"], doc["data"]) == (1, None)
-        assert (doc["ok"], doc["texts"], doc["allowed"]) == (False, 2, 0)
+        assert (doc["schema_version"], doc["data"]) == (2, None)
+        assert (doc["ok"], doc["texts"], doc["accepted"]) == (False, 2, 0)
         first, second = doc["reports"]
         assert (first["line"], first["id"], first["ok"]) == (1, "a", True)
         assert (second["line"], "id" in second, second["ok"]) == (3, False, False)
@@ -104,14 +104,14 @@ class TestCheckJsonl:
         assert "--format markdown" in problem["fix"]
 
 
-class TestLookup:
+class TestFind:
     def test_an_unapproved_word_comes_with_its_alternatives(self, served, capsys):
-        code, doc, _ = run(["lookup", "Ensure"], capsys)
+        code, doc, _ = run(["find", "Ensure"], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
         assert code == 0 and entry["alternatives"] == ["make sure (v)"]
 
     def test_each_alternative_sits_beside_its_example(self, served, capsys):
-        _, doc, _ = run(["lookup", "return"], capsys)
+        _, doc, _ = run(["find", "return"], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
         (choice,) = entry["choices"]
         assert choice == {
@@ -122,40 +122,40 @@ class TestLookup:
         assert (entry["ste_example"], entry["nonste_example"]) == (None, None)
 
     def test_each_qualifier_keeps_its_own_alternatives(self, served, capsys):
-        _, doc, _ = run(["lookup", "few"], capsys)
+        _, doc, _ = run(["find", "few"], capsys)
         entries = doc["words"][0]["entries"]
         got = {e.get("qualifier"): e["alternatives"] for e in entries}
         assert got == {None: ["small number"], "a few": ["do (v)"]}
 
     def test_unpaired_examples_stay_raw(self, served, capsys):
-        _, doc, _ = run(["lookup", "ensure"], capsys)
+        _, doc, _ = run(["find", "ensure"], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
         assert entry["choices"] == [] and entry["ste_example"]
 
     def test_every_entry_has_every_key_even_with_no_part_of_speech(
         self, served, capsys
     ):
-        _, doc, _ = run(["lookup", "such as", "ensure", "return", "test"], capsys)
+        _, doc, _ = run(["find", "such as", "ensure", "return", "test"], capsys)
         rows = [e for w in doc["words"] for e in w["entries"]]
         assert len({tuple(e) for e in rows}) == 1, "one key set, one order"
         (phrase,) = doc["words"][0]["entries"]
         assert (phrase["pos"], phrase["qualifier"]) == (None, None)
 
     def test_a_form_finds_its_headword(self, served, capsys):
-        _, doc, _ = run(["lookup", "removed"], capsys)
+        _, doc, _ = run(["find", "removed"], capsys)
         assert [e["word"] for e in doc["words"][0]["entries"]] == ["REMOVE"]
 
     def test_several_words_in_one_call(self, served, capsys):
-        _, doc, _ = run(["lookup", "removed", "frobnicate"], capsys)
+        _, doc, _ = run(["find", "removed", "frobnicate"], capsys)
         assert [w["word"] for w in doc["words"]] == ["removed", "frobnicate"]
 
     def test_an_inflected_unapproved_word_finds_its_headword(self, served, capsys):
-        _, doc, _ = run(["lookup", "ensured"], capsys)
+        _, doc, _ = run(["find", "ensured"], capsys)
         (got,) = doc["words"]
         assert got["headword"] == "ensure" and got["entries"][0]["word"] == "ensure"
 
     def test_a_noun_plural_finds_its_approved_noun(self, served, capsys):
-        _, doc, _ = run(["lookup", "tests"], capsys)
+        _, doc, _ = run(["find", "tests"], capsys)
         (got,) = doc["words"]
         assert [(e["word"], e["pos"]) for e in got["entries"]] == [("TEST", "n")]
         assert "next" not in got
@@ -179,7 +179,7 @@ class TestLookup:
                 "status": {"kind": "approved", "alternatives": []},
             }
         )
-        got = cli.lookup_one("tests", {"test": [verb]}, {}, {"tests": [noun]})
+        got = cli.find_one("tests", {"test": [verb]}, {}, {"tests": [noun]})
         assert got["headword"] == "test"
         assert [(e["word"], e["pos"]) for e in got["entries"]] == [
             ("test", "v"),
@@ -187,14 +187,14 @@ class TestLookup:
         ]
 
     def test_an_absent_word_says_what_to_do(self, served, capsys):
-        _, doc, _ = run(["lookup", "frobnicate"], capsys)
+        _, doc, _ = run(["find", "frobnicate"], capsys)
         (got,) = doc["words"]
         assert got["entries"] == [] and "technical" in got["next"]
 
 
-class TestFetchAndClean:
-    def test_fetch_then_clean_reports_the_bytes(self, served, capsys):
-        code, doc, _ = run(["fetch"], capsys)
+class TestGetAndClean:
+    def test_get_then_clean_reports_the_bytes(self, served, capsys):
+        code, doc, _ = run(["get"], capsys)
         assert code == 0 and len(doc["artifacts"]) == 3
         code, receipt, _ = run(["clean"], capsys)
         assert code == 0 and receipt["bytes_freed"] > 0
@@ -225,23 +225,23 @@ class TestLocalData:
         assert report["version"] is None and err == ""
         assert not cache.exists(), "a local release fills no cache"
 
-    def test_lookup_reads_the_directory(self, local, capsys):
-        code, doc, _ = run(["lookup", "ensure", "--data", str(local)], capsys)
+    def test_find_reads_the_directory(self, local, capsys):
+        code, doc, _ = run(["find", "ensure", "--data", str(local)], capsys)
         ((entry,),) = [w["entries"] for w in doc["words"]]
         assert code == 0 and entry["alternatives"] == ["make sure (v)"]
 
     def test_every_origin_gives_one_shape(self, local, served, capsys):
-        for argv in (["check", "--text", "Remove it."], ["lookup", "remove"]):
+        for argv in (["check", "--text", "Remove it."], ["find", "remove"]):
             _, cached, _ = run(argv, capsys)
             _, read, _ = run([*argv, "--data", str(local)], capsys)
             assert list(cached) == list(read), "same keys in the same order"
-            assert (cached["schema_version"], cached["data"]) == (1, None)
-            assert (read["schema_version"], read["version"]) == (1, None)
+            assert (cached["schema_version"], cached["data"]) == (2, None)
+            assert (read["schema_version"], read["version"]) == (2, None)
 
     def test_a_file_off_its_digest_is_exit_one_and_kept(self, local, capsys):
         lexicon = local / "lexicon.json"
         lexicon.write_bytes(lexicon.read_bytes() + b" ")
-        code, _, err = run(["lookup", "ensure", "--data", str(local)], capsys)
+        code, _, err = run(["find", "ensure", "--data", str(local)], capsys)
         assert code == 1 and "data/lexicon.json differs" in err
         assert lexicon.exists(), "the user owns the directory: nothing deleted"
 
@@ -252,10 +252,10 @@ class TestLocalData:
         assert code == 1 and "data/lexicon.json, data/rules.json" in err
 
     def test_a_directory_without_a_manifest_is_exit_one(self, local, capsys):
-        code, _, err = run(["lookup", "x", "--data", str(local.parent)], capsys)
+        code, _, err = run(["find", "x", "--data", str(local.parent)], capsys)
         assert code == 1 and "no manifest.json" in err
 
     def test_data_and_version_together_is_exit_one(self, local, capsys):
-        argv = ["lookup", "x", "--data", str(local), "--version", "v0.1.2"]
+        argv = ["find", "x", "--data", str(local), "--version", "v0.1.2"]
         code, _, err = run(argv, capsys)
         assert code == 1 and "not allowed with" in err

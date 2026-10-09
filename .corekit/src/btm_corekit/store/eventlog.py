@@ -28,7 +28,7 @@ class Stamped(Model):
 @dataclass(frozen=True, slots=True)
 class EventLog:
     path: Path
-    hint: str = "run init first"
+    hint: str = "run start first"
     cap: int = MAX_EVENTS
 
     def exists(self) -> bool:

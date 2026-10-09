@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import btm_caveman
-from btm_caveman.admit import admit
+from btm_caveman.accept import accept
 from btm_caveman.classify import NON_MARKDOWN_PROSE_EXTENSIONS
 from btm_caveman.markdown import split_frontmatter
 from btm_caveman.model import Plan, Refusal
@@ -48,8 +48,8 @@ def warn_format(path: Path) -> None:
 
 
 def planned(path: Path) -> Plan:
-    """The admitted plan. A refusal is an invariant, so it ends the command."""
-    match admit(path):
+    """The accepted plan. A refusal is an invariant, so it ends the command."""
+    match accept(path):
         case Refusal(reason):
             raise CommandError(reason)
         case Plan() as plan:

@@ -1,15 +1,15 @@
 # Limitations: The Floor and What Sits Above It
 
 Read paper's Limitations section last among banks, after objections from
-`design` and `analysis` stand, then note `walks` entry for `limitations`.
+`design` and `analysis` stand, then record `walks` entry for `limitations`.
 
 ## Signalling questions
 
-| Kind | Question | Anchor or `missing` |
+| Type | Question | Anchor or `missing` |
 | --- | --- | --- |
 | `unstated` | Does grounded objection from another bank go unmentioned in authors' Limitations? | Other objection's anchor; text names omission |
 | `shallow` | Does stated limitation name why results fail to transfer, or only where they were not tried ("English only", "one dataset")? | Limitation sentence |
-| `misdescribed` | Is prior work described in a way its own text contradicts (baseline said to lack feature it has)? | Description; note it once literature phase supplies `prior` key |
+| `misdescribed` | Is prior work described in a way its own text contradicts (baseline said to lack feature it has)? | Description; record it once literature phase supplies `prior` key |
 | `scope` | Does scope claimed in conclusion exceed scope limitations concede? | Both sentences |
 
 ## The echo test

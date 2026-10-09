@@ -1,4 +1,4 @@
-"""Argument surface: fetch, check, lookup, clean; one JSON document out."""
+"""Argument surface: get, check, find, clean; one JSON document out."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from btm_asd_ste100.artifacts import (
 )
 from btm_asd_ste100.check import (
     Mode,
-    allow_terms,
+    accept_terms,
     check,
     limits,
     stems,
@@ -37,7 +37,7 @@ from btm_asd_ste100.check import (
 from btm_asd_ste100.layout import Cut, Format
 from btm_asd_ste100.records import Dictionary, Entry, Lexicon, Manifest, Rules, spelled
 from btm_corekit import (
-    Admission,
+    Acceptance,
     CommandError,
     Commands,
     Diagnostic,
@@ -59,14 +59,14 @@ STOP = re.compile(r"(?<=[.!?])\s+")
 # An unapproved entry's alternatives, keyed like the dictionary: a word and
 # part of speech can carry two qualifiers ("few" and "a few").
 Resolved = dict[tuple[str, str | None, str | None], list[str]]
-ALLOW = Optional("allow", inline=False)
+ACCEPT = Optional("accept", inline=False)
 UNCHANGED = "nothing: check writes no state"
-# The shape of the check and lookup documents; a change to a field that
+# The shape of the check and find documents; a change to a field that
 # SKILL.md names raises it.
-REPORT_SCHEMA = 1
+REPORT_SCHEMA = 2
 
 
-def cmd_fetch(args: argparse.Namespace) -> int:
+def cmd_get(args: argparse.Namespace) -> int:
     manifest = fetch(client_for(SKILL, read_timeout=None), args.version)
     emit(
         {
@@ -87,7 +87,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def stamp(origin: Origin) -> dict[str, Any]:
-    """The head of every check and lookup document: one shape, any origin."""
+    """The head of every check and find document: one shape, any origin."""
     return {"schema_version": REPORT_SCHEMA, **origin.echo()}
 
 
@@ -122,7 +122,7 @@ LINE_SHAPE = '{"text": "...", "id": "..."}'
 
 def items(raw: str) -> Batch | Refused:
     """Each non-blank line of `raw` as a `TextLine`, or every problem at once."""
-    gate = Admission()
+    gate = Acceptance()
     batch: Batch = []
     for number, line in enumerate(raw.splitlines(), start=1):
         if not line.strip():
@@ -147,7 +147,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     """One report, or with `--jsonl` one per line from one lexicon index:
     O(lexicon) once, then O(n) per text (3,855 short texts: about 2 s)."""
     body = text(TEXT, args)
-    allowed = allow_terms(text(ALLOW, args))
+    accepted = accept_terms(text(ACCEPT, args))
     batch = items(body) if args.jsonl else None
     if isinstance(batch, Refused):
         emit(rejection(batch.problems, UNCHANGED, TEXT))
@@ -159,14 +159,14 @@ def cmd_check(args: argparse.Namespace) -> int:
     how = Cut(args.format, args.section)
     vocab = vocabulary(lexicon)
     if batch is None:
-        report = check(body, vocab, lim, allowed, how)
-        emit({**stamp(origin), **report, "allowed": allowed.terms})
+        report = check(body, vocab, lim, accepted, how)
+        emit({**stamp(origin), **report, "accepted": accepted.terms})
         return 0
     reports: list[dict[str, Any]] = []
     failed: dict[str, list[int]] = {}  # message -> lines, so one cause is one fix
     for number, item in batch:
         try:
-            report = check(item.text, vocab, lim, allowed, how)
+            report = check(item.text, vocab, lim, accepted, how)
         except CommandError as err:
             failed.setdefault(str(err), []).append(number)
             continue
@@ -184,14 +184,14 @@ def cmd_check(args: argparse.Namespace) -> int:
             **stamp(origin),
             "ok": all(r["ok"] for r in reports),
             "texts": len(reports),
-            "allowed": allowed.terms,
+            "accepted": accepted.terms,
             "reports": reports,
         }
     )
     return 0
 
 
-def cmd_lookup(args: argparse.Namespace) -> int:
+def cmd_find(args: argparse.Namespace) -> int:
     origin, manifest = release(args)
     dictionary = load(manifest, origin, "dictionary.json", Dictionary)
     lexicon = load(manifest, origin, "lexicon.json", Lexicon)
@@ -204,7 +204,7 @@ def cmd_lookup(args: argparse.Namespace) -> int:
         for form in dict.fromkeys([e.word.lower(), *(f.lower() for f in e.forms)]):
             by_form.setdefault(form, []).append(e)
     # The dictionary prints no noun plurals; the lexicon derives them, and
-    # `check` accepts them. Without these, `lookup valves` said "not in the
+    # `check` accepts them. Without these, `find valves` said "not in the
     # dictionary" for the plural of an approved noun.
     plurals = {(x.word, x.pos): x.plural.lower() for x in lexicon.approved if x.plural}
     by_plural: dict[str, list[Entry]] = {}
@@ -212,12 +212,12 @@ def cmd_lookup(args: argparse.Namespace) -> int:
         plural = plurals.get((e.word.lower(), e.pos))
         if plural and e.status.get("kind") == "approved":
             by_plural.setdefault(plural, []).append(e)
-    words = [lookup_one(w, by_form, resolved, by_plural) for w in args.words]
+    words = [find_one(w, by_form, resolved, by_plural) for w in args.words]
     emit({**stamp(origin), "words": words})
     return 0
 
 
-def lookup_one(
+def find_one(
     raw: str,
     by_form: dict[str, list[Entry]],
     resolved: Resolved,
@@ -335,14 +335,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser = Parser(prog="btm-asd-ste100", description=btm_asd_ste100.__doc__)
     commands: Commands = parser.add_subparsers(dest="command", required=True)
 
-    fetcher = commands.add_parser("fetch", help="download and verify the artifacts")
-    fetcher.set_defaults(func=cmd_fetch)
-    add_version(fetcher)
+    getter = commands.add_parser("get", help="download and verify the artifacts")
+    getter.set_defaults(func=cmd_get)
+    add_version(getter)
 
     checker = commands.add_parser("check", help="report STE violations in a text")
     checker.set_defaults(func=cmd_check)
     add_slot(checker, TEXT, "the text to check")
-    add_slot(checker, ALLOW, "declared technical nouns and verbs, one per line")
+    add_slot(checker, ACCEPT, "declared technical nouns and verbs, one per line")
     checker.add_argument(
         "--mode",
         type=Mode,
@@ -373,14 +373,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_release(checker)
 
-    looker = commands.add_parser(
-        "lookup", help="dictionary entries and their alternatives"
+    finder = commands.add_parser(
+        "find", help="dictionary entries and their alternatives"
     )
-    looker.set_defaults(func=cmd_lookup)
-    looker.add_argument(
+    finder.set_defaults(func=cmd_find)
+    finder.add_argument(
         "words", nargs="+", metavar="WORD", help="a headword or one of its forms"
     )
-    add_release(looker)
+    add_release(finder)
 
     cleaner = commands.add_parser("clean", help="drop the artifact cache")
     cleaner.set_defaults(func=cmd_clean)

@@ -1,8 +1,8 @@
 """A projection of an undecided set, sized to a judgment rather than a read.
-An agent screening a few hundred candidates needs to know what kinds of
-thing are there and accept or reject a kind in one move, not read every
+An agent screening a few hundred candidates needs to know what types of
+thing are there and accept or reject a type in one move, not read every
 row. `digest` computes that partition in C-backed passes and returns one
-label, count, selecting rule, and a few exemplars per kind."""
+label, count, selecting rule, and a few exemplars per type."""
 
 from __future__ import annotations
 
@@ -14,14 +14,14 @@ from typing import Any
 from btm_corekit.report.invariants import require
 from btm_corekit.text import ascii_words
 
-CLUSTER_CAP = 20  # how many kinds an agent can weigh in one pass
+CLUSTER_CAP = 20  # how many types an agent can weigh in one pass
 EXEMPLARS = 2  # enough rows to judge a label, not enough to read the corpus
-CLUSTER_SIZE_MIN = 2  # one item is that item, not a kind worth a rule
+CLUSTER_SIZE_MIN = 2  # one item is that item, not a type worth a rule
 TEXT_CHARS = 90  # an exemplar identifies its cluster; it is not the record
 RESIDUE_CAP = 25
-LABEL_CHARS_MIN = 3  # shorter tokens are articles and initials, never kinds
-LABEL_SHARE_MAX = 0.3  # a term in a third of items is the query, not a kind
-LABEL_ITEMS_MIN = 2  # a term in one item names that item, not a kind
+LABEL_CHARS_MIN = 3  # shorter tokens are articles and initials, never types
+LABEL_SHARE_MAX = 0.3  # a term in a third of items is the query, not a type
+LABEL_ITEMS_MIN = 2  # a term in one item names that item, not a type
 
 STOPWORDS = frozenset(
     [
@@ -95,7 +95,7 @@ class Item:
 
 
 def brief(item: Item) -> dict[str, str]:
-    """An item's text, truncated: enough to recognize the kind. The caller
+    """An item's text, truncated: enough to recognize the type. The caller
     reads the full record only for the few it acts on."""
     text = item.text
     if len(text) > TEXT_CHARS:

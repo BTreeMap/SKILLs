@@ -240,7 +240,7 @@ def blockers(state: RunState, gate: Gate) -> list[str]:
     match gate:
         case Gate.PLAN if state.meta.verb is Verb.DESIGN and not state.claims:
             return [
-                "note each falsifiable claim as to-run: the plan carries the ledger"
+                "record each falsifiable claim as to-run: the plan carries the ledger"
             ]
         case Gate.PLAN:
             return []
@@ -296,7 +296,7 @@ def _request(state: RunState, gate: Gate) -> None:
 def _decide(state: RunState, event: GateDecided) -> None:
     require(
         state.gates.get(event.gate) is Standing.PENDING,
-        f"the {event.gate} gate has no pending request; note gate-requested first",
+        f"the {event.gate} gate has no pending request; record gate-requested first",
     )
     state.gates[event.gate] = DECIDED[event.outcome]
     if event.outcome is Outcome.REJECT:
@@ -309,7 +309,7 @@ def _live(state: RunState, claim_id: str) -> Claim:
 
 
 def apply(state: RunState, raw: Mapping[str, Any]) -> None:
-    """Admit one unstamped event into the state, or raise the law it breaks.
+    """Accept one unstamped event into the state, or raise the law it breaks.
     The gate runs this on every staged event, so the log holds only events
     that replay."""
     require(state.events < MAX_EVENTS, f"event cap reached ({MAX_EVENTS})")

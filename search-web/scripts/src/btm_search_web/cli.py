@@ -123,12 +123,12 @@ def cmd_passages(args: argparse.Namespace) -> int:
         "count": len(found),
     }
     if not found:
-        document["next"] = "ask another question, or read the paper with fetch"
+        document["next"] = "ask another question, or read the paper with get"
     emit(document)
     return 0
 
 
-def cmd_fetch(args: argparse.Namespace) -> int:
+def cmd_get(args: argparse.Namespace) -> int:
     """One page's text, cached by URL in the record shape every verb caches;
     with `--out`, the raw body written to a file and pinned by its digest,
     never cached, so the digest is always of what the server sent now."""
@@ -137,7 +137,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         saved = sources.save(args.url, target)
         emit(
             {
-                "verb": "fetch",
+                "verb": "get",
                 "url": args.url,
                 "path": str(target),
                 "bytes": saved.size,
@@ -145,25 +145,25 @@ def cmd_fetch(args: argparse.Namespace) -> int:
             }
         )
         return 0
-    key = f"fetch:{args.url}"
+    key = f"get:{args.url}"
     rows = remembered(key)
     if rows:
-        signal("cached: this fetch ran before; clean drops the cache")
+        signal("cached: this get ran before; clean drops the cache")
         text = rows[0].snippet
     else:
         text = sources.fetch(args.url)
         remember(
             key,
-            [Result(title=args.url, url=args.url, source="fetch", snippet=text)],
+            [Result(title=args.url, url=args.url, source="get", snippet=text)],
         )
     if len(text) < THIN_CHARS:
         signal(
-            f"thin: fetch extracted {len(text)} characters; the page is likely "
+            f"thin: get extracted {len(text)} characters; the page is likely "
             "rendered by JavaScript, so its content lives elsewhere: look for "
             "a JSON or Markdown source (an API spec, a raw file) before "
             "reading the page as empty"
         )
-    emit({"verb": "fetch", "url": args.url, "chars": len(text), "text": text})
+    emit({"verb": "get", "url": args.url, "chars": len(text), "text": text})
     return 0
 
 
@@ -220,10 +220,10 @@ def build_parser() -> argparse.ArgumentParser:
         reader, what="passages to ask for", default=DEFAULT_PASSAGES, cap=MAX_RESULTS
     )
 
-    fetch = commands.add_parser("fetch", help="readable text of one page")
-    fetch.set_defaults(func=cmd_fetch)
-    fetch.add_argument("url", help="an http or https URL")
-    fetch.add_argument(
+    getter = commands.add_parser("get", help="readable text of one page")
+    getter.set_defaults(func=cmd_get)
+    getter.add_argument("url", help="an http or https URL")
+    getter.add_argument(
         "--out",
         metavar="PATH",
         help="write the raw body to PATH, a new file, and report its bytes and "

@@ -153,7 +153,7 @@ reference topic.
 Hand work to another agent through `/summon`, supplying only what its caller
 table asks: unit one delegate closes, record it receives, rules of this
 skill that unit can break, return shape by registered name, cap, gate lead
-admits return through. Leave mode, brief shape, bounds, sizing, trust,
+accepts return through. Leave mode, brief shape, bounds, sizing, trust,
 return review to summon; carry no worker prompt, delegation threshold, or
 cost figure.
 

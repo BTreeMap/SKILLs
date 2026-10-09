@@ -1,11 +1,11 @@
 # Analysis: Results and Statistics
 
-Walk once per paper over every table and figure claims cite, then note
+Walk once per paper over every table and figure claims cite, then record
 `walks` entry for `analysis`.
 
 ## Signalling questions
 
-| Kind | Question | Anchor or `missing` |
+| Type | Question | Anchor or `missing` |
 | --- | --- | --- |
 | `variance` | Do results supporting main claim carry error bars, intervals, or test over several runs? | Table caption, or `missing: error bars for <table>` |
 | `comparison` | Is "A beats B" backed by direct test of difference, or by two separate significance results? | Comparison sentence |

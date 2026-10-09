@@ -25,7 +25,7 @@ theme: paragraph per paper makes annotated bibliography.
   resolve it: report says so.
 - **Single-paper claims are labeled.** Write "One study reports ...".
 - **Weight follows appraisal.** Read each record's `appraisal` with
-  `read --kind extraction`. Weakly appraised paper can be mentioned; cannot
+  `read --type extraction`. Weakly appraised paper can be mentioned; cannot
   anchor theme's conclusion. Say why when weight differs.
 - **Every synthesis sentence is traceable.** Each claim maps to named
   records (invariant 1); delete sentence no record supports.
@@ -46,7 +46,7 @@ support.
 
 ## Findings and gaps as records
 
-Promote each theme conclusion into notebook with `note`: finding carries
+Promote each theme conclusion into notebook with `record`: finding carries
 claim, supporting keys, read level each citation needs; gap carries absence
 claimed, null-search log ids proving it, and watch: `|`-separated words a
 challenger would use in title or abstract, matched literally. `brief`
@@ -96,7 +96,7 @@ Corpus-relative gaps, phrased as Gaps requires.
 
 ## Included papers
 | [n] | title | authors | year | venue | read level | key |
-Rows follow the script's marker table; bibliography with DOI or arXiv
+Rows follow the script's mark table; bibliography with DOI or arXiv
 link per entry.
 </template>
 
@@ -109,7 +109,7 @@ link per entry.
    broken DOI (usually mangled key: re-search paper), or remove citation and
    its dependent claims. Crossref title-mismatch signal is possible
    retraction or erratum: check landing page before keeping citation.
-2. Run `cite-check --draft:file <file>`. Fix every problem it lists (markers
+2. Run `cite-check --draft:file <file>`. Fix every problem it lists (marks
    never assigned, citations of excluded or unread papers), resolve at-risk
    findings it echoes, rerun until clean. Unused included papers are
    coverage question to settle deliberately.

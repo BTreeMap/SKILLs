@@ -14,11 +14,11 @@ from btm_peer_review.constants import (
     Band,
     Bank,
     ClaimVerdict,
-    Kind,
     Level,
     Recommendation,
     Severity,
     Standing,
+    Type,
 )
 from btm_peer_review.state import Ledger, Missing, Objection
 from btm_peer_review.store import Corpus
@@ -33,7 +33,7 @@ closed so no fifth word can be written into a row downstream reads."""
 
 
 class AnchorView(TypedDict):
-    """One quote as the report renders it. Read by marker downstream, so the
+    """One quote as the report renders it. Read by mark downstream, so the
     keys are the contract between the views."""
 
     quote: str
@@ -45,9 +45,9 @@ class ObjectionView(TypedDict):
     """One objection as every downstream view reads it. Five functions index
     this by key, so the keys are the contract between them."""
 
-    marker: str
+    mark: str
     id: str
-    kind: Kind
+    type: Type
     bank: Bank
     severity: Severity
     standing: Standing
@@ -62,10 +62,10 @@ class ObjectionView(TypedDict):
 
 
 class ClaimView(TypedDict):
-    """One contribution claim and what stands against it. Indexed by marker
+    """One contribution claim and what stands against it. Indexed by mark
     by the draft check, so its shape outlives the return."""
 
-    marker: str
+    mark: str
     id: str
     verbatim: str
     page: int | None
@@ -73,7 +73,7 @@ class ClaimView(TypedDict):
     objections: list[str]
 
 
-def markers(ledger: Ledger) -> tuple[dict[str, str], dict[str, str]]:
+def marks(ledger: Ledger) -> tuple[dict[str, str], dict[str, str]]:
     claims = {cid: f"C{i}" for i, cid in enumerate(ledger.claim_order, start=1)}
     objections = {oid: f"O{i}" for i, oid in enumerate(ledger.objection_order, start=1)}
     return claims, objections
@@ -150,7 +150,7 @@ def _standing(withdrawn: bool, anchored: bool, dated: bool) -> Standing:
 def objection_views(
     ledger: Ledger, paper: PaperText | None, corpus: Corpus | None, year: int
 ) -> list[ObjectionView]:
-    claim_markers, objection_markers = markers(ledger)
+    claim_marks, objection_marks = marks(ledger)
     views: list[ObjectionView] = []
     for oid in ledger.objection_order:
         objection = ledger.objections[oid]
@@ -158,13 +158,13 @@ def objection_views(
         prior, dated = _prior_views(objection, corpus, year)
         views.append(
             ObjectionView(
-                marker=objection_markers[oid],
+                mark=objection_marks[oid],
                 id=oid,
-                kind=objection.kind,
-                bank=objection.kind.bank,
+                type=objection.type,
+                bank=objection.type.bank,
                 severity=objection.severity,
                 standing=_standing(oid in ledger.withdrawn, anchored, dated),
-                claim=claim_markers[objection.claim] if objection.claim else None,
+                claim=claim_marks[objection.claim] if objection.claim else None,
                 where=objection.where,
                 text=objection.text,
                 anchors=anchors,
@@ -190,16 +190,16 @@ def _claim_verdict(hits: list[ObjectionView]) -> ClaimVerdict:
 def claim_views(
     ledger: Ledger, paper: PaperText | None, objections: list[ObjectionView]
 ) -> list[ClaimView]:
-    claim_markers, _ = markers(ledger)
-    against: dict[str, list[ObjectionView]] = {m: [] for m in claim_markers.values()}
+    claim_marks, _ = marks(ledger)
+    against: dict[str, list[ObjectionView]] = {m: [] for m in claim_marks.values()}
     for view in objections:
         if view["claim"] and view["standing"] is Standing.GROUNDED:
             against[view["claim"]].append(view)
     views: list[ClaimView] = []
     for cid in ledger.claim_order:
         claim = ledger.claims[cid]
-        marker = claim_markers[cid]
-        hits = against[marker]
+        mark = claim_marks[cid]
+        hits = against[mark]
         page: int | None = claim.page
         if paper is not None:
             match paper.resolve(claim.verbatim):
@@ -209,12 +209,12 @@ def claim_views(
                     page = None
         views.append(
             ClaimView(
-                marker=marker,
+                mark=mark,
                 id=cid,
                 verbatim=claim.verbatim,
                 page=page,
                 verdict=_claim_verdict(hits),
-                objections=[v["marker"] for v in hits],
+                objections=[v["mark"] for v in hits],
             )
         )
     return views
@@ -301,13 +301,13 @@ def scaffold(
     rest listed where the draft must disclose or drop them."""
     grounded = [v for v in objections if v["standing"] is Standing.GROUNDED]
     by_severity = {
-        s: [v["marker"] for v in grounded if v["severity"] is s] for s in Severity
+        s: [v["mark"] for v in grounded if v["severity"] is s] for s in Severity
     }
     by_standing = {
-        s: [v["marker"] for v in objections if v["standing"] is s] for s in Standing
+        s: [v["mark"] for v in objections if v["standing"] is s] for s in Standing
     }
     return {
-        "claims": [c["marker"] for c in claims],
+        "claims": [c["mark"] for c in claims],
         "fatal": by_severity[Severity.FATAL],
         "major": by_severity[Severity.MAJOR],
         "minor": by_severity[Severity.MINOR],
@@ -321,7 +321,7 @@ def scaffold(
 class Citations(TypedDict):
     """`recommendation` is spliced in by the command after the pure check."""
 
-    markers: int
+    marks: int
     problems: list[str]
     recommendation: NotRequired[dict[str, JSON]]
 
@@ -329,34 +329,34 @@ class Citations(TypedDict):
 def cite_check(
     text: str, claims: list[ClaimView], objections: list[ObjectionView]
 ) -> Citations:
-    """Pure verdict over a draft: every marker resolves to a grounded
+    """Pure verdict over a draft: every mark resolves to a grounded
     objection or a claim, and every grounded fatal or major objection is
-    cited. Code spans are blanked first, so a marker quoted inside a fence
+    cited. Code spans are blanked first, so a mark quoted inside a fence
     is prose about the review, not a citation. O(draft + ledger)."""
-    known_claims = {c["marker"] for c in claims}
-    by_marker = {v["marker"]: v for v in objections}
+    known_claims = {c["mark"] for c in claims}
+    by_mark = {v["mark"]: v for v in objections}
     used = {
         content
         for content in bracketed(strip_code(text))
         if content[:1] in ("C", "O") and is_digits(content[1:])
     }
     problems = []
-    for marker in sorted(used):
-        if marker in known_claims:
+    for mark in sorted(used):
+        if mark in known_claims:
             continue
-        view = by_marker.get(marker)
+        view = by_mark.get(mark)
         if view is None:
-            problems.append(f"[{marker}] was never minted; cite a marker from check")
+            problems.append(f"[{mark}] was never made; cite a mark from check")
         elif view["standing"] is not Standing.GROUNDED:
-            problems.append(f"[{marker}] is {view['standing']}; drop it or restore it")
+            problems.append(f"[{mark}] is {view['standing']}; drop it or restore it")
     for view in objections:
         if (
             view["standing"] is Standing.GROUNDED
             and view["severity"] in DECISIVE
-            and view["marker"] not in used
+            and view["mark"] not in used
         ):
             problems.append(
-                f"[{view['marker']}] is a grounded {view['severity']} objection "
+                f"[{view['mark']}] is a grounded {view['severity']} objection "
                 "absent from the draft"
             )
-    return {"markers": len(used), "problems": problems}
+    return {"marks": len(used), "problems": problems}

@@ -152,27 +152,27 @@ def _sweep_row(sweep: Sweep, view: View) -> dict[str, Any]:
 
 
 CITED_FIELDS = ("doi", "arxiv_id", "authors", "year", "venue")
-"""What a source noted from a `cite` record adds to its Sources line."""
+"""What a source recorded from a `cite` record adds to its Sources line."""
 
 
-def marker_table(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, JSON]:
-    """Marker to the fields a Sources line needs: class, title, url, and each
+def mark_table(ledger: Ledger, mark_of: dict[str, str]) -> dict[str, JSON]:
+    """Mark to the fields a Sources line needs: class, title, url, and each
     citation field the source carries, an absent one costing nothing. The
-    minted id is the ledger's business, not the draft's, and 41 of them cost
+    new id is the ledger's business, not the draft's, and 41 of them cost
     1.9 KB no reader spends."""
     table: dict[str, JSON] = {}
     for source_id in ledger.source_order:
         fields = ledger.sources[source_id].model_dump(mode="json")
         line = {name: fields[name] for name in ("cls", "title", "url")}
         line.update({name: fields[name] for name in CITED_FIELDS if fields[name]})
-        table[marker_of[source_id]] = line
+        table[mark_of[source_id]] = line
     return table
 
 
 def scaffold(
-    ledger: Ledger, marker_of: dict[str, str], view: View = View.DRAFT
+    ledger: Ledger, mark_of: dict[str, str], view: View = View.DRAFT
 ) -> dict[str, list[dict[str, Any]]]:
-    """The stored close prose keyed by marker, grouped into the derived sections.
+    """The stored close prose keyed by mark, grouped into the derived sections.
 
     Every row carries its identity and derivation at every view level; the
     agent's own findings (premise, detail, survivors, eliminated) show only
@@ -187,7 +187,7 @@ def scaffold(
                     {
                         "leaf": leaf_id,
                         "q": leaf.question,
-                        "markers": [marker_of[sid] for sid in sources],
+                        "marks": [mark_of[sid] for sid in sources],
                         "stated": stated(classes),
                     }
                     | prose(premise, detail)
@@ -197,7 +197,7 @@ def scaffold(
                     {
                         "leaf": leaf_id,
                         "q": leaf.question,
-                        "markers": [marker_of[sid] for sid in sources],
+                        "marks": [mark_of[sid] for sid in sources],
                     }
                     | prose(premise, detail)
                 )

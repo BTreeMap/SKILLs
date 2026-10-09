@@ -118,7 +118,7 @@ class TestPassages:
         _, document, _ = run(["passages", "10.1145/3065386"], capsys)
         assert document["query"] is None
         assert document["ref"] == "doi:10.1145/3065386"
-        assert document["count"] == 0 and "fetch" in document["next"]
+        assert document["count"] == 0 and "get" in document["next"]
 
     def test_only_an_index_with_passages_is_a_choice(self):
         with pytest.raises(CommandError, match="invalid choice"):
@@ -127,8 +127,8 @@ class TestPassages:
             )
 
 
-class TestFetch:
-    def test_the_second_fetch_of_one_url_costs_no_request(self, capsys, monkeypatch):
+class TestGet:
+    def test_the_second_get_of_one_url_costs_no_request(self, capsys, monkeypatch):
         calls = []
 
         def once(url):
@@ -136,16 +136,16 @@ class TestFetch:
             return "the readable body"
 
         monkeypatch.setattr(sources, "fetch", once)
-        _, first, _ = run(["fetch", "https://x.org/a"], capsys)
-        _, second, err = run(["fetch", "https://x.org/a"], capsys)
+        _, first, _ = run(["get", "https://x.org/a"], capsys)
+        _, second, err = run(["get", "https://x.org/a"], capsys)
         assert calls == ["https://x.org/a"]
         assert second == first and second["chars"] == len("the readable body")
         assert "cached" in err
 
     def test_a_different_url_is_a_different_page(self, capsys, monkeypatch):
         monkeypatch.setattr(sources, "fetch", lambda url: url)
-        run(["fetch", "https://x.org/a"], capsys)
-        _, document, err = run(["fetch", "https://x.org/b"], capsys)
+        run(["get", "https://x.org/a"], capsys)
+        _, document, err = run(["get", "https://x.org/b"], capsys)
         assert document["text"] == "https://x.org/b" and "cached" not in err
 
 
@@ -160,21 +160,21 @@ class TestThinPage:
         on the cached answer too."""
         monkeypatch.setattr(sources, "fetch", lambda url: self.REDOC_MENU)
         for _ in range(2):
-            code, document, err = run(["fetch", "https://x.org/api-docs/"], capsys)
+            code, document, err = run(["get", "https://x.org/api-docs/"], capsys)
             assert code == 0 and document["chars"] == len(self.REDOC_MENU)
             assert "rendered by JavaScript" in err and "JSON or Markdown" in err
 
     def test_an_article_length_extraction_is_quiet(self, capsys, monkeypatch):
         monkeypatch.setattr(sources, "fetch", lambda url: "word " * 100)
-        _, _, err = run(["fetch", "https://x.org/a"], capsys)
+        _, _, err = run(["get", "https://x.org/a"], capsys)
         assert "thin" not in err
 
 
-class TestRawFetch:
+class TestRawGet:
     def test_out_reports_the_digest_and_skips_the_cache(
         self, capsys, monkeypatch, tmp_path, temp_cache
     ):
-        """A pin is of what the server sends now, so a raw fetch never reads
+        """A pin is of what the server sends now, so a raw get never reads
         or fills the page cache."""
         calls = []
 
@@ -184,7 +184,7 @@ class TestRawFetch:
 
         monkeypatch.setattr(sources, "save", save)
         target = tmp_path / "set.csv"
-        argv = ["fetch", "https://x.org/set.csv", "--out", str(target)]
+        argv = ["get", "https://x.org/set.csv", "--out", str(target)]
         _, first, _ = run(argv, capsys)
         _, second, err = run(argv, capsys)
         assert calls == [("https://x.org/set.csv", target)] * 2
@@ -192,7 +192,7 @@ class TestRawFetch:
             first
             == second
             == {
-                "verb": "fetch",
+                "verb": "get",
                 "url": "https://x.org/set.csv",
                 "path": str(target),
                 "bytes": 3,

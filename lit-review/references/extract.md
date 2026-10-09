@@ -21,12 +21,12 @@ missing from them needs re-read later.
 
 Write one record per paper; `status` and `brief` list included papers with
 no extraction entry. Fill only what source states; write "not reported" for
-rest. Body free beyond `kind` and `key`: add per-paper hypothesis-directed
+rest. Body free beyond `type` and `key`: add per-paper hypothesis-directed
 questions whenever argument needs them.
 
 <template for="extraction">
 $R write "$S" <<'JSON'
-{"kind": "extraction", "key": "doi:10.1234/example.1",
+{"type": "extraction", "key": "doi:10.1234/example.1",
  "claims": "the one to three findings the paper itself asserts, each with location",
  "method": "design, dataset or sample, baselines compared against",
  "evidence": "the numbers backing each claim, as reported, with units",

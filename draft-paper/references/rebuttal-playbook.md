@@ -23,7 +23,7 @@ any readable layout, one block per reviewer:
 
 1. List every reviewer concern as quoted one-liner with reviewer and score;
    `write` each as `objection` entry; mapping below is filled from
-   `read --kind objection`.
+   `read --type objection`.
 2. Classify each concern; respond by its class:
 
    | Class | Response |

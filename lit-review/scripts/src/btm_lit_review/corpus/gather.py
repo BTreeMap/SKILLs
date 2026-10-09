@@ -84,7 +84,7 @@ def record_fetch(
         {
             "id": log_id,
             "time": now_iso(),
-            "fetched": len(fetched),
+            "got": len(fetched),
             "new": new_count,
             "total_matches": total,
             "truncated": truncated,
@@ -126,7 +126,7 @@ class Query(Model):
     query: NonEmpty
 
 
-def cmd_init(args: argparse.Namespace) -> int:
+def cmd_start(args: argparse.Namespace) -> int:
     framing = content(Framing, FRAMING, args)
     made = STORE.create(args.session)
     root, name = made.directory, made.name

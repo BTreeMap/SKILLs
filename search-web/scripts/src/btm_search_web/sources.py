@@ -205,7 +205,7 @@ def read(ref: Ref, query: str | None, limit: int, source: str) -> tuple[Passage,
 def web_url(url: str) -> str:
     """The URL, once it is http or https: no request reads a local file."""
     if not url.startswith(("http://", "https://")):
-        raise CommandError(f"fetch takes an http or https URL; got {url!r}")
+        raise CommandError(f"get takes an http or https URL; got {url!r}")
     return url
 
 
@@ -227,7 +227,7 @@ def fetch(url: str) -> str:
 
 
 class Saved(NamedTuple):
-    """What a raw fetch wrote: the size and digest that pin the file."""
+    """What a raw get wrote: the size and digest that pin the file."""
 
     size: int
     sha256: str

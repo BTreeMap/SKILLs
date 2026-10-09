@@ -35,7 +35,7 @@ class Criteria(Model):
 
 
 class Protocol(Tagged):
-    """The review's frame, written at init and edited by hand thereafter."""
+    """The review's frame, written at start and edited by hand thereafter."""
 
     question: NonEmpty
     level: Level = Level.FULL

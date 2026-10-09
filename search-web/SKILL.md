@@ -10,7 +10,7 @@ compatibility: >-
   first run builds the `.venv` at the checkout root that every skill's
   scripts share, about 225 MB.
 metadata:
-  argument-hint: "[web|instant|wiki|scholar|passages|fetch] [query-paper-or-url]"
+  argument-hint: "[web|instant|wiki|scholar|passages|get] [query-paper-or-url]"
 ---
 
 # Search Web
@@ -42,7 +42,7 @@ Each invocation runs one verb.
 | wiki | Wikipedia hits, each with summary | Question encyclopedic |
 | scholar | Papers, with DOI, year, citations | Research question |
 | passages | Full-text passages of one paper for question | Paper's body, not abstract, holds answer |
-| fetch | Readable text of one page | Result worth reading in full |
+| get | Readable text of one page | Result worth reading in full |
 
 ## Commands
 
@@ -56,7 +56,7 @@ $R instant --query "<term>"
 $R wiki --query "<terms>" [--limit 8]
 $R scholar --query "<terms>" [--source openalex|crossref|arxiv|semanticscholar|firecrawl] [--limit 8]
 $R passages "<doi-or-arxiv-id-or-index-id>" [--query "<question>"] [--source firecrawl] [--limit 4]
-$R fetch "<url>" [--out PATH]
+$R get "<url>" [--out PATH]
 $R clean
 </commands>
 
@@ -88,12 +88,12 @@ clear it. Repeated query answered from cache, says so; `clean` drops cache.
   `--query`, each with `score`. Without `--query`: abstract as one unscored
   passage. `--source` lists only indexes holding full text. Output's `ref`
   is reference as parsed; paper index does not hold: rejection.
-- `fetch`: takes one http or https URL, returns article. PDF, raw data file
+- `get`: takes one http or https URL, returns article. PDF, raw data file
   (JSONL, CSV), listing, or paywall comes back refused, not empty. Page
   rendered by JavaScript comes back refused or as few characters of menu
   text, never its content. With `--out PATH`: extracts nothing; writes body
   unchanged to `PATH` (file must not exist yet), returns `path`, `bytes`,
-  `sha256`. Pin data file or PDF this way, quoting digest. Raw fetch never
+  `sha256`. Pin data file or PDF this way, quoting digest. Raw `get` never
   cached, capped at 512 MiB.
 
 ## Reading results
@@ -105,7 +105,7 @@ have. Judge row by its `source`:
 - `passages`: paper's own words, citable at full-text read level for that
   passage alone.
 - `wiki`: tertiary summary; orientation only, never citation.
-- `web`: whatever ranked; open with `fetch` before relying on it.
+- `web`: whatever ranked; open with `get` before relying on it.
 
 ## Completion checks
 

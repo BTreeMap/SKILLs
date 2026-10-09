@@ -18,7 +18,7 @@ class TestEventLog:
         assert log.count() == 2
 
     def test_reading_a_missing_log_names_the_hint(self, tmp_path):
-        with pytest.raises(CommandError, match="run init first"):
+        with pytest.raises(CommandError, match="run start first"):
             EventLog(tmp_path / "ledger.jsonl").read()
 
     def test_the_cap_counts_the_whole_log(self, tmp_path):

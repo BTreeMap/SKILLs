@@ -20,14 +20,14 @@ only place novelty objection can point.
    before paper's is now citable as `prior`; later key is refused. Key
    sharing paper's year passes with advisory; confirm prior work was public
    first before keeping objection at major.
-6. Walk questions below; note `walks` entry for `novelty`.
+6. Walk questions below; record `walks` entry for `novelty`.
 
 Ultra adds forward snowball from every key cited as `prior`, so rebuttal
 already published is in corpus before review says "predates".
 
 ## Signalling questions
 
-| Kind | Question | Anchor and prior |
+| Type | Question | Anchor and prior |
 | --- | --- | --- |
 | `prior` | Does corpus work make same contribution, in substance, before this paper? | Claim sentence; prior key; text states what overlaps and what differs |
 | `first` | Is "first", "novel", or "no prior work" claim contradicted by dated corpus work? | Claim sentence; prior key |

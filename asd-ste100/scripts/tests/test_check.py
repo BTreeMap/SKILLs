@@ -8,7 +8,7 @@ import pytest
 from btm_asd_ste100.check import (
     WORD,
     Mode,
-    allow_terms,
+    accept_terms,
     check,
     limits,
     paragraphs,
@@ -29,16 +29,16 @@ def run(lexicon_doc, rules_doc):
     def go(
         text: str,
         mode: Mode = Mode.PROCEDURE,
-        allow: str | None = None,
+        accept: str | None = None,
         how: Cut = Cut(),  # noqa: B008 - frozen, so one shared default is safe
     ) -> dict:
-        return check(text, vocab, limits(rules, mode), allow_terms(allow), how)
+        return check(text, vocab, limits(rules, mode), accept_terms(accept), how)
 
     return go
 
 
-def kinds(report: dict, key: str = "findings") -> list[str]:
-    return [f["kind"] for f in report[key]]
+def types(report: dict, key: str = "findings") -> list[str]:
+    return [f["type"] for f in report[key]]
 
 
 class TestSplitter:
@@ -118,12 +118,12 @@ class TestFindings:
 
     def test_description_mode_sets_its_own_limit(self, run):
         text = "Remove the test and install the faster test."
-        assert kinds(run(text, Mode.PROCEDURE)) == ["sentence_length"]
+        assert types(run(text, Mode.PROCEDURE)) == ["sentence_length"]
         assert run(text, Mode.DESCRIPTION)["ok"]
 
     def test_the_paragraph_limit_applies_to_description_only(self, run):
         text = "Remove the test. Remove the test. Remove the test."
-        assert "paragraph_length" in kinds(run(text, Mode.DESCRIPTION))
+        assert "paragraph_length" in types(run(text, Mode.DESCRIPTION))
         procedure = run(text, Mode.PROCEDURE)
         assert procedure["ok"]
         assert any("6.6" in s for s in procedure["skipped"])
@@ -149,7 +149,7 @@ class TestFindings:
 
     def test_a_contraction_and_a_semicolon(self, run):
         report = run("Don't remove the test; do the test.")
-        assert {"contraction", "punctuation"} <= set(kinds(report))
+        assert {"contraction", "punctuation"} <= set(types(report))
 
     def test_a_code_span_is_not_checked(self, run):
         assert run("Remove the `frobnicate --utilize` test.")["ok"]
@@ -157,7 +157,7 @@ class TestFindings:
     def test_quoted_text_is_a_technical_noun_and_a_signal(self, run):
         report = run('Do not remove the "utilize" test.')
         assert report["ok"]
-        (s,) = [s for s in report["signals"] if s["kind"] == "quotation"]
+        (s,) = [s for s in report["signals"] if s["type"] == "quotation"]
         assert (s["text"], s["lines"]) == ('"utilize"', [1])
 
     def test_an_inflected_unapproved_word_carries_its_alternatives(self, run):
@@ -171,7 +171,7 @@ class TestFindings:
 
     def test_an_unapproved_ing_headword_is_reported_under_1_1(self, run):
         (f,) = run("Remove the finding.")["findings"]
-        assert (f["rule"], f["kind"], f["alternatives"]) == (
+        assert (f["rule"], f["type"], f["alternatives"]) == (
             "1.1",
             "not_approved",
             ["test (n)"],
@@ -196,7 +196,7 @@ class TestFindings:
         (f,) = report["findings"]
         assert (f["sentences"], f["lines"]) == ([1, 2], [3, 4])
 
-    def test_the_summary_counts_by_kind_and_names_the_words(self, run):
+    def test_the_summary_counts_by_type_and_names_the_words(self, run):
         summary = run("Ensure the pump.")["summary"]
         assert summary["findings"] == {"not_approved": 2}
         assert summary["words"] == ["Ensure", "pump"]
@@ -214,7 +214,7 @@ class TestPhrases:
         a particle used apart: 'turn on the sleeves'."""
         report = run("Turn off the test.")
         assert report["ok"]
-        (s,) = [s for s in report["signals"] if s["kind"] == "phrasal_verb"]
+        (s,) = [s for s in report["signals"] if s["type"] == "phrasal_verb"]
         assert (s["token"], s["headword"], s["alternatives"]) == (
             "Turn off",
             "turn off",
@@ -222,8 +222,8 @@ class TestPhrases:
         )
 
     def test_an_inflected_phrasal_verb_names_its_headword(self, run):
-        report = run("Then the test turned off.", allow="then")
-        (s,) = [s for s in report["signals"] if s["kind"] == "phrasal_verb"]
+        report = run("Then the test turned off.", accept="then")
+        (s,) = [s for s in report["signals"] if s["type"] == "phrasal_verb"]
         assert (s["token"], s["headword"]) == ("turned off", "turn off")
 
     def test_a_declared_word_passes_alone_in_a_phrasal_verb(self, run):
@@ -231,14 +231,14 @@ class TestPhrases:
         noun, and the words read as SWITCH (TN) and OFF."""
         text = "Remove the test switch off the opening."
         assert not run(text)["ok"]
-        report = run(text, allow="switch")
+        report = run(text, accept="switch")
         assert report["ok"]
-        assert "phrasal_verb" in kinds(report, "signals")
+        assert "phrasal_verb" in types(report, "signals")
 
     def test_a_phrasal_verb_with_a_word_that_fails_alone_is_a_finding(self, run):
         """AWAY is approved only in AWAY FROM, so 'get away' stays a finding."""
         (f,) = run("Get away the test.")["findings"]
-        assert (f["kind"], f["token"]) == ("not_approved", "Get away")
+        assert (f["type"], f["token"]) == ("not_approved", "Get away")
 
     def test_the_words_of_the_phrase_alone_pass(self, run):
         assert run("Turn the test. Remove the test off.")["ok"]
@@ -267,27 +267,27 @@ class TestPhrases:
 
     def test_an_unapproved_hyphenated_headword_is_found(self, run):
         """Every part is declared, but the whole is a headword."""
-        (f,) = run("Hand-tighten the test.", allow="hand\ntighten")["findings"]
+        (f,) = run("Hand-tighten the test.", accept="hand\ntighten")["findings"]
         assert (f["token"], f["alternatives"]) == ("Hand-tighten", ["install (v)"])
 
 
-class TestAllowList:
+class TestAcceptList:
     def test_a_declared_noun_and_its_plural_pass(self, run):
-        allow = "# technical nouns\npump\nfuel line\n"
-        assert run("Remove the pump. Remove the pumps.", allow=allow)["ok"]
-        assert run("Remove the fuel line.", allow=allow)["ok"]
+        accept = "# technical nouns\npump\nfuel line\n"
+        assert run("Remove the pump. Remove the pumps.", accept=accept)["ok"]
+        assert run("Remove the fuel line.", accept=accept)["ok"]
 
     def test_a_hyphenated_word_of_declared_and_approved_parts(self, run):
-        assert run("Remove the one-pump test.", allow="pump\n")["ok"]
+        assert run("Remove the one-pump test.", accept="pump\n")["ok"]
         assert not run("Remove the one-pump test.")["ok"]
 
     def test_a_declared_noun_passes_as_a_possessive(self, run):
-        assert run("Remove the pump's test.", allow="pump\n")["ok"]
+        assert run("Remove the pump's test.", accept="pump\n")["ok"]
 
     def test_a_word_of_a_multi_word_term_does_not_pass_alone(self, run):
-        allow = "fuel line\n"
-        assert run("Remove the fuel lines.", allow=allow)["ok"]
-        (f,) = run("Remove the line.", allow=allow)["findings"]
+        accept = "fuel line\n"
+        assert run("Remove the fuel lines.", accept=accept)["ok"]
+        (f,) = run("Remove the line.", accept=accept)["findings"]
         assert f["token"] == "line"
 
     def test_numbers_units_and_number_words_pass(self, run):
@@ -298,7 +298,7 @@ class TestSignals:
     def test_signals_never_flip_ok(self, run):
         report = run("The test is installed by a test.", Mode.DESCRIPTION)
         assert report["ok"]
-        (s,) = [s for s in report["signals"] if s["kind"] == "passive_candidate"]
+        (s,) = [s for s in report["signals"] if s["type"] == "passive_candidate"]
         assert s["agent_named"] is True
 
     def test_an_approved_noun_that_is_an_unapproved_verb(self, run):
@@ -313,9 +313,9 @@ class TestSignals:
 
     def test_a_regular_form_of_an_unapproved_verb_is_signaled(self, run):
         """'tests' is the approved plural of TEST (n) and the -s form of
-        test (v); lookup links it to the verb, so check signals it."""
+        test (v); find links it to the verb, so check signals it."""
         (s,) = run("The opening tests.")["signals"]
-        assert (s["kind"], s["token"], s["not_approved_as"]) == (
+        assert (s["type"], s["token"], s["not_approved_as"]) == (
             "part_of_speech",
             "tests",
             ["v"],
@@ -324,10 +324,10 @@ class TestSignals:
     def test_a_number_word_that_is_an_unapproved_verb_is_signaled(self, run):
         """ZERO is a technical noun as a number (rule 1.5) and zero (v) is
         not approved: 'Zero the opening.' passes but carries the signal."""
-        report = run("Zero the opening. Set the opening to zero.", allow="set\nto")
+        report = run("Zero the opening. Set the opening to zero.", accept="set\nto")
         assert report["ok"]
         (s,) = report["signals"]
-        assert (s["kind"], s["token"], s["approved_as"], s["not_approved_as"]) == (
+        assert (s["type"], s["token"], s["approved_as"], s["not_approved_as"]) == (
             "part_of_speech",
             "zero",
             ["tn"],
@@ -340,11 +340,11 @@ class TestSignals:
 
     def test_capitals_in_mixed_text_pass_as_a_label(self, run):
         report = run("Remove the EMER opening.")
-        assert report["ok"] and kinds(report, "signals") == ["abbreviation"]
+        assert report["ok"] and types(report, "signals") == ["abbreviation"]
 
     def test_one_abbreviation_signal_per_label(self, run):
         (s,) = run("Remove the EMER opening. Install the EMER opening.")["signals"]
-        assert (s["kind"], s["sentences"]) == ("abbreviation", [0, 1])
+        assert (s["type"], s["sentences"]) == ("abbreviation", [0, 1])
 
     def test_capitals_in_shouted_text_are_still_checked(self, run):
         assert not run("REMOVE THE EMER TEST.")["ok"]
@@ -357,14 +357,14 @@ class TestSignals:
 
     def test_a_label_in_a_mixed_sentence_passes_in_shouted_text(self, run):
         report = run("REMOVE THE OPENING. INSTALL THE OPENING. Remove the EMER.")
-        assert report["ok"] and kinds(report, "signals") == ["abbreviation"]
+        assert report["ok"] and types(report, "signals") == ["abbreviation"]
 
     def test_a_second_instruction_after_and(self, run):
         report = run("Remove it and install it.")
-        assert "second_instruction" in kinds(report, "signals")
+        assert "second_instruction" in types(report, "signals")
 
     def test_a_sentence_that_opens_with_then_has_one_instruction(self, run):
-        assert "second_instruction" not in kinds(run("Then remove it."), "signals")
+        assert "second_instruction" not in types(run("Then remove it."), "signals")
 
 
 class TestLimits:

@@ -1,4 +1,4 @@
-"""The pad: verbatim round-trips, minted ids, and filtered reads."""
+"""The pad: verbatim round-trips, new ids, and filtered reads."""
 
 from __future__ import annotations
 
@@ -10,12 +10,12 @@ from btm_corekit.store.pad import MATCH_MAX, pad_read, pad_write
 
 class TestWrite:
     def test_mints_sequential_ids_and_round_trips_the_body(self, tmp_path):
-        assert pad_write(tmp_path, {"kind": "open", "q": "why?"})["written"] == "j1"
+        assert pad_write(tmp_path, {"type": "open", "q": "why?"})["written"] == "j1"
         assert (
             pad_write(tmp_path, {"free": ["any", {"shape": True}]})["written"] == "j2"
         )
         entries = pad_entries(tmp_path)
-        assert entries[0]["body"] == {"kind": "open", "q": "why?"}
+        assert entries[0]["body"] == {"type": "open", "q": "why?"}
         assert entries[1]["body"] == {"free": ["any", {"shape": True}]}
         assert pad_ids(tmp_path) == {"j1", "j2"}
 
@@ -28,13 +28,13 @@ class TestWrite:
 
 class TestRead:
     def seed(self, tmp_path):
-        pad_write(tmp_path, {"kind": "open", "q": "cost model?"})
-        pad_write(tmp_path, {"kind": "extraction", "key": "doi:10.1/x"})
+        pad_write(tmp_path, {"type": "open", "q": "cost model?"})
+        pad_write(tmp_path, {"type": "extraction", "key": "doi:10.1/x"})
         pad_write(tmp_path, {"text": "arXiv wants field syntax"})
 
     def test_kind_and_match_and_since_filter(self, tmp_path):
         self.seed(tmp_path)
-        assert pad_read(tmp_path, kind="open")["shown"] == 1
+        assert pad_read(tmp_path, type_="open")["shown"] == 1
         assert pad_read(tmp_path, match="FIELD syntax")["shown"] == 1
         late = pad_read(tmp_path, since="j1")
         assert [e["j"] for e in late["entries"]] == ["j2", "j3"]
@@ -57,16 +57,16 @@ class TestRead:
 
 class TestRedirectAppends:
     def test_a_bare_row_appended_by_hand_reads_as_a_body(self, tmp_path):
-        pad_write(tmp_path, {"kind": "open", "q": "first"})
+        pad_write(tmp_path, {"type": "open", "q": "first"})
         with (tmp_path / "scratch.jsonl").open("a") as handle:
-            handle.write('{"kind": "open", "q": "by redirect"}\n')
+            handle.write('{"type": "open", "q": "by redirect"}\n')
         entries = pad_entries(tmp_path)
         assert entries[1] == {
             "j": "j2",
             "t": "",
-            "body": {"kind": "open", "q": "by redirect"},
+            "body": {"type": "open", "q": "by redirect"},
         }
-        assert pad_write(tmp_path, {"kind": "open"})["written"] == "j3"
+        assert pad_write(tmp_path, {"type": "open"})["written"] == "j3"
 
     def test_a_mangled_line_fails_cleanly(self, tmp_path):
         (tmp_path / "scratch.jsonl").write_text("{broken\n")

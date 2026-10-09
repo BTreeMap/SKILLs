@@ -6,7 +6,7 @@ from pathlib import Path
 
 from btm_caveman.classify import assess
 from btm_caveman.markdown import split_frontmatter
-from btm_caveman.model import MAX_FILE_SIZE, Admitted, FileKind, Plan, Refusal
+from btm_caveman.model import MAX_FILE_SIZE, Accepted, FileKind, Plan, Refusal
 from btm_caveman.sensitive import is_sensitive, name_reads_sensitive
 from btm_caveman.store import STORE, read_utf8
 
@@ -24,7 +24,7 @@ NAME_GUIDANCE = (
 )
 
 
-def admit(path: Path) -> Admitted:  # noqa: PLR0911
+def accept(path: Path) -> Accepted:  # noqa: PLR0911
     """Parse, don't validate: every refusal this file decides lives here, once;
     undecodable bytes reject inside `read_utf8`.
 

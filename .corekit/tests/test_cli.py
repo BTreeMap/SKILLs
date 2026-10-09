@@ -30,7 +30,7 @@ from btm_corekit import (
 )
 from btm_corekit.cli import (
     ARGV_MESSAGE_MAX,
-    PAD_KINDS,
+    PAD_TYPES,
     FromFile,
     FromStdin,
     Inline,
@@ -221,17 +221,17 @@ class TestBatchAndWiring:
     def test_wire_pad_and_clean_round_trip(self, tmp_path, capsys, monkeypatch):
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
-        store = SessionStore("beta", marker="meta.json", hint="run init first")
+        store = SessionStore("beta", marker="meta.json", hint="run start first")
         made = store.create("one two")
         store.write_meta(made.directory, Marker())
         built = Parser()
         commands = built.add_subparsers(dest="command", required=True)
         wire_pad(commands, store)
         wire_clean(commands, store)
-        monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "k"}'))
+        monkeypatch.setattr("sys.stdin", io.StringIO('{"type": "k"}'))
         assert run_cli(built, ["write", made.name]) == 0
         assert json.loads(capsys.readouterr().out)["written"] == "j1"
-        assert run_cli(built, ["read", made.name, "--kind", "k"]) == 0
+        assert run_cli(built, ["read", made.name, "--type", "k"]) == 0
         assert json.loads(capsys.readouterr().out)["shown"] == 1
         assert run_cli(built, ["clean", made.name]) == 0
         assert json.loads(capsys.readouterr().out)["bytes_freed"] > 0
@@ -242,34 +242,34 @@ class TestBatchAndWiring:
         """Every member's pad takes --known; before, only lit-review's did."""
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
-        store = SessionStore("beta", marker="meta.json", hint="run init first")
+        store = SessionStore("beta", marker="meta.json", hint="run start first")
         built = Parser()
         wire_pad(built.add_subparsers(dest="command", required=True), store)
-        monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "known", "x": 1}'))
+        monkeypatch.setattr("sys.stdin", io.StringIO('{"type": "known", "x": 1}'))
         assert run_cli(built, ["write", "no-such-session", "--known"]) == 0
         capsys.readouterr()
         assert run_cli(built, ["read", "anything", "--known"]) == 0
         shown = json.loads(capsys.readouterr().out)
-        assert shown["entries"][0]["body"] == {"kind": "known", "x": 1}
+        assert shown["entries"][0]["body"] == {"type": "known", "x": 1}
         assert (store.known() / "scratch.jsonl").is_file()
         assert store.ids() == [], "a known write makes no session"
 
 
-class TestPadKinds:
+class TestPadTypes:
     def test_the_authoring_reference_lists_the_kernel_vocabulary(self):
-        """author-skill's scripts reference documents the kinds for authors;
-        PAD_KINDS is what schema prints. Each row must match its entry."""
+        """author-skill's scripts reference documents the types for authors;
+        PAD_TYPES is what schema prints. Each row must match its entry."""
         reference = (
             Path(__file__).parents[2] / "author-skill" / "references" / "scripts.md"
         )
         lines = reference.read_text(encoding="utf-8").splitlines()
-        start = lines.index("| Kind | Meaning |") + 2
+        start = lines.index("| Type | Meaning |") + 2
         table = lines[start : lines.index("", start)]
         documented = {
-            kind.strip().strip("`"): meaning.strip()
-            for kind, meaning in (row.split("|")[1:3] for row in table)
+            name.strip().strip("`"): meaning.strip()
+            for name, meaning in (row.split("|")[1:3] for row in table)
         }
-        assert documented == PAD_KINDS
+        assert documented == PAD_TYPES
 
 
 class TestLimitGrammar:
@@ -306,7 +306,7 @@ class TestLimitGrammar:
         pad, and `--limit -1` silently dropped the oldest entry."""
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
-        store = SessionStore("beta", marker="meta.json", hint="run init first")
+        store = SessionStore("beta", marker="meta.json", hint="run start first")
         made = store.create("one two")
         store.write_meta(made.directory, Marker())
         built = Parser()

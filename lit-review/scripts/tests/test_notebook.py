@@ -1,4 +1,4 @@
-"""Notebook admission and the derived verdicts over live corpus state."""
+"""Notebook acceptance and the derived verdicts over live corpus state."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from btm_lit_review.findings.notebook import (
     FindingRecord,
     GapRecord,
     arrivals_of,
-    expand_notes,
+    expand_records,
     finding_view,
     gap_view,
     live,
@@ -66,7 +66,7 @@ def papers():
 
 
 def expand(batch, papers, log_count=3, pad=frozenset(), existing=()):
-    return expand_notes(batch, papers, log_count, set(pad), list(existing))
+    return expand_records(batch, papers, log_count, set(pad), list(existing))
 
 
 class TestAdmission:
@@ -81,7 +81,7 @@ class TestAdmission:
             papers,
         )
         assert result.problems == []
-        assert result.admitted == {"findings": ["f1"], "gaps": ["g1"]}
+        assert result.accepted == {"findings": ["f1"], "gaps": ["g1"]}
         finding, gap = result.records
         assert finding["support"] == [{"key": "doi:10.1/bandit", "needs": "full-text"}]
         assert gap["seen"] == 3
@@ -237,7 +237,7 @@ class TestSupersedeChains:
 
 def test_an_overlong_watch_is_refused():
     batch = {"gaps": [{"statement": "s", "probes": [], "watch": "a" * (WATCH_MAX + 1)}]}
-    result = expand_notes(batch, {}, 0, set(), [])
+    result = expand_records(batch, {}, 0, set(), [])
     assert result.records == []
     assert result.problems[0].where == "gaps[0].watch"
 

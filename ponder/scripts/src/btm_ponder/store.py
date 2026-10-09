@@ -13,12 +13,12 @@ from btm_ponder.ledger import replay
 from btm_ponder.state import Ledger, Level, Open
 from btm_ponder.views import counts_of, yield_table
 
-STORE = SessionStore("ponder", marker="session.json", hint="run init first")
+STORE = SessionStore("ponder", marker="session.json", hint="run start first")
 LEDGER = "ledger.jsonl"
 
 
 class SessionMeta(Tagged):
-    """What one session is about, fixed at init."""
+    """What one session is about, fixed at start."""
 
     question: NonEmpty
     focus: str | None = None
@@ -47,12 +47,12 @@ def next_step(ledger: Ledger, open_leaves: int) -> str:
     if open_leaves:
         return f"close {open_leaves} open leaves: add sources, then a close each"
     if not ledger.swept:
-        return "run the rival sweep, then note it"
+        return "run the rival sweep, then record it"
     return "draft from check output"
 
 
 def orient(directory: Path) -> dict[str, Any]:
-    """The status payload: everything a resumed agent needs first."""
+    """The status payload: everything a continuing agent needs first."""
     events = EventLog(directory / LEDGER).read()
     ledger = replay(events)
     meta = STORE.read_meta(directory, SessionMeta)
@@ -67,7 +67,7 @@ def orient(directory: Path) -> dict[str, Any]:
         "question": meta.question,
         "focus": meta.focus,
         "project": meta.project,
-        "links": [dump(link) for link in meta.links],
+        "connections": [dump(connection) for connection in meta.connections],
         "level": meta.level,
         "counts": counts_of(ledger),
         "sources": len(ledger.sources),

@@ -70,7 +70,7 @@ evidence.
 - Fetch page search result points to before quoting it; quote fetched text,
   record fetched URL and access date.
 - Harness fetch fails on host (timeout, bot wall, redirect to login): try in
-  order: same page through `/search-web fetch`; PDF of page through
+  order: same page through `/search-web get`; PDF of page through
   `/read-pdf`; another tier-1 page of same owner (docs, registry, or
   repository). Quote only text one of these returned; search-result summary
   is lead, never evidence.

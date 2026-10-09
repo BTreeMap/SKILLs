@@ -62,7 +62,7 @@ def paper(title, doi, abstract=None, **decisions):
 @pytest.fixture
 def session(tmp_path, capsys):
     root = tmp_path / "review"
-    code, document, _ = run(["init", str(root)], capsys, stdin='{"question": "q"}')
+    code, document, _ = run(["start", str(root)], capsys, stdin='{"question": "q"}')
     assert code == 0
     assert document["dir"] == str(root)
     built = Session(root)
@@ -216,22 +216,24 @@ BATCH = {
 
 
 class TestNoteAndBrief:
-    def admit(self, session, tmp_path, capsys):
+    def accept(self, session, tmp_path, capsys):
         batch_file = tmp_path / "round.json"
         batch_file.write_text(json.dumps(BATCH))
-        return run(["note", str(session.root), "--batch:file", str(batch_file)], capsys)
+        return run(
+            ["record", str(session.root), "--batch:file", str(batch_file)], capsys
+        )
 
     def test_a_clean_batch_is_admitted_with_a_receipt(self, session, tmp_path, capsys):
-        code, document, _ = self.admit(session, tmp_path, capsys)
+        code, document, _ = self.accept(session, tmp_path, capsys)
         assert code == 0
-        assert document["admitted"] == {"findings": ["f1"], "gaps": ["g1"]}
+        assert document["accepted"] == {"findings": ["f1"], "gaps": ["g1"]}
 
     def test_a_broken_batch_returns_every_fix_and_changes_nothing(
         self, session, capsys, monkeypatch
     ):
         bad = {"findings": [{"claim": "", "support": ["ghost"]}], "junk": []}
         code, document, _ = run(
-            ["note", str(session.root)], capsys, json.dumps(bad), monkeypatch
+            ["record", str(session.root)], capsys, json.dumps(bad), monkeypatch
         )
         assert code == 1
         assert len(document["rejected"]) == 3
@@ -239,7 +241,7 @@ class TestNoteAndBrief:
         assert not session.notebook_path.exists()
 
     def test_brief_derives_verdicts_and_tracks_drift(self, session, tmp_path, capsys):
-        self.admit(session, tmp_path, capsys)
+        self.accept(session, tmp_path, capsys)
         code, first, _ = run(["brief", str(session.root)], capsys)
         assert code == 0
         assert first["drift"] == {"since": None}
@@ -256,7 +258,7 @@ class TestNoteAndBrief:
 
     def test_an_unreadable_snapshot_is_recomputed_not_refused(self, session, capsys):
         """The snapshot is wholly derived from the corpus, so losing it costs
-        one brief's drift, never the resume the agent came for."""
+        one brief's drift, never the continue view the agent came for."""
         run(["brief", str(session.root)], capsys)
         session.snapshot_path.write_text("{not json", encoding="utf-8")
         code, document, err = run(["brief", str(session.root)], capsys)
@@ -271,7 +273,7 @@ class TestPadAndDraft:
         code, receipt, err = run(
             ["write", str(session.root)],
             capsys,
-            stdin='{"kind": "extraction", "key": "10.1/zzz"}',
+            stdin='{"type": "extraction", "key": "10.1/zzz"}',
         )
         assert code == 0
         assert receipt["written"] == "j1"
@@ -285,7 +287,7 @@ class TestPadAndDraft:
         )
         assert code == 1
         assert any("never assigned" in p for p in report["problems"])
-        assert report["markers"]["[1]"]["key"] == "doi:10.1/b"
+        assert report["marks"]["[1]"]["key"] == "doi:10.1/b"
         assert "citation problem" in err
 
 
@@ -293,7 +295,7 @@ class TestSchema:
     def test_every_record_shape_is_printed(self, capsys):
         code, document, _ = run(["schema"], capsys)
         assert code == 0
-        assert {"paper", "note_batch", "pad", "search_log", "exit_codes"} <= set(
+        assert {"paper", "record_batch", "pad", "search_log", "exit_codes"} <= set(
             document
         )
 
@@ -431,12 +433,12 @@ class TestUpdateEnvelope:
 class TestProject:
     def test_init_tags_the_review_and_status_shows_it(self, capsys):
         code, opened, _ = run(
-            ["init", "ste tax", "--project", "ste-tax"],
+            ["start", "ste tax", "--project", "ste-tax"],
             capsys,
             stdin='{"question": "q"}',
         )
         assert code == 0
         code, document, _ = run(["status", opened["session"]], capsys)
-        assert (document["project"], document["links"]) == ("ste-tax", [])
+        assert (document["project"], document["connections"]) == ("ste-tax", [])
         code, listing, _ = run(["clean", "--project", "ste-tax"], capsys)
         assert [row["session"] for row in listing["sessions"]] == [opened["session"]]

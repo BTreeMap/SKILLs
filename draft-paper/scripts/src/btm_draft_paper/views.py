@@ -1,4 +1,4 @@
-"""Derived views: the resume status, the gate summary, and the evidence
+"""Derived views: the continue status, the gate summary, and the evidence
 ledger. Each is computed from the replayed trace on every call."""
 
 from __future__ import annotations
@@ -35,15 +35,15 @@ def next_step(state: RunState) -> str:
     if state.closed is not None:
         return (
             f"the human rejected the {state.closed} gate and the run is closed; "
-            "init a new run if they redirect the work"
+            "start a new run if they redirect the work"
         )
     if (pending := _pending(state)) is not None:
         return (
-            f"present the {pending} gate from check and wait; note gate-decided "
+            f"present the {pending} gate from check and wait; record gate-decided "
             "with the human's reply verbatim"
         )
     if state.stage is None:
-        return f"note stage-entered {state.meta.stages()[0]}"
+        return f"record stage-entered {state.meta.stages()[0]}"
     return _within(state, state.stage)
 
 
@@ -54,27 +54,27 @@ def _within(state: RunState, stage: int) -> str:
             case Standing.REVISE:
                 return (
                     f"revise the {ARTIFACT[gate]} per the human's notes, then "
-                    f"note gate-requested {gate}"
+                    f"record gate-requested {gate}"
                 )
             case Standing.OPEN:
-                return f"finish stage {stage}, then note gate-requested {gate}"
+                return f"finish stage {stage}, then record gate-requested {gate}"
             case Standing.APPROVED if stage < state.meta.stages()[1]:
-                return f"the {gate} gate passed; note stage-entered {stage + 1}"
+                return f"the {gate} gate passed; record stage-entered {stage + 1}"
     if stage < state.meta.stages()[1]:
-        return f"finish stage {stage}, then note stage-entered {stage + 1}"
+        return f"finish stage {stage}, then record stage-entered {stage + 1}"
     if gate is not None and state.gates[gate] is Standing.APPROVED:
         return "deliver per the output contract"
     return f"finish stage {stage}, then deliver per the output contract"
 
 
 def status_view(run: Run) -> dict[str, Any]:
-    """The cheap resume view."""
+    """The cheap continue view."""
     state = run.state
     pad = pad_entries(run.directory)
     document: dict[str, Any] = {
         "session": run.directory.name,
         "project": run.meta.project,
-        "links": [dump(link) for link in run.meta.links],
+        "connections": [dump(connection) for connection in run.meta.connections],
         "verb": run.meta.verb,
         "format": run.meta.format,
         "state": run.meta.state,
@@ -189,14 +189,18 @@ def linked_shelf(run: Run) -> Shelf | None:
 
 
 def citations_view(run: Run) -> dict[str, Any]:
-    """Each noted citation and the corpus record its ref names, if any.
+    """Each recorded citation and the corpus record its ref names, if any.
     Which refs resolve is the script's; whether a record supports its
     sentence is the agent's. One shelf read, O(rows + citations)."""
     shelf = linked_shelf(run)
     rows: list[dict[str, Any]] = []
-    for noted in run.state.citations:
-        key = shelf.find(noted.ref) if shelf else None
-        row: dict[str, Any] = {"ref": noted.ref, "sentence": noted.sentence, "key": key}
+    for recorded in run.state.citations:
+        key = shelf.find(recorded.ref) if shelf else None
+        row: dict[str, Any] = {
+            "ref": recorded.ref,
+            "sentence": recorded.sentence,
+            "key": key,
+        }
         if shelf is not None and key is not None:
             work = shelf.works[key].model_dump(mode="json")
             row["record"] = {field: work[field] for field in RECORD_FIELDS}

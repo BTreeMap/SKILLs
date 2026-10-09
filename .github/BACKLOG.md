@@ -51,7 +51,7 @@ review of the rest.
   document on stdout via `emit`; advisory `signal:` lines on stderr; nothing
   else prints.
 - `CommandError` for authoritative defect, `UpstreamError` for network,
-  `Diagnostic` list through `rejection` for admitted batch; batch rejected
+  `Diagnostic` list through `rejection` for accepted batch; batch rejected
   totally, every problem named in one verdict, state unchanged.
 - Frozen pydantic `Model` decodes every boundary-crossing shape;
   `extra="forbid"` where agent writes file, `extra="ignore"` where another
@@ -79,7 +79,7 @@ review of the rest.
   or longer description needs equal trim elsewhere, listed in return.
 - Text in `asd-ste100/SKILL.md` passes its own checker; run it after any
   edit there. Check each section in its mode, `procedure` for "Procedure"
-  and `description` for every other section, with committed allow file;
+  and `description` for every other section, with committed accept file;
   every report must give `"ok": true`. New technical term goes in
   `asd-ste100/terms.txt` under group that justifies it.
 
@@ -88,7 +88,7 @@ R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath asd-
 grep -E '^#+ ' asd-ste100/SKILL.md | sed -E 's/^#+ //' | while read -r h; do
   m=description; [ "$h" = Procedure ] && m=procedure
   $R check --text:file asd-ste100/SKILL.md --format markdown --section "$h" \
-    --mode "$m" --allow:file asd-ste100/terms.txt | grep -q '"ok": true' \
+    --mode "$m" --accept:file asd-ste100/terms.txt | grep -q '"ok": true' \
     || echo "not ok: $h"
 done
 ```
@@ -100,7 +100,7 @@ done
   code before fix; say in return that you ran it against old code and what
   it printed.
 - Test bridge code: decoders at untrusted boundary, error conversion,
-  all-or-nothing admission, witness gating destruction. Test nothing
+  all-or-nothing acceptance, witness gating destruction. Test nothing
   pydantic or closed enum already proves.
 - New wire decoder written against recorded real response, pasted into test
   as fixture, never against vendor's prose.

@@ -22,7 +22,7 @@ from btm_corekit import (
 )
 from btm_peer_review.constants import Level
 
-STORE = SessionStore("peer-review", marker="session.json", hint="run init first")
+STORE = SessionStore("peer-review", marker="session.json", hint="run start first")
 LEDGER = "ledger.jsonl"
 PAPER_TEXT = "paper.txt"
 
@@ -41,7 +41,7 @@ backtracking engine stays linear."""
 
 
 class Meta(Tagged):
-    """Session facts fixed at init, extended by ingest and attach."""
+    """Session facts fixed at start, extended by ingest and attach."""
 
     title: NonEmpty
     date: Date

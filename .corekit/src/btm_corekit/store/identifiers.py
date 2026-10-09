@@ -1,5 +1,5 @@
-"""The identifier algebra: slugging, minting, resolution, elimination.
-Pure except `suffix`/`mint` (randomness)."""
+"""The identifier algebra: slugging, making, resolution, elimination.
+Pure except `suffix`/`make_id` (randomness)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from btm_corekit.report.errors import CommandError
 from btm_corekit.text import ascii_words
 
-KEYWORD_RANGE = (2, 3)  # advisory band for minting keywords
+KEYWORD_RANGE = (2, 3)  # advisory band for keywords that make an id
 
 
 def slugify(words: Iterable[str]) -> str:
@@ -104,7 +104,7 @@ def suffix() -> str:
     return base64.b32hexencode(os.urandom(16)).decode().rstrip("=").lower()
 
 
-def mint(words: Iterable[str]) -> str:
+def make_id(words: Iterable[str]) -> str:
     return f"{slugify(words)}-{suffix()}"
 
 

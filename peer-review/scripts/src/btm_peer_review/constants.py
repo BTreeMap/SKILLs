@@ -26,7 +26,7 @@ class Bank(StrEnum):
     NOVELTY = "novelty"
 
 
-class Kind(StrEnum):
+class Type(StrEnum):
     """One way a paper fails; `bank` names the reference file that owns it."""
 
     UNSUPPORTED = "unsupported"
@@ -63,39 +63,39 @@ class Kind(StrEnum):
 
     @property
     def bank(self) -> Bank:
-        return KIND_BANK[self]
+        return TYPE_BANK[self]
 
 
-BANKS: dict[Bank, tuple[Kind, ...]] = {
-    Bank.CLAIMS: (Kind.UNSUPPORTED, Kind.OVERREACH, Kind.SPECULATION, Kind.RHETORIC),
+BANKS: dict[Bank, tuple[Type, ...]] = {
+    Bank.CLAIMS: (Type.UNSUPPORTED, Type.OVERREACH, Type.SPECULATION, Type.RHETORIC),
     Bank.DESIGN: (
-        Kind.CONTROL,
-        Kind.ASSIGNMENT,
-        Kind.DEVIATION,
-        Kind.ATTRITION,
-        Kind.MEASUREMENT,
-        Kind.SELECTIVE,
-        Kind.BASELINE,
-        Kind.ABLATION,
-        Kind.DATA,
-        Kind.REPORTING,
+        Type.CONTROL,
+        Type.ASSIGNMENT,
+        Type.DEVIATION,
+        Type.ATTRITION,
+        Type.MEASUREMENT,
+        Type.SELECTIVE,
+        Type.BASELINE,
+        Type.ABLATION,
+        Type.DATA,
+        Type.REPORTING,
     ),
     Bank.ANALYSIS: (
-        Kind.VARIANCE,
-        Kind.COMPARISON,
-        Kind.UNITS,
-        Kind.POWER,
-        Kind.CIRCULAR,
-        Kind.MULTIPLICITY,
-        Kind.NULL,
-        Kind.CAUSAL,
-        Kind.METRIC,
+        Type.VARIANCE,
+        Type.COMPARISON,
+        Type.UNITS,
+        Type.POWER,
+        Type.CIRCULAR,
+        Type.MULTIPLICITY,
+        Type.NULL,
+        Type.CAUSAL,
+        Type.METRIC,
     ),
-    Bank.LIMITATIONS: (Kind.UNSTATED, Kind.SHALLOW, Kind.MISDESCRIBED, Kind.SCOPE),
-    Bank.NOVELTY: (Kind.PRIOR, Kind.FIRST, Kind.SOTA, Kind.POSITIONING),
+    Bank.LIMITATIONS: (Type.UNSTATED, Type.SHALLOW, Type.MISDESCRIBED, Type.SCOPE),
+    Bank.NOVELTY: (Type.PRIOR, Type.FIRST, Type.SOTA, Type.POSITIONING),
 }
-KIND_BANK: dict[Kind, Bank] = {
-    kind: bank for bank, kinds in BANKS.items() for kind in kinds
+TYPE_BANK: dict[Type, Bank] = {
+    member: bank for bank, members in BANKS.items() for member in members
 }
 LEVEL_BANKS: dict[Level, tuple[Bank, ...]] = {
     Level.LITE: (Bank.CLAIMS, Bank.LIMITATIONS),
@@ -134,7 +134,7 @@ class Band(StrEnum):
 # Anchor resolution: a quote resolves exactly, or by best-substring similarity.
 # Alignment costs O(len(quote) x len(paper) / 64) inside rapidfuzz, so the
 # quote is capped: an anchor is a sentence, never a section.
-ANCHOR_SIMILARITY = 0.85  # normalized indel similarity that admits an anchor
+ANCHOR_SIMILARITY = 0.85  # normalized indel similarity that accepts an anchor
 ANCHOR_HINT_FLOOR = 0.5  # below this the rejection names no page at all
 ANCHOR_CHARS_MAX = 1000
 # Below this a similarity score is noise: any short string resembles some

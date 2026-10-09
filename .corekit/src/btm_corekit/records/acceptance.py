@@ -1,6 +1,6 @@
 """The batch gate's shared mechanics: problems accumulate, nothing raises. A
-member subclasses Admission for its own record semantics, adding reference
-resolution, id minting, and pad-link checks; each check is O(entry) or
+member subclasses Acceptance for its own record semantics, adding reference
+resolution, id making, and pad-link checks; each check is O(entry) or
 O(pool), with pools in the low hundreds."""
 
 from __future__ import annotations
@@ -28,11 +28,11 @@ from btm_corekit.store.identifiers import (
 )
 from btm_corekit.text import ascii_words
 
-Minter = Callable[[Iterable[str]], str]
+Maker = Callable[[Iterable[str]], str]
 
 
 class Named(Model):
-    """An entry that mints its own id: two or three keywords, or one stem."""
+    """An entry that makes its own id: two or three keywords, or one stem."""
 
     kw: tuple[Keyword, ...] = ()
     ref: Annotated[str, Trimmed] | None = None
@@ -108,8 +108,8 @@ class Pool:
     label: str
     ids: list[str]
     slugs: set[str] = field(default_factory=set)
-    minted: dict[str, str] = field(default_factory=dict)  # stem -> full id
-    fresh: set[str] = field(default_factory=set)  # ids minted in this batch
+    new: dict[str, str] = field(default_factory=dict)  # stem -> full id
+    fresh: set[str] = field(default_factory=set)  # ids made in this batch
     _keywords: dict[str, set[str]] = field(default_factory=dict)
 
     def keywords(self) -> dict[str, set[str]]:
@@ -120,11 +120,11 @@ class Pool:
         return self._keywords
 
 
-class Admission:
+class Acceptance:
     """Accumulates corrective orders and advisories for one batch."""
 
-    def __init__(self, mint: Minter | None = None, pad: Iterable[str] = ()) -> None:
-        self.mint = mint
+    def __init__(self, maker: Maker | None = None, pad: Iterable[str] = ()) -> None:
+        self.maker = maker
         self.pad = set(pad)
         self.problems: list[Diagnostic] = []
         self.advisories: list[str] = []
@@ -168,7 +168,7 @@ class Admission:
         family's schema fragment for problems pydantic states without one."""
         require(
             not any(info.is_required() for info in container.model_fields.values()),
-            f"{container.__name__} admits families one at a time only if every "
+            f"{container.__name__} accepts families one at a time only if every "
             "field has a default",
         )
         schema = hints or {}
@@ -234,11 +234,11 @@ class Admission:
                 )
         return None
 
-    def mint_id(self, entry: Named, pool: Pool, where: str) -> str | None:
-        """Mint from the entry's own words; a batch may not name one twice. An
+    def make_id(self, entry: Named, pool: Pool, where: str) -> str | None:
+        """Make from the entry's own words; a batch may not name one twice. An
         explicit `ref` is the stem as chosen, so only `kw` draws band advice."""
-        if self.mint is None:
-            raise CommandError("this admission mints nothing")
+        if self.maker is None:
+            raise CommandError("this acceptance makes nothing")
         words = entry.words
         try:
             stem = slugify(words)
@@ -246,14 +246,14 @@ class Admission:
             self.fail(where, str(err))
             return None
         if stem in pool.slugs:
-            self.fail(where, f"vary one keyword: '{stem}' already minted in this batch")
+            self.fail(where, f"vary one keyword: '{stem}' already made in this batch")
             return None
         if entry.ref is None and (advice := band_signal(stem)):
             self.advisories.append(advice)
-        full = self.mint(words)
+        full = self.maker(words)
         pool.slugs.add(stem)
         pool.ids.append(full)
-        pool.minted[stem] = full
+        pool.new[stem] = full
         pool.fresh.add(full)
         return full
 

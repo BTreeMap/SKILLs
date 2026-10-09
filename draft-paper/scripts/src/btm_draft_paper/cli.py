@@ -17,7 +17,7 @@ from btm_corekit import (
     EventLog,
     Parser,
     add_slot,
-    corpus_link,
+    corpus_connection,
     corpus_path,
     dump,
     emit,
@@ -32,7 +32,7 @@ from btm_corekit import (
     wire_pad,
     wire_project,
 )
-from btm_draft_paper.batch import SCHEMA, NoteResult, expand_batch
+from btm_draft_paper.batch import SCHEMA, RecordResult, expand_batch
 from btm_draft_paper.run import (
     GATE_STAGE,
     STORE,
@@ -48,7 +48,7 @@ from btm_draft_paper.views import check_view, next_step, status_view
 OUTCOMES = {
     Outcome.APPROVE: "the gate passes; stages past it open",
     Outcome.REVISE: "the gate stays closed; revise at its stage, then request it again",
-    Outcome.REJECT: "the run closes; nothing more is admitted",
+    Outcome.REJECT: "the run closes; nothing more is accepted",
 }
 STATUSES = {
     Status.SUPPORTED: "the artifact backs the claim as written; artifact must "
@@ -60,7 +60,7 @@ STATUSES = {
 }
 
 
-def cmd_init(args: argparse.Namespace) -> int:
+def cmd_start(args: argparse.Namespace) -> int:
     made = STORE.create(args.ref)
     artifacts = Path(args.artifacts).expanduser().resolve()
     if not artifacts.is_dir():
@@ -78,7 +78,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             "created": now_iso(),
             "project": args.project,
         },
-        "init",
+        "start",
     )
     STORE.write_meta(made.directory, meta)
     EventLog(made.directory / TRACE).touch()
@@ -96,24 +96,24 @@ def cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_note(args: argparse.Namespace) -> int:
+def cmd_record(args: argparse.Namespace) -> int:
     run = load(args.session)
 
-    def expand(batch: dict[str, Any]) -> NoteResult:
+    def expand(batch: dict[str, Any]) -> RecordResult:
         return expand_batch(run.state, batch, pad_ids(run.directory))
 
-    def commit(result: NoteResult) -> dict[str, Any]:
+    def commit(result: RecordResult) -> dict[str, Any]:
         stamped = [{"run": run.meta.run, **event} for event in result.events]
         EventLog(run.directory / TRACE).append(stamped, held=len(run.rows))
         document: dict[str, Any] = {
             "session": run.directory.name,
-            "admitted": dict(Counter(event["event"] for event in result.events)),
+            "accepted": dict(Counter(event["event"] for event in result.events)),
             "stage": run.state.stage,
             "gates": dict(run.state.gates),
             "next": next_step(run.state),
         }
-        if result.minted:
-            document["minted"] = result.minted
+        if result.new:
+            document["new"] = result.new
         return document
 
     return gated(BATCH, args, "trace", expand, commit)
@@ -123,7 +123,7 @@ def cmd_attach(args: argparse.Namespace) -> int:
     run = load(args.session)
     path = corpus_path(args.corpus)
     shelf = read_shelf(path)
-    meta = run.meta.with_(corpus=str(path)).with_link(corpus_link(path))
+    meta = run.meta.with_(corpus=str(path)).with_connection(corpus_connection(path))
     STORE.write_meta(run.directory, meta)
     emit(
         {
@@ -131,7 +131,7 @@ def cmd_attach(args: argparse.Namespace) -> int:
             "corpus": str(path),
             "records": len(shelf.works),
             "as_of": shelf.as_of,
-            "next": "note citation-added per citation; check resolves each ref",
+            "next": "record citation-added per citation; check resolves each ref",
         }
     )
     return 0
@@ -155,15 +155,15 @@ def cmd_check(args: argparse.Namespace) -> int:
 def cmd_schema(args: argparse.Namespace) -> int:
     emit(
         {
-            "note_batch": {"events": list(SCHEMA.values())},
-            "order": "events apply in array order; a later event may cite a "
-            "claim minted earlier in the batch",
+            "record_batch": {"events": list(SCHEMA.values())},
+            "sequence": "events apply in array order; a later event may cite a "
+            "claim made earlier in the batch",
             "gates": {
                 gate: f"closes stage {stage}" for gate, stage in GATE_STAGE.items()
             },
             "outcomes": dict(OUTCOMES),
             "statuses": dict(STATUSES),
-            "refs": REFS_SCHEMA + "; receipts echo every minted id",
+            "refs": REFS_SCHEMA + "; receipts echo every new id",
             "pad": PAD_SCHEMA,
         }
     )
@@ -174,26 +174,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser = Parser(description=btm_draft_paper.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    init = commands.add_parser("init", help="mint a run and pin its intake facts")
-    init.set_defaults(func=cmd_init)
-    init.add_argument("ref", help="two or three keywords, or a directory path")
-    init.add_argument("--verb", type=Verb, choices=list(Verb), required=True)
-    init.add_argument("--format", type=Format, choices=list(Format), required=True)
-    init.add_argument(
+    start = commands.add_parser("start", help="make a run and pin its intake facts")
+    start.set_defaults(func=cmd_start)
+    start.add_argument("ref", help="two or three keywords, or a directory path")
+    start.add_argument("--verb", type=Verb, choices=list(Verb), required=True)
+    start.add_argument("--format", type=Format, choices=list(Format), required=True)
+    start.add_argument(
         "--state", type=InputState, choices=list(InputState), required=True
     )
-    init.add_argument("--venue", required=True, help="target venue and track")
-    init.add_argument("--model", required=True, help="backbone model version")
-    init.add_argument(
+    start.add_argument("--venue", required=True, help="target venue and track")
+    start.add_argument("--model", required=True, help="backbone model version")
+    start.add_argument(
         "--artifacts",
         default=".",
         help="root that claim artifact paths resolve against",
     )
-    wire_project(init)
-    note = commands.add_parser("note", help="admit one batch of trace events")
-    note.set_defaults(func=cmd_note)
-    note.add_argument("session", help="session identifier or directory")
-    add_slot(note, BATCH, '{"events": [...]}; schema prints each kind')
+    wire_project(start)
+    record = commands.add_parser("record", help="accept one batch of trace events")
+    record.set_defaults(func=cmd_record)
+    record.add_argument("session", help="session identifier or directory")
+    add_slot(record, BATCH, '{"events": [...]}; schema prints each kind')
     status = commands.add_parser(
         "status", help="stage, gates, claim counts, and the next step"
     )

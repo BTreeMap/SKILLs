@@ -199,10 +199,10 @@ def _apply_close(ledger: Ledger, raw: dict[str, Any]) -> None:
 
 
 def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
-    """Admit one raw event into the ledger, or raise the violated invariant.
+    """Accept one raw event into the ledger, or raise the violated invariant.
 
     This is the smart constructor: an event this function rejects is never
-    appended, so the log on disk holds only admitted events.
+    appended, so the log on disk holds only accepted events.
     """
     require(ledger.events < MAX_EVENTS, f"event cap reached ({MAX_EVENTS})")
     match raw.get("e"):

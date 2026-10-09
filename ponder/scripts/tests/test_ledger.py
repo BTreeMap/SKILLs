@@ -1,4 +1,4 @@
-"""Event transitions: what the ledger admits, and what it refuses."""
+"""Event transitions: what the ledger accepts, and what it refuses."""
 
 from __future__ import annotations
 

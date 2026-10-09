@@ -1,10 +1,10 @@
-"""Laws of the identifier algebra: slugging, minting, resolution, elimination."""
+"""Laws of the identifier algebra: slugging, making, resolution, elimination."""
 
 from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, mint, slugify
+from btm_corekit import CommandError, make_id, slugify
 from btm_corekit.store.identifiers import (
     Ambiguous,
     Exact,
@@ -101,8 +101,8 @@ class TestEliminate:
             eliminate(NoMatch(), "absent", "session")
 
     def test_hint_extends_the_no_match_message(self):
-        with pytest.raises(CommandError, match="run init first"):
-            eliminate(NoMatch(), "absent", "session", "run init first")
+        with pytest.raises(CommandError, match="run start first"):
+            eliminate(NoMatch(), "absent", "session", "run start first")
 
     def test_empty_reference_reports_emptiness_over_absence(self):
         with pytest.raises(CommandError, match="empty session reference"):
@@ -116,17 +116,17 @@ class TestMinting:
         assert "=" not in value
         assert set(value) <= set("0123456789abcdefghijklmnopqrstuv")
 
-    def test_mint_extends_the_slug_with_entropy(self):
-        minted = mint(["rent", "length"])
-        assert minted.startswith("rent-length-")
+    def test_make_id_extends_the_slug_with_entropy(self):
+        made = make_id(["rent", "length"])
+        assert made.startswith("rent-length-")
 
-    def test_mint_is_collision_free_across_a_batch(self):
-        minted = {mint(["rent", "length"]) for _ in range(64)}
-        assert len(minted) == 64
+    def test_make_id_is_collision_free_across_a_batch(self):
+        made = {make_id(["rent", "length"]) for _ in range(64)}
+        assert len(made) == 64
 
-    def test_minted_identifier_resolves_exactly(self):
-        minted = mint(["rent", "length"])
-        assert resolve(minted, [minted]) == Exact(minted)
+    def test_made_identifier_resolves_exactly(self):
+        made = make_id(["rent", "length"])
+        assert resolve(made, [made]) == Exact(made)
 
 
 class TestSharedIndex:

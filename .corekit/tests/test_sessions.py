@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, Link, Model, SessionStore, Tagged
+from btm_corekit import CommandError, Connection, Model, SessionStore, Tagged
 
 
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
-    return SessionStore("alpha", marker="meta.json", hint="run init first")
+    return SessionStore("alpha", marker="meta.json", hint="run start first")
 
 
 def make_session(store: SessionStore, name: str) -> None:
@@ -93,7 +93,7 @@ class TestCreateAndMeta:
     def test_directory_requires_the_marker(self, store):
         make_session(store, "deep-sea-abc123")
         assert store.directory("sea") == store.root() / "deep-sea-abc123"
-        with pytest.raises(CommandError, match="run init first"):
+        with pytest.raises(CommandError, match="run start first"):
             store.directory("absent")
 
 
@@ -130,8 +130,10 @@ class TestProjectAndLinks:
         assert store.ids() == ["a-1"]
 
     def test_relinking_a_skill_replaces_its_link(self):
-        first = Link(skill="lit-review", session="a", path="/a")
-        other = Link(skill="ponder", session="p", path="/p")
-        second = Link(skill="lit-review", session="b", path="/b")
-        meta = Meta().with_link(first).with_link(other).with_link(second)
-        assert meta.links == (other, second)
+        first = Connection(skill="lit-review", session="a", path="/a")
+        other = Connection(skill="ponder", session="p", path="/p")
+        second = Connection(skill="lit-review", session="b", path="/b")
+        meta = (
+            Meta().with_connection(first).with_connection(other).with_connection(second)
+        )
+        assert meta.connections == (other, second)

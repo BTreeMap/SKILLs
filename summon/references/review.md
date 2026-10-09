@@ -3,7 +3,7 @@
 Judge one return against brief that produced it. Read-only: findings only,
 working tree untouched, areas not covered named.
 
-## 1. Admit the return
+## 1. Accept the return
 
 Status "failed" is no return (spine's trust boundary): re-send bundle
 instead of reading it.

@@ -36,7 +36,7 @@ retrievable claim; leaves group by mechanism.
   fan-out stay independent.
 - 3 to 10 leaves covers worked range. Past 10, fold near-duplicates before
   searching; below 3 still works.
-- Register leaves as `leaves` entries in round's `note` batch: keywords,
+- Register leaves as `leaves` entries in round's `record` batch: keywords,
   question, origin. Reference them by identifiers output echoes.
 
 ## Worked frames
@@ -209,7 +209,7 @@ Delegates read source pages, return closure proposals; they write nothing.
 Lead judges each return under summon's review, checks inflated source-class
 tags against class table in spine.
 
-## Admit a round
+## Accept a round
 
 1. Deduplicate sources.
 2. Judge each close. Use anomalous evidence to test frame. Before
@@ -218,8 +218,8 @@ tags against class table in spine.
    `unresolved` with reason `not_pursued` and its explanation.
 3. Adapt leaf set: add delegate discoveries as `"origin": "spawned"`; retire
    superseded leaves.
-4. Admit spawned leaves, sources, closes, `checkpoints` entry as one `note`
-   batch. Checkpoint carries round's declared search count (sum of
+4. Accept spawned leaves, sources, closes, `checkpoints` entry as one
+   `record` batch. Checkpoint carries round's declared search count (sum of
    delegates' `searches_spent`); same output returns updated yield table. On
    rejection, apply every listed fix, resend once.
 

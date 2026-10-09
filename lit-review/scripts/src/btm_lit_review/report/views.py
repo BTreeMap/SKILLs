@@ -1,4 +1,4 @@
-"""Whole-session views: the resume brief, the schema card, and the pad verbs."""
+"""Whole-session views: the continue brief, the schema card, and the pad verbs."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ from btm_lit_review.constants import (
     Status,
 )
 from btm_lit_review.corpus.paper import Paper
-from btm_lit_review.findings.draft import marker_table, refresh_markers
+from btm_lit_review.findings.draft import mark_table, refresh_marks
 from btm_lit_review.findings.notebook import (
     SCHEMA,
     FindingRecord,
@@ -55,7 +55,7 @@ from btm_lit_review.session import (
 )
 
 PAD_RECOGNIZED = (
-    '; {"kind": "extraction", "key": "<paper key>", ...} counts toward '
+    '; {"type": "extraction", "key": "<paper key>", ...} counts toward '
     "extraction coverage"
 )
 
@@ -64,7 +64,7 @@ def extraction_keys(entries: list[dict[str, Any]]) -> set[str]:
     return {
         entry["body"].get("key")
         for entry in entries
-        if entry["body"].get("kind") == "extraction"
+        if entry["body"].get("type") == "extraction"
     }
 
 
@@ -96,9 +96,9 @@ class Snapshot(Model):
 
 def load_snapshot(session: Session) -> Snapshot | None:
     """The previous brief's corpus statuses; one file, replaced per brief, so
-    the notebook never grows by the corpus size on every resume. Wholly
+    the notebook never grows by the corpus size on every brief. Wholly
     regenerable: a snapshot that will not parse is dropped with a signal and
-    recomputed by this brief, never a refusal to resume."""
+    recomputed by this brief, never a refusal to continue."""
     path = session.snapshot_path
     if not path.is_file():
         return None
@@ -144,7 +144,7 @@ def cmd_brief(args: argparse.Namespace) -> int:
         signal(f"at-risk findings: {', '.join(at_risk)}; re-affirm or supersede")
     if challenged:
         signal(f"challenged gaps: {', '.join(challenged)}; re-affirm or supersede")
-    markers = refresh_markers(session, papers)
+    marks = refresh_marks(session, papers)
     entries = pad_entries(session.root)
     last = load_snapshot(session)
     document: dict[str, JSON] = {
@@ -164,7 +164,7 @@ def cmd_brief(args: argparse.Namespace) -> int:
             for record in records
             if isinstance(record, RuleRecord)
         ],
-        "markers": marker_table(markers, papers),
+        "marks": mark_table(marks, papers),
         "unextracted": unextracted_in(entries, papers),
         "pad_tail": entries[-PAD_TAIL:],
         "known": [entry["body"] for entry in pad_entries(STORE.known())],
@@ -192,10 +192,10 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "decision": '{"<key>": {"status": "...", "reason": "...", '
             '"stage": "...", "read_level": "..."}} on stdin to update; a status '
             "sent without a stage leaves the stage null",
-            "note_batch": SCHEMA,
+            "record_batch": SCHEMA,
             "pad": PAD_SCHEMA + PAD_RECOGNIZED,
             "search_log": "search: {id, command, source, query, from_year, to_year, "
-            "limit, offset, criteria_hash, time, fetched, new, total_matches, "
+            "limit, offset, criteria_hash, time, got, new, total_matches, "
             "truncated}; snowball carries seed and direction in place of query "
             "and offset; "
             f"sources: {', '.join(SOURCES)}; "
@@ -223,7 +223,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
 
 def recognize_extraction(args: argparse.Namespace, body: Mapping[str, Any]) -> None:
     """Advisories only: the write stands whatever these say."""
-    if args.known or body.get("kind") != "extraction":
+    if args.known or body.get("type") != "extraction":
         return
     papers = load_papers(open_session(args.session))
     key = str(body.get("key") or "")

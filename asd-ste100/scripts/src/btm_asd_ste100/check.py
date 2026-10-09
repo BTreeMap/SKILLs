@@ -1,9 +1,9 @@
 """The checker: text in, one report out. Pure; the shell supplies the
-lexicon, the rules, and the allow list.
+lexicon, the rules, and the accept list.
 
 Decidable findings: sentence over the word limit (5.1 or 6.3; a note in a
 procedure 25, under 5.1), paragraph over the sentence limit (6.6), a word
-not approved and not allowed (1.1), an -ing form outside the approved few
+not approved and not accepted (1.1), an -ing form outside the approved few
 (3.5), a contraction (4.2), a semicolon (8.1). Signals, never findings:
 passive voice candidates (3.6), a second instruction in one sentence
 (5.2), an approved word that is also an unapproved headword (1.2), an
@@ -337,7 +337,7 @@ def phrase_of(word: str, qualifier: str | None) -> tuple[str, ...]:
 
 
 @dataclass(frozen=True, slots=True)
-class Allowed:
+class Accepted:
     """Declared technical nouns and verbs. A one-word term passes alone; a
     multi-word term passes only whole, so its words stay checked elsewhere."""
 
@@ -346,7 +346,7 @@ class Allowed:
     terms: int
 
 
-def allow_terms(raw: str | None) -> Allowed:
+def accept_terms(raw: str | None) -> Accepted:
     """One term per line; `#` starts a comment. A declared noun's regular
     plural passes too, on the last word of a multi-word term."""
     words: set[str] = set()
@@ -360,7 +360,7 @@ def allow_terms(raw: str | None) -> Allowed:
         elif tokens:
             first = multi.setdefault(tokens[0], set())
             first.update((tokens, (*tokens[:-1], plural(tokens[-1]))))
-    return Allowed(frozenset(words), longest_first(multi), terms)
+    return Accepted(frozenset(words), longest_first(multi), terms)
 
 
 def plural(noun: str) -> str:
@@ -420,7 +420,7 @@ class Context:
     mode: Mode
     vocab: Vocabulary
     lim: Limits
-    allowed: Allowed
+    accepted: Accepted
 
 
 @dataclass(slots=True)
@@ -433,13 +433,13 @@ class Report:
 
 
 def check(
-    text: str, vocab: Vocabulary, lim: Limits, allowed: Allowed, how: Cut = PLAIN
+    text: str, vocab: Vocabulary, lim: Limits, accepted: Accepted, how: Cut = PLAIN
 ) -> dict[str, Any]:
     """One report. `ok` is true only when no decidable finding remains."""
     text = text.replace(CURLY_APOSTROPHE, "'")
     mode = lim.mode
     cut = layout(text, how)
-    ctx = Context(mode, vocab, lim, allowed)
+    ctx = Context(mode, vocab, lim, accepted)
     report = Report()
     n_words = 0
     for p_index, block in enumerate(cut.blocks):
@@ -450,7 +450,7 @@ def check(
         ]
         if lim.paragraph_sentences is not None and len(sents) > lim.paragraph_sentences:
             report.findings.append({
-                "rule": "6.6", "kind": "paragraph_length", "paragraph": p_index,
+                "rule": "6.6", "type": "paragraph_length", "paragraph": p_index,
                 "line": cut.line(sents[0][0]), "sentences": len(sents),
                 "limit": lim.paragraph_sentences,
             })  # fmt: skip
@@ -466,7 +466,7 @@ def check(
         locate(item, report.lines)
     skipped = [
         "meaning (1.3) and part of speech (1.2) are not decided; read the signals",
-        "technical nouns and technical verbs pass only when --allow declares them",
+        "technical nouns and technical verbs pass only when --accept declares them",
         "text in parentheses counts as one word, not as a sentence of its own",
         "an inline code span counts as one word and its words are not checked",
     ]
@@ -503,17 +503,17 @@ def locate(item: dict[str, Any], lines: list[int]) -> None:
 
 
 def summary(report: Report) -> dict[str, Any]:
-    """The report at a glance: counts by kind, and each word to replace."""
+    """The report at a glance: counts by type, and each word to replace."""
 
-    def by_kind(items: list[dict[str, Any]]) -> dict[str, int]:
+    def by_type(items: list[dict[str, Any]]) -> dict[str, int]:
         out: dict[str, int] = {}
         for item in items:
-            out[item["kind"]] = out.get(item["kind"], 0) + 1
+            out[item["type"]] = out.get(item["type"], 0) + 1
         return out
 
     return {
-        "findings": by_kind(report.findings),
-        "signals": by_kind(report.signals),
+        "findings": by_type(report.findings),
+        "signals": by_type(report.signals),
         "words": [f["token"] for f in report.words.values()],
     }
 
@@ -533,19 +533,19 @@ def measure(
     if words > limit:
         report.findings.append({
             "rule": "5.1" if ctx.mode is Mode.PROCEDURE else "6.3",
-            "kind": "sentence_length", "sentence": index, "paragraph": p_index,
+            "type": "sentence_length", "sentence": index, "paragraph": p_index,
             "words": words, "limit": limit, "text": shown[:120],
         })  # fmt: skip
     for mark in ctx.lim.forbidden:
         if mark in sent:
             report.findings.append(
-                {"rule": "8.1", "kind": "punctuation", "mark": mark, "sentence": index}
+                {"rule": "8.1", "type": "punctuation", "mark": mark, "sentence": index}
             )
     return words
 
 
 def covered(tokens: list[str], tables: tuple[Phrases, ...]) -> set[int]:
-    """Indices inside an approved or allowed multi-word term, longest first."""
+    """Indices inside an approved or accepted multi-word term, longest first."""
     out: set[int] = set()
     for i, tok in enumerate(tokens):
         for table in tables:
@@ -569,7 +569,7 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
     # sentence decides for itself: one shouted warning in mixed text is
     # checked, and a label in a mixed sentence passes in a shouted text.
     shouting = sum(c.isupper() for c in sent) > sum(c.islower() for c in sent)
-    inside = covered(tokens, (ctx.vocab.phrases, ctx.allowed.phrases))
+    inside = covered(tokens, (ctx.vocab.phrases, ctx.accepted.phrases))
     inside |= phrase_findings((originals, tokens), inside, index, ctx, report)
     after_number = False
     for i, (orig, tok) in enumerate(zip(originals, tokens, strict=True)):
@@ -580,15 +580,15 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
         if tok in NUMBERS and not unit and i not in inside:
             before = tokens[i - 1] if i else ""
             pos_signal(tok, (index, f"{before} {orig}".strip()), ctx.vocab, report)
-        if passes or i in inside or tok in ctx.allowed.words:
+        if passes or i in inside or tok in ctx.accepted.words:
             continue
         if tok.endswith(CONTRACTED) or tok in S_CONTRACTIONS:
             report.findings.append(
-                {"rule": "4.2", "kind": "contraction", "token": orig, "sentence": index}
+                {"rule": "4.2", "type": "contraction", "token": orig, "sentence": index}
             )
             continue
         base = tok.removesuffix(POSSESSIVE)
-        if base in ctx.allowed.words:
+        if base in ctx.accepted.words:
             continue
         if headword_compound(base, ctx.vocab):
             unknown(orig, base, index, ctx.vocab, report)
@@ -652,7 +652,7 @@ def phrasal(key: str, words: list[str], ctx: Context) -> bool:
         bool(hints)
         and all(h.pos == "v" for h in hints)
         and words[-1] in ctx.vocab.particles
-        and all(approved(w, ctx.vocab) or w in ctx.allowed.words for w in words)
+        and all(approved(w, ctx.vocab) or w in ctx.accepted.words for w in words)
     )
 
 
@@ -661,7 +661,7 @@ def bad_phrases(
 ) -> dict[int, tuple[str, int]]:
     """Start index -> (headword, length) of each unapproved multi-word
     headword. The first word may carry a regular ending: "turned off" is
-    "turn off". No match starts inside an approved or allowed term, or
+    "turn off". No match starts inside an approved or accepted term, or
     after an article: "the rear of the unit" uses the noun REAR."""
     out: dict[int, tuple[str, int]] = {}
     i = 0
@@ -704,14 +704,14 @@ def cited(item: dict[str, Any], index: int) -> None:
 
 
 def per_word(
-    report: Report, kind: str, key: str, index: int, body: dict[str, Any]
+    report: Report, type_: str, key: str, index: int, body: dict[str, Any]
 ) -> None:
-    """One signal per word and kind, citing every sentence it occurs in."""
-    seen = report.per_word.get((kind, key))
+    """One signal per word and type, citing every sentence it occurs in."""
+    seen = report.per_word.get((type_, key))
     if seen is not None:
         cited(seen, index)
     else:
-        report.per_word[(kind, key)] = {"kind": kind, **body, "sentences": [index]}
+        report.per_word[(type_, key)] = {"type": type_, **body, "sentences": [index]}
 
 
 def approved(tok: str, vocab: Vocabulary) -> bool:
@@ -735,7 +735,7 @@ def compound(tok: str, ctx: Context) -> bool:
     parts = tok.split("-")
     return len(parts) > 1 and all(
         p in ctx.vocab.approved
-        or p in ctx.allowed.words
+        or p in ctx.accepted.words
         or p in NUMBERS
         or bool(DIGIT.search(p))
         for p in parts
@@ -779,7 +779,7 @@ def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) 
         hints = vocab.unapproved.get(base, ()) if base else ()
     entry: dict[str, Any] = {
         "rule": "3.5" if verb else "1.1",
-        "kind": "ing_form" if verb else "not_approved",
+        "type": "ing_form" if verb else "not_approved",
         "token": orig,
         "sentences": [index],
         "alternatives": unique(a for h in hints for a in h.alternatives),
@@ -859,7 +859,7 @@ def passive(tokens: list[str], index: int, vocab: Vocabulary, report: Report) ->
                 nxt.endswith("ed") and len(nxt) >= PARTICIPLE_MIN
             ):
                 report.signals.append({
-                    "rule": "3.6", "kind": "passive_candidate", "sentence": index,
+                    "rule": "3.6", "type": "passive_candidate", "sentence": index,
                     "evidence": " ".join(tokens[i : j + 1]),
                     "agent_named": "by" in tokens[j + 1 :],
                 })  # fmt: skip
@@ -874,6 +874,6 @@ def instructions(
     for tok, nxt in pairwise(tokens[1:] if tokens[:1] == ["then"] else tokens):
         if tok in ("and", "then") and nxt in vocab.verbs and nxt in vocab.approved:
             report.signals.append({
-                "rule": "5.2", "kind": "second_instruction", "sentence": index,
+                "rule": "5.2", "type": "second_instruction", "sentence": index,
                 "evidence": f"{tok} {nxt}",
             })  # fmt: skip

@@ -45,13 +45,13 @@ def repo(tmp_path):
     # The guarded set is read off these two files, so the rule and the
     # kernel cannot disagree about what a consumer could import.
     (kernel / "identifiers.py").write_text(
-        "def mint(words):\n    return 1\n\n\ndef resolve(ref, ids):\n"
+        "def make_id(words):\n    return 1\n\n\ndef resolve(ref, ids):\n"
         "    return ref\n\n\nclass Exact:\n    pass\n",
         encoding="utf-8",
     )
     (kernel / "__init__.py").write_text(
-        "from btm_corekit.identifiers import Exact, mint, resolve\n\n"
-        '__all__ = ["Exact", "mint", "resolve"]\n',
+        "from btm_corekit.identifiers import Exact, make_id, resolve\n\n"
+        '__all__ = ["Exact", "make_id", "resolve"]\n',
         encoding="utf-8",
     )
     (tmp_path / "README.md").write_text("# Readme\n", encoding="utf-8")
@@ -188,7 +188,7 @@ def write_member(skill: Path, name: str, dependencies: str = "") -> Path:
 class TestKernel:
     def test_a_consumer_redefining_a_kernel_symbol_is_a_finding(self, repo):
         member = write_member(repo / "alpha", "alpha", '"btm-corekit"')
-        (member / "code.py").write_text("def mint(words):\n    return 1\n", "utf-8")
+        (member / "code.py").write_text("def make_id(words):\n    return 1\n", "utf-8")
         assert "kernel" in rules_hit(repo)
 
     def test_a_non_consumer_may_define_the_same_name(self, repo):
@@ -238,18 +238,18 @@ class TestKernel:
         assert "kernel" not in rules_hit(repo)
 
     def test_only_top_level_definitions_of_the_exact_name_shadow(self):
-        kernel = Kernel(frozenset({"mint"}), frozenset({"Exact"}))
+        kernel = Kernel(frozenset({"make_id"}), frozenset({"Exact"}))
         text = (
-            "def mint(words):\n"
-            "    def mint(inner):\n"
-            "def minted(words):\n"
-            "def mint = 1\n"
+            "def make_id(words):\n"
+            "    def make_id(inner):\n"
+            "def make_ids(words):\n"
+            "def make_id = 1\n"
             "class Exact(Base):\n"
             "class Exactly:\n"
             "class Exact:\n"
         )
         found = list(redefined_kernel_symbols(text, kernel))
-        assert found == ["def mint(", "class Exact", "class Exact"]
+        assert found == ["def make_id(", "class Exact", "class Exact"]
 
     def test_a_legacy_kernel_symlink_is_swept(self, repo):
         (repo / "alpha" / ".corekit").symlink_to("../.corekit")

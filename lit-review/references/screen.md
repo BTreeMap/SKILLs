@@ -9,7 +9,7 @@ feel wrong while screening: record amendment.
 ## Pass 1: title and abstract
 
 1. Run `digest`; judge its labels against criteria.
-2. Cut or keep whole kinds with rule `digest` hands you, through
+2. Cut or keep whole types with rule `digest` hands you, through
    `screen --exclude` (or `--include`, mirror case, still bound by criteria
    gate) with `--on` field digest used and
    `{"match": "<regex>", "reason": "..."}` on pipe. Case-insensitive regex
@@ -20,7 +20,7 @@ feel wrong while screening: record amendment.
    reason, so first list matches with
    `show --status candidate --match <regex> --on <field>` and decide by hand
    any paper the reason misdescribes.
-3. Re-run `digest` after each cut; its kinds are relative to undecided set.
+3. Re-run `digest` after each cut; its types are relative to undecided set.
 4. Drop to `show --status candidate` for residue and for records you need in
    full, most-cited first. `--match` with `--on title|abstract` narrows by
    vocabulary, `--on key` by key prefix, `--found-by` by search that fetched

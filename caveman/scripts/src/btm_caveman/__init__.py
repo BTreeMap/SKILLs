@@ -8,6 +8,6 @@ only as signal lines for the agent to weigh, never a blocking verdict.
 
 `model` holds the closed domain, `classify` the heuristics, `sensitive` the
 exact refusals, `markdown` the protected regions, `validate` the structural
-comparison, `store` the backup filesystem, `admit` the parse boundary, and
+comparison, `store` the backup filesystem, `accept` the parse boundary, and
 `cli` the verbs.
 """

@@ -9,7 +9,7 @@ from pydantic import model_validator
 
 from btm_corekit import Diagnostic, NonEmpty, SessionStore, Tagged, refuse
 
-STORE = SessionStore("draft-paper", marker="run.json", hint="run init first")
+STORE = SessionStore("draft-paper", marker="run.json", hint="run start first")
 TRACE = "trace.jsonl"
 
 
@@ -58,7 +58,7 @@ GATE_STAGE: dict[Gate, int] = {Gate.PLAN: 1, Gate.LEDGER: 2, Gate.DRAFT: 8}
 
 
 class RunMeta(Tagged):
-    """Fixed at init but for the corpus and links `attach` sets; the marker
+    """Fixed at start but for the corpus and connections `attach` sets; the marker
     file that witnesses a session."""
 
     run: NonEmpty
@@ -67,7 +67,7 @@ class RunMeta(Tagged):
     state: InputState
     venue: NonEmpty
     model: NonEmpty
-    artifacts: NonEmpty  # the root at init; `artifacts-repinned` moves it
+    artifacts: NonEmpty  # the root at start; `artifacts-repinned` moves it
     created: str = ""
     corpus: str | None = None  # the attached lit-review `papers.jsonl`, set by attach
 

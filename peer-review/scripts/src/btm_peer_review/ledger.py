@@ -21,7 +21,7 @@ from btm_corekit import (
     parse_model,
     require,
 )
-from btm_peer_review.constants import Bank, Kind, Severity
+from btm_peer_review.constants import Bank, Severity, Type
 from btm_peer_review.state import Claim, Evidenced, Ledger, Objection
 
 
@@ -35,7 +35,7 @@ class ClaimEvent(Stamped):
 class ObjectionEvent(Stamped, Evidenced):
     e: Literal["objection"]
     id: Slug
-    kind: Kind
+    type: Type
     severity: Severity
     text: NonEmpty
     claim: Slug | None = None
@@ -62,14 +62,14 @@ def apply(ledger: Ledger, event: dict[str, Any]) -> None:
     match event.get("e"):
         case "claim":
             claim = parse_model(ClaimEvent, event, "claim event")
-            require(claim.id not in ledger.claims, f"claim {claim.id} minted twice")
+            require(claim.id not in ledger.claims, f"claim {claim.id} made twice")
             ledger.claims[claim.id] = Claim(verbatim=claim.verbatim, page=claim.page)
             ledger.claim_order.append(claim.id)
         case "objection":
             raised = parse_model(ObjectionEvent, event, "objection event")
             require(
                 raised.id not in ledger.objections,
-                f"objection {raised.id} minted twice",
+                f"objection {raised.id} made twice",
             )
             require(
                 raised.claim is None or raised.claim in ledger.claims,
@@ -80,7 +80,7 @@ def apply(ledger: Ledger, event: dict[str, Any]) -> None:
             ledger.objections[raised.id] = parse_model(
                 Objection,
                 {
-                    "kind": raised.kind,
+                    "type": raised.type,
                     "severity": raised.severity,
                     "text": raised.text,
                     "claim": raised.claim,

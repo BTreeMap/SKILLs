@@ -13,7 +13,7 @@ from pydantic import model_validator
 from btm_corekit import (
     JSON,
     MATCH,
-    Admission,
+    Acceptance,
     CommandError,
     Diagnostic,
     Item,
@@ -173,7 +173,7 @@ def decision_updates(decision: Decision) -> dict[str, Any]:
     return updates
 
 
-class Screening(Admission):
+class Screening(Acceptance):
     """Every decision in the batch judged before any is applied: one verdict
     names every unknown key and every malformed decision at once, and the
     corpus moves only when nothing is left to fix."""
@@ -267,8 +267,8 @@ def cell(value: Any) -> str:
 
 
 def cmd_digest(args: argparse.Namespace) -> int:
-    """The screening entry point: what kinds of candidate are in the corpus,
-    with the rule that selects each kind.
+    """The screening entry point: what types of candidate are in the corpus,
+    with the rule that selects each type.
 
     `show` costs one row per candidate; this projects to a few dozen labels
     so each verdict is one `screen` away."""
@@ -380,7 +380,7 @@ def next_step(
         return "nothing is included yet; widen the search or revisit exclusions"
     if unextracted:
         return f"extract {len(unextracted)} included papers, then write one record each"
-    return "note findings and gaps, then brief"
+    return "record findings and gaps, then brief"
 
 
 def band_advisory(level: Level, included: int) -> str | None:
@@ -434,7 +434,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         {
             "question": protocol.question,
             "project": protocol.project,
-            "links": [dump(link) for link in protocol.links],
+            "connections": [dump(connection) for connection in protocol.connections],
             "level": protocol.level,
             "criteria_ready": protocol.ready,
             "criteria_hash": current_hash,

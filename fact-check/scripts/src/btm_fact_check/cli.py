@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 import btm_fact_check
 from btm_corekit import (
-    Admission,
+    Acceptance,
     CommandError,
     Parser,
     Required,
@@ -32,13 +32,13 @@ def cmd_report(args: argparse.Namespace) -> int:
         raw = json.loads(text(STATE, args))
     except json.JSONDecodeError as err:
         raise CommandError(f"make the state valid JSON: {err}") from err
-    gate = Admission()
+    gate = Acceptance()
     state = gate.decode(State, raw)
     if state is None:
         emit(rejection(gate.problems, UNCHANGED, STATE))
         return 1
     match readiness(state):
-        case Admission(problems=problems):
+        case Acceptance(problems=problems):
             emit(rejection(problems, UNCHANGED, STATE))
             return 1
         case ready:

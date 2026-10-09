@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from btm_corekit import CommandError
-from btm_peer_review.constants import Bank, Kind
+from btm_peer_review.constants import Bank, Type
 from btm_peer_review.ledger import replay
 from btm_peer_review.state import Missing, Quoted
 
@@ -16,7 +16,7 @@ def objection(**fields):
     base = {
         "e": "objection",
         "id": "o1",
-        "kind": "control",
+        "type": "control",
         "severity": "major",
         "text": "t",
         "anchors": ["q"],
@@ -34,7 +34,7 @@ class TestDecoder:
             ]
         )
         record = ledger.objections["o1"]
-        assert record.kind is Kind.CONTROL and record.kind.bank is Bank.DESIGN
+        assert record.type is Type.CONTROL and record.type.bank is Bank.DESIGN
         assert record.evidence == Quoted(anchors=("q",))
         assert ledger.walks == {Bank.DESIGN: "n"} and ledger.withdrawn == {"o1": "r"}
 
@@ -45,13 +45,13 @@ class TestDecoder:
     @pytest.mark.parametrize(
         ("fields", "message"),
         [
-            ({"kind": "vibes"}, "kind: Input should be"),
+            ({"type": "vibes"}, "type: Input should be"),
             ({"severity": "huge"}, "severity: Input should be"),
             ({"claim": "c9"}, "unknown claim"),
             ({"anchors": [], "missing": None}, "quote the paper or name"),
             ({"missing": "x"}, "never both"),
-            ({"prior": ["doi:10.1/a"]}, "novelty kinds alone"),
-            ({"kind": "first"}, "novelty kinds alone"),
+            ({"prior": ["doi:10.1/a"]}, "novelty types alone"),
+            ({"type": "first"}, "novelty types alone"),
         ],
     )
     def test_malformed_rows_fail_loudly(self, fields, message):

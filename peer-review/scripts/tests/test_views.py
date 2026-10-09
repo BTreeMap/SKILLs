@@ -17,11 +17,11 @@ from btm_peer_review.views import (
 )
 
 
-def objection(oid, kind, severity, anchors=(), prior=(), claim=None):  # noqa: PLR0913, PLR0917 - a test row reads best flat
+def objection(oid, type_, severity, anchors=(), prior=(), claim=None):  # noqa: PLR0913, PLR0917 - a test row reads best flat
     return {
         "e": "objection",
         "id": oid,
-        "kind": kind,
+        "type": type_,
         "severity": severity,
         "text": "t",
         "claim": claim,
@@ -68,7 +68,7 @@ def derive(paper, corpus_dir=None, year=2026, events=EVENTS):
 class TestStandings:
     def test_each_standing_derives_from_live_state(self, paper_text, corpus_dir):
         _, _, _, objections, claims = derive(paper_text, corpus_dir)
-        standing = {v["marker"]: v["standing"] for v in objections}
+        standing = {v["mark"]: v["standing"] for v in objections}
         assert standing == {
             "O1": "grounded",
             "O2": "grounded",
@@ -102,7 +102,7 @@ class TestRules:
     ):
         _, _, _, objections, _ = derive(paper_text, corpus_dir)
         assert recommendation(objections)["verdict"] == "major revision"
-        only_minor = [v for v in objections if v["marker"] == "O2"]
+        only_minor = [v for v in objections if v["mark"] == "O2"]
         assert recommendation(only_minor)["verdict"] == "minor revision"
         assert recommendation([])["verdict"] == "no objection stands"
         fatal = [dict(objections[3], standing=Standing.GROUNDED)]
@@ -149,9 +149,9 @@ class TestCiteCheck:
         report = cite_check(
             "[C1] fails per [O1] and [O4]; see [O9].", claims, objections
         )
-        assert report["markers"] == 4
+        assert report["marks"] == 4
         assert any("[O4] is unanchored" in p for p in report["problems"])
-        assert any("[O9] was never minted" in p for p in report["problems"])
+        assert any("[O9] was never made" in p for p in report["problems"])
         assert any("[O3] is a grounded major" in p for p in report["problems"])
         clean = cite_check("[O1] [O3]", claims, objections)
         assert clean["problems"] == []

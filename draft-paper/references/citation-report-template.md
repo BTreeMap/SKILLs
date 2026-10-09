@@ -15,7 +15,7 @@ record, in this order:
 3. No DOI or arXiv id: `/search-web scholar` by title, then `cite` DOI it
    returns.
 
-Read cited passage with `/read-pdf` or `/search-web fetch`; corpus record
+Read cited passage with `/read-pdf` or `/search-web get`; corpus record
 proves paper exists, never what it says.
 
 <template for="citation-report">

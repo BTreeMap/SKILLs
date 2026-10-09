@@ -1,4 +1,4 @@
-"""The note gate: decode, resolve, and simulate one batch of events; a
+"""The record gate: decode, resolve, and simulate one batch of events; a
 rejection lists every fix at once and the trace stays unchanged."""
 
 from __future__ import annotations
@@ -11,14 +11,14 @@ from typing import Any, Literal
 from pydantic import ConfigDict
 
 from btm_corekit import (
-    Admission,
+    Acceptance,
     CommandError,
     Diagnostic,
     Model,
     Named,
     Pool,
     dump,
-    mint,
+    make_id,
     suggest,
 )
 from btm_draft_paper.run import Gate
@@ -65,7 +65,7 @@ SCHEMA: dict[str, str] = {
 
 
 class ClaimEntry(Claim, Named):
-    """A claim as the agent writes it: keywords in place of the minted id."""
+    """A claim as the agent writes it: keywords in place of the new id."""
 
     event: Literal["claim-added"]
 
@@ -83,7 +83,7 @@ ROWS: dict[str, type[Model]] = {
 }
 
 
-class NoteBatch(Model):
+class RecordBatch(Model):
     """The container; rows decode one at a time so a bad row still lets its
     neighbours resolve."""
 
@@ -93,20 +93,20 @@ class NoteBatch(Model):
 
 
 @dataclass(slots=True)
-class NoteResult:
+class RecordResult:
     """Everything one batch produced; events commit only when problems is empty."""
 
     events: list[dict[str, Any]] = field(default_factory=list)
-    minted: dict[str, str] = field(default_factory=dict)
+    new: dict[str, str] = field(default_factory=dict)
     advisories: list[str] = field(default_factory=list)
     problems: list[Diagnostic] = field(default_factory=list)
 
 
-class _Expansion(Admission):
+class _Expansion(Acceptance):
     """One batch: every method appends a problem and none raises."""
 
     def __init__(self, state: RunState, pad: Iterable[str]) -> None:
-        super().__init__(mint, pad)
+        super().__init__(make_id, pad)
         self.state = state
         self.claims = Pool("claim", list(state.claims))
         self.staged: list[tuple[str, dict[str, Any]]] = []
@@ -132,10 +132,10 @@ class _Expansion(Admission):
                 self.staged.append((where, event))
 
     def resolved(self, entry: Model, where: str) -> dict[str, Any] | None:
-        """The event as it will be stored: ids minted, refs made full."""
+        """The event as it will be stored: ids made, refs made full."""
         match entry:
             case ClaimEntry():
-                claim_id = self.mint_id(entry, self.claims, where)
+                claim_id = self.make_id(entry, self.claims, where)
                 if claim_id is None:
                     return None
                 fields = dump(entry)
@@ -227,20 +227,20 @@ class _Expansion(Admission):
 
 def expand_batch(
     state: RunState, batch: Mapping[str, Any], pad: Iterable[str] = ()
-) -> NoteResult:
-    """Expand one note batch into events, collecting every problem. The
+) -> RecordResult:
+    """Expand one record batch into events, collecting every problem. The
     state passed in is advanced; on a non-empty problem list the caller
     discards it with the events."""
     expansion = _Expansion(state, pad)
-    expansion.known_keys(batch, NoteBatch)
-    note = expansion.families(batch, NoteBatch)
-    expansion.take(note.events)
+    expansion.known_keys(batch, RecordBatch)
+    record = expansion.families(batch, RecordBatch)
+    expansion.take(record.events)
     if not expansion.staged and expansion.clean:
         expansion.fail("events", "add at least one event: the batch records nothing")
     expansion.simulate()
-    return NoteResult(
+    return RecordResult(
         events=expansion.events,
-        minted=expansion.claims.minted,
+        new=expansion.claims.new,
         advisories=expansion.advisories,
         problems=expansion.problems,
     )

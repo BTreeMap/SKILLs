@@ -35,7 +35,7 @@ from btm_corekit.cli import (
     wire_view,
 )
 from btm_corekit.indexes import arxiv, crossref, doi, openalex
-from btm_corekit.indexes.cite import Shelf, corpus_link, corpus_path, read_shelf
+from btm_corekit.indexes.cite import Shelf, corpus_connection, corpus_path, read_shelf
 from btm_corekit.indexes.registry import (
     INDEXES,
     citations,
@@ -68,7 +68,7 @@ from btm_corekit.net.http import (
     stream,
 )
 from btm_corekit.net.wire import Upstream, json_body
-from btm_corekit.records.admission import Admission, Named, Pool, salvage, suggest
+from btm_corekit.records.acceptance import Acceptance, Named, Pool, salvage, suggest
 from btm_corekit.records.digest import CLUSTER_CAP, Item, digest
 from btm_corekit.records.models import (
     Count,
@@ -99,7 +99,7 @@ from btm_corekit.store.fsio import (
     write_atomic,
 )
 from btm_corekit.store.identifiers import (
-    mint,
+    make_id,
     slugify,
 )
 from btm_corekit.store.pad import (
@@ -110,7 +110,7 @@ from btm_corekit.store.pad import (
 from btm_corekit.store.sessions import (
     LIT_REVIEW_CORPUS,
     LIT_REVIEW_SESSIONS,
-    Link,
+    Connection,
     SessionStore,
     Tagged,
 )
@@ -141,19 +141,19 @@ __all__ = [
     "MAX_EVENTS",
     "PAD_SCHEMA",
     "REFS_SCHEMA",
-    "Admission",
+    "Acceptance",
     "ByArxiv",
     "ByDoi",
     "ByNative",
     "Citation",
     "CommandError",
     "Commands",
+    "Connection",
     "Count",
     "Diagnostic",
     "Doi",
     "EventLog",
     "Item",
-    "Link",
     "MaybeArxivId",
     "MaybeDoi",
     "Model",
@@ -192,7 +192,7 @@ __all__ = [
     "collapsed",
     "compile_match",
     "content",
-    "corpus_link",
+    "corpus_connection",
     "corpus_path",
     "count_lines",
     "crossref",
@@ -212,7 +212,7 @@ __all__ = [
     "json_body",
     "keep_table",
     "lookup",
-    "mint",
+    "make_id",
     "normalize_arxiv_id",
     "normalize_doi",
     "now_iso",

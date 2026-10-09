@@ -14,7 +14,7 @@ def fake_mint(words):
 
 
 @pytest.fixture
-def admit(paper_text):
+def accept(paper_text):
     def run(batch, *, ledger=None, corpus=None, year=2026, text=paper_text):
         ledger = ledger if ledger is not None else Ledger()
         return ledger, expand_batch(
@@ -30,7 +30,7 @@ CLAIM = {
 }
 SEEDS = {
     "kw": ["best", "run"],
-    "kind": "selective",
+    "type": "selective",
     "severity": "major",
     "text": "Best-of-five reporting; report mean and spread.",
     "anchors": ["We report the best run over five seeds"],
@@ -38,14 +38,14 @@ SEEDS = {
 
 
 class TestClaims:
-    def test_a_verbatim_claim_is_admitted_with_its_page(self, admit):
-        ledger, result = admit({"claims": [CLAIM]})
+    def test_a_verbatim_claim_is_accepted_with_its_page(self, accept):
+        ledger, result = accept({"claims": [CLAIM]})
         assert not result.problems
-        assert result.minted["claims"] == {"first-combine": "first-combine-x"}
+        assert result.new["claims"] == {"first-combine": "first-combine-x"}
         assert ledger.claims["first-combine-x"].page == 1
 
-    def test_a_paraphrase_is_rejected_with_the_closest_page(self, admit):
-        ledger, result = admit(
+    def test_a_paraphrase_is_rejected_with_the_closest_page(self, accept):
+        ledger, result = accept(
             {
                 "claims": [
                     {
@@ -61,14 +61,14 @@ class TestClaims:
         assert problem.where == "claims[0].verbatim"
         assert "closest page 1" in problem.hint
 
-    def test_without_ingest_every_quote_fails(self, admit):
-        _, result = admit({"claims": [CLAIM]}, text=None)
+    def test_without_ingest_every_quote_fails(self, accept):
+        _, result = accept({"claims": [CLAIM]}, text=None)
         assert "ingest" in result.problems[0].fix
 
 
 class TestObjections:
-    def test_anchored_objection_targets_a_claim_minted_in_the_same_batch(self, admit):
-        ledger, result = admit(
+    def test_anchored_objection_targets_a_claim_made_in_the_same_batch(self, accept):
+        ledger, result = accept(
             {"claims": [CLAIM], "objections": [{**SEEDS, "claim": "first combine"}]}
         )
         assert not result.problems
@@ -76,13 +76,13 @@ class TestObjections:
         assert objection.claim == "first-combine-x"
         assert objection.evidence.anchors == ("We report the best run over five seeds",)
 
-    def test_missing_replaces_anchors(self, admit):
-        ledger, result = admit(
+    def test_missing_replaces_anchors(self, accept):
+        ledger, result = accept(
             {
                 "objections": [
                     {
                         "kw": ["error", "bars"],
-                        "kind": "variance",
+                        "type": "variance",
                         "severity": "major",
                         "text": "No spread reported.",
                         "missing": "error bars or confidence intervals for Table 1",
@@ -93,13 +93,13 @@ class TestObjections:
         assert not result.problems
         assert ledger.objections["error-bars-x"].evidence.what.startswith("error bars")
 
-    def test_every_problem_comes_back_at_once(self, admit):
-        ledger, result = admit(
+    def test_every_problem_comes_back_at_once(self, accept):
+        ledger, result = accept(
             {
                 "objections": [
                     {
                         "kw": ["x", "y"],
-                        "kind": "vibes",
+                        "type": "vibes",
                         "severity": "huge",
                         "text": "",
                         "anchors": ["not in the paper at all here"],
@@ -110,7 +110,7 @@ class TestObjections:
         )
         where = {p.where for p in result.problems}
         assert {
-            "objections[0].kind",
+            "objections[0].type",
             "objections[0].severity",
             "objections[0].text",
             "objections[0].anchors[0]",
@@ -119,10 +119,10 @@ class TestObjections:
         assert ledger.objections == {}
         assert result.events == []
 
-    def test_a_malformed_family_never_hides_a_problem_in_its_siblings(self, admit):
+    def test_a_malformed_family_never_hides_a_problem_in_its_siblings(self, accept):
         """A container of the wrong shape once swallowed the whole batch, so
         the unanchored quote beside it cost a second round trip."""
-        _, result = admit(
+        _, result = accept(
             {
                 "claims": CLAIM,
                 "objections": [{**SEEDS, "anchors": ["not in the paper at all here"]}],
@@ -133,18 +133,18 @@ class TestObjections:
             "objections[0].anchors[0]",
         }
 
-    def test_novelty_needs_a_attached_corpus_and_dated_prior(self, admit, corpus_dir):
+    def test_novelty_needs_a_attached_corpus_and_dated_prior(self, accept, corpus_dir):
         base = {
             "kw": ["not", "first"],
-            "kind": "first",
+            "type": "first",
             "severity": "major",
             "text": "Bandit routing predates this.",
             "anchors": ["the first to combine bandits"],
         }
-        _, result = admit({"objections": [base]})
+        _, result = accept({"objections": [base]})
         assert "novelty objection names the prior work" in result.problems[0].fix
         corpus = load_corpus(corpus_dir / "papers.jsonl")
-        _, result = admit(
+        _, result = accept(
             {
                 "objections": [
                     {**base, "prior": ["doi:10.1/b", "title:undated router", "nope"]}
@@ -158,7 +158,7 @@ class TestObjections:
             and "no year" in fixes
             and "not in the attached corpus" in fixes
         )
-        ledger, result = admit(
+        ledger, result = accept(
             {"objections": [{**base, "prior": ["DOI:10.1/a"]}]},
             corpus=corpus,
         )
@@ -167,8 +167,8 @@ class TestObjections:
 
 
 class TestWalksAndWithdraws:
-    def test_walk_and_withdraw_round_trip(self, admit):
-        ledger, result = admit(
+    def test_walk_and_withdraw_round_trip(self, accept):
+        ledger, result = accept(
             {
                 "objections": [SEEDS],
                 "walks": [{"bank": "design", "note": "seeds and baselines checked"}],
@@ -176,7 +176,7 @@ class TestWalksAndWithdraws:
         )
         assert not result.problems
         assert ledger.walks == {"design": "seeds and baselines checked"}
-        ledger, result = admit(
+        ledger, result = accept(
             {
                 "withdraws": [
                     {"objection": "best run", "reason": "appendix B reports the mean"}
@@ -187,12 +187,12 @@ class TestWalksAndWithdraws:
         assert not result.problems
         assert ledger.withdrawn == {"best-run-x": "appendix B reports the mean"}
 
-    def test_prior_keys_outside_the_novelty_bank_are_refused(self, admit):
-        _, result = admit({"objections": [{**SEEDS, "prior": ["doi:10.1/a"]}]})
+    def test_prior_keys_outside_the_novelty_bank_are_refused(self, accept):
+        _, result = accept({"objections": [{**SEEDS, "prior": ["doi:10.1/a"]}]})
         assert result.problems[0].where == "objections[0].prior"
 
-    def test_unknown_bank_and_empty_batch_are_rejected(self, admit):
-        _, result = admit({"walks": [{"bank": "vibes"}]})
+    def test_unknown_bank_and_empty_batch_are_rejected(self, accept):
+        _, result = accept({"walks": [{"bank": "vibes"}]})
         assert result.problems[0].where == "walks[0].bank"
-        _, result = admit({})
+        _, result = accept({})
         assert result.problems[0].where == "$"

@@ -1,13 +1,13 @@
-"""Admission mechanics: decoding, refs with did-you-mean, minting, pad links."""
+"""Acceptance mechanics: decoding, refs with did-you-mean, id making, pad links."""
 
 from __future__ import annotations
 
 import pytest
 
-from btm_corekit import Admission, CommandError, Model, Named, NonEmpty, Pool, suggest
+from btm_corekit import Acceptance, CommandError, Model, Named, NonEmpty, Pool, suggest
 
 
-def fake_mint(words):
+def fake_maker(words):
     return "-".join(words) + "-x"
 
 
@@ -31,23 +31,23 @@ class TestHelpers:
 
 class TestDecode:
     def test_every_field_problem_comes_back_located(self):
-        gate = Admission()
+        gate = Acceptance()
         assert gate.decode(Entry, {"kw": ["a"], "q": "", "x": 1}, "leaves[0]") is None
         assert {p.where for p in gate.problems} == {"leaves[0].q", "leaves[0].x"}
 
     def test_the_schema_fragment_rides_along(self):
         """pydantic states the fix; the hint keeps the whole entry shape."""
-        gate = Admission()
+        gate = Acceptance()
         gate.decode(Entry, {"kw": ["a"], "q": ""}, "leaves[0]", "the shape")
         assert gate.problems[0].hint == "the shape"
 
     def test_a_root_problem_keeps_the_outer_location(self):
-        gate = Admission()
+        gate = Acceptance()
         assert gate.decode(Entry, "not an object", "leaves[0]") is None
         assert gate.problems[0].where == "leaves[0]"
 
     def test_families_round_trip_a_batch_every_family_of_which_decodes(self):
-        gate = Admission()
+        gate = Acceptance()
         batch = gate.families({"leaves": [{"a": 1}], "sources": []}, Batch)
         assert gate.clean
         assert batch.leaves == ({"a": 1},) and batch.sources == ()
@@ -55,7 +55,7 @@ class TestDecode:
     def test_a_malformed_family_takes_its_default_and_its_siblings_survive(self):
         """The whole point: one bad family costs its own contents, never the
         checks its siblings were going to pay for."""
-        gate = Admission()
+        gate = Acceptance()
         batch = gate.families(
             {"leaves": {"not": "a list"}, "sources": [{"b": 2}]},
             Batch,
@@ -67,7 +67,7 @@ class TestDecode:
         ]
 
     def test_two_bad_families_give_two_located_problems(self):
-        gate = Admission()
+        gate = Acceptance()
         gate.families({"leaves": 1, "sources": 2}, Batch)
         assert [p.where for p in gate.problems] == ["leaves", "sources"]
 
@@ -76,18 +76,18 @@ class TestDecode:
             leaves: tuple[dict, ...]
 
         with pytest.raises(CommandError, match="default"):
-            Admission().families({"leaves": []}, Demanding)
+            Acceptance().families({"leaves": []}, Demanding)
 
     def test_known_keys_names_what_the_container_does_not_declare(self):
-        gate = Admission()
+        gate = Acceptance()
         gate.known_keys({"leaves": [], "bogus": 1}, Batch)
         assert [p.where for p in gate.problems] == ["bogus"]
         assert "leaves" in gate.problems[0].hint
 
 
-class TestAdmission:
+class TestAcceptance:
     def test_resolve_ref_covers_every_resolution(self):
-        gate = Admission()
+        gate = Acceptance()
         pool = Pool("leaf", ["rent-length-1", "rent-width-2"])
         assert gate.resolve_ref("rent-length-1", pool, "w") == "rent-length-1"
         assert gate.resolve_ref("width", pool, "w") == "rent-width-2"
@@ -96,32 +96,32 @@ class TestAdmission:
         assert gate.resolve_ref("zzz", pool, "w") is None
         assert [p.fix[:8] for p in gate.problems] == ["replace ", "replace "]
 
-    def test_mint_id_tracks_slugs_ids_and_fresh(self):
-        gate = Admission(mint=fake_mint)
+    def test_make_id_tracks_slugs_ids_and_fresh(self):
+        gate = Acceptance(maker=fake_maker)
         pool = Pool("leaf", [])
         named = Entry(kw=["rent", "length"], q="x")
-        full = gate.mint_id(named, pool, "leaves[0]")
+        full = gate.make_id(named, pool, "leaves[0]")
         assert full == "rent-length-x"
-        assert pool.ids == [full] and pool.minted == {"rent-length": full}
+        assert pool.ids == [full] and pool.new == {"rent-length": full}
         assert gate.resolve_ref("rent", pool, "w") == full
         assert gate.advisories == []  # fresh ids recover silently
-        assert gate.mint_id(named, pool, "leaves[1]") is None
+        assert gate.make_id(named, pool, "leaves[1]") is None
         assert "vary one keyword" in gate.problems[0].fix
-        assert gate.mint_id(Entry(ref="explicit", q="x"), pool, "w") == "explicit-x"
+        assert gate.make_id(Entry(ref="explicit", q="x"), pool, "w") == "explicit-x"
 
     def test_only_keywords_draw_the_keyword_count_advisory(self):
         """An explicit `ref` is a stem the agent chose, so the advice to pick
         two or three keywords does not apply to it; one keyword still draws
         it."""
-        gate = Admission(mint=fake_mint)
+        gate = Acceptance(maker=fake_maker)
         pool = Pool("source", [])
-        gate.mint_id(Entry(ref="uwbench", q="x"), pool, "sources[0]")
+        gate.make_id(Entry(ref="uwbench", q="x"), pool, "sources[0]")
         assert gate.advisories == []
-        gate.mint_id(Entry(kw=["uwbench2"], q="x"), pool, "sources[1]")
+        gate.make_id(Entry(kw=["uwbench2"], q="x"), pool, "sources[1]")
         assert gate.advisories == ["'uwbench2': two or three keywords resolve best"]
 
     def test_an_entry_that_names_itself_nothing_is_refused(self):
-        gate = Admission(mint=fake_mint)
+        gate = Acceptance(maker=fake_maker)
         assert gate.decode(Entry, {"q": "x"}, "leaves[0]") is None
         assert 'add "kw"' in gate.problems[0].fix
 
@@ -132,12 +132,12 @@ class TestAdmission:
         assert set(pool.keywords()) == {"rent-length-1", "bcl-2"}
         assert suggest("bcl", pool.ids, keywords=pool.keywords()) == ["bcl-2"]
 
-    def test_minting_without_a_minter_is_a_defect(self):
+    def test_making_without_a_maker_is_a_defect(self):
         with pytest.raises(CommandError):
-            Admission().mint_id(Entry(kw=["a", "b"], q="x"), Pool("x", []), "w")
+            Acceptance().make_id(Entry(kw=["a", "b"], q="x"), Pool("x", []), "w")
 
     def test_pad_links_name_the_entry_that_does_not_exist(self):
-        gate = Admission(pad={"j1", "j2"})
+        gate = Acceptance(pad={"j1", "j2"})
         assert gate.pad_links(("j1", "j2"), "w") is True
         assert gate.pad_links((), "w") is True
         assert gate.pad_links(("j9",), "w") is False

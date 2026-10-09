@@ -58,7 +58,7 @@ class TestLabels:
 
     def test_a_term_in_over_a_third_of_items_is_reported_not_clustered(self):
         """The ledger case: "language" in 198 of 422 titles labelled the
-        largest kind and separated nothing."""
+        largest type and separated nothing."""
         corpus = [Item(f"l{n}", f"language topic{n}") for n in range(4)] + [
             Item(f"o{n}", f"other{n % 2} item") for n in range(6)
         ]

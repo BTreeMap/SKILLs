@@ -14,19 +14,19 @@ def repo_with(source: str, name: str = "skill/scripts/src/pkg/cli.py") -> Repo:
 
 SILENT = """
 def build(sub):
-    sub.add_parser("note")
+    sub.add_parser("record")
 """
 
 NAMED = """
 def build(sub):
-    sub.add_parser("note", help="admit one batch")
+    sub.add_parser("record", help="accept one batch")
 """
 
 
 def test_a_parser_without_help_is_reported():
     [finding] = rule_command_help(repo_with(SILENT))
     assert finding.rule == "command-help"
-    assert "'note'" in finding.message
+    assert "'record'" in finding.message
     assert finding.repair is None  # only the author knows what it does
 
 

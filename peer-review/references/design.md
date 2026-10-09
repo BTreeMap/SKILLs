@@ -1,6 +1,6 @@
 # Design: Study Design and Execution
 
-Walk once per paper; note `walks` entry for `design` with what was ruled
+Walk once per paper; record `walks` entry for `design` with what was ruled
 out. Pick profile by study type, then answer every question.
 
 ## Profiles
@@ -14,7 +14,7 @@ out. Pick profile by study type, then answer every question.
 
 ## Signalling questions
 
-| Kind | Question | Anchor or `missing` |
+| Type | Question | Anchor or `missing` |
 | --- | --- | --- |
 | `control` | Is there comparison condition isolating manipulation? | Design sentence, or `missing: control condition` |
 | `assignment` | Were units assigned to conditions by stated process; groups comparable at baseline? | Assignment sentence or baseline table |

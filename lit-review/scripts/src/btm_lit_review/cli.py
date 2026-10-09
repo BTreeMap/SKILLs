@@ -40,12 +40,12 @@ from btm_lit_review.corpus.curate import (
 )
 from btm_lit_review.corpus.gather import (
     cmd_fill,
-    cmd_init,
     cmd_search,
     cmd_snowball,
+    cmd_start,
 )
 from btm_lit_review.findings.draft import cmd_cite_check
-from btm_lit_review.findings.notebook import cmd_note
+from btm_lit_review.findings.notebook import cmd_record
 from btm_lit_review.report.verify import cmd_verify
 from btm_lit_review.report.views import (
     cmd_brief,
@@ -79,12 +79,12 @@ def add_common(parser: argparse.ArgumentParser) -> None:
 
 
 def wire_gather(commands: Commands) -> None:
-    init = commands.add_parser("init", help="create a review session")
-    add_common(init)
-    add_slot(init, FRAMING, '{"question": "the research question"}')
-    init.add_argument("--level", type=Level, choices=LEVELS, default=Level.FULL)
-    wire_project(init)
-    init.set_defaults(func=cmd_init)
+    start = commands.add_parser("start", help="create a review session")
+    add_common(start)
+    add_slot(start, FRAMING, '{"question": "the research question"}')
+    start.add_argument("--level", type=Level, choices=LEVELS, default=Level.FULL)
+    wire_project(start)
+    start.set_defaults(func=cmd_start)
 
     search = commands.add_parser("search", help="run one logged search")
     add_common(search)
@@ -149,12 +149,12 @@ def wire_curate(commands: Commands) -> None:
 
     digester = commands.add_parser(
         "digest",
-        help="what kinds of candidate are undecided, and the rule selecting each",
+        help="what types of candidate are undecided, and the rule selecting each",
     )
     add_common(digester)
     digester.add_argument("--status", choices=STATUSES, default="candidate")
     digester.add_argument("--on", choices=MATCH_FIELDS, default="title")
-    wire_limit(digester, what="kinds to return", default=CLUSTER_CAP, flag="--clusters")
+    wire_limit(digester, what="types to return", default=CLUSTER_CAP, flag="--clusters")
     digester.set_defaults(func=cmd_digest)
 
     show = commands.add_parser("show", help="project the corpus for screening")
@@ -185,15 +185,17 @@ def wire_curate(commands: Commands) -> None:
 
 
 def wire_notebook(commands: Commands) -> None:
-    note = commands.add_parser("note", help="admit findings and gaps into the notebook")
-    add_common(note)
-    add_slot(note, BATCH, "findings and gaps")
-    note.set_defaults(func=cmd_note)
+    record = commands.add_parser(
+        "record", help="accept findings and gaps into the notebook"
+    )
+    add_common(record)
+    add_slot(record, BATCH, "findings and gaps")
+    record.set_defaults(func=cmd_record)
 
     wire_pad(commands, STORE, on_write=recognize_extraction)
 
     brief = commands.add_parser(
-        "brief", help="resume view: findings, gaps, drift, markers, pad tail"
+        "brief", help="continue view: findings, gaps, drift, marks, pad tail"
     )
     add_common(brief)
     brief.set_defaults(func=cmd_brief)

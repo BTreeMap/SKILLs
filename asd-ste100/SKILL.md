@@ -52,9 +52,9 @@ R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <ski
 </commands>
 
 <commands for="surface">
-$R fetch [--version TAG]
-$R check --text:file draft.txt [--allow:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--jsonl] [--version TAG | --data DIR]
-$R lookup WORD [WORD ...] [--version TAG | --data DIR]
+$R get [--version TAG]
+$R check --text:file draft.txt [--accept:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--jsonl] [--version TAG | --data DIR]
+$R find WORD [WORD ...] [--version TAG | --data DIR]
 $R clean
 </commands>
 
@@ -77,7 +77,7 @@ $R clean
 * An inline code span counts as one word, and `check` does not examine the
   words in it. Text in quotation marks is a technical noun. It counts as one
   word, and the report shows it in a `quotation` signal.
-* `--allow:file PATH` gives your technical nouns and technical verbs, one
+* `--accept:file PATH` gives your technical nouns and technical verbs, one
   term on each line. A comment starts with `#`. The checker accepts a
   one-word term and the regular plural of a noun. It accepts a term of two
   or more words only when all its words are together. It does not accept one
@@ -86,15 +86,15 @@ $R clean
   and a limit for a sentence that starts with `NOTE:`. `--mode description`
   sets the sentence limit and the paragraph limit for descriptions. The
   `limits` in the report shows the numbers that apply.
-* `lookup` accepts one or more words, and gives one item in `words` for
-  each. It shows each dictionary entry that has the word as its headword, as
-  a form, or as the plural of an approved noun. Each entry gives its
-  approved meaning or its alternatives, and the examples from the
-  specification. For a form of a headword that is not approved, `lookup`
-  gives the `headword` and its entries. When the specification gives one
-  example for each alternative, `choices` gives each alternative with its
-  STE example and with the sentence that it replaces. An empty `entries`
-  shows that the word is not in the dictionary.
+* `find` accepts one or more words, and gives one item in `words` for each.
+  It shows each dictionary entry that has the word as its headword, as a
+  form, or as the plural of an approved noun. Each entry gives its approved
+  meaning or its alternatives, and the examples from the specification. For
+  a form of a headword that is not approved, `find` gives the `headword` and
+  its entries. When the specification gives one example for each
+  alternative, `choices` gives each alternative with its STE example and
+  with the sentence that it replaces. An empty `entries` shows that the word
+  is not in the dictionary.
 * Each item in `entries` has the same fields: `word`, `pos`, `qualifier`,
   `forms`, `status`, `ste_example`, `nonste_example`, `page`,
   `alternatives`, and `choices`. If the specification does not give a value,
@@ -103,13 +103,13 @@ $R clean
   the approved meaning. Read the alternatives in `alternatives`, not in
   `status`. If `choices` is not empty, `ste_example` and `nonste_example`
   are `null`, because `choices` contains the examples.
-* `fetch` downloads the release that this skill uses, and makes sure that
-  the digest of each file is correct. If the cache is empty, `check` and
-  `lookup` do a `fetch` first and tell you in a `signal:` line. `clean`
-  removes the cache, and the next command downloads the release again.
+* `get` downloads the release that this skill uses, and makes sure that the
+  digest of each file is correct. If the cache is empty, `check` and `find`
+  do a `get` first and tell you in a `signal:` line. `clean` removes the
+  cache, and the next command downloads the release again.
 * `--data DIR` gives a local release: the `data/` directory of a ste-tax
   checkout, with `manifest.json` and the files that it shows. Then `check`
-  and `lookup` read only that directory, and do not use the network or the
+  and `find` read only that directory, and do not use the network or the
   cache. The report gives `null` in `version`. If a file is missing or its
   digest is not correct, the exit is 1 and the command does not remove the
   file. Do not use `--data` together with `--version`.
@@ -127,13 +127,13 @@ $R clean
 
 * The `check` report gives these fields: `schema_version`, `version`,
   `data`, `mode`, `format`, `ok`, `summary`, `limits`, `counts`, `findings`,
-  `signals`, `skipped`, and `allowed`. With `--section`, it also gives
-  `section`. The `lookup` report gives `schema_version`, `version`, `data`,
+  `signals`, `skipped`, and `accepted`. With `--section`, it also gives
+  `section`. The `find` report gives `schema_version`, `version`, `data`,
   and `words`. These fields, and the other fields that this section and
   Commands name, change only if `schema_version` changes.
 * `version` gives the release in the cache. `data` gives the `--data`
   directory. The other field is `null`.
-* `allowed` gives the number of terms in the allow file.
+* `accepted` gives the number of terms in the accept file.
 * `summary` gives the number of errors and signals of each type, and each
   word to replace. In a long text, read it first.
 * `ok` is `true` only when `findings` is empty. This condition is necessary
@@ -152,7 +152,7 @@ $R clean
   * For a `not_approved` word that is not in the dictionary, `alternatives`
     is empty, and `next` gives an instruction. Write the sentence with
     approved words. If the word is a technical noun or a technical verb,
-    write it in the allow file.
+    write it in the accept file.
   * The report gives one `not_approved` item for each different word, not
     for each time the word occurs. A headword of two or more words, for
     example "carry out" or "a few", is one item. Its `token` shows the words
@@ -188,14 +188,14 @@ $R clean
 ## Technical nouns and verbs
 
 The dictionary does not contain technical nouns or technical verbs. Before
-the first check, write them in the allow file.
+the first check, write them in the accept file.
 
 1. Find the possible terms. Look for the names of parts, tools, materials,
    physical quantities, systems, locations, units, persons, and documents.
    For example, "oil" and "air" are materials, and "pressure" and
    "temperature" are physical quantities. Also look for the procedures of
    the work of the user, for example "drill" or "download".
-2. Write a word in the allow file only if it is a technical noun or a
+2. Write a word in the accept file only if it is a technical noun or a
    technical verb. Do not write a general word there to stop an error.
    "Utilize", "ensure", and "perform" are not technical nouns or technical
    verbs.
@@ -204,16 +204,16 @@ the first check, write them in the allow file.
    that is clear. Use a maximum of three words in a multi-word noun. Write a
    longer technical noun in full one time. After that, make it shorter, or
    connect its words with hyphens.
-5. Before you write a word in the allow file, use `$R lookup WORD` to find
+5. Before you write a word in the accept file, use `$R find WORD` to find
    it. If the dictionary shows that the word is not approved, use an
    alternative. If the word is the name of an item in the user's work, write
-   it in the allow file.
+   it in the accept file.
 
 ## Write STE
 
 * Select each alternative by its meaning, not by its position in the list.
-  Use `lookup` to read the examples of the entry. Use the alternative that
-  has an example with the same meaning as your sentence. In `choices`, each
+  Use `find` to read the examples of the entry. Use the alternative that has
+  an example with the same meaning as your sentence. In `choices`, each
   alternative has its example. An alternative with a form ("fast (adj):
   faster") tells you the form to write.
 * If no alternative can replace the word directly, write the sentence
@@ -236,7 +236,7 @@ the first check, write them in the allow file.
   articles. Use a past participle only as an adjective. Use an -ing word
   only if it is a technical noun or the dictionary shows it as approved.
   Write each -ing technical noun, for example "wiring" or "parking brake",
-  in the allow file, or the report shows it as an `ing_form` error.
+  in the accept file, or the report shows it as an `ing_form` error.
 
 ## Procedure
 
@@ -244,7 +244,7 @@ the first check, write them in the allow file.
   <phase name="prepare">
     <step>Select the mode: `procedure` for instructions, or `description` for text that gives information. A short text that gives only a fact or a value, for example a result that you calculated, gives information.</step>
     <step>If a text has instructions and information, examine each part in its applicable mode. For a Markdown file, use `--format markdown` and one `--section` for each part.</step>
-    <step>Write the allow file from the text and the brief (refer to Technical nouns and verbs).</step>
+    <step>Write the accept file from the text and the brief (refer to Technical nouns and verbs).</step>
   </phase>
   <phase name="draft">
     <step>For `build`, write a draft from the brief in STE (refer to Write STE).</step>
@@ -252,13 +252,13 @@ the first check, write them in the allow file.
     <step>For `review`, go to the loop. Do not change the text.</step>
   </phase>
   <phase name="loop">
-    <step>Use the command `$R check --text:file draft.txt --allow:file terms.txt --mode MODE`.</step>
+    <step>Use the command `$R check --text:file draft.txt --accept:file terms.txt --mode MODE`.</step>
     <step>Replace each `not_approved` word with an alternative, or write the sentence differently.</step>
     <step>Divide each sentence that is too long. Divide each paragraph that is too long.</step>
     <step>Remove each contraction and each semicolon.</step>
     <step>Examine each signal. If a signal is correct, correct the text.</step>
     <step>Do the check again. Stop when `ok` is `true`.</step>
-    <step>If each error that stays is a technical noun or a technical verb, write it in the allow file. Do the check one more time. Then stop.</step>
+    <step>If each error that stays is a technical noun or a technical verb, write it in the accept file. Do the check one more time. Then stop.</step>
   </phase>
   <phase name="deliver">
     <step>Compare the meaning of the last draft with the source or the brief. Make sure that the facts, the sequence of steps, and the warnings are the same.</step>
@@ -286,13 +286,13 @@ Write the technical nouns and verbs first. ok: true is necessary, but not suffic
   capital letters as a label. It gives an `abbreviation` signal for that
   word. If a sentence has more capital letters, for example a warning, the
   checker examines each word.
-* The allow file accepts a term in all sentences. If you write a term as a
+* The accept file accepts a term in all sentences. If you write a term as a
   noun, the checker also accepts it where you use it as a verb. Read the
   text for this error.
 * The checker does not examine meaning. For example, "fall" is approved only
-  for movement by gravity, not for a value that decreases. `lookup` shows
-  each approved meaning.
-* The alternatives in `lookup` are for the meanings that the specification
+  for movement by gravity, not for a value that decreases. `find` shows each
+  approved meaning.
+* The alternatives in `find` are for the meanings that the specification
   gives. If your meaning is different, no alternative is correct. For
   example, the alternatives for "fix" are for "attach" and "repair", not for
   "correct an error". Then find an approved word for your meaning, here
@@ -306,7 +306,7 @@ Write the technical nouns and verbs first. ok: true is necessary, but not suffic
 ## Checks before you stop
 
 <checklist>
-  <item>The allow file had all the terms before the first check, and it contains only technical nouns and technical verbs.</item>
+  <item>The accept file had all the terms before the first check, and it contains only technical nouns and technical verbs.</item>
   <item>The last report has `ok: true`, or the result gives the cause of each error that stays.</item>
   <item>You examined each signal, and the result gives the signals that you did not correct.</item>
   <item>The text keeps all facts, numbers, conditions, and warnings of its source or brief.</item>

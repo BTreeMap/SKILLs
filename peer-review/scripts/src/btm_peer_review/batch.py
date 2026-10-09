@@ -1,4 +1,4 @@
-"""The note pipeline: parse, resolve, simulate; a rejection lists every fix.
+"""The record pipeline: parse, resolve, simulate; a rejection lists every fix.
 
 Every phase runs to completion so one verdict carries every problem; the
 ledger changes only when the problem list is empty.
@@ -13,7 +13,7 @@ from typing import Annotated, Any
 from pydantic import AfterValidator, ConfigDict, Field
 
 from btm_corekit import (
-    Admission,
+    Acceptance,
     Diagnostic,
     Model,
     Named,
@@ -21,7 +21,7 @@ from btm_corekit import (
     Pool,
     salvage,
 )
-from btm_peer_review.constants import BANKS, CLAIM_WORDS_MAX, Bank, Kind, Severity
+from btm_peer_review.constants import BANKS, CLAIM_WORDS_MAX, Bank, Severity, Type
 from btm_peer_review.ledger import apply
 from btm_peer_review.state import Evidenced, Ledger
 from btm_peer_review.store import Corpus
@@ -30,12 +30,12 @@ from btm_peer_review.text import Fuzzy, PaperText, Unresolved, Verbatim
 SCHEMA: dict[str, str] = {
     "claims": '{"kw": ["two", "words"], "verbatim": "the claim as the paper '
     'states it, one sentence"}',
-    "objections": '{"kw": ["two", "words"], "kind": "<a kind from banks>", '
+    "objections": '{"kw": ["two", "words"], "type": "<a type from banks>", '
     '"severity": "fatal|major|minor|question", "text": "the objection, with '
     'what would resolve it", "claim": "<claim ref> (optional)", "where": '
     '"section or table (optional)", "anchors": ["verbatim quote from the '
     'paper"], "missing": "what the paper omits (replaces anchors)", '
-    '"prior": ["<corpus key>"] (required for novelty kinds), '
+    '"prior": ["<corpus key>"] (required for novelty types), '
     '"from": ["<pad id>"] (optional provenance)}',
     "walks": '{"bank": "claims|design|analysis|limitations|novelty", '
     '"note": "what the walk found or ruled out"}',
@@ -54,7 +54,7 @@ class ClaimEntry(Named):
 
 
 class ObjectionEntry(Named, Evidenced):
-    kind: Kind
+    type: Type
     severity: Severity
     text: NonEmpty
     claim: str | None = None
@@ -76,7 +76,7 @@ class WithdrawEntry(Model):
 Rows = tuple[Mapping[str, Any], ...]
 
 
-class NoteBatch(Model):
+class RecordBatch(Model):
     """The container. Rows stay opaque here and decode one at a time, so a
     row with a bad field still lets its neighbours reach the checks that need
     the paper and the corpus. Extras are ignored here and named by
@@ -90,12 +90,12 @@ class NoteBatch(Model):
     withdraws: Rows = ()
 
 
-BATCH_KEYS = tuple(NoteBatch.model_fields)
+BATCH_KEYS = tuple(RecordBatch.model_fields)
 
 
 @dataclass(frozen=True, slots=True)
 class Context:
-    """What admission checks quotes and prior work against."""
+    """What acceptance checks quotes and prior work against."""
 
     paper: PaperText | None
     corpus: Corpus | None
@@ -103,24 +103,24 @@ class Context:
 
 
 @dataclass(slots=True)
-class NoteResult:
+class RecordResult:
     events: list[dict[str, Any]] = field(default_factory=list)
-    minted: dict[str, dict[str, str]] = field(default_factory=dict)
+    new: dict[str, dict[str, str]] = field(default_factory=dict)
     advisories: list[str] = field(default_factory=list)
     problems: list[Diagnostic] = field(default_factory=list)
 
 
-class _Admission(Admission):
+class _Acceptance(Acceptance):
     """One batch's resolution context; every phase runs, problems accumulate."""
 
     def __init__(
         self,
         ledger: Ledger,
         context: Context,
-        mint: Callable[[Iterable[str]], str],
+        maker: Callable[[Iterable[str]], str],
         pad: Iterable[str],
     ) -> None:
-        super().__init__(mint, pad)
+        super().__init__(maker, pad)
         self.context = context
         self.events: list[dict[str, Any]] = []
         self.claims = Pool("claim", list(ledger.claim_order))
@@ -151,7 +151,7 @@ class _Admission(Admission):
             if entry is None:
                 continue
             hit = self.anchor(entry.verbatim, f"{where}.verbatim")
-            full = self.mint_id(entry, self.claims, where)
+            full = self.make_id(entry, self.claims, where)
             if hit is None or full is None:
                 continue
             self.events.append(
@@ -176,23 +176,23 @@ class _Admission(Admission):
             if entry.claim is not None:
                 claim = self.resolve_ref(entry.claim, self.claims, f"{where}.claim")
                 ok = ok and claim is not None
-            if entry.kind.bank is Bank.NOVELTY:
+            if entry.type.bank is Bank.NOVELTY:
                 ok = self.take_prior(entry.prior, where) and ok
             elif entry.prior:
                 self.fail(
                     f"{where}.prior",
-                    "prior keys belong to novelty kinds; drop them here",
-                    f"novelty kinds: {' '.join(BANKS[Bank.NOVELTY])}",
+                    "prior keys belong to novelty types; drop them here",
+                    f"novelty types: {' '.join(BANKS[Bank.NOVELTY])}",
                 )
                 ok = False
-            full = self.mint_id(entry, self.objections, where)
+            full = self.make_id(entry, self.objections, where)
             if not ok or full is None:
                 continue
             self.events.append(
                 {
                     "e": "objection",
                     "id": full,
-                    "kind": entry.kind,
+                    "type": entry.type,
                     "severity": entry.severity,
                     "text": entry.text,
                     "claim": claim,
@@ -276,26 +276,26 @@ def expand_batch(
     ledger: Ledger,
     batch: dict[str, Any],
     context: Context,
-    mint: Callable[[Iterable[str]], str],
+    maker: Callable[[Iterable[str]], str],
     pad: Iterable[str] = (),
-) -> NoteResult:
-    admission = _Admission(ledger, context, mint, pad)
-    admission.known_keys(batch, NoteBatch)
-    note = admission.families(batch, NoteBatch, SCHEMA)
-    admission.take_claims(note.claims)
-    admission.take_objections(note.objections)
-    admission.take_walks(note.walks)
-    admission.take_withdraws(note.withdraws)
-    if admission.clean and not admission.events:
-        admission.fail("$", "add at least one entry: the batch records nothing")
-    result = NoteResult(
-        events=[] if admission.problems else admission.events,
-        minted={
-            "claims": admission.claims.minted,
-            "objections": admission.objections.minted,
+) -> RecordResult:
+    acceptance = _Acceptance(ledger, context, maker, pad)
+    acceptance.known_keys(batch, RecordBatch)
+    record = acceptance.families(batch, RecordBatch, SCHEMA)
+    acceptance.take_claims(record.claims)
+    acceptance.take_objections(record.objections)
+    acceptance.take_walks(record.walks)
+    acceptance.take_withdraws(record.withdraws)
+    if acceptance.clean and not acceptance.events:
+        acceptance.fail("$", "add at least one entry: the batch records nothing")
+    result = RecordResult(
+        events=[] if acceptance.problems else acceptance.events,
+        new={
+            "claims": acceptance.claims.new,
+            "objections": acceptance.objections.new,
         },
-        advisories=admission.advisories,
-        problems=admission.problems,
+        advisories=acceptance.advisories,
+        problems=acceptance.problems,
     )
     for event in result.events:
         apply(ledger, event)

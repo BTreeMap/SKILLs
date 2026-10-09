@@ -1,4 +1,4 @@
-"""The verbs end to end: admit, prepare, apply, restore, clean."""
+"""The verbs end to end: accept, prepare, apply, restore, clean."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import pytest
 
 from btm_caveman import cli as caveman_cli
-from btm_caveman.admit import admit
+from btm_caveman.accept import accept
 from btm_caveman.cli import main
 from btm_caveman.model import MAX_FILE_SIZE, Plan, Refusal
 from btm_corekit import CommandError
@@ -40,50 +40,50 @@ def apply(note, body: str) -> int:
     return main(["apply", str(note), "--body:file", str(body_file)])
 
 
-class TestAdmit:
-    def test_ordinary_prose_is_admitted(self, note):
-        assert isinstance(admit(note), Plan)
+class TestAccept:
+    def test_ordinary_prose_is_accepted(self, note):
+        assert isinstance(accept(note), Plan)
 
     def test_a_missing_file_is_refused(self, tmp_path):
-        assert isinstance(admit(tmp_path / "absent.md"), Refusal)
+        assert isinstance(accept(tmp_path / "absent.md"), Refusal)
 
     def test_an_empty_file_is_refused(self, tmp_path):
         path = tmp_path / "empty.md"
         path.write_text("   \n", encoding="utf-8")
-        assert "empty" in admit(path).reason
+        assert "empty" in accept(path).reason
 
     def test_an_exact_secret_name_is_refused(self, tmp_path):
         path = tmp_path / "credentials.md"
         path.write_text(PROSE, encoding="utf-8")
-        assert "sensitive" in admit(path).reason
+        assert "sensitive" in accept(path).reason
 
-    def test_a_secret_looking_name_is_admitted_with_a_note(self, tmp_path):
+    def test_a_secret_looking_name_is_accepted_with_a_note(self, tmp_path):
         path = tmp_path / "api-key.md"
         path.write_text(PROSE, encoding="utf-8")
-        admission = admit(path)
-        assert isinstance(admission, Plan)
-        assert "filename looks sensitive" in admission.notes[0]
+        acceptance = accept(path)
+        assert isinstance(acceptance, Plan)
+        assert "filename looks sensitive" in acceptance.notes[0]
 
     def test_an_oversized_file_is_refused(self, tmp_path):
         path = tmp_path / "big.md"
         path.write_text("x" * (MAX_FILE_SIZE + 1), encoding="utf-8")
-        assert "exceeds" in admit(path).reason
+        assert "exceeds" in accept(path).reason
 
     def test_non_utf8_bytes_are_refused(self, tmp_path):
         path = tmp_path / "bin.md"
         path.write_bytes(b"\xff\xfe\x00")
         with pytest.raises(CommandError, match="UTF-8"):
-            admit(path)
+            accept(path)
 
     def test_a_body_that_is_only_frontmatter_is_refused(self, tmp_path):
         path = tmp_path / "fm.md"
         path.write_text("---\na: 1\n---\n\n", encoding="utf-8")
-        assert "empty after frontmatter" in admit(path).reason
+        assert "empty after frontmatter" in accept(path).reason
 
-    def test_a_code_file_is_admitted_with_guidance(self, tmp_path):
+    def test_a_code_file_is_accepted_with_guidance(self, tmp_path):
         path = tmp_path / "script.py"
         path.write_text("def f():\n    return 1\n", encoding="utf-8")
-        plan = admit(path)
+        plan = accept(path)
         assert isinstance(plan, Plan)
         assert any("CODE" in note for note in plan.notes)
 

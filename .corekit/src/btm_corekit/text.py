@@ -78,7 +78,7 @@ def blanked(span: str) -> str:
 
 
 def strip_code(text: str) -> str:
-    """Fenced (```...```) and inline (`...`) spans blanked, so a marker quoted
+    """Fenced (```...```) and inline (`...`) spans blanked, so a mark quoted
     inside code never counts as a citation while every offset, length, and
     line number of the surrounding prose survives. An unterminated fence
     blanks to the end. One pass over `str.find`, O(n), and idempotent: the

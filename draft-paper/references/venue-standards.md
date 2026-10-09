@@ -11,9 +11,9 @@ never from examples in this file.
 
 1. Find current cycle's official call for papers and submission instructions
    (conference site, not mirror or prior year's page). Search and fetch with
-   harness's own tools; absent: `/search-web` (`web` to find page, `fetch`
-   to read it). Read PDF call with `/read-pdf`. No retrieval available: say
-   so, fall back to archetypes below, flag every venue fact in draft as
+   harness's own tools; absent: `/search-web` (`web` to find page, `get` to
+   read it). Read PDF call with `/read-pdf`. No retrieval available: say so,
+   fall back to archetypes below, flag every venue fact in draft as
    unverified.
 2. Answer every question in CFP checklist below before outlining; file
    answers as venue brief, each with source URL and cycle year.

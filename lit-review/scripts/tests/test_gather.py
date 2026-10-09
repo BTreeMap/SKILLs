@@ -85,7 +85,7 @@ def upstream(monkeypatch):
 @pytest.fixture
 def session(tmp_path, capsys):
     root = tmp_path / "review"
-    run(["init", str(root)], capsys, stdin='{"question": "q"}')
+    run(["start", str(root)], capsys, stdin='{"question": "q"}')
     built = Session(root)
     protocol = json.loads(built.protocol_path.read_text())
     protocol["criteria"] = {"include": ["on topic"], "exclude": ["off topic"]}
@@ -181,7 +181,7 @@ class TestSearch:
         )
         assert code == 0
         assert seen[0].url.params["page"] == "2"
-        assert document["offset"] == 100 and document["fetched"] == 5
+        assert document["offset"] == 100 and document["got"] == 5
         assert document["truncated"] is False and "matches upstream" not in err
         assert log(session)[0]["offset"] == 100
 
@@ -332,7 +332,7 @@ class TestSnowball:
             ],
             capsys,
         )
-        assert document["fetched"] == 0
+        assert document["got"] == 0
         assert "openalex lists no references for doi:10.1/a" in err
 
 

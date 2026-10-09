@@ -27,7 +27,7 @@ report.
    conference papers, gray literature. Preprints normal in fast fields;
    report labels them.
 
-Then run `init` with question and level.
+Then run `start` with question and level.
 
 ## Criteria
 

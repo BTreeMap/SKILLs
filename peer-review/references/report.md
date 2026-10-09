@@ -1,7 +1,7 @@
 # Report: The Review Document
 
 Draft once from `check` output, sweep draft with `/humanize` in embedded
-mode, then `cite-check` file. Every objection in draft is marker `[On]` from
+mode, then `cite-check` file. Every objection in draft is mark `[On]` from
 scaffold's `fatal`, `major`, `minor`, or `questions` lists; every claim is
 `[Cn]`. Withdrawn, unanchored, undated records stay out.
 
@@ -18,12 +18,12 @@ extracted text; corpus: <n records, or none>.
 evidence offered. No praise, no verdict here.>
 
 ## Claims
-| Marker | Claim | Page | Verdict |
+| Mark | Claim | Page | Verdict |
 | --- | --- | --- | --- |
 | C1 | <verbatim, trimmed> | p. 1 | contested by O1, O3 |
 
 ## Fatal
-<none, or one paragraph per marker: what is wrong, where (page and
+<none, or one paragraph per mark: what is wrong, where (page and
 quote), what would resolve it.>
 
 ## Major
@@ -38,7 +38,7 @@ run-to-run range if the spread is typical for this benchmark.
 <the `questions` list, each answerable in a rebuttal.>
 
 ## Points that did not affect the recommendation
-<writing, figures, formatting; no markers.>
+<writing, figures, formatting; no marks.>
 
 ## Recommendation
 <the derived verdict verbatim from check>, confidence <band> (<walked
@@ -67,5 +67,5 @@ every quoted anchor and prior-work key was verified by its script.
 After delivery, offer next step whose condition holds. Invoke none unasked.
 
 - Paper is user's own and review answers it: `/draft-paper rebut` with
-  review file as reviews input; init its run with
+  review file as reviews input; start its run with
   `--verb rebut --state reviews`.

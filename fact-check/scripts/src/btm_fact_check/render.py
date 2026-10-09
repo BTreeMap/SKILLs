@@ -7,7 +7,7 @@ from collections import Counter
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from btm_corekit import Admission
+from btm_corekit import Acceptance
 from btm_fact_check.state import (
     Claim,
     ClaimType,
@@ -66,9 +66,9 @@ def sourced(claim: Claim) -> bool:
     return len(publishers) >= INDEPENDENT or owner_plus_probe(claim)
 
 
-def readiness(state: State) -> list[Ready] | Admission:
+def readiness(state: State) -> list[Ready] | Acceptance:
     """Every claim narrowed to `Ready`, or every problem found, at once."""
-    gate = Admission()
+    gate = Acceptance()
     seen: Counter[str] = Counter(claim.id for claim in state.claims)
     ready: list[Ready] = []
     for index, claim in enumerate(state.claims):

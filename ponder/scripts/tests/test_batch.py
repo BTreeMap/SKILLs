@@ -1,4 +1,4 @@
-"""The note pipeline: minting, references, recovery, and total rejection."""
+"""The record pipeline: id making, references, recovery, and total rejection."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from btm_ponder.batch import expand_batch
 from btm_ponder.state import Ledger, Retrieved
 
 
-def fixed_mint(words: Iterable[str]) -> str:
-    """Deterministic stand-in for mint, so expansion is assertable."""
+def fixed_maker(words: Iterable[str]) -> str:
+    """Deterministic stand-in for make_id, so expansion is assertable."""
     return slugify(words) + "-0123456789abcdefghijklmnop"[:32]
 
 
@@ -66,9 +66,9 @@ FULL_BATCH = {
 
 @pytest.fixture
 def loaded():
-    """A ledger with the full batch admitted through the pipeline."""
+    """A ledger with the full batch accepted through the pipeline."""
     ledger = Ledger()
-    result = expand_batch(ledger, FULL_BATCH, fixed_mint)
+    result = expand_batch(ledger, FULL_BATCH, fixed_maker)
     assert result.problems == []
     return ledger, result
 
@@ -80,7 +80,7 @@ class TestExpansion:
 
     def test_every_entry_mints_one_identifier(self, loaded):
         _, result = loaded
-        assert sorted(len(group) for group in result.minted.values()) == [2, 3]
+        assert sorted(len(group) for group in result.new.values()) == [2, 3]
 
     def test_expansion_order_lets_closes_cite_fresh_sources(self, loaded):
         _, result = loaded
@@ -121,7 +121,7 @@ class TestRecovery:
                 }
             ]
         }
-        result = expand_batch(ledger, batch, fixed_mint)
+        result = expand_batch(ledger, batch, fixed_maker)
         assert any(
             line.startswith("recovered leaf 'rent'") for line in result.advisories
         )
@@ -133,7 +133,7 @@ class TestRecovery:
                 {"kw": ["x", "y"], "leaf": "pool", "cls": "reported", "title": "t"}
             ]
         }
-        result = expand_batch(ledger, batch, fixed_mint)
+        result = expand_batch(ledger, batch, fixed_maker)
         [problem] = result.problems
         assert "matches several" in problem.fix
         assert "write one of:" in problem.hint
@@ -145,7 +145,7 @@ class TestRecovery:
                 {"leaf": "rent length", "state": "retrieved", "sources": ["gile"]}
             ]
         }
-        result = expand_batch(ledger, batch, fixed_mint)
+        result = expand_batch(ledger, batch, fixed_maker)
         [problem] = result.problems
         assert problem.where == "closes[0].sources[0]"
         assert "no source matches" in problem.fix
@@ -171,7 +171,7 @@ class TestTotalRejection:
                 }
             ],
         }
-        result = expand_batch(ledger, batch, fixed_mint)
+        result = expand_batch(ledger, batch, fixed_maker)
         wheres = {problem.where for problem in result.problems}
         assert "closes[0].sources[0]" in wheres
         assert "sweeps[0].survivors[0]" in wheres
@@ -184,7 +184,7 @@ class TestTotalRejection:
             "leaves": {"kw": ["rent", "length"], "q": "a leaf, not a list of them"},
             "closes": [{"leaf": "rent length", "state": "retrieved", "from": ["p9"]}],
         }
-        result = expand_batch(ledger, batch, fixed_mint, pad=["p1"])
+        result = expand_batch(ledger, batch, fixed_maker, pad=["p1"])
         wheres = {problem.where for problem in result.problems}
         assert wheres == {"leaves", "closes[0].from[0]"}
 
@@ -194,20 +194,20 @@ class TestTotalRejection:
         batch = {
             "closes": [{"leaf": "nope nope", "state": "retrieved", "from": ["p9"]}]
         }
-        result = expand_batch(Ledger(), batch, fixed_mint, pad=["p1"])
+        result = expand_batch(Ledger(), batch, fixed_maker, pad=["p1"])
         wheres = {problem.where for problem in result.problems}
         assert wheres == {"closes[0].leaf", "closes[0].from[0]"}
 
     def test_a_rejected_batch_stages_no_event_for_the_broken_entry(self, loaded):
         ledger, _ = loaded
         batch = {"closes": [{"leaf": "nope nope", "state": "retrieved"}]}
-        result = expand_batch(ledger, batch, fixed_mint)
+        result = expand_batch(ledger, batch, fixed_maker)
         assert result.events == []
         assert result.problems
 
     def test_vocabulary_violations_carry_the_schema_fragment(self):
         batch = {"leaves": [{"kw": ["a", "b"], "q": "x", "origin": "invented"}]}
-        result = expand_batch(Ledger(), batch, fixed_mint)
+        result = expand_batch(Ledger(), batch, fixed_maker)
         [problem] = result.problems
         # The field type names the vocabulary; the hint keeps the schema
         # fragment, which is where the whole entry shape is spelled out.
@@ -215,22 +215,22 @@ class TestTotalRejection:
         assert "frame|spawned" in problem.hint
 
     def test_empty_batch_is_a_problem_not_a_crash(self):
-        result = expand_batch(Ledger(), {}, fixed_mint)
+        result = expand_batch(Ledger(), {}, fixed_maker)
         assert any("records nothing" in p.fix for p in result.problems)
 
     def test_unknown_top_level_key_names_the_valid_keys(self):
-        result = expand_batch(Ledger(), {"leafs": []}, fixed_mint)
+        result = expand_batch(Ledger(), {"leafs": []}, fixed_maker)
         assert any("valid keys" in (p.hint or "") for p in result.problems)
 
     def test_unsluggable_keywords_are_a_located_problem(self):
         result = expand_batch(
-            Ledger(), {"leaves": [{"kw": ["!!"], "q": "x"}]}, fixed_mint
+            Ledger(), {"leaves": [{"kw": ["!!"], "q": "x"}]}, fixed_maker
         )
         assert any(p.where == "leaves[0].kw[0]" for p in result.problems)
 
     def test_duplicate_keywords_in_one_batch_are_a_problem(self):
         batch = {"leaves": [{"kw": ["a", "b"], "q": "x"}, {"kw": ["a", "b"], "q": "y"}]}
-        result = expand_batch(Ledger(), batch, fixed_mint)
+        result = expand_batch(Ledger(), batch, fixed_maker)
         assert any("vary one keyword" in p.fix for p in result.problems)
 
 
@@ -241,20 +241,20 @@ class TestSweepSurvivors:
                 {"checked": "x", "candidates": ["first", "second"], "survivors": [1]}
             ]
         }
-        result = expand_batch(Ledger(), batch, fixed_mint)
+        result = expand_batch(Ledger(), batch, fixed_maker)
         assert result.problems == []
         assert result.events[0]["survivors"] == ["second"]
 
     def test_an_out_of_range_index_is_a_problem(self):
         batch = {"sweeps": [{"checked": "x", "candidates": ["only"], "survivors": [3]}]}
-        result = expand_batch(Ledger(), batch, fixed_mint)
+        result = expand_batch(Ledger(), batch, fixed_maker)
         assert any("out of range" in p.fix for p in result.problems)
 
     def test_a_verbatim_string_still_works(self):
         batch = {
             "sweeps": [{"checked": "x", "candidates": ["kept"], "survivors": ["kept"]}]
         }
-        result = expand_batch(Ledger(), batch, fixed_mint)
+        result = expand_batch(Ledger(), batch, fixed_maker)
         assert result.problems == []
 
 
@@ -272,9 +272,9 @@ class TestExplicitRefAndMerge:
                 }
             ],
         }
-        result = expand_batch(Ledger(), batch, fixed_mint)
+        result = expand_batch(Ledger(), batch, fixed_maker)
         assert result.problems == []
-        assert "gile-handcock" in result.minted["sources"]
+        assert "gile-handcock" in result.new["sources"]
 
     def test_a_duplicate_url_merges_instead_of_minting(self, loaded):
         ledger, first = loaded
@@ -290,27 +290,29 @@ class TestExplicitRefAndMerge:
                 }
             ],
         }
-        result = expand_batch(ledger, batch, fixed_mint)
+        result = expand_batch(ledger, batch, fixed_maker)
         assert result.problems == []
-        assert result.merged == {"dupe-post": first.minted["sources"]["bcl-rent"]}
+        assert result.merged == {"dupe-post": first.new["sources"]["bcl-rent"]}
 
 
 class TestCheckpoints:
     def test_a_checkpoint_cannot_smuggle_another_event_kind(self):
         """The entry once spread into the event, so `e` could be overwritten
-        and a leaf reached the ledger without passing through minting."""
+        and a leaf reached the ledger without passing through id making."""
         ledger = Ledger()
         result = expand_batch(
             ledger,
             {"checkpoints": [{"e": "add_leaf", "id": "smuggled", "q": "bypassed"}]},
-            fixed_mint,
+            fixed_maker,
         )
         assert result.problems
         assert not ledger.leaves
 
     def test_a_checkpoint_records_its_round(self):
         result = expand_batch(
-            Ledger(), {"checkpoints": [{"label": "round-1", "searches": 5}]}, fixed_mint
+            Ledger(),
+            {"checkpoints": [{"label": "round-1", "searches": 5}]},
+            fixed_maker,
         )
         assert not result.problems
         assert result.events == [{"e": "checkpoint", "label": "round-1", "searches": 5}]
@@ -340,7 +342,7 @@ class TestCitedSources:
             self.leaf_and(
                 doi="https://doi.org/10.1/A", authors=["A. Author"], year=2021
             ),
-            fixed_mint,
+            fixed_maker,
         )
         assert result.problems == []
         source = next(iter(ledger.sources.values()))
@@ -350,7 +352,7 @@ class TestCitedSources:
     def test_an_arxiv_id_derives_its_abstract_page(self):
         ledger = Ledger()
         result = expand_batch(
-            ledger, self.leaf_and(arxiv="arXiv:2401.00001v2"), fixed_mint
+            ledger, self.leaf_and(arxiv="arXiv:2401.00001v2"), fixed_maker
         )
         assert result.problems == []
         source = next(iter(ledger.sources.values()))
@@ -361,7 +363,7 @@ class TestCitedSources:
 
     def test_an_unreadable_identifier_is_refused_not_dropped(self):
         result = expand_batch(
-            Ledger(), self.leaf_and(doi="not a doi", arxiv="nope"), fixed_mint
+            Ledger(), self.leaf_and(doi="not a doi", arxiv="nope"), fixed_maker
         )
         wheres = [problem.where for problem in result.problems]
         assert wheres == ["sources[0].doi", "sources[0].arxiv"]
@@ -369,10 +371,10 @@ class TestCitedSources:
     def test_a_doi_dedups_against_its_landing_url(self):
         ledger = Ledger()
         first = expand_batch(
-            ledger, self.leaf_and(url="https://doi.org/10.1/a"), fixed_mint
+            ledger, self.leaf_and(url="https://doi.org/10.1/a"), fixed_maker
         )
         batch = self.leaf_and(doi="10.1/a")
         batch["leaves"] = []
         batch["sources"][0]["kw"] = ["paper", "two"]  # type: ignore[index]
-        second = expand_batch(ledger, batch, fixed_mint)
-        assert second.merged == {"paper-two": first.minted["sources"]["paper-one"]}
+        second = expand_batch(ledger, batch, fixed_maker)
+        assert second.merged == {"paper-two": first.new["sources"]["paper-one"]}

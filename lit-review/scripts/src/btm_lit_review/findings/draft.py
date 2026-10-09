@@ -1,4 +1,4 @@
-"""Citation markers and the draft check they make mechanical.
+"""Citation marks and the draft check they make mechanical.
 
 Assignment is append-only and monotone: a paper keeps its number for the
 life of the session, and a late inclusion extends the map, so renumbering
@@ -36,13 +36,13 @@ from btm_lit_review.findings.notebook import (
 from btm_lit_review.session import Session, load_papers, open_session
 from btm_lit_review.slots import DRAFT
 
-MARKERS = TypeAdapter(dict[str, int])
-"""Every paper key to its citation number. Authoritative: a marker is the
+MARKS = TypeAdapter(dict[str, int])
+"""Every paper key to its citation number. Authoritative: a mark is the
 draft's only handle on a paper, so a file that will not decode is refused
 by name rather than silently renumbering the whole draft."""
 
 
-def load_markers(session: Session) -> dict[str, int]:
+def load_marks(session: Session) -> dict[str, int]:
     path = session.citations_path
     if not path.exists():
         return {}
@@ -50,14 +50,14 @@ def load_markers(session: Session) -> dict[str, int]:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as err:
         raise CommandError(f"unreadable {path}: {err}") from err
-    return parse_with(MARKERS, raw, str(path))
+    return parse_with(MARKS, raw, str(path))
 
 
-def assign_markers(
-    markers: Mapping[str, int], papers: Mapping[str, Paper]
+def assign_marks(
+    marks: Mapping[str, int], papers: Mapping[str, Paper]
 ) -> dict[str, int]:
     """Every included paper numbered, existing numbers untouched."""
-    assigned = dict(markers)
+    assigned = dict(marks)
     taken = max(assigned.values(), default=0)
     for key, paper in papers.items():
         if paper.status is Status.INCLUDED and key not in assigned:
@@ -66,14 +66,14 @@ def assign_markers(
     return assigned
 
 
-def refresh_markers(session: Session, papers: Mapping[str, Paper]) -> dict[str, int]:
-    markers = assign_markers(load_markers(session), papers)
-    write_atomic(session.citations_path, json.dumps(markers, indent=2) + "\n")
-    return markers
+def refresh_marks(session: Session, papers: Mapping[str, Paper]) -> dict[str, int]:
+    marks = assign_marks(load_marks(session), papers)
+    write_atomic(session.citations_path, json.dumps(marks, indent=2) + "\n")
+    return marks
 
 
-def marker_table(
-    markers: Mapping[str, int], papers: Mapping[str, Paper]
+def mark_table(
+    marks: Mapping[str, int], papers: Mapping[str, Paper]
 ) -> dict[str, dict[str, Any]]:
     return {
         f"[{number}]": {
@@ -82,20 +82,20 @@ def marker_table(
             "year": papers[key].year,
             "read_level": papers[key].read_level,
         }
-        for key, number in sorted(markers.items(), key=lambda item: item[1])
+        for key, number in sorted(marks.items(), key=lambda item: item[1])
         if key in papers
     }
 
 
 def cite_check(
     text: str,
-    markers: Mapping[str, int],
+    marks: Mapping[str, int],
     papers: Mapping[str, Paper],
     findings: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Pure verdict over a draft; O(draft + markers + findings). Code spans
+    """Pure verdict over a draft; O(draft + marks + findings). Code spans
     are blanked first, so a `[1]` inside a fence is an example, not a cite."""
-    by_number = {number: key for key, number in markers.items()}
+    by_number = {number: key for key, number in marks.items()}
     used = {
         int(content) for content in bracketed(strip_code(text)) if is_digits(content)
     }
@@ -104,14 +104,14 @@ def cite_check(
         key = by_number.get(number)
         paper = papers.get(key) if key else None
         if paper is None:
-            problems.append(f"[{number}] was never assigned; cite an assigned marker")
+            problems.append(f"[{number}] was never assigned; cite an assigned mark")
         elif paper.status is not Status.INCLUDED:
             problems.append(f"[{number}] cites {key}, which is {paper.status}")
         elif paper.read_level is ReadLevel.NONE:
             problems.append(f"[{number}] cites {key}, which is unread")
     unused = sorted(
         number
-        for key, number in markers.items()
+        for key, number in marks.items()
         if (paper := papers.get(key))
         and paper.status is Status.INCLUDED
         and number not in used
@@ -129,13 +129,13 @@ def cmd_cite_check(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     draft = text(DRAFT, args)
     papers = load_papers(session)
-    markers = refresh_markers(session, papers)
+    marks = refresh_marks(session, papers)
     findings = [
         finding_view(record, papers)
         for record in live(load_notebook(session), FindingRecord).values()
     ]
-    report = cite_check(draft, markers, papers, findings)
-    report["markers"] = marker_table(markers, papers)
+    report = cite_check(draft, marks, papers, findings)
+    report["marks"] = mark_table(marks, papers)
     emit(report)
     if report["problems"]:
         signal(f"{len(report['problems'])} citation problem(s); fix the draft")

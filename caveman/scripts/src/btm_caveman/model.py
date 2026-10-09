@@ -1,4 +1,4 @@
-"""The closed domain: what a file may be, and what an admission may say."""
+"""The closed domain: what a file may be, and what an acceptance may say."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ class Assessment:
 
 @dataclass(frozen=True, slots=True)
 class Plan:
-    """An admitted compression: the single trusted entry into the domain.
+    """An accepted compression: the single trusted entry into the domain.
 
     `original == frontmatter + body` holds by construction. `notes` carries
     advisory signals; it never gates.
@@ -54,7 +54,7 @@ class Plan:
         return self.frontmatter + self.body
 
 
-Admitted = Plan | Refusal
+Accepted = Plan | Refusal
 
 
 @dataclass(frozen=True, slots=True)

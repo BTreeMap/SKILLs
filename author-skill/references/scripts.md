@@ -7,7 +7,7 @@ Place each responsibility by first row it matches.
 | Responsibility | Owner | Form |
 | --- | --- | --- |
 | Computable exactly from bytes, no taste involved | script | invariant that hard-fails |
-| Fact agent would otherwise remember across turns (admitted record, identifier, count) | script | stored once, echoed in every output |
+| Fact agent would otherwise remember across turns (accepted record, identifier, count) | script | stored once, echoed in every output |
 | Verdict following from stored facts (standing, coverage, ratio, next legal step) | script | derived from live state on every call, never stored |
 | Judgment about meaning, relevance, quality, or intent | agent | script hands over evidence as signal |
 | Irreversible effect | agent decides | script executes behind explicit witness, keeps undo where agent's judgment could be wrong |
@@ -15,7 +15,7 @@ Place each responsibility by first row it matches.
 | Script owns | Agent owns |
 | --- | --- |
 | Existence, size, encoding, digests, schemas, structural equality, cross-record links | Whether claim supported, paper relevant, sentence clear |
-| Session files, ledgers, minted identifiers, admitted records | Which rung, school, level, or sibling fits |
+| Session files, ledgers, new identifiers, accepted records | Which rung, school, level, or sibling fits |
 | Derived scaffolds and `next` advisory | Every draft, rewrite, brief; retrieved text read as data |
 | HTTP with retries and rate limits; wire decoding | Weighing signal against user's request |
 | Idempotent repairs; witnessed effects | Decision to take irreversible step |
@@ -31,30 +31,30 @@ Place each responsibility by first row it matches.
 * Validate only what derivation branches, joins, or counts on: closed
   vocabularies at envelope, open payloads inside. Reject only unparseable
   transport, dangling reference, or value outside branching vocabulary;
-  everything else at most advisory. Reject missing required field; admit
-  extra one. Return everything admitted in some view.
-* Give agent free memory beside gate: pad (`write`, `read`) admitting any
+  everything else at most advisory. Reject missing required field; accept
+  extra one. Return everything accepted in some view.
+* Give agent free memory beside gate: pad (`write`, `read`) accepting any
   JSON object or prose under script-stamped envelope, never rejecting
   content. Gated record may cite pad ids as provenance, each checked to
   exist.
 * Store claim's inputs (support keys, probes, watch regex, log position);
   derive its verdict on every read. Branch on structure (variant keyed by
   field presence), never on vocabulary value. Make append-only what must
-  never move (citation markers). Surface contradiction candidate (watch
-  hit); leave judgment to agent.
+  never move (citation marks). Surface contradiction candidate (watch hit);
+  leave judgment to agent.
 * Design for agent's loop, not pipeline: give evolving beliefs objects and
   verbs (findings, gaps, open threads) with supersede chains; record bulk
   judgment as one rule with its matched keys; keep zero-result search in log
-  as evidence of absence; ship resume view (`brief`, `status`) re-entering
+  as evidence of absence; ship continue view (`brief`, `status`) re-entering
   loop after compaction with derived verdicts, drift since last snapshot,
   coverage, pad tail.
 
-Pad kinds are suggested, never checked; each means one thing across library.
-Kernel's `PAD_KINDS` holds them and every `schema` prints them under `pad`;
-skill text cites that list, naming only kinds its procedure relies on. Every
+Pad types are suggested, never checked; each means one thing across library.
+Kernel's `PAD_TYPES` holds them and every `schema` prints them under `pad`;
+skill text cites that list, naming only types its procedure relies on. Every
 pad takes `--known`: skill's cross-session pad beside its sessions.
 
-| Kind | Meaning |
+| Type | Meaning |
 | --- | --- |
 | `quote` | verbatim passage kept to cite later, with its origin |
 | `hunch` | unverified idea or hypothesis worth testing |
@@ -82,11 +82,11 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
 
 | Verb | Effect, same in every skill |
 | --- | --- |
-| `init` | Mint session from two or three keywords |
+| `start` | Make session from two or three keywords |
 | `schema` | Print every record shape |
-| `note` | Admit one batch through gate |
+| `record` | Accept one batch through gate |
 | `check` | Derive verdicts and drafting scaffold from live state |
-| `status` | Cheap resume view, with advisory `next` |
+| `status` | Cheap continue view, with advisory `next` |
 | `write`, `read` | Write to and read from pad |
 | `clean` | Remove one target or `--all`, reporting bytes freed |
 
@@ -102,7 +102,7 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
   both. Second slot claiming pipe: rejection naming first. Interpret nothing
   inside value, so content needs no escape; reject empty one, never read it
   as absent. Malformed argument line: located exit-1 rejection.
-* Mint identifiers in script: agent supplies two or three keywords; return
+* Make identifiers in script: agent supplies two or three keywords; return
   lowercase dash-joined slug plus 128-bit suffix
   (`b32hexencode(os.urandom(16)).decode().rstrip("=").lower()`), echoed in
   every output. Accept keyword subset as recovery for lost identifier,
@@ -111,8 +111,8 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
 * Spend output freely, reject totally: run every row before committing
   anything, then return one verdict naming every problem as imperative fix
   with its field path (`findings[0].claim`) and hint (did-you-mean, valid
-  vocabulary, schema fragment), state unchanged. Echo receipts (minted ids,
-  marker tables) so agent copies instead of deriving. Accept alias agent
+  vocabulary, schema fragment), state unchanged. Echo receipts (new ids,
+  mark tables) so agent copies instead of deriving. Accept alias agent
   plausibly writes (DOI, arXiv id) with resolution advisory.
 
 | Exit | Meaning |
@@ -128,7 +128,7 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
   untrusted value as refined alias (`Slug`, `Doi`, `Count`). Subclass
   kernel's frozen `Model`; `extra="forbid"` where agent writes file,
   `extra="ignore"` where another writer owns it. Keep in script only what
-  model cannot see: resolving against live state, minting, proving
+  model cannot see: resolving against live state, making ids, proving
   cross-record link. Pass `uv run mypy`, strict with pydantic plugin.
 * Gate destructive or hard-to-reverse effect on exact witness (marker file,
   identity record, explicit flag); provide undo path where agent's judgment
@@ -163,7 +163,7 @@ pad takes `--known`: skill's cross-session pad beside its sessions.
 * Put logic shared across members once in kernel `btm-corekit` under
   `.corekit/`, declared as `dependencies = ["btm-corekit"]` with source
   `btm-corekit = { workspace = true }`. Compose its gate mechanics
-  (`SessionStore`, `EventLog`, `Admission` with `Pool`, `gated` and
+  (`SessionStore`, `EventLog`, `Acceptance` with `Pool`, `gated` and
   `rejection`, `wire_pad`, `wire_limit`, `wire_clean`); add only member's
   record semantics; redefine no kernel symbol.
 * Mark network request's origin by first defined of `BTM_USER_AGENT` (sent

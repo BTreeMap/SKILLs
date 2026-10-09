@@ -58,7 +58,7 @@ NonEmpty = Annotated[str, Trimmed, StringConstraints(min_length=1)]
 Keyword = Annotated[str, Folded, StringConstraints(pattern=r"^[a-z0-9]+$")]
 
 Slug = Annotated[str, Folded, StringConstraints(pattern=r"^[a-z0-9-]+$")]
-"""A minted id or any reference to one, the keyword-subset form included."""
+"""A new id or any reference to one, the keyword-subset form included."""
 
 DOI_PATTERN = r"^10\.\d+/\S+$"
 Doi = Annotated[str, Folded, StringConstraints(pattern=DOI_PATTERN)]

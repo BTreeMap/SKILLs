@@ -32,7 +32,7 @@ def compile_match(pattern: str) -> re.Pattern[str]:
 
 def pad_entries(directory: Path) -> list[dict[str, Any]]:
     """Rows the pad holds; a line appended by hand reads as a bare body.
-    Positional ids match write's minting, so hand-written and written lines
+    Positional ids match write's numbering, so hand-written and written lines
     never collide."""
     path = directory / SCRATCH
     if not path.exists():
@@ -54,7 +54,7 @@ def pad_ids(directory: Path) -> set[str]:
 
 
 def pad_write(directory: Path, body: Mapping[str, Any]) -> dict[str, Any]:
-    """Append one entry; the receipt echoes the minted id.
+    """Append one entry; the receipt echoes the new id.
 
     The id is the line count, so an append reads the file: O(entries) each
     time, bounded by the soft cap. Positional ids are worth that.
@@ -96,7 +96,7 @@ def _entry_number(entry_id: str) -> int:
 def pad_read(
     directory: Path,
     *,
-    kind: str | None = None,
+    type_: str | None = None,
     match: str | None = None,
     since: str | None = None,
     limit: int | None = None,
@@ -107,8 +107,8 @@ def pad_read(
     if since is not None:
         floor = _entry_number(since)
         entries = [e for e in entries if _entry_number(e["j"]) > floor]
-    if kind is not None:
-        entries = [e for e in entries if e["body"].get("kind") == kind]
+    if type_ is not None:
+        entries = [e for e in entries if e["body"].get("type") == type_]
     if match is not None:
         pattern = compile_match(match)
         entries = [

@@ -47,7 +47,7 @@ class TestNextStep:
             ((True, 1, 3, 9, ["k"]), "screen 3 undecided"),
             ((True, 1, 0, 0, []), "nothing is included yet"),
             ((True, 1, 0, 2, ["k", "j"]), "extract 2 included papers"),
-            ((True, 1, 0, 2, []), "note findings and gaps"),
+            ((True, 1, 0, 2, []), "record findings and gaps"),
         ],
     )
     def test_the_earliest_unfinished_phase_wins(self, state, expected):

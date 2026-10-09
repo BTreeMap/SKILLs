@@ -13,7 +13,7 @@ from typing import Annotated
 from pydantic import Field, StringConstraints, model_validator
 
 from btm_corekit import Model, NonEmpty, Positive, Trimmed, demand
-from btm_peer_review.constants import ANCHOR_CHARS_MAX, Bank, Kind, Severity
+from btm_peer_review.constants import ANCHOR_CHARS_MAX, Bank, Severity, Type
 
 Anchor = Annotated[
     str, Trimmed, StringConstraints(min_length=1, max_length=ANCHOR_CHARS_MAX)
@@ -23,7 +23,7 @@ Anchor = Annotated[
 
 class Claim(Model):
     verbatim: NonEmpty
-    page: Positive  # page at admission; check re-resolves against live text
+    page: Positive  # page at acceptance; check re-resolves against live text
 
 
 class Quoted(Model):
@@ -38,7 +38,7 @@ Evidence = Quoted | Missing
 
 
 class Evidenced(Model):
-    """Carries one kind of evidence. Both wire shapes that build an objection
+    """Carries one type of evidence. Both wire shapes that build an objection
     inherit it, so the law is stated once."""
 
     anchors: tuple[Anchor, ...] = ()
@@ -61,7 +61,7 @@ class Evidenced(Model):
 
 
 class Objection(Model):
-    kind: Kind
+    type: Type
     severity: Severity
     text: NonEmpty
     claim: str | None  # a claim id the objection contests
@@ -75,9 +75,9 @@ class Objection(Model):
 
     @model_validator(mode="after")
     def _prior_belongs_to_the_novelty_bank(self) -> Objection:
-        if bool(self.prior) != (self.kind.bank is Bank.NOVELTY):
+        if bool(self.prior) != (self.type.bank is Bank.NOVELTY):
             raise ValueError(
-                f"prior keys belong to novelty kinds alone; got {self.kind} "
+                f"prior keys belong to novelty types alone; got {self.type} "
                 f"with {len(self.prior)}"
             )
         return self

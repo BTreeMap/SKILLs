@@ -1,6 +1,6 @@
 """The gated notebook: findings, gaps, rules, and snapshots derivations run on.
 
-Admission is total and strict, so one verdict names every problem in a
+Acceptance is total and strict, so one verdict names every problem in a
 batch; verdicts themselves are never stored, only derived from live corpus
 state.
 """
@@ -26,7 +26,7 @@ from pydantic import (
 from btm_corekit import (
     BATCH,
     JSON,
-    Admission,
+    Acceptance,
     Count,
     Diagnostic,
     Model,
@@ -103,7 +103,7 @@ Support = Annotated[SupportEntry, BeforeValidator(_as_support)]
 
 
 class Linked(Model):
-    """What both note kinds carry: provenance and the record they replace."""
+    """What both record types carry: provenance and the record they replace."""
 
     from_: tuple[str, ...] = Field(default=(), alias="from")
     supersedes: str | None = None
@@ -121,7 +121,7 @@ class GapEntry(Linked):
 
 
 class Recorded(Model):
-    """What the notebook stamps on every record it admits."""
+    """What the notebook stamps on every record it accepts."""
 
     id: str
     t: str = ""
@@ -171,7 +171,7 @@ RECORD: TypeAdapter[list[NotebookRecord]] = TypeAdapter(
 Rows = tuple[Mapping[str, Any], ...]
 
 
-class NoteBatch(Model):
+class RecordBatch(Model):
     """The container. Rows stay opaque here and decode one at a time, so a
     row with a bad field still lets its neighbours reach the corpus checks."""
 
@@ -280,16 +280,16 @@ def gap_view(
 
 
 @dataclass(slots=True)
-class NoteResult:
+class RecordResult:
     records: list[dict[str, Any]] = field(default_factory=list)
-    admitted: dict[str, list[str]] = field(
+    accepted: dict[str, list[str]] = field(
         default_factory=lambda: {"findings": [], "gaps": []}
     )
     advisories: list[str] = field(default_factory=list)
     problems: list[Diagnostic] = field(default_factory=list)
 
 
-class _Admission(Admission):
+class _Acceptance(Acceptance):
     """One batch working through validation; every method appends, none raises."""
 
     def __init__(
@@ -303,7 +303,7 @@ class _Admission(Admission):
         self.papers = papers
         self.log_count = log_count
         self.records: list[dict[str, Any]] = []
-        self.admitted: dict[str, list[str]] = {"findings": [], "gaps": []}
+        self.accepted: dict[str, list[str]] = {"findings": [], "gaps": []}
         self.aliases = {
             alias: key
             for key, paper in papers.items()
@@ -357,14 +357,14 @@ class _Admission(Admission):
                 clean = False
         return clean
 
-    def admit(self, kind: str, fields: dict[str, Any], entry: Linked) -> None:
+    def accept(self, kind: str, fields: dict[str, Any], entry: Linked) -> None:
         """Stamp the record and hold it; the batch commits or none of it does."""
         self.counts[kind] += 1
-        minted = f"{ID_PREFIX[kind]}{self.counts[kind]}"
-        self.ids[kind].add(minted)
+        new_id = f"{ID_PREFIX[kind]}{self.counts[kind]}"
+        self.ids[kind].add(new_id)
         record = {
             "e": kind,
-            "id": minted,
+            "id": new_id,
             "t": now_iso(),
             **fields,
             "from": list(entry.from_),
@@ -372,7 +372,7 @@ class _Admission(Admission):
         if entry.supersedes:
             record["supersedes"] = entry.supersedes
         self.records.append(record)
-        self.admitted[f"{kind}s"].append(minted)
+        self.accepted[f"{kind}s"].append(new_id)
 
     def take_findings(self, rows: Rows) -> None:
         for index, row in enumerate(rows):
@@ -386,7 +386,9 @@ class _Admission(Admission):
             clean = support is not None
             clean = self.take_links(entry, "finding", where) and clean
             if clean:
-                self.admit("finding", {"claim": entry.claim, "support": support}, entry)
+                self.accept(
+                    "finding", {"claim": entry.claim, "support": support}, entry
+                )
 
     def _support(
         self, entries: tuple[SupportEntry, ...], where: str
@@ -431,7 +433,7 @@ class _Admission(Admission):
                 }
                 if entry.watch:
                     record["watch"] = entry.watch
-                self.admit("gap", record, entry)
+                self.accept("gap", record, entry)
 
     def probes(self, probes: Sequence[str], where: str) -> bool:
         """Every probe names a search the log actually holds."""
@@ -448,43 +450,43 @@ class _Admission(Admission):
         return clean
 
 
-def expand_notes(
+def expand_records(
     batch: dict[str, Any],
     papers: Mapping[str, Paper],
     log_count: int,
     pad: set[str],
     existing: Sequence[NotebookRecord],
-) -> NoteResult:
-    """Expand one note batch into records, collecting every problem."""
-    admission = _Admission(papers, log_count, pad, existing)
-    admission.known_keys(batch, NoteBatch)
-    note = admission.families(batch, NoteBatch, SCHEMA)
-    admission.take_findings(note.findings)
-    admission.take_gaps(note.gaps)
-    if not admission.records and admission.clean:
-        admission.fail("$", "add at least one entry: the batch records nothing")
-    return NoteResult(
-        records=[] if admission.problems else admission.records,
-        admitted=admission.admitted,
-        advisories=admission.advisories,
-        problems=admission.problems,
+) -> RecordResult:
+    """Expand one record batch into records, collecting every problem."""
+    acceptance = _Acceptance(papers, log_count, pad, existing)
+    acceptance.known_keys(batch, RecordBatch)
+    record = acceptance.families(batch, RecordBatch, SCHEMA)
+    acceptance.take_findings(record.findings)
+    acceptance.take_gaps(record.gaps)
+    if not acceptance.records and acceptance.clean:
+        acceptance.fail("$", "add at least one entry: the batch records nothing")
+    return RecordResult(
+        records=[] if acceptance.problems else acceptance.records,
+        accepted=acceptance.accepted,
+        advisories=acceptance.advisories,
+        problems=acceptance.problems,
     )
 
 
-def cmd_note(args: argparse.Namespace) -> int:
+def cmd_record(args: argparse.Namespace) -> int:
     session = open_session(args.session)
     papers = load_papers(session)
     log_count = count_lines(session.log_path)
     records = load_notebook(session)
 
-    def expand(batch: dict[str, Any]) -> NoteResult:
-        return expand_notes(batch, papers, log_count, pad_ids(session.root), records)
+    def expand(batch: dict[str, Any]) -> RecordResult:
+        return expand_records(batch, papers, log_count, pad_ids(session.root), records)
 
-    def commit(result: NoteResult) -> dict[str, JSON]:
+    def commit(result: RecordResult) -> dict[str, JSON]:
         append_jsonl(session.notebook_path, result.records)
         everything = records + parse_with(RECORD, result.records, "notebook")
         return {
-            "admitted": result.admitted,
+            "accepted": result.accepted,
             "findings": len(live(everything, FindingRecord)),
             "gaps": len(live(everything, GapRecord)),
         }

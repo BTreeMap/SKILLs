@@ -122,13 +122,13 @@ decision, six fields, bounds, sizing, review of return are this skill's.
 | Rules of its own this unit can break | rules |
 | Its return record's shape, by registered name | contract |
 | Its cap where it has one (search cap, page count); else a number from Cost section's sizing, written into brief | budget |
-| Gate lead admits return through: script command, or lead's own check | the join, after `review` |
+| Gate lead accepts return through: script command, or lead's own check | the join, after `review` |
 
 Caller's reference file reaches delegate by absolute path under evidence,
 Readable variant in `harness`; caller says so when it wants excerpt instead.
 
 - Lead is sole writer. Delegate returns record, writes no session state;
-  lead judges it under `review`, then admits it through caller's gate.
+  lead judges it under `review`, then accepts it through caller's gate.
 - Branch leaves no trace. Deliverable and state identical whether unit ran
   inline or delegated; only cost and latency differ, reported where caller's
   report has a line for them.

@@ -64,7 +64,7 @@ predictions cannot be verified: mark such claims `unverifiable` with reason.
 Determine from tools present:
 
 - Retrieval: prefer harness's own web search and fetch. Absent: use
-  `/search-web` (`web`, `wiki`, `scholar`, `fetch`). Read PDF with
+  `/search-web` (`web`, `wiki`, `scholar`, `get`). Read PDF with
   `/read-pdf`. Neither available: inventory claims (Step 1), mark every
   claim needing external evidence `unverifiable` with note "no web access in
   this environment", report, stop. Do not verify from memory.
@@ -129,7 +129,7 @@ State file is `factcheck-state.json` in working or scratch directory. Holds
 pinned `constraints` (copy of Invariants), claim inventory, one verdict
 record per claim as each completes, each claim's approval status
 (`pending | approved | user-rejected | applied`), side findings under
-`side_findings`. State file is source of truth: long run resumes from it;
+`side_findings`. State file is source of truth: long run continues from it;
 report is regenerated from it. Write it in this shape; each `claims` entry
 is Step 2's verdict record plus `status`, holding only `id`, `claim`,
 `span`, `type` until its verdict completes.

@@ -39,7 +39,7 @@ def run(argv, capsys, stdin: str | None = None, monkeypatch=None):
 
 
 def opened(capsys) -> str:
-    code, document, _ = run(["init", "rent length"], capsys, stdin='{"question": "q"}')
+    code, document, _ = run(["start", "rent length"], capsys, stdin='{"question": "q"}')
     assert code == 0
     return document["session"]
 
@@ -47,7 +47,7 @@ def opened(capsys) -> str:
 class TestOpen:
     def test_open_with_a_question_creates_and_echoes_the_session(self, capsys):
         code, document, _ = run(
-            ["init", "rent length"], capsys, stdin='{"question": "why"}'
+            ["start", "rent length"], capsys, stdin='{"question": "why"}'
         )
         assert code == 0
         assert document["session"].startswith("rent-length-")
@@ -70,7 +70,7 @@ class TestOpen:
     def test_opening_an_unknown_session_without_a_question_fails(self, capsys):
         code, _, err = run(["status", "absent thing"], capsys)
         assert code == 1
-        assert "run init first" in err
+        assert "run start first" in err
 
     def test_a_mangled_ledger_line_is_exit_one_not_a_traceback(
         self, capsys, isolated_state
@@ -82,7 +82,7 @@ class TestOpen:
         assert code == 1 and "line 1 is not JSON" in err
 
     def test_an_off_band_name_advises(self, capsys):
-        _, _, err = run(["init", "solo"], capsys, stdin='{"question": "q"}')
+        _, _, err = run(["start", "solo"], capsys, stdin='{"question": "q"}')
         assert "two or three keywords" in err
 
 
@@ -112,7 +112,7 @@ class TestNoteAndCheck:
     def test_a_full_round_records_and_counts(self, capsys, monkeypatch):
         session = opened(capsys)
         code, document, _ = run(
-            ["note", session], capsys, stdin=self.batch(), monkeypatch=monkeypatch
+            ["record", session], capsys, stdin=self.batch(), monkeypatch=monkeypatch
         )
         assert code == 0
         assert document["counts"] == {"retrieved": 1}
@@ -120,20 +120,20 @@ class TestNoteAndCheck:
 
     def test_check_derives_the_scaffold_from_the_ledger(self, capsys, monkeypatch):
         session = opened(capsys)
-        run(["note", session], capsys, stdin=self.batch(), monkeypatch=monkeypatch)
+        run(["record", session], capsys, stdin=self.batch(), monkeypatch=monkeypatch)
         code, document, _ = run(["check", session], capsys)
         assert code == 0
         assert document["sections"] == ["answer", "rival", "sources"]
         assert document["violations"] == []
-        assert document["markers"]["S1"]["title"] == "BCL source"
-        assert document["scaffold"]["answer"][0]["markers"] == ["S1"]
+        assert document["marks"]["S1"]["title"] == "BCL source"
+        assert document["scaffold"]["answer"][0]["marks"] == ["S1"]
 
     def test_check_on_an_unswept_session_reports_the_violation(
         self, capsys, monkeypatch
     ):
         session = opened(capsys)
         batch = json.dumps({"leaves": [{"kw": ["a", "b"], "q": "q"}]})
-        run(["note", session], capsys, stdin=batch, monkeypatch=monkeypatch)
+        run(["record", session], capsys, stdin=batch, monkeypatch=monkeypatch)
         code, document, err = run(["check", session], capsys)
         assert code == 0  # advisory: violations never block the command
         assert any("no sweep recorded" in line for line in document["violations"])
@@ -143,7 +143,7 @@ class TestNoteAndCheck:
     def test_an_empty_note_body_is_refused(self, capsys, monkeypatch):
         session = opened(capsys)
         code, _, err = run(
-            ["note", session], capsys, stdin="  ", monkeypatch=monkeypatch
+            ["record", session], capsys, stdin="  ", monkeypatch=monkeypatch
         )
         assert code == 1
         assert "--batch:file, --batch:stdin, the pipe" in err
@@ -152,7 +152,7 @@ class TestNoteAndCheck:
         session = opened(capsys)
         bad = json.dumps({"leaves": [{"kw": ["a", "b"], "q": ""}]})
         code, document, _ = run(
-            ["note", session], capsys, stdin=bad, monkeypatch=monkeypatch
+            ["record", session], capsys, stdin=bad, monkeypatch=monkeypatch
         )
         assert code == 1
         assert document["unchanged"] == "ledger"
@@ -168,7 +168,7 @@ class TestNoteAndCheck:
             }
         )
         code, document, _ = run(
-            ["note", session], capsys, stdin=bad, monkeypatch=monkeypatch
+            ["record", session], capsys, stdin=bad, monkeypatch=monkeypatch
         )
         assert code == 1
         wheres = {problem["where"] for problem in document["rejected"]}
@@ -179,15 +179,15 @@ class TestNoteAndCheck:
         batch_file = tmp_path / "batch.json"
         batch_file.write_text(self.batch(), encoding="utf-8")
         code, document, _ = run(
-            ["note", session, "--batch:file", str(batch_file)], capsys
+            ["record", session, "--batch:file", str(batch_file)], capsys
         )
         assert code == 0
-        assert document["admitted"]["add_source"] == 1
+        assert document["accepted"]["add_source"] == 1
 
     def test_invalid_json_is_a_located_rejection(self, capsys, monkeypatch):
         session = opened(capsys)
         code, document, _ = run(
-            ["note", session], capsys, stdin="{nope", monkeypatch=monkeypatch
+            ["record", session], capsys, stdin="{nope", monkeypatch=monkeypatch
         )
         assert code == 1
         assert "valid JSON" in document["rejected"][0]["fix"]
@@ -204,7 +204,7 @@ class TestStatusAndSchema:
                 ],
             }
         )
-        run(["note", session], capsys, stdin=batch, monkeypatch=monkeypatch)
+        run(["record", session], capsys, stdin=batch, monkeypatch=monkeypatch)
         code, document, _ = run(["status", session], capsys)
         assert code == 0
         assert document["open"] == [
@@ -215,19 +215,19 @@ class TestStatusAndSchema:
     def test_schema_prints_the_batch_shape(self, capsys):
         code, document, _ = run(["schema"], capsys)
         assert code == 0
-        assert "survivors" in document["note_batch"]["sweeps"]
+        assert "survivors" in document["record_batch"]["sweeps"]
 
 
 class TestLiteLevel:
     def test_lite_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
         code, document, _ = run(
-            ["init", "loose idea", "--level", "lite"],
+            ["start", "loose idea", "--level", "lite"],
             capsys,
             stdin='{"question": "q"}',
         )
         session = document["session"]
         batch = json.dumps({"leaves": [{"kw": ["a", "b"], "q": "q"}]})
-        run(["note", session], capsys, stdin=batch, monkeypatch=monkeypatch)
+        run(["record", session], capsys, stdin=batch, monkeypatch=monkeypatch)
         code, document, _ = run(["check", session], capsys)
         assert code == 0
         assert document["violations"] == []
@@ -239,13 +239,13 @@ class TestPad:
     def test_write_and_read_round_trip(self, capsys):
         session = opened(capsys)
         code, receipt, _ = run(
-            ["write", session], capsys, stdin='{"kind": "hunch", "n": 1}'
+            ["write", session], capsys, stdin='{"type": "hunch", "n": 1}'
         )
         assert code == 0
         assert receipt["written"] == "j1"
-        code, view, _ = run(["read", session, "--kind", "hunch"], capsys)
+        code, view, _ = run(["read", session, "--type", "hunch"], capsys)
         assert code == 0
-        assert view["entries"][0]["body"] == {"kind": "hunch", "n": 1}
+        assert view["entries"][0]["body"] == {"type": "hunch", "n": 1}
 
     def test_prose_is_stored_as_text_with_an_advisory(self, capsys):
         session = opened(capsys)
@@ -348,7 +348,7 @@ class TestViewChain:
     def noted(self, capsys) -> str:
         """One session with one closed round, reusable across views."""
         session = opened(capsys)
-        run(["note", session], capsys, stdin=self.batch())
+        run(["record", session], capsys, stdin=self.batch())
         return session
 
     def viewed(self, capsys, session: str, view: str | None = None) -> dict:
@@ -390,11 +390,11 @@ class TestViewChain:
 
     def test_plan_keeps_the_marker_refs_that_carry_the_derivation(self, capsys):
         answer = self.checked(capsys, "plan")["scaffold"]["answer"][0]
-        assert answer["markers"] == ["S1"]
+        assert answer["marks"] == ["S1"]
         assert answer["stated"] == "plain"
 
     def test_plan_omits_the_source_table(self, capsys):
-        assert "markers" not in self.checked(capsys, "plan")
+        assert "marks" not in self.checked(capsys, "plan")
 
     def test_draft_is_the_default(self, capsys):
         session = self.noted(capsys)
@@ -403,12 +403,12 @@ class TestViewChain:
     def test_draft_carries_the_prose_and_the_table(self, capsys):
         document = self.checked(capsys, "draft")
         assert document["scaffold"]["answer"][0]["premise"].startswith("Rent")
-        assert document["markers"]["S1"]["title"] == "BCL source"
+        assert document["marks"]["S1"]["title"] == "BCL source"
 
     def test_the_marker_table_drops_the_minted_id(self, capsys):
         """A draft cites S1 and renders a title and a url; the ledger's own
         identifier is never read, and 41 of them are 1.9 KB."""
-        assert set(self.checked(capsys, "draft")["markers"]["S1"]) == {
+        assert set(self.checked(capsys, "draft")["marks"]["S1"]) == {
             "cls",
             "title",
             "url",
@@ -416,7 +416,7 @@ class TestViewChain:
 
     def test_the_scaffold_is_emitted_before_the_table(self, capsys):
         keys = list(self.checked(capsys, "draft"))
-        assert keys.index("scaffold") < keys.index("markers")
+        assert keys.index("scaffold") < keys.index("marks")
 
     def test_full_adds_the_record_dump(self, capsys):
         assert "leaves" in self.checked(capsys, "full")
@@ -425,10 +425,10 @@ class TestViewChain:
     def test_a_note_receipt_withholds_minted_ids_below_draft(self, capsys):
         session = opened(capsys)
         code, receipt, _ = run(
-            ["note", session, "--view", "plan"], capsys, stdin=self.batch()
+            ["record", session, "--view", "plan"], capsys, stdin=self.batch()
         )
         assert code == 0
-        assert "minted" not in receipt
+        assert "new" not in receipt
         assert receipt["counts"] == {"retrieved": 1}
 
     def test_a_note_receipt_dumps_records_at_full(self, capsys):
@@ -436,7 +436,7 @@ class TestViewChain:
         all: nothing in the suite broke when the flag was removed."""
         session = opened(capsys)
         _, receipt, _ = run(
-            ["note", session, "--view", "full"], capsys, stdin=self.batch()
+            ["record", session, "--view", "full"], capsys, stdin=self.batch()
         )
         dumped = next(iter(receipt["leaves"].values()))
         assert dumped["question"] == "what does Rent guarantee"
@@ -445,7 +445,7 @@ class TestViewChain:
         """The documented cheap import path for prior work, previously
         exercised only below the command surface."""
         session = opened(capsys)
-        run(["note", session], capsys, stdin=self.batch())
+        run(["record", session], capsys, stdin=self.batch())
         again = json.dumps(
             {
                 "leaves": [{"kw": ["second", "leaf"], "q": "another"}],
@@ -460,13 +460,13 @@ class TestViewChain:
                 ],
             }
         )
-        _, receipt, _ = run(["note", session], capsys, stdin=again)
+        _, receipt, _ = run(["record", session], capsys, stdin=again)
         assert list(receipt["merged"]) == ["same-doc"]
 
     def test_a_note_receipt_carries_minted_ids_by_default(self, capsys):
         session = opened(capsys)
-        _, receipt, _ = run(["note", session], capsys, stdin=self.batch())
-        assert "bcl-rent" in receipt["minted"]["sources"]
+        _, receipt, _ = run(["record", session], capsys, stdin=self.batch())
+        assert "bcl-rent" in receipt["new"]["sources"]
 
     def test_an_unknown_view_names_the_vocabulary(self, capsys):
         session = opened(capsys)
@@ -484,7 +484,7 @@ class TestProseWithheldUniformly:
     field sat at two different levels depending on how a leaf closed."""
 
     IDENTITY: ClassVar = frozenset({"leaf", "q", "checked"})
-    DERIVED: ClassVar = frozenset({"markers", "stated", "reason"})
+    DERIVED: ClassVar = frozenset({"marks", "stated", "reason"})
     FINDINGS: ClassVar = frozenset({"premise", "detail", "survivors", "eliminated"})
 
     def batch(self) -> str:
@@ -543,7 +543,7 @@ class TestProseWithheldUniformly:
 
     def scaffold(self, capsys, view: str) -> dict:
         session = opened(capsys)
-        run(["note", session], capsys, stdin=self.batch())
+        run(["record", session], capsys, stdin=self.batch())
         code, document, _ = run(["check", session, "--view", view], capsys)
         assert code == 0
         return document["scaffold"]
@@ -571,7 +571,7 @@ class TestProseWithheldUniformly:
         """The blunt check the field lists could still get wrong: none of the
         prose written into the batch appears anywhere in the plan document."""
         session = opened(capsys)
-        run(["note", session], capsys, stdin=self.batch())
+        run(["record", session], capsys, stdin=self.batch())
         _, document, _ = run(["check", session, "--view", "plan"], capsys)
         rendered = json.dumps(document)
         for authored in (
@@ -587,7 +587,7 @@ class TestProseWithheldUniformly:
 
     def test_draft_restores_every_withheld_finding(self, capsys):
         session = opened(capsys)
-        run(["note", session], capsys, stdin=self.batch())
+        run(["record", session], capsys, stdin=self.batch())
         _, document, _ = run(["check", session], capsys)
         rendered = json.dumps(document)
         for authored in (
@@ -638,10 +638,10 @@ class TestCite:
                 }
             ],
         }
-        code, _, err = run(["note", session], capsys, stdin=json.dumps(batch))
+        code, _, err = run(["record", session], capsys, stdin=json.dumps(batch))
         assert code == 0, err
         _, document, _ = run(["check", session], capsys)
-        assert document["markers"]["S1"] == {
+        assert document["marks"]["S1"] == {
             "cls": "measured",
             "title": "A paper",
             "url": "https://doi.org/10.1/a",
@@ -653,19 +653,19 @@ class TestCite:
 class TestProject:
     def test_init_tags_the_session_and_status_shows_it(self, capsys):
         code, opened_doc, _ = run(
-            ["init", "rent length", "--project", "ste-tax"],
+            ["start", "rent length", "--project", "ste-tax"],
             capsys,
             stdin='{"question": "q"}',
         )
         assert code == 0
         _, document, _ = run(["status", opened_doc["session"]], capsys)
-        assert (document["project"], document["links"]) == ("ste-tax", [])
+        assert (document["project"], document["connections"]) == ("ste-tax", [])
 
 
 class TestLegacyMode:
     def test_a_session_written_with_mode_reads_its_level(self, capsys):
-        """Before the rename, init stored `--mode lite` as `mode`; such a
-        session must still resume at lite."""
+        """Before the rename, a session stored `--mode lite` as `mode`; such a
+        session must still continue at lite."""
         session = opened(capsys)
         meta = STORE.directory(session) / "session.json"
         raw = json.loads(meta.read_text(encoding="utf-8"))

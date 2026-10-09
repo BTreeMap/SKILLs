@@ -17,12 +17,12 @@ from btm_corekit.store.identifiers import (
     band_signal,
     eliminate,
     is_pathlike,
-    mint,
+    make_id,
     resolve,
 )
 
 
-class Link(Model):
+class Connection(Model):
     """One session of another skill this session draws on: the skill, the
     session's identifier, and the directory it lives in."""
 
@@ -33,16 +33,18 @@ class Link(Model):
 
 class Tagged(Model):
     """What every session meta carries beside its own fields: a free project
-    name, set at init, that groups sessions across skills, and the sessions
-    of other skills it links. A member's meta model subclasses this."""
+    name, set at start, that groups sessions across skills, and the sessions
+    of other skills it connects. A member's meta model subclasses this."""
 
     project: NonEmpty | None = None
-    links: tuple[Link, ...] = ()
+    connections: tuple[Connection, ...] = ()
 
-    def with_link(self, link: Link) -> Self:
-        """One link per linked skill: relinking replaces the earlier one."""
-        kept = tuple(held for held in self.links if held.skill != link.skill)
-        return self.with_(links=(*kept, link))
+    def with_connection(self, connection: Connection) -> Self:
+        """One connection per connected skill: a new one replaces the earlier one."""
+        kept = tuple(
+            held for held in self.connections if held.skill != connection.skill
+        )
+        return self.with_(connections=(*kept, connection))
 
 
 class Tags(Tagged):
@@ -95,13 +97,13 @@ class SessionStore:
         return found
 
     def create(self, ref: str) -> Created:
-        """A path stands as given; keywords mint an identifier under the root.
+        """A path stands as given; keywords make an identifier under the root.
         An existing marker refuses, so creation never overwrites."""
         if is_pathlike(ref):
             directory = Path(ref).expanduser()
             name = str(directory)
         else:
-            name = mint(ref.split())
+            name = make_id(ref.split())
             if advice := band_signal(name.rsplit("-", 1)[0]):
                 signal(advice)
             directory = self.root() / name
@@ -204,7 +206,7 @@ class SessionStore:
 
 
 LIT_REVIEW_SESSIONS = SessionStore(
-    "lit-review", marker="protocol.json", hint="run lit-review init first"
+    "lit-review", marker="protocol.json", hint="run lit-review start first"
 )
 LIT_REVIEW_CORPUS = "papers.jsonl"
 """lit-review's session layout, the one cross-member contract: lit-review

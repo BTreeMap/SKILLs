@@ -27,7 +27,7 @@ def run(argv, capsys, stdin: str | None = None):
 
 def started(capsys, paper_file, level="full") -> str:
     code, document, _ = run(
-        ["init", "ada route", "--date", "2026-03", "--level", level],
+        ["start", "ada route", "--date", "2026-03", "--level", level],
         capsys,
         stdin='{"title": "AdaRoute"}',
     )
@@ -49,12 +49,12 @@ def batch(tmp_path, payload) -> str:
 
 class TestFlow:
     def test_init_names_its_positional_as_every_sibling_does(self):
-        args = build_parser().parse_args(["init", "ada route", "--date", "2026-03"])
+        args = build_parser().parse_args(["start", "ada route", "--date", "2026-03"])
         assert args.session == "ada route"
 
     def test_init_rejects_a_bad_date(self, capsys):
         code, _, err = run(
-            ["init", "ada route", "--date", "March"],
+            ["start", "ada route", "--date", "March"],
             capsys,
             stdin='{"title": "t"}',
         )
@@ -79,7 +79,7 @@ class TestFlow:
             "objections": [
                 {
                     "kw": ["not", "first"],
-                    "kind": "first",
+                    "type": "first",
                     "severity": "major",
                     "text": "Bandit routing predates it.",
                     "claim": "first combine",
@@ -88,7 +88,7 @@ class TestFlow:
                 },
                 {
                     "kw": ["error", "bars"],
-                    "kind": "variance",
+                    "type": "variance",
                     "severity": "minor",
                     "text": "No spread.",
                     "missing": "error bars for Table 1",
@@ -100,10 +100,10 @@ class TestFlow:
             ],
         }
         code, document, _ = run(
-            ["note", session, "--batch:file", batch(tmp_path, payload)], capsys
+            ["record", session, "--batch:file", batch(tmp_path, payload)], capsys
         )
         assert code == 0
-        assert document["admitted"] == {"claim": 1, "objection": 2, "walk": 5}
+        assert document["accepted"] == {"claim": 1, "objection": 2, "walk": 5}
         code, document, err = run(["check", session], capsys)
         assert code == 0
         assert document["recommendation"]["verdict"] == "major revision"
@@ -135,7 +135,7 @@ class TestFlow:
             "objections": [
                 {
                     "kw": ["a", "b"],
-                    "kind": "control",
+                    "type": "control",
                     "severity": "major",
                     "text": "x",
                     "anchors": ["nothing like this appears in the paper"],
@@ -143,7 +143,7 @@ class TestFlow:
             ]
         }
         code, document, _ = run(
-            ["note", session, "--batch:file", batch(tmp_path, payload)], capsys
+            ["record", session, "--batch:file", batch(tmp_path, payload)], capsys
         )
         assert code == 1 and document["unchanged"] == "ledger"
         code, document, _ = run(["status", session], capsys)
@@ -155,7 +155,7 @@ class TestFlow:
             "objections": [
                 {
                     "kw": ["best", "run"],
-                    "kind": "selective",
+                    "type": "selective",
                     "severity": "major",
                     "text": "x",
                     "anchors": ["We report the best run over five seeds"],
@@ -163,7 +163,9 @@ class TestFlow:
             ]
         }
         assert (
-            run(["note", session, "--batch:file", batch(tmp_path, payload)], capsys)[0]
+            run(["record", session, "--batch:file", batch(tmp_path, payload)], capsys)[
+                0
+            ]
             == 0
         )
         other = tmp_path / "v2.txt"
@@ -178,7 +180,9 @@ class TestFlow:
         session = started(capsys, paper_file, level="lite")
         payload = {"walks": [{"bank": "claims"}, {"bank": "limitations"}]}
         assert (
-            run(["note", session, "--batch:file", batch(tmp_path, payload)], capsys)[0]
+            run(["record", session, "--batch:file", batch(tmp_path, payload)], capsys)[
+                0
+            ]
             == 0
         )
         _, document, err = run(["check", session], capsys)
@@ -187,10 +191,10 @@ class TestFlow:
     def test_pad_and_schema(self, capsys, paper_file):
         session = started(capsys, paper_file)
         code, document, _ = run(
-            ["write", session], capsys, stdin='{"kind": "injection", "page": 2}'
+            ["write", session], capsys, stdin='{"type": "injection", "page": 2}'
         )
         assert code == 0 and document["written"] == "j1"
-        code, document, _ = run(["read", session, "--kind", "injection"], capsys)
+        code, document, _ = run(["read", session, "--type", "injection"], capsys)
         assert document["shown"] == 1
         _, document, _ = run(["schema"], capsys)
         assert "novelty" in document["banks"]
@@ -212,7 +216,7 @@ class TestProjectAndLinks:
         self, capsys, paper_file, corpus_dir
     ):
         code, opened, _ = run(
-            ["init", "ada route", "--date", "2026-03", "--project", "ste-tax"],
+            ["start", "ada route", "--date", "2026-03", "--project", "ste-tax"],
             capsys,
             stdin='{"title": "AdaRoute"}',
         )
@@ -222,6 +226,6 @@ class TestProjectAndLinks:
         run(["attach", session, "--corpus", str(corpus_dir)], capsys)
         _, document, _ = run(["status", session], capsys)
         assert document["project"] == "ste-tax"
-        assert document["links"] == [
+        assert document["connections"] == [
             {"skill": "lit-review", "session": "lit", "path": str(corpus_dir)}
         ]

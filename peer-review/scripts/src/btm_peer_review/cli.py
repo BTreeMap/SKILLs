@@ -22,11 +22,11 @@ from btm_corekit import (
     Required,
     add_slot,
     content,
-    corpus_link,
+    corpus_connection,
     dump,
     emit,
     gated,
-    mint,
+    make_id,
     now_iso,
     pad_ids,
     parse_model,
@@ -40,7 +40,13 @@ from btm_corekit import (
     wire_project,
     write_atomic,
 )
-from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, NoteResult, expand_batch
+from btm_peer_review.batch import (
+    BATCH_KEYS,
+    SCHEMA,
+    Context,
+    RecordResult,
+    expand_batch,
+)
 from btm_peer_review.constants import BANKS, LEVEL_BANKS, Level, Severity, Standing
 from btm_peer_review.ledger import replay
 from btm_peer_review.state import Ledger
@@ -78,7 +84,7 @@ class Reviewed(Model):
     title: NonEmpty
 
 
-def cmd_init(args: argparse.Namespace) -> int:
+def cmd_start(args: argparse.Namespace) -> int:
     paper = content(Reviewed, PAPER, args)
     meta = parse_model(
         Meta,
@@ -140,7 +146,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
             "session": directory.name,
             "pages": len(pages),
             "limitations_section": paper.limitations is not None,
-            "next": "note claims from abstract, introduction, and conclusion",
+            "next": "record claims from abstract, introduction, and conclusion",
         }
     )
     return 0
@@ -150,7 +156,7 @@ def cmd_attach(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
     papers = LIT_REVIEW_SESSIONS.dir_of(args.corpus) / LIT_REVIEW_CORPUS
     corpus = load_corpus(papers)
-    attached = meta.with_(corpus=str(papers)).with_link(corpus_link(papers))
+    attached = meta.with_(corpus=str(papers)).with_connection(corpus_connection(papers))
     STORE.write_meta(directory, attached)
     later = sum(1 for r in corpus.records if r.year is not None and r.year > meta.year)
     emit(
@@ -174,22 +180,22 @@ def attached_corpus(session: str) -> Path | None:
     return Path(meta.corpus) if meta.corpus else None
 
 
-def cmd_note(args: argparse.Namespace) -> int:
+def cmd_record(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
     log = EventLog(directory / LEDGER)
     events = log.read()
     ledger = replay(events)
     context = Context(_paper(directory), corpus_of(meta), meta.year)
 
-    def expand(batch: dict[str, Any]) -> NoteResult:
-        return expand_batch(ledger, batch, context, mint, pad_ids(directory))
+    def expand(batch: dict[str, Any]) -> RecordResult:
+        return expand_batch(ledger, batch, context, make_id, pad_ids(directory))
 
-    def commit(result: NoteResult) -> dict[str, JSON]:
+    def commit(result: RecordResult) -> dict[str, JSON]:
         log.append(result.events, held=len(events))
         return {
             "session": directory.name,
-            "admitted": dict(Counter(event["e"] for event in result.events)),
-            "minted": result.minted,
+            "accepted": dict(Counter(event["e"] for event in result.events)),
+            "new": result.new,
             "claims": len(ledger.claim_order),
             "objections": len(ledger.objection_order),
             "walked": sorted(ledger.walks),
@@ -248,7 +254,7 @@ def cmd_check(args: argparse.Namespace) -> int:
             "authors' own Limitations; hunt outside it"
         )
     broken = [
-        str(v["marker"])
+        str(v["mark"])
         for v in document["objections"]
         if v["standing"] in (Standing.UNANCHORED, Standing.UNDATED)
     ]
@@ -266,7 +272,7 @@ def next_step(meta: Meta, ledger: Ledger) -> str:
     if not meta.pages:
         return "ingest the paper text"
     if not ledger.claim_order:
-        return "note the contribution claims verbatim"
+        return "record the contribution claims verbatim"
     unwalked = sorted(set(LEVEL_BANKS[meta.level]) - set(ledger.walks))
     if unwalked:
         return f"walk the remaining banks: {' '.join(unwalked)}"
@@ -283,7 +289,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             "session": directory.name,
             "title": meta.title,
             "project": meta.project,
-            "links": [dump(link) for link in meta.links],
+            "connections": [dump(connection) for connection in meta.connections],
             "level": meta.level,
             "pages": meta.pages,
             "corpus": meta.corpus,
@@ -305,7 +311,7 @@ def cmd_cite_check(args: argparse.Namespace) -> int:
     report["recommendation"] = document["recommendation"]
     emit(report)
     if report["problems"]:
-        signal(f"{len(report['problems'])} marker problem(s); fix the draft")
+        signal(f"{len(report['problems'])} mark problem(s); fix the draft")
         return 1
     return 0
 
@@ -313,10 +319,10 @@ def cmd_cite_check(args: argparse.Namespace) -> int:
 def cmd_schema(args: argparse.Namespace) -> int:
     emit(
         {
-            "note_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
-            "order": "claims, objections, walks, withdraws; later entries may "
-            "reference ids minted earlier in the same batch",
-            "banks": {bank: list(kinds) for bank, kinds in BANKS.items()},
+            "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
+            "sequence": "claims, objections, walks, withdraws; later entries may "
+            "reference ids made earlier in the same batch",
+            "banks": {bank: list(types) for bank, types in BANKS.items()},
             "severities": list(Severity),
             "levels": list(Level),
             "refs": REFS_SCHEMA,
@@ -330,15 +336,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = Parser(description=btm_peer_review.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    init = commands.add_parser("init", help="mint a session for one paper")
-    init.set_defaults(func=cmd_init)
-    init.add_argument("session", help="two or three keywords, or a directory path")
-    add_slot(init, PAPER, '{"title": "the paper under review"}')
-    init.add_argument(
+    start = commands.add_parser("start", help="make a session for one paper")
+    start.set_defaults(func=cmd_start)
+    start.add_argument("session", help="two or three keywords, or a directory path")
+    add_slot(start, PAPER, '{"title": "the paper under review"}')
+    start.add_argument(
         "--date", required=True, help="YYYY[-MM[-DD]] of the version reviewed"
     )
-    init.add_argument("--level", type=Level, choices=list(Level), default=Level.FULL)
-    wire_project(init)
+    start.add_argument("--level", type=Level, choices=list(Level), default=Level.FULL)
+    wire_project(start)
     ingest = commands.add_parser("ingest", help="store the paper's extracted text")
     ingest.set_defaults(func=cmd_ingest)
     ingest.add_argument("session")
@@ -349,10 +355,10 @@ def build_parser() -> argparse.ArgumentParser:
     attach.set_defaults(func=cmd_attach)
     attach.add_argument("session")
     attach.add_argument("--corpus", required=True, help="lit-review session id or path")
-    note = commands.add_parser("note", help="admit one JSON batch")
-    note.set_defaults(func=cmd_note)
-    note.add_argument("session")
-    add_slot(note, BATCH, "claims, objections, walks, withdraws")
+    record = commands.add_parser("record", help="accept one JSON batch")
+    record.set_defaults(func=cmd_record)
+    record.add_argument("session")
+    add_slot(record, BATCH, "claims, objections, walks, withdraws")
     check = commands.add_parser(
         "check", help="derive standings and the report scaffold"
     )
@@ -363,13 +369,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status.set_defaults(func=cmd_status)
     status.add_argument("session")
-    cite = commands.add_parser(
-        "cite-check", help="markers in a draft against the ledger"
-    )
+    cite = commands.add_parser("cite-check", help="marks in a draft against the ledger")
     cite.set_defaults(func=cmd_cite_check)
     cite.add_argument("session")
     add_slot(cite, DRAFT, "the draft's Markdown")
-    schema = commands.add_parser("schema", help="print the note batch shape")
+    schema = commands.add_parser("schema", help="print the record batch shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, STORE)
     wire_cite(commands, STORE.skill, attached_corpus)

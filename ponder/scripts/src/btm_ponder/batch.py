@@ -1,4 +1,4 @@
-"""The note pipeline: parse, resolve, simulate; a rejection lists every fix at once.
+"""The record pipeline: parse, resolve, simulate; a rejection lists every fix at once.
 
 The agent pays output tokens for the batch and again on every resend, so
 every phase runs to completion and the ledger changes only when the problem
@@ -14,7 +14,7 @@ from typing import Annotated, Any
 from pydantic import BeforeValidator, ConfigDict, Field
 
 from btm_corekit import (
-    Admission,
+    Acceptance,
     CommandError,
     Diagnostic,
     Model,
@@ -90,7 +90,7 @@ class SourceEntry(Named):
     @property
     def address(self) -> str:
         """The url as given, else the DOI's or arXiv id's landing page, so a
-        source noted by identifier dedups against one noted by its link."""
+        source recorded by identifier dedups against one recorded by its link."""
         if self.url:
             return self.url
         if self.doi:
@@ -121,7 +121,7 @@ class SweepEntry(Model):
 Rows = tuple[Mapping[str, Any], ...]
 
 
-class NoteBatch(Model):
+class RecordBatch(Model):
     """The container. Rows stay opaque here and decode one at a time, so a
     row with a bad field still lets its neighbours resolve. Extras are named
     by `known_keys`, so one unknown key cannot swallow the whole batch."""
@@ -135,15 +135,15 @@ class NoteBatch(Model):
     checkpoints: Rows = ()
 
 
-BATCH_KEYS = tuple(NoteBatch.model_fields)
+BATCH_KEYS = tuple(RecordBatch.model_fields)
 
 
 @dataclass(slots=True)
-class NoteResult:
+class RecordResult:
     """Everything one batch produced; events commit only when problems is empty."""
 
     events: list[dict[str, Any]] = field(default_factory=list)
-    minted: dict[str, dict[str, str]] = field(
+    new: dict[str, dict[str, str]] = field(
         default_factory=lambda: {"leaves": {}, "sources": {}}
     )
     merged: dict[str, str] = field(default_factory=dict)  # batch stem -> existing id
@@ -175,16 +175,16 @@ def _normal_url(raw: object) -> str:
     return str(raw or "").strip().rstrip("/")
 
 
-class _Expansion(Admission):
+class _Expansion(Acceptance):
     """One batch working through the phases; every method appends, none raises."""
 
     def __init__(
         self,
         ledger: Ledger,
-        minter: Callable[[Iterable[str]], str],
+        maker: Callable[[Iterable[str]], str],
         pad: Iterable[str],
     ) -> None:
-        super().__init__(minter, pad)
+        super().__init__(maker, pad)
         self.ledger = ledger
         self.aliases: dict[str, str] = {}  # merged stems -> existing ids
         self.merged: dict[str, str] = {}
@@ -209,7 +209,7 @@ class _Expansion(Admission):
             entry = self.decode(LeafEntry, row, where, SCHEMA["leaves"])
             if entry is None:
                 continue
-            full = self.mint_id(entry, self.leaves, where)
+            full = self.make_id(entry, self.leaves, where)
             if full is None:
                 continue
             self.staged.append(
@@ -240,7 +240,7 @@ class _Expansion(Admission):
                     f"{where} merges into {existing}: same url already in the ledger"
                 )
                 continue
-            full = self.mint_id(entry, self.sources, where)
+            full = self.make_id(entry, self.sources, where)
             if full is None:
                 continue
             leaf = self.lookup(entry.leaf, self.leaves, f"{where}.leaf")
@@ -358,7 +358,7 @@ class _Expansion(Admission):
             if checkpoint is None:
                 continue
             # Through the model, so no entry key can reach the event and
-            # overwrite `e` with a kind that mints nothing.
+            # overwrite `e` with a kind that makes nothing.
             self.staged.append((where, {"e": "checkpoint", **dump(checkpoint)}))
 
     def simulate(self) -> None:
@@ -376,32 +376,32 @@ class _Expansion(Admission):
 def expand_batch(
     ledger: Ledger,
     batch: dict[str, Any],
-    minter: Callable[[Iterable[str]], str],
+    maker: Callable[[Iterable[str]], str],
     pad: Iterable[str] = (),
-) -> NoteResult:
-    """Expand one note batch into events, collecting every problem.
+) -> RecordResult:
+    """Expand one record batch into events, collecting every problem.
 
-    Admission order: leaves, sources, closes, sweeps, checkpoints, so later
-    entries may reference ids minted earlier in the batch. Events from clean
+    Acceptance order: leaves, sources, closes, sweeps, checkpoints, so later
+    entries may reference ids made earlier in the batch. Events from clean
     entries are simulated against the passed ledger (which is mutated); on a
     non-empty problem list the caller discards ledger and events alike.
     """
-    expansion = _Expansion(ledger, minter, pad)
-    expansion.known_keys(batch, NoteBatch)
-    note = expansion.families(batch, NoteBatch, SCHEMA)
-    expansion.take_leaves(note.leaves)
-    expansion.take_sources(note.sources)
-    expansion.take_closes(note.closes)
-    expansion.take_sweeps(note.sweeps)
-    expansion.take_checkpoints(note.checkpoints)
+    expansion = _Expansion(ledger, maker, pad)
+    expansion.known_keys(batch, RecordBatch)
+    record = expansion.families(batch, RecordBatch, SCHEMA)
+    expansion.take_leaves(record.leaves)
+    expansion.take_sources(record.sources)
+    expansion.take_closes(record.closes)
+    expansion.take_sweeps(record.sweeps)
+    expansion.take_checkpoints(record.checkpoints)
     if not expansion.staged and expansion.clean:
         expansion.fail("$", "add at least one entry: the batch records nothing")
     expansion.simulate()
-    return NoteResult(
+    return RecordResult(
         events=expansion.events,
-        minted={
-            "leaves": expansion.leaves.minted,
-            "sources": expansion.sources.minted,
+        new={
+            "leaves": expansion.leaves.new,
+            "sources": expansion.sources.new,
         },
         merged=expansion.merged,
         advisories=expansion.advisories,
