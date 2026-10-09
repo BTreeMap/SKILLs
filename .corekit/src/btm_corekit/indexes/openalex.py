@@ -290,14 +290,29 @@ def crossed(answer: Page) -> Found:
     return Found(total=answer.total, works=tuple(map(record, answer.results)))
 
 
-def search(
-    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+def search(  # noqa: PLR0913, PLR0917 - the registry's Search signature
+    client: httpx.Client,
+    cap: int,
+    query: str,
+    limit: int,
+    window: Window,
+    offset: int = 0,
 ) -> Found:
-    """One relevance page, the year window as a publication-date filter."""
+    """`limit` works from rank `offset`, the year window as a publication-date
+    filter. OpenAlex pages by number, so a span that straddles a page
+    boundary costs one more page of `limit` works: two requests at most."""
     params = {"search": query, "per-page": str(limit)}
     if bounds := year_filter(window.from_year, window.to_year):
         params["filter"] = bounds
-    return crossed(page(client, cap, params))
+    if not offset:
+        return crossed(page(client, cap, params))
+    number, skip = divmod(offset, limit)
+    first = page(client, cap, {**params, "page": str(number + 1)})
+    results = first.results
+    if skip and len(results) == limit:
+        results += page(client, cap, {**params, "page": str(number + 2)}).results
+    span = results[skip : skip + limit]
+    return Found(total=first.total, works=tuple(map(record, span)))
 
 
 def lookup(client: httpx.Client, cap: int, ref: Ref) -> Work | None:

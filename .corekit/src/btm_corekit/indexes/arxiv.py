@@ -127,25 +127,30 @@ def record(entry: Entry) -> Work:
     )
 
 
-def feed(client: httpx.Client, cap: int, query: str, limit: int) -> Feed:
-    """One search, after waiting out whatever the terms still owe."""
+def feed(
+    client: httpx.Client, cap: int, query: str, limit: int, start: int = 0
+) -> Feed:
+    """One search from rank `start`, after waiting out whatever the terms
+    still owe."""
     PACE.wait()
-    payload = get_bytes(
-        client,
-        QUERY,
-        cap,
-        {"search_query": fielded(query), "max_results": str(limit)},
-    )
-    return parse(payload)
+    params = {"search_query": fielded(query), "max_results": str(limit)}
+    if start:
+        params["start"] = str(start)
+    return parse(get_bytes(client, QUERY, cap, params))
 
 
-def search(
-    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+def search(  # noqa: PLR0913, PLR0917 - the registry's Search signature
+    client: httpx.Client,
+    cap: int,
+    query: str,
+    limit: int,
+    window: Window,
+    offset: int = 0,
 ) -> Found:
-    """One ranked feed. The API has no date filter, so the window is the
-    registry's to disclaim; an empty answer to a bare phrase says how to
-    retry."""
-    answer = feed(client, cap, query, limit)
+    """One ranked feed from rank `offset`. The API has no date filter, so the
+    window is the registry's to disclaim; an empty answer to a bare phrase
+    says how to retry."""
+    answer = feed(client, cap, query, limit, offset)
     if not answer.total and ":" not in query:
         signal('arXiv matched nothing; retry with field syntax: all:"<phrase>"')
     return Found(total=answer.total, works=tuple(map(record, answer.entries)))

@@ -37,8 +37,12 @@ hand with the same fields the script writes.
   applies them. arxiv ignores them and the script says so, so apply the
   window at screening.
 - When the script signals truncation, either the query is too broad (narrow
-  it and rerun) or the field is large (raise `--limit` toward its cap of 100
-  and say in the report that coverage is a ranked sample, with counts).
+  it and rerun) or the field is large. For a large field, raise `--limit`
+  toward its cap of 100, then rerun the same query with the `--offset` the
+  signal names to fetch the next ranks. Where you stop before the upstream
+  total, say in the report that coverage is a ranked sample, with counts.
+  The indexes page no further than rank 10,000 (openalex, crossref), 1,000
+  (semanticscholar), or 500 (firecrawl).
 
 ## Snowballing
 

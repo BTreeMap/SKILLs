@@ -156,6 +156,34 @@ class TestSearch:
         )
         assert document["total_matches"] == 90 and document["truncated"] is True
         assert "90 matches upstream" in err
+        assert "rerun with --offset 1" in err
+
+    def test_an_offset_reaches_past_the_cap_and_counts_toward_coverage(
+        self, session, capsys, upstream
+    ):
+        """The ledger case: 105 matches, a cap of 100. Rank 100 onward is one
+        more call, and the five it reaches leave nothing truncated."""
+        tail = [{"id": f"W{rank}", "title": f"T{rank}"} for rank in range(100, 105)]
+        seen = upstream({"meta": {"count": 105}, "results": tail})
+        code, document, err = run(
+            [
+                "search",
+                str(session.root),
+                "--source",
+                "openalex",
+                "--limit",
+                "100",
+                "--offset",
+                "100",
+            ],
+            capsys,
+            stdin='{"query": "q"}',
+        )
+        assert code == 0
+        assert seen[0].url.params["page"] == "2"
+        assert document["offset"] == 100 and document["fetched"] == 5
+        assert document["truncated"] is False and "matches upstream" not in err
+        assert log(session)[0]["offset"] == 100
 
 
 class TestResolveRef:

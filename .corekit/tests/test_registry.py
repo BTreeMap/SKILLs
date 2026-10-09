@@ -43,7 +43,14 @@ class TestShape:
         """A positional mismatch would pass mypy through a lambda and fail
         only at the first live call, so the parameters are read here."""
         parameters = inspect.signature(INDEXES[name].search).parameters
-        assert list(parameters) == ["client", "cap", "query", "limit", "window"]
+        assert list(parameters) == [
+            "client",
+            "cap",
+            "query",
+            "limit",
+            "window",
+            "offset",
+        ]
 
     def test_the_registry_cannot_be_edited_by_a_caller(self):
         with pytest.raises(TypeError):

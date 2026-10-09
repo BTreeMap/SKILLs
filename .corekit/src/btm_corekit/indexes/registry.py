@@ -26,7 +26,7 @@ from btm_corekit.indexes.work import Found, Passage, Ref, Window, Work
 from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError
 
-Search = Callable[[httpx.Client, int, str, int, Window], Found]
+Search = Callable[[httpx.Client, int, str, int, Window, int], Found]
 Lookup = Callable[[httpx.Client, int, Ref], Work | None]
 Graph = Callable[[httpx.Client, int, Ref, int], Found]
 Passages = Callable[[httpx.Client, int, Ref, str | None, int], tuple[Passage, ...]]
@@ -123,11 +123,13 @@ def search(  # noqa: PLR0913, PLR0917 - the index, then the Search signature
     query: str,
     limit: int,
     window: Window,
+    offset: int = 0,
 ) -> Found:
-    """Search one index; a window it cannot honour is disclosed, not refused."""
+    """Search one index for `limit` works from rank `offset`, the first rank
+    being 0; a window it cannot honour is disclosed, not refused."""
     if window and not index.windows:
         signal(f"{index.name} ignores year bounds; filter after fetching")
-    return index.search(client, cap, query, limit, window)
+    return index.search(client, cap, query, limit, window, offset)
 
 
 def lookup(index: Index, client: httpx.Client, cap: int, ref: Ref) -> Work | None:

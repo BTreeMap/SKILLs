@@ -122,7 +122,19 @@ class TestRegistryShape:
         params = seen[0].url.params
         assert (params["query"], params["rows"]) == ("q", "3")
         assert params["filter"] == "until-pub-date:2024-12-31"
+        assert "offset" not in params, "rank 0 sends no offset"
         assert found.total == 2 and found.works[0].doi == "10.1/a"
+
+    def test_an_offset_rides_as_offset(self):
+        seen: list[httpx.Request] = []
+
+        def answer(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            return httpx.Response(200, content=b'{"message": {"items": []}}')
+
+        client = httpx.Client(transport=httpx.MockTransport(answer))
+        crossref.search(client, 10_000, "q", 3, Window(), 100)
+        assert seen[0].url.params["offset"] == "100"
 
     @pytest.mark.parametrize("ref", [ByDoi("10.1/a"), ByNative("10.1/a")])
     def test_a_doi_is_its_native_id(self, ref):

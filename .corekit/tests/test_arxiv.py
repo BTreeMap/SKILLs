@@ -111,6 +111,11 @@ class TestRegistryShape:
         }
         assert found.total == 412 and found.works[0].arxiv_id == "2401.01234"
 
+    def test_an_offset_rides_as_start(self):
+        client, seen = recording(FEED)
+        arxiv.search(client, 10_000, "ti:things", 4, Window(), 100)
+        assert seen[0].url.params["start"] == "100"
+
     def test_a_bare_phrase_matching_nothing_says_how_to_retry(self, capsys):
         client, _ = recording(BARE)
         arxiv.search(client, 10_000, "things", 4, Window())

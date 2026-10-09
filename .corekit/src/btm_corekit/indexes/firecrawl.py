@@ -215,18 +215,24 @@ def _checked(results: Results) -> Results:
     return results
 
 
-def search(
-    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+def search(  # noqa: PLR0913, PLR0917 - the registry's Search signature
+    client: httpx.Client,
+    cap: int,
+    query: str,
+    limit: int,
+    window: Window,
+    offset: int = 0,
 ) -> Found:
     """One ranked list, `k` up to 500; the window becomes inclusive date
-    bounds. No total is sent."""
-    params = {"query": query, "k": str(limit)}
+    bounds. No total is sent. The index takes no offset, so a span from rank
+    `offset` asks for `offset + limit` and drops the head."""
+    params = {"query": query, "k": str(offset + limit)}
     if window.from_year is not None:
         params["from"] = f"{window.from_year}-01-01"
     if window.to_year is not None:
         params["to"] = f"{window.to_year}-12-31"
     found = _checked(answer(Results, client, cap, PAPERS, params))
-    return Found(total=None, works=tuple(map(record, found.results)))
+    return Found(total=None, works=tuple(map(record, found.results[offset:])))
 
 
 def _read(

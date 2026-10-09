@@ -52,13 +52,16 @@ def record_fetch(
     total: int | None,
 ) -> None:
     """Shared tail of search and snowball: absorb, log, report. A total the
-    index did not report is logged as null and never reads as truncation."""
+    index did not report is logged as null and never reads as truncation; a
+    search skipped `offset` ranks, which the truncation check counts."""
     log_id = f"s{count_lines(session.log_path) + 1}"
     papers = load_papers(session)
     stamped = [paper.with_(found_by=(log_id,)) for paper in fetched]
     papers, new_count = absorb(papers, stamped)
     save_papers(session, papers)
-    truncated = total is not None and total > len(fetched)
+    offset: int | None = entry.get("offset")  # a snowball has no ranks to skip
+    reached = (offset or 0) + len(fetched)
+    truncated = total is not None and total > reached
     entry.update(
         {
             "id": log_id,
@@ -71,9 +74,11 @@ def record_fetch(
     )
     append_jsonl(session.log_path, [entry])
     if truncated:
+        skipped = f" after skipping {offset}" if offset else ""
+        rerun = "" if offset is None else f", or rerun with --offset {reached}"
         signal(
-            f"{total} matches upstream but only {len(fetched)} fetched; "
-            f"narrow the query or raise --limit (cap {MAX_LIMIT})"
+            f"{total} matches upstream but only {len(fetched)} fetched{skipped}; "
+            f"narrow the query or raise --limit (cap {MAX_LIMIT}){rerun}"
         )
     emit({**entry, "corpus_size": len(papers)})
 
@@ -118,7 +123,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     require_criteria(protocol)
     limit = args.limit
     window = Window(args.from_year, args.to_year)
-    fetched, total = fetch(args.source, asked, limit, window)
+    fetched, total = fetch(args.source, asked, limit, window, args.offset)
     entry = {
         "command": "search",
         "source": args.source,
@@ -126,6 +131,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         "from_year": args.from_year,
         "to_year": args.to_year,
         "limit": limit,
+        "offset": args.offset,
         "criteria_hash": criteria_hash(protocol),
     }
     record_fetch(session, entry, fetched, total)

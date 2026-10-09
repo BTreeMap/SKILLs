@@ -179,6 +179,34 @@ class TestSearch:
         client, seen = routed(lambda request: (200, {}))
         assert openalex.search(client, 10_000, "q", 5, Window()).works == ()
         assert "filter" not in seen[0].url.params
+        assert "page" not in seen[0].url.params, "rank 0 asks for no page"
+
+    @staticmethod
+    def ranked(request: httpx.Request) -> tuple[int, dict]:
+        """Ten ranked works, W0 to W9, served by page number and size."""
+        size = int(request.url.params["per-page"])
+        start = (int(request.url.params.get("page", "1")) - 1) * size
+        ids = [f"W{rank}" for rank in range(start, min(start + size, 10))]
+        return 200, {"meta": {"count": 10}, "results": [{"id": i} for i in ids]}
+
+    def test_an_offset_on_a_page_boundary_is_that_one_page(self, keyed):
+        client, seen = routed(self.ranked)
+        found = openalex.search(client, 10_000, "q", 3, Window(), 6)
+        assert [request.url.params["page"] for request in seen] == ["3"]
+        assert [work.openalex_id for work in found.works] == ["W6", "W7", "W8"]
+        assert found.total == 10
+
+    def test_an_offset_inside_a_page_joins_two_pages_and_keeps_the_span(self, keyed):
+        client, seen = routed(self.ranked)
+        found = openalex.search(client, 10_000, "q", 3, Window(), 4)
+        assert [request.url.params["page"] for request in seen] == ["2", "3"]
+        assert [work.openalex_id for work in found.works] == ["W4", "W5", "W6"]
+
+    def test_a_short_page_asks_for_no_next_one(self, keyed):
+        client, seen = routed(self.ranked)
+        found = openalex.search(client, 10_000, "q", 4, Window(), 9)
+        assert len(seen) == 1
+        assert [work.openalex_id for work in found.works] == ["W9"]
 
 
 class TestLookup:

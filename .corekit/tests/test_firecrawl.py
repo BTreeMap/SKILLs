@@ -203,6 +203,13 @@ class TestCalls:
         assert found.total is None, "the index sends no total"
         assert found.works[0].arxiv_id == "1706.03762"
 
+    def test_an_offset_asks_for_the_head_too_and_drops_it(self):
+        """The index takes no offset: rank 1 onward is k = 2 minus rank 0."""
+        client, seen = routed(200, SEARCH)
+        found = firecrawl.search(client, 10_000, "attention", 1, Window(), 1)
+        assert seen[0].url.params["k"] == "2"
+        assert found.works == ()
+
     def test_keyless_rides_bare_and_a_key_rides_as_a_bearer(self, monkeypatch):
         client, seen = routed(200, SEARCH)
         firecrawl.search(client, 10_000, "q", 1, Window())

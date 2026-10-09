@@ -187,6 +187,12 @@ class TestCalls:
         client, seen = routed(200, {})
         assert s2.search(client, 10_000, "q", 7, Window()).works == ()
         assert "year" not in seen[0].url.params
+        assert "offset" not in seen[0].url.params, "rank 0 sends no offset"
+
+    def test_an_offset_rides_as_offset(self, keyed):
+        client, seen = routed(200, {})
+        s2.search(client, 10_000, "q", 7, Window(), 100)
+        assert seen[0].url.params["offset"] == "100"
 
     def test_a_key_rides_as_x_api_key(self, keyed):
         client, seen = routed(200, LOOKUP)

@@ -56,6 +56,18 @@ from btm_lit_review.slots import DECISIONS, DRAFT, FRAMING, KEYS, QUERY, RULE
 MATCH_FIELDS = ("title", "abstract", "venue")
 
 
+def rank_offset(raw: str) -> int:
+    """How many ranked matches a search skips. Below 0 names no rank, so argv
+    refuses it where it is written rather than reading it as 0."""
+    try:
+        value = int(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{raw!r} is not a whole number") from None
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"{value} names no rank; pass 0 or more")
+    return value
+
+
 def add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "session",
@@ -75,6 +87,13 @@ def wire_gather(commands: Commands) -> None:
     add_slot(search, QUERY, '{"query": "the search string"}')
     search.add_argument("--source", choices=SOURCES, required=True)
     wire_limit(search, what="papers to fetch", default=DEFAULT_LIMIT, cap=MAX_LIMIT)
+    search.add_argument(
+        "--offset",
+        type=rank_offset,
+        default=0,
+        metavar="N",
+        help="ranked matches to skip before fetching, default 0",
+    )
     search.add_argument("--from-year", type=int, default=None)
     search.add_argument("--to-year", type=int, default=None)
     search.set_defaults(func=cmd_search)

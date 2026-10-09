@@ -269,12 +269,19 @@ def year_range(window: Window) -> str:
     return f"{window.from_year or ''}-{window.to_year or ''}"
 
 
-def search(
-    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+def search(  # noqa: PLR0913, PLR0917 - the registry's Search signature
+    client: httpx.Client,
+    cap: int,
+    query: str,
+    limit: int,
+    window: Window,
+    offset: int = 0,
 ) -> Found:
-    """One relevance page; the service caps `limit` at 100 and the whole
-    ranking at 1,000."""
+    """One relevance page from rank `offset`; the service caps `limit` at 100
+    and `offset + limit` at 1,000."""
     params = {"query": query, "limit": str(limit), "fields": FIELDS}
+    if offset:
+        params["offset"] = str(offset)
     if window:
         params["year"] = year_range(window)
     page = answer(Page, client, cap, f"{PAPER}/search", params)

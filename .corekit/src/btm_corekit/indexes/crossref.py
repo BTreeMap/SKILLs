@@ -157,11 +157,19 @@ def registration(client: httpx.Client, cap: int, doi: str) -> Item | None:
     return body.message
 
 
-def search(
-    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+def search(  # noqa: PLR0913, PLR0917 - the registry's Search signature
+    client: httpx.Client,
+    cap: int,
+    query: str,
+    limit: int,
+    window: Window,
+    offset: int = 0,
 ) -> Answer:
-    """One relevance page, the year window as a publication-date filter."""
+    """One relevance page of `limit` works from rank `offset`, the year window
+    as a publication-date filter; Crossref takes an offset up to 10,000."""
     params = {"query": query, "rows": str(limit)}
+    if offset:
+        params["offset"] = str(offset)
     if bounds := date_filter(window.from_year, window.to_year):
         params["filter"] = bounds
     message = page(client, cap, params)

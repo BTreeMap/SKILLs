@@ -131,6 +131,12 @@ class TestCountFlags:
         with pytest.raises(CommandError, match="asks for nothing"):
             build_parser().parse_args(argv)
 
+    def test_a_negative_offset_is_refused_where_it_is_written(self):
+        with pytest.raises(CommandError, match="names no rank"):
+            build_parser().parse_args(
+                ["search", "s", "--source", "openalex", "--offset", "-1"]
+            )
+
     def test_a_fetch_limit_above_the_cap_clamps_out_loud(self, capsys):
         argv = ["search", "s", "--source", "openalex", "--limit", str(MAX_LIMIT + 5)]
         assert build_parser().parse_args(argv).limit == MAX_LIMIT

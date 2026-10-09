@@ -189,8 +189,9 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "note_batch": SCHEMA,
             "pad": PAD_SCHEMA,
             "search_log": "search: {id, command, source, query, from_year, to_year, "
-            "limit, criteria_hash, time, fetched, new, total_matches, truncated}; "
-            "snowball carries seed and direction in place of query; "
+            "limit, offset, criteria_hash, time, fetched, new, total_matches, "
+            "truncated}; snowball carries seed and direction in place of query "
+            "and offset; "
             f"sources: {', '.join(SOURCES)}; "
             f"snowball sources: {', '.join(GRAPH_SOURCES)}; "
             "total_matches is null where a source reports no count",
