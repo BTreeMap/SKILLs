@@ -20,8 +20,8 @@ metadata:
 
 Write new text in ASD-STE100 Simplified Technical English (STE), Issue 9,
 change a text into STE, or examine a text for STE errors. The result is the
-STE text and the last `check` report. For `examine`, the result is only the
-report.
+STE text, the last `check` report, and the cause to keep each finding that
+stays. For `examine`, the result is only the report.
 
 ## Skill verbs
 
@@ -31,8 +31,8 @@ text, the skill verb is `examine`.
 
 | Skill verb | Task | Result |
 | --- | --- | --- |
-| `write` | Write new text from a brief, from notes, or from facts | STE text and a report with no errors |
-| `refactor` | Change a text into STE and keep its meaning | STE text, a report with no errors, and a list of the changes in meaning |
+| `write` | Write new text from a brief, from notes, or from facts | The result above |
+| `refactor` | Change a text into STE and keep its meaning | The result above, and a list of the changes in meaning |
 | `examine` | Examine a text, but do not change it | The report, as a list of corrections, each with its rule |
 | `help` | Show how to use this skill | The `help` card |
 
@@ -77,11 +77,11 @@ $R clean
 * An inline code span counts as one word, and `check` does not examine the
   words in it. Text in quotation marks is a technical noun. It counts as one
   word, and the report shows it in a `quotation` signal.
-* `--accept:file PATH` gives your technical nouns and technical verbs, one
-  term on each line. A comment starts with `#`. The checker accepts a
-  one-word term and the regular plural of a noun. It accepts a term of two
-  or more words only when all its words are together. It does not accept one
-  of these words without the other words.
+* `--accept:file PATH` is optional. It gives your technical nouns and
+  technical verbs, one term on each line. A comment starts with `#`. The
+  checker accepts a one-word term and the regular plural of a noun. It
+  accepts a term of two or more words only when all its words are together.
+  It does not accept one of these words without the other words.
 * `--mode procedure` (the default) sets the sentence limit for procedures,
   and a limit for a sentence that starts with `NOTE:`. `--mode description`
   sets the sentence limit and the paragraph limit for descriptions. The
@@ -136,11 +136,12 @@ $R clean
 * `accepted` gives the number of terms in the accept file.
 * `summary` gives the number of errors and signals of each type, and each
   word to replace. In a long text, read it first.
-* `ok` is `true` only when `findings` is empty. This condition is necessary
-  but not sufficient. Because the checker cannot see meaning, a text with
-  `ok: true` can contain STE errors.
-* Each item in `findings` is an error that a rule finds, and it gives its
-  `rule`. Each item also gives the `line` or the `lines` in the source text.
+* `ok` is `true` when `findings` is empty. It is a fact, not a decision. The
+  checker cannot see meaning or part of speech. Thus a text with `ok: true`
+  can contain STE errors, and a finding can be correct STE.
+* Each item in `findings` is a possible error that a rule finds, and it
+  gives its `rule`. Each item also gives the `line` or the `lines` in the
+  source text.
   * `sentence_length` gives the sentence number, the number of words, and
     the limit.
   * `paragraph_length` gives the number of sentences in the paragraph.
@@ -152,7 +153,7 @@ $R clean
   * For a `not_approved` word that is not in the dictionary, `alternatives`
     is empty, and `next` gives an instruction. Write the sentence with
     approved words. If the word is a technical noun or a technical verb,
-    write it in the accept file.
+    keep it.
   * The report gives one `not_approved` item for each different word, not
     for each time the word occurs. A headword of two or more words, for
     example "carry out" or "a few", is one item. Its `token` shows the words
@@ -187,8 +188,9 @@ $R clean
 
 ## Technical nouns and verbs
 
-The dictionary does not contain technical nouns or technical verbs. Before
-the first check, write them in the accept file.
+The dictionary does not contain technical nouns or technical verbs. The
+checker shows them as `not_approved`. If a term occurs many times, write it
+in the accept file before the first check.
 
 1. Find the possible terms. Look for the names of parts, tools, materials,
    physical quantities, systems, locations, units, persons, and documents.
@@ -235,8 +237,8 @@ the first check, write them in the accept file.
 * Write words in full. Do not use contractions or semicolons. Keep all
   articles. Use a past participle only as an adjective. Use an -ing word
   only if it is a technical noun or the dictionary shows it as approved.
-  Write each -ing technical noun, for example "wiring" or "parking brake",
-  in the accept file, or the report shows it as an `ing_form` error.
+  Keep the `ing_form` error of an -ing technical noun, for example "wiring",
+  and give the cause.
 
 ## Procedure
 
@@ -244,7 +246,7 @@ the first check, write them in the accept file.
   <phase name="prepare">
     <step>Select the mode: `procedure` for instructions, or `description` for text that gives information. A short text that gives only a fact or a value, for example a result that you calculated, gives information.</step>
     <step>If a text has instructions and information, examine each part in its applicable mode. For a Markdown file, use `--format markdown` and one `--section` for each part.</step>
-    <step>Write the accept file from the text and the brief (refer to Technical nouns and verbs).</step>
+    <step>Find the technical nouns and verbs (refer to Technical nouns and verbs).</step>
   </phase>
   <phase name="draft">
     <step>For `write`, write a draft from the brief in STE (refer to Write STE).</step>
@@ -257,12 +259,11 @@ the first check, write them in the accept file.
     <step>Divide each sentence that is too long. Divide each paragraph that is too long.</step>
     <step>Remove each contraction and each semicolon.</step>
     <step>Examine each signal. If a signal is correct, correct the text.</step>
-    <step>Do the check again. Stop when `ok` is `true`.</step>
-    <step>If each error that stays is a technical noun or a technical verb, write it in the accept file. Do the check one more time. Then stop.</step>
+    <step>Do the check again. Stop when you corrected each finding, or have the cause to keep it.</step>
   </phase>
   <phase name="deliver">
     <step>Compare the meaning of the last draft with the source or the brief. Make sure that the facts, the sequence of steps, and the warnings are the same.</step>
-    <step>Give the text. From the last report, give `ok`, the counts, and the signals that you did not correct.</step>
+    <step>Give the text and the last report. For each finding that stays, give one line with the cause to keep it. Also give the signals that you did not correct.</step>
     <step>For `refactor`, give a list of each location where STE changed the meaning or removed information.</step>
     <step>For `examine`, give the report as a list of corrections with line numbers. Also give the items in `skipped`.</step>
   </phase>
@@ -272,11 +273,11 @@ the first check, write them in the accept file.
 
 <template for="help">
 asd-ste100: write, refactor, or examine text in ASD-STE100 STE (Issue 9).
-  write    <brief>   write new STE text until the report shows no errors
+  write    <brief>   write new STE text, and read the report
   refactor <file>    change a text into STE, and keep its meaning
   examine  <file>    give only the report, and do not change the text
   help               show this card
-Write the technical nouns and verbs first. ok: true is necessary, but not sufficient.
+The report shows possible errors. Correct each one, or give the cause to keep it.
 </template>
 
 ## Possible problems
@@ -306,8 +307,8 @@ Write the technical nouns and verbs first. ok: true is necessary, but not suffic
 ## Checks before you stop
 
 <checklist>
-  <item>The accept file had all the terms before the first check, and it contains only technical nouns and technical verbs.</item>
-  <item>The last report has `ok: true`, or the result gives the cause of each error that stays.</item>
+  <item>The accept file, if you used one, contains only technical nouns and technical verbs.</item>
+  <item>The result gives the last report, and one line with the cause to keep each finding that stays.</item>
   <item>You examined each signal, and the result gives the signals that you did not correct.</item>
   <item>The text keeps all facts, numbers, conditions, and warnings of its source or brief.</item>
   <item>You do not tell the user that a text agrees with STE only because of `ok`. If the check did not occur, you do not tell the user that the text agrees with STE.</item>

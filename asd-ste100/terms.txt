@@ -13,7 +13,6 @@ form
 meaning
 text
 word
-one-word
 multi-word
 term
 sentence
@@ -80,15 +79,16 @@ field
 comment
 ste-tax
 checker
+finding
 signal
 card
-user
 
 # Technical verbs of the shell and the network.
 bind
 download
 
-# Inputs of the work: a brief and a draft are named documents.
+# The work: the user who gives it, and its named documents.
+user
 brief
 draft
 

@@ -77,11 +77,11 @@ review of the rest.
   contracts.
 - Library's descriptions total under 7,000 characters, enforced by gate. New
   or longer description needs equal trim elsewhere, listed in output.
-- Text in `asd-ste100/SKILL.md` passes its own checker; run it after any
-  edit there. Check each section in its mode, `procedure` for "Procedure"
-  and `description` for every other section, with committed accept file;
-  every report must give `"ok": true`. New technical term goes in
-  `asd-ste100/terms.txt` under group that justifies it.
+- Checker advisory, never authoritative. After any edit to
+  `asd-ste100/SKILL.md`, run it on each section in its mode, `procedure` for
+  "Procedure", `description` otherwise, with committed accept file; read
+  every finding; output lists each finding kept, with reason. New technical
+  term goes in `asd-ste100/terms.txt` under group that justifies it.
 
 ```
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath asd-ste100/scripts) btm-asd-ste100"
@@ -89,7 +89,7 @@ grep -E '^#+ ' asd-ste100/SKILL.md | sed -E 's/^#+ //' | while read -r h; do
   m=description; [ "$h" = Procedure ] && m=procedure
   $R check --text:file asd-ste100/SKILL.md --format markdown --section "$h" \
     --mode "$m" --accept:file asd-ste100/terms.txt | grep -q '"ok": true' \
-    || echo "not ok: $h"
+    || echo "read findings: $h"
 done
 ```
 
