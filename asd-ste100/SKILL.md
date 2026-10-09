@@ -167,10 +167,9 @@ $R clean
   * `part_of_speech` shows an approved word that is also a headword that is
     not approved in a different part of speech. It gives the alternatives
     for that part of speech. Its `context` shows the word with the word that
-    comes before it. This is usually sufficient to find the part of speech.
-    A number word, for example "zero", is a technical noun. If it is also a
-    word that is not approved in a different part of speech, this signal
-    shows it.
+    comes before it. A number word, for example "zero", is a technical noun.
+    If it is also a word that is not approved in a different part of speech,
+    this signal shows it.
   * `phrasal_verb` shows a verb of two or more words that is not approved,
     for example "turn off", if each of its words is an approved word. The
     same words can be a verb and a preposition, for example in "turn on the
@@ -298,11 +297,9 @@ Write the technical nouns and verbs first. ok: true is necessary, but not suffic
   example, the alternatives for "fix" are for "attach" and "repair", not for
   "correct an error". Then find an approved word for your meaning, here
   `correct (v)`.
-* The checker does not examine text in quotation marks. Use quotation marks
-  only for the text on a label or for a word that you write about. Read each
-  `quotation` signal.
-* Put each command, flag, key, and file name in an inline code span. Then it
-  counts as one word, and the checker does not examine it.
+* Use quotation marks only for the text on a label or for a word that you
+  write about. Read each `quotation` signal.
+* Put each command, flag, key, and file name in an inline code span.
 * If one section has instructions and information, examine it in
   `description` mode. Keep each instruction in it to the `procedure` limit.
 
