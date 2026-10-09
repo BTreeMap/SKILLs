@@ -32,6 +32,13 @@ BRAND = "btm-skills"
 # `skills/` is the vendor-neutral hub; vendor paths symlink to it, not the skill.
 HUB = Path("skills")
 VENDOR_LINKS = (Path(".agents/skills"), Path(".claude/skills"), Path(".github/skills"))
+# The one spelling of a skill's command binding (author-skill `scripts`); both
+# unsets keep the caller's environment from redirecting uv.
+BINDING = (
+    'R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project'
+    ' $(realpath <skill-root>/scripts) btm-{skill}"'
+)
+BINDING_MARK = "uv run --project"
 # The shared kernel package; a consumer member declares it as a workspace dependency.
 KERNEL = Path(".corekit")
 MARKETPLACE = Path(".claude-plugin/marketplace.json")

@@ -106,6 +106,7 @@ settle. Run the same chain before pushing and the gate has nothing to do:
 | | An em-dash (U+2014), whose replacement is a judgment |
 | | Skill Python outside its `scripts/` member, or a manifest off `scripts/pyproject.toml` |
 | | A workspace member whose Python redefines a kernel symbol |
+| | A skill command binding off the one form, or a skill with scripts and no binding |
 
 Rules live in `.github/gate/src/btm_repo_gate/rules/`, one function each. A
 rule returns findings, and a finding carries its repair or `None`; that

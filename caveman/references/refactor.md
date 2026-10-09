@@ -13,7 +13,7 @@ Bind the guard command once per shell, and re-bind after a reset; `realpath`
 is required:
 
 <commands for="bind">
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-caveman"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-caveman"
 </commands>
 
 The command surface is `prepare`, `apply`, `restore`, and `clean`, used as

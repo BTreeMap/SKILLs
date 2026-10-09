@@ -58,21 +58,25 @@ package.json, Cargo.toml) stay authoritative.
 
 ## Provision
 
+Bind the command to `R` once per shell, and re-bind after a reset;
+`realpath` and both `env -u` flags are required:
+
 <commands for="setup">
 
 ```bash
-env -u VIRTUAL_ENV uv run --project "$(realpath <skill-dir>/scripts)" btm-setup-env provision <tags> --project <project-root>
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-setup-env"
+$R provision <tags> --project <project-root>
 ```
 
 </commands>
 
 Every verb is named outright; a bare tag list is rejected. The examples
-below abbreviate the invocation above as `btm-setup-env`. `--project`
-defaults to the nearest ancestor of the working directory containing `.git`.
-The environment root is derived from the project path, under the system temp
-dir; override the base with `DENV_HOME`, or the exact root with `--root` or
-`DENV_ROOT`, the flag winning. A root under the temp dir is ephemeral: after
-a reboot, re-run provision.
+below abbreviate `$R` as `btm-setup-env`. `--project` defaults to the
+nearest ancestor of the working directory containing `.git`. The environment
+root is derived from the project path, under the system temp dir; override
+the base with `DENV_HOME`, or the exact root with `--root` or `DENV_ROOT`,
+the flag winning. A root under the temp dir is ephemeral: after a reboot,
+re-run provision.
 
 <commands for="examples">
 

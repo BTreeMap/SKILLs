@@ -105,12 +105,12 @@ Before the protocol phase, check two conditions:
 ## Script
 
 Bind the command to `R` and the session identifier to `S` once per shell,
-and re-bind after a reset; `realpath` and `env -u VIRTUAL_ENV` are both
-required. Invoke the script and read its output; read its source only when
+and re-bind after a reset; `realpath` and both `env -u` flags are required.
+Invoke the script and read its output; read its source only when
 troubleshooting on the user's instruction.
 
 <commands>
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-lit-review"
 $R init "<two or three keywords>" --level full <<'JSON'
 {"question": "..."}
 JSON

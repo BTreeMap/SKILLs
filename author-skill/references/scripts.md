@@ -140,10 +140,13 @@ Place each responsibility by the first row it matches.
   `scripts/tests/`, listed in the root `pyproject.toml`, with no code
   outside `scripts/`. Expose one entry point, the console command
   `btm-<skill>`, invoked through one binding,
-  `R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-<skill>"`;
+  `R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-<skill>"`;
   `realpath` is required because uv resolves the project path lexically and
-  an alias path has no workspace root above it. Invoke no host `python` and
-  no module path.
+  an alias path has no workspace root above it. Both `-u` flags are
+  required: a set `UV_PROJECT_ENVIRONMENT` makes uv install the skill into
+  the caller's environment, and a set `VIRTUAL_ENV` draws a mismatch warning
+  on every call. Spell the binding in exactly this form; the repository gate
+  rejects any other. Invoke no host `python` and no module path.
 * Put logic shared across members once in the kernel `btm-corekit` under
   `.corekit/`, declared as `dependencies = ["btm-corekit"]` with source
   `btm-corekit = { workspace = true }`. Compose its gate mechanics

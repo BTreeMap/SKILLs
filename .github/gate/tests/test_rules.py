@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from btm_repo_gate.cli import find_root, repair_to_fixpoint
+from btm_repo_gate.conventions import BINDING
 from btm_repo_gate.repairs import _relative_target
 from btm_repo_gate.rules import audit
 from btm_repo_gate.rules.frontmatter import rule_description_budget
@@ -277,3 +278,47 @@ class TestMemberLayout:
             '[project]\nname = "btm-alpha"\n', encoding="utf-8"
         )
         assert "member-layout" in rules_hit(repo)
+
+
+OLD_BINDING = (
+    'R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-alpha"'
+)
+
+
+def write_binding(skill: Path, line: str, doc: str = "SKILL.md") -> None:
+    path = skill / doc
+    path.parent.mkdir(exist_ok=True)
+    text = path.read_text(encoding="utf-8") if path.exists() else "# Doc\n"
+    path.write_text(f"{text}\n<commands>\n{line}\n</commands>\n", encoding="utf-8")
+
+
+class TestBinding:
+    def test_the_exact_binding_is_no_finding(self, repo):
+        write_member(repo / "alpha", "alpha")
+        write_binding(repo / "alpha", BINDING.format(skill="alpha"))
+        assert "binding" not in rules_hit(repo)
+
+    def test_a_binding_leaving_uv_project_environment_set_is_a_finding(self, repo):
+        """The caller's UV_PROJECT_ENVIRONMENT would receive the install."""
+        write_member(repo / "alpha", "alpha")
+        write_binding(repo / "alpha", OLD_BINDING)
+        assert "binding" in rules_hit(repo)
+
+    def test_a_binding_naming_another_skill_is_a_finding(self, repo):
+        write_member(repo / "alpha", "alpha")
+        write_binding(repo / "alpha", BINDING.format(skill="beta"))
+        assert "binding" in rules_hit(repo)
+
+    def test_a_member_with_no_documented_binding_is_a_finding(self, repo):
+        write_member(repo / "alpha", "alpha")
+        assert "binding" in rules_hit(repo)
+
+    def test_a_binding_in_a_reference_file_counts(self, repo):
+        write_member(repo / "alpha", "alpha")
+        write_binding(repo / "alpha", BINDING.format(skill="alpha"), "references/x.md")
+        assert "binding" not in rules_hit(repo)
+
+    def test_the_rule_statement_in_backticks_is_no_finding(self, repo):
+        statement = f"  `{BINDING.format(skill='<skill>')}`;"
+        write_binding(repo / "alpha", statement, "references/scripts.md")
+        assert "binding" not in rules_hit(repo)

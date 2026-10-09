@@ -215,7 +215,7 @@ per shell; `realpath` is required. Read its output; source reading belongs
 to user-instructed troubleshooting.
 
 <commands for="render">
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-fact-check"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-fact-check"
 $R render --state:file factcheck-state.json
 </commands>
 

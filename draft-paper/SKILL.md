@@ -121,7 +121,7 @@ below and read their output; read the source only when the user asks for
 troubleshooting.
 
 <commands>
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-draft-paper"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-draft-paper"
 $R init "<two or three keywords>" --verb build --format full --state partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>]
 S="<the session identifier the init output echoed>"
 $R schema

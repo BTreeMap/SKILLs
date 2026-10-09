@@ -88,7 +88,7 @@ rejected without review of the rest.
   `asd-ste100/terms.txt` under the group that justifies it.
 
 ```
-R="env -u VIRTUAL_ENV uv run --project $(realpath asd-ste100/scripts) btm-asd-ste100"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath asd-ste100/scripts) btm-asd-ste100"
 grep -E '^#+ ' asd-ste100/SKILL.md | sed -E 's/^#+ //' | while read -r h; do
   m=description; [ "$h" = Procedure ] && m=procedure
   $R check --text:file asd-ste100/SKILL.md --format markdown --section "$h" \

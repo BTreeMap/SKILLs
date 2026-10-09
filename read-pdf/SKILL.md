@@ -38,7 +38,7 @@ required. Invoke it and read its output; source reading belongs to
 user-instructed troubleshooting.
 
 <commands for="bind">
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
 </commands>
 
 `$R <document> [flags]` takes a local path or an http(s) URL.

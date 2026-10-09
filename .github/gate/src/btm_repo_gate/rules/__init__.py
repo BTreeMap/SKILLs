@@ -7,6 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 
 from btm_repo_gate.repairs import Finding
+from btm_repo_gate.rules.bindings import rule_binding
 from btm_repo_gate.rules.commands import rule_command_help
 from btm_repo_gate.rules.frontmatter import (
     rule_description_budget,
@@ -23,6 +24,7 @@ from btm_repo_gate.snapshot import Repo
 
 RULES: tuple[Callable[[Repo], Iterator[Finding]], ...] = (
     rule_alias,
+    rule_binding,
     rule_command_help,
     rule_description_budget,
     rule_em_dash,

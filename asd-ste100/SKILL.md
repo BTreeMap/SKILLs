@@ -48,7 +48,7 @@ Read the source code only when the user tells you to find the cause of a
 problem.
 
 <commands for="bind">
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-asd-ste100"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-asd-ste100"
 </commands>
 
 <commands for="surface">

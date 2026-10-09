@@ -52,7 +52,7 @@ and read its output; read the source only when the user instructs
 troubleshooting.
 
 <commands for="search">
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-search-web"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-search-web"
 $R web --query "<terms>" [--limit 8]
 $R instant --query "<term>"
 $R wiki --query "<terms>" [--limit 8]

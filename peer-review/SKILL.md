@@ -169,7 +169,7 @@ reinterpreted, so a regex needs no escape; an empty one is a rejection, not
 a fallback.
 
 <commands>
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
 $R init "<two or three keywords>" --date 2026-03 [--level full] <<'JSON'
 {"title": "..."}
 JSON

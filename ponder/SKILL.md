@@ -62,7 +62,7 @@ The script `btm-ponder` owns the ledger and its verification. Bind `R` and
 `S` per shell:
 
 <commands>
-R="env -u VIRTUAL_ENV uv run --project $(realpath <skill-root>/scripts) btm-ponder"
+R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-ponder"
 $R init "<two or three keywords>" [--mode lite] <<'JSON'
 {"question": "...", "focus": "..."}
 JSON
