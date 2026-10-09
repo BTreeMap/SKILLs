@@ -186,8 +186,8 @@ the rest stands:
   the workspace root only, never in a worktree, never with `uv sync` beyond
   `--locked`, and install nothing. Run `df -h /` first and stop if free
   space is under 1.2 GB. Download no file over 5 MB.
-- An issue the lead has put on hold is named in your handoff prompt; skip
-  it. An issue whose body ends with a lead decision comment is ready:
-  implement that decision.
+- Any open issue off the hold list in your handoff prompt is ready; the hold
+  list is the only gate, and an issue's class never defers it. Where a lead
+  decision comment ends the issue, implement that decision.
 - Close the issue with `gh issue comment` naming the commit when the lead
   has pushed it; until then, leave it open.
