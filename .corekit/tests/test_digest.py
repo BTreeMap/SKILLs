@@ -16,6 +16,11 @@ CORPUS = [
     Item("b1", "Control simulation experiment with Lorenz", 8.0),
     Item("b2", "Control simulation experiment for a typhoon", 3.0),
     Item("c1", "Corporate governance and shareholder value", 0.0),
+    Item("d1", "Volcanic ash dispersion", 0.0),
+    Item("d2", "Glacier retreat in Patagonia", 0.0),
+    Item("d3", "Soil moisture retrieval", 0.0),
+    Item("d4", "Urban heat islands", 0.0),
+    Item("d5", "Monsoon onset prediction", 0.0),
 ]
 
 
@@ -50,6 +55,16 @@ class TestLabels:
         result = digest(CORPUS)
         assert labels(result) == ["cloud", "control"]
         assert not {"and", "the", "with", "for"} & set(labels(result))
+
+    def test_a_term_in_over_a_third_of_items_is_reported_not_clustered(self):
+        """The ledger case: "language" in 198 of 422 titles labelled the
+        largest kind and separated nothing."""
+        corpus = [Item(f"l{n}", f"language topic{n}") for n in range(4)] + [
+            Item(f"o{n}", f"other{n % 2} item") for n in range(6)
+        ]
+        result = digest(corpus)
+        assert "language" not in labels(result)
+        assert result.view()["too_common"]["language"] == 4
 
     def test_the_rule_selects_exactly_its_cluster(self):
         result = digest(CORPUS)

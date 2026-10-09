@@ -20,7 +20,7 @@ CLUSTER_SIZE_MIN = 2  # one item is that item, not a kind worth a rule
 TEXT_CHARS = 90  # an exemplar identifies its cluster; it is not the record
 RESIDUE_CAP = 25
 LABEL_CHARS_MIN = 3  # shorter tokens are articles and initials, never kinds
-LABEL_SHARE_MAX = 0.6  # a term in most items separates nothing
+LABEL_SHARE_MAX = 0.3  # a term in a third of items is the query, not a kind
 LABEL_ITEMS_MIN = 2  # a term in one item names that item, not a kind
 
 STOPWORDS = frozenset(
@@ -131,6 +131,7 @@ class Digest:
     residue: tuple[Item, ...]
     residue_total: int
     total: int
+    too_common: tuple[tuple[str, int], ...] = ()
 
     def __post_init__(self) -> None:
         covered = sum(cluster.size for cluster in self.clusters)
@@ -145,13 +146,18 @@ class Digest:
             "clusters": [cluster.view() for cluster in self.clusters],
             "residue": [brief(item) for item in self.residue],
             "residue_total": self.residue_total,
+            "too_common": dict(self.too_common),
         }
 
 
-def _labels(items: list[tuple[Item, list[str]]], cap: int) -> list[str]:
+def _labels(
+    items: list[tuple[Item, list[str]]], cap: int
+) -> tuple[list[str], list[tuple[str, int]]]:
     """Terms that partition the set: seen at least twice, in at most
     `LABEL_SHARE_MAX` of items, ranked by frequency with ties on the term
-    itself so the same corpus always yields the same digest."""
+    itself so the same corpus always yields the same digest. Second, the
+    `cap` most frequent terms skipped as too common, with their counts, so
+    the skip is reported rather than silent."""
     frequency: Counter[str] = Counter()
     for _, words in items:
         frequency.update(
@@ -165,7 +171,12 @@ def _labels(items: list[tuple[Item, list[str]]], cap: int) -> list[str]:
         for term, count in frequency.items()
         if LABEL_ITEMS_MIN <= count <= ceiling
     )
-    return [term for _, term in usable[:cap]]
+    common = sorted(
+        (-count, term) for term, count in frequency.items() if count > ceiling
+    )
+    return [term for _, term in usable[:cap]], [
+        (term, -negated) for negated, term in common[:cap]
+    ]
 
 
 def rank_of(item: Item) -> float:
@@ -184,7 +195,7 @@ def digest(
     then a bounded top-k per cluster: O(n*w + V log V) for n items of w
     words over V terms, O(V) space."""
     tokenized = [(item, ascii_words(item.text)) for item in items]
-    ranked = _labels(tokenized, cap)
+    ranked, too_common = _labels(tokenized, cap)
     order = {term: index for index, term in enumerate(ranked)}
     buckets: defaultdict[str, list[Item]] = defaultdict(list)
     residue: list[Item] = []
@@ -216,4 +227,5 @@ def digest(
         residue=tuple(residue[:residue_cap]),
         residue_total=len(residue),
         total=len(items),
+        too_common=tuple(too_common),
     )
