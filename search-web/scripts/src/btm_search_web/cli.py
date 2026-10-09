@@ -30,6 +30,7 @@ from btm_search_web.constants import (
     DEFAULT_PASSAGES,
     DEFAULT_RESULTS,
     MAX_RESULTS,
+    THIN_CHARS,
 )
 from btm_search_web.records import Result
 
@@ -154,6 +155,13 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         remember(
             key,
             [Result(title=args.url, url=args.url, source="fetch", snippet=text)],
+        )
+    if len(text) < THIN_CHARS:
+        signal(
+            f"thin: fetch extracted {len(text)} characters; the page is likely "
+            "rendered by JavaScript, so its content lives elsewhere: look for "
+            "a JSON or Markdown source (an API spec, a raw file) before "
+            "reading the page as empty"
         )
     emit({"verb": "fetch", "url": args.url, "chars": len(text), "text": text})
     return 0

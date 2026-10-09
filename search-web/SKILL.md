@@ -94,8 +94,9 @@ and says so; `clean` drops the cache.
   hold full text. The output's `ref` is the reference as parsed; a paper
   the index does not hold is a rejection.
 - `fetch`: takes one http or https URL and returns an article. A PDF, a
-  raw data file such as JSONL or CSV, a listing, a paywall, or a page
-  rendered by JavaScript comes back refused, not empty. With `--out PATH`
+  raw data file such as JSONL or CSV, a listing, or a paywall comes back
+  refused, not empty. A page rendered by JavaScript comes back refused or
+  as a few characters of menu text, never its content. With `--out PATH`
   it extracts nothing: it writes the body unchanged to `PATH`, a file that
   must not exist yet, and returns its `path`, `bytes`, and `sha256`. Pin a
   data file or a PDF this way, quoting the digest. A raw fetch is never

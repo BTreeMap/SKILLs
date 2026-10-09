@@ -149,6 +149,27 @@ class TestFetch:
         assert document["text"] == "https://x.org/b" and "cached" not in err
 
 
+class TestThinPage:
+    REDOC_MENU = "Academic Graph API Recommendations API Datasets API"
+
+    def test_a_near_empty_extraction_signals_its_likely_cause(
+        self, capsys, monkeypatch
+    ):
+        """A JavaScript-rendered page extracts to its menu with exit 0; read
+        as a page, it says the docs are empty. The signal names the fallback,
+        on the cached answer too."""
+        monkeypatch.setattr(sources, "fetch", lambda url: self.REDOC_MENU)
+        for _ in range(2):
+            code, document, err = run(["fetch", "https://x.org/api-docs/"], capsys)
+            assert code == 0 and document["chars"] == len(self.REDOC_MENU)
+            assert "rendered by JavaScript" in err and "JSON or Markdown" in err
+
+    def test_an_article_length_extraction_is_quiet(self, capsys, monkeypatch):
+        monkeypatch.setattr(sources, "fetch", lambda url: "word " * 100)
+        _, _, err = run(["fetch", "https://x.org/a"], capsys)
+        assert "thin" not in err
+
+
 class TestRawFetch:
     def test_out_reports_the_digest_and_skips_the_cache(
         self, capsys, monkeypatch, tmp_path, temp_cache

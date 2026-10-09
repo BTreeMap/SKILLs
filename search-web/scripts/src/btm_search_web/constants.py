@@ -17,6 +17,7 @@ MAX_RESULTS = 50
 SNIPPET_CHARS = 400  # enough to judge a hit, not enough to read the page
 TITLE_CHARS = 300  # a title an index padded with a subtitle still fits
 TOPIC_CHARS = 80  # a related term names itself; its text is the snippet
+THIN_CHARS = 200  # an extraction this short is likely menu text, not the page
 
 
 DEFAULT_PASSAGES = 4  # the index's own default; enough to judge a paper
