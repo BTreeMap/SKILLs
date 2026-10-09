@@ -179,8 +179,10 @@ The dictionary does not contain technical nouns or technical verbs. Before
 the first check, write them in the allow file.
 
 1. Find the possible terms. Look for the names of parts, tools, materials,
-   systems, locations, units, persons, and documents. Also look for the
-   procedures of the work of the user, for example "drill" or "download".
+   physical quantities, systems, locations, units, persons, and documents.
+   For example, "oil" and "air" are materials, and "pressure" and
+   "temperature" are physical quantities. Also look for the procedures of
+   the work of the user, for example "drill" or "download".
 2. Write a word in the allow file only if it is a technical noun or a
    technical verb. Do not write a general word there to stop an error.
    "Utilize", "ensure", and "perform" are not technical nouns or technical

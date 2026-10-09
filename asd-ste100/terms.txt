@@ -91,5 +91,7 @@ download
 brief
 draft
 
-# A physical quantity the text names as an example meaning of "fall".
+# Physical quantities: the class that step 1 names, and "gravity", which
+# the text gives as the approved meaning of "fall".
+physical quantity
 gravity
