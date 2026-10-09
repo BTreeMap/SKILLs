@@ -136,10 +136,11 @@ reference topic.
 * State pattern to follow; name banned form only where it must be recognized
   (secrets, em-dashes, spec violations). Never emit em-dash (U+2014).
 * Cut unnecessary words before shortening meaningful ones; invent no
-  abbreviation. Never drop not, never, no, only, except. Preserve: negation,
-  exception, exclusivity, scope, necessary versus sufficient, uncertainty
-  and evidential strength, numbers, units, thresholds, execution order,
-  stopping conditions, permissions, irreversible-action boundaries,
+  abbreviation. Never drop not, never, no, only, except. Never stack two
+  condition-colons in one sentence; use "if" or parentheses. Preserve:
+  negation, exception, exclusivity, scope, necessary versus sufficient,
+  uncertainty and evidential strength, numbers, units, thresholds, execution
+  order, stopping conditions, permissions, irreversible-action boundaries,
   commands, identifiers, literals, schemas, error strings, quotations,
   intentional bad examples. Cut only empty hedges.
 * Readability floor: sentence follower would read twice keeps longer form.
