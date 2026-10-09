@@ -137,5 +137,9 @@ named papers doing named things. The banned vocabulary in SKILL.md applies.
   deliverable; tables carry structure.
 - Recency words ("recent", "current") always bind to the method section's
   as-of date.
-- Sweep the finished report with `/humanize` and its detection index before
-  delivery.
+- Sweep the finished report before delivery, at the level's depth:
+
+  | Level | Sweep |
+  | --- | --- |
+  | lite | Mechanical only: search the report for U+2014 and U+2013 dashes, `**`, Title Case headings, emoji, curly quotes, and each banned word; fix every hit. |
+  | full, ultra | The lite searches, then `/humanize` on the report file: it scans its detection index and loads only the owner files of the patterns it finds. |
