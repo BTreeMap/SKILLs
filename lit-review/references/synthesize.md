@@ -139,3 +139,15 @@ papers doing named things. Banned vocabulary in SKILL.md applies.
   | --- | --- |
   | lite | Mechanical only: search report for U+2014 and U+2013 dashes, `**`, Title Case headings, emoji, curly quotes, each banned word; fix every hit. |
   | full, ultra | Lite searches, then `/humanize` on report file: it scans its detection index, loads only owner files of patterns it finds. |
+
+## Handoffs
+
+After delivery, offer each next step whose condition holds; name sibling,
+verb, artifact to pass. Invoke none unasked.
+
+- Review feeds paper: `/draft-paper build`; pass this session's identifier
+  to its `link <run> --corpus`, so corpus records need no re-retrieval.
+- Paper to referee against this literature: `/peer-review`; pass this
+  session's identifier to its `link <session> --corpus`.
+- Question stays open past what corpus answers: `/ponder` with open
+  question; its sources `cite --corpus <this session>` for corpus records.

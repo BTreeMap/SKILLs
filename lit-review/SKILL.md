@@ -36,6 +36,7 @@ reading, synthesis.
 
 - Checking a document's facts: `/fact-check`
 - Reading one known paper: `/read-pdf`
+- Drafting paper from existing review: `/draft-paper`
 
 ## Invariants
 

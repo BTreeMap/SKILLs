@@ -71,3 +71,13 @@ Below <threshold> the answer flips: <flipped claim> [S4].
 - S1 (constitutive): <title>, <url>
 - S3 (reported): <title>, <url>
 </template>
+
+## Handoffs
+
+After delivery, offer each next step whose condition holds; name sibling,
+verb, artifact to pass. Invoke none unasked.
+
+- Answer needs scholarly record (survey, related work, priority claim):
+  `/lit-review` with question; pass DOIs from source records as seeds.
+- Answer became research plan: `/draft-paper design` with answer and its
+  Sources section; pass this session's project to its `init --project`.

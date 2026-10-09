@@ -36,6 +36,7 @@ Agent searches adversely; script derives verdict.
 
 - A literature survey: `/lit-review`
 - Checking a document's facts: `/fact-check`
+- Answering reviews of user's own paper: `/draft-paper rebut`
 
 ## Invariants
 

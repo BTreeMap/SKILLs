@@ -33,6 +33,7 @@ let ledger state set presentation.
 
 - A literature review: `/lit-review`
 - Checking claims in a document: `/fact-check`
+- Planning research study or paper: `/draft-paper design`
 
 ## Invariants
 

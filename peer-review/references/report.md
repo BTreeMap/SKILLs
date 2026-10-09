@@ -61,3 +61,11 @@ every quoted anchor and prior-work key was verified by its script.
 - No author names, affiliations, or venue guesses anywhere.
 - Hedge by evidence class: `question` reads as question; objection whose
   prior work was read at abstract level says so.
+
+## Handoffs
+
+After delivery, offer next step whose condition holds. Invoke none unasked.
+
+- Paper is user's own and review answers it: `/draft-paper rebut` with
+  review file as reviews input; init its run with
+  `--verb rebut --state reviews`.

@@ -344,6 +344,20 @@ jumping from stage 3 to 8 has skipped citation verification.
 - `rebut`: rebuttal draft or revision letter plus response-to-reviewer
   mapping from `rebuttal-playbook`.
 
+## Handoffs
+
+After delivery, offer each next step whose condition holds; name sibling,
+verb, artifact to pass. Invoke none unasked.
+
+- Draft wants referee pass beyond stage 7: `/peer-review` on compiled PDF;
+  pass linked lit-review session to its `link <session> --corpus`.
+- Draft's claims need checking against sources: `/fact-check` on draft file.
+- Venue requires Simplified Technical English: `/asd-ste100 review` on draft
+  file.
+- Prose reads machine-written after stage 8: `/humanize` on draft file.
+- Reviews arrive: `/draft-paper rebut` with reviews text; new run
+  `--verb rebut --state reviews`, same `--project`.
+
 ## Completion checks
 
 <checklist>
