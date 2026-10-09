@@ -1,92 +1,86 @@
 # Craft: color
 
-Color carries the least information and attracts the most attention. Design
-the interface in grayscale first; color, gradients included, cannot fix a
-hierarchy that does not already read.
+Color carries least information, attracts most attention. Design interface
+in grayscale first; color, gradients included, cannot fix hierarchy that
+does not already read.
 
 ## Structure
 
-* **One accent.** A single color means action, selection, and focus, and
-  holds across every screen; never pick one for buttons, another for links,
-  and a third for charts. Where a system is supplied, this means one
-  *declared* accent honored exactly: a declared accent plus reserved
-  secondary hues is consistent when used as declared, and inconsistent the
-  moment a component invents another value.
+* **One accent.** Single color means action, selection, focus, and holds
+  across every screen; never one for buttons, another for links, a third for
+  charts. System supplied: one *declared* accent honored exactly; declared
+  accent plus reserved secondary hues is consistent when used as declared,
+  inconsistent the moment component invents another value.
 * **One neutral family**, consistently warm or cool. Users perceive mixed
-  warm and cool greys as a mismatch even when they cannot name it.
-* **Semantic colors** for success, warning, danger, and information, each
-  distinguishable from the accent and from each other, so alerts read as
-  alerts. Danger must never be the accent, or destructive actions stop
-  reading as destructive.
-* Keep saturation restrained for large areas and reserve full saturation for
-  small, deliberate emphasis. A saturated field fatigues; a saturated
-  twelve-pixel dot informs.
+  warm and cool greys as mismatch even when they cannot name it.
+* **Semantic colors** for success, warning, danger, information, each
+  distinguishable from accent and each other, so alerts read as alerts.
+  Danger must never be accent, or destructive actions stop reading as
+  destructive.
+* Restrained saturation for large areas; full saturation only for small,
+  deliberate emphasis. Saturated field fatigues; saturated twelve-pixel dot
+  informs.
 
 ## Tokens, not values
 
-Name by role. A token called `surface-raised` survives a theme change; one
-called `grey-100` becomes wrong when the theme inverts. Roles worth having:
-page and raised surfaces, primary, secondary, and disabled text, subtle and
-strong borders, the accent plus its hover, active, and subtle variants, the
-semantic set, and a focus ring.
+Name by role. Token `surface-raised` survives theme change; `grey-100`
+becomes wrong when theme inverts. Roles worth having: page and raised
+surfaces; primary, secondary, disabled text; subtle and strong borders;
+accent plus its hover, active, subtle variants; semantic set; focus ring.
 
-Author in a perceptually uniform color space where the toolchain supports
-it, so a lightness step means the same visual change at every hue. Derive
-hover and active states by adjusting lightness within the space, and let the
-platform's color mixing do the derivation so the relationship survives a
-token change.
+Author in perceptually uniform color space where toolchain supports it, so
+lightness step means same visual change at every hue. Derive hover and
+active states by adjusting lightness within space; let platform's color
+mixing do derivation so relationship survives token change.
 
 ## Both themes, from the start
 
-Design light and dark together. A retrofitted theme produces one designed
-mode and one inverted mode.
+Design light and dark together. Retrofitted theme produces one designed mode
+and one inverted mode.
 
-* Use near-black and near-white for large surfaces. Pure black kills depth
-  and smears on some displays; pure white glares.
-* Dark mode is not an inversion. Elevation reverses: raised surfaces get
-  lighter, and shadows do less work, so borders and surface lightness carry
-  elevation instead.
-* Saturated colors vibrate against dark backgrounds. Reduce saturation and
+* Near-black and near-white for large surfaces. Pure black kills depth and
+  smears on some displays; pure white glares.
+* Dark mode is not inversion. Elevation reverses: raised surfaces get
+  lighter, shadows do less work, so borders and surface lightness carry
+  elevation.
+* Saturated colors vibrate against dark backgrounds. Reduce saturation,
   raise lightness for accents in dark mode.
-* Hierarchy parity is the requirement: whatever draws the eye first in light
-  draws it first in dark.
-* Select between theme values through the platform's own single-declaration
-  mechanism, so the interface tracks the operating system preference live.
-* **Default to the system preference and store nothing.** Ship no
-  `light | dark | system` setting, no persisted choice, and no app-level
-  theme state unless the user asks for a toggle.
-* Add a toggle when the user asks for one, or when a mode loses meaningful
-  brand expression. Default it to the system preference and persist that
-  choice per `interaction`.
+* Hierarchy parity required: whatever draws eye first in light draws it
+  first in dark.
+* Select between theme values through platform's own single-declaration
+  mechanism, so interface tracks operating system preference live.
+* **Default to system preference; store nothing.** Ship no
+  `light | dark | system` setting, no persisted choice, no app-level theme
+  state unless user asks for toggle.
+* Add toggle when user asks, or when mode loses meaningful brand expression.
+  Default it to system preference; persist choice per `interaction`.
 
 ## Contrast in practice
 
-`a11y` owns the thresholds, exemptions, and their interpretation. Compute
-every ratio; estimates and a supplied document's claims are unverified.
+`a11y` owns thresholds, exemptions, their interpretation. Compute every
+ratio; estimates and supplied document's claims are unverified.
 
-* Style placeholder, helper, disabled-looking, and secondary text to read as
+* Style placeholder, helper, disabled-looking, secondary text to read as
   secondary, then measure each against every surface it appears on,
   including tinted cards. Grey text lightened until it looks refined usually
   fails.
-* An accent that fails at body size often passes at display size, so decide
-  where a brand color may carry text before committing it to a button.
-* Text over imagery needs a guaranteed backing: a scrim, a gradient, or a
-  solid panel. Contrast against an image's average color is not contrast
-  against the pixels behind the letters.
-* Color is never the only channel. Pair it with text, icon, weight, or
-  position.
+* Accent failing at body size often passes at display size: decide where
+  brand color may carry text before committing it to button.
+* Text over imagery needs guaranteed backing: scrim, gradient, or solid
+  panel. Contrast against image's average color is not contrast against
+  pixels behind letters.
+* Color never the only channel. Pair with text, icon, weight, or position.
 * Keep forced-colors and high-contrast modes functional.
 
 ## Choosing a palette
 
-Let the brand, domain, and audience choose. When nothing constrains the
-choice, avoid the reflexive families of generated design: the purple-to-blue
-technology gradient, and the warm cream with brass and oxblood that appears
-on every artisan and premium consumer brief. Both make distinct brands look
-identical.
+Let brand, domain, audience choose. Nothing constrains choice: avoid
+reflexive families of generated design: purple-to-blue technology gradient;
+warm cream with brass and oxblood on every artisan and premium consumer
+brief. Both make distinct brands look identical.
 
-Choose a direction that is coherent and unusual for the category: a
-saturated single hue against one neutral, a deep natural tone with a warm
-accent, sharp near-black against a warm mid-tone, or true monochrome with
-one bright accent. Rotate across projects; shipping the same palette twice
-within a category means the palette came from habit.
+Choose direction coherent and unusual for category: saturated single hue
+against one neutral, deep natural tone with warm accent, sharp near-black
+against warm mid-tone, or true monochrome with one bright accent. Rotate
+across projects; same palette twice within category means palette came from
+habit.

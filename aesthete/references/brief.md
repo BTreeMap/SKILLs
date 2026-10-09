@@ -1,104 +1,100 @@
 # Supplied material
 
 Design documents routinely carry contrast failures, stale accessibility
-claims, missing states, and rules written for a different scope. Adopt what
-holds, verify the rest, and report every divergence.
+claims, missing states, rules written for different scope. Adopt what holds,
+verify rest, report every divergence.
 
 ## Procedure
 
 1. **Inventory.** List what was supplied: tokens, component specifications,
-   composition rules, prohibitions, and stated gaps. Note what is absent;
+   composition rules, prohibitions, stated gaps. Note what is absent;
    absences drive step 5.
-2. **Apply precedence.** A supplied palette overrides the document's colors
-   and nothing else. The document keeps its type, spacing, radius,
-   component, and composition decisions.
-3. **Map the palette to roles** (below).
-4. **Verify against the floor** (below).
-5. **Fill gaps by deriving values from the supplied system**, following its
-   own logic so each value looks native, and report every value derived.
-   Missing dark theme, states, responsive rules, and semantic colors are all
-   common.
-6. **Report** (below), naming every failing token you adopted and why.
+2. **Apply precedence.** Supplied palette overrides document's colors and
+   nothing else. Document keeps its type, spacing, radius, component,
+   composition decisions.
+3. **Map palette to roles** (below).
+4. **Verify against floor** (below).
+5. **Fill gaps by deriving values from supplied system**, following its own
+   logic so each value looks native; report every value derived. Missing
+   dark theme, states, responsive rules, semantic colors all common.
+6. **Report** (below), naming every failing token adopted and why.
 
 ## Mapping a palette to roles
 
-Make the mapping once and write it down. Identify, in this order:
+Make mapping once; write it down. Identify, in this order:
 
-1. **Accent**: the most saturated color, or the one the source names as
-   primary. Exactly one, however many the palette offers.
-2. **Ink and canvas**: the darkest and lightest members. Neither should be
-   pure black or pure white unless the palette insists.
-3. **Neutral family**: the desaturated members, which must read as one
-   temperature. If the palette mixes warm and cool neutrals, pick one and
-   derive the rest.
-4. **Remaining members**: assign to secondary surfaces, or hold them in
-   reserve. Use only colors with assigned roles; five supplied colors do not
-   obligate five roles.
+1. **Accent**: most saturated color, or one source names as primary. Exactly
+   one, however many palette offers.
+2. **Ink and canvas**: darkest and lightest members. Neither pure black nor
+   pure white unless palette insists.
+3. **Neutral family**: desaturated members; must read as one temperature.
+   Palette mixes warm and cool neutrals: pick one, derive rest.
+4. **Remaining members**: assign to secondary surfaces, or hold in reserve.
+   Use only colors with assigned roles; five supplied colors do not obligate
+   five roles.
 
-When the palette arrives as stepped scales, the ramp is the role source:
-select a light step for canvas, a mid step for borders and secondary text, a
-dark step for ink, and the accent's own mid and dark steps for rest and
-active states. Every value the interface needs should already exist in the
-ramp.
+Palette arrives as stepped scales: ramp is role source. Light step for
+canvas, mid step for borders and secondary text, dark step for ink, accent's
+own mid and dark steps for rest and active states. Every value interface
+needs should already exist in ramp.
 
-Derive what is missing from the palette's own geometry: hover and active
-states are lightness steps on the accent, and surface elevation steps are
-lightness steps on the canvas. Fill a role with an existing hue.
+Derive what is missing from palette's own geometry: hover and active states
+are lightness steps on accent; surface elevation steps are lightness steps
+on canvas. Fill role with existing hue.
 
-Prefer the palette's own members where one reads correctly for the meaning.
-Where none does, import the minimum, keep them distinguishable from the
-accent, and declare them as additions in the report. Danger must never be
-the accent, or destructive actions stop reading as destructive.
+Prefer palette's own members where one reads correctly for meaning. None
+does: import minimum, keep them distinguishable from accent, declare them as
+additions in report. Danger must never be accent, or destructive actions
+stop reading as destructive.
 
 ## Verifying against the floor
 
-Compute each contrast ratio from the two composited values; the document's
-claim is unverified. `a11y` owns the thresholds and exemptions; apply them
-to every supplied pairing before adopting any of it.
+Compute each contrast ratio from two composited values; document's claim is
+unverified. `a11y` owns thresholds and exemptions; apply them to every
+supplied pairing before adopting any of it.
 
-Check at minimum: every text role against every surface it sits on, the
-accent against its on-color at the sizes used, secondary and muted text
-against both the canvas and any tinted card, borders that identify a
-control, and both themes if two exist.
+Check at minimum: every text role against every surface it sits on; accent
+against its on-color at sizes used; secondary and muted text against both
+canvas and any tinted card; borders identifying control; both themes if two
+exist.
 
-Verify every accessibility claim against the current specification.
-Documents commonly cite superseded thresholds or the wrong conformance
-level, and a claim of non-compliance can be as wrong as a claim of
-compliance.
+Verify every accessibility claim against current specification. Documents
+commonly cite superseded thresholds or wrong conformance level; claim of
+non-compliance can be as wrong as claim of compliance.
 
 ## Resolving a conflict with the floor
 
-Satisfy the floor and preserve brand intent. Resolve by derivation, in this
-order, and report which step was used:
+Satisfy floor, preserve brand intent. Resolve by derivation, in this order;
+report which step used:
 
-1. **Restrict by size.** A brand color failing the normal-text threshold
-   often passes the large-text threshold. Keep it for display type and large
-   fills; use a compliant variant for small text. This usually preserves the
-   brand where it is most visible.
-2. **Use the darker or lighter ramp step.** Most systems already ship an
-   active or pressed variant that passes. Promote it to the text-bearing use
-   and keep the original for fills.
-3. **Change the on-color.** A mid-tone accent frequently fails against white
-   and passes against the system's own ink.
-4. **Adjust lightness within the hue**, as little as the threshold requires,
-   preserving hue and saturation so the brand still reads.
-5. **Report as unresolvable** only if all four fail, and name what the
-   document must change.
+1. **Restrict by size.** Brand color failing normal-text threshold often
+   passes large-text threshold. Keep it for display type and large fills;
+   compliant variant for small text. Usually preserves brand where most
+   visible.
+2. **Use darker or lighter ramp step.** Most systems already ship active or
+   pressed variant that passes. Promote it to text-bearing use; keep
+   original for fills.
+3. **Change on-color.** Mid-tone accent frequently fails against white and
+   passes against system's own ink.
+4. **Adjust lightness within hue**, as little as threshold requires,
+   preserving hue and saturation so brand still reads.
+5. **Report as unresolvable** only if all four fail; name what document must
+   change.
 
-Never resolve by silently shipping the failure, by abandoning the brand
-color entirely, or by claiming the floor does not apply.
+Never resolve by silently shipping failure, abandoning brand color entirely,
+or claiming floor does not apply.
 
 ## Rules that survive supplied material
 
 Supplied documents govern appearance; function still applies.
 
-* **Interaction states are function.** Treat unspecified hover, focus,
-  loading, or error states as gaps: fill them in the system's own language
-  and report them. A document can legitimately forbid a particular hover
-  *treatment*; it cannot forbid focus visibility or an error state.
-* **A document's prohibitions bind its own scope.** A rule about what to
-  document is not a rule about what to implement, and a rule about a
-  marketing surface does not govern an application surface.
+* **Interaction states are function.** Unspecified hover, focus, loading, or
+  error states are gaps: fill them in system's own language, report them.
+  Document can legitimately forbid particular hover *treatment*; it cannot
+  forbid focus visibility or error state.
+* **Document's prohibitions bind its own scope.** Rule about what to
+  document is not rule about what to implement; rule about marketing surface
+  does not govern application surface.
 
 ## Report
 
@@ -127,12 +123,12 @@ Resolution: {which derivation, and the resulting value}
 
 ## Completion checks
 
-Run these with `preflight` before declaring done.
+Run with `preflight` before declaring done.
 
 <checklist>
-  <item>Precedence applied in order: the palette overrode the document's colors, the document overrode this skill's defaults, and the accessibility floor overrode everything.</item>
-  <item>Every supplied token pairing used was measured for contrast, including secondary text on tinted surfaces.</item>
-  <item>Every floor conflict was resolved by derivation and reported, with the brand preserved wherever the threshold allowed.</item>
-  <item>Accessibility claims made by the document were verified against the specification.</item>
-  <item>Gaps the document left were derived from its own logic and reported.</item>
+  <item>Precedence applied in order: palette overrode document's colors, document overrode this skill's defaults, accessibility floor overrode everything.</item>
+  <item>Every supplied token pairing used measured for contrast, including secondary text on tinted surfaces.</item>
+  <item>Every floor conflict resolved by derivation and reported, brand preserved wherever threshold allowed.</item>
+  <item>Document's accessibility claims verified against specification.</item>
+  <item>Gaps document left derived from its own logic and reported.</item>
 </checklist>

@@ -1,51 +1,49 @@
 # Verb: teach
 
-Takes a design decision and returns an explanation that lets the reader make
-the next one without asking. Calibrate to the audience; never lecture.
+Takes design decision; returns explanation letting reader make next one
+without asking. Calibrate to audience; never lecture.
 
 ## Calibration
 
 | Audience | Lead with | Avoid |
 | --- | --- | --- |
-| Engineer | The rule, the token, the failure it prevents | Art vocabulary without a mechanism |
-| Designer | The principle and the precedent | Restating fundamentals they hold |
-| Product or founder | The user outcome and the cost of the alternative | Craft vocabulary as justification |
-| Mixed or unknown | The user outcome, then the mechanism | Assuming shared vocabulary |
+| Engineer | Rule, token, failure it prevents | Art vocabulary without mechanism |
+| Designer | Principle and precedent | Restating fundamentals they hold |
+| Product or founder | User outcome and cost of alternative | Craft vocabulary as justification |
+| Mixed or unknown | User outcome, then mechanism | Assuming shared vocabulary |
 
 ## Structure
 
-1. **The decision**, in one sentence.
-2. **The user consequence**: what changes for the person using this, said
+1. **Decision**, in one sentence.
+2. **User consequence**: what changes for person using this, said
    concretely, without quality adjectives.
-3. **The mechanism**: why this produces that consequence. Name the principle
-   if a real one applies, and name it accurately.
-4. **The counterfactual**: what the common alternative would have caused.
-5. **The boundary**: when this decision would be wrong.
+3. **Mechanism**: why this produces that consequence. Name principle if real
+   one applies, accurately.
+4. **Counterfactual**: what common alternative would have caused.
+5. **Boundary**: when this decision would be wrong.
 
 ## Rules
 
-* Teach the reasoning behind the ruling. "Sixteen pixels" is a ruling.
-  "Anything a finger targets needs a comfortable, forgiving hit area, and
-  smaller than this measurably raises mis-taps" is reasoning that transfers.
-* Cite a principle only when it applies and you can state it correctly. A
-  misapplied law of interaction is worse than no citation, because the
-  reader will repeat the error with confidence.
+* Teach reasoning behind ruling. "Sixteen pixels" is ruling. "Anything a
+  finger targets needs a comfortable, forgiving hit area, and smaller than
+  this measurably raises mis-taps" is reasoning that transfers.
+* Cite principle only when it applies and you can state it correctly.
+  Misapplied law of interaction is worse than no citation: reader repeats
+  error with confidence.
 * Show one before-and-after, one snippet, or one described comparison.
-* Match length to the question. A question about one radius value gets three
+* Match length to question. Question about one radius value gets three
   sentences.
 * Admit taste when it is taste. Some decisions are defensible preference
-  inside a coherent system, and saying so builds more trust than a
-  rationalization.
-* Never defend a wrong decision. Correct it plainly and teach the corrected
-  version.
+  inside coherent system; saying so builds more trust than rationalization.
+* Never defend wrong decision. Correct it plainly; teach corrected version.
 
 ## Completion checks
 
 <checklist>
-  <item>Audience was identified and the explanation was calibrated to it.</item>
-  <item>The user consequence was stated concretely.</item>
+  <item>Audience identified; explanation calibrated to it.</item>
+  <item>User consequence stated concretely.</item>
   <item>Any principle cited applies and is stated accurately.</item>
-  <item>The counterfactual and the boundary condition were both given.</item>
-  <item>Length matches the scope of the question.</item>
-  <item>Preference was labeled as preference.</item>
+  <item>Counterfactual and boundary condition both given.</item>
+  <item>Length matches scope of question.</item>
+  <item>Preference labeled as preference.</item>
 </checklist>

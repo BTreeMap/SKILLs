@@ -2,48 +2,45 @@
 
 ## Principles
 
-Cite these only where they apply.
+Cite only where they apply.
 
 * **Targets**: acquisition difficulty rises as targets get smaller and
-  farther away. Frequent actions get large, close targets. Screen edges and
-  corners are effectively infinite in depth and are premium real estate.
-* **Choices**: decision time rises with the number and complexity of
-  options. Reduce, group, order by frequency, and default. Ten equally
-  weighted options is a harder screen than three plus a disclosure.
+  farther. Frequent actions get large, close targets. Screen edges and
+  corners effectively infinite in depth: premium real estate.
+* **Choices**: decision time rises with number and complexity of options.
+  Reduce, group, order by frequency, default. Ten equally weighted options
+  is harder screen than three plus disclosure.
 * **Convention**: users form expectations from every other interface they
-  use. Departing from convention costs comprehension and must buy something
+  use. Departing from convention costs comprehension; must buy something
   real.
-* **Conservation of complexity**: the irreducible complexity of a task goes
-  somewhere. Put it in the system.
+* **Conservation of complexity**: task's irreducible complexity goes
+  somewhere. Put it in system.
 * **Response threshold**: interactions completing within roughly four tenths
-  of a second preserve the sense of direct manipulation. Past that the user
-  notices waiting and attention starts to drift.
-* **Memory**: recognition is cheap, recall is expensive. Show the options.
-* **Beauty bias**: attractive interfaces are rated as more usable and their
-  problems go unreported. Test the interaction separately from its visual
-  polish.
+  of a second preserve sense of direct manipulation. Past that user notices
+  waiting; attention starts to drift.
+* **Memory**: recognition cheap, recall expensive. Show options.
+* **Beauty bias**: attractive interfaces rated more usable; their problems
+  go unreported. Test interaction separately from visual polish.
 
 ## The complete state set
 
-Every interactive element ships these states; never ship the happy path
-alone.
+Every interactive element ships these states; never ship happy path alone.
 
 | State | Requirement |
 | --- | --- |
-| Rest | Affordance is visible without hover. |
-| Hover | Pointer only. Provide its information and actions through another channel, since hover is invisible to touch and keyboard. |
-| Focus-visible | Always present, never suppressed, high contrast, not clipped. Obscuring rules are in `a11y`. |
+| Rest | Affordance visible without hover. |
+| Hover | Pointer only. Provide its information and actions through another channel; hover is invisible to touch and keyboard. |
+| Focus-visible | Always present, never suppressed, high contrast, not clipped. Obscuring rules in `a11y`. |
 | Active | Immediate acknowledgment at press, before any network work begins. |
-| Disabled | Rare, and always explained. Prefer enabled with an explanation on attempt. |
-| Loading | In place, with the label preserved so the control does not resize. |
-| Error | Adjacent, specific, and actionable. |
+| Disabled | Rare, always explained. Prefer enabled with explanation on attempt. |
+| Loading | In place, label preserved so control does not resize. |
+| Error | Adjacent, specific, actionable. |
 | Success | Perceptible, then quiet. |
 
 Every data container ships six states; treat them as six different screens.
 Independent boolean flags cannot express them: flags admit loading together
-with error, and cannot distinguish "none exist" from "none match the
-filter". Encode them as one closed set, so that omitting a state fails the
-build:
+with error, cannot distinguish "none exist" from "none match the filter".
+Encode as one closed set, so omitting state fails build:
 
 <template for="container-states">
   | { status: 'loading' }
@@ -54,90 +51,85 @@ build:
   | { status: 'ready'; items: Item[] }
 </template>
 
-`empty` and `filtered` are the pair most often collapsed into one; they need
+`empty` and `filtered`: pair most often collapsed into one; they need
 different copy and different actions.
 
 ## Latency
 
 | Elapsed | Design response |
 | --- | --- |
-| Under 100ms | Nothing. Show the result. |
-| 100ms to 400ms | Nothing but the result. A loader here flashes and reads as a glitch. |
-| 400ms to 1s | Local, in-place indication at the point of action. |
-| 1s to 10s | Determinate progress, the rest of the interface still usable. |
-| Over 10s | Move to background, release the user, notify on completion. |
+| Under 100ms | Nothing. Show result. |
+| 100ms to 400ms | Nothing but result. Loader here flashes, reads as glitch. |
+| 400ms to 1s | Local, in-place indication at point of action. |
+| 1s to 10s | Determinate progress, rest of interface still usable. |
+| Over 10s | Move to background, release user, notify on completion. |
 
-Delay the appearance of any loader so fast responses never flash one, and
-once shown, hold it briefly so it does not flicker out. Skeletons mirror the
-real layout's dimensions. Optimistic updates apply to reversible actions
-with an honest rollback and error path; never fake success for something
-that can fail permanently.
+Delay any loader's appearance so fast responses never flash one; once shown,
+hold it briefly so it does not flicker out. Skeletons mirror real layout's
+dimensions. Optimistic updates apply to reversible actions with honest
+rollback and error path; never fake success for something that can fail
+permanently.
 
 ## Error philosophy
 
-1. **Prevent.** Constrain input so the invalid value cannot be entered.
-   Supply the correct default. Make the destructive action non-adjacent to
-   the frequent one.
-2. **Tolerate.** Parse what the user meant. Accept correct but differently
-   formatted input, and pasted values with spaces, separators, and
-   surrounding characters. Trim. Correct case.
-3. **Recover.** Preserve everything the user entered, place the message next
-   to the cause, name the fix, and move focus to the first failure. Reuse
-   information the system already has.
-4. **Explain.** State what happened, what it means, and the next action
-   instead of exposing a raw fault code alone. Keep technical detail
-   available but secondary.
+1. **Prevent.** Constrain input so invalid value cannot be entered. Supply
+   correct default. Make destructive action non-adjacent to frequent one.
+2. **Tolerate.** Parse what user meant. Accept correct but differently
+   formatted input, pasted values with spaces, separators, surrounding
+   characters. Trim. Correct case.
+3. **Recover.** Preserve everything user entered, place message next to
+   cause, name fix, move focus to first failure. Reuse information system
+   already has.
+4. **Explain.** State what happened, what it means, next action, instead of
+   exposing raw fault code alone. Technical detail available but secondary.
 
-Never validate on the first keystroke, telling the user a half-typed entry
-is invalid.
+Never validate on first keystroke, telling user half-typed entry is invalid.
 
 ## Destructive actions
 
-* Reversible: perform it immediately and offer undo for a meaningful window.
-  This is faster and safer than a confirmation, because confirmations are
-  dismissed reflexively.
-* Irreversible: confirm, naming the exact object and the exact consequence,
-  with a verb on the confirming button. For the catastrophic, require a
-  deliberate act such as typing the name.
-* Never confirm a safe action: it teaches users to dismiss dialogs unread,
-  so the one dangerous confirmation is dismissed too.
-* Place destructive actions away from frequent actions and away from the
-  default focused control.
+* Reversible: perform immediately, offer undo for meaningful window. Faster
+  and safer than confirmation, because confirmations are dismissed
+  reflexively.
+* Irreversible: confirm, naming exact object and exact consequence, verb on
+  confirming button. Catastrophic: require deliberate act such as typing
+  name.
+* Never confirm safe action: it teaches users to dismiss dialogs unread, so
+  the one dangerous confirmation gets dismissed too.
+* Place destructive actions away from frequent actions and from default
+  focused control.
 
 ## Feedback placement
 
-* Show progress and results where the action was initiated. A toast in the
-  far corner for an action taken in a form is a message the user will not
-  see.
-* Reserve toasts for transient, non-critical confirmations. Anything the
-  user must act on, or must not miss, belongs inline and persistent.
-* A modal never opens a modal; give the second task a route instead.
+* Show progress and results where action was initiated. Toast in far corner
+  for action taken in form is message user will not see.
+* Toasts only for transient, non-critical confirmations. Anything user must
+  act on, or must not miss: inline and persistent.
+* Modal never opens modal; give second task a route instead.
 
 ## Keyboard and assistive access
 
-* Every pointer action has a keyboard path. Everything focusable is
-  reachable in a logical order matching the visual order.
-* Focus moves into a dialog on open, stays within it, and returns to the
-  trigger on close. Escape closes anything dismissible.
-* Background content behind a modal is made inert.
-* Keep the focused control fully clear of sticky headers, footers, and
-  floating panels. `a11y` records which part of this is the floor and which
-  is house practice above it.
-* Provide a skip link past repeated navigation.
-* Announce asynchronous changes through a live region, politely for status
-  and assertively only for genuine urgency.
-* Any drag interaction has a non-drag alternative, since dragging is
-  unavailable to many users.
-* Replace any removed outline with a focus style at least as visible.
-  Suppressed focus is the most common accessibility defect.
+* Every pointer action has keyboard path. Everything focusable reachable in
+  logical order matching visual order.
+* Focus moves into dialog on open, stays within it, returns to trigger on
+  close. Escape closes anything dismissible.
+* Background content behind modal made inert.
+* Keep focused control fully clear of sticky headers, footers, floating
+  panels. `a11y` records which part is floor and which is house practice
+  above it.
+* Provide skip link past repeated navigation.
+* Announce asynchronous changes through live region: politely for status,
+  assertively only for genuine urgency.
+* Any drag interaction has non-drag alternative; dragging unavailable to
+  many users.
+* Replace any removed outline with focus style at least as visible.
+  Suppressed focus is most common accessibility defect.
 
 ## Continuity
 
-* URL reflects state: record, tab, filter, sort, page, and search.
-* Make Back do what the user expects and preserve work.
+* URL reflects state: record, tab, filter, sort, page, search.
+* Back does what user expects, preserves work.
 * Scroll position and expansion state survive navigation and return.
 * Drafts persist across refresh and failure.
-* Persist preferences, including density, dismissed guidance, and an
-  explicit theme toggle where `color` calls for one. Keep dismissed guidance
-  dismissed.
-* Preserve authentication flows that depend on password managers or paste.
+* Persist preferences: density, dismissed guidance, explicit theme toggle
+  where `color` calls for one. Dismissed guidance stays dismissed.
+* Preserve authentication flows depending on password managers or paste.

@@ -1,32 +1,30 @@
 # Verb: review
 
-Takes a screen, component, diff, or pull request (the default verb for
-existing work) and returns ranked findings. Read-only: change nothing.
+Takes screen, component, diff, or pull request (default verb for existing
+work); returns ranked findings. Read-only: change nothing.
 
 ## Procedure
 
-1. **Reconstruct the intended read.** Infer the surface, audience, and
-   primary goal from the artifact itself, and state it. Most findings are
-   disagreements between the intended read and the built result; naming the
-   read makes them arguable.
-2. **Walk the flow before the pixels.** Trace the user's path to the primary
-   goal and count the friction budget as built. Interaction failures outrank
-   visual ones and are found by walking the flow.
-3. **Run the five sweeps** in `tells`, in the order listed. Do not
-   interleave them; each needs a different attention mode. Check the
-   repository for an existing implementation of anything the diff
-   re-implements.
-4. **Check beyond the diff.** Report the whole-surface failures the changed
-   lines cannot show, per the spine's consistency gotcha: the second accent
-   introduced three commits ago, the layout family used four times.
-5. **Verify before reporting.** For each candidate finding, name the
-   concrete failure: the input, state, or viewport where it breaks and what
-   the user sees. Drop any finding without a failure scenario.
+1. **Reconstruct intended read.** Infer surface, audience, primary goal from
+   artifact itself; state it. Most findings are disagreements between
+   intended read and built result; naming read makes them arguable.
+2. **Walk flow before pixels.** Trace user's path to primary goal; count
+   friction budget as built. Interaction failures outrank visual ones, found
+   by walking flow.
+3. **Run five sweeps** in `tells`, in listed order. Do not interleave them;
+   each needs different attention mode. Check repository for existing
+   implementation of anything diff re-implements.
+4. **Check beyond diff.** Report whole-surface failures changed lines cannot
+   show, per spine's consistency gotcha: second accent introduced three
+   commits ago, layout family used four times.
+5. **Verify before reporting.** For each candidate finding, name concrete
+   failure: input, state, or viewport where it breaks and what user sees.
+   Drop any finding without failure scenario.
 6. **Rank and report**, most severe first.
 
 ## Severity
 
-Rate each finding on the Severity scale in `tells`.
+Rate each finding on Severity scale in `tells`.
 
 ## Finding format
 
@@ -38,23 +36,23 @@ Fix: {the specific change, not a principle}
 
 ## Rules
 
-* Every finding names a fix that is a concrete change.
-* Keep findings on the current design. Put a fundamentally different
-  direction in one top finding only.
-* Say plainly when the work is good. A review that manufactures findings to
-  appear thorough trains the reader to ignore reviews.
-* State what was not checked: interactions requiring a running application,
-  real data volumes, assistive-technology behavior, and anything else
-  outside the artifact.
+* Every finding names fix that is concrete change.
+* Keep findings on current design. Fundamentally different direction: one
+  top finding only.
+* Say plainly when work is good. Review manufacturing findings to appear
+  thorough trains reader to ignore reviews.
+* State what was not checked: interactions requiring running application,
+  real data volumes, assistive-technology behavior, anything else outside
+  artifact.
 
 ## Completion checks
 
 <checklist>
-  <item>The intended read was reconstructed and stated before any finding.</item>
-  <item>The flow was walked and the built friction budget counted.</item>
-  <item>All five sweeps ran in order and whole-surface consistency was checked beyond the diff.</item>
-  <item>The repository was checked for an existing implementation of anything the diff re-implements.</item>
-  <item>Every finding carries a concrete failure scenario and a specific fix.</item>
-  <item>Findings are ranked by severity and preferences were dropped.</item>
-  <item>Coverage limits are stated and nothing was modified.</item>
+  <item>Intended read reconstructed and stated before any finding.</item>
+  <item>Flow walked; built friction budget counted.</item>
+  <item>All five sweeps ran in order; whole-surface consistency checked beyond diff.</item>
+  <item>Repository checked for existing implementation of anything diff re-implements.</item>
+  <item>Every finding carries concrete failure scenario and specific fix.</item>
+  <item>Findings ranked by severity; preferences dropped.</item>
+  <item>Coverage limits stated; nothing modified.</item>
 </checklist>

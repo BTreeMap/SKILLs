@@ -1,45 +1,40 @@
 # Verb: design
 
-Takes a request for a surface; returns a committed direction and composition
-plan, a decision document someone else could build from. Writes no
-implementation code: a snippet pinning a token or a motion curve is fine; a
-component belongs to `build`.
+Takes request for surface; returns committed direction and composition plan,
+decision document someone else could build from. Writes no implementation
+code: snippet pinning token or motion curve is fine; component belongs to
+`build`.
 
 ## Procedure
 
-1. **Name the primary goal.** One sentence: the single action or
-   understanding this surface optimizes. Everything competing with it is
-   secondary. A surface with two primary goals is two surfaces, and saying
-   so is a valid outcome.
-2. **Map the user's path.** Write the shortest honest sequence from arrival
-   to goal and count its steps, decisions, fields, and waits: the friction
-   budget. For each item, state the reason it exists or mark it for removal.
-3. **Choose the foundation**: the repository's existing component library,
-   an official design system, or a hand-composed system. If the repository
-   already uses one, that is the choice; otherwise return to the spine and
-   load `systems`.
-4. **Set the token spine** before composing, once for the whole surface:
-   type scale and pairing, spacing scale, radius scale, one accent, neutral
-   family, motion curve family, elevation ladder, icon family and weight.
-   Load the craft owners from the spine for any scale the read does not
-   settle.
-5. **Compose the sequence.** On a marketing surface, plan the section order,
-   giving each section a distinct layout family and job. On a product
-   surface, plan the navigation model, the density per region, and primary,
-   secondary, and tertiary action placement. Every adjacent pair differs
-   structurally; combine sections that share a job. Specify each region's
-   mobile behavior while planning it.
-6. **Decide the accessibility posture** and compose within it: target
-   contrast level, target size minimum, keyboard model, reduced-motion
-   degradation.
-7. **Write the kill list.** Name what the design deliberately excludes and
-   why, including patterns the brief invited that you decline, and what
-   replaces each.
-8. **Identify the risks.** Name the two or three decisions most likely to be
-   wrong, the evidence that would falsify each, and the fallback.
+1. **Name primary goal.** One sentence: single action or understanding this
+   surface optimizes. Everything competing with it is secondary. Surface
+   with two primary goals is two surfaces; saying so is valid outcome.
+2. **Map user's path.** Write shortest honest sequence from arrival to goal;
+   count its steps, decisions, fields, waits: friction budget. Each item:
+   state reason it exists or mark it for removal.
+3. **Choose foundation**: repository's existing component library, official
+   design system, or hand-composed system. Repository already uses one: that
+   is the choice; otherwise return to spine and load `systems`.
+4. **Set token spine** before composing, once for whole surface: type scale
+   and pairing, spacing scale, radius scale, one accent, neutral family,
+   motion curve family, elevation ladder, icon family and weight. Load craft
+   owners from spine for any scale read does not settle.
+5. **Compose sequence.** Marketing surface: plan section order, each section
+   distinct layout family and job. Product surface: plan navigation model,
+   density per region, primary, secondary, tertiary action placement. Every
+   adjacent pair differs structurally; combine sections sharing job. Specify
+   each region's mobile behavior while planning it.
+6. **Decide accessibility posture**, compose within it: target contrast
+   level, target size minimum, keyboard model, reduced-motion degradation.
+7. **Write kill list.** Name what design deliberately excludes and why,
+   including patterns brief invited that you decline, and what replaces
+   each.
+8. **Identify risks.** Name two or three decisions most likely wrong,
+   evidence that would falsify each, fallback.
 
-Commit to one direction. If a fork exists, name it, pick a side, and state
-the one question whose answer would flip it.
+Commit to one direction. Fork exists: name it, pick side, state one question
+whose answer would flip it.
 
 ## Deliverable
 
@@ -84,12 +79,12 @@ Icons: {family and weight}
 ## Completion checks
 
 <checklist>
-  <item>Primary goal is one sentence and the surface optimizes for it.</item>
-  <item>Friction budget is counted, itemized, and reduced where possible.</item>
-  <item>Foundation choice names the repository's existing stack or a stated reason to depart from it.</item>
-  <item>Every token scale is fixed once, with a rule, before composition.</item>
-  <item>Adjacent sections or regions differ structurally and carry distinct jobs.</item>
-  <item>Kill list is non-empty and names replacements.</item>
-  <item>Mobile behavior and accessibility posture are decided.</item>
-  <item>Exactly one direction is committed to.</item>
+  <item>Primary goal is one sentence; surface optimizes for it.</item>
+  <item>Friction budget counted, itemized, reduced where possible.</item>
+  <item>Foundation choice names repository's existing stack or stated reason to depart from it.</item>
+  <item>Every token scale fixed once, with rule, before composition.</item>
+  <item>Adjacent sections or regions differ structurally, carry distinct jobs.</item>
+  <item>Kill list non-empty, names replacements.</item>
+  <item>Mobile behavior and accessibility posture decided.</item>
+  <item>Exactly one direction committed to.</item>
 </checklist>
