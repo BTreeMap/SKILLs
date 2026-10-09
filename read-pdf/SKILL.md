@@ -8,7 +8,8 @@ description: >-
 license: MIT
 compatibility: >-
   Requires uv, and a full SKILLs repository checkout. Network access is
-  needed only for URL inputs.
+  needed only for URL inputs. The first run builds the `.venv` at the
+  checkout root that every skill's scripts share, about 225 MB.
 metadata:
   argument-hint: "<pdf path or URL> [pages]"
 ---

@@ -35,7 +35,7 @@ order; put any agent-specific hint under `metadata` as a quoted string.
 | `name` | Equals the directory of `<name>/SKILL.md`: 1-64 lowercase letters, digits, hyphens, none leading, trailing, or doubled. A task skill is the imperative a user would speak (`fact-check`); a persona is one noun (`caveman`). No filler noun (`-helper`). |
 | `description` | `>-` folded, 1-1024 characters, third person: what the skill does and delivers, one or two guarantees a reader can hold it to, its search terms; then triggers starting "Use when". Names no internal record, phase, file, library, verb, or level. 100 to 150 tokens; the library's descriptions total under 7,000 characters. |
 | `license` | `MIT`. |
-| `compatibility` | Only for runtimes, system packages, network access, or a full repository checkout; at most 500 characters. |
+| `compatibility` | Only for runtimes, system packages, network access, or a full repository checkout; at most 500 characters. Where a run builds an environment, name its location and its size on disk. |
 | `metadata.argument-hint` | The invocation grammar, spelled here only: one bracket group per independent choice in typing order (`"[lite|full|ultra] [design|review|help]"`); a skill with no vocabulary names its subject (`"[file-or-section]"`). Update on any verb, level, or mode change. |
 | `allowed-tools` | Last, only when a harness needs it. |
 

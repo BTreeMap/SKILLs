@@ -8,7 +8,9 @@ description: >-
 license: MIT
 compatibility: >-
   Requires uv, retrieval (the harness's web search and fetch, else
-  `/search-web`), and a full SKILLs repository checkout.
+  `/search-web`), and a full SKILLs repository checkout. The first run
+  builds the `.venv` at the checkout root that every skill's scripts share,
+  about 225 MB.
 metadata:
   argument-hint: "[lite|full] <question>"
 ---

@@ -13,7 +13,8 @@ compatibility: >-
   uv on PATH, network access, and a full SKILLs repository checkout. Linux
   and macos on x86_64/arm64 are first class; windows x86_64 is best effort
   (haskell, bash, c, cpp unavailable there). Roughly 1-7 GB under the
-  environment root, depending on targets.
+  environment root, depending on targets. The first run builds the `.venv`
+  at the checkout root that every skill's scripts share, about 225 MB.
 metadata:
   argument-hint: "[provision|design|status|shim|clean|list] [tags...]"
 ---

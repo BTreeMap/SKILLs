@@ -9,7 +9,9 @@ license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. The first run needs
   network access to download the pinned dictionary and rules; later runs
-  read the cache. `--data DIR` reads a local release with no network.
+  read the cache. `--data DIR` reads a local release with no network. The
+  first run builds the `.venv` at the checkout root that every skill's
+  scripts share, about 225 MB.
 metadata:
   argument-hint: "[build|refactor|review|help] [file-or-text]"
 ---

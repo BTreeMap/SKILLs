@@ -8,7 +8,9 @@ description: >-
   tokens, or a longer-lived context.
 license: MIT
 compatibility: >-
-  The refactor verb requires uv and a full SKILLs repository checkout.
+  The refactor verb requires uv and a full SKILLs repository checkout. The
+  first run builds the `.venv` at the checkout root that every skill's
+  scripts share, about 225 MB.
 metadata:
   argument-hint: "[lite|full|ultra] [wenyan] [commit|review|refactor|stats|help]"
 ---

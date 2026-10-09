@@ -9,7 +9,9 @@ description: >-
   related-work section, or what research says about a topic.
 license: MIT
 compatibility: >-
-  Requires uv, network access, and a full SKILLs repository checkout.
+  Requires uv, network access, and a full SKILLs repository checkout. The
+  first run builds the `.venv` at the checkout root that every skill's
+  scripts share, about 225 MB.
 metadata:
   argument-hint: "[lite|full|ultra] <question>"
 ---

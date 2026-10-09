@@ -8,7 +8,9 @@ description: >-
   statistics, or version numbers, or update outdated facts.
 license: MIT
 compatibility: >-
-  The report renderer requires uv and a full SKILLs repository checkout.
+  The report renderer requires uv and a full SKILLs repository checkout. The
+  first run builds the `.venv` at the checkout root that every skill's
+  scripts share, about 225 MB.
 metadata:
   argument-hint: "[file-or-section]"
 ---

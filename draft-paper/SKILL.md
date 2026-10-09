@@ -9,7 +9,8 @@ license: MIT
 compatibility: >-
   Requires uv and a full SKILLs repository checkout. Venue and literature
   retrieval need network access; without it, venue facts ship flagged as
-  unverified.
+  unverified. The first run builds the `.venv` at the checkout root that
+  every skill's scripts share, about 225 MB.
 metadata:
   argument-hint: "[design|build|refactor|rebut|help] [short|full|workshop|journal|survey|demo]"
 ---
