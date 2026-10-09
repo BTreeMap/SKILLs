@@ -1,33 +1,30 @@
 # Limitations: The Floor and What Sits Above It
 
-Read the paper's Limitations section last among the banks, after the
-objections from `design` and `analysis` stand, then note a `walks` entry for
-`limitations`.
+Read paper's Limitations section last among banks, after objections from
+`design` and `analysis` stand, then note `walks` entry for `limitations`.
 
 ## Signalling questions
 
 | Kind | Question | Anchor or `missing` |
 | --- | --- | --- |
-| `unstated` | Does a grounded objection from another bank go unmentioned in the authors' Limitations? | Use the other objection's anchor; text names the omission |
-| `shallow` | Does a stated limitation name why results fail to transfer, or only where they were not tried ("English only", "one dataset")? | The limitation sentence |
-| `misdescribed` | Is prior work described in a way its own text contradicts (a baseline said to lack a feature it has)? | The description; note it once the literature phase supplies the `prior` key |
-| `scope` | Does the scope claimed in the conclusion exceed the scope the limitations concede? | Both sentences |
+| `unstated` | Does grounded objection from another bank go unmentioned in authors' Limitations? | Other objection's anchor; text names omission |
+| `shallow` | Does stated limitation name why results fail to transfer, or only where they were not tried ("English only", "one dataset")? | Limitation sentence |
+| `misdescribed` | Is prior work described in a way its own text contradicts (baseline said to lack feature it has)? | Description; note it once literature phase supplies `prior` key |
+| `scope` | Does scope claimed in conclusion exceed scope limitations concede? | Both sentences |
 
 ## The echo test
 
-`check` reports the echo ratio: the share of anchored objections whose quote
-sits inside the authors' Limitations. Above one half, the review is
-restating the paper: return to `design` and `analysis` and hunt outside that
-section before drafting. Limitations detection matches a closed heading
-list; when `ingest` signals none, the echo ratio is unavailable and the
-floor is judged by hand. A limitation the authors state is `minor` at most
-unless it undermines a main claim, in which case the objection belongs to
-the bank that found it, anchored in the results.
+`check` reports echo ratio: share of anchored objections whose quote sits
+inside authors' Limitations. Above one half, review is restating paper:
+return to `design` and `analysis`, hunt outside that section before
+drafting. Limitations detection matches closed heading list; `ingest`
+signals none: echo ratio unavailable, floor judged by hand. Limitation
+authors state is `minor` at most unless it undermines main claim; then
+objection belongs to bank that found it, anchored in results.
 
 ## What counts
 
-A good limitation is specific and consequential: the assumption that fails,
-the population or regime where the result breaks, the cost that blocks use.
-Ask for that shape in the objection text: "state which morphology-rich
-languages were tried and what happened"; "add more languages" asks for
-nothing.
+Good limitation is specific and consequential: assumption that fails,
+population or regime where result breaks, cost that blocks use. Ask for that
+shape in objection text: "state which morphology-rich languages were tried
+and what happened"; "add more languages" asks for nothing.

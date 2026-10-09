@@ -1,9 +1,9 @@
 # Report: The Review Document
 
-Draft once from `check` output, sweep the draft with `/humanize` in embedded
-mode, then `cite-check` the file. Every objection in the draft is a marker
-`[On]` from the scaffold's `fatal`, `major`, `minor`, or `questions` lists;
-every claim is `[Cn]`. Withdrawn, unanchored, and undated records stay out.
+Draft once from `check` output, sweep draft with `/humanize` in embedded
+mode, then `cite-check` file. Every objection in draft is marker `[On]` from
+scaffold's `fatal`, `major`, `minor`, or `questions` lists; every claim is
+`[Cn]`. Withdrawn, unanchored, undated records stay out.
 
 ## Template
 
@@ -51,13 +51,13 @@ every quoted anchor and prior-work key was verified by its script.
 ## Rules
 
 - One paragraph per objection: what is wrong, where (page and quoted anchor,
-  or the missing item and its expected place), and a concrete resolving
-  action: a table, a run, a citation, a restated scope.
-- Order within a severity by the claim it contests, main claim first.
-- The Summary is descriptive. Strengths appear only where a later objection
-  needs the contrast ("the ablation in Table 3 isolates the encoder; no such
-  ablation covers the router").
-- Numbers come from the paper or the corpus and carry their page or key.
+  or missing item and its expected place), concrete resolving action: table,
+  run, citation, restated scope.
+- Order within severity by claim it contests, main claim first.
+- Summary is descriptive. Strengths appear only where later objection needs
+  contrast ("the ablation in Table 3 isolates the encoder; no such ablation
+  covers the router").
+- Numbers come from paper or corpus, carry their page or key.
 - No author names, affiliations, or venue guesses anywhere.
-- Hedge by evidence class: a `question` reads as a question; an objection
-  whose prior work was read at abstract level says so.
+- Hedge by evidence class: `question` reads as question; objection whose
+  prior work was read at abstract level says so.

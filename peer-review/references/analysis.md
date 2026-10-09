@@ -1,40 +1,39 @@
 # Analysis: Results and Statistics
 
-Walk once per paper over every table and figure the claims cite, then note a
+Walk once per paper over every table and figure claims cite, then note
 `walks` entry for `analysis`.
 
 ## Signalling questions
 
 | Kind | Question | Anchor or `missing` |
 | --- | --- | --- |
-| `variance` | Do results supporting a main claim carry error bars, intervals, or a test over several runs? | The table caption, or `missing: error bars for <table>` |
-| `comparison` | Is "A beats B" backed by a direct test of the difference, or by two separate significance results? | The comparison sentence |
-| `units` | Is the unit of analysis the unit of independence (runs, subjects), with repeated measures or clustering handled? | The n sentence |
-| `power` | Is the sample large enough for the effect claimed, or is an extraordinary result resting on a handful of items? | The sample sentence |
-| `circular` | Were the analyzed cases, features, or thresholds chosen using the same data that reports the effect? | The selection sentence |
-| `multiplicity` | Are many tests or configurations reported without correction or a stated selection rule? | The results sentence |
-| `null` | Is a non-significant or small difference read as "no effect" or "equivalent"? | The interpretive sentence |
-| `causal` | Is causal language ("leads to", "because") used for an observed association? | The sentence |
-| `metric` | Do the metrics measure the claim (a proxy standing in for the target, one metric where the claim needs two)? | The metric definition |
+| `variance` | Do results supporting main claim carry error bars, intervals, or test over several runs? | Table caption, or `missing: error bars for <table>` |
+| `comparison` | Is "A beats B" backed by direct test of difference, or by two separate significance results? | Comparison sentence |
+| `units` | Is unit of analysis the unit of independence (runs, subjects), with repeated measures or clustering handled? | The n sentence |
+| `power` | Is sample large enough for effect claimed, or does extraordinary result rest on handful of items? | Sample sentence |
+| `circular` | Were analyzed cases, features, or thresholds chosen using same data that reports effect? | Selection sentence |
+| `multiplicity` | Are many tests or configurations reported without correction or stated selection rule? | Results sentence |
+| `null` | Is non-significant or small difference read as "no effect" or "equivalent"? | Interpretive sentence |
+| `causal` | Is causal language ("leads to", "because") used for observed association? | The sentence |
+| `metric` | Do metrics measure claim (proxy standing in for target, one metric where claim needs two)? | Metric definition |
 
 ## Consistency reads
 
-Numbers in the abstract, text, tables, and figures must agree. When they
-differ, quote both sides (`selective` or `reporting`, severity by the size
-of the gap). Percentages must sum and means must sit inside their reported
-ranges. On a bounded measure, a standard deviation larger than half the mean
-flags a non-normal spread described as normal.
+Numbers in abstract, text, tables, figures must agree. They differ: quote
+both sides (`selective` or `reporting`, severity by size of gap).
+Percentages must sum; means must sit inside reported ranges. On bounded
+measure, standard deviation larger than half the mean flags non-normal
+spread described as normal.
 
 ## Ultra: recomputation
 
-Recompute every derivable number the claims lean on: differences between
-rows, relative improvements, averages over columns, totals. Do the
-arithmetic on the pad, then object with both numbers quoted. A recomputed
-gap that erases the headline improvement is `fatal`.
+Recompute every derivable number claims lean on: differences between rows,
+relative improvements, averages over columns, totals. Do arithmetic on pad,
+then object with both numbers quoted. Recomputed gap erasing headline
+improvement is `fatal`.
 
 ## Severity
 
-`fatal` when the main result loses its support (no variance over a gap
-smaller than run-to-run noise, a leaked or circular analysis); `major` when
-the interpretation changes; `minor` for presentation of otherwise sound
-numbers.
+`fatal` when main result loses its support (no variance over gap smaller
+than run-to-run noise, leaked or circular analysis); `major` when
+interpretation changes; `minor` for presentation of otherwise sound numbers.
