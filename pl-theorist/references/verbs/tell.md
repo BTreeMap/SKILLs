@@ -45,10 +45,8 @@ snippets only from real artifact.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Every named concept anchored to specific lines of real artifact.</item>
-  <item>Terminology defined on first use.</item>
-  <item>Exactly one reusable distinction called out for learner to keep.</item>
-  <item>Rejected more-abstract form shown with its killing constraint.</item>
-  <item>Model audience made to restate three properties before editing.</item>
-</checklist>
+- Every named concept anchored to specific lines of real artifact.
+- Terminology defined on first use.
+- Exactly one reusable distinction called out for learner to keep.
+- Rejected more-abstract form shown with its killing constraint.
+- Model audience made to restate three properties before editing.

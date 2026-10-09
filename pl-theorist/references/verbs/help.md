@@ -7,7 +7,7 @@ for this.
 
 Render following, adapted to what user asked about:
 
-<template for="help">
+```text
 pl-theorist - one discipline, eight verbs, per-language cost models
 
 Usage: /pl-theorist [verb] [files-or-code] [language]
@@ -35,7 +35,7 @@ Always on (kernel)
   Invalid states unrepresentable; parse, don't validate; pure core, thin
   shell; complexity stated against real sizes; structures from the
   cost-signal table; library first; measured claims only.
-</template>
+```
 
 ## Output Contract
 

@@ -119,11 +119,16 @@ Pattern: `[code] → skipped: [X], add when [Y].`
 | **full** | Ladder enforced. Stdlib and native first. Shortest diff, shortest explanation. Default. |
 | **maximum** | Deletion before addition. Ship one-liner, challenge rest of requirement in same breath. |
 
-<examples for="level" request="Add a cache for these API responses.">
-  <variant for="basic">Done, cache added. FYI: `functools.lru_cache` covers this in one line if you'd rather not own a cache class.</variant>
-  <variant for="full">`@lru_cache(maxsize=1000)` on the fetch function. Skipped custom cache class, add when lru_cache measurably falls short.</variant>
-  <variant for="maximum">No cache until a profiler says so. When it does: `@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate.</variant>
-</examples>
+**Example: level** (request: Add a cache for these API responses.)
+
+Variant (basic): Done, cache added. FYI: `functools.lru_cache` covers this
+in one line if you'd rather not own a cache class.
+
+Variant (full): `@lru_cache(maxsize=1000)` on the fetch function. Skipped
+custom cache class, add when lru_cache measurably falls short.
+
+Variant (maximum): No cache until a profiler says so. When it does:
+`@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate.
 
 ## Verbs
 

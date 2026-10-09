@@ -52,11 +52,11 @@ Return, in order:
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Every meaningless field combination unrepresentable or explicitly justified.</item>
-  <item>Every transition total or returns explicit rejection.</item>
-  <item>Untrusted data enters through named smart-constructor boundaries only.</item>
-  <item>Dominant operations carry stated bounds and structures.</item>
-  <item>Effect boundary names idempotency, retries, transactions, required capabilities.</item>
-  <item>One rejected alternative documented with its killing constraint.</item>
-</checklist>
+- Every meaningless field combination unrepresentable or explicitly
+  justified.
+- Every transition total or returns explicit rejection.
+- Untrusted data enters through named smart-constructor boundaries only.
+- Dominant operations carry stated bounds and structures.
+- Effect boundary names idempotency, retries, transactions, required
+  capabilities.
+- One rejected alternative documented with its killing constraint.

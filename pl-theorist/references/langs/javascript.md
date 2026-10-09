@@ -43,8 +43,7 @@ ES6+. React code: `react` loads beside this profile.
 
 ## Teaching Example
 
-<example for="teaching" language="javascript">
-<![CDATA[
+```javascript
 const ok = value => Object.freeze({ tag: "ok", value });
 const failure = message => Object.freeze({ tag: "error", message });
 
@@ -62,7 +61,7 @@ const describe = result => {
     default: throw new TypeError("unknown result variant");
   }
 };
-]]></example>
+```
 
 Taste: factories admit only valid ports; tagged result makes failure data;
 flat stable objects suit engine. Runtime JavaScript cannot prove no third

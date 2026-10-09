@@ -70,11 +70,11 @@ Deliver tests, then report:
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Each law implementation relies on has named test or stated reason it cannot have one.</item>
-  <item>Every sum variant and smart-constructor rejection path exercised.</item>
-  <item>Optimized structures checked against naive oracle or operation count.</item>
-  <item>Tests use repository's existing frameworks and conventions.</item>
-  <item>Failing law tests reported as code findings, kept as written.</item>
-  <item>Refactor changed API: laws audited on old code first; API errors reported apart from law failures.</item>
-</checklist>
+- Each law implementation relies on has named test or stated reason it
+  cannot have one.
+- Every sum variant and smart-constructor rejection path exercised.
+- Optimized structures checked against naive oracle or operation count.
+- Tests use repository's existing frameworks and conventions.
+- Failing law tests reported as code findings, kept as written.
+- Refactor changed API: laws audited on old code first; API errors reported
+  apart from law failures.

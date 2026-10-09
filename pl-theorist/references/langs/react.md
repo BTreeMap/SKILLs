@@ -40,8 +40,7 @@ Loaded beside `javascript` or `typescript` when code uses React.
 
 ## Teaching Example
 
-<example for="teaching" framework="react" language="typescript">
-<![CDATA[
+```typescript
 type SearchState =
   | { readonly tag: "idle" }
   | { readonly tag: "loading"; readonly requestId: string }
@@ -97,7 +96,7 @@ const useSearch = (query: string): SearchState => {
   }, [query]);
   return state;
 };
-]]></example>
+```
 
 In JavaScript, same code drops type declarations, freezes initial state
 (`Object.freeze({ tag: "idle" })`), replaces each `assertNever` call with

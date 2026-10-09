@@ -395,15 +395,21 @@ model never transfers by analogy.
 
 Every verb file appends own checks to these kernel checks.
 
-<checklist>
-  <item>Exactly one verb file and only participating language profiles, plus `react` for React code, loaded.</item>
-  <item>Invalid states unrepresentable where type system permits; untrusted input crosses one smart-constructor boundary.</item>
-  <item>Sum variants closed and eliminated exhaustively where supported; remaining partiality explicit.</item>
-  <item>Native combinators and monads considered before custom machinery.</item>
-  <item>Time and space complexity of produced or reviewed shape stated against real input sizes.</item>
-  <item>Every nested loop survived index/memoize interrogation or is justified by small bounded n.</item>
-  <item>Data-structure choices name their bounds, including amortized versus worst-case and adversarial behavior where relevant.</item>
-  <item>Code uses repository's configured language standard, preferring its modern constructs where they clarify.</item>
-  <item>Resources, cancellation, boundedness, retries, transactions remain correct.</item>
-  <item>Performance or fusion claims evidenced or marked unmeasured.</item>
-</checklist>
+- Exactly one verb file and only participating language profiles, plus
+  `react` for React code, loaded.
+- Invalid states unrepresentable where type system permits; untrusted input
+  crosses one smart-constructor boundary.
+- Sum variants closed and eliminated exhaustively where supported; remaining
+  partiality explicit.
+- Native combinators and monads considered before custom machinery.
+- Time and space complexity of produced or reviewed shape stated against
+  real input sizes.
+- Every nested loop survived index/memoize interrogation or is justified by
+  small bounded n.
+- Data-structure choices name their bounds, including amortized versus
+  worst-case and adversarial behavior where relevant.
+- Code uses repository's configured language standard, preferring its modern
+  constructs where they clarify.
+- Resources, cancellation, boundedness, retries, transactions remain
+  correct.
+- Performance or fusion claims evidenced or marked unmeasured.

@@ -47,8 +47,7 @@
 
 ## Teaching Example
 
-<example for="teaching" language="c">
-<![CDATA[
+```c
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -68,7 +67,7 @@ static PortResult port_parse(unsigned value) {
         .data.port = { .value = (uint16_t)value },
     };
 }
-]]></example>
+```
 
 Taste: tag makes failure explicit; constructor is sole admission path in
 this translation unit. C cannot prevent callers forging public `Port`; use

@@ -49,10 +49,8 @@ row.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Working tree untouched.</item>
-  <item>Hot paths and trust boundaries examined before peripheral code.</item>
-  <item>Both diff-scale and repo-scale categories swept.</item>
-  <item>Unexamined areas named.</item>
-  <item>Ranking reflects severity times reach.</item>
-</checklist>
+- Working tree untouched.
+- Hot paths and trust boundaries examined before peripheral code.
+- Both diff-scale and repo-scale categories swept.
+- Unexamined areas named.
+- Ranking reflects severity times reach.

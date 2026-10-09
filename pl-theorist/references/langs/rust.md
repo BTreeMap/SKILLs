@@ -84,8 +84,7 @@ never beyond.
 
 ## Teaching Example
 
-<example for="teaching" language="rust">
-<![CDATA[
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Port(u16);
 
@@ -103,7 +102,7 @@ impl Port {
 fn configured_port(raw: Option<u16>) -> Result<Port, PortError> {
     raw.map_or_else(|| Port::new(8080), Port::new)
 }
-]]></example>
+```
 
 Taste: private newtype makes zero unrepresentable after construction;
 `Option` models missing configuration, `Result` invalid configuration; no

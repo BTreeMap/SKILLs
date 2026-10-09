@@ -42,8 +42,7 @@
 
 ## Teaching Example
 
-<example for="teaching" language="go">
-<![CDATA[
+```go
 package domain
 
 import (
@@ -67,7 +66,7 @@ func LookupEmail(users map[string]Email, id string) (Email, bool) {
     email, ok := users[id]
     return email, ok
 }
-]]></example>
+```
 
 Taste: unexported field and parser create strongest practical invariant;
 `error` signals invalid input, `bool` ordinary absence. Explicit control

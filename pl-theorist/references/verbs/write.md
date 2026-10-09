@@ -51,10 +51,8 @@ Deliver code, then report briefly:
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Domain types existed before function bodies using them.</item>
-  <item>Existing repository types and helpers reused over parallel inventions.</item>
-  <item>Pure core performs no I/O, clock, or randomness access.</item>
-  <item>Stated bounds preceded implementation; code achieves them.</item>
-  <item>Tests cover every variant and rejection path, shipped with code.</item>
-</checklist>
+- Domain types existed before function bodies using them.
+- Existing repository types and helpers reused over parallel inventions.
+- Pure core performs no I/O, clock, or randomness access.
+- Stated bounds preceded implementation; code achieves them.
+- Tests cover every variant and rejection path, shipped with code.

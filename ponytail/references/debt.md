@@ -10,9 +10,9 @@ Grep repository for comment markers, skipping `.git`, vendored dependencies
 (e.g. `node_modules`), build output; add other comment prefixes the stack
 uses.
 
-<commands for="scan">
+```bash
 grep -rnE '(#|//) ?ponytail:' .
-</commands>
+```
 
 Each hit is one ledger row; comment prefix keeps prose merely mentioning the
 convention out of ledger.
@@ -21,9 +21,11 @@ convention out of ledger.
 
 One row per marker, grouped by file:
 
-<template for="ledger-row">
+**Template: ledger-row**
+
+```text
 <file>:<line>, <what was simplified>. ceiling: <the limit named>. upgrade: <the trigger to revisit>.
-</template>
+```
 
 Pull ceiling and trigger straight from comment, which follows
 `ponytail: <ceiling>, <upgrade path>`. Owner per row: add

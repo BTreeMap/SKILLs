@@ -65,8 +65,7 @@ workflow/job/step level; effect discipline becomes privilege discipline.
 
 ## Teaching Example
 
-<example for="teaching" language="yaml">
-<![CDATA[
+```yaml
 on:
   workflow_call:
     inputs:
@@ -92,7 +91,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}            # data crosses as env, not splice
         run: ./ci/build.sh "$TARGET"
-]]></example>
+```
 
 Taste: matrix maps pure build over declared domain in parallel with
 independent failures; `permissions` names job's one effect; potentially
@@ -119,10 +118,10 @@ variable; logic is in ShellCheck-able script.
 Run `actionlint` and security scanner such as `zizmor`. No `/setup-env` tag
 installs either; run both through uv, which `/setup-env` already assumes:
 
-<commands for="workflow-lint">
+```bash
 uvx --from actionlint-py actionlint
 uvx zizmor .github/workflows
-</commands>
+```
 
 `actionlint` ShellChecks embedded `run:` blocks only when `shellcheck` is on
 PATH; install it with `/setup-env install bash`. Grep workflow set for

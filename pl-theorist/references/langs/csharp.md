@@ -38,8 +38,7 @@
 
 ## Teaching Example
 
-<example for="teaching" language="csharp">
-<![CDATA[
+```csharp
 using System;
 
 public sealed record Email
@@ -71,7 +70,7 @@ public static class PaymentDescriptions
         _ => throw new ArgumentOutOfRangeException(nameof(state))
     };
 }
-]]></example>
+```
 
 Taste: construction validates `Email`; record hierarchy prevents
 contradictory payment fields. Fallback arm still required defensively; C#

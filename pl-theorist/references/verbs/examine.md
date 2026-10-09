@@ -36,10 +36,8 @@ per finding.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Working tree untouched.</item>
-  <item>Every category swept over full scope, or skipped remainder named.</item>
-  <item>Every finding survived cost-model and convention check.</item>
-  <item>Findings ranked by severity with file:line anchors.</item>
-  <item>Sound areas named so silence is meaningful.</item>
-</checklist>
+- Working tree untouched.
+- Every category swept over full scope, or skipped remainder named.
+- Every finding survived cost-model and convention check.
+- Findings ranked by severity with file:line anchors.
+- Sound areas named so silence is meaningful.

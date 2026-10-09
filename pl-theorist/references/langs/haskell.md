@@ -44,8 +44,7 @@
 
 ## Teaching Example
 
-<example for="teaching" language="haskell">
-<![CDATA[
+```haskell
 module Port (Port, PortError(..), mkPort, configuredPort) where
 
 newtype Port = Port Int
@@ -61,7 +60,7 @@ mkPort n
 
 configuredPort :: Maybe Int -> Either PortError Port
 configuredPort = maybe (mkPort 8080) mkPort
-]]></example>
+```
 
 Taste: hide `Port` outside module, making smart constructor only admission
 path. `Maybe` means absent configuration; `Either` preserves reason

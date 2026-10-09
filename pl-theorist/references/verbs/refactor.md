@@ -32,9 +32,11 @@ Default collection teaching preference: explicit combinators over
 comprehension syntax. Filter-transform shape: prefer target language's
 equivalent of following when its profile permits:
 
-<template for="filter-map">
+**Template: filter-map**
+
+```python
 results = map(process, filter(lambda x: x > 5, data))
-</template>
+```
 
 Preference yields to clearer named predicate, fused native operator,
 required eager collection type, or measured single-pass constraint.
@@ -76,11 +78,10 @@ explanation, cost-model caveat.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Observable contract and effect order intact.</item>
-  <item>Imperative control flow classified before transformation.</item>
-  <item>Cost signals scanned alongside algebra; complexity regressions impossible; improvements stated or flagged.</item>
-  <item>Any fallback descended only as far as cost model required.</item>
-  <item>Point-free and curried forms easier to reason about than alternatives.</item>
-  <item>Relevant automated checks pass or unavailable checks named.</item>
-</checklist>
+- Observable contract and effect order intact.
+- Imperative control flow classified before transformation.
+- Cost signals scanned alongside algebra; complexity regressions impossible;
+  improvements stated or flagged.
+- Any fallback descended only as far as cost model required.
+- Point-free and curried forms easier to reason about than alternatives.
+- Relevant automated checks pass or unavailable checks named.

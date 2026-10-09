@@ -43,8 +43,7 @@ React code: `react` loads beside this profile.
 
 ## Teaching Example
 
-<example for="teaching" language="typescript">
-<![CDATA[
+```typescript
 declare const portBrand: unique symbol;
 type Port = number & { readonly [portBrand]: true };
 type Result<T, E> =
@@ -61,7 +60,7 @@ const foldResult = <T, E, R>(
   onOk: (value: T) => R,
   onError: (error: E) => R,
 ): R => result.tag === "ok" ? onOk(result.value) : onError(result.error);
-]]></example>
+```
 
 Taste: sole assertion is inside validation; `Result` exposes expected
 failure; consumers eliminate both variants.
