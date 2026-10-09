@@ -48,6 +48,12 @@ bare.
 - Hedge every leaf the check lists under `hedges`, and name the class by
   stating the claim as attributed evidence: "benchmarks report [S4]",
   "practitioner accounts hold [S6]".
+- The strongest source in a close sets the leaf's entry in `hedges`: a close
+  holding a `constitutive` or `attested` source, or two `measured` ones, is
+  never listed, whatever else it holds. Apply the same rule to each sentence
+  by its own markers: hedge a sentence and name its class unless its markers
+  include a `constitutive` or `attested` source or two `measured` ones, even
+  inside a leaf that `hedges` does not list.
 
 <template for="answer">
 ## Answer
