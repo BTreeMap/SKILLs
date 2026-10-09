@@ -227,6 +227,8 @@ the first check, write them in the allow file.
 * Write words in full. Do not use contractions or semicolons. Keep all
   articles. Use a past participle only as an adjective. Use an -ing word
   only if it is a technical noun or the dictionary shows it as approved.
+  Write each -ing technical noun, for example "wiring" or "parking brake",
+  in the allow file, or the report shows it as an `ing_form` error.
 
 ## Procedure
 
