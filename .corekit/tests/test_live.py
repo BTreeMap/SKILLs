@@ -18,8 +18,8 @@ import httpx
 import pytest
 
 from btm_corekit import UpstreamError, arxiv, build_client, crossref, doi, openalex
-from btm_corekit.indexes import semanticscholar
-from btm_corekit.indexes.work import ByDoi
+from btm_corekit.indexes import firecrawl, semanticscholar
+from btm_corekit.indexes.work import ByDoi, Window
 
 pytestmark = pytest.mark.network
 
@@ -176,3 +176,21 @@ class TestSemanticScholar:
         assert work.published, "publicationDate still decodes"
         assert work.authors, "the authors field still decodes"
         assert work.cited_by and work.cited_by > 0
+
+
+class TestFirecrawl:
+    def test_a_search_answers_with_ranked_papers(self, client):
+        """One call. Keyless calls are capped per address per day, and a
+        spent cap is the service's budget rather than a decoder fault."""
+        try:
+            found = firecrawl.search(
+                client, CAP, "attention is all you need", 3, Window()
+            )
+        except UpstreamError as err:
+            if err.status == 429:
+                pytest.skip("the Firecrawl daily cap for this address is spent")
+            raise
+        assert found.works, "a famous title ranks something"
+        assert all(work.title for work in found.works)
+        assert all(work.abstract for work in found.works)
+        assert any(work.arxiv_id == "1706.03762" for work in found.works)

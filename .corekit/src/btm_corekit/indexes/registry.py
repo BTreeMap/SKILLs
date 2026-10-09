@@ -15,7 +15,13 @@ from typing import Literal, TypeVar
 
 import httpx
 
-from btm_corekit.indexes import arxiv, crossref, openalex, semanticscholar
+from btm_corekit.indexes import (
+    arxiv,
+    crossref,
+    firecrawl,
+    openalex,
+    semanticscholar,
+)
 from btm_corekit.indexes.work import Found, Passage, Ref, Window, Work
 from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError
@@ -80,6 +86,15 @@ INDEXES: Mapping[str, Index] = MappingProxyType(
             references=semanticscholar.references,
             citations=semanticscholar.citations,
             passages=None,
+            windows=True,
+        ),
+        "firecrawl": Index(
+            name="firecrawl",
+            search=firecrawl.search,
+            lookup=firecrawl.lookup,
+            references=None,
+            citations=None,
+            passages=firecrawl.passages,
             windows=True,
         ),
     }
