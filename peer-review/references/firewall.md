@@ -20,8 +20,7 @@ legitimate form named.
 
 ## Re-shaping
 
-A dropped pattern often hides a real objection one step away. "Not novel"
-becomes `prior` once the work is found; "needs more experiments" becomes
-`unsupported` once the untested claim is named; "weak baseline" becomes
-`baseline` once the tuning sentence is quoted or `sota` once the stronger
-corpus result is keyed.
+"Not novel" becomes `prior` once the work is found; "needs more
+experiments" becomes `unsupported` once the untested claim is named; "weak
+baseline" becomes `baseline` once the tuning sentence is quoted or `sota`
+once the stronger corpus result is keyed.

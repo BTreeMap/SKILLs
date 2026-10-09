@@ -63,11 +63,11 @@ and full; at ultra, note it in the report as identified but unassessed.
 
 ## Shortlist size
 
-The included set drives extraction cost. Lite: 5 to 10 papers. Full: 10 to
-25. Ultra: whatever the criteria admit; if that exceeds roughly 40, say so
-and agree with the user on tighter criteria or a longer run before
-proceeding. Fewer than 5 included papers usually means search coverage
-failed: reopen search before concluding the field is empty.
+Lite: 5 to 10 papers. Full: 10 to 25. Ultra: whatever the criteria admit;
+if that exceeds roughly 40, say so and agree with the user on tighter
+criteria or a longer run before proceeding. Fewer than 5 included papers
+usually means search coverage failed: reopen search before concluding the
+field is empty.
 
 ## Bias sweep
 

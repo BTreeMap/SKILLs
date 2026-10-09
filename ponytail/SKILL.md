@@ -15,7 +15,7 @@ metadata:
 # Ponytail
 
 Write the least code that works: climb the ladder and stop at the first rung
-that holds. Lazy means efficient: the best code is the code never written.
+that holds.
 
 ## Registry
 
@@ -119,7 +119,7 @@ Pattern: `[code] → skipped: [X], add when [Y].`
 | --- | --- |
 | **lite** | Build what's asked, but name the lazier alternative in one line. User picks. |
 | **full** | The ladder enforced. Stdlib and native first. Shortest diff, shortest explanation. Default. |
-| **ultra** | YAGNI extremist. Deletion before addition. Ship the one-liner and challenge the rest of the requirement in the same breath. |
+| **ultra** | Deletion before addition. Ship the one-liner and challenge the rest of the requirement in the same breath. |
 
 <examples for="level" request="Add a cache for these API responses.">
   <variant for="lite">Done, cache added. FYI: `functools.lru_cache` covers this in one line if you'd rather not own a cache class.</variant>

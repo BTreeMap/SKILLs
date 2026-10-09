@@ -105,7 +105,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
 | Level | What changes |
 | --- | --- |
 | **lite** | No filler hedges. Keep articles and full sentences. Professional but tight. |
-| **full** | Drop articles, fragments OK, short synonyms. Classic caveman. Default. |
+| **full** | Drop articles, fragments OK, short synonyms. Default. |
 | **ultra** | Strip conjunctions when cause-then-effect stays unambiguous. One word when one word enough. State each fact once. Code symbols, function names, error strings: never touch. |
 | **wenyan** | Classical Chinese at the active level. Load `wenyan`. Classical characters belong to this level only. |
 
@@ -117,9 +117,9 @@ Pattern: `[thing] [action] [reason]. [next step].`
 
 ## Verbs
 
-One-shot verbs. On `/caveman <verb>` or matching trigger phrase,
-load ONLY file registered under that verb, follow it, report. Active level
-untouched. Reference files load only this way or through wenyan level.
+On `/caveman <verb>` or matching trigger phrase, load ONLY file
+registered under that verb, follow it, report. Active level untouched.
+Reference files load only this way or through wenyan level.
 
 | Verb | What it does |
 | --- | --- |

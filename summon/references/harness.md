@@ -1,8 +1,7 @@
 # Harness and reach
 
-What a delegate starts with: its inheritance per harness, and how a named
-skill reaches it. "Not documented" means the vendor documentation surveyed
-does not state it: probe it, never assume it.
+"Not documented" means the vendor documentation surveyed does not state
+it: probe it, never assume it.
 
 ## Inheritance
 

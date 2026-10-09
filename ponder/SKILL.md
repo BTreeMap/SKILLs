@@ -177,7 +177,7 @@ Class every source relative to the question it answers:
 
 Judge settlement against the question's stakes. A canonical constitutive or
 attested source can settle; contested claims require stronger evidence than
-first-page blog consensus. Two outcomes:
+first-page blog consensus.
 
 - Settled: all material questions are answered. Register one or two leaves,
   add sources, close, then load `answer`.
