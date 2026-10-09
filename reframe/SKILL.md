@@ -14,12 +14,12 @@ metadata:
 
 # Reframe
 
-Turn a design or planning discussion into one strategic direction judgment.
-Define the decision horizon, system boundary, and target model before
-choosing an implementation. Treat the thesis as a high-leverage hypothesis:
-open the frame, make the call, then make it falsifiable before any execution
-commitment. Strategic altitude is conceptual compression: fewer concepts,
-clearer ownership, longer-lived boundaries, higher leverage.
+Turn design or planning discussion into one strategic direction judgment.
+Define decision horizon, system boundary, target model before choosing
+implementation. Treat thesis as high-leverage hypothesis: open frame, make
+the call, then make it falsifiable before any execution commitment.
+Strategic altitude is conceptual compression: fewer concepts, clearer
+ownership, longer-lived boundaries, higher leverage.
 
 ## Redirects
 
@@ -46,21 +46,20 @@ Invoke on explicit cues, including:
 
 Invoke proactively only when at least one symptom exists:
 
-- A local patch is chosen before the target model is stated.
-- Compatibility is preserved without a named contract or stakeholder.
-- The current package, document, process, or partial implementation is
-  treated as immutable.
-- Migration size is used to reject a direction before its value is assessed.
+- Local patch chosen before target model is stated.
+- Compatibility preserved without named contract or stakeholder.
+- Current package, document, process, or partial implementation treated as
+  immutable.
+- Migration size used to reject direction before its value is assessed.
 - Many small concepts obscure one lifecycle, owner, or product promise.
-- Proposed options differ in mechanics but preserve the same questionable
-  frame.
+- Proposed options differ in mechanics but preserve same questionable frame.
 
-A small proposal alone is not a trigger; it can be correct when the
-boundary, target, and evidence support it.
+Small proposal alone is not a trigger; it can be correct when boundary,
+target, evidence support it.
 
 ## Inputs
 
-Derive these from supplied material before asking questions:
+Derive from supplied material before asking questions:
 
 - Decision to make.
 - Outcome and useful time horizon.
@@ -68,73 +67,72 @@ Derive these from supplied material before asking questions:
 - Known contracts and stakeholders.
 - Claimed constraints and supporting evidence.
 
-If an input is missing, ask one focused question only when the answer could
-change the target model. Otherwise, state the assumption and lower
-confidence.
+Input missing: ask one focused question only when answer could change target
+model. Otherwise state assumption, lower confidence.
 
 ## Workflow
 
 ### 1. Reframe the decision
 
-State the real choice at the highest useful level. Define outcome, horizon,
-system boundary, and decision owner. Reject vague goals such as "cleaner" or
-"more scalable."
+State real choice at highest useful level. Define outcome, horizon, system
+boundary, decision owner. Reject vague goals such as "cleaner" or "more
+scalable."
 
 ### 2. Establish the evidence baseline
 
-Separate observed facts, explicit instructions, and assumptions; label every
-unsupported claim as an assumption. Record missing evidence only when it can
-change the decision.
+Separate observed facts, explicit instructions, assumptions; label every
+unsupported claim as assumption. Record missing evidence only when it can
+change decision.
 
-If a repository or document set is available:
+Repository or document set available:
 
 1. Search for public contracts, persisted schemas, integrations, callers,
-   tests, migration code, and ownership boundaries.
+   tests, migration code, ownership boundaries.
 2. Read representative definitions and call sites; avoid exhaustive
-   archaeology before forming the thesis.
+   archaeology before forming thesis.
 3. Inspect version history only when intent or compatibility status could
-   change the decision.
+   change decision.
 
 ### 3. Diagnose the inherited frame
 
-Name the constraint currently controlling the proposal and state who or what
-requires it. Classify it, and every other inherited constraint, by this
-table before using it. Estimate compatibility, migration, and refactor costs
-before letting them determine the target.
+Name constraint currently controlling proposal; state who or what requires
+it. Classify it, and every other inherited constraint, by this table before
+using it. Estimate compatibility, migration, refactor costs before letting
+them determine target.
 
 | Class | Evidence | Treatment |
 | --- | --- | --- |
 | Contract | Public API, persisted data, documented integration, user promise, compliance rule, deployment limit, explicit instruction | Preserve, migrate deliberately, or renegotiate openly |
-| Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; keep it out of the target architecture |
+| Delivery constraint | Deadline, budget, staffing, rollout window, operational capacity | Price in the path; keep it out of target architecture |
 | Migration cost | Internal callers, relearning, diff size, temporary dual operation | Estimate and stage if justified; call it compatibility only with evidence |
 | Inertia | Stale name, old package layout, partial implementation, document shape, "already built" | Remove from target reasoning |
-| Unknown | Asserted constraint without inspectable evidence | Name the assumption; seek the cheapest deciding evidence |
+| Unknown | Asserted constraint without inspectable evidence | Name assumption; seek cheapest deciding evidence |
 
 Internal usage creates work; grant contract status only when evidence names
 a contract.
 
 ### 4. Open the frame
 
-Apply the smallest set of these moves that exposes the hidden decision, at
-least one, and name each move in the output. Explain the newly visible
-option, boundary, deletion, or principle.
+Apply smallest set of these moves exposing hidden decision, at least one;
+name each move in output. Explain newly visible option, boundary, deletion,
+or principle.
 
 | Move | Question | Guardrail |
 | --- | --- | --- |
-| End-state backcasting | If this were excellent at the chosen horizon, what would be true? | Backcast to the present and keep the architecture grounded |
+| End-state backcasting | If this were excellent at the chosen horizon, what would be true? | Backcast to present; keep architecture grounded |
 | Zero-legacy thought experiment | With no old callers or names, what model would we choose? | Restore only constraints proven real |
-| Kill the wrong concept | Which object, phase, section, or service encodes the wrong model? | Delete the concept, label and all |
-| Ten-times stress | Which plausible 10x axis makes the model fail first? | Choose one relevant axis and scale only that axis |
+| Kill the wrong concept | Which object, phase, section, or service encodes the wrong model? | Delete concept, label and all |
+| Ten-times stress | Which plausible 10x axis makes the model fail first? | Choose one relevant axis, scale only that axis |
 | Constraint inversion | If this constraint vanished, what would change? | Decide whether removal cost is worth paying |
 | Non-negotiable principles | Which two to four rules must the target never violate? | Use principles to decide |
 | Boundary reset | Is responsibility split at the wrong system, lifecycle, or ownership boundary? | Move boundaries only when ownership becomes clearer |
-| Tasteful deletion | What can stop existing without reducing the intended outcome? | Name the lost behavior and affected stakeholder |
+| Tasteful deletion | What can stop existing without reducing the intended outcome? | Name lost behavior and affected stakeholder |
 
 ### 5. Form the clean target
 
-Describe the end-state independently of migration, and keep the target
-separate from the path that reaches it in reasoning and output alike. Prefer
-conceptual deletion and boundary repair over additive architecture. State:
+Describe end-state independently of migration; keep target separate from
+path reaching it, in reasoning and output alike. Prefer conceptual deletion
+and boundary repair over additive architecture. State:
 
 - Core model and system boundary.
 - Lifecycle owner and source of truth.
@@ -144,87 +142,85 @@ conceptual deletion and boundary repair over additive architecture. State:
 
 ### 6. Name what not to do
 
-Identify safe-looking actions that block the target:
+Identify safe-looking actions that block target:
 
-- Local optimizations that fix symptoms while preserving the wrong boundary.
-- Permanent shims or dual models without a named contract and retirement
+- Local optimizations fixing symptoms while preserving wrong boundary.
+- Permanent shims or dual models without named contract and retirement
   condition.
-- Detail work that does not reduce uncertainty or advance the target.
+- Detail work that neither reduces uncertainty nor advances target.
 
 ### 7. Compare three paths
 
-Use the canonical options:
+Use canonical options:
 
-- **Conservative path**: preserve the inherited model; minimize immediate
+- **Conservative path**: preserve inherited model; minimize immediate
   disruption.
-- **Clean target**: move directly to the preferred end-state.
-- **Staged clean path**: preserve the same clean target; sequence reversible
-  steps and give every temporary bridge an owner, a removal trigger, and a
-  deadline or measurable gate.
+- **Clean target**: move directly to preferred end-state.
+- **Staged clean path**: preserve same clean target; sequence reversible
+  steps; give every temporary bridge owner, removal trigger, and deadline or
+  measurable gate.
 
 Compare target integrity, immediate price, permanent complexity, contract
-risk, and time to evidence, and give the three rows distinct tradeoffs. If a
-path is incoherent, mark it non-viable. Recommend one; choose Staged only
-when it preserves the clean target and has explicit retirement. Give every
-compatibility mechanism a named contract, owner, and retirement condition.
+risk, time to evidence; give three rows distinct tradeoffs. Path incoherent:
+mark it non-viable. Recommend one; choose Staged only when it preserves
+clean target and has explicit retirement. Give every compatibility mechanism
+named contract, owner, retirement condition.
 
 ### 8. Make the call
 
-State material tradeoffs without weakening the recommendation. Assign
-confidence from the evidence:
+State material tradeoffs without weakening recommendation. Assign confidence
+from evidence:
 
 - **High**: decisive contracts and representative evidence inspected; no
   major unresolved assumption.
 - **Medium**: direction supported; one or more material assumptions remain
   testable.
-- **Low**: thesis mainly opens the frame; decisive evidence is absent or
+- **Low**: thesis mainly opens frame; decisive evidence absent or
   contradictory.
 
 ### 9. Design the verification path
 
-Specify the First Proof Point fields, then the Falsifier section:
+Specify First Proof Point fields, then Falsifier section:
 
-- Artifact or observation: cheapest artifact or observation that
-  distinguishes this thesis from alternatives.
-- Expected signal: observable result supporting the thesis.
-- Decision unlocked: choice the signal permits.
-- Deferred commitment: irreversible choice not to make before the signal
+- Artifact or observation: cheapest artifact or observation distinguishing
+  this thesis from alternatives.
+- Expected signal: observable result supporting thesis.
+- Decision unlocked: choice signal permits.
+- Deferred commitment: irreversible choice not to make before signal
   arrives.
-- Falsifier: evidence that forces rejection or material revision, and the
+- Falsifier: evidence forcing rejection or material revision, and
   alternative it would favor.
 
-Make the proof point test the target model, contract assumption, boundary,
-or payoff; showing that code can be written is not enough. Keep every
-irreversible commitment behind this proof point, and give every bold take a
-falsifier.
+Proof point tests target model, contract assumption, boundary, or payoff;
+showing code can be written is not enough. Keep every irreversible
+commitment behind this proof point; give every bold take a falsifier.
 
 ### 10. Close the payoff ledger
 
-For each major bold take or kill-list item, record one row, and tie every
-row to such an item:
+For each major bold take or kill-list item, record one row; tie every row to
+such an item:
 
 - Price paid now.
 - Specific pain removed or capability unlocked.
 - Moment or signal when payoff appears.
-- Stakeholder receiving the payoff.
+- Stakeholder receiving payoff.
 
 Reject rows based solely on "cleaner," "simpler," "more maintainable," or
 similar generic claims.
 
 ## Output
 
-Produce one strategic direction judgment in the user's language from the
-template below. Replace every `{{...}}` field and remove every instructional
-placeholder. Keep the eleven sections in template order, Thesis first
-through Payoff Ledger last, and keep the table structure.
+Produce one strategic direction judgment in user's language from template
+below. Replace every `{{...}}` field; remove every instructional
+placeholder. Keep eleven sections in template order, Thesis first through
+Payoff Ledger last; keep table structure.
 
 - Lead with the call; methodology and caveats follow.
-- Use code-level detail only when it changes the direction or verifies a
-  claim.
-- End with the ledger; omit a second summary.
+- Code-level detail only when it changes direction or verifies claim.
+- End with ledger; omit second summary.
 
-After the target is accepted, route it to an available feasibility or
-landing procedure, or state the unresolved landing questions.
+After target is accepted, route it to available feasibility or landing
+procedure, or state unresolved landing questions.
 
 <template for="output">
 # Strategic Direction: {{topic}}
@@ -301,19 +297,19 @@ landing procedure, or state the unresolved landing questions.
 ## Validation
 
 <checklist>
-  <item>Trigger gate satisfied by a real frame problem.</item>
-  <item>Decision, outcome, horizon, and boundary stated.</item>
-  <item>Facts, instructions, and assumptions separated.</item>
+  <item>Trigger gate satisfied by real frame problem.</item>
+  <item>Decision, outcome, horizon, boundary stated.</item>
+  <item>Facts, instructions, assumptions separated.</item>
   <item>Each inherited constraint classified and evidenced.</item>
   <item>At least one frame-opening move applied and named.</item>
   <item>Clean target simplifies concepts or increases durable leverage.</item>
-  <item>Target design and migration path remain separate.</item>
-  <item>Kill list explains the wrong model each removal eliminates.</item>
-  <item>Warnings identify actions that would preserve the wrong model.</item>
+  <item>Target design and migration path stay separate.</item>
+  <item>Kill list explains wrong model each removal eliminates.</item>
+  <item>Warnings identify actions that would preserve wrong model.</item>
   <item>All three canonical paths compared or marked non-viable.</item>
-  <item>Recommendation and confidence are explicit.</item>
-  <item>Proof point distinguishes the thesis from alternatives.</item>
-  <item>Falsifier could overturn the thesis.</item>
-  <item>Every payoff row names price, specific payoff, visibility signal, and beneficiary.</item>
+  <item>Recommendation and confidence explicit.</item>
+  <item>Proof point distinguishes thesis from alternatives.</item>
+  <item>Falsifier could overturn thesis.</item>
+  <item>Every payoff row names price, specific payoff, visibility signal, beneficiary.</item>
   <item>No generic benefit, default shim, fake certainty, or performative bigness remains.</item>
 </checklist>
