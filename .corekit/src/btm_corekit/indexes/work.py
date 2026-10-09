@@ -282,3 +282,13 @@ class ByArxiv:
 Ref = ByNative | ByDoi | ByArxiv
 """How a caller names one paper to an index: closed, so each index renders
 every form or says which it cannot."""
+
+
+class Citation(Work):
+    """A `Work` as a citing document holds it: `key` names the corpus record
+    it came from (None from an index), `source` the corpus session or index
+    that answered, `retrieved` the ISO date the record stood there."""
+
+    key: str | None
+    source: str
+    retrieved: str

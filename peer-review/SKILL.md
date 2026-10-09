@@ -149,6 +149,7 @@ re-read or authors could settle it.
 | `init` | Takes two or three keywords, or directory path to place session, plus paper's date and its title on pipe; mints session identifier, echoes it with directory. Keyword subset recovers lost identifier |
 | `ingest` | Splits extraction on `## PDF page N` lines into per-page anchors |
 | `link` | Attaches lit-review corpus as prior work |
+| `cite` | Returns one citable record for corpus key, DOI, or arXiv id: linked corpus (`--session`) first, then indexes; carries `key`, `source`, `retrieved` date; exit 1 when nothing resolves |
 | `status` | Ledger counts, banks walked, advisory `next`, never a gate |
 | `cite-check` | Requires every `[On]` and `[Cn]` in draft to resolve to grounded record and every grounded fatal or major objection to appear |
 | `schema` | Prints batch shape and each bank's kinds |
@@ -175,6 +176,7 @@ $R ingest "$S" --extraction:file <extraction.txt>
 $R schema
 $R note "$S" --batch:file <round.json> && $R check "$S"
 $R link "$S" --corpus <lit-review session id or path>
+$R cite <corpus key, DOI, or arXiv id> [--session "$S" | --corpus <lit-review session id or path>]
 $R status "$S"
 $R jot "$S" [--prose] <<'JSON'
 {"kind": "note", ...}

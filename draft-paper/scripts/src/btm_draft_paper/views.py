@@ -4,9 +4,10 @@ ledger. Each is computed from the replayed trace on every call."""
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
-from btm_corekit import pad_entries
+from btm_corekit import CommandError, Shelf, pad_entries, read_shelf, signal
 from btm_draft_paper.run import GATE_STAGE, Gate
 from btm_draft_paper.trace import (
     EVIDENCED,
@@ -78,6 +79,7 @@ def status_view(run: Run) -> dict[str, Any]:
         "venue": run.meta.venue,
         "model": run.meta.model,
         "artifacts": state.root,
+        "corpus": run.meta.corpus,
         "stages": list(run.meta.stages()),
         "stage": state.stage,
         "gates": dict(state.gates),
@@ -163,5 +165,43 @@ def check_view(run: Run) -> dict[str, Any]:
         for claim_id, reason in state.dropped.items()
     ]
     document["missing_artifacts"] = missing
+    document["citations"] = citations_view(run)
     document["next"] = next_step(state)
     return document
+
+
+RECORD_FIELDS = ("title", "authors", "year", "venue", "doi", "arxiv_id")
+"""What a citation report row checks against: the Fields match column."""
+
+
+def linked_shelf(run: Run) -> Shelf | None:
+    """The linked corpus, or None with a signal where it is gone or corrupt:
+    lit-review owns that file, so its state is no defect of this run."""
+    if run.meta.corpus is None:
+        return None
+    try:
+        return read_shelf(Path(run.meta.corpus))
+    except CommandError as err:
+        signal(f"linked corpus unreadable, every citation unresolved: {err}")
+        return None
+
+
+def citations_view(run: Run) -> dict[str, Any]:
+    """Each noted citation and the corpus record its ref names, if any.
+    Which refs resolve is the script's; whether a record supports its
+    sentence is the agent's. One shelf read, O(rows + citations)."""
+    shelf = linked_shelf(run)
+    rows: list[dict[str, Any]] = []
+    for noted in run.state.citations:
+        key = shelf.find(noted.ref) if shelf else None
+        row: dict[str, Any] = {"ref": noted.ref, "sentence": noted.sentence, "key": key}
+        if shelf is not None and key is not None:
+            work = shelf.works[key].model_dump(mode="json")
+            row["record"] = {field: work[field] for field in RECORD_FIELDS}
+        rows.append(row)
+    return {
+        "corpus": run.meta.corpus,
+        "as_of": shelf.as_of if shelf else None,
+        "rows": rows,
+        "unresolved": [row["ref"] for row in rows if row["key"] is None],
+    }

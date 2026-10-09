@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import ConfigDict, Field
+from pydantic import BeforeValidator, ConfigDict, Field
 
 from btm_corekit import (
     Admission,
@@ -23,6 +23,8 @@ from btm_corekit import (
     Pool,
     ascii_words,
     dump,
+    normalize_arxiv_id,
+    normalize_doi,
     slugify,
 )
 from btm_ponder.ledger import apply
@@ -39,7 +41,9 @@ SCHEMA: dict[str, str] = {
     "leaves": '{"kw": ["two", "words"], "q": "the sub-question", '
     '"origin": "frame|spawned"}',
     "sources": '{"kw": ["two", "words"] or "ref": "explicit-name", "leaf": "<ref>", '
-    '"cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}',
+    '"cls": "constitutive|attested|measured|reported", "title": "...", '
+    '"url": "...", "doi": "...", "arxiv": "..." (url, doi, arxiv: any of them; '
+    "authors, year, venue optional, copied from a cite record)}",
     "closes": '{"leaf": "<ref>", '
     '"state": "retrieved|refuted|unresolved|retired|folded", '
     '"sources": ["<ref>"], "premise": "the claim, one line", '
@@ -57,11 +61,41 @@ class LeafEntry(Named):
     origin: Origin = Origin.FRAME
 
 
+def _identifier(normalize: Callable[[Any], Any], what: str) -> BeforeValidator:
+    """The bare form of an identifier the agent wrote in any spelling the
+    normalizer reads; one it cannot read is a rejection, never a silent drop."""
+
+    def bare(raw: Any) -> Any:
+        if raw is None:
+            return None
+        found = normalize(raw)
+        if found is None:
+            raise ValueError(f"{raw!r} is no {what}; write it bare or drop it")
+        return found
+
+    return BeforeValidator(bare)
+
+
 class SourceEntry(Named):
     leaf: NonEmpty
     cls: SourceClass
     title: NonEmpty
     url: str = ""
+    doi: Annotated[str | None, _identifier(normalize_doi, "DOI")] = None
+    arxiv: Annotated[str | None, _identifier(normalize_arxiv_id, "arXiv id")] = None
+    authors: tuple[NonEmpty, ...] = ()
+    year: int | None = None
+    venue: NonEmpty | None = None
+
+    @property
+    def address(self) -> str:
+        """The url as given, else the DOI's or arXiv id's landing page, so a
+        source noted by identifier dedups against one noted by its link."""
+        if self.url:
+            return self.url
+        if self.doi:
+            return f"https://doi.org/{self.doi}"
+        return f"https://arxiv.org/abs/{self.arxiv}" if self.arxiv else ""
 
 
 class CloseEntry(Model):
@@ -124,6 +158,19 @@ def _stem(entry: Named) -> str | None:
         return None
 
 
+def cited_fields(entry: SourceEntry) -> dict[str, Any]:
+    """The citation fields the entry carries, absent ones left off so an
+    event without them reads as it did before they existed."""
+    given = {
+        "doi": entry.doi,
+        "arxiv_id": entry.arxiv,
+        "authors": list(entry.authors),
+        "year": entry.year,
+        "venue": entry.venue,
+    }
+    return {key: value for key, value in given.items() if value}
+
+
 def _normal_url(raw: object) -> str:
     return str(raw or "").strip().rstrip("/")
 
@@ -183,7 +230,7 @@ class _Expansion(Admission):
             entry = self.decode(SourceEntry, row, where, SCHEMA["sources"])
             if entry is None:
                 continue
-            url = _normal_url(entry.url)
+            url = _normal_url(entry.address)
             stem = _stem(entry)
             if url and url in self.url_index and stem is not None:
                 existing = self.url_index[url]
@@ -210,7 +257,8 @@ class _Expansion(Admission):
                         "leaf": leaf,
                         "cls": entry.cls,
                         "title": entry.title,
-                        "url": entry.url,
+                        "url": entry.address,
+                        **cited_fields(entry),
                     },
                 )
             )

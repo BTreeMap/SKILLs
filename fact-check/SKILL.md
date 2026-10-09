@@ -182,6 +182,17 @@ Evidence entry is quoted source or, for `spec` claim about live service,
 live probe carrying `probe` (method and URL), `status`, `keys`, `accessed`
 in place of quote.
 
+Evidence from scholarly paper: with `R` bound as in Step 3, `cite` returns
+one retrieved record for DOI or arXiv id (`--corpus` names `/lit-review`
+session to ask first). Take `publisher` from its `venue`, `url` from its
+`landing_url` or DOI link, `accessed` from its `retrieved` date. Record
+proves paper exists; quote still comes from paper's text. Exit 1: no index
+holds identifier.
+
+<commands for="cite">
+$R cite <DOI or arXiv id> [--corpus <lit-review session id or path>]
+</commands>
+
 ### Orchestration
 
 Pick one branch from Step 0 probe and summon's mode table. Verdict records

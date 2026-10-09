@@ -14,6 +14,8 @@ from pydantic import Field, TypeAdapter
 from btm_corekit import (
     MAX_EVENTS,
     CommandError,
+    MaybeArxivId,
+    MaybeDoi,
     NonEmpty,
     Slug,
     Stamped,
@@ -59,6 +61,11 @@ class AddSource(Stamped):
     cls: SourceClass
     title: NonEmpty
     url: str = ""
+    doi: MaybeDoi = None
+    arxiv_id: MaybeArxivId = None
+    authors: tuple[str, ...] = ()
+    year: int | None = None
+    venue: str | None = None
 
 
 class Closing(Stamped):
@@ -212,7 +219,15 @@ def apply(ledger: Ledger, raw: dict[str, Any]) -> Ledger:
             )
             require(source.leaf in ledger.leaves, f"unknown leaf id: {source.leaf}")
             ledger.sources[source.id] = Source(
-                leaf=source.leaf, cls=source.cls, title=source.title, url=source.url
+                leaf=source.leaf,
+                cls=source.cls,
+                title=source.title,
+                url=source.url,
+                doi=source.doi,
+                arxiv_id=source.arxiv_id,
+                authors=source.authors,
+                year=source.year,
+                venue=source.venue,
             )
             ledger.source_order.append(source.id)
         case "close":

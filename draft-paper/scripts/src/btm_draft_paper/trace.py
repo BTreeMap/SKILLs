@@ -166,6 +166,15 @@ class ArtifactsRepinned(Model):
     root: NonEmpty
 
 
+class CitationAdded(Model):
+    """One citation the draft makes: `ref` is a corpus key, DOI, or arXiv id.
+    What it resolves to is derived on every `check`, never stored."""
+
+    event: Literal["citation-added"]
+    ref: NonEmpty
+    sentence: NonEmpty
+
+
 class Decision(Model):
     event: Literal["decision"]
     what: NonEmpty
@@ -181,6 +190,7 @@ Event = (
     | ClaimRevised
     | ClaimDropped
     | ArtifactsRepinned
+    | CitationAdded
     | Decision
 )
 EVENT: TypeAdapter[Event] = TypeAdapter(Annotated[Event, Field(discriminator="event")])
@@ -209,6 +219,7 @@ class RunState:
     closed: Gate | None = None
     claims: dict[str, Claim] = field(default_factory=dict)
     dropped: dict[str, str] = field(default_factory=dict)
+    citations: list[CitationAdded] = field(default_factory=list)
     events: int = 0
 
     @classmethod
@@ -331,6 +342,8 @@ def apply(state: RunState, raw: Mapping[str, Any]) -> None:
         case ArtifactsRepinned(root=root):
             require(Path(root).is_absolute(), f"artifact root {root!r} is not absolute")
             state.root = root
+        case CitationAdded():
+            state.citations.append(event)
         case Decision():
             pass
         case _:

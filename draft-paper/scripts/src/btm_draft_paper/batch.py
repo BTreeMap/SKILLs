@@ -25,6 +25,7 @@ from btm_draft_paper.run import Gate
 from btm_draft_paper.trace import (
     EVIDENCED,
     ArtifactsRepinned,
+    CitationAdded,
     Claim,
     ClaimDropped,
     ClaimRevised,
@@ -56,6 +57,8 @@ SCHEMA: dict[str, str] = {
     "claim-dropped": '{"event": "claim-dropped", "claim": "<ref>", "reason": "..."}',
     "artifacts-repinned": '{"event": "artifacts-repinned", '
     '"root": "the artifact tree\'s new directory"}',
+    "citation-added": '{"event": "citation-added", '
+    '"ref": "corpus key, DOI, or arXiv id", "sentence": "the citing sentence"}',
     "decision": '{"event": "decision", "what": "...", "why": "...", '
     '"from": ["<pad id>"] (optional)}',
 }
@@ -75,6 +78,7 @@ ROWS: dict[str, type[Model]] = {
     "claim-revised": ClaimRevised,
     "claim-dropped": ClaimDropped,
     "artifacts-repinned": ArtifactsRepinned,
+    "citation-added": CitationAdded,
     "decision": Decision,
 }
 

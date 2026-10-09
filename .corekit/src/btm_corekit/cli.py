@@ -1,5 +1,5 @@
 """The process boundary shared by argparse-driven members: dispatch, content
-slots, the rejection envelope, and the pad and clean subcommands."""
+slots, the rejection envelope, and the pad, cite, and clean subcommands."""
 
 from __future__ import annotations
 
@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Any, Final, NoReturn, Protocol, TypeAlias, overload
 from weakref import WeakKeyDictionary
 
-from btm_corekit.records.models import M, parse_model
+from btm_corekit.indexes.cite import cite, corpus_path, read_shelf
+from btm_corekit.net.http import client_for
+from btm_corekit.records.models import M, dump, parse_model
 from btm_corekit.report.channels import emit, signal
 from btm_corekit.report.errors import CommandError, UpstreamError
 from btm_corekit.report.verdicts import Diagnostic
@@ -505,6 +507,41 @@ def wire_pad(
     if lore is not None:
         for parser in (jotter, recaller):
             parser.add_argument("--lore", action="store_true", help=lore)
+
+
+CITE_TIMEOUT_SECONDS = 30
+CorpusOf = Callable[[str], Path | None]
+
+
+def wire_cite(commands: Commands, skill: str, linked: CorpusOf | None = None) -> None:
+    """Add `cite`: one citable record for a corpus key, DOI, or arXiv id, the
+    named corpus or the session's linked one answering before any index.
+    `linked` maps the member's session to its linked `papers.jsonl`; given,
+    it adds `--session`."""
+
+    def cmd_cite(args: argparse.Namespace) -> int:
+        session = getattr(args, "session", None)
+        path = corpus_path(args.corpus) if args.corpus else None
+        if path is None and session is not None and linked is not None:
+            path = linked(session)
+            if path is None:
+                signal(f"session {session} links no corpus; asking the indexes")
+        shelf = read_shelf(path) if path is not None else None
+        client = client_for(skill, read_timeout=CITE_TIMEOUT_SECONDS)
+        emit(dump(cite(args.ref, shelf, client)))
+        return 0
+
+    citer = commands.add_parser(
+        "cite", help="one citable record for a corpus key, DOI, or arXiv id"
+    )
+    citer.set_defaults(func=cmd_cite)
+    citer.add_argument("ref", help="corpus key, DOI, or arXiv id")
+    corpus = citer.add_mutually_exclusive_group()
+    corpus.add_argument("--corpus", help="lit-review session id or path, asked first")
+    if linked is not None:
+        corpus.add_argument(
+            "--session", help="this skill's session; its linked corpus is asked first"
+        )
 
 
 def wire_clean(commands: Commands, store: SessionStore) -> None:

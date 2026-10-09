@@ -192,3 +192,14 @@ class TestFlow:
         assert document["shown"] == 1
         _, document, _ = run(["schema"], capsys)
         assert "novelty" in document["banks"]
+
+
+class TestCite:
+    def test_cite_reads_the_linked_corpus_before_any_index(
+        self, capsys, paper_file, corpus_dir
+    ):
+        session = started(capsys, paper_file)
+        run(["link", session, "--corpus", str(corpus_dir)], capsys)
+        code, document, _ = run(["cite", "2401.00001", "--session", session], capsys)
+        assert code == 0
+        assert (document["key"], document["title"]) == ("doi:10.1/b", "Later work")

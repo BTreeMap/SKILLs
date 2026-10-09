@@ -195,3 +195,16 @@ def test_malformed_json_is_a_rejection(tmp_path, capsys):
     path.write_text("{", encoding="utf-8")
     assert main(["render", "--state:file", str(path)]) == 1
     assert "make the state valid JSON" in capsys.readouterr().err
+
+
+def test_cite_gives_a_scholarly_source_one_citable_record(tmp_path, capsys):
+    """A named corpus answers without a request; render is untouched."""
+    session = tmp_path / "lit"
+    session.mkdir()
+    (session / "papers.jsonl").write_text(
+        json.dumps({"key": "doi:10.1/a", "title": "T", "doi": "10.1/a"}) + "\n",
+        encoding="utf-8",
+    )
+    assert main(["cite", "10.1/a", "--corpus", str(session)]) == 0
+    document = json.loads(capsys.readouterr().out)
+    assert (document["key"], document["source"]) == ("doi:10.1/a", "lit")

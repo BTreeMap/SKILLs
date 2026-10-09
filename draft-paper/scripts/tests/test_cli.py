@@ -386,3 +386,105 @@ class TestReplay:
         code, _, err = run(["status", session], capsys)
         assert code == 1
         assert message in err
+
+
+CORPUS_ROWS = [
+    {
+        "key": "doi:10.1/a",
+        "title": "Bandit prompt routing",
+        "year": 2021,
+        "authors": ["A. Author"],
+        "doi": "10.1/a",
+        "status": "included",
+        "read_level": "abstract",
+        "found_by": ["s1"],
+    },
+    {
+        "key": "arxiv:2401.00001",
+        "title": "Later work",
+        "arxiv_id": "2401.00001",
+        "status": "candidate",
+    },
+]
+
+
+@pytest.fixture
+def corpus(tmp_path: Path) -> Path:
+    """A lit-review session directory, laid out as lit-review writes it."""
+    root = tmp_path / "lit"
+    root.mkdir()
+    (root / "protocol.json").write_text("{}", encoding="utf-8")
+    (root / "papers.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in CORPUS_ROWS), encoding="utf-8"
+    )
+    return root
+
+
+def cite_event(ref: str) -> dict[str, Any]:
+    return {"event": "citation-added", "ref": ref, "sentence": f"as {ref} shows"}
+
+
+class TestCorpus:
+    def test_link_records_the_corpus_and_status_shows_it(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        code, document, _ = run(["link", session, "--corpus", str(corpus)], capsys)
+        assert code == 0
+        assert document["records"] == 2
+        _, status, _ = run(["status", session], capsys)
+        assert status["corpus"] == str(corpus / "papers.jsonl")
+
+    def test_check_resolves_each_citation_against_the_linked_corpus(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        run(["link", session, "--corpus", str(corpus)], capsys)
+        code, _, err = note(
+            session,
+            capsys,
+            cite_event("10.1/A"),
+            cite_event("arXiv:2401.00001"),
+            cite_event("10.9/elsewhere"),
+        )
+        assert code == 0, err
+        _, document, _ = run(["check", session], capsys)
+        rows = document["citations"]["rows"]
+        assert [row["key"] for row in rows] == [
+            "doi:10.1/a",
+            "arxiv:2401.00001",
+            None,
+        ]
+        assert rows[0]["record"]["title"] == "Bandit prompt routing"
+        assert "record" not in rows[2]
+        assert document["citations"]["unresolved"] == ["10.9/elsewhere"]
+
+    def test_without_a_corpus_every_citation_is_unresolved(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        note(session, capsys, cite_event("10.1/a"))
+        _, document, _ = run(["check", session], capsys)
+        assert document["citations"]["corpus"] is None
+        assert document["citations"]["unresolved"] == ["10.1/a"]
+
+    def test_a_vanished_corpus_signals_rather_than_refusing(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        run(["link", session, "--corpus", str(corpus)], capsys)
+        note(session, capsys, cite_event("10.1/a"))
+        (corpus / "papers.jsonl").unlink()
+        code, document, err = run(["check", session], capsys)
+        assert code == 0
+        assert "linked corpus unreadable" in err
+        assert document["citations"]["unresolved"] == ["10.1/a"]
+
+    def test_cite_reads_the_session_link_before_any_index(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        run(["link", session, "--corpus", str(corpus)], capsys)
+        code, document, _ = run(["cite", "10.1/a", "--session", session], capsys)
+        assert code == 0
+        assert (document["key"], document["source"]) == ("doi:10.1/a", "lit")

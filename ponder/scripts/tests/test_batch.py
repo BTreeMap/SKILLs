@@ -314,3 +314,65 @@ class TestCheckpoints:
         )
         assert not result.problems
         assert result.events == [{"e": "checkpoint", "label": "round-1", "searches": 5}]
+
+
+class TestCitedSources:
+    """A source may name its paper by DOI or arXiv id, copied from `cite`."""
+
+    def leaf_and(self, **source: object) -> dict[str, object]:
+        return {
+            "leaves": [{"kw": ["rent", "length"], "q": "x"}],
+            "sources": [
+                {
+                    "kw": ["paper", "one"],
+                    "leaf": "rent length",
+                    "cls": "measured",
+                    "title": "A paper",
+                    **source,
+                }
+            ],
+        }
+
+    def test_a_doi_alone_carries_the_record_and_a_derived_url(self):
+        ledger = Ledger()
+        result = expand_batch(
+            ledger,
+            self.leaf_and(
+                doi="https://doi.org/10.1/A", authors=["A. Author"], year=2021
+            ),
+            fixed_mint,
+        )
+        assert result.problems == []
+        source = next(iter(ledger.sources.values()))
+        assert (source.doi, source.url) == ("10.1/a", "https://doi.org/10.1/a")
+        assert (source.authors, source.year) == (("A. Author",), 2021)
+
+    def test_an_arxiv_id_derives_its_abstract_page(self):
+        ledger = Ledger()
+        result = expand_batch(
+            ledger, self.leaf_and(arxiv="arXiv:2401.00001v2"), fixed_mint
+        )
+        assert result.problems == []
+        source = next(iter(ledger.sources.values()))
+        assert (source.arxiv_id, source.url) == (
+            "2401.00001",
+            "https://arxiv.org/abs/2401.00001",
+        )
+
+    def test_an_unreadable_identifier_is_refused_not_dropped(self):
+        result = expand_batch(
+            Ledger(), self.leaf_and(doi="not a doi", arxiv="nope"), fixed_mint
+        )
+        wheres = [problem.where for problem in result.problems]
+        assert wheres == ["sources[0].doi", "sources[0].arxiv"]
+
+    def test_a_doi_dedups_against_its_landing_url(self):
+        ledger = Ledger()
+        first = expand_batch(
+            ledger, self.leaf_and(url="https://doi.org/10.1/a"), fixed_mint
+        )
+        batch = self.leaf_and(doi="10.1/a")
+        batch["leaves"] = []
+        batch["sources"][0]["kw"] = ["paper", "two"]  # type: ignore[index]
+        second = expand_batch(ledger, batch, fixed_mint)
+        assert second.merged == {"paper-two": first.minted["sources"]["paper-one"]}

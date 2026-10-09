@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from btm_corekit import Count, Model, NonEmpty, Slug
+from btm_corekit import Count, MaybeArxivId, MaybeDoi, Model, NonEmpty, Slug
 
 
 class SourceClass(StrEnum):
@@ -123,10 +123,18 @@ class Sweep(Model):
 
 
 class Source(Model):
+    """A retrieved source; the bibliographic fields are present when the agent
+    took them from a `cite` record, so a Sources line can cite it as a work."""
+
     leaf: Slug
     cls: SourceClass
     title: NonEmpty
     url: str
+    doi: MaybeDoi = None
+    arxiv_id: MaybeArxivId = None
+    authors: tuple[str, ...] = ()
+    year: int | None = None
+    venue: str | None = None
 
 
 class Checkpoint(Model):

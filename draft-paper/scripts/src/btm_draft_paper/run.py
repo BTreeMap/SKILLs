@@ -68,6 +68,7 @@ class RunMeta(Model):
     model: NonEmpty
     artifacts: NonEmpty  # the root at init; `artifacts-repinned` moves it
     created: str = ""
+    corpus: str | None = None  # the linked lit-review `papers.jsonl`, set by link
 
     @model_validator(mode="after")
     def _verb_fits_state(self) -> RunMeta:

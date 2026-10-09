@@ -33,6 +33,7 @@ from btm_corekit import (
     run_cli,
     signal,
     text,
+    wire_cite,
     wire_clean,
     wire_pad,
     write_atomic,
@@ -162,6 +163,11 @@ def cmd_link(args: argparse.Namespace) -> int:
             f"{later} corpus record(s) postdate the paper; they cannot serve as prior"
         )
     return 0
+
+
+def linked_corpus(session: str) -> Path | None:
+    _, meta = _session(session)
+    return Path(meta.corpus) if meta.corpus else None
 
 
 def cmd_note(args: argparse.Namespace) -> int:
@@ -357,6 +363,7 @@ def build_parser() -> argparse.ArgumentParser:
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_cite(commands, STORE.skill, linked_corpus)
     wire_clean(commands, STORE)
     return parser
 

@@ -1,4 +1,4 @@
-"""Argument surface: `render`, one JSON document out."""
+"""Argument surface: `render` and `cite`, one JSON document out each."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from btm_corekit import (
     rejection,
     run_cli,
     text,
+    wire_cite,
 )
 from btm_fact_check.render import readiness, report
 from btm_fact_check.state import State, Verdict
@@ -60,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     render.set_defaults(func=cmd_render)
     add_slot(render, STATE, "the factcheck-state.json object")
+    wire_cite(commands, "fact-check")
     return parser
 
 

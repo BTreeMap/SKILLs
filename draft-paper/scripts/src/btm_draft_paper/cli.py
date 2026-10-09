@@ -17,13 +17,16 @@ from btm_corekit import (
     EventLog,
     Parser,
     add_slot,
+    corpus_path,
     dump,
     emit,
     gated,
     now_iso,
     pad_ids,
     parse_model,
+    read_shelf,
     run_cli,
+    wire_cite,
     wire_clean,
     wire_pad,
 )
@@ -113,6 +116,28 @@ def cmd_note(args: argparse.Namespace) -> int:
     return gated(BATCH, args, "trace", expand, commit)
 
 
+def cmd_link(args: argparse.Namespace) -> int:
+    run = load(args.session)
+    path = corpus_path(args.corpus)
+    shelf = read_shelf(path)
+    STORE.write_meta(run.directory, run.meta.with_(corpus=str(path)))
+    emit(
+        {
+            "session": run.directory.name,
+            "corpus": str(path),
+            "records": len(shelf.works),
+            "as_of": shelf.as_of,
+            "next": "note citation-added per citation; check resolves each ref",
+        }
+    )
+    return 0
+
+
+def linked_corpus(session: str) -> Path | None:
+    corpus = STORE.read_meta(STORE.directory(session), RunMeta).corpus
+    return Path(corpus) if corpus else None
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     emit(status_view(load(args.session)))
     return 0
@@ -169,14 +194,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status.set_defaults(func=cmd_status)
     status.add_argument("session", help="session identifier or directory")
+    link = commands.add_parser(
+        "link", help="attach a lit-review corpus; its records need no re-retrieval"
+    )
+    link.set_defaults(func=cmd_link)
+    link.add_argument("session", help="session identifier or directory")
+    link.add_argument("--corpus", required=True, help="lit-review session id or path")
     check = commands.add_parser(
-        "check", help="the gate summary and the evidence ledger"
+        "check", help="the gate summary, the evidence ledger, and the citations"
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("session", help="session identifier or directory")
     schema = commands.add_parser("schema", help="print every event shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_cite(commands, STORE.skill, linked_corpus)
     wire_clean(commands, STORE)
     return parser
 

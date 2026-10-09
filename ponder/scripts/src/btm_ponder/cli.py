@@ -28,6 +28,7 @@ from btm_corekit import (
     pad_ids,
     run_cli,
     signal,
+    wire_cite,
     wire_clean,
     wire_pad,
     wire_view,
@@ -215,6 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
     wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_cite(commands, STORE.skill)
     wire_clean(commands, STORE)
     return parser
 

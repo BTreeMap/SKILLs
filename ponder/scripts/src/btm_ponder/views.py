@@ -151,18 +151,22 @@ def _sweep_row(sweep: Sweep, view: View) -> dict[str, Any]:
     return row
 
 
+CITED_FIELDS = ("doi", "arxiv_id", "authors", "year", "venue")
+"""What a source noted from a `cite` record adds to its Sources line."""
+
+
 def marker_table(ledger: Ledger, marker_of: dict[str, str]) -> dict[str, JSON]:
-    """Marker to the three fields a Sources line needs. The minted id is the
-    ledger's business, not the draft's, and 41 of them cost 1.9 KB no reader
-    spends."""
-    return {
-        marker_of[source_id]: {
-            "cls": ledger.sources[source_id].cls,
-            "title": ledger.sources[source_id].title,
-            "url": ledger.sources[source_id].url,
-        }
-        for source_id in ledger.source_order
-    }
+    """Marker to the fields a Sources line needs: class, title, url, and each
+    citation field the source carries, an absent one costing nothing. The
+    minted id is the ledger's business, not the draft's, and 41 of them cost
+    1.9 KB no reader spends."""
+    table: dict[str, JSON] = {}
+    for source_id in ledger.source_order:
+        fields = ledger.sources[source_id].model_dump(mode="json")
+        line = {name: fields[name] for name in ("cls", "title", "url")}
+        line.update({name: fields[name] for name in CITED_FIELDS if fields[name]})
+        table[marker_of[source_id]] = line
+    return table
 
 
 def scaffold(

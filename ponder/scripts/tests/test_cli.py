@@ -606,3 +606,44 @@ class TestProseWithheldUniformly:
         draft = self.scaffold(capsys, "draft")["sweeps"][0]
         assert draft["survivors"] == ["SURVIVING RIVAL"]
         assert draft["eliminated"] == ["ELIMINATED RIVAL"]
+
+
+class TestCite:
+    def test_a_cited_source_carries_its_record_into_the_marker_table(
+        self, capsys, tmp_path
+    ):
+        corpus = tmp_path / "lit"
+        corpus.mkdir()
+        (corpus / "papers.jsonl").write_text(
+            json.dumps(
+                {"key": "doi:10.1/a", "title": "A paper", "doi": "10.1/a", "year": 2021}
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        code, record, _ = run(["cite", "10.1/a", "--corpus", str(corpus)], capsys)
+        assert code == 0
+        session = opened(capsys)
+        batch = {
+            "leaves": [{"kw": ["rent", "length"], "q": "q"}],
+            "sources": [
+                {
+                    "kw": ["a", "paper"],
+                    "leaf": "rent length",
+                    "cls": "measured",
+                    "title": record["title"],
+                    "doi": record["doi"],
+                    "year": record["year"],
+                }
+            ],
+        }
+        code, _, err = run(["note", session], capsys, stdin=json.dumps(batch))
+        assert code == 0, err
+        _, document, _ = run(["check", session], capsys)
+        assert document["markers"]["S1"] == {
+            "cls": "measured",
+            "title": "A paper",
+            "url": "https://doi.org/10.1/a",
+            "doi": "10.1/a",
+            "year": 2021,
+        }

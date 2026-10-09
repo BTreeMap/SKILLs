@@ -52,6 +52,9 @@ let ledger state set presentation.
   same reach from script: `web`, `wiki`, `scholar`, `fetch`. Neither: say
   question needs retrieval and stop.
 - Read PDF with `/read-pdf`.
+- Paper with DOI or arXiv id: `cite` it before noting; copy record's
+  `title`, `doi` or `arxiv_id`, `authors`, `year`, `venue` into source
+  entry.
 - Send scholarly-corpus leaf to `/lit-review`.
 
 ## Session
@@ -75,6 +78,7 @@ $R jot "$S" [--prose] <<'JSON'
 JSON
 $R jot "$S" --entry:file <entry.json>
 $R recall "$S" [--kind quote] [--match <regex>] [--since j9] [--limit 20]
+$R cite <DOI or arXiv id> [--corpus <lit-review session id or path>]
 $R clean ["$S" | --all]
 </commands>
 
@@ -87,6 +91,7 @@ $R clean ["$S" | --all]
 | `status` | Nothing | Counts, open leaves, yield table, advisory `next`: cheap mid-session view |
 | `jot` | Any JSON object, or prose with `--prose` | Pad id; never rejects content |
 | `recall` | Filters; `--limit` takes 1 or more, default all | Matching pad entries |
+| `cite` | No session: DOI or arXiv id; `--corpus` names `/lit-review` session asked first | One retrieved record with `source` and `retrieved` date; exit 1 when nothing resolves |
 | `clean` | Session optional; or `--all` | Removes one session or all; with neither, lists sessions with sizes |
 
 Identifiers: supply two or three keywords for each session, leaf, or source;
@@ -124,7 +129,7 @@ minted earlier in batch:
 <template for="note-batch">
 {
   "leaves":      [{"kw": ["rent", "length"], "q": "...", "origin": "frame|spawned"}],
-  "sources":     [{"kw": ["bcl", "rent"], "leaf": "<ref>", "cls": "constitutive|attested|measured|reported", "title": "...", "url": "..."}],
+  "sources":     [{"kw": ["bcl", "rent"], "leaf": "<ref>", "cls": "constitutive|attested|measured|reported", "title": "...", "url": "...", "doi": "...", "arxiv": "...", "authors": ["..."], "year": 2024, "venue": "..."}],
   "closes":      [{"leaf": "<ref>", "state": "retrieved|refuted|unresolved|retired|folded", "sources": ["<ref>"], "premise": "...", "detail": "...", "reason": "searched|not_pursued", "into": "<ref>", "from": ["j3"]}],
   "sweeps":      [{"checked": "...", "candidates": ["..."], "survivors": [0]}],
   "checkpoints": [{"label": "round-1", "searches": 5}]
@@ -140,6 +145,10 @@ minted earlier in batch:
 - Source may take `"ref": "<name>"` in place of `kw` to name its ID's stem.
   `ref` draws no keyword-count advisory; minted ID still carries suffix, so
   copy it from `minted` receipt.
+- Source names itself by `url`, `doi`, or `arxiv`, any of them; without
+  `url`, script derives DOI or arXiv landing page. Unreadable identifier is
+  rejection. `authors`, `year`, `venue` optional; they ride into `check`'s
+  marker table.
 - `survivors` are zero-based indexes into `candidates`.
 - Contrary evidence may move `retrieved` to `refuted`; other closes final.
 

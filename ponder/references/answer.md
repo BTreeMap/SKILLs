@@ -17,9 +17,10 @@ $R check "$S"
 At default `draft` view, `check` returns derived `sections`; `scaffold`
 holding each close's stored premise and detail keyed by marker;
 `violations`, lite-demoted ones under `advisories`; `hedges`; `markers`
-table, `S1` onward, with class, title, url. Exits 0 even with violations:
-read them; resolve every violation and every `open` leaf before drafting.
-Lite mode: open leaf may remain; disclose it in Open section.
+table, `S1` onward, with class, title, url, plus `doi`, `arxiv_id`,
+`authors`, `year`, `venue` where source carries them. Exits 0 even with
+violations: read them; resolve every violation and every `open` leaf before
+drafting. Lite mode: open leaf may remain; disclose it in Open section.
 
 ## 3. Draft once
 
@@ -34,7 +35,7 @@ within scope.
 | Rival | Every `refuted` premise and every sweep survivor, stated at its strongest |
 | Boundary | Where answer flips within scope (band, version, workload) |
 | Open | Each `unresolved` leaf with what was tried or why it was passed over |
-| Sources | Check's table: marker, class, title, url |
+| Sources | Check's table: marker, class, title, url; authors, year, venue where present |
 
 Omit `retired` leaves. Absent Rival records empty sweep.
 
