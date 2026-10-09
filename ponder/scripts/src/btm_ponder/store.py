@@ -6,9 +6,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from pydantic import model_validator
+
 from btm_corekit import EventLog, NonEmpty, SessionStore, Tagged, dump
 from btm_ponder.ledger import replay
-from btm_ponder.state import Ledger, Mode, Open
+from btm_ponder.state import Ledger, Level, Open
 from btm_ponder.views import counts_of, yield_table
 
 STORE = SessionStore("ponder", marker="session.json", hint="run init first")
@@ -20,8 +22,19 @@ class SessionMeta(Tagged):
 
     question: NonEmpty
     focus: str | None = None
-    mode: Mode = Mode.FULL
+    level: Level = Level.FULL
     created: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy_mode(cls, raw: Any) -> Any:
+        """Sessions written before the rename spell the level `mode`."""
+        if isinstance(raw, dict) and "mode" in raw and "level" not in raw:
+            return {
+                **{k: v for k, v in raw.items() if k != "mode"},
+                "level": raw["mode"],
+            }
+        return raw
 
 
 def next_step(ledger: Ledger, open_leaves: int) -> str:
@@ -55,7 +68,7 @@ def orient(directory: Path) -> dict[str, Any]:
         "focus": meta.focus,
         "project": meta.project,
         "links": [dump(link) for link in meta.links],
-        "mode": meta.mode,
+        "level": meta.level,
         "counts": counts_of(ledger),
         "sources": len(ledger.sources),
         "swept": ledger.swept,

@@ -36,7 +36,7 @@ from btm_corekit import (
 )
 from btm_ponder.batch import BATCH_KEYS, SCHEMA, NoteResult, expand_batch
 from btm_ponder.ledger import replay
-from btm_ponder.state import MODES, Mode, Open
+from btm_ponder.state import LEVELS, Level, Open
 from btm_ponder.store import (
     LEDGER,
     STORE,
@@ -72,7 +72,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     meta = SessionMeta(
         question=framing.question,
         focus=framing.focus,
-        mode=args.mode,
+        level=args.level,
         created=now_iso(),
         project=args.project,
     )
@@ -125,7 +125,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     events = EventLog(directory / LEDGER).read()
     ledger = replay(events)
     meta = STORE.read_meta(directory, SessionMeta)
-    mode = meta.mode
+    level = meta.level
     markers = {
         source_id: f"S{index}"
         for index, source_id in enumerate(ledger.source_order, start=1)
@@ -133,7 +133,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     found = violations(ledger)
     demoted = (
         [line for line in found if line.startswith(LITE_DEMOTED)]
-        if mode is Mode.LITE
+        if level is Level.LITE
         else []
     )
     blocking = [line for line in found if line not in demoted]
@@ -142,7 +142,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     signal("Boundary section is yours: render it where the answer flips inside scope")
     document: dict[str, JSON] = {
         "session": directory.name,
-        "mode": mode,
+        "level": level,
         "question": meta.question,
         "sections": sections(ledger),
         # Scaffold before markers: the marker table serves only the Sources
@@ -191,10 +191,10 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("ref", help="two or three keywords, or a directory path")
     add_slot(init, FRAMING, '{"question": ..., "focus": ...}')
     init.add_argument(
-        "--mode",
-        type=Mode,
-        choices=MODES,
-        default=Mode.FULL,
+        "--level",
+        type=Level,
+        choices=LEVELS,
+        default=Level.FULL,
         help="lite demotes draft blockers to advisories",
     )
     wire_project(init)

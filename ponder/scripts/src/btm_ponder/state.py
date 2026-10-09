@@ -40,8 +40,9 @@ class Reason(StrEnum):
     NOT_PURSUED = "not_pursued"
 
 
-class Mode(StrEnum):
-    """LITE demotes draft blockers to advisories; sourcing is unchanged."""
+class Level(StrEnum):
+    """Rigor level: LITE demotes draft blockers to advisories; sourcing is
+    unchanged."""
 
     FULL = "full"
     LITE = "lite"
@@ -58,7 +59,7 @@ class CloseState(StrEnum):
     FOLDED = "folded"
 
 
-MODES = tuple(Mode)  # argparse reads the vocabulary off the type
+LEVELS = tuple(Level)  # argparse reads the vocabulary off the type
 CHAIN_MIN_LINKS = 2  # a Chain section renders past this many retrieved leaves
 
 

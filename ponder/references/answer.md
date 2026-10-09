@@ -20,7 +20,7 @@ holding each close's stored premise and detail keyed by marker;
 table, `S1` onward, with class, title, url, plus `doi`, `arxiv_id`,
 `authors`, `year`, `venue` where source carries them. Exits 0 even with
 violations: read them; resolve every violation and every `open` leaf before
-drafting. Lite mode: open leaf may remain; disclose it in Open section.
+drafting. At lite level, open leaf may remain; disclose it in Open section.
 
 ## 3. Draft once
 

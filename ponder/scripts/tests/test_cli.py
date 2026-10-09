@@ -10,6 +10,7 @@ from typing import ClassVar
 import pytest
 
 from btm_ponder.cli import main
+from btm_ponder.store import STORE
 
 
 @pytest.fixture(autouse=True)
@@ -217,10 +218,10 @@ class TestStatusAndSchema:
         assert "survivors" in document["note_batch"]["sweeps"]
 
 
-class TestInformalMode:
+class TestLiteLevel:
     def test_lite_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
         code, document, _ = run(
-            ["init", "loose idea", "--mode", "lite"],
+            ["init", "loose idea", "--level", "lite"],
             capsys,
             stdin='{"question": "q"}',
         )
@@ -659,3 +660,18 @@ class TestProject:
         assert code == 0
         _, document, _ = run(["status", opened_doc["session"]], capsys)
         assert (document["project"], document["links"]) == ("ste-tax", [])
+
+
+class TestLegacyMode:
+    def test_a_session_written_with_mode_reads_its_level(self, capsys):
+        """Before the rename, init stored `--mode lite` as `mode`; such a
+        session must still resume at lite."""
+        session = opened(capsys)
+        meta = STORE.directory(session) / "session.json"
+        raw = json.loads(meta.read_text(encoding="utf-8"))
+        raw.pop("level", None)
+        raw["mode"] = "lite"
+        meta.write_text(json.dumps(raw), encoding="utf-8")
+        code, document, _ = run(["status", session], capsys)
+        assert code == 0
+        assert document["level"] == "lite"
