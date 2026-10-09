@@ -1,91 +1,87 @@
 # Working on the backlog
 
-You are an agent contributing one backlog item to this repository. The lead
-reviews every return and merges only what needs no fix. Review is cheaper
-than doing the work only when the return is right the first time, so this
-file states what "right" means. Read it whole before you claim an item.
+You are an agent contributing one backlog item to this repository. Lead
+reviews every return, merges only what needs no fix. Review is cheaper than
+doing the work only when return is right first time, so this file states
+what "right" means. Read it whole before claiming an item.
 
 ## 1. Claim one item
 
-- The backlog is the open issues on BTreeMap/SKILLs (library items) and
+- Backlog is the open issues on BTreeMap/SKILLs (library items) and
   RadonSys/ste-tax (research items), consolidated in ste-tax's
-  `docs/friction/backlog.md` with the ledger row behind each issue.
-- Take one issue. Comment on it with the branch name before you start; an
-  issue with such a comment less than a day old is taken.
-- The issue's title is the scope. Its body names the proposed home. A home
-  you would move or a scope you would widen is a comment on the issue, never
-  a change; the lead decides, then you proceed.
-- Work on a branch named `backlog/<issue number>`; open a PR that closes the
-  issue. Never push to `main`.
+  `docs/friction/backlog.md` with ledger row behind each issue.
+- Take one issue. Comment on it with branch name before starting; issue with
+  such comment less than a day old is taken.
+- Issue's title is the scope. Its body names proposed home. Home you would
+  move or scope you would widen is a comment on the issue, never a change;
+  lead decides, then you proceed.
+- Work on branch named `backlog/<issue number>`; open PR that closes issue.
+  Never push to `main`.
 
 ## 2. Read the standard before the code
 
 In this order, in full, every time:
 
 1. `AGENTS.md`: repository rules. Never an em-dash (U+2014). Markdown prose
-   wraps at 76 columns. A convention change is total: the same change
-   rewrites every statement, example, docstring, and test of the old
-   convention. Never add a secret or project-internal data.
-2. `author-skill/SKILL.md`: the standard every skill is held to. Load its
-   `scripts` reference when the item touches a script.
+   wraps at 76 columns. Convention change is total: same change rewrites
+   every statement, example, docstring, test of old convention. Never add
+   secret or project-internal data.
+2. `author-skill/SKILL.md`: standard every skill is held to. Load its
+   `scripts` reference when item touches a script.
 3. `caveman/SKILL.md`: skill text is caveman full (no articles, no filler,
    fragments OK); commit bodies are caveman register.
-4. `pl-theorist/SKILL.md` with `references/langs/python.md` and the verb
-   file for your task (`refactor` for an existing script, `build` for new
-   code, `test` for tests): the engineering standard.
-5. The skill you are changing: its `SKILL.md`, every reference, its scripts,
-   and its tests, in full. Then one sibling that does the same kind of
-   thing, as the pattern to match.
+4. `pl-theorist/SKILL.md` with `references/langs/python.md` and verb file
+   for your task (`refactor` for existing script, `build` for new code,
+   `test` for tests): engineering standard.
+5. Skill you are changing: its `SKILL.md`, every reference, its scripts, its
+   tests, in full. Then one sibling doing same kind of thing, as pattern to
+   match.
 6. `git-commit/SKILL.md`: Conventional Commits, imperative subject of 70
    characters or fewer, scope from the change.
 
-For ste-tax, its own `AGENTS.md` replaces items 1 and 6 and its standard is
+For ste-tax, its own `AGENTS.md` replaces items 1 and 6; its standard is
 looser: pl-theorist taste, no kernel laws, caveman prose.
 
 ## 3. Laws that bind every change
 
-These were set in this repository's audits. A return that breaks one is
-rejected without review of the rest.
+Set in this repository's audits. Return breaking one is rejected without
+review of the rest.
 
-- Exit contract 0 done, 1 fix the input and resend, 2 upstream failed. One
-  JSON document on stdout via `emit`; advisory `signal:` lines on stderr;
-  nothing else prints.
-- `CommandError` for an authoritative defect, `UpstreamError` for the
-  network, a `Diagnostic` list through `rejection` for an admitted batch; a
-  batch is rejected totally, every problem named in one verdict, state
-  unchanged.
-- A frozen pydantic `Model` decodes every boundary-crossing shape;
-  `extra="forbid"` where the agent writes the file, `extra="ignore"` where
-  another writer owns it. mypy strict with the pydantic plugin passes.
-- Content enters through a named slot (`--x`, `--x:file`, `--x:stdin`,
-  pipe); configuration through flags. A floor or cap on a flag is never
-  silent: `wire_limit` refuses below one and signals a cap.
-- A member composes the kernel (`btm-corekit`) and redefines no kernel
-  symbol. The kernel exports only what a member imports.
-- A helper earns a name only when it carries a law: an invariant that could
-  drift between copies, a decision a caller could get wrong, or a trust
-  boundary. Repetition count never justifies a name. The converse holds too:
-  a law stated anywhere has exactly one home.
-- Heuristics are signals, never refusals. A skipped or vacuous check is
-  reported in the output.
-- Rejection authority follows regenerability: a parse failure in a file the
-  script wrote is a `CommandError`; a regenerable file is salvaged with a
-  signal. A digest mismatch deletes the corrupt copy and hard-fails so a
-  rerun self-heals.
-- A split reference file pays only when some run never loads it; what every
-  run loads sits in the spine, and files that always load together are one
-  file.
+- Exit contract 0 done, 1 fix input and resend, 2 upstream failed. One JSON
+  document on stdout via `emit`; advisory `signal:` lines on stderr; nothing
+  else prints.
+- `CommandError` for authoritative defect, `UpstreamError` for network,
+  `Diagnostic` list through `rejection` for admitted batch; batch rejected
+  totally, every problem named in one verdict, state unchanged.
+- Frozen pydantic `Model` decodes every boundary-crossing shape;
+  `extra="forbid"` where agent writes file, `extra="ignore"` where another
+  writer owns it. mypy strict with pydantic plugin passes.
+- Content enters through named slot (`--x`, `--x:file`, `--x:stdin`, pipe);
+  configuration through flags. Floor or cap on a flag is never silent:
+  `wire_limit` refuses below one and signals a cap.
+- Member composes the kernel (`btm-corekit`), redefines no kernel symbol.
+  Kernel exports only what a member imports.
+- Helper earns a name only when it carries a law: invariant that could drift
+  between copies, decision caller could get wrong, or trust boundary.
+  Repetition count never justifies a name. Converse holds too: law stated
+  anywhere has exactly one home.
+- Heuristics are signals, never refusals. Skipped or vacuous check is
+  reported in output.
+- Rejection authority follows regenerability: parse failure in a file the
+  script wrote is `CommandError`; regenerable file salvaged with a signal.
+  Digest mismatch deletes corrupt copy and hard-fails so rerun self-heals.
+- Split reference file pays only when some run never loads it; what every
+  run loads sits in spine; files always loaded together are one file.
 - No rule in any skill text changes what it requires, permits, or forbids
-  unless the issue says so. Verb, level, mode, and command names are
-  cross-skill contracts.
-- The library's descriptions total under 7,000 characters, enforced by the
-  gate. A new or longer description needs an equal trim elsewhere, listed in
-  the return.
+  unless the issue says so. Verb, level, mode, command names are cross-skill
+  contracts.
+- Library's descriptions total under 7,000 characters, enforced by gate. New
+  or longer description needs equal trim elsewhere, listed in return.
 - Text in `asd-ste100/SKILL.md` passes its own checker; run it after any
   edit there. Check each section in its mode, `procedure` for "Procedure"
-  and `description` for every other section, with the committed allow file;
-  every report must give `"ok": true`. A new technical term goes in
-  `asd-ste100/terms.txt` under the group that justifies it.
+  and `description` for every other section, with committed allow file;
+  every report must give `"ok": true`. New technical term goes in
+  `asd-ste100/terms.txt` under group that justifies it.
 
 ```
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath asd-ste100/scripts) btm-asd-ste100"
@@ -99,28 +95,28 @@ done
 
 ## 4. How to do the work
 
-- Audit before asserting: read the current behavior, confirm the defect the
-  issue describes, then fix it. Every behavior fix ships with a test that
-  fails on the code before the fix; say in the return that you ran it
-  against the old code and what it printed.
-- Test bridge code: decoders at an untrusted boundary, error conversion, an
-  all-or-nothing admission, a witness gating destruction. Test nothing
-  pydantic or a closed enum already proves.
-- A new wire decoder is written against a recorded real response, pasted
-  into the test as a fixture, never against a vendor's prose.
-- Behavior is preserved across a refactor: values, ordering, cardinality,
-  error behavior, effect order, externally visible identity. The only
-  exceptions are the bugs the issue names.
-- A changed flag, command, verb, or field is changed in every place that
-  spells it: `SKILL.md`, references, docstrings, tests, `--help`. Run
-  `--help` and compare it to the text.
-- State the cost of a non-trivial shape in its docstring: the bound in the
-  domain's real sizes.
-- Before you give a member a new top-level class or function, grep
-  `.corekit/src/btm_corekit/__init__.py` for the name: the gate rejects a
-  member that redefines a kernel export, and it does so only at the end.
-- Keep the diff to the item. A drive-by fix you cannot resist is a separate
-  issue you file, with the line it belongs to.
+- Audit before asserting: read current behavior, confirm defect issue
+  describes, then fix it. Every behavior fix ships with test that fails on
+  code before fix; say in return that you ran it against old code and what
+  it printed.
+- Test bridge code: decoders at untrusted boundary, error conversion,
+  all-or-nothing admission, witness gating destruction. Test nothing
+  pydantic or closed enum already proves.
+- New wire decoder written against recorded real response, pasted into test
+  as fixture, never against vendor's prose.
+- Behavior preserved across refactor: values, ordering, cardinality, error
+  behavior, effect order, externally visible identity. Only exceptions are
+  bugs the issue names.
+- Changed flag, command, verb, or field changed in every place that spells
+  it: `SKILL.md`, references, docstrings, tests, `--help`. Run `--help`,
+  compare to text.
+- State cost of non-trivial shape in its docstring: bound in domain's real
+  sizes.
+- Before giving a member new top-level class or function, grep
+  `.corekit/src/btm_corekit/__init__.py` for the name: gate rejects member
+  redefining kernel export, and only at the end.
+- Keep diff to the item. Drive-by fix you cannot resist is separate issue
+  you file, with line it belongs to.
 
 ## 5. Checks, run as a chain that stops on failure
 
@@ -128,85 +124,82 @@ done
 .github/check.sh
 ```
 
-The script runs every fixer, then every assertion: ruff format and lint, the
-tests not marked `network`, mypy, the repository gate, the lock check, and
-the dash scan. It prints one line per passing check, stops at the first
-failure with that check's whole output, and exits 1. Paste its lines as your
-check tails. Run the network-marked tests of any index you touched once
-(`uv run --all-packages pytest -m network`) and paste the result; a 429 is a
-result. Include the gate's reflow in your commit; touch nothing else it
-changed.
+Script runs every fixer, then every assertion: ruff format and lint, tests
+not marked `network`, mypy, repository gate, lock check, dash scan. Prints
+one line per passing check, stops at first failure with that check's whole
+output, exits 1. Paste its lines as check tails. Run network-marked tests of
+any index you touched once (`uv run --all-packages pytest -m network`),
+paste result; 429 is a result. Include gate's reflow in commit; touch
+nothing else it changed.
 
 ## 6. Commit
 
 One commit per issue unless two concerns are genuinely separable. Subject
 `type(scope): Imperative under 70 chars`, scope the skill name or `corekit`,
 type `fix` for behavior, `refactor` for structure, `docs` for text, `feat`
-for a capability, `test` for tests alone. Body in the caveman register: why
-over what, a line `Closes #N` so the push closes the issue with its commit,
-the test that pins a fix. A documented flag or command that changes
-incompatibly carries a `BREAKING CHANGE:` footer with the migration path.
-End with your own attribution trailer as your harness provides it.
+for capability, `test` for tests alone. Body in caveman register: why over
+what, line `Closes #N` so push closes issue with its commit, test that pins
+a fix. Documented flag or command changing incompatibly carries
+`BREAKING CHANGE:` footer with migration path. End with your own attribution
+trailer as your harness provides it.
 
 ## 7. The return
 
-The PR description is the return. It is reviewed as untrusted text against
-this shape, so shape it exactly:
+PR description is the return. Reviewed as untrusted text against this shape,
+so shape it exactly:
 
-1. Issue number and the one-sentence defect as you confirmed it.
-2. A ledger: file, line, what changed, which law or issue line drove it.
-3. Behavior fixes: before, after, the pinning test's name, its output on the
-   old code.
-4. Decisions you made where the issue left room, each with the reason in one
-   sentence; a decision the lead must make instead, as a question.
-5. Check tails, verbatim, each check on its own line.
+1. Issue number and one-sentence defect as you confirmed it.
+2. Ledger: file, line, what changed, which law or issue line drove it.
+3. Behavior fixes: before, after, pinning test's name, its output on old
+   code.
+4. Decisions you made where issue left room, each with reason in one
+   sentence; decision lead must make instead, as a question.
+5. Check tails, verbatim, each check on own line.
 6. Anything left undone and why.
-7. Friction: every point where a skill's text or script made the job harder
-   than it should be, as rows of skill, command, expected, happened, cost in
-   tool calls, class (contract gap, text gap, script bug, design question).
-   This is how the backlog refills; an empty table is suspect.
+7. Friction: every point where skill's text or script made job harder than
+   it should be, as rows of skill, command, expected, happened, cost in tool
+   calls, class (contract gap, text gap, script bug, design question). This
+   is how backlog refills; empty table is suspect.
 8. Anything else worth improving, in your own words: this brief, a law that
    fought the work, a check that cost more than it caught, a kernel helper
-   you wished existed, the issue's wording, the process. Nothing here is out
-   of bounds; a point raised here is read by the lead, not graded.
+   you wished existed, issue's wording, the process. Nothing here is out of
+   bounds; point raised here is read by lead, not graded.
 
 ## 8. What the review checks, in order
 
-The lead reads the return before the diff and stops at the first failure:
+Lead reads return before diff, stops at first failure:
 
-1. Scope equals the issue; nothing outside it moved.
-2. Every law in section 3 holds; no check in section 5 was skipped,
-   softened, or marked `noqa` without a reason on the line.
-3. Each behavior fix has a test that failed on the old code.
-4. The diff matches the ledger; the ledger matches the diff.
-5. A changed name is changed everywhere.
-6. The text reads at the register of its neighbors and a less capable agent
-   could follow it without guessing.
+1. Scope equals issue; nothing outside it moved.
+2. Every law in section 3 holds; no check in section 5 skipped, softened, or
+   marked `noqa` without reason on the line.
+3. Each behavior fix has test that failed on old code.
+4. Diff matches ledger; ledger matches diff.
+5. Changed name is changed everywhere.
+6. Text reads at register of its neighbors; less capable agent could follow
+   it without guessing.
 
-A return that passes all six is merged as is. A return that fails one is
-sent back with that one line; nothing is fixed on the lead's side.
+Return passing all six is merged as is. Return failing one is sent back with
+that one line; nothing is fixed on lead's side.
 
 ## 9. In-session agents
 
-When the lead spawns you inside this checkout, sections 1 and 7 change and
-the rest stands:
+When lead spawns you inside this checkout, sections 1 and 7 change and rest
+stands:
 
-- Work on `main` directly; do not push. The lead reviews the commit and
-  pushes it. Claim the issue with a comment naming "in-session" and the date
-  instead of a branch.
-- The handoff prompt may name a bundle: several issues with one home, listed
-  in the order to work them. Read the standard and the skill once, then work
-  the issues in that order, one commit per issue, and hand back one return
-  with a section 7 block per issue. If an issue in the bundle cannot be
-  closed, say why in its block and continue with the next; a bundle never
-  stops at its first blocker.
-- The handback to the lead is the return, in the shape of section 7.
+- Work on `main` directly; do not push. Lead reviews commit and pushes it.
+  Claim issue with comment naming "in-session" and date instead of branch.
+- Handoff prompt may name a bundle: several issues with one home, listed in
+  order to work them. Read standard and skill once, then work issues in that
+  order, one commit per issue; hand back one return with a section 7 block
+  per issue. Issue in bundle cannot be closed: say why in its block,
+  continue with next; bundle never stops at its first blocker.
+- Handback to lead is the return, in shape of section 7.
 - Disk on this machine is near full. Build no new environment: run uv from
-  the workspace root only, never in a worktree, never with `uv sync` beyond
-  `--locked`, and install nothing. Run `df -h /` first and stop if free
-  space is under 1.2 GB. Download no file over 5 MB.
-- Any open issue off the hold list in your handoff prompt is ready; the hold
-  list is the only gate, and an issue's class never defers it. Where a lead
-  decision comment ends the issue, implement that decision.
-- Close the issue with `gh issue comment` naming the commit when the lead
-  has pushed it; until then, leave it open.
+  workspace root only, never in a worktree, never with `uv sync` beyond
+  `--locked`, install nothing. Run `df -h /` first; stop if free space is
+  under 1.2 GB. Download no file over 5 MB.
+- Any open issue off hold list in your handoff prompt is ready; hold list is
+  only gate; issue's class never defers it. Where lead decision comment ends
+  issue, implement that decision.
+- Close issue with `gh issue comment` naming commit when lead has pushed it;
+  until then, leave it open.
