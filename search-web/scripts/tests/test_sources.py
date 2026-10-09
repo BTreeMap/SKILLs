@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 import httpx
@@ -244,3 +245,29 @@ class TestFetch:
             + b"</p></article></body></html>"
         )
         assert "long enough" in sources.fetch("https://example.org/a")
+
+
+class TestSave:
+    def test_the_raw_body_lands_unchanged_with_its_digest(self, served, tmp_path):
+        """A data file is pinned by the bytes the server sent, so nothing in
+        between may extract, decode, or refuse them, a PDF included."""
+        body = b"%PDF-1.7\n" + bytes(range(256)) * 64
+        served(body)
+        target = tmp_path / "data" / "set.bin"
+        saved = sources.save("https://example.org/set.bin", target)
+        assert target.read_bytes() == body
+        assert saved == sources.Saved(len(body), hashlib.sha256(body).hexdigest())
+
+    def test_an_existing_file_is_refused_and_left_alone(self, served, tmp_path):
+        served(b"new")
+        target = tmp_path / "set.csv"
+        target.write_bytes(b"old")
+        with pytest.raises(CommandError, match="exists"):
+            sources.save("https://example.org/set.csv", target)
+        assert target.read_bytes() == b"old"
+
+    def test_a_non_http_url_is_refused_before_any_file(self, tmp_path):
+        target = tmp_path / "x"
+        with pytest.raises(CommandError, match="http or https"):
+            sources.save("file:///etc/passwd", target)
+        assert not target.exists()

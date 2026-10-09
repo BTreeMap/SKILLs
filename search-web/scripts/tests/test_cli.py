@@ -149,6 +149,38 @@ class TestFetch:
         assert document["text"] == "https://x.org/b" and "cached" not in err
 
 
+class TestRawFetch:
+    def test_out_reports_the_digest_and_skips_the_cache(
+        self, capsys, monkeypatch, tmp_path, temp_cache
+    ):
+        """A pin is of what the server sends now, so a raw fetch never reads
+        or fills the page cache."""
+        calls = []
+
+        def save(url, target):
+            calls.append((url, target))
+            return sources.Saved(3, "ab" * 32)
+
+        monkeypatch.setattr(sources, "save", save)
+        target = tmp_path / "set.csv"
+        argv = ["fetch", "https://x.org/set.csv", "--out", str(target)]
+        _, first, _ = run(argv, capsys)
+        _, second, err = run(argv, capsys)
+        assert calls == [("https://x.org/set.csv", target)] * 2
+        assert (
+            first
+            == second
+            == {
+                "verb": "fetch",
+                "url": "https://x.org/set.csv",
+                "path": str(target),
+                "bytes": 3,
+                "sha256": "ab" * 32,
+            }
+        )
+        assert "cached" not in err and not temp_cache.exists()
+
+
 class TestLimit:
     def test_a_limit_below_one_is_rejected_before_any_request(
         self, capsys, monkeypatch

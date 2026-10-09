@@ -56,7 +56,7 @@ $R instant --query "<term>"
 $R wiki --query "<terms>" [--limit 8]
 $R scholar --query "<terms>" [--source openalex|crossref|arxiv|semanticscholar|firecrawl] [--limit 8]
 $R passages "<doi-or-arxiv-id-or-index-id>" [--query "<question>"] [--source firecrawl] [--limit 4]
-$R fetch "<url>"
+$R fetch "<url>" [--out PATH]
 $R clean
 </commands>
 
@@ -95,8 +95,11 @@ and says so; `clean` drops the cache.
   the index does not hold is a rejection.
 - `fetch`: takes one http or https URL and returns an article. A PDF, a
   raw data file such as JSONL or CSV, a listing, a paywall, or a page
-  rendered by JavaScript comes back refused, not empty. Download a data
-  file directly instead.
+  rendered by JavaScript comes back refused, not empty. With `--out PATH`
+  it extracts nothing: it writes the body unchanged to `PATH`, a file that
+  must not exist yet, and returns its `path`, `bytes`, and `sha256`. Pin a
+  data file or a PDF this way, quoting the digest. A raw fetch is never
+  cached and is capped at 512 MiB.
 
 ## Reading results
 

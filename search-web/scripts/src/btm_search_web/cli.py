@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable, Sequence
+from pathlib import Path
 
 import btm_search_web
 from btm_corekit import (
@@ -127,7 +128,22 @@ def cmd_passages(args: argparse.Namespace) -> int:
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
-    """One page's text, cached by URL in the record shape every verb caches."""
+    """One page's text, cached by URL in the record shape every verb caches;
+    with `--out`, the raw body written to a file and pinned by its digest,
+    never cached, so the digest is always of what the server sent now."""
+    if args.out is not None:
+        target = Path(args.out).absolute()
+        saved = sources.save(args.url, target)
+        emit(
+            {
+                "verb": "fetch",
+                "url": args.url,
+                "path": str(target),
+                "bytes": saved.size,
+                "sha256": saved.sha256,
+            }
+        )
+        return 0
     key = f"fetch:{args.url}"
     rows = remembered(key)
     if rows:
@@ -199,6 +215,12 @@ def build_parser() -> argparse.ArgumentParser:
     fetch = commands.add_parser("fetch", help="readable text of one page")
     fetch.set_defaults(func=cmd_fetch)
     fetch.add_argument("url", help="an http or https URL")
+    fetch.add_argument(
+        "--out",
+        metavar="PATH",
+        help="write the raw body to PATH, a new file, and report its bytes and "
+        "SHA-256 instead of extracting text",
+    )
 
     cleaner = commands.add_parser("clean", help="drop the query cache, freeing space")
     cleaner.set_defaults(func=cmd_clean)

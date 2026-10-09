@@ -11,6 +11,7 @@ APP = "btm-skills"  # the instant-answer API asks callers to name themselves
 TIMEOUT_SECONDS = 30
 RESPONSE_CAP_BYTES = 16 * 1024 * 1024
 PAGE_CAP_BYTES = 8 * 1024 * 1024
+RAW_CAP_BYTES = 512 * 1024 * 1024  # a data file pinned by digest, not read as a page
 DEFAULT_RESULTS = 8
 MAX_RESULTS = 50
 SNIPPET_CHARS = 400  # enough to judge a hit, not enough to read the page

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import urllib.parse
+from pathlib import Path
+from typing import NamedTuple
 
 import httpx
 import trafilatura
@@ -21,6 +24,7 @@ from btm_corekit import (
     Window,
     Work,
     client_for,
+    download,
     get_bytes,
     json_body,
     normalize_arxiv_id,
@@ -33,6 +37,7 @@ from btm_search_web.constants import (
     ARXIV_REGISTRANT,
     INSTANT_ANSWER,
     PAGE_CAP_BYTES,
+    RAW_CAP_BYTES,
     RESPONSE_CAP_BYTES,
     TIMEOUT_SECONDS,
     TITLE_CHARS,
@@ -197,14 +202,19 @@ def read(ref: Ref, query: str | None, limit: int, source: str) -> tuple[Passage,
     return passages(INDEXES[source], client(), RESPONSE_CAP_BYTES, ref, query, limit)
 
 
+def web_url(url: str) -> str:
+    """The URL, once it is http or https: no request reads a local file."""
+    if not url.startswith(("http://", "https://")):
+        raise CommandError(f"fetch takes an http or https URL; got {url!r}")
+    return url
+
+
 def fetch(url: str) -> str:
     """The readable text of one page.
 
     A PDF is refused rather than mangled: `/read-pdf` extracts those.
     """
-    if not url.startswith(("http://", "https://")):
-        raise CommandError(f"fetch takes an http or https URL; got {url!r}")
-    payload = get_bytes(client(), url, PAGE_CAP_BYTES)
+    payload = get_bytes(client(), web_url(url), PAGE_CAP_BYTES)
     if payload[:5] == b"%PDF-":
         raise CommandError(f"{url} is a PDF; read it with /read-pdf")
     text = trafilatura.extract(payload.decode("utf-8", "replace"))
@@ -214,3 +224,29 @@ def fetch(url: str) -> str:
             "a paywall, or rendered by JavaScript"
         )
     return str(text)
+
+
+class Saved(NamedTuple):
+    """What a raw fetch wrote: the size and digest that pin the file."""
+
+    size: int
+    sha256: str
+
+
+def save(url: str, target: Path) -> Saved:
+    """The body unchanged at `target`, sized and digested, for pinning a data
+    file. An existing file is refused, never overwritten. Two passes over the
+    file, each linear in its size and capped at 512 MiB."""
+    web_url(url)
+    if target.exists():
+        raise CommandError(f"{target} exists; name a new path or remove it first")
+    download(
+        client(),
+        url,
+        target,
+        RAW_CAP_BYTES,
+        remedy="the raw cap is 512 MiB; download a larger file outside this skill",
+    )
+    with target.open("rb") as body:
+        digest = hashlib.file_digest(body, "sha256").hexdigest()
+    return Saved(target.stat().st_size, digest)
