@@ -77,6 +77,7 @@ def status_view(run: Run) -> dict[str, Any]:
         "state": run.meta.state,
         "venue": run.meta.venue,
         "model": run.meta.model,
+        "artifacts": state.root,
         "stages": list(run.meta.stages()),
         "stage": state.stage,
         "gates": dict(state.gates),
@@ -128,13 +129,13 @@ def _changed_since_ledger(rows: list[dict[str, Any]]) -> list[str]:
 
 def check_view(run: Run) -> dict[str, Any]:
     """The gate summary and the evidence ledger, for the human."""
-    state, meta = run.state, run.meta
+    state = run.state
     ledger = []
     missing = []
     for claim_id, claim in state.claims.items():
         exists = None
         if claim.artifact is not None:
-            exists = meta.artifact(claim.artifact).exists()
+            exists = state.artifact(claim.artifact).exists()
             if claim.status in EVIDENCED and not exists:
                 missing.append(
                     f"claim {claim_id}'s artifact {claim.artifact} does not exist"

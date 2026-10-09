@@ -158,6 +158,13 @@ class ClaimDropped(Model):
     reason: NonEmpty
 
 
+class ArtifactsRepinned(Model):
+    """The artifact tree moved; claim paths resolve against `root` from here."""
+
+    event: Literal["artifacts-repinned"]
+    root: NonEmpty
+
+
 class Decision(Model):
     event: Literal["decision"]
     what: NonEmpty
@@ -172,6 +179,7 @@ Event = (
     | ClaimAdded
     | ClaimRevised
     | ClaimDropped
+    | ArtifactsRepinned
     | Decision
 )
 EVENT: TypeAdapter[Event] = TypeAdapter(Annotated[Event, Field(discriminator="event")])
@@ -195,6 +203,7 @@ class RunState:
 
     meta: RunMeta
     gates: dict[Gate, Standing]
+    root: str
     stage: int | None = None
     closed: Gate | None = None
     claims: dict[str, Claim] = field(default_factory=dict)
@@ -203,7 +212,12 @@ class RunState:
 
     @classmethod
     def of(cls, meta: RunMeta) -> RunState:
-        return cls(meta, dict.fromkeys(meta.gates(), Standing.OPEN))
+        return cls(meta, dict.fromkeys(meta.gates(), Standing.OPEN), meta.artifacts)
+
+    def artifact(self, path: str) -> Path:
+        """A claim's artifact, relative to the latest artifact root."""
+        given = Path(path).expanduser()
+        return given if given.is_absolute() else Path(self.root) / given
 
     def gate_at(self, stage: int) -> Gate | None:
         return next((g for g in self.gates if GATE_STAGE[g] == stage), None)
@@ -309,6 +323,9 @@ def apply(state: RunState, raw: Mapping[str, Any]) -> None:
             _live(state, claim_id)
             del state.claims[claim_id]
             state.dropped[claim_id] = reason
+        case ArtifactsRepinned(root=root):
+            require(Path(root).is_absolute(), f"artifact root {root!r} is not absolute")
+            state.root = root
         case Decision():
             pass
         case _:

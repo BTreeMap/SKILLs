@@ -140,10 +140,10 @@ signal.
 
 | Command | Contract |
 | --- | --- |
-| `init` | Takes two or three keywords, or a directory path as the session location. Mints the session and pins the verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), and the artifact root that claim paths resolve against (default: the current directory). |
+| `init` | Takes two or three keywords, or a directory path as the session location. Mints the session and pins the verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), and the artifact root that claim paths resolve against (default: the current directory; an `artifacts-repinned` event moves it). |
 | `schema` | Prints every event shape. |
 | `note` | Admits one batch of events to the trace. |
-| `status` | The cheap resume view: stage, gate standings, claim counts, the pad tail, and an advisory `next`. |
+| `status` | The cheap resume view: stage, gate standings, claim counts, the live artifact root, the pad tail, and an advisory `next`. |
 | `check` | Derives the gate summary and the evidence ledger. |
 | `jot`, `recall` | Write to and read from the pad. |
 | `clean` | Lists sessions with sizes; removes one or `--all`, reporting bytes freed. |
@@ -173,6 +173,7 @@ keyword ref works but signals, so write full identifiers in the next batch.
   {"event": "claim-added", "kw": ["p99", "drop"], "text": "p99 latency drops 30% under load", "status": "supported", "artifact": "runs/load/metrics.json", "location": "summary.p99, seeds 0-2"},
   {"event": "claim-revised", "claim": "<ref>", "status": "exploratory"},
   {"event": "claim-dropped", "claim": "<ref>", "reason": "the campaign did not run"},
+  {"event": "artifacts-repinned", "root": "<the artifact tree's new directory>"},
   {"event": "decision", "what": "lead with the contradiction framing", "why": "the closest prior work assumes the opposite", "from": ["j3"]},
   {"event": "gate-requested", "gate": "ledger"},
   {"event": "gate-decided", "gate": "ledger", "outcome": "approve", "reply": "<the human's reply, verbatim>"}
@@ -235,9 +236,14 @@ artifact exists under the artifact root, re-checks existence on every
 written (same metric, split, and baseline) is the agent's judgment and the
 human's at the gate.
 
-Artifact paths resolve against the root pinned at `init`; an absolute path
-stands as given. Moving the artifact tree after `init` marks every claim
-missing in `check` and blocks the `draft` gate.
+Artifact paths resolve against the latest artifact root: the one pinned at
+`init`, or the one the last `artifacts-repinned` event names. An absolute
+claim path stands as given. Moving the artifact tree marks every evidenced
+claim missing in `check` and blocks the `draft` gate. When the tree moves (a
+worktree removed after merge, a renamed directory), note
+`artifacts-repinned` with the new directory; the script resolves a relative
+`root` against the current directory, refuses one that is not a directory,
+and signals the evidenced claims whose artifacts the new root lacks.
 
 | Status | Meaning | Script checks |
 | --- | --- | --- |

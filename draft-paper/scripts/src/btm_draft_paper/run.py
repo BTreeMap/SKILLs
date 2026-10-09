@@ -4,7 +4,6 @@ and gates the verb spans."""
 from __future__ import annotations
 
 from enum import StrEnum
-from pathlib import Path
 
 from pydantic import model_validator
 
@@ -67,7 +66,7 @@ class RunMeta(Model):
     state: InputState
     venue: NonEmpty
     model: NonEmpty
-    artifacts: NonEmpty
+    artifacts: NonEmpty  # the root at init; `artifacts-repinned` moves it
     created: str = ""
 
     @model_validator(mode="after")
@@ -102,8 +101,3 @@ class RunMeta(Model):
     def gates(self) -> tuple[Gate, ...]:
         first, last = self.stages()
         return tuple(gate for gate in Gate if first <= GATE_STAGE[gate] <= last)
-
-    def artifact(self, path: str) -> Path:
-        """A claim's artifact, relative to the root pinned at init."""
-        given = Path(path).expanduser()
-        return given if given.is_absolute() else Path(self.artifacts) / given

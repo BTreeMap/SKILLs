@@ -201,6 +201,33 @@ class TestNote:
         assert "location" in document["rejected"][0]["fix"]
 
 
+class TestRepin:
+    def test_a_repin_moves_the_root_that_claims_resolve_against(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path, tmp_path: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        note(session, capsys, stage(2), SUPPORTED)
+        moved = artifacts.rename(tmp_path / "merged")
+        _, document, _ = run(["check", session], capsys)
+        assert len(document["missing_artifacts"]) == 1
+        repin = {"event": "artifacts-repinned", "root": str(moved)}
+        assert note(session, capsys, repin)[0] == 0
+        _, document, _ = run(["check", session], capsys)
+        assert document["ledger"][0]["exists"] is True
+        assert document["missing_artifacts"] == []
+        _, document, _ = run(["status", session], capsys)
+        assert document["artifacts"] == str(moved)
+
+    def test_a_repin_to_a_missing_directory_is_refused(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path, tmp_path: Path
+    ) -> None:
+        session = opened(capsys, artifacts)
+        repin = {"event": "artifacts-repinned", "root": str(tmp_path / "gone")}
+        code, document, _ = note(session, capsys, repin)
+        assert code == 1
+        assert document["rejected"][0]["where"] == "events[0].root"
+
+
 class TestGates:
     def test_no_stage_past_a_gate_until_the_human_approves(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path

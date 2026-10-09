@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import ConfigDict
@@ -23,6 +24,7 @@ from btm_corekit import (
 from btm_draft_paper.run import Gate
 from btm_draft_paper.trace import (
     EVIDENCED,
+    ArtifactsRepinned,
     Claim,
     ClaimDropped,
     ClaimRevised,
@@ -52,6 +54,8 @@ SCHEMA: dict[str, str] = {
     "claim-revised": '{"event": "claim-revised", "claim": "<ref>", '
     'plus any of "text", "status", "artifact", "location"}',
     "claim-dropped": '{"event": "claim-dropped", "claim": "<ref>", "reason": "..."}',
+    "artifacts-repinned": '{"event": "artifacts-repinned", '
+    '"root": "the artifact tree\'s new directory"}',
     "decision": '{"event": "decision", "what": "...", "why": "...", '
     '"from": ["<pad id>"] (optional)}',
 }
@@ -70,6 +74,7 @@ ROWS: dict[str, type[Model]] = {
     "claim-added": ClaimEntry,
     "claim-revised": ClaimRevised,
     "claim-dropped": ClaimDropped,
+    "artifacts-repinned": ArtifactsRepinned,
     "decision": Decision,
 }
 
@@ -138,12 +143,23 @@ class _Expansion(Admission):
             case ClaimRevised() | ClaimDropped():
                 full = self.resolve_ref(entry.claim, self.claims, f"{where}.claim")
                 return None if full is None else {**dump(entry), "claim": full}
+            case ArtifactsRepinned():
+                root = self.directory(entry.root, f"{where}.root")
+                return None if root is None else {**dump(entry), "root": root}
             case Decision():
-                if not self.pad_links(entry.from_, where):
-                    return None
-                return entry.model_dump(mode="json", by_alias=True)
+                linked = self.pad_links(entry.from_, where)
+                return entry.model_dump(mode="json", by_alias=True) if linked else None
             case _:
                 return dump(entry)
+
+    def directory(self, given: str, where: str) -> str | None:
+        """`given` made absolute against the current directory, when it names
+        a directory; the trace stores roots absolute so replay needs no cwd."""
+        root = Path(given).expanduser().resolve()
+        if root.is_dir():
+            return str(root)
+        self.fail(where, f"{root} is not a directory")
+        return None
 
     def simulate(self) -> None:
         """Apply staged events in order; a refusal becomes a located order,
@@ -161,6 +177,8 @@ class _Expansion(Admission):
                 self.skipped(before, event["stage"], where)
             if kind in ("claim-added", "claim-revised"):
                 self.artifact_exists(event.get("id") or event["claim"], where)
+            if kind == "artifacts-repinned":
+                self.lost_under_root(where)
             if kind == "gate-requested" and event["gate"] == Gate.DRAFT:
                 for claim_id in self.state.claims:
                     self.artifact_exists(claim_id, where)
@@ -169,12 +187,28 @@ class _Expansion(Admission):
         claim = self.state.claims[claim_id]
         if claim.status not in EVIDENCED or claim.artifact is None:
             return
-        path = self.state.meta.artifact(claim.artifact)
+        path = self.state.artifact(claim.artifact)
         if not path.exists():
             self.fail(
                 where,
                 f"claim {claim_id}'s artifact {path} does not exist: fix the "
                 "path, mark the claim to-run or unsupported, or drop it",
+            )
+
+    def lost_under_root(self, where: str) -> None:
+        """Advise on evidenced claims the new root does not hold; `check`
+        and the draft gate act on them."""
+        lost = [
+            claim_id
+            for claim_id, claim in self.state.claims.items()
+            if claim.status in EVIDENCED
+            and claim.artifact is not None
+            and not self.state.artifact(claim.artifact).exists()
+        ]
+        if lost:
+            self.advisories.append(
+                f"{where}: the new root {self.state.root} lacks the artifact "
+                f"of evidenced claims {', '.join(lost)}"
             )
 
     def skipped(self, before: int | None, stage: int, where: str) -> None:
