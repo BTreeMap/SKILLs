@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 from btm_corekit import Work
-from btm_lit_review.constants import ReadLevel, Status
+from btm_lit_review.constants import ReadLevel, Stage, Status
 from btm_lit_review.corpus.curate import Screening, band_advisory, next_step
 from btm_lit_review.corpus.paper import paper_from
 
@@ -133,6 +133,15 @@ class TestDecisionUpdates:
     def test_an_explicit_null_reason_clears_it(self):
         assert self.parsed({"reason": None}) == {"decision_reason": None}
 
+    def test_a_new_status_without_a_stage_leaves_it_unstated(self):
+        """A stage left from an earlier decision would misplace this one in
+        the flow counts."""
+        assert self.parsed({"status": "included"})["decision_stage"] is None
+
+    def test_a_stage_lands_in_the_domain(self):
+        decision = {"status": "excluded", "reason": "r", "stage": "full-text"}
+        assert self.parsed(decision)["decision_stage"] is Stage.FULL_TEXT
+
     def test_a_valid_read_level_lands_in_the_domain(self):
         assert self.parsed({"read_level": "full-text"})["read_level"] is (
             ReadLevel.FULL_TEXT
@@ -149,6 +158,7 @@ class TestVocabulary:
             ({"reason": 0}, "reason"),
             ({"status": "maybe"}, "status"),
             ({"read_level": "skimmed"}, "read_level"),
+            ({"stage": "abstract"}, "stage"),
             ({"status": None}, "status"),
         ],
     )

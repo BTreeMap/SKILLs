@@ -157,7 +157,7 @@ def wire_curate(commands: Commands) -> None:
     add_slot(
         update,
         DECISIONS,
-        '{"<key>": {"status": ..., "reason": ..., "read_level": ...}}',
+        '{"<key>": {"status": ..., "reason": ..., "stage": ..., "read_level": ...}}',
     )
     update.set_defaults(func=cmd_update)
 

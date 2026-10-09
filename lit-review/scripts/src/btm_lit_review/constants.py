@@ -46,12 +46,21 @@ class ReadLevel(StrEnum):
     FULL_TEXT = "full-text"
 
 
+class Stage(StrEnum):
+    """The screening pass a decision was made in; the report's flow counts
+    split exclusions by it."""
+
+    TITLE_ABSTRACT = "title-abstract"
+    FULL_TEXT = "full-text"
+
+
 READ_RANK = {level: rank for rank, level in enumerate(ReadLevel)}
 # The argparse and validation surfaces read the vocabulary off the type, so a
 # variant can never be added in one place and forgotten in the other.
 LEVELS = tuple(Level)
 STATUSES = tuple(Status)
 READ_LEVELS = tuple(ReadLevel)
+STAGES = tuple(Stage)
 SOURCES = tuple(INDEXES)
 GRAPH_SOURCES = tuple(dict.fromkeys(having("references") + having("citations")))
 """The indexes a snowball can walk, in registry order; openalex leads."""

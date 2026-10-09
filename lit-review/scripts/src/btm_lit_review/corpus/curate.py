@@ -38,6 +38,7 @@ from btm_lit_review.constants import (
     AUTHOR_SHOW_LIMIT,
     Level,
     ReadLevel,
+    Stage,
     Status,
 )
 from btm_lit_review.corpus.paper import PAPER_FIELDS, Paper
@@ -101,7 +102,9 @@ def cmd_screen(args: argparse.Namespace) -> int:
     )
     for key in matched:
         papers[key] = papers[key].with_(
-            status=action, decision_reason=f"rule:{rule_id}: {reason}"
+            status=action,
+            decision_reason=f"rule:{rule_id}: {reason}",
+            decision_stage=Stage.TITLE_ABSTRACT,  # a rule reads no full text
         )
     save_papers(session, papers)
     emit(
@@ -120,10 +123,12 @@ def cmd_screen(args: argparse.Namespace) -> int:
 
 class Decision(Model):
     """One screening decision. An absent field keeps its value; an explicit
-    null clears the reason. An exclusion states why in the same decision."""
+    null clears the reason or the stage. An exclusion states why in the same
+    decision, and a new status without a stage leaves the stage unstated."""
 
     status: Status | None = None
     reason: str | None = None
+    stage: Stage | None = None
     read_level: ReadLevel | None = None
 
     @model_validator(mode="after")
@@ -142,7 +147,9 @@ class Decision(Model):
         return self
 
 
-DECISION_SCHEMA = '{"status": "...", "reason": "...", "read_level": "..."}'
+DECISION_SCHEMA = (
+    '{"status": "...", "reason": "...", "stage": "...", "read_level": "..."}'
+)
 
 
 def decision_updates(decision: Decision) -> dict[str, Any]:
@@ -157,6 +164,9 @@ def decision_updates(decision: Decision) -> dict[str, Any]:
         updates["status"] = decision.status
     if "reason" in sent:
         updates["decision_reason"] = collapsed(decision.reason)
+    if "stage" in sent or "status" in sent:
+        # A stage belongs to the decision it came with, never to the next one.
+        updates["decision_stage"] = decision.stage
     if "read_level" in sent:
         updates["read_level"] = decision.read_level
     return updates
@@ -408,6 +418,11 @@ def cmd_status(args: argparse.Namespace) -> int:
             f"protocol.json records {len(protocol.amendments)} amendment(s); "
             "append one per change"
         )
+    excluded_at = Counter(
+        paper.decision_stage
+        for paper in papers.values()
+        if paper.status is Status.EXCLUDED
+    )
     pending = unextracted(session.root, papers)
     undecided = by_status.get(Status.CANDIDATE, 0)
     included = by_status.get(Status.INCLUDED, 0)
@@ -423,6 +438,10 @@ def cmd_status(args: argparse.Namespace) -> int:
             "searches": len(log),
             "papers": {status.value: n for status, n in by_status.items()},
             "included_read_levels": {level.value: n for level, n in by_read.items()},
+            "excluded_by_stage": {
+                **{stage.value: excluded_at[stage] for stage in Stage},
+                "unstated": excluded_at[None],
+            },
             "undecided": undecided,
             "unextracted": pending,
             "next": next_step(protocol.ready, len(log), undecided, included, pending),

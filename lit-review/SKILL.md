@@ -145,7 +145,7 @@ $R clean ["$S" | --all]
 | `show` | Reads specific records by key, status, or regex. `--found-by` keeps the papers the named search log ids fetched, and `--on key` runs the regex over keys (`^doi:10\.1007/` for one DOI prefix); both narrow the `--status` or `--keys` selection. |
 | `brief` | The resume view and the belief check: findings and gaps with verdicts derived from the live corpus, corpus drift since the previous brief, the citation marker table, unextracted papers, the pad tail, and lore. Run it after compaction and before drafting. |
 | `cite-check` | Checks every `[n]` in the draft against assigned markers. Numbers are append-only: a late inclusion extends the table and existing citations stand. |
-| `status` | The cheap resume view: per-status counts, criteria drift, advisories. |
+| `status` | The cheap resume view: per-status counts, exclusions by screening stage, criteria drift, advisories. |
 | `clean` | Lists sessions with sizes and removes one session or `--all`, reporting bytes freed. |
 
 `protocol.json` in the session directory is the one file the agent edits by

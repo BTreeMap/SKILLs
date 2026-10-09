@@ -15,7 +15,7 @@ from btm_corekit import (
     ascii_words,
     parse_model,
 )
-from btm_lit_review.constants import ReadLevel, Status
+from btm_lit_review.constants import ReadLevel, Stage, Status
 
 
 class Paper(Model):
@@ -36,6 +36,7 @@ class Paper(Model):
     found_by: tuple[str, ...] = ()
     status: Status = Status.CANDIDATE
     decision_reason: str | None = None
+    decision_stage: Stage | None = None
     read_level: ReadLevel = ReadLevel.NONE
 
     @model_validator(mode="after")
@@ -89,6 +90,7 @@ def paper_from(work: Work) -> Paper:
         found_by=(),
         status=Status.CANDIDATE,
         decision_reason=None,
+        decision_stage=None,
         read_level=ReadLevel.NONE,
     )
 
@@ -132,7 +134,9 @@ def absorb(
 
 PAPER_FIELDS = frozenset(Paper.model_fields)
 IDENTITY_FIELDS = frozenset({"key", "title"})
-DECISION_FIELDS = frozenset({"status", "decision_reason", "read_level"})
+DECISION_FIELDS = frozenset(
+    {"status", "decision_reason", "decision_stage", "read_level"}
+)
 COUNTED_FIELDS = frozenset({"cited_by_count", "found_by", "authors"})
 # Derived, so a field added to Paper cannot be left out of a merge.
 GAP_FILLABLE = tuple(

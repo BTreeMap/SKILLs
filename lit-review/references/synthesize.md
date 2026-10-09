@@ -62,7 +62,9 @@ they earn support.
 
 Assemble, verify, then deliver. Fill sections in order and drop bracketed
 ones where the level says so. Take the flow counts from state: `status`
-gives per-status counts, the log gives per-search totals.
+gives per-status counts and exclusions by screening stage, the log gives
+per-search totals. Exclusions `status` counts as `unstated` carry no stage:
+set it with `update` before counting.
 
 <template for="report">
 # Literature review: <question>

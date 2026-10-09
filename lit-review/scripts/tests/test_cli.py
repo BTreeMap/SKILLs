@@ -360,6 +360,35 @@ class TestStatus:
         assert document["undecided"] == 2
         assert "screen 2 undecided" in document["next"]
 
+    def test_exclusions_split_by_the_stage_that_cut_them(self, session, capsys):
+        """The report's flow counts read off status; before, only a total
+        came back and the full-text count was grepped from reasons."""
+        run(
+            ["screen", str(session.root), "--exclude"],
+            capsys,
+            stdin='{"match": "cooking", "reason": "off topic"}',
+        )
+        run(
+            ["update", str(session.root)],
+            capsys,
+            stdin=json.dumps(
+                {
+                    "doi:10.1/a": {
+                        "status": "excluded",
+                        "reason": "no data",
+                        "stage": "full-text",
+                    },
+                    "doi:10.1/b": {"status": "excluded", "reason": "editorial"},
+                }
+            ),
+        )
+        _, document, _ = run(["status", str(session.root)], capsys)
+        assert document["excluded_by_stage"] == {
+            "title-abstract": 1,
+            "full-text": 1,
+            "unstated": 1,
+        }
+
     def test_the_band_advisory_fires_on_a_thin_corpus(self, session, capsys):
         run(
             ["update", str(session.root)],

@@ -28,6 +28,7 @@ from btm_lit_review.constants import (
     PAD_TAIL,
     READ_LEVELS,
     SOURCES,
+    STAGES,
     STATUSES,
     ReadLevel,
     Status,
@@ -184,10 +185,12 @@ def cmd_schema(args: argparse.Namespace) -> int:
         {
             "paper": "key title year authors venue doi arxiv_id openalex_id "
             f"cited_by_count abstract pdf_url landing_url found_by status "
-            f"decision_reason read_level; status in {'|'.join(STATUSES)}, "
+            f"decision_reason decision_stage read_level; status in "
+            f"{'|'.join(STATUSES)}, decision_stage in {'|'.join(STAGES)} or null, "
             f"read_level in {'|'.join(READ_LEVELS)}",
             "decision": '{"<key>": {"status": "...", "reason": "...", '
-            '"read_level": "..."}} on stdin to update',
+            '"stage": "...", "read_level": "..."}} on stdin to update; a status '
+            "sent without a stage leaves the stage null",
             "note_batch": SCHEMA,
             "pad": PAD_SCHEMA,
             "search_log": "search: {id, command, source, query, from_year, to_year, "

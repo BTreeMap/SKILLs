@@ -34,15 +34,20 @@ fit. If the criteria feel wrong while screening, record an amendment.
    missing abstract is a data gap: keep the paper, screen it on title plus
    landing page, or leave it unsure for pass 2.
 6. Write the decisions to a JSON file and apply them with `update`. The
-   script rejects an exclusion without a reason.
+   script rejects an exclusion without a reason. Give each exclusion the
+   `stage` of the pass that made it, `title-abstract` here; `status` counts
+   exclusions by stage for the report's flow counts, and `screen` sets the
+   stage itself.
 
 <example for="decisions">
 {
   "doi:10.1234/example.1": {"status": "included"},
   "arxiv:2401.00001": {"status": "excluded",
-                       "reason": "no generation component (criterion 1)"},
+                       "reason": "no generation component (criterion 1)",
+                       "stage": "title-abstract"},
   "title:some borderline paper": {"status": "excluded",
-                                  "reason": "editorial, not a study"}
+                                  "reason": "editorial, not a study",
+                                  "stage": "title-abstract"}
 }
 </example>
 
@@ -58,9 +63,10 @@ citable version and exclude the other as "superseded duplicate".
 ## Pass 2: full-text triage
 
 For the remaining unsure papers, fetch what the record links (`pdf_url`,
-`landing_url`), skim introduction and conclusions, and decide. Exclude a
-paper whose text is unreachable at all with reason "inaccessible" at lite
-and full; at ultra, note it in the report as identified but unassessed.
+`landing_url`), skim introduction and conclusions, and decide with
+`"stage": "full-text"` on each exclusion. Exclude a paper whose text is
+unreachable at all with reason "inaccessible" at lite and full; at ultra,
+note it in the report as identified but unassessed.
 
 ## Shortlist size
 
