@@ -28,15 +28,15 @@ it, source printed activation script, build. Re-run to repair.
 
 | Name | Path |
 | --- | --- |
-| `cli` | [scripts/src/btm_setup_env/cli.py](scripts/src/btm_setup_env/cli.py) |
-| `model` | [scripts/src/btm_setup_env/model.py](scripts/src/btm_setup_env/model.py) |
-| `steps` | [scripts/src/btm_setup_env/steps.py](scripts/src/btm_setup_env/steps.py) |
 | `catalog` | [scripts/src/btm_setup_env/catalog.py](scripts/src/btm_setup_env/catalog.py) |
+| `cli` | [scripts/src/btm_setup_env/cli.py](scripts/src/btm_setup_env/cli.py) |
+| `execute` | [scripts/src/btm_setup_env/shell/execute.py](scripts/src/btm_setup_env/shell/execute.py) |
+| `extending` | [references/extending.md](references/extending.md) |
+| `model` | [scripts/src/btm_setup_env/model.py](scripts/src/btm_setup_env/model.py) |
 | `plan` | [scripts/src/btm_setup_env/plan.py](scripts/src/btm_setup_env/plan.py) |
 | `render` | [scripts/src/btm_setup_env/render.py](scripts/src/btm_setup_env/render.py) |
-| `execute` | [scripts/src/btm_setup_env/shell/execute.py](scripts/src/btm_setup_env/shell/execute.py) |
+| `steps` | [scripts/src/btm_setup_env/steps.py](scripts/src/btm_setup_env/steps.py) |
 | `targets` | [references/targets.md](references/targets.md) |
-| `extending` | [references/extending.md](references/extending.md) |
 
 Load `targets` before choosing tag beyond the obvious or pinning version;
 load `extending` only to add or change recipe. Invoke command, read its

@@ -27,9 +27,9 @@ reading, synthesis.
 | Name | Path |
 | --- | --- |
 | `extract` | [references/extract.md](references/extract.md) |
+| `find` | [references/find.md](references/find.md) |
 | `protocol` | [references/protocol.md](references/protocol.md) |
 | `screen` | [references/screen.md](references/screen.md) |
-| `find` | [references/find.md](references/find.md) |
 | `synthesize` | [references/synthesize.md](references/synthesize.md) |
 
 ## Redirects
