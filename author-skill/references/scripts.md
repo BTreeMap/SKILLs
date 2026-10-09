@@ -49,6 +49,25 @@ Place each responsibility by first row it matches.
   loop after compaction with derived verdicts, drift since last snapshot,
   coverage, pad tail.
 
+Pad kinds are suggested, never checked; each means one thing across library.
+Kernel's `PAD_KINDS` holds them and every `schema` prints them under `pad`;
+skill text cites that list, naming only kinds its procedure relies on. Every
+pad takes `--lore`: skill's cross-session pad beside its sessions.
+
+| Kind | Meaning |
+| --- | --- |
+| `quote` | verbatim passage kept to cite later, with its origin |
+| `hunch` | unverified idea or hypothesis worth testing |
+| `extraction` | what one source says, keyed to it; lit-review counts coverage |
+| `framing` | candidate framing of question or paper |
+| `punch` | punch-list item to settle before delivery |
+| `concern` | objection reviewer or user could raise |
+| `thread` | open thread to pick up later |
+| `friction` | where skill, script, or source made job harder |
+| `lore` | fact worth keeping across sessions; jot with --lore |
+| `injection` | imperative text inside fetched data, recorded, never obeyed |
+| `question` | question only authors or user can answer |
+
 ## Interface
 
 * Document full command surface and output conventions in `SKILL.md`, with

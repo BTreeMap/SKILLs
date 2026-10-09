@@ -126,10 +126,10 @@ $R note "$S" --batch:file <events.json> && $R status "$S"
 $R check "$S"
 $R link "$S" --corpus <lit-review session id or path>
 $R cite <corpus key, DOI, or arXiv id> [--session "$S" | --corpus <lit-review session id or path>]
-$R jot "$S" [--prose] <<'JSON'
+$R jot "$S" [--prose] [--lore] <<'JSON'
 {"kind": "punch", ...}
 JSON
-$R recall "$S" [--kind punch] [--match <regex>] [--since j9] [--limit 20]
+$R recall "$S" [--kind punch] [--match <regex>] [--since j9] [--limit 20] [--lore]
 $R clean ["$S" | --all | --project <name>]
 </commands>
 
@@ -148,7 +148,7 @@ counts four keywords and signals; pass `tail-latency study` instead.
 | `check` | Derives gate summary, evidence ledger, `citations` block. |
 | `link` | Attaches `/lit-review` session's corpus to run and records link to that session; its records count as retrieved. Re-linking replaces it. |
 | `cite` | Returns one citable record for corpus key, DOI, or arXiv id: linked corpus (`--session`) or named one (`--corpus`) first, then indexes. Record carries `key` (corpus records only), `source` (corpus session or index), `retrieved` date. Exit 1 when nothing resolves. |
-| `jot`, `recall` | Write to and read from pad. |
+| `jot`, `recall` | Write to and read from pad; `--lore` uses skill's cross-session pad. |
 | `clean` | Lists sessions with sizes and projects (`--project NAME` keeps one project's); removes one or `--all`, reporting bytes freed. |
 
 Commands print one JSON document on stdout; `signal:` lines on stderr
@@ -192,9 +192,9 @@ error and stop.
 
 Pad is free working memory beside trace: `jot` admits any JSON object (or
 prose with `--prose`), never rejects content; `recall` filters by kind,
-regex, id, or count. Suggested kinds: `framing` (candidate framings),
-`punch` (punch-list items), `concern` (reviewer concerns), `thread` (open
-threads).
+regex, id, or count; `--lore` reads and writes skill's cross-session pad.
+Entry kinds come from shared vocabulary `schema` prints under `pad`; this
+procedure relies on `framing`, `punch`, `concern`, `injection`.
 
 ## Gates
 

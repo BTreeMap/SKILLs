@@ -320,7 +320,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "severities": list(Severity),
             "levels": list(Level),
             "refs": REFS_SCHEMA,
-            "pad": PAD_SCHEMA + "; suggested kinds: note, question, injection",
+            "pad": PAD_SCHEMA,
         }
     )
     return 0
@@ -369,7 +369,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_slot(cite, DRAFT, "the draft's Markdown")
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
-    wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_pad(commands, STORE)
     wire_cite(commands, STORE.skill, linked_corpus)
     wire_clean(commands, STORE)
     return parser

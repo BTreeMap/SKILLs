@@ -53,8 +53,8 @@ challenger would use in title or abstract, matched literally. `brief`
 re-derives their verdicts against live corpus: excluded or under-read
 support flags finding at-risk; later paper matching gap's watch flags gap
 challenged, cue to re-read claim written earlier. Supersede record when
-field model moves. Keep forming hypotheses on pad as `map` or `open` entries
-until they earn support.
+field model moves. Keep forming hypotheses on pad as `hunch` or `thread`
+entries until they earn support.
 
 ## Report template
 

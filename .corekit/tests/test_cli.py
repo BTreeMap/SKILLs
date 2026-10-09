@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+from pathlib import Path
 
 import pytest
 
@@ -29,6 +30,7 @@ from btm_corekit import (
 )
 from btm_corekit.cli import (
     ARGV_MESSAGE_MAX,
+    PAD_KINDS,
     FromFile,
     FromStdin,
     Inline,
@@ -224,7 +226,7 @@ class TestBatchAndWiring:
         store.write_meta(made.directory, Marker())
         built = Parser()
         commands = built.add_subparsers(dest="command", required=True)
-        wire_pad(commands, lambda args: store.directory(args.session))
+        wire_pad(commands, store)
         wire_clean(commands, store)
         monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "k"}'))
         assert run_cli(built, ["jot", made.name]) == 0
@@ -233,6 +235,41 @@ class TestBatchAndWiring:
         assert json.loads(capsys.readouterr().out)["shown"] == 1
         assert run_cli(built, ["clean", made.name]) == 0
         assert json.loads(capsys.readouterr().out)["bytes_freed"] > 0
+
+    def test_lore_is_one_pad_per_skill_beside_its_sessions(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Every member's pad takes --lore; before, only lit-review's did."""
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
+        store = SessionStore("beta", marker="meta.json", hint="run init first")
+        built = Parser()
+        wire_pad(built.add_subparsers(dest="command", required=True), store)
+        monkeypatch.setattr("sys.stdin", io.StringIO('{"kind": "lore", "x": 1}'))
+        assert run_cli(built, ["jot", "no-such-session", "--lore"]) == 0
+        capsys.readouterr()
+        assert run_cli(built, ["recall", "anything", "--lore"]) == 0
+        recalled = json.loads(capsys.readouterr().out)
+        assert recalled["entries"][0]["body"] == {"kind": "lore", "x": 1}
+        assert (store.lore() / "scratch.jsonl").is_file()
+        assert store.ids() == [], "a lore jot makes no session"
+
+
+class TestPadKinds:
+    def test_the_authoring_reference_lists_the_kernel_vocabulary(self):
+        """author-skill's scripts reference documents the kinds for authors;
+        PAD_KINDS is what schema prints. Each row must match its entry."""
+        reference = (
+            Path(__file__).parents[2] / "author-skill" / "references" / "scripts.md"
+        )
+        lines = reference.read_text(encoding="utf-8").splitlines()
+        start = lines.index("| Kind | Meaning |") + 2
+        table = lines[start : lines.index("", start)]
+        documented = {
+            kind.strip().strip("`"): meaning.strip()
+            for kind, meaning in (row.split("|")[1:3] for row in table)
+        }
+        assert documented == PAD_KINDS
 
 
 class TestLimitGrammar:
@@ -273,10 +310,7 @@ class TestLimitGrammar:
         made = store.create("one two")
         store.write_meta(made.directory, Marker())
         built = Parser()
-        wire_pad(
-            built.add_subparsers(dest="command", required=True),
-            lambda args: store.directory(args.session),
-        )
+        wire_pad(built.add_subparsers(dest="command", required=True), store)
         assert run_cli(built, ["recall", made.name, "--limit", raw]) == 1
         assert "pass 1 or more" in capsys.readouterr().err
 

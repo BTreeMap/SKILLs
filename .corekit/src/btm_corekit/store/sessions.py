@@ -130,6 +130,10 @@ class SessionStore:
             json.dumps(dump(meta), indent=2, ensure_ascii=False) + "\n",
         )
 
+    def lore(self) -> Path:
+        """The skill's cross-session pad, beside its sessions."""
+        return state_root(self.skill) / "lore"
+
     def project_of(self, directory: Path) -> str | None:
         """The project a session's meta names. A listing is a view, so an
         unreadable meta lists with none and a signal, never a refusal."""

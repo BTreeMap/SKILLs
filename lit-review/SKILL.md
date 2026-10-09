@@ -155,10 +155,10 @@ Every other write goes through one of two paths:
 
 - Pad is free working memory. `jot` admits any JSON object (or prose with
   `--prose`), never rejects content; `recall` filters it back by kind,
-  regex, id, or count. Entry with `"kind": "extraction"` and paper `key`
-  counts toward extraction coverage; `map`, `open`, `lore` are suggested
-  kinds; `--lore` reads and writes cross-session pad for facts worth keeping
-  between reviews.
+  regex, id, or count. Entry kinds come from shared vocabulary `schema`
+  prints under `pad`; entry with `"kind": "extraction"` and paper `key`
+  counts toward extraction coverage; `--lore` reads and writes cross-session
+  pad for facts worth keeping between reviews.
 - Gate is what script later judges: `update` and `screen` move paper
   statuses; `note` admits findings and gaps. Rejected batch names every
   problem at once, changes nothing: apply all fixes, resend. DOI or arXiv id

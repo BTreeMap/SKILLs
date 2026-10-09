@@ -50,7 +50,6 @@ from btm_lit_review.report.verify import cmd_verify
 from btm_lit_review.report.views import (
     cmd_brief,
     cmd_schema,
-    pad_directory,
     recognize_extraction,
 )
 from btm_lit_review.session import STORE
@@ -191,12 +190,7 @@ def wire_notebook(commands: Commands) -> None:
     add_slot(note, BATCH, "findings and gaps")
     note.set_defaults(func=cmd_note)
 
-    wire_pad(
-        commands,
-        pad_directory,
-        lore="use the cross-session tool pad",
-        on_jot=recognize_extraction,
-    )
+    wire_pad(commands, STORE, on_jot=recognize_extraction)
 
     brief = commands.add_parser(
         "brief", help="resume view: findings, gaps, drift, markers, pad tail"

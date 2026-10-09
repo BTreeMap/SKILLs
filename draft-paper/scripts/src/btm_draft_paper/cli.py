@@ -164,7 +164,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "outcomes": dict(OUTCOMES),
             "statuses": dict(STATUSES),
             "refs": REFS_SCHEMA + "; receipts echo every minted id",
-            "pad": PAD_SCHEMA + "; suggested kinds: framing, punch, concern, thread",
+            "pad": PAD_SCHEMA,
         }
     )
     return 0
@@ -212,7 +212,7 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("session", help="session identifier or directory")
     schema = commands.add_parser("schema", help="print every event shape")
     schema.set_defaults(func=cmd_schema)
-    wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_pad(commands, STORE)
     wire_cite(commands, STORE.skill, linked_corpus)
     wire_clean(commands, STORE)
     return parser

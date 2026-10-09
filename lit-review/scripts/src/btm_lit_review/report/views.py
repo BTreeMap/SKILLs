@@ -10,6 +10,7 @@ from typing import Any
 
 from btm_corekit import (
     JSON,
+    PAD_SCHEMA,
     Count,
     Model,
     dump,
@@ -17,7 +18,6 @@ from btm_corekit import (
     now_iso,
     pad_entries,
     signal,
-    state_root,
     suggest,
     write_atomic,
 )
@@ -46,17 +46,18 @@ from btm_lit_review.findings.notebook import (
     live,
     load_notebook,
 )
-from btm_lit_review.session import Session, load_papers, load_protocol, open_session
-
-PAD_SCHEMA = (
-    'jot stores any JSON object; {"kind": "extraction", "key": "<paper key>", ...} '
-    "is recognized for coverage; map, open, and lore are suggested kinds; "
-    "--lore keeps cross-session tool notes"
+from btm_lit_review.session import (
+    STORE,
+    Session,
+    load_papers,
+    load_protocol,
+    open_session,
 )
 
-
-def lore_dir() -> Path:
-    return state_root("lit-review") / "lore"
+PAD_RECOGNIZED = (
+    '; {"kind": "extraction", "key": "<paper key>", ...} counts toward '
+    "extraction coverage"
+)
 
 
 def extraction_keys(entries: list[dict[str, Any]]) -> set[str]:
@@ -166,7 +167,7 @@ def cmd_brief(args: argparse.Namespace) -> int:
         "markers": marker_table(markers, papers),
         "unextracted": unextracted_in(entries, papers),
         "pad_tail": entries[-PAD_TAIL:],
-        "lore": [entry["body"] for entry in pad_entries(lore_dir())],
+        "lore": [entry["body"] for entry in pad_entries(STORE.lore())],
     }
     emit(document)
     count = (last.n if last else 0) + 1
@@ -192,7 +193,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             '"stage": "...", "read_level": "..."}} on stdin to update; a status '
             "sent without a stage leaves the stage null",
             "note_batch": SCHEMA,
-            "pad": PAD_SCHEMA,
+            "pad": PAD_SCHEMA + PAD_RECOGNIZED,
             "search_log": "search: {id, command, source, query, from_year, to_year, "
             "limit, offset, criteria_hash, time, fetched, new, total_matches, "
             "truncated}; snowball carries seed and direction in place of query "
@@ -218,12 +219,6 @@ def cmd_schema(args: argparse.Namespace) -> int:
         }
     )
     return 0
-
-
-def pad_directory(args: argparse.Namespace) -> Path:
-    if args.lore:
-        return lore_dir()
-    return open_session(args.session).root
 
 
 def recognize_extraction(args: argparse.Namespace, body: Mapping[str, Any]) -> None:

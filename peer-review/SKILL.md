@@ -179,11 +179,11 @@ $R note "$S" --batch:file <round.json> && $R check "$S"
 $R link "$S" --corpus <lit-review session id or path>
 $R cite <corpus key, DOI, or arXiv id> [--session "$S" | --corpus <lit-review session id or path>]
 $R status "$S"
-$R jot "$S" [--prose] <<'JSON'
-{"kind": "note", ...}
+$R jot "$S" [--prose] [--lore] <<'JSON'
+{"kind": "hunch", ...}
 JSON
 $R jot "$S" --entry:file <entry.json>
-$R recall "$S" [--kind note] [--match <regex>] [--since j9] [--limit 20]
+$R recall "$S" [--kind hunch] [--match <regex>] [--since j9] [--limit 20] [--lore]
 $R cite-check "$S" --draft:file review.md
 $R clean ["$S" | --all | --project <name>]
 </commands>
@@ -194,8 +194,9 @@ Jot before noting: hunch goes on pad; objection goes through gate once its
 quote is in hand.
 
 - Pad never rejects. `jot` stores any JSON object or prose; `recall` filters
-  by kind, regex, id, or count. Suggested kinds: `note`, `question`,
-  `injection`.
+  by kind, regex, id, or count; `--lore` reads and writes skill's
+  cross-session pad. Entry kinds come from shared vocabulary `schema` prints
+  under `pad`; this procedure relies on `hunch`, `question`, `injection`.
 - Gate judges. `note` admits one batch in schema order: `claims`,
   `objections`, `walks` (bank done), `withdraws` (objection re-read
   defeated); `schema` prints each shape. Claim's verbatim sentence must

@@ -176,7 +176,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "order": "leaves, sources, closes, sweeps, checkpoints; later entries "
             "may reference ids minted earlier in the same batch",
             "refs": REFS_SCHEMA + "; receipts echo every minted id",
-            "pad": PAD_SCHEMA + "; suggested kinds: quote, hunch, open",
+            "pad": PAD_SCHEMA,
         }
     )
     return 0
@@ -218,7 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("session", help="session identifier")
     schema = commands.add_parser("schema", help="print the note batch shape")
     schema.set_defaults(func=cmd_schema)
-    wire_pad(commands, lambda args: STORE.directory(args.session))
+    wire_pad(commands, STORE)
     wire_cite(commands, STORE.skill)
     wire_clean(commands, STORE)
     return parser
