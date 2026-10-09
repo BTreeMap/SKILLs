@@ -1,4 +1,4 @@
-# Verb: dispatch
+# Verb: send
 
 Compose one brief for one task, hand off one delegate, judge what comes
 back.

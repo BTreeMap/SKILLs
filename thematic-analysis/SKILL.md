@@ -100,11 +100,11 @@ Apply as given; record user override in analysis header next to approach.
    new dated entry. Framework matrix: chart cases as rows, codes as columns,
    each cell short summary with quote reference.
 6. **Check agreement** (codebook school only). Independent second coder
-   labels agreement sample: delegate briefed through `/summon dispatch`
-   whose evidence is only codebook and raw units, whose contract is one
-   label per unit. Compute per-code agreement against threshold fixed at
-   Select; resolve disagreements by refining codebook; recode affected
-   units. Second coder is same model in fresh context: report says so.
+   labels agreement sample: delegate briefed through `/summon send` whose
+   evidence is only codebook and raw units, whose contract is one label per
+   unit. Compute per-code agreement against threshold fixed at Select;
+   resolve disagreements by refining codebook; recode affected units. Second
+   coder is same model in fresh context: report says so.
 7. **Develop themes.** Cluster codes into groupings within default range.
    Give each theme name and one-sentence central claim, then check claim
    back against original units it summarizes.

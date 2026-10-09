@@ -28,7 +28,7 @@ skill is needed, buys certainty that body is present.
 | Preloaded | the agent definition names the skill under `skills:`, so the body is injected at start | names the skill only | documented |
 | Invocable | the delegate has a skill-loading tool | commands the skill by name in slash form; the delegate loads the body itself | measured |
 | Readable | no skill tool, but the file is reachable on disk | gives the absolute path and says to read it before starting | measured |
-| Definable | no preload exists, and the harness hot-reloads agent definitions | mints an agent definition naming the skill under `skills:`, then dispatches to that type | documented, untested: the agents directory must exist at session start, since the docs require a restart to pick one up |
+| Definable | no preload exists, and the harness hot-reloads agent definitions | mints an agent definition naming the skill under `skills:`, then sends to that type | documented, untested: the agents directory must exist at session start, since the docs require a restart to pick one up |
 | Sealed | none of the above holds | excerpts the binding rules into the brief's rules field | documented, not observed |
 
 Sealed arises when skill tool is omitted from delegate's tools or listed
@@ -37,13 +37,12 @@ harness with no skill loading at all.
 
 Harness preloading skills does so at agent-definition time; prompt is only
 call-time channel. Point, not paste, wherever delegate can load skill
-itself. Excerpting is Sealed branch alone, under excerpting law in
-`dispatch`.
+itself. Excerpting is Sealed branch alone, under excerpting law in `send`.
 
 ## Probe
 
-Unfamiliar harness, or agent definition with restricted tool list: dispatch
-one probe delegate before first real brief; it settles reach for every later
+Unfamiliar harness, or agent definition with restricted tool list: send one
+probe delegate before first real brief; it settles reach for every later
 delegation.
 
 <template for="probe">

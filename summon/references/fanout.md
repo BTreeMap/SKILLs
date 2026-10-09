@@ -1,7 +1,7 @@
 # Verb: fanout
 
-Partition open work, then run one dispatch per bundle. Load `dispatch`
-first: every bundle ships full six-field brief defined there.
+Partition open work, then run one send per bundle. Load `send` first: every
+bundle ships full six-field brief defined there.
 
 ## Partition law
 
@@ -36,13 +36,13 @@ Spawning: no.
 Size fan against spine's cited sizing and its concurrency cap; bundle too
 small to justify a context goes back inline. Fanout not transactional, so
 each brief closes own bundle without reference to another bundle's output;
-dead bundle re-dispatches alone.
+dead bundle is re-sent alone.
 
 ## Joining returns
 
 Returns arrive one per completion notification. Judge each under `review` on
 arrival, then join. Lead owns coverage across bundles: reconcile handoff
-lines, re-dispatch only work no bundle claimed.
+lines, re-send only work no bundle claimed.
 
 ## Completion Checks
 
@@ -50,7 +50,7 @@ lines, re-dispatch only work no bundle claimed.
   <item>Bundles pairwise disjoint on topic and files; union is open work.</item>
   <item>Every bundle names neighbouring territory, carries refusal rule.</item>
   <item>Every bundle names owned and forbidden files and own scratch subdirectory.</item>
-  <item>Each brief closes its bundle alone, so any one can be re-dispatched.</item>
+  <item>Each brief closes its bundle alone, so any one can be re-sent.</item>
   <item>Fan plus children fits concurrency cap.</item>
-  <item>Handoff lines reconciled; unclaimed work named or re-dispatched.</item>
+  <item>Handoff lines reconciled; unclaimed work named or re-sent.</item>
 </checklist>

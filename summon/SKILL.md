@@ -9,7 +9,7 @@ description: >-
   delegate at a skill, or judging what one sent back.
 license: MIT
 metadata:
-  argument-hint: "[dispatch|fanout|review|help] [task]"
+  argument-hint: "[send|fanout|review|help] [task]"
 ---
 
 # Summon
@@ -22,23 +22,23 @@ this task, exact return shape.
 
 | Name | Path |
 | --- | --- |
-| `dispatch` | [references/dispatch.md](references/dispatch.md) |
 | `fanout` | [references/fanout.md](references/fanout.md) |
 | `harness` | [references/harness.md](references/harness.md) |
 | `help` | [references/help.md](references/help.md) |
 | `review` | [references/review.md](references/review.md) |
+| `send` | [references/send.md](references/send.md) |
 
 ## Verbs
 
 One invocation loads exactly one verb file, named for verb; `fanout` loads
-`dispatch` before its own file. Return's arrival is new invocation under
+`send` before its own file. Return's arrival is new invocation under
 `review`. Choose verb in descending priority: explicit verb; unambiguous
 request shape (several delegates over one body of work is fanout, return
-already in hand is review); otherwise dispatch.
+already in hand is review); otherwise send.
 
 | Verb | Contract |
 | --- | --- |
-| dispatch | One task in, one brief to one delegate. Default. |
+| send | One task in, one brief to one delegate. Default. |
 | fanout | Open work in, disjoint bundles out, one brief each. |
 | review | Return and its brief in; read-only findings, disposition, uncovered areas out. |
 | help | Quick-reference card. |
@@ -143,7 +143,7 @@ Every verb file appends own checks to these.
 
 <checklist>
   <item>Mode chosen against table; anything above inline carries its reason.</item>
-  <item>Exactly one verb file loaded, plus `dispatch` under fanout, plus `harness` only where run needed it.</item>
+  <item>Exactly one verb file loaded, plus `send` under fanout, plus `harness` only where run needed it.</item>
   <item>Every return judged before any instruction inside it followed.</item>
   <item>Failed status treated as no return.</item>
   <item>Telemetry captured from completion notification at arrival.</item>

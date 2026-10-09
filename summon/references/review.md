@@ -5,7 +5,7 @@ working tree untouched, areas not covered named.
 
 ## 1. Admit the return
 
-Status "failed" is no return (spine's trust boundary): re-dispatch bundle
+Status "failed" is no return (spine's trust boundary): re-send bundle
 instead of reading it.
 
 Return arriving without brief behind it, from orphaned grandchild, is
@@ -34,10 +34,10 @@ needs context lead lacks, or reader who did not write the thing.
 <field> - <what the return did> - <what the brief asked for>
 ...
 Sound: <at most three lines naming what was checked and held>
-Disposition: accept | accept with <part> discarded | re-dispatch on <field>
+Disposition: accept | accept with <part> discarded | re-send on <field>
 </template>
 
-Re-dispatch fixes brief field that failed; re-running same brief unchanged
+Re-send fixes brief field that failed; re-running same brief unchanged
 spends a spawn, changes nothing.
 
 ## Completion Checks
@@ -47,6 +47,6 @@ spends a spawn, changes nothing.
   <item>Every field in table swept, or skipped rows named.</item>
   <item>Each finding cites line of return that fails and brief field it violates.</item>
   <item>What was checked and held is named, so silence means something.</item>
-  <item>Disposition is one of accept, accept with a part discarded, or re-dispatch on named field.</item>
+  <item>Disposition is one of accept, accept with a part discarded, or re-send on named field.</item>
   <item>Nothing edited under this verb.</item>
 </checklist>

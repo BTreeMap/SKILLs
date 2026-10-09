@@ -6,12 +6,12 @@ this.
 <template for="help">
 summon - hand work to another agent so the result comes back usable
 
-Usage: /summon [dispatch|fanout|review|help] [task]
-No verb: dispatch. Several delegates over one body of work: fanout; a
+Usage: /summon [send|fanout|review|help] [task]
+No verb: send. Several delegates over one body of work: fanout; a
 return already in hand: review.
 
 Verbs
-  dispatch  One brief, one delegate. Default.
+  send      One brief, one delegate. Default.
   fanout    Partition into disjoint bundles, one brief each.
   review    Judge a return against its contract. Read-only.
   help      This card.
