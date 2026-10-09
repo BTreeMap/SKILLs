@@ -98,6 +98,7 @@ Run same chain before pushing and gate has nothing to do:
 | Manifest `name` fields and declared skill list | Missing or unreadable plugin manifest |
 | Skill entries out of alphabetical order in this file and `README.md` | Skill missing from either list, or entry naming no skill |
 | Markdown prose off 76-column wrap; code, tables, markup keep their width | |
+| | Skill root entry other than `SKILL.md`, `references/`, `scripts/` |
 | | Alias path occupied by real content, which no repair may destroy |
 | | Em-dash (U+2014), whose replacement is a judgment |
 | | Skill Python outside its `scripts/` member, or manifest off `scripts/pyproject.toml` |

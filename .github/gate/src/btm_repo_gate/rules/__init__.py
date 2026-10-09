@@ -13,6 +13,7 @@ from btm_repo_gate.rules.frontmatter import (
     rule_description_budget,
     rule_frontmatter,
     rule_skill_layout,
+    rule_skill_root,
 )
 from btm_repo_gate.rules.generated import rule_listings, rule_manifest
 from btm_repo_gate.rules.kernel import rule_kernel
@@ -34,6 +35,7 @@ RULES: tuple[Callable[[Repo], Iterator[Finding]], ...] = (
     rule_manifest,
     rule_member_layout,
     rule_skill_layout,
+    rule_skill_root,
     rule_wrap,
 )
 

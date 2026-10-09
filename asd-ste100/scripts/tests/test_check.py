@@ -356,10 +356,6 @@ the test.
 utilize the frobnicator
 ```
 
-<commands for="surface">
-$R utilize --ensure
-</commands>
-
 <procedure>
   <step>Remove the [test](https://example.org/utilize).</step>
 </procedure>
@@ -374,7 +370,7 @@ class TestMarkdown:
     def report(self, run, section: str | None = None) -> dict:
         return run(MARKDOWN, Mode.DESCRIPTION, how=Cut(Format.MARKDOWN, section))
 
-    def test_code_front_matter_and_payloads_are_not_prose(self, run):
+    def test_code_and_front_matter_are_not_prose(self, run):
         words = self.report(run)["summary"]["words"]
         assert words == ["pump"]
 
@@ -382,7 +378,7 @@ class TestMarkdown:
         report = self.report(run)
         assert report["counts"] == {"paragraphs": 9, "sentences": 12, "words": 28}
         (f,) = report["findings"]
-        assert f["lines"] == [10, 31]
+        assert f["lines"] == [10, 27]
 
     def test_a_table_cell_is_a_sentence(self, run):
         cell = run("| Remove the test | Install the test |", how=Cut(Format.MARKDOWN))

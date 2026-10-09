@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -85,6 +85,8 @@ class Repo:
     texts: Mapping[Path, str]  # repo-relative path to contents
     links: Mapping[Path, LinkState]  # hub, its entries, and the vendor paths
     manifests: Mapping[Path, ManifestState]
+    # Skill to its root entry names, symlinks included, tool caches pruned.
+    roots: Mapping[str, frozenset[str]] = field(default_factory=dict)
 
 
 def snapshot(root: Path) -> Repo:
@@ -128,4 +130,12 @@ def snapshot(root: Path) -> Repo:
     manifests = {
         path: _manifest_state(root / path) for path in (MARKETPLACE, PLUGIN_MANIFEST)
     }
-    return Repo(skills, texts, links, manifests)
+    roots = {
+        skill: frozenset(
+            entry.name
+            for entry in (root / skill).iterdir()
+            if entry.name not in PRUNED_DIRS
+        )
+        for skill in skills
+    }
+    return Repo(skills, texts, links, manifests, roots)

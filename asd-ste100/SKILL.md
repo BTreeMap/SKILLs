@@ -53,7 +53,7 @@ R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <ski
 
 <commands for="surface">
 $R get [--version TAG]
-$R check --text:file draft.txt [--accept:file terms.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--jsonl] [--version TAG | --data DIR]
+$R check --text:file draft.txt [--accept:file accept.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--jsonl] [--version TAG | --data DIR]
 $R find WORD [WORD ...] [--version TAG | --data DIR]
 $R clean
 </commands>
@@ -61,12 +61,11 @@ $R clean
 * `check` reads the text from one of these sources: `--text` for a short
   text, `--text:file PATH`, `--text:stdin`, or the pipe if no flag uses it.
   For more than one sentence, use a file. `check` rejects an empty text.
-* With `--format markdown`, `check` ignores the front matter, fenced code,
-  and the lines in a `<commands>` or `<template>` element. Each heading,
-  list item, table row, and line that starts with a tag is a paragraph. Each
-  table cell is a sentence. `--section HEADING` keeps only that heading and
-  its lines, until the next heading. With `--format text` (the default), an
-  empty line ends a paragraph.
+* With `--format markdown`, `check` ignores the front matter and fenced
+  code. Each heading, list item, table row, and line that starts with a tag
+  is a paragraph. Each table cell is a sentence. `--section HEADING` keeps
+  only that heading and its lines, until the next heading. With
+  `--format text` (the default), an empty line ends a paragraph.
 * With `--jsonl`, each line of the text is one JSON object:
   `{"text": "...", "id": "..."}`. The `id` is optional. `check` reads the
   dictionary one time and gives one report for each line in `reports`, with
@@ -250,7 +249,7 @@ in the accept file before the first check.
     <step>For `examine`, go to the loop. Do not change the text.</step>
   </phase>
   <phase name="loop">
-    <step>Use the command `$R check --text:file draft.txt --accept:file terms.txt --mode MODE`.</step>
+    <step>Use the command `$R check --text:file draft.txt --accept:file accept.txt --mode MODE`.</step>
     <step>Replace each `not_approved` word with an alternative, or write the sentence differently.</step>
     <step>Divide each sentence that is too long. Divide each paragraph that is too long.</step>
     <step>Remove each contraction and each semicolon.</step>

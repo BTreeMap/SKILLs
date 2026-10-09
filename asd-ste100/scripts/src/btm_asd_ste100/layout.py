@@ -4,10 +4,10 @@ of characters whose sentences the splitter reads.
 Masking keeps every length, so an offset into the masked text is an offset
 into the source, and a line number follows from it. An inline code span
 keeps its two backticks and blanks its inside: it counts as one word and no
-word in it is checked. In Markdown, front matter, fenced code, and the
-payload of a `<commands>` or `<template>` element blank out; each heading,
-list item, table row, and line that opens with a tag starts a block; each
-table cell is a segment. One pass over lines, `str` methods only: O(n).
+word in it is checked. In Markdown, front matter and fenced code blank
+out; each heading, list item, table row, and line that opens with a tag
+starts a block; each table cell is a segment. One pass over lines, `str`
+methods only: O(n).
 """
 
 from __future__ import annotations
@@ -31,7 +31,6 @@ Block = tuple[Span, ...]  # one paragraph: the segments its sentences come from
 
 PARAGRAPH = re.compile(r"\n[ \t]*\n")
 FENCES = ("```", "~~~")
-PAYLOADS = ("commands", "template")  # containers whose content is no prose
 TABLE_RULE = frozenset("|-: \t")
 HEADING_MAX = 6
 LIST_MARKS = ("- ", "* ", "+ ")
@@ -154,15 +153,6 @@ def item_mark(stripped: str) -> int:
     return 0
 
 
-def opens_payload(stripped: str) -> str | None:
-    """The closing tag a payload element waits for, or None."""
-    for name in PAYLOADS:
-        tag = f"<{name}"
-        if stripped.startswith(tag) and stripped[len(tag) : len(tag) + 1] in (" ", ">"):
-            return f"</{name}>"
-    return None
-
-
 @dataclass(slots=True)
 class Scanner:
     """One pass over Markdown lines; `out` is the masked copy. A heading's
@@ -201,7 +191,7 @@ class Scanner:
             self.current.clear()
 
     def skipped(self, n: int, stripped: str) -> bool:
-        """Front matter, a fence, a payload, or a line outside the section."""
+        """Front matter, a fence, or a line outside the section."""
         if self.waiting is not None:
             if stripped.startswith(self.waiting) or self.waiting in stripped:
                 self.waiting = None
@@ -209,13 +199,9 @@ class Scanner:
         if n == 0 and stripped == "---":
             self.waiting = "---"
             return True
-        closing = "```" if stripped.startswith(FENCES) else opens_payload(stripped)
-        if closing is not None:
+        if stripped.startswith(FENCES):
             self.close()
-            if closing == "```":
-                self.waiting = stripped[:3]
-            elif closing not in stripped:
-                self.waiting = closing
+            self.waiting = stripped[:3]
             return True
         heading = heading_of(self.source[n].strip())
         if heading is not None:

@@ -11,6 +11,8 @@ import yaml
 from btm_repo_gate.conventions import (
     DESCRIPTION_BUDGET,
     DESCRIPTION_LIMIT,
+    KERNEL,
+    SKILL_ROOT,
     SPEC_FIELDS,
     split_frontmatter,
 )
@@ -26,6 +28,21 @@ def rule_skill_layout(repo: Repo) -> Iterator[Finding]:
                 skill,
                 "top-level directories are the reserved skill namespace, so this "
                 "needs a SKILL.md or belongs in a dotted directory",
+            )
+
+
+def rule_skill_root(repo: Repo) -> Iterator[Finding]:
+    """Reported, never repaired: where a stray entry belongs is a judgment.
+    `.corekit` is `rule_kernel`'s. Stricter than the agentskills.io `assets/`
+    allowance and Codex's `agents/openai.yaml`, on purpose."""
+    allowed = SKILL_ROOT | {KERNEL.name}
+    for skill in sorted(repo.skills):
+        for name in sorted(repo.roots.get(skill, frozenset()) - allowed):
+            yield Finding(
+                "skill-root",
+                str(Path(skill, name)),
+                "skill root holds only SKILL.md, references/, scripts/; move it "
+                "into one of them or into a dotted directory",
             )
 
 

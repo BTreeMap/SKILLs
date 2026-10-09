@@ -355,9 +355,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=Format,
         choices=list(Format),
         default=Format.TEXT,
-        help="markdown skips front matter, code, and command payloads, and "
-        "reads each heading, list item, and table row as a paragraph and each "
-        "table cell as a sentence; default text",
+        help="markdown skips front matter and code, and reads each heading, "
+        "list item, and table row as a paragraph and each table cell as a "
+        "sentence; default text",
     )
     checker.add_argument(
         "--section",

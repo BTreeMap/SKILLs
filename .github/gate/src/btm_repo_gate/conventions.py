@@ -27,6 +27,8 @@ DESCRIPTION_BUDGET = 7000
 WRAP_WIDTH = 76
 # A skill's Python is one workspace member rooted here; the skill dir stays docs.
 MEMBER_DIR = Path("scripts")
+# Every entry a skill root may hold.
+SKILL_ROOT = frozenset({"SKILL.md", "references", MEMBER_DIR.name})
 # The one brand string this repo publishes: marketplace, plugin, XDG state root.
 BRAND = "btm-skills"
 # `skills/` is the vendor-neutral hub; vendor paths symlink to it, not the skill.

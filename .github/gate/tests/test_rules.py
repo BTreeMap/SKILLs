@@ -141,6 +141,13 @@ class TestSkillLayout:
         (repo / "orphan" / "notes.md").write_text("text\n", encoding="utf-8")
         assert "skill-layout" in rules_hit(repo)
 
+    def test_a_stray_file_or_symlink_at_a_skill_root_is_a_finding(self, repo):
+        (repo / "alpha" / "terms.txt").write_text("pump\n", encoding="utf-8")
+        (repo / "alpha" / "stray").symlink_to("SKILL.md")
+        (repo / "alpha" / ".corekit").mkdir()  # rule_kernel's, not this rule's
+        found = {f.path for f in audit(snapshot(repo)) if f.rule == "skill-root"}
+        assert found == {"alpha/terms.txt", "alpha/stray"}
+
 
 class TestAliases:
     def test_a_missing_hub_alias_is_repaired(self, repo):
