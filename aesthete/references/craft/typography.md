@@ -1,7 +1,6 @@
 # Craft: typography
 
-Type carries most of the hierarchy, most of the voice, and most of the
-reading effort. Get it right before touching color.
+Get type right before touching color.
 
 ## The scale
 

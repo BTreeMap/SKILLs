@@ -1,11 +1,6 @@
 # Judging: sweeps, severity, and tells
 
-Owns how `review` and `audit` judge work: the five sweeps, the severity
-scale, and the catalogue of generated-looking output.
-
 ## The five sweeps
-
-Judge work along these five sweeps:
 
 1. **Logic**: does behavior follow from appearance, is state complete, are
    errors preventable, is work preserved, does the keyboard path exist?
@@ -43,8 +38,7 @@ When building, derive each decision from the design read; these patterns
 substitute for decisions, so most disappear when each choice has a reason.
 When reviewing, count mechanically wherever a count is defined: section
 labels against section count, consecutive split layouts, marquees,
-occurrences of U+2014, distinct accent colors, distinct radius values. A
-count is not an opinion.
+occurrences of U+2014, distinct accent colors, distinct radius values.
 
 ### Typography
 

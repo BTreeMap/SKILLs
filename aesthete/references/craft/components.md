@@ -1,9 +1,8 @@
 # Craft: component architecture
 
-Owns component boundaries, prop APIs, duplication policy, layering, and
-render cost. Compose so the second screen costs less than the first: name
-each concept once, close the set of its variants, make the invalid
-combination unrepresentable, and keep effects at the edges.
+Compose so the second screen costs less than the first: name each concept
+once, close the set of its variants, make the invalid combination
+unrepresentable, and keep effects at the edges.
 
 ## Inventory before authoring
 

@@ -1,9 +1,5 @@
 # Supplied material
 
-Owns ingestion of a supplied design document and color palette: precedence,
-palette-to-role mapping, verification, conflict resolution, gap filling,
-reporting, and the supplied-material checks of the ship gate.
-
 Design documents routinely carry contrast failures, stale accessibility
 claims, missing states, and rules written for a different scope. Adopt what
 holds, verify the rest, and report every divergence.
@@ -26,8 +22,7 @@ holds, verify the rest, and report every divergence.
 
 ## Mapping a palette to roles
 
-A palette is colors; a system needs roles. Make the mapping once and write
-it down. Identify, in this order:
+Make the mapping once and write it down. Identify, in this order:
 
 1. **Accent**: the most saturated color, or the one the source names as
    primary. Exactly one, however many the palette offers.

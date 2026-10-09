@@ -178,13 +178,12 @@ Beyond each entry's own exceptions, a person may show any of the following;
 treat none as evidence by itself:
 
 - **Perfect grammar and consistent style.** Many writers are professionals
-  or have been edited. Polish does not equal AI.
+  or have been edited.
 - **Mixed casual and formal styles.** This can reflect the writer's field,
   age, or personal habits.
 - **"Bland" or "robotic" prose.** AI prose has specific tells. Generic
   dryness without those tells is just dry writing.
-- **Unsourced claims.** Most of the web is unsourced. Lack of citations
-  proves nothing.
+- **Unsourced claims.** Most of the web is unsourced.
 - **Correct, complex formatting.** Visual editors and templates produce
   clean output without any AI.
 - **Edits made before November 30, 2022.** ChatGPT's public launch. Anything

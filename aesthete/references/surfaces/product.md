@@ -49,8 +49,8 @@ under the latency budget like anything else.
 
 ## Tables and data
 
-* Column choice is the design. Show what the user decides with; move the
-  rest behind a detail view or a column picker.
+* Show what the user decides with; move the rest behind a detail view or a
+  column picker.
 * Align text left and numbers right, with numbers in tabular figures so
   digits form columns.
 * The header row stays visible while scrolling. Row identity stays visible
@@ -80,8 +80,7 @@ under the latency budget like anything else.
 
 ## Empty states
 
-The empty state is the first screen most users see and the least designed in
-most products. Say what belongs here and why it is worth having, and offer
-the single action that populates it. Distinguish never-had-any from
+Say what belongs here and why it is worth having, and offer the single
+action that populates it. Distinguish never-had-any from
 none-match-this-filter from you-cleared-them-all: each needs its own copy
 and action, and the filtered one offers to clear the filter.

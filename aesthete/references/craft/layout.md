@@ -1,7 +1,7 @@
 # Craft: layout
 
-Layout is where hierarchy becomes visible. Space, alignment, and grouping do
-the work; use borders and boxes only when those signals are insufficient.
+Space, alignment, and grouping do the work; use borders and boxes only when
+those signals are insufficient.
 
 ## Space
 

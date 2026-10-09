@@ -20,9 +20,7 @@ the next one without asking. Calibrate to the audience; never lecture.
 3. **The mechanism**: why this produces that consequence. Name the principle
    if a real one applies, and name it accurately.
 4. **The counterfactual**: what the common alternative would have caused.
-   This is the part that transfers.
-5. **The boundary**: when this decision would be wrong. A rule taught
-   without its domain becomes cargo cult.
+5. **The boundary**: when this decision would be wrong.
 
 ## Rules
 
