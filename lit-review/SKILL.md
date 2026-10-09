@@ -13,7 +13,7 @@ compatibility: >-
   first run builds the `.venv` at the checkout root that every skill's
   scripts share, about 225 MB.
 metadata:
-  argument-hint: "[lite|full|ultra] <question>"
+  argument-hint: "[basic|full|maximum] <question>"
 ---
 
 # Lit Review
@@ -62,13 +62,13 @@ SKILL.md and reload state through script.
 ## Levels
 
 Default: **full**. User's word choice selects: "quick look at the
-literature" is lite, "systematic review" is ultra.
+literature" is basic, "systematic review" is maximum.
 
 | Level | Rigor |
 | --- | --- |
-| lite | One find cycle, one source acceptable, no snowball required, short-form report, flow counts optional |
+| basic | One find cycle, one source acceptable, no snowball required, short-form report, flow counts optional |
 | full | Two or more sources, at least one snowball cycle from included papers, flow counts, appraisal noted per theme |
-| ultra | Three sources, snowball until cycle yields no new included paper, per-paper appraisal table, PRISMA-style counts, changes log in report |
+| maximum | Three sources, snowball until cycle yields no new included paper, per-paper appraisal table, PRISMA-style counts, changes log in report |
 
 ## Phases
 
@@ -183,14 +183,14 @@ Output and input conventions:
 Keep these words out of report and every intermediate note. One appearing in
 quoted source title stays inside quotation marks.
 
-<directives for="banned-words">
+<instructions for="banned-words">
 delve, tapestry, landscape (figurative), pivotal, crucial, seminal,
 groundbreaking, cutting-edge, state-of-the-art (unless a paper claims it,
 attributed), rapidly evolving, burgeoning, holistic, robust (outside a
 statistics term), comprehensive, seamless, leverage (verb), showcase,
 underscore, highlight (verb), testament, interplay, myriad, plethora,
 paradigm shift, in the realm of, it is important to note
-</directives>
+</instructions>
 
 ## Gotchas
 

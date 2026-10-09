@@ -1,4 +1,4 @@
-# Judging: sweeps, severity, and tells
+# Judging: sweeps, severity, and signs
 
 ## The five sweeps
 
@@ -25,15 +25,15 @@ Rate each finding on this scale.
 | Incoherent | Violates surface's own established system. Cheap to fix, compounds if not. |
 | Generated | Reads as templated output. Undermines credibility without breaking function. |
 
-## Tells
+## Signs
 
-Tell: pattern far more common in generated interfaces than considered ones;
+Sign: pattern far more common in generated interfaces than considered ones;
 design decision nobody made. Each banned as **default reach**; any is
 available when brief calls for it and you can say why. Spine owns em-dash
 and fabrication rules; not restated here.
 
-Building: derive each decision from design read; these patterns substitute
-for decisions, so most disappear when each choice has reason. Reviewing:
+Writing: derive each decision from design read; these patterns substitute
+for decisions, so most disappear when each choice has reason. Examining:
 count mechanically wherever count defined: section labels against section
 count, consecutive split layouts, marquees, occurrences of U+2014, distinct
 accent colors, distinct radius values.

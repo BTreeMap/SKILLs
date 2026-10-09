@@ -353,9 +353,9 @@ def cmd_show(args: argparse.Namespace) -> int:
 # The band each level's shortlist should land in. Leaving it advises, never
 # errors; the agent decides whether to tighten criteria or disclose.
 LEVEL_BANDS = {
-    Level.LITE: (5, 10),
+    Level.BASIC: (5, 10),
     Level.FULL: (10, 25),
-    Level.ULTRA: (10, 40),
+    Level.MAXIMUM: (10, 40),
 }
 
 

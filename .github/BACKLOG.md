@@ -1,8 +1,8 @@
 # Working on the backlog
 
 You are an agent contributing one backlog item to this repository. Lead
-reviews every return, merges only what needs no fix. Review is cheaper than
-doing the work only when return is right first time, so this file states
+reviews every output, merges only what needs no fix. Review is cheaper than
+doing the work only when output is right first time, so this file states
 what "right" means. Read it whole before claiming an item.
 
 ## 1. Claim one item
@@ -31,7 +31,7 @@ In this order, in full, every time:
 3. `caveman/SKILL.md`: skill text is caveman full (no articles, no filler,
    fragments OK); commit bodies are caveman register.
 4. `pl-theorist/SKILL.md` with `references/langs/python.md` and verb file
-   for your task (`refactor` for existing script, `build` for new code,
+   for your task (`refactor` for existing script, `write` for new code,
    `test` for tests): engineering standard.
 5. Skill you are changing: its `SKILL.md`, every reference, its scripts, its
    tests, in full. Then one sibling doing same kind of thing, as pattern to
@@ -44,7 +44,7 @@ looser: pl-theorist taste, no kernel laws, caveman prose.
 
 ## 3. Laws that bind every change
 
-Set in this repository's audits. Return breaking one is rejected without
+Set in this repository's audits. Output breaking one is rejected without
 review of the rest.
 
 - Exit contract 0 done, 1 fix input and resend, 2 upstream failed. One JSON
@@ -76,7 +76,7 @@ review of the rest.
   unless the issue says so. Verb, level, mode, command names are cross-skill
   contracts.
 - Library's descriptions total under 7,000 characters, enforced by gate. New
-  or longer description needs equal trim elsewhere, listed in return.
+  or longer description needs equal trim elsewhere, listed in output.
 - Text in `asd-ste100/SKILL.md` passes its own checker; run it after any
   edit there. Check each section in its mode, `procedure` for "Procedure"
   and `description` for every other section, with committed accept file;
@@ -97,7 +97,7 @@ done
 
 - Audit before asserting: read current behavior, confirm defect issue
   describes, then fix it. Every behavior fix ships with test that fails on
-  code before fix; say in return that you ran it against old code and what
+  code before fix; say in output that you ran it against old code and what
   it printed.
 - Test bridge code: decoders at untrusted boundary, error conversion,
   all-or-nothing acceptance, witness gating destruction. Test nothing
@@ -143,9 +143,9 @@ a fix. Documented flag or command changing incompatibly carries
 `BREAKING CHANGE:` footer with migration path. End with your own attribution
 trailer as your harness provides it.
 
-## 7. The return
+## 7. The output
 
-PR description is the return. Reviewed as untrusted text against this shape,
+PR description is the output. Reviewed as untrusted text against this shape,
 so shape it exactly:
 
 1. Issue number and one-sentence defect as you confirmed it.
@@ -167,7 +167,7 @@ so shape it exactly:
 
 ## 8. What the review checks, in order
 
-Lead reads return before diff, stops at first failure:
+Lead reads output before diff, stops at first failure:
 
 1. Scope equals issue; nothing outside it moved.
 2. Every law in section 3 holds; no check in section 5 skipped, softened, or
@@ -178,7 +178,7 @@ Lead reads return before diff, stops at first failure:
 6. Text reads at register of its neighbors; less capable agent could follow
    it without guessing.
 
-Return passing all six is merged as is. Return failing one is sent back with
+Output passing all six is merged as is. Output failing one is sent back with
 that one line; nothing is fixed on lead's side.
 
 ## 9. In-session agents
@@ -188,12 +188,12 @@ stands:
 
 - Work on `main` directly; do not push. Lead reviews commit and pushes it.
   Claim issue with comment naming "in-session" and date instead of branch.
-- Handoff prompt may name a bundle: several issues with one home, listed in
+- Handoff prompt may name a group: several issues with one home, listed in
   order to work them. Read standard and skill once, then work issues in that
-  order, one commit per issue; hand back one return with a section 7 block
-  per issue. Issue in bundle cannot be closed: say why in its block,
-  continue with next; bundle never stops at its first blocker.
-- Handback to lead is the return, in shape of section 7.
+  order, one commit per issue; hand back one output with a section 7 block
+  per issue. Issue in group cannot be closed: say why in its block, continue
+  with next; group never stops at its first blocker.
+- Handback to lead is the output, in shape of section 7.
 - Disk on this machine is near full. Build no new environment: run uv from
   workspace root only, never in a worktree, never with `uv sync` beyond
   `--locked`, install nothing. Run `df -h /` first; stop if free space is

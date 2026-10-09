@@ -1,6 +1,6 @@
 # Design plan
 
-Stage 1 deliverable for `design` and for `build` from shaped idea, one
+Stage 1 deliverable for `design` and for `write` from shaped idea, one
 section per heading below. Human accepts it before any experiment runs.
 
 ## Scenario sketch
@@ -50,7 +50,7 @@ budget, failure criterion (result that sends plan back for revision).
 
 Map every falsifiable claim to artifact path its experiment will write.
 `design` run notes each as `to-run` claim before requesting `plan` gate,
-renders this section from `check`; `build` run notes them in stage 2.
+renders this section from `check`; `write` run notes them in stage 2.
 
 ## Award assessment
 

@@ -390,7 +390,7 @@ the test.
 
 | Test | Do |
 | --- | --- |
-| `build` | Remove the test. Install the test. |
+| `write` | Remove the test. Install the test. |
 
 ```
 utilize the frobnicator

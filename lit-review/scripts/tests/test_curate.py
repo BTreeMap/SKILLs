@@ -60,7 +60,7 @@ class TestBandAdvisory:
         [
             ("full", 3, "below"),
             ("full", 40, "above"),
-            ("lite", 7, None),
+            ("basic", 7, None),
             ("full", 0, None),
             ("", 12, None),
             ("invented", 12, None),

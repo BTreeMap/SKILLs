@@ -176,8 +176,8 @@ class TestFlow:
         assert document["objections"][0]["standing"] == "unanchored"
         assert "lost their grounding" in err
 
-    def test_lite_level_needs_only_two_banks(self, capsys, paper_file, tmp_path):
-        session = started(capsys, paper_file, level="lite")
+    def test_basic_level_needs_only_two_banks(self, capsys, paper_file, tmp_path):
+        session = started(capsys, paper_file, level="basic")
         payload = {"walks": [{"bank": "claims"}, {"bank": "limitations"}]}
         assert (
             run(["record", session, "--batch:file", batch(tmp_path, payload)], capsys)[

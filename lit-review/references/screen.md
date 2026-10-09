@@ -63,12 +63,12 @@ duplicate".
 Remaining unsure papers: fetch what record links (`pdf_url`, `landing_url`),
 skim introduction and conclusions, decide with `"stage": "full-text"` on
 each exclusion. Text unreachable at all: exclude with reason "inaccessible"
-at lite and full; at ultra, note in report as identified but unassessed.
+at basic and full; at maximum, note in report as identified but unassessed.
 Before excluding paper as inaccessible, run `fill` on its key.
 
 ## Shortlist size
 
-Lite: 5 to 10 papers. Full: 10 to 25. Ultra: whatever criteria admit;
+Basic: 5 to 10 papers. Full: 10 to 25. Maximum: whatever criteria admit;
 exceeds roughly 40: say so, agree with user on tighter criteria or longer
 run before proceeding. Fewer than 5 included papers usually means search
 coverage failed: reopen find before concluding field is empty.

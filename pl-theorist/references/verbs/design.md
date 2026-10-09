@@ -3,7 +3,7 @@
 Types-first domain modeling before code exists. Deliverable: domain model
 whose invalid states are already dead on paper, effect boundary, complexity
 budget. Write no implementation code beyond type sketches unless user asks
-to proceed to `build`.
+to proceed to `write`.
 
 ## Pipeline
 

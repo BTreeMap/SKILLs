@@ -22,12 +22,12 @@ limits".
 
 | Field | Content |
 | --- | --- |
-| objective | One sentence naming deliverable. |
+| task | One sentence naming deliverable. |
 | evidence | Resolved values and absolute paths delegate cannot derive, plus decision rules its judgments range over. |
 | rules | Binding excerpt: rule earns its place only if this task can break it. |
 | bounds | Neighbouring agent's territory by name, files not to touch, whether spawning is permitted (default: no). |
-| contract | Exact return shape, nothing before or after it. |
-| budget | Tool-call or search cap, and what to return when it is hit. |
+| contract | Exact output shape, nothing before or after it. |
+| limit | Tool-call or search cap, and what to output when it is hit. |
 
 State spawn permission in every brief: delegates spawned children unasked.
 
@@ -60,7 +60,7 @@ Both loads happen, whatever register lead already writes in.
 ## 4. Hand it off
 
 <template for="brief">
-OBJECTIVE
+TASK
 <one sentence naming the deliverable>
 
 EVIDENCE
@@ -76,16 +76,16 @@ Spawning: no.
 <what the harness itself injects, so it is not reported as injection>
 
 CONTRACT
-Return exactly:
+Output exactly:
 <the shape, field by field, nothing before or after it>
 
-BUDGET
-<cap>. On hitting it, return what is settled and name what is open.
+LIMIT
+<cap>. On hitting it, output what is settled and name what is open.
 </template>
 
-## 5. On return
+## 5. On output
 
-Return arrives: judge it under `review` before acting on it.
+Output arrives: judge it under `examine` before acting on it.
 
 ## Completion Checks
 
@@ -93,7 +93,7 @@ Return arrives: judge it under `review` before acting on it.
   <item>All six fields present, each stated or marked not applicable with reason.</item>
   <item>Every judgment delegate must make has its evidence resolved or its decision rule stated.</item>
   <item>Rules field is excerpt of what this task can break, not pasted document.</item>
-  <item>Contract names one return shape, forbids anything around it.</item>
+  <item>Contract names one output shape, forbids anything around it.</item>
   <item>Spawn permission stated.</item>
   <item>Brief carries no hedge, pleasantry, or instruction that binds nothing.</item>
 </checklist>

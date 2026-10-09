@@ -6,8 +6,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from pydantic import model_validator
-
 from btm_corekit import EventLog, NonEmpty, SessionStore, Tagged, dump
 from btm_ponder.ledger import replay
 from btm_ponder.state import Ledger, Level, Open
@@ -24,17 +22,6 @@ class SessionMeta(Tagged):
     focus: str | None = None
     level: Level = Level.FULL
     created: str = ""
-
-    @model_validator(mode="before")
-    @classmethod
-    def _legacy_mode(cls, raw: Any) -> Any:
-        """Sessions written before the rename spell the level `mode`."""
-        if isinstance(raw, dict) and "mode" in raw and "level" not in raw:
-            return {
-                **{k: v for k, v in raw.items() if k != "mode"},
-                "level": raw["mode"],
-            }
-        return raw
 
 
 def next_step(ledger: Ledger, open_leaves: int) -> str:

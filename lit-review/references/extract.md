@@ -52,13 +52,13 @@ summed into one score:
 | Independence | Funding or affiliation bearing on claim? |
 
 Full: appraisal shapes how much weight paper carries in synthesis, mentioned
-where it matters. Ultra: report carries table for every included paper.
+where it matters. Maximum: report carries table for every included paper.
 
 ## Parallel extraction
 
-Delegate through `/summon fanout`, one delegate per included paper. Each
+Delegate through `/summon divide`, one delegate per included paper. Each
 brief: evidence is paper's corpus entry and its `pdf_url`; rules are reading
 order and depth above, `/read-pdf` as reader; contract is extraction
-template, returned as JSON object alone. Delegates write no session state;
-lead judges each return, then runs `write` and `set` itself, so branch
+template, output as JSON object alone. Delegates write no session state;
+lead judges each output, then runs `write` and `set` itself, so branch
 leaves no trace in deliverable.

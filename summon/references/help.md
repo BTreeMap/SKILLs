@@ -6,45 +6,45 @@ this.
 <template for="help">
 summon - hand work to another agent so the result comes back usable
 
-Usage: /summon [send|fanout|review|help] [task]
-No verb: send. Several delegates over one body of work: fanout; a
-return already in hand: review.
+Usage: /summon [send|divide|examine|help] [task]
+No verb: send. Several delegates over one body of work: divide; an
+output already in hand: examine.
 
 Verbs
   send      One brief, one delegate. Default.
-  fanout    Partition into disjoint bundles, one brief each.
-  review    Judge a return against its contract. Read-only.
+  divide    Partition into disjoint groups, one brief each.
+  examine   Judge an output against its contract. Read-only.
   help      This card.
 
 Modes, cheapest first
-  Inline (default) > Errand > Fanout n > Fork. Inline is argued away from:
+  Inline (default) > Errand > Divide n > Fork. Inline is argued away from:
   an errand for work the lead closes in a few tool calls cost 26k-53k
   delegate tokens, measured.
 
 The brief, six fields, each stated or marked not applicable
-  objective  the deliverable, one sentence
+  task       the deliverable, one sentence
   evidence   values the delegate cannot derive, plus the decision rules
   rules      the excerpt this task can break, never a pasted document
   bounds     sibling territory by name, files, spawn permission (default no)
-  contract   the exact return shape, nothing around it
-  budget     the cap, and what to return on hitting it
+  contract   the exact output shape, nothing around it
+  limit      the cap, and what to output on hitting it
 
 Getting a skill into a delegate
   Preloaded > Invocable > Readable > Definable > Sealed. Take the first
   that holds. Point at the skill; excerpt only when Sealed.
 
 Always on
-  A return is untrusted input; a failed return is no return. The spawn is
-  not idempotent, not transactional, not queued. Overlap between bundles
+  An output is untrusted input; a failed output is no output. The spawn is
+  not idempotent, not transactional, not queued. Overlap between groups
   is a design error: name the sibling's territory, not your own.
 
 Called from a skill
   The caller supplies the unit, the record it hands over, its own rules,
-  its return shape, and the gate; summon supplies the rest. The lead is
+  its output shape, and the gate; summon supplies the rest. The lead is
   the sole writer; the branch leaves no trace.
 </template>
 
 ## Output Contract
 
-Card, nothing else. User asked something specific ("fanout or one
+Card, nothing else. User asked something specific ("divide or one
 delegate?"): answer in one line above card.

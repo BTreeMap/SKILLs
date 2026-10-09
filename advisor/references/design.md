@@ -9,10 +9,10 @@ them now when no review exists. Output: plan template alone.
   dependency forces otherwise: tolerance claim on smallest current workload;
   mechanism claim at scale on trusted simulator, calibrated against real
   run; comparison against strongest baseline in its own best configuration.
-* Cost: every phase carries cost in envelope's units: accelerator-hours,
-  rented money, people-weeks, simulator-hours. Phase whose cost exceeds
-  envelope takes simulator or emulator row of spine's instrument table, or
-  names collaborator it needs.
+* Cost: every phase carries cost in range's units: accelerator-hours, rented
+  money, people-weeks, simulator-hours. Phase whose cost exceeds range takes
+  simulator or emulator row of spine's instrument table, or names
+  collaborator it needs.
 * Checkpoints: each phase names test showing it succeeded or failed, and
   decision its result unlocks. Cut phase with no decision behind it.
 * Venue: name venue class plan targets and questions its reviewers ask
@@ -32,7 +32,7 @@ them now when no review exists. Output: plan template alone.
 <irreversible commitments withheld, each with the phase whose result releases it>
 
 ## Out of scope
-<what the plan does not attempt, and whether the envelope, the venue, or the claim rules it out>
+<what the plan does not attempt, and whether the range, the venue, or the claim rules it out>
 
 ## Ask
 <the one question whose answer changes the plan, or the word none>
@@ -43,7 +43,7 @@ them now when no review exists. Output: plan template alone.
 <checklist for="verb">
   <item>Phase 1 is cheapest run that can kill claim or direction.</item>
   <item>Every phase has claim, instrument, kill test, cost, decision it unlocks.</item>
-  <item>Every cost fits envelope, or phase names its simulator, emulator, or collaborator.</item>
+  <item>Every cost fits range, or phase names its simulator, emulator, or collaborator.</item>
   <item>Irreversible commitments under Deferred with releasing phase.</item>
   <item>Venue's questions each answered or named out of scope.</item>
 </checklist>

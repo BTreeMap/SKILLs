@@ -8,7 +8,7 @@ description: >-
   designing component APIs.
 license: MIT
 metadata:
-  argument-hint: "[design|build|refactor|review|audit|teach|help] [target] [marketing|product]"
+  argument-hint: "[design|write|refactor|examine|audit|tell|help] [target] [marketing|product]"
 ---
 
 # Aesthete
@@ -23,10 +23,10 @@ accessible behavior.
 | `a11y` | [references/a11y.md](references/a11y.md) |
 | `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
 | `brief` | [references/brief.md](references/brief.md) |
-| `build` | [references/verbs/build.md](references/verbs/build.md) |
 | `color` | [references/craft/color.md](references/craft/color.md) |
 | `components` | [references/craft/components.md](references/craft/components.md) |
 | `design` | [references/verbs/design.md](references/verbs/design.md) |
+| `examine` | [references/verbs/examine.md](references/verbs/examine.md) |
 | `help` | [references/verbs/help.md](references/verbs/help.md) |
 | `interaction` | [references/craft/interaction.md](references/craft/interaction.md) |
 | `layout` | [references/craft/layout.md](references/craft/layout.md) |
@@ -36,11 +36,11 @@ accessible behavior.
 | `preflight` | [references/preflight.md](references/preflight.md) |
 | `product` | [references/surfaces/product.md](references/surfaces/product.md) |
 | `refactor` | [references/verbs/refactor.md](references/verbs/refactor.md) |
-| `review` | [references/verbs/review.md](references/verbs/review.md) |
+| `signs` | [references/signs.md](references/signs.md) |
 | `systems` | [references/systems.md](references/systems.md) |
-| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
-| `tells` | [references/tells.md](references/tells.md) |
+| `tell` | [references/verbs/tell.md](references/verbs/tell.md) |
 | `typography` | [references/craft/typography.md](references/craft/typography.md) |
+| `write` | [references/verbs/write.md](references/verbs/write.md) |
 
 ## Objective
 
@@ -119,20 +119,20 @@ hairlines; density buys hierarchy, never noise.
 
 ## Verbs and loading
 
-Choose verb by explicit verb, then request shape, otherwise `build` for new
-work and `review` for existing work. Load exactly one verb file, named for
-verb. Every verb except `teach` and `help` also loads one surface profile,
-`a11y`, `interaction`, `components`; `review` and `audit` add `tells`. Run
+Choose verb by explicit verb, then request shape, otherwise `write` for new
+work and `examine` for existing work. Load exactly one verb file, named for
+verb. Every verb except `tell` and `help` also loads one surface profile,
+`a11y`, `interaction`, `components`; `examine` and `audit` add `signs`. Run
 work spanning verbs as sequential invocations.
 
 | Verb | Request shape |
 | --- | --- |
 | design | Direction or composition plan before code |
-| build | Implement interface (default for new work) |
+| write | Implement interface (default for new work) |
 | refactor | Rework existing interface, function preserved |
-| review | Read-only findings on screen or diff (default for existing work) |
+| examine | Read-only findings on screen or diff (default for existing work) |
 | audit | Ranked sweep of product or design system |
-| teach | Explain decision, calibrated to audience |
+| tell | Explain decision, calibrated to audience |
 | help | Quick-reference card |
 
 Choose surface profile (owner of surface-specific composition and density)
@@ -160,7 +160,7 @@ from another reference; decision spans two: load both here.
 | `motion` | Animation, transitions, choreography, scroll behavior, reduced motion |
 | `platform` | Modern CSS, HTML, framework capability; framework posture; performance targets |
 | `systems` | Choosing or installing design system; honest aesthetic labeling |
-| `tells` | Five sweeps and severity scale `review` and `audit` judge by; naming or removing generated-looking output |
+| `signs` | Five sweeps and severity scale `examine` and `audit` judge by; naming or removing generated-looking output |
 | `preflight` | Final gate before declaring done: verification and mechanical counts |
 
 ## Laws of taste
@@ -221,7 +221,7 @@ Owner files define terms. These hold regardless.
   Required asset cannot be produced: leave labeled slot; never fill it with
   something fake.
 * Depart from default only for reason in read; different default is not
-  reason. `tells` governs only *unbriefed* choices: higher-precedence
+  reason. `signs` governs only *unbriefed* choices: higher-precedence
   material overrides it; supplied brand is argued with only from floor, and
   only with measurements.
 

@@ -6,21 +6,21 @@ answer in one line above card.
 <template for="help">
 advisor - read a project the way its principal investigator would
 
-Usage: /advisor [review|design|audit|teach|help] <paper, proposal, or results>
-No verb: review. A plan of experiments: design. Several projects: audit.
+Usage: /advisor [examine|design|audit|tell|help] <paper, proposal, or results>
+No verb: examine. A plan of experiments: design. Several projects: audit.
 
 The four moves, before every verb
   constitution  every origin, each mechanism tagged as-is, tweaked,
                 transferred, or new, and the patterns it fits
   currency      each setup element classed current, legacy, or toy, with a source
-  envelope      what the lab can afford, written as an assumption
+  range         what the lab can afford, written as an assumption
   claims        one instrument and one kill test per claim
 
 Verbs
-  review   Judge one artifact. Read-only. Default.
+  examine  Judge one artifact. Read-only. Default.
   design   Plan the next phase: order, instruments, kill tests, cost.
   audit    Judge a program: sampled by leverage, unexamined named.
-  teach    Explain one judgment to a named audience, with its source.
+  tell     Explain one judgment to a named audience, with its source.
   help     This card.
 
 Instruments

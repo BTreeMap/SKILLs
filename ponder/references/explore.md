@@ -33,7 +33,7 @@ act. Decompose by governing principle: each leaf names mechanism and
 retrievable claim; leaves group by mechanism.
 
 - Put dependent sub-questions in draft's `[~]` chain, so ledger leaves and
-  fan-out stay independent.
+  groups stay independent.
 - 3 to 10 leaves covers worked range. Past 10, fold near-duplicates before
   searching; below 3 still works.
 - Register leaves as `leaves` entries in cycle's `record` batch: keywords,
@@ -195,19 +195,19 @@ Before bundling leaves, verify:
   <item>Rival premise and answer-flipping boundaries explicit.</item>
 </checklist>
 
-## Bundle and delegate
+## Group and delegate
 
 Delegation starts here, after cycle one; lead retains comprehensive view.
-Partition open leaves into disjoint bundles by corpus, vocabulary, or
-principle; jointly cover open set. Prefer fewer, fuller bundles.
+Partition open leaves into disjoint groups by corpus, vocabulary, or
+principle; jointly cover open set. Prefer fewer, fuller groups.
 
-Delegate through `/summon fanout`, one delegate per bundle, with brief
-`brief` lays out. Summon's mode table decides when bundle runs inline
+Delegate through `/summon divide`, one delegate per group, with brief
+`brief` lays out. Summon's mode table decides when group runs inline
 instead; ledger state same either way; delegate identity stays outside it.
 
-Delegates read source pages, return closure proposals; they write nothing.
-Lead judges each return under summon's review, checks inflated source-class
-tags against class table in spine.
+Delegates read source pages, output closure proposals; they write nothing.
+Lead judges each output under summon's `examine`, checks inflated
+source-class tags against class table in spine.
 
 ## Accept a cycle
 

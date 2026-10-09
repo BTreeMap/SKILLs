@@ -1,7 +1,7 @@
 # Verb: audit
 
 Judge codebase: read-only, whole-repository or module-level sweep through PL
-lens, producing ranked ledger of modeling and cost debt. `review` is total
+lens, producing ranked ledger of modeling and cost debt. `examine` is total
 over diff and gates decision; `audit` samples by blast radius and ranks
 backlog.
 
@@ -44,7 +44,7 @@ Ledger table, ranked:
 `| # | location | category | finding | suggested shape | effort (S/M/L) |`
 
 Then at most five lines: systemic themes, highest-value fix, unexamined
-areas. Fixing proceeds through `refactor` or `build` invocations per ledger
+areas. Fixing proceeds through `refactor` or `write` invocations per ledger
 row.
 
 ## Completion Checks

@@ -44,7 +44,7 @@ from btm_ponder.store import (
     orient,
 )
 from btm_ponder.views import (
-    LITE_DEMOTED,
+    BASIC_DEMOTED,
     counts_of,
     hedges,
     leaf_view,
@@ -132,8 +132,8 @@ def cmd_check(args: argparse.Namespace) -> int:
     }
     found = violations(ledger)
     demoted = (
-        [line for line in found if line.startswith(LITE_DEMOTED)]
-        if level is Level.LITE
+        [line for line in found if line.startswith(BASIC_DEMOTED)]
+        if level is Level.BASIC
         else []
     )
     blocking = [line for line in found if line not in demoted]
@@ -195,7 +195,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Level,
         choices=LEVELS,
         default=Level.FULL,
-        help="lite demotes draft blockers to advisories",
+        help="basic demotes draft blockers to advisories",
     )
     wire_project(start)
     record = commands.add_parser(

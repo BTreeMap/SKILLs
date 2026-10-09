@@ -18,9 +18,9 @@ report.
 
    | Type | Goal | Default level |
    | --- | --- | --- |
-   | Narrative | Orient in topic, background section | lite |
+   | Narrative | Orient in topic, background section | basic |
    | Scoping | Map field: themes, venues, gaps | full |
-   | Systematic | Answer one question from all qualifying evidence | ultra |
+   | Systematic | Answer one question from all qualifying evidence | maximum |
 
 3. **Bounds.** Year window, language, geographic or domain scope.
 4. **Accepted source types.** Peer-reviewed only, or also preprints,

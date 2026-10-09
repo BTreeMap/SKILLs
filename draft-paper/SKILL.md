@@ -12,7 +12,7 @@ compatibility: >-
   unverified. The first run builds the `.venv` at the checkout root that
   every skill's scripts share, about 225 MB.
 metadata:
-  argument-hint: "[design|build|refactor|rebut|help] [short|full|workshop|journal|survey|demo]"
+  argument-hint: "[design|write|refactor|rebut|help] [short|full|workshop|journal|survey|demo]"
 ---
 
 # Draft Paper
@@ -73,13 +73,13 @@ Hold at every stage. After context compaction, re-open this file and run
 | Verb | Starts from | Runs stages | Delivers |
 | --- | --- | --- | --- |
 | `design` | initial or shaped idea | 1 | positioned research plan with its prospective ledger |
-| `build` | shaped idea, partial or full results | 2-8 (1-8 from a shaped idea) | complete draft |
+| `write` | shaped idea, partial or full results | 2-8 (1-8 from a shaped idea) | complete draft |
 | `refactor` | existing draft | 3-8, abbreviated | draft retargeted to new format or venue, claims preserved |
 | `rebut` | reviews received | 9 | rebuttal or revision letter |
 | `help` | any | none | prints Verbs, Formats, Gates tables of this file and stops; opens no run |
 
 Dispatch by explicit verb, then request shape (rough idea: `design`;
-results: `build`; reviews: `rebut`), then default verb `build`.
+results: `write`; reviews: `rebut`), then default verb `write`.
 
 ## Input status
 
@@ -89,9 +89,9 @@ Status ambiguous: ask exactly one question.
 | Status | Means | Verbs |
 | --- | --- | --- |
 | `initial` | few sentences of idea | `design` positions it; nothing written as fact |
-| `shaped` | hypothesis plus literature context or early evidence | `design` sharpens plan; `build` validates positioning in stage 1, then starts ledger |
-| `partial` | some experiments done | `build` ledgers what exists, notes rest `to-run`, states only what ran |
-| `full` | complete artifact set | `build` runs full pipeline |
+| `shaped` | hypothesis plus literature context or early evidence | `design` sharpens plan; `write` validates positioning in stage 1, then starts ledger |
+| `partial` | some experiments done | `write` ledgers what exists, notes rest `to-run`, states only what ran |
+| `full` | complete artifact set | `write` runs full pipeline |
 | `draft` | draft to retarget | `refactor` re-outlines against new format and venue checklist, keeps unchanged sections |
 | `reviews` | reviews as text | `rebut` |
 
@@ -119,7 +119,7 @@ read source only when user asks for troubleshooting.
 
 <commands>
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-draft-paper"
-$R start "<two or three keywords>" --verb build --format full --status partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>] [--project <name>]
+$R start "<two or three keywords>" --verb write --format full --status partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>] [--project <name>]
 S="<the session identifier the start output echoed>"
 $R schema
 $R record "$S" --batch:file <events.json> && $R status "$S"
@@ -280,10 +280,10 @@ jumping from stage 3 to 8 has skipped citation verification.
    chosen venue for `design` run: start with `--venue undecided`, record
    `decision` naming candidate venues, skip CFP study and template fetch;
    award assessment then weighs each candidate's venue family from
-   `venue-standards`, and `build` run that follows studies chosen venue's
-   CFP. `build` run settles venue before `start`, or takes `--venue none`
+   `venue-standards`, and `write` run that follows studies chosen venue's
+   CFP. `write` run settles venue before `start`, or takes `--venue none`
    per invariant 9.
-1. Positioning (`design`; `build` from shaped idea): sweep literature with
+1. Positioning (`design`; `write` from shaped idea): sweep literature with
    `/lit-review`, analyze gap, argue novelty from retrieved full text, state
    falsifiable claims, write pre-registration-style experiment plan. If
    `/lit-review` review of same question exists, `attach` its session as
@@ -293,7 +293,7 @@ jumping from stage 3 to 8 has skipped citation verification.
    from `design-plan-template`; its award section filled from
    `award-assessment`. `design` run: record each falsifiable claim as
    `to-run` before requesting gate. Gate: `plan`.
-2. Evidence (`build`): record one claim per empirical claim, per evidence
+2. Evidence (`write`): record one claim per empirical claim, per evidence
    ledger above. Gate: `ledger`.
 3. Outline: rank 2-3 framings in pad; freeze one against outline template
    and format's structure in `section-guide`. Freeze one-sentence key
@@ -311,7 +311,7 @@ jumping from stage 3 to 8 has skipped citation verification.
    supports sentence stays your judgment. Fix, downgrade, or cut each
    failing citation. Work splits by key. To delegate: hand each delegate
    batch of keys with citing sentences through `/summon`, with invariant 3
-   as rule it can break and `citation-report-template` rows as return shape;
+   as rule it can break and `citation-report-template` rows as output shape;
    accept only rows whose Source column names retrieved record.
 6. Figure and table audit: every referenced figure and table exists,
    captions describe what is shown, prose numbers match their claims'
@@ -335,7 +335,7 @@ jumping from stage 3 to 8 has skipped citation verification.
 
 - `design`: research plan from `design-plan-template` plus prospective
   ledger rendered from `check`. No results prose.
-- `build`: complete draft in venue's template within its limits,
+- `write`: complete draft in venue's template within its limits,
   double-blind; venue brief; evidence ledger rendered from `check`; citation
   verification report; reviewer task list with resolutions; reproducibility
   bundle manifest; explicit AI-assistance disclosure.
@@ -352,8 +352,8 @@ verb, artifact to pass. Invoke none unasked.
 - Draft wants referee pass beyond stage 7: `/peer-review` on compiled PDF;
   pass attached lit-review session to its `attach <session> --corpus`.
 - Draft's claims need checking against sources: `/fact-check` on draft file.
-- Venue requires Simplified Technical English: `/asd-ste100 review` on draft
-  file.
+- Venue requires Simplified Technical English: `/asd-ste100 examine` on
+  draft file.
 - Prose reads machine-written after stage 8: `/humanize` on draft file.
 - Reviews arrive: `/draft-paper rebut` with reviews text; new run
   `--verb rebut --status reviews`, same `--project`.
@@ -362,7 +362,7 @@ verb, artifact to pass. Invoke none unasked.
 
 <checklist>
   <item>`status` shows verb's last gate accepted (for `rebut`, stage 9 started); `next` names delivery.</item>
-  <item>Every empirical claim about work's own results maps to live claim in `check`'s ledger; no live claim in `build` or `refactor` deliverable is `to-run` or `unsupported`.</item>
+  <item>Every empirical claim about work's own results maps to live claim in `check`'s ledger; no live claim in `write` or `refactor` deliverable is `to-run` or `unsupported`.</item>
   <item>Every citation has report row naming retrieved record behind it; each unverifiable one stands as `[CITATION NEEDED]`.</item>
   <item>Venue brief carries cycle year and source URL per fact, or every venue fact in draft flagged unverified.</item>
   <item>Every deliverable output contract lists for verb exists.</item>

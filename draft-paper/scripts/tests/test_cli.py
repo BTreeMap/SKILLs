@@ -46,7 +46,7 @@ def run(
 def opened(
     capsys: pytest.CaptureFixture[str],
     artifacts: Path,
-    verb: str = "build",
+    verb: str = "write",
     status: str = "partial",
 ) -> str:
     code, document, err = run(
@@ -449,7 +449,7 @@ class TestCorpus:
     ) -> None:
         code, document, err = run(
             [
-                *("start", "tail latency", "--verb", "build", "--format", "full"),
+                *("start", "tail latency", "--verb", "write", "--format", "full"),
                 *("--status", "partial", "--venue", "v", "--model", "m"),
                 *("--artifacts", str(artifacts), "--project", "ste-tax"),
             ],

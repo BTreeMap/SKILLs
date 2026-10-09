@@ -1,4 +1,4 @@
-# Ultra: Atomicity and History-Consistency Audit
+# Maximum: Atomicity and History-Consistency Audit
 
 Applies on top of SKILL.md, its Full section included. Run these audits
 BEFORE drafting; they may change what gets committed as well as message.
@@ -28,6 +28,6 @@ its own; split stays proposal until user accepts it.
   <step>Add each as footer line (`Resolves #142`); invent none.</step>
 </procedure>
 
-<directives for="verification">
+<instructions for="verification">
   <rule>Before output, run Full checklist in SKILL.md item by item. Any failure: fix and re-verify instead of shipping violation.</rule>
-</directives>
+</instructions>

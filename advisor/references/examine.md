@@ -1,17 +1,17 @@
-# Verb: review
+# Verb: examine
 
 Judge one artifact (paper, proposal, draft, result set) after four moves.
 Read-only: no file changes, no re-run of experiments. Output template alone.
 
 * Direction: one paragraph saying where project wins given constitution,
-  currency table, envelope; which claim goes first; what lab stops doing.
+  currency table, range; which claim goes first; what lab stops doing.
   Target is pattern's "what it has to show" row. Headline only; `design`
   expands it into plan.
 * Sound: each line names what was checked; silence means unchecked.
 * Routed: each piece of work outside lens, one line, with sibling spine's
   Redirects name for it; word none when nothing left lens.
 
-<template for="review">
+<template for="examine">
 # Review: <artifact title>
 <path, URL, or DOI>; read <YYYY-MM-DD>.
 
@@ -24,7 +24,7 @@ Read-only: no file changes, no re-run of experiments. Output template alone.
 | --- | --- | --- | --- | --- |
 <one row per element: scale, topology, substrate, hardware, workload, baseline, metric>
 
-## Envelope (assumption)
+## Range (assumption)
 <compute, network, data, people, money: one line each; "unknown" where unknown>
 
 ## Claims

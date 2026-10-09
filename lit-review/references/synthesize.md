@@ -74,7 +74,7 @@ below.
 
 ## Method
 Sources searched with dates and logged query counts; criteria (and
-changes, at ultra); flow counts: identified N, after dedup N, excluded
+changes, at maximum); flow counts: identified N, after dedup N, excluded
 at title/abstract N, excluded at full-text N, included N. State the search
 dates as the review's as-of point, and note truncated searches as ranked
 samples with their upstream totals.
@@ -84,7 +84,7 @@ Synthesis prose citing records as [n], using the numbers `brief` or
 `cite-check` assigned. Disagreements and single-paper claims labeled as
 Rules of evidence requires.
 
-[## Appraisal table]  (ultra: one row per included paper, six dimensions)
+[## Appraisal table]  (maximum: one row per included paper, six dimensions)
 
 ## Limitations of this review
 Coverage limits: sources not searched, papers identified but unassessed,
@@ -137,15 +137,15 @@ papers doing named things. Banned vocabulary in SKILL.md applies.
 
   | Level | Sweep |
   | --- | --- |
-  | lite | Mechanical only: search report for U+2014 and U+2013 dashes, `**`, Title Case headings, emoji, curly quotes, each banned word; fix every hit. |
-  | full, ultra | Lite searches, then `/humanize` on report file: it scans its detection index, loads only owner files of patterns it finds. |
+  | basic | Mechanical only: search report for U+2014 and U+2013 dashes, `**`, Title Case headings, emoji, curly quotes, each banned word; fix every hit. |
+  | full, maximum | Basic searches, then `/humanize` on report file: it scans its detection index, loads only owner files of patterns it finds. |
 
 ## Handoffs
 
 After delivery, offer each next step whose condition holds; name sibling,
 verb, artifact to pass. Invoke none unasked.
 
-- Review feeds paper: `/draft-paper build`; pass this session's identifier
+- Review feeds paper: `/draft-paper write`; pass this session's identifier
   to its `attach <run> --corpus`, so corpus records need no re-retrieval.
 - Paper to referee against this literature: `/peer-review`; pass this
   session's identifier to its `attach <session> --corpus`.

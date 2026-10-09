@@ -18,7 +18,7 @@ remediation plan. Read-only: change nothing.
    `components` directs. Several implementations of one primitive: normally
    highest-leverage finding; consolidating fixes many inconsistency
    instances at once.
-4. **Score each surface** on five sweeps in `tells`. Note primary goal and
+4. **Score each surface** on five sweeps in `signs`. Note primary goal and
    friction budget per surface.
 5. **Cluster findings by cause.** Twelve contrast failures from one bad
    neutral token: one finding with twelve instances. Report accessibility

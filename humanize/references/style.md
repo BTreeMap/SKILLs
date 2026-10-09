@@ -103,7 +103,7 @@ Run the command.
 **Problem:** Curly quotes (“...”) where writer or target format uses
 straight quotes ("...").
 
-As evidence, curly quotes count only when stacked with other tells; macOS,
+As evidence, curly quotes count only when stacked with other signs; macOS,
 Word, Google Docs, and most CMSes auto-curl by default.
 
 <examples>

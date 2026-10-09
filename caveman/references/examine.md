@@ -1,7 +1,7 @@
-# Caveman Review Verb
+# Caveman Examine Verb
 
 Write terse, actionable review comments, one line per finding, ready to
-paste. Review only: do not write fix, approve, request changes, or run
+paste. Examine only: do not write fix, approve, request changes, or run
 linters.
 
 ## Format
@@ -27,7 +27,7 @@ Keep: exact line numbers, exact symbol names in backticks, concrete fix
 (never "consider refactoring"), the why when fix is not obvious from
 problem.
 
-<examples for="review">
+<examples for="examine">
   <before>I noticed that on line 42 you're not checking if the user object is null before accessing the email property. This could potentially cause a crash. You might want to add a null check here.</before>
   <after>L42: bug: user can be null after .find(). Add guard before .email.</after>
   <after>L88-140: nit: 50-line fn does 4 things. Extract validate/normalize/persist.</after>

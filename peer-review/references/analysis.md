@@ -25,7 +25,7 @@ Percentages must sum; means must sit inside reported ranges. On bounded
 measure, standard deviation larger than half the mean flags non-normal
 spread described as normal.
 
-## Ultra: recomputation
+## Maximum: recomputation
 
 Recompute every derivable number claims lean on: differences between rows,
 relative improvements, averages over columns, totals. Do arithmetic on pad,

@@ -1,4 +1,4 @@
-# Caveman Stats Verb
+# Caveman Measure Verb
 
 Display honest savings card. Edit nothing, write nothing, change no level.
 NEVER fabricate or estimate per-session token counts: this skill has no

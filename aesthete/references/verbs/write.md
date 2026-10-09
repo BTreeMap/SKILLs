@@ -1,4 +1,4 @@
-# Verb: build
+# Verb: write
 
 Takes request for new interface work (default verb for it); returns working
 code. No design plan exists: first produce compressed one inline (primary
@@ -6,7 +6,7 @@ goal, token spine, composition order).
 
 ## Order of work
 
-Build in this order; each stage constrains next; reordering causes rework.
+Write in this order; each stage constrains next; reordering causes rework.
 
 1. **Inventory before authoring**, per `components`. List what exists and
    will be reused, what exists and needs new variant, what does not exist

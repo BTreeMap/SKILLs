@@ -3,7 +3,7 @@ name: humanize
 description: >-
   Rewrites AI-sounding prose so it reads like its writer, keeping every
   claim, number, citation at original strength, inventing nothing. Writing
-  sample or style file outranks its catalogue of AI writing tells. Pasted
+  sample or style file outranks its catalogue of AI writing signs. Pasted
   text comes back rewritten; named file edited in place. Use when asked to
   humanize, de-AI, or naturalize prose, or remove AI writing patterns.
 license: MIT
@@ -16,7 +16,7 @@ metadata:
 Rewrite AI-sounding text so it reads like its writer, replacing generic with
 specific. §1-35 come from Wikipedia's ["Signs of AI
 writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing);
-§36-40 and added cases in older entries cover tells that survive vocabulary
+§36-40 and added cases in older entries cover signs that survive vocabulary
 scrub.
 
 ## Registry
@@ -124,7 +124,7 @@ Every entry occurs in human writing; hit is style signal, never proof of
 authorship. Structural and rhetorical entries diagnostic alone or in pairs;
 lexical entries (§7, §37) count only in clusters or above density owner file
 states. Unsure: look for several patterns together; several stock patterns
-in one passage are stronger evidence than any one. Vocabulary tells drift by
+in one passage are stronger evidence than any one. Vocabulary signs drift by
 model and year; structural ones last.
 
 | § | Cue |
@@ -179,8 +179,8 @@ none as evidence by itself:
   or have been edited.
 - **Mixed casual and formal styles.** Can reflect writer's field, age, or
   personal habits.
-- **"Bland" or "robotic" prose.** AI prose has specific tells. Generic
-  dryness without those tells is just dry writing.
+- **"Bland" or "robotic" prose.** AI prose has specific signs. Generic
+  dryness without those signs is just dry writing.
 - **Unsourced claims.** Most of the web is unsourced.
 - **Correct, complex formatting.** Visual editors and templates produce
   clean output without any AI.

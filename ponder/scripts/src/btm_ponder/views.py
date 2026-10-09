@@ -49,7 +49,7 @@ def sections(ledger: Ledger) -> list[str]:
 
 OPEN_LEAF = "open leaf blocks draft"
 NO_SCAN = "no scan recorded"
-LITE_DEMOTED = (OPEN_LEAF, NO_SCAN)  # advisories, not blockers, at lite
+BASIC_DEMOTED = (OPEN_LEAF, NO_SCAN)  # advisories, not blockers, at basic
 
 
 def violations(ledger: Ledger) -> list[str]:

@@ -1,16 +1,16 @@
 # Verb: audit
 
 Judge research program: lab's projects, thesis's chapters, multi-paper line.
-Sample by leverage (projects consuming most of envelope or carrying
-program's central claim); run four moves on each sampled one. Name unsampled
-projects. Read-only.
+Sample by leverage (projects consuming most of range or carrying program's
+central claim); run four moves on each sampled one. Name unsampled projects.
+Read-only.
 
 ## Portfolio reads
 
 | Signal | Reading |
 | --- | --- |
 | Several projects share one origin A | Lab's asset is A; program is A plus set of partners; direction is partner with strongest current setup |
-| Every setup toy or legacy | Envelope bounds program, not ideas; plan is instruments before topics |
+| Every setup toy or legacy | Range bounds program, not ideas; plan is instruments before topics |
 | One project's kill test would kill others | Run it first, program-wide |
 | Project's delta is composition alone | Sound when pattern's "what it has to show" met; otherwise replication |
 | Two projects test one claim with two instruments | Merge them, keep cheaper instrument |
@@ -20,7 +20,7 @@ projects. Read-only.
 <one line: the shared origins and the set of compositions>
 
 ## Sampled
-| project | constitution | setup class | envelope fit | kill test |
+| project | constitution | setup class | range fit | kill test |
 | --- | --- | --- | --- | --- |
 
 ## Unsampled

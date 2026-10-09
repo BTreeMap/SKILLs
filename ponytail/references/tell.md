@@ -1,4 +1,4 @@
-# Ponytail Teach Verb
+# Ponytail Tell Verb
 
 Explain ladder decision so audience can make next one themselves. Prose is
 deliverable here, but still no essays.

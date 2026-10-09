@@ -147,7 +147,7 @@ removal; unlike §24 it hedges writer's sincerity, not claim's strength.
 State point directly.
 
 **Exceptions:** "Honestly" or "look" mid-sentence in casual writing, and
-quoted speech, stay. Tell is standalone theatrical opener, or writer marking
+quoted speech, stay. Sign is standalone theatrical opener, or writer marking
 own claim as the honest one.
 
 <examples>

@@ -6,9 +6,9 @@ from enum import StrEnum
 
 
 class Level(StrEnum):
-    LITE = "lite"
+    BASIC = "basic"
     FULL = "full"
-    ULTRA = "ultra"
+    MAXIMUM = "maximum"
 
 
 class Severity(StrEnum):
@@ -98,9 +98,9 @@ TYPE_BANK: dict[Type, Bank] = {
     member: bank for bank, members in BANKS.items() for member in members
 }
 LEVEL_BANKS: dict[Level, tuple[Bank, ...]] = {
-    Level.LITE: (Bank.CLAIMS, Bank.LIMITATIONS),
+    Level.BASIC: (Bank.CLAIMS, Bank.LIMITATIONS),
     Level.FULL: tuple(Bank),
-    Level.ULTRA: tuple(Bank),
+    Level.MAXIMUM: tuple(Bank),
 }
 
 

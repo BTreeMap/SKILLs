@@ -199,11 +199,11 @@ Pick one branch from Step 0 probe and summon's mode table. Verdict records
 and report MUST be identical across branches; branch shows only in cost and
 latency metadata.
 
-- **Parallel**: delegate through `/summon fanout`, one delegate per claim.
+- **Parallel**: delegate through `/summon divide`, one delegate per claim.
   Each brief: evidence is exactly contract input; rules are `verification`
   and Invariant 4, `verification` passed by path where delegate can read
-  files, so lead need not load it; contract is one verdict record, returned
-  as JSON object alone. Delegate never sees document, other claims, other
+  files, so lead need not load it; contract is one verdict record, output as
+  JSON object alone. Delegate never sees document, other claims, other
   verdicts, or file system for writing, and edits nothing. Lead alone
   aggregates, reports, seeks approval, edits. This split is security
   boundary: only delegates touch untrusted web content.

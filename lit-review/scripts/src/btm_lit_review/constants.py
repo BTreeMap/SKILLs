@@ -23,9 +23,9 @@ HTTP_OK = 200
 class Level(StrEnum):
     """How much rigor the review runs at; the bands read off it."""
 
-    LITE = "lite"
+    BASIC = "basic"
     FULL = "full"
-    ULTRA = "ultra"
+    MAXIMUM = "maximum"
 
 
 class Status(StrEnum):

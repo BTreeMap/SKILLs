@@ -9,7 +9,7 @@ description: >-
   of, whether setup holds up, or what to run next.
 license: MIT
 metadata:
-  argument-hint: "[review|design|audit|teach|help] <paper, proposal, or results>"
+  argument-hint: "[examine|design|audit|tell|help] <paper, proposal, or results>"
 ---
 
 # Advisor
@@ -23,9 +23,9 @@ field runs now, size lab, then point work where lab can win.
 | --- | --- |
 | `audit` | [references/audit.md](references/audit.md) |
 | `design` | [references/design.md](references/design.md) |
+| `examine` | [references/examine.md](references/examine.md) |
 | `help` | [references/help.md](references/help.md) |
-| `review` | [references/review.md](references/review.md) |
-| `teach` | [references/teach.md](references/teach.md) |
+| `tell` | [references/tell.md](references/tell.md) |
 
 ## Redirects
 
@@ -92,7 +92,7 @@ memory" with model's cutoff. Retrieve with harness's search and fetch, else
 memory ages. Toy element: flaw when claim is about deployment scale; stated
 limitation when claim is about mechanism and paper says so.
 
-### 3. Envelope
+### 3. Range
 
 Infer what lab can afford from testbed section, affiliation, anything user
 states. Cover compute (count and class of accelerators), network (fabric,
@@ -108,12 +108,12 @@ systems work: mechanism claim (protocol, algorithm, or design behaves as
 described) and tolerance claim (workload survives what mechanism does to
 it). Claim paper makes about scale it did not test, in abstract, motivation,
 or deployment language: own row. For each claim, name cheapest credible
-instrument inside envelope that proves it at setup field accepts as current:
+instrument inside range that proves it at setup field accepts as current:
 
 | The claim is about | Instrument |
 | --- | --- |
-| Behaviour at scale envelope reaches | Real system, at that scale |
-| Behaviour at scale envelope cannot reach | Simulator or emulator field already trusts, calibrated against small real run |
+| Behaviour at scale range reaches | Real system, at that scale |
+| Behaviour at scale range cannot reach | Simulator or emulator field already trusts, calibrated against small real run |
 | Workload's tolerance | Smallest workload field still calls current, on real system, mechanism's effect injected; never paper's own workload when Currency table classed it toy or legacy |
 | Comparison | Strongest baseline in its own best configuration, never reimplementation with its hardware removed |
 
@@ -128,15 +128,15 @@ Name kill test per claim: outcome that ends direction.
 
 One invocation loads exactly one verb file, named for verb. Choose in
 descending priority: explicit verb; unambiguous request shape; otherwise
-review. Plan of experiments: design. Several projects or whole program:
-audit. Explanation for named audience: teach.
+examine. Plan of experiments: design. Several projects or whole program:
+audit. Explanation for named audience: tell.
 
 | Verb | Contract |
 | --- | --- |
-| review | Judge one artifact: constitution, currency, envelope, claims, direction. Read-only. Default. |
+| examine | Judge one artifact: constitution, currency, range, claims, direction. Read-only. Default. |
 | design | Plan next phase before it runs: instruments, order, kill tests, cost. |
 | audit | Judge program: projects sampled by leverage, unexamined ones named. |
-| teach | Explain one judgment to named audience, citing heuristic behind it. |
+| tell | Explain one judgment to named audience, citing heuristic behind it. |
 | help | Quick-reference card. |
 
 ## Completion Checks
@@ -145,8 +145,8 @@ audit. Explanation for named audience: teach.
   <item>Method section and its citations read before abstract.</item>
   <item>Constitution: one line naming every origin; each mechanism tagged as-is, tweaked, transferred, or new; patterns from table.</item>
   <item>Every setup element classed with dated source or mark "from memory".</item>
-  <item>Envelope written as assumption; at most one question asked.</item>
-  <item>Every claim has instrument inside envelope and kill test.</item>
+  <item>Range written as assumption; at most one question asked.</item>
+  <item>Every claim has instrument inside range and kill test.</item>
   <item>Exactly one verb file loaded.</item>
   <item>Work outside lens routed to sibling skill by name.</item>
 </checklist>

@@ -1,4 +1,4 @@
-# Verb: teach
+# Verb: tell
 
 Explain one judgment from four moves to named audience. Audience unnamed:
 take student.
@@ -7,7 +7,7 @@ take student.
 | --- | --- |
 | student | Move as procedure they run next time, artifact's own text as worked example |
 | collaborator | Judgment and its evidence; procedure skipped |
-| reviewer or funder | Claim, instrument, kill test; nothing about lab's envelope |
+| reviewer or funder | Claim, instrument, kill test; nothing about lab's range |
 
 Output: explanation, then one line naming heuristic behind judgment and its
 full source citation from tables below. Nothing after it.
@@ -23,9 +23,9 @@ full source citation from tables below. Nothing after it.
 | Currency | Name how problem is solved today and where current practice hits its limits | Heilmeier |
 | Currency | State what is new in approach and why it will succeed where prior attempts did not | Heilmeier |
 | Currency | Build and deploy system, measure it, compare against realistic alternatives, state its weaknesses | Levin and Redell |
-| Envelope | Before calling problem important, check for genuine, feasible line of attack; without one, set it aside whatever its prestige | Hamming |
-| Envelope | Plot each candidate problem on feasibility against interest; prefer those scoring on both | Alon |
-| Envelope | Name risks, cost, time, and mid-term and final tests showing success or failure | Heilmeier |
+| Range | Before calling problem important, check for genuine, feasible line of attack; without one, set it aside whatever its prestige | Hamming |
+| Range | Plot each candidate problem on feasibility against interest; prefer those scoring on both | Alon |
+| Range | Name risks, cost, time, and mid-term and final tests showing success or failure | Heilmeier |
 | Claims | Hold several working hypotheses instead of one favoured explanation | Platt |
 | Claims | Design experiment whose alternative outcomes each exclude standing hypothesis; run it first | Platt |
 | Claims | Treat every hypothesis as expendable; clean disproof is progress | Platt |

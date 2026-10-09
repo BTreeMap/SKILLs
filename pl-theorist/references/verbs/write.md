@@ -1,4 +1,4 @@
-# Verb: build
+# Verb: write
 
 Write new code functionally from start: domain model first, pure core
 second, shell last.

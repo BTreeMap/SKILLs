@@ -14,7 +14,7 @@ review.
 | semanticscholar | Every field, own citation graph, open-access PDF links | Second graph for snowballing; OpenAlex misses paper's references |
 | firecrawl | arXiv, PubMed, bioRxiv, medRxiv abstracts ranked by meaning | Biomedical or preprint fields; concept named in many vocabularies |
 
-Use at least as many sources as level requires; lite run stopping after one
+Use at least as many sources as level requires; basic run stopping after one
 source stops after productive one. `firecrawl` returns no year, author, or
 citation count in `find`, reports no match count: treat its results as
 ranked sample, fill gaps from another source's record of same paper. Other
@@ -59,7 +59,7 @@ for some arXiv-only records: snowball same seed with
 `--source semanticscholar`, seed from journal-indexed record instead, or
 read paper's own reference list during extract. Screen new candidates from
 snowballing with same criteria as keyword results. Full: cycle covers two or
-more seeds. Ultra: repeat cycles until cycle yields no new included paper.
+more seeds. Maximum: repeat cycles until cycle yields no new included paper.
 
 ## Saturation and stopping
 

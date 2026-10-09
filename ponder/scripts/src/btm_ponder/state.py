@@ -41,11 +41,11 @@ class Reason(StrEnum):
 
 
 class Level(StrEnum):
-    """Rigor level: LITE demotes draft blockers to advisories; sourcing is
+    """Rigor level: BASIC demotes draft blockers to advisories; sourcing is
     unchanged."""
 
     FULL = "full"
-    LITE = "lite"
+    BASIC = "basic"
 
 
 class CloseStatus(StrEnum):

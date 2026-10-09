@@ -9,7 +9,7 @@ description: >-
   "simplest solution", or "yagni".
 license: MIT
 metadata:
-  argument-hint: "[lite|full|ultra] [design|refactor|review|audit|test|teach|debt|stats|help]"
+  argument-hint: "[basic|full|maximum] [design|refactor|examine|audit|test|tell|debt|measure|help]"
 ---
 
 # Ponytail
@@ -23,11 +23,11 @@ Write least code that works: climb ladder, stop at first rung that holds.
 | `audit` | [references/audit.md](references/audit.md) |
 | `debt` | [references/debt.md](references/debt.md) |
 | `design` | [references/design.md](references/design.md) |
+| `examine` | [references/examine.md](references/examine.md) |
 | `help` | [references/help.md](references/help.md) |
+| `measure` | [references/measure.md](references/measure.md) |
 | `refactor` | [references/refactor.md](references/refactor.md) |
-| `review` | [references/review.md](references/review.md) |
-| `stats` | [references/stats.md](references/stats.md) |
-| `teach` | [references/teach.md](references/teach.md) |
+| `tell` | [references/tell.md](references/tell.md) |
 | `test` | [references/test.md](references/test.md) |
 
 ## Redirects
@@ -35,15 +35,15 @@ Write least code that works: climb ladder, stop at first rung that holds.
 - Terse prose: `/caveman`
 - Correctness, security, performance, domain modeling, typing, or
   law-derived tests: `/pl-theorist`, same verb
-- Applying a review's or audit's cuts: `/ponytail refactor`
-- Counted figures for teach: `/ponytail debt`
+- Applying cuts from examine or audit: `/ponytail refactor`
+- Counted figures for tell: `/ponytail debt`
 
 ## Persistence
 
 ACTIVE EVERY RESPONSE. No drift back to over-building. Still active if
 unsure. Off only: "stop ponytail" / "normal mode". Default: **full**.
-Switch: `/ponytail lite|full|ultra`; level sticks until changed or session
-end.
+Switch: `/ponytail basic|full|maximum`; level sticks until changed or
+session end.
 
 ## The ladder
 
@@ -115,38 +115,38 @@ Pattern: `[code] → skipped: [X], add when [Y].`
 
 | Level | What changes |
 | --- | --- |
-| **lite** | Build what's asked, but name lazier alternative in one line. User picks. |
+| **basic** | Build what's asked, but name lazier alternative in one line. User picks. |
 | **full** | Ladder enforced. Stdlib and native first. Shortest diff, shortest explanation. Default. |
-| **ultra** | Deletion before addition. Ship one-liner, challenge rest of requirement in same breath. |
+| **maximum** | Deletion before addition. Ship one-liner, challenge rest of requirement in same breath. |
 
 <examples for="level" request="Add a cache for these API responses.">
-  <variant for="lite">Done, cache added. FYI: `functools.lru_cache` covers this in one line if you'd rather not own a cache class.</variant>
+  <variant for="basic">Done, cache added. FYI: `functools.lru_cache` covers this in one line if you'd rather not own a cache class.</variant>
   <variant for="full">`@lru_cache(maxsize=1000)` on the fetch function. Skipped custom cache class, add when lru_cache measurably falls short.</variant>
-  <variant for="ultra">No cache until a profiler says so. When it does: `@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate.</variant>
+  <variant for="maximum">No cache until a profiler says so. When it does: `@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate.</variant>
 </examples>
 
 ## Verbs
 
 On `/ponytail <verb>` or matching trigger phrase, load only reference file
 registered under that verb's name, follow it, report; active level stays
-untouched. `build`, default verb, is the stance itself: ladder at active
+untouched. `write`, default verb, is the stance itself: ladder at active
 level, loading nothing. Load no reference file otherwise.
 
 | Verb | Takes | Returns |
 | --- | --- | --- |
 | design | Requirements, before code | YAGNI kill list: what not to build, rung each survivor sits on |
 | refactor | Existing code | Cuts applied, behavior preserved, as shortest diff |
-| review | A diff | Smuggled complexity, one line per finding: what to cut, what replaces it |
+| examine | A diff | Smuggled complexity, one line per finding: what to cut, what replaces it |
 | audit | The repository | Standing complexity, ranked: what to delete, simplify, or replace |
 | test | Logic | One minimal runnable check that fails if logic breaks |
-| teach | A ladder decision | Decision explained to named audience |
+| tell | A ladder decision | Decision explained to named audience |
 | debt | The repository | Debt ledger harvested from `ponytail:` comments |
-| stats | Nothing | Benchmark-median scoreboard: less code, less cost, more speed |
+| measure | Nothing | Benchmark-median scoreboard: less code, less cost, more speed |
 | help | Nothing | Quick-reference card for levels and verbs |
 
 ### Cut tags
 
-`review` and `audit` tag each finding:
+`examine` and `audit` tag each finding:
 
 - `delete:` dead code, unused flexibility, speculative feature. Replacement:
   nothing.

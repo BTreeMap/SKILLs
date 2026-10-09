@@ -15,7 +15,7 @@ TRACE = "trace.jsonl"
 
 class Verb(StrEnum):
     DESIGN = "design"
-    BUILD = "build"
+    WRITE = "write"
     REFACTOR = "refactor"
     REBUT = "rebut"
 
@@ -40,7 +40,7 @@ class InputStatus(StrEnum):
 
 STARTS: dict[Verb, tuple[InputStatus, ...]] = {
     Verb.DESIGN: (InputStatus.INITIAL, InputStatus.SHAPED),
-    Verb.BUILD: (InputStatus.SHAPED, InputStatus.PARTIAL, InputStatus.FULL),
+    Verb.WRITE: (InputStatus.SHAPED, InputStatus.PARTIAL, InputStatus.FULL),
     Verb.REFACTOR: (InputStatus.DRAFT,),
     Verb.REBUT: (InputStatus.REVIEWS,),
 }
@@ -88,13 +88,13 @@ class RunMeta(Tagged):
         return self
 
     def stages(self) -> tuple[int, int]:
-        """First and last stage the verb runs; build validates a shaped
+        """First and last stage the verb runs; write validates a shaped
         idea's positioning before its evidence. Design ends at the plan gate,
         which accepts the prospective ledger with the plan."""
         match self.verb:
             case Verb.DESIGN:
                 return 1, 1
-            case Verb.BUILD:
+            case Verb.WRITE:
                 return (1 if self.status is InputStatus.SHAPED else 2), 8
             case Verb.REFACTOR:
                 return 3, 8

@@ -7,22 +7,22 @@ and craft, refuses generated defaults.
 
 `/aesthete [verb] [target] [surface]`
 
-Without verb: `build` for new work, `review` for existing work.
+Without verb: `write` for new work, `examine` for existing work.
 
 ## Verbs
 
 | Verb | Use it to |
 | --- | --- |
 | design | Commit to direction and composition plan before code |
-| build | Implement interface (default for new work) |
-| review | Report findings on screen or diff, changing nothing (default for existing work) |
+| write | Implement interface (default for new work) |
+| examine | Report findings on screen or diff, changing nothing (default for existing work) |
 | audit | Sweep whole product, rank remediation by leverage |
 | refactor | Rework existing interface, function preserved |
-| teach | Explain design decision so next one is self-served |
+| tell | Explain design decision so next one is self-served |
 | help | This card |
 
 One verb file per invocation, plus mandatory surface profile, `a11y`,
-`interaction`, `components` (review and audit add `tells`). Multi-verb work
+`interaction`, `components` (examine and audit add `signs`). Multi-verb work
 runs as sequential invocations.
 
 ## Surfaces
@@ -81,5 +81,5 @@ One level deep, never chained; spine names files every verb loads.
 | Surface profile | `marketing` or `product` |
 | Craft decision | `typography` `color` `layout` `motion` `interaction` `components` `platform` |
 | Official design systems | `systems` |
-| Sweeps, severity, generated-output catalogue | `tells` |
+| Sweeps, severity, generated-output catalogue | `signs` |
 | Ship gate | `preflight` |

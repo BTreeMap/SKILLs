@@ -16,10 +16,10 @@ $R check "$S"
 
 At default `draft` view, `check` returns derived `sections`; `structure`
 holding each close's stored premise and detail keyed by mark; `violations`,
-lite-demoted ones under `advisories`; `hedges`; `marks` table, `S1` onward,
+basic-demoted ones under `advisories`; `hedges`; `marks` table, `S1` onward,
 with class, title, url, plus `doi`, `arxiv_id`, `authors`, `year`, `venue`
 where source carries them. Exits 0 even with violations: read them; resolve
-every violation and every `open` leaf before drafting. At lite level, open
+every violation and every `open` leaf before drafting. At basic level, open
 leaf may remain; disclose it in Open section.
 
 ## 3. Draft once

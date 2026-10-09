@@ -1,7 +1,7 @@
-# Verb: review
+# Verb: examine
 
-Judge change: read-only PL-lens review of diff, PR, or file set, total over
-its scope.
+Judge change: read-only PL-lens examination of diff, PR, or file set, total
+over its scope.
 
 ## Pipeline
 

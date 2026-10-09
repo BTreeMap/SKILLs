@@ -1,6 +1,6 @@
 # Novelty: The Literature Check
 
-Reviewer's own search, run through `/lit-review` at lite. Its corpus is the
+Reviewer's own search, run through `/lit-review` at basic. Its corpus is the
 only place novelty objection can point.
 
 ## Procedure
@@ -10,7 +10,7 @@ only place novelty objection can point.
 2. Build inclusion criteria admitting any work claiming same contribution or
    reporting on same task with comparable method; exclusion criteria drop
    surveys and unrelated tasks.
-3. Run `/lit-review lite` with that protocol. Queries: one per claim in
+3. Run `/lit-review basic` with that protocol. Queries: one per claim in
    paper's own terms plus one synonym variant per claim, six to twelve in
    total; pass `--to-year` as paper's year. Snowball backward from paper's
    two most-cited references when reachable.
@@ -22,7 +22,7 @@ only place novelty objection can point.
    first before keeping objection at major.
 6. Walk questions below; record `walks` entry for `novelty`.
 
-Ultra adds forward snowball from every key cited as `prior`, so rebuttal
+Maximum adds forward snowball from every key cited as `prior`, so rebuttal
 already published is in corpus before review says "predates".
 
 ## Signalling questions

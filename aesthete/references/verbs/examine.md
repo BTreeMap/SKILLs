@@ -1,4 +1,4 @@
-# Verb: review
+# Verb: examine
 
 Takes screen, component, diff, or pull request (default verb for existing
 work); returns ranked findings. Read-only: change nothing.
@@ -11,7 +11,7 @@ work); returns ranked findings. Read-only: change nothing.
 2. **Walk flow before pixels.** Trace user's path to primary goal; count
    friction budget as built. Interaction failures outrank visual ones, found
    by walking flow.
-3. **Run five sweeps** in `tells`, in listed order. Do not interleave them;
+3. **Run five sweeps** in `signs`, in listed order. Do not interleave them;
    each needs different attention mode. Check repository for existing
    implementation of anything diff re-implements.
 4. **Check beyond diff.** Report whole-surface failures changed lines cannot
@@ -24,7 +24,7 @@ work); returns ranked findings. Read-only: change nothing.
 
 ## Severity
 
-Rate each finding on Severity scale in `tells`.
+Rate each finding on Severity scale in `signs`.
 
 ## Finding format
 

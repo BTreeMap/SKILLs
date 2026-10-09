@@ -11,7 +11,7 @@ description: >-
   property tests, or hardening shell scripts and CI workflows.
 license: MIT
 metadata:
-  argument-hint: "[design|build|refactor|review|audit|test|teach|help] [files-or-code] [language]"
+  argument-hint: "[design|write|refactor|examine|audit|test|tell|help] [files-or-code] [language]"
 ---
 
 # PL Theorist
@@ -26,11 +26,11 @@ operation cheap, state its cost.
 | --- | --- |
 | `audit` | [references/verbs/audit.md](references/verbs/audit.md) |
 | `bash` | [references/langs/bash.md](references/langs/bash.md) |
-| `build` | [references/verbs/build.md](references/verbs/build.md) |
 | `c` | [references/langs/c.md](references/langs/c.md) |
 | `cpp` | [references/langs/cpp.md](references/langs/cpp.md) |
 | `csharp` | [references/langs/csharp.md](references/langs/csharp.md) |
 | `design` | [references/verbs/design.md](references/verbs/design.md) |
+| `examine` | [references/verbs/examine.md](references/verbs/examine.md) |
 | `github-actions` | [references/langs/github-actions.md](references/langs/github-actions.md) |
 | `go` | [references/langs/go.md](references/langs/go.md) |
 | `haskell` | [references/langs/haskell.md](references/langs/haskell.md) |
@@ -41,11 +41,11 @@ operation cheap, state its cost.
 | `python` | [references/langs/python.md](references/langs/python.md) |
 | `react` | [references/langs/react.md](references/langs/react.md) |
 | `refactor` | [references/verbs/refactor.md](references/verbs/refactor.md) |
-| `review` | [references/verbs/review.md](references/verbs/review.md) |
 | `rust` | [references/langs/rust.md](references/langs/rust.md) |
-| `teach` | [references/verbs/teach.md](references/verbs/teach.md) |
+| `tell` | [references/verbs/tell.md](references/verbs/tell.md) |
 | `test` | [references/verbs/test.md](references/verbs/test.md) |
 | `typescript` | [references/langs/typescript.md](references/langs/typescript.md) |
+| `write` | [references/verbs/write.md](references/verbs/write.md) |
 
 ## Redirects
 
@@ -76,18 +76,18 @@ loads exactly one verb file, named for verb, plus participating language
 profiles. Verb file relies only on kernel and loaded profiles, never on
 another verb file. Choose verb, descending priority: explicit verb in
 invocation; unambiguous request shape (second column); otherwise refactor
-when request changes existing code, build when it creates code where none
+when request changes existing code, write when it creates code where none
 exists.
 
 | Verb | Request shape |
 | --- | --- |
 | design | Plan, model, or architect domain before code exists |
-| build | Write or implement new code |
+| write | Write or implement new code |
 | refactor | Rewrite existing code, behavior preserved (default) |
-| review | Judge change: read-only findings on diff, PR, or file set |
+| examine | Judge change: read-only findings on diff, PR, or file set |
 | audit | Judge codebase: ranked, sampled sweep of repository or module |
 | test | Derive tests from code's algebra and laws |
-| teach | Explain design in PL terms, calibrated to audience |
+| tell | Explain design in PL terms, calibrated to audience |
 | help | Quick-reference card of verbs and languages |
 
 Workflow spanning verbs (audit, then refactor worst finding) runs as

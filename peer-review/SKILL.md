@@ -12,7 +12,7 @@ compatibility: >-
   lit-review's network access. The first run builds the `.venv` at the
   checkout root that every skill's scripts share, about 225 MB.
 metadata:
-  argument-hint: "[lite|full|ultra] <paper path or URL>"
+  argument-hint: "[basic|full|maximum] <paper path or URL>"
 ---
 
 # Peer Review
@@ -62,21 +62,21 @@ replay state with `check`.
 
 ## Levels
 
-Default: **full**. "Quick look" or "desk check" selects lite; "referee
-report" or "reproduce" selects ultra.
+Default: **full**. "Quick look" or "desk check" selects basic; "referee
+report" or "reproduce" selects maximum.
 
 | Level | Banks walked | Extra |
 | --- | --- | --- |
-| lite | `claims`, `limitations` | No corpus; abstract-level reading allowed |
-| full | All five | Corpus via lit-review at lite; full text required |
-| ultra | All five | Recompute reported numbers per `analysis`; forward snowball from every prior key per `novelty` |
+| basic | `claims`, `limitations` | No corpus; abstract-level reading allowed |
+| full | All five | Corpus via lit-review at basic; full text required |
+| maximum | All five | Recompute reported numbers per `analysis`; forward snowball from every prior key per `novelty` |
 
 ## Environment probe
 
 Before ingest, determine from available tools:
 
 - PDF text: read with `/read-pdf`, pass extraction file to `ingest`. Paper
-  with no reachable text runs at lite only, disclosed in report.
+  with no reachable text runs at basic only, disclosed in report.
 - Network: novelty bank runs lit-review. Without network, walk other banks,
   report novelty as unassessed.
 - Retrieval: prefer harness's own web search and fetch; absent: use
@@ -97,12 +97,12 @@ loads exactly reference of its name; `firewall` loads with every bank;
 | verdict | Run `check`; withdraw what re-read defeats; resolve every signal |
 | report | Draft from structure per `report`; `cite-check` draft |
 
-Investigate may fan out through `/summon fanout`, one delegate per bank at
-most. Each brief: evidence is extraction file, bank's reference file,
+Investigate may divide work through `/summon divide`, one delegate per bank
+at most. Each brief: evidence is extraction file, bank's reference file,
 `firewall`, by absolute path, plus claims recorded so far with keywords;
-contract is that bank's share of record batch, returned as JSON object
-alone. Delegates write no session state; lead judges each return, then runs
-`write` and `record` itself.
+contract is that bank's share of record batch, output as JSON object alone.
+Delegates write no session state; lead judges each output, then runs `write`
+and `record` itself.
 
 ## Claims bank
 

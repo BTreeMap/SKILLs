@@ -62,7 +62,7 @@ resource cleanup.
 ## Output Contract
 
 Code-edit request: perform edit and checks. Then report briefly; fuller
-teaching treatment: user invokes `teach`:
+explanation: user invokes `tell`:
 
 1. Language profile loaded.
 2. Recovered algebra and invalid state eliminated; why result is total, or

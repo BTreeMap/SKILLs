@@ -11,17 +11,17 @@ Render following, adapted to what user asked about:
 pl-theorist - one discipline, eight verbs, per-language cost models
 
 Usage: /pl-theorist [verb] [files-or-code] [language]
-No verb: refactor when changing existing code, build when writing new code.
+No verb: refactor when changing existing code, write when writing new code.
 
 Verbs
   design    Types-first domain model, effect boundary, complexity budget. No code.
-  build     New code: domain types first, pure core, thin shell, tests included.
+  write     New code: domain types first, pure core, thin shell, tests included.
   refactor  Behavior-preserving rewrite toward functional style. (default)
-  review    Read-only ranked findings on a diff/PR: partiality, invalid states,
+  examine   Read-only ranked findings on a diff/PR: partiality, invalid states,
             effect leaks, complexity, stale idioms.
   audit     Read-only repo/module ledger, ranked by severity x reach.
   test      Law-derived tests: fold laws, roundtrips, rejection paths, oracles.
-  teach     PL explanation of a design, calibrated to human or model audience.
+  tell      PL explanation of a design, calibrated to human or model audience.
   help      This card.
 
 Languages (cost model loaded on demand)

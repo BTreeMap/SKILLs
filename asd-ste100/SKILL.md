@@ -13,30 +13,30 @@ compatibility: >-
   first run builds the `.venv` at the checkout root that every skill's
   scripts share, about 225 MB.
 metadata:
-  argument-hint: "[build|refactor|review|help] [file-or-text]"
+  argument-hint: "[write|refactor|examine|help] [file-or-text]"
 ---
 
 # ASD-STE100
 
 Write new text in ASD-STE100 Simplified Technical English (STE), Issue 9,
 change a text into STE, or examine a text for STE errors. The result is the
-STE text and the last `check` report. For `review`, the result is only the
+STE text and the last `check` report. For `examine`, the result is only the
 report.
 
 ## Skill verbs
 
 The skill verb that the user gives comes first. If the user gives no skill
 verb, the task in the table sets the skill verb. If the user gives only a
-text, the skill verb is `review`.
+text, the skill verb is `examine`.
 
 | Skill verb | Task | Result |
 | --- | --- | --- |
-| `build` | Write new text from a brief, from notes, or from facts | STE text and a report with no errors |
+| `write` | Write new text from a brief, from notes, or from facts | STE text and a report with no errors |
 | `refactor` | Change a text into STE and keep its meaning | STE text, a report with no errors, and a list of the changes in meaning |
-| `review` | Examine a text, but do not change it | The report, as a list of corrections, each with its rule |
+| `examine` | Examine a text, but do not change it | The report, as a list of corrections, each with its rule |
 | `help` | Show how to use this skill | The `help` card |
 
-`review` does not change the text. `build` and `refactor` change only the
+`examine` does not change the text. `write` and `refactor` change only the
 draft that they make. They change a file of the user only if the user tells
 you to change that file.
 
@@ -247,9 +247,9 @@ the first check, write them in the accept file.
     <step>Write the accept file from the text and the brief (refer to Technical nouns and verbs).</step>
   </phase>
   <phase name="draft">
-    <step>For `build`, write a draft from the brief in STE (refer to Write STE).</step>
+    <step>For `write`, write a draft from the brief in STE (refer to Write STE).</step>
     <step>For `refactor`, write a draft from the source, one sentence at a time. Keep all facts, numbers, conditions, and warnings.</step>
-    <step>For `review`, go to the loop. Do not change the text.</step>
+    <step>For `examine`, go to the loop. Do not change the text.</step>
   </phase>
   <phase name="loop">
     <step>Use the command `$R check --text:file draft.txt --accept:file terms.txt --mode MODE`.</step>
@@ -264,17 +264,17 @@ the first check, write them in the accept file.
     <step>Compare the meaning of the last draft with the source or the brief. Make sure that the facts, the sequence of steps, and the warnings are the same.</step>
     <step>Give the text. From the last report, give `ok`, the counts, and the signals that you did not correct.</step>
     <step>For `refactor`, give a list of each location where STE changed the meaning or removed information.</step>
-    <step>For `review`, give the report as a list of corrections with line numbers. Also give the items in `skipped`.</step>
+    <step>For `examine`, give the report as a list of corrections with line numbers. Also give the items in `skipped`.</step>
   </phase>
 </procedure>
 
 ## The `help` card
 
 <template for="help">
-asd-ste100: build, refactor, or review text in ASD-STE100 STE (Issue 9).
-  build    <brief>   write new STE text until the report shows no errors
+asd-ste100: write, refactor, or examine text in ASD-STE100 STE (Issue 9).
+  write    <brief>   write new STE text until the report shows no errors
   refactor <file>    change a text into STE, and keep its meaning
-  review   <file>    give only the report, and do not change the text
+  examine  <file>    give only the report, and do not change the text
   help               show this card
 Write the technical nouns and verbs first. ok: true is necessary, but not sufficient.
 </template>

@@ -1,7 +1,7 @@
 # Ponytail Refactor Verb
 
 Apply cuts: rewrite existing code onto highest ladder rung that holds,
-behavior preserved. This verb edits: `review` and `audit` list, `refactor`
+behavior preserved. This verb edits: `examine` and `audit` list, `refactor`
 deletes.
 
 ## Pipeline

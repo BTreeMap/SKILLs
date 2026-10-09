@@ -16,10 +16,10 @@ such as load-bearing belong to §37 in `register`.
 
 **Exceptions:**
 
-- Formal or academic words. Only words listed above count as tells. Do not
+- Formal or academic words. Only words listed above count as signs. Do not
   simplify every formal word.
 - Common transition words in isolation. Additionally, moreover, consequently
-  are AI-coded only when piled up. One however is not a tell.
+  are AI-coded only when piled up. One however is not a sign.
 - Claude-favored words in isolation. Genuine, latent, settled, seam, quietly
   are everyday words.
 

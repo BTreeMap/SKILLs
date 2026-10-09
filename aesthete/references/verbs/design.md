@@ -3,7 +3,7 @@
 Takes request for surface; returns committed direction and composition plan,
 decision document someone else could build from. Writes no implementation
 code: snippet pinning token or motion curve is fine; component belongs to
-`build`.
+`write`.
 
 ## Procedure
 

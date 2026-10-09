@@ -120,7 +120,7 @@ class TestRules:
         full = coverage(ledger, "full", corpus, paper)
         assert full["walked"] == ["design"]
         assert "novelty" in full["unwalked"] and full["confidence"] == "low"
-        lite = coverage(
+        basic = coverage(
             replay(
                 [
                     *EVENTS,
@@ -128,11 +128,11 @@ class TestRules:
                     {"e": "walk", "bank": "limitations"},
                 ]
             ),
-            "lite",
+            "basic",
             None,
             paper,
         )
-        assert lite["confidence"] == "high"
+        assert basic["confidence"] == "high"
 
     def test_scaffold_groups_grounded_by_severity(self, paper_text, corpus_dir):
         _, _, _, objections, claims = derive(paper_text, corpus_dir)

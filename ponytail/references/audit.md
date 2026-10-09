@@ -1,7 +1,7 @@
 # Ponytail Audit Verb
 
 Judge codebase: scan whole tree for standing complexity, rank it, biggest
-cut first. `review` guards what a change brings in; `audit` ranks what
+cut first. `examine` guards what a change brings in; `audit` ranks what
 already stands.
 
 ## Hunt

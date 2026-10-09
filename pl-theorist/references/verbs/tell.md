@@ -1,4 +1,4 @@
-# Verb: teach
+# Verb: tell
 
 Explain design or refactor in PL terms calibrated to audience: human
 learning FP taste, or less capable model about to edit code.

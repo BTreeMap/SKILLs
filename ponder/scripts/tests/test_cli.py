@@ -10,7 +10,6 @@ from typing import ClassVar
 import pytest
 
 from btm_ponder.cli import main
-from btm_ponder.store import STORE
 
 
 @pytest.fixture(autouse=True)
@@ -218,10 +217,10 @@ class TestStatusAndSchema:
         assert "survivors" in document["record_batch"]["scans"]
 
 
-class TestLiteLevel:
-    def test_lite_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
+class TestBasicLevel:
+    def test_basic_demotes_draft_blockers_to_advisories(self, capsys, monkeypatch):
         code, document, _ = run(
-            ["start", "loose idea", "--level", "lite"],
+            ["start", "loose idea", "--level", "basic"],
             capsys,
             stdin='{"question": "q"}',
         )
@@ -660,18 +659,3 @@ class TestProject:
         assert code == 0
         _, document, _ = run(["status", opened_doc["session"]], capsys)
         assert (document["project"], document["connections"]) == ("ste-tax", [])
-
-
-class TestLegacyMode:
-    def test_a_session_written_with_mode_reads_its_level(self, capsys):
-        """Before the rename, a session stored `--mode lite` as `mode`; such a
-        session must still continue at lite."""
-        session = opened(capsys)
-        meta = STORE.directory(session) / "session.json"
-        raw = json.loads(meta.read_text(encoding="utf-8"))
-        raw.pop("level", None)
-        raw["mode"] = "lite"
-        meta.write_text(json.dumps(raw), encoding="utf-8")
-        code, document, _ = run(["status", session], capsys)
-        assert code == 0
-        assert document["level"] == "lite"

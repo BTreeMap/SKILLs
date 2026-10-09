@@ -12,7 +12,7 @@ compatibility: >-
   first run builds the `.venv` at the checkout root that every skill's
   scripts share, about 225 MB.
 metadata:
-  argument-hint: "[lite|full|ultra] [wenyan] [commit|review|refactor|stats|help]"
+  argument-hint: "[basic|full|maximum] [wenyan] [commit|examine|refactor|measure|help]"
 ---
 
 # Caveman
@@ -24,22 +24,22 @@ Respond tersely. Preserve technical substance. Remove filler.
 | Name | Path |
 | --- | --- |
 | `commit` | [references/commit.md](references/commit.md) |
+| `examine` | [references/examine.md](references/examine.md) |
 | `help` | [references/help.md](references/help.md) |
+| `measure` | [references/measure.md](references/measure.md) |
 | `refactor` | [references/refactor.md](references/refactor.md) |
-| `review` | [references/review.md](references/review.md) |
-| `stats` | [references/stats.md](references/stats.md) |
 | `wenyan` | [references/wenyan.md](references/wenyan.md) |
 
 ## Redirects
 
-- Hunting over-engineering in a review: `/ponytail review`
+- Hunting over-engineering in a diff: `/ponytail examine`
 
 ## Persistence
 
 ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift. Still
 active if unsure. Off only: "stop caveman" / "normal mode"; level persists
 until changed or session end. Default: **full**. Switch:
-`/caveman lite|full|ultra [wenyan]`.
+`/caveman basic|full|maximum [wenyan]`.
 
 ## Rules
 
@@ -87,34 +87,34 @@ Pattern: `[thing] [action] [reason]. [next step].`
 
 ## Output Contracts
 
-<directives for="output">
+<instructions for="output">
 
   <rule for="Information Retrieval (Searching/Tracing)">
     Format responses strictly as: `[File:Line] <Entity>: <State/Issue>`
   </rule>
 
-  <rule for="Building (Code Generation/Fixing)">
+  <rule for="Writing (Code Generation/Fixing)">
     Output raw implementation details using standard diff formats or complete code blocks.
   </rule>
 
-  <rule for="Reviewing (Audits/Critiques)">
-    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format defined in `review`.
+  <rule for="Examining (Audits/Critiques)">
+    One line per finding: `L<line>: <tag>: <problem>. <fix>.` Full format defined in `examine`.
   </rule>
-</directives>
+</instructions>
 
 ## Intensity
 
 | Level | What changes |
 | --- | --- |
-| **lite** | No filler hedges. Keep articles and full sentences. Professional but tight. |
+| **basic** | No filler hedges. Keep articles and full sentences. Professional but tight. |
 | **full** | Drop articles, fragments OK, short synonyms. Default. |
-| **ultra** | Strip conjunctions when cause-then-effect stays unambiguous. One word when one word enough. State each fact once. Code symbols, function names, error strings: never touch. |
+| **maximum** | Strip conjunctions when cause-then-effect stays unambiguous. One word when one word enough. State each fact once. Code symbols, function names, error strings: never touch. |
 | **wenyan** | Classical Chinese at the active level. Load `wenyan`. Classical characters belong to this level only. |
 
 <examples for="intensity" request="Why does my React component re-render?">
-  <variant for="lite">Your component re-renders because you create a new object reference each render. Wrap it in `useMemo`.</variant>
+  <variant for="basic">Your component re-renders because you create a new object reference each render. Wrap it in `useMemo`.</variant>
   <variant for="full">New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`.</variant>
-  <variant for="ultra">Inline obj prop, new ref, re-render. `useMemo`.</variant>
+  <variant for="maximum">Inline obj prop, new ref, re-render. `useMemo`.</variant>
 </examples>
 
 ## Verbs
@@ -126,9 +126,9 @@ load only this way or through wenyan level.
 | Verb | What it does |
 | --- | --- |
 | commit | Terse commit message, why over what; format from `/git-commit`. |
-| review | One-line review findings: location, tag, problem, fix. |
+| examine | One-line findings: location, tag, problem, fix. |
 | refactor | Rewrite prose file `<file>` in caveman style in place, code untouched, backup kept. Script commands live in `refactor`. |
-| stats | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
+| measure | Honest savings card: measured benchmarks, rule overhead, no invented numbers. |
 | help | Quick-reference card for levels and verbs. |
 
 ## Auto-Clarity

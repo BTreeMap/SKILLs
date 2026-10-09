@@ -1,4 +1,4 @@
-# Verb: teach
+# Verb: tell
 
 Takes design decision; returns explanation letting reader make next one
 without asking. Calibrate to audience; never lecture.
@@ -24,7 +24,7 @@ without asking. Calibrate to audience; never lecture.
 
 ## Rules
 
-* Teach reasoning behind ruling. "Sixteen pixels" is ruling. "Anything a
+* Tell reasoning behind ruling. "Sixteen pixels" is ruling. "Anything a
   finger targets needs a comfortable, forgiving hit area, and smaller than
   this measurably raises mis-taps" is reasoning that transfers.
 * Cite principle only when it applies and you can state it correctly.
@@ -35,7 +35,7 @@ without asking. Calibrate to audience; never lecture.
   sentences.
 * Admit taste when it is taste. Some decisions are defensible preference
   inside coherent system; saying so builds more trust than rationalization.
-* Never defend wrong decision. Correct it plainly; teach corrected version.
+* Never defend wrong decision. Correct it plainly; tell corrected version.
 
 ## Completion checks
 

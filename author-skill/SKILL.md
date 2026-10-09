@@ -35,7 +35,7 @@ put agent-specific hint under `metadata` as quoted string.
 | `description` | `>-` folded, 1-1024 characters, third person: what skill does and delivers, one or two guarantees reader can hold it to, search terms; then triggers starting "Use when". Names no internal record, phase, file, library, verb, or level. 100 to 150 tokens; library's descriptions total under 7,000 characters. |
 | `license` | `MIT`. |
 | `compatibility` | Only for runtimes, system packages, network access, or full repository checkout; at most 500 characters. Run builds environment: name its location and size on disk. |
-| `metadata.argument-hint` | Invocation grammar, spelled here only: one bracket group per independent choice, in typing order (`"[lite|full|ultra] [design|review|help]"`); skill with no vocabulary names its subject (`"[file-or-section]"`). Update on any verb, level, or mode change. |
+| `metadata.argument-hint` | Invocation grammar, spelled here only: one bracket group per independent choice, in typing order (`"[basic|full|maximum] [design|examine|help]"`); skill with no vocabulary names its subject (`"[file-or-section]"`). Update on any verb, level, or mode change. |
 | `allowed-tools` | Last, only when harness needs it. |
 
 ## Layout
@@ -87,7 +87,7 @@ reference topic.
 
 | Container | Children |
 | --- | --- |
-| `directives` | `rule` |
+| `instructions` | `rule` |
 | `checklist` | `item` |
 | `procedure` | `phase`, `step` |
 | `examples` | `example` holding `before`, `after`, `variant`, `context` |
@@ -152,10 +152,10 @@ reference topic.
 
 Hand work to another agent through `/summon`, supplying only what its caller
 table asks: unit one delegate closes, record it receives, rules of this
-skill that unit can break, return shape by registered name, cap, gate lead
-accepts return through. Leave mode, brief shape, bounds, sizing, trust,
-return review to summon; carry no worker prompt, delegation threshold, or
-cost figure.
+skill that unit can break, output shape by registered name, cap, gate lead
+accepts output through. Leave mode, brief shape, bounds, sizing, trust,
+output examination to summon; carry no worker prompt, delegation threshold,
+or cost figure.
 
 ## Persona verbs
 
@@ -166,23 +166,23 @@ lens can honor, each with table's contract in every persona; vary only lens.
 | Verb | Contract |
 | --- | --- |
 | design | Plan before code exists |
-| build | Write new code |
+| write | Write new code |
 | refactor | Rewrite existing code, behavior preserved |
-| review | Judge a change: total over the diff, sound areas named |
+| examine | Judge a change: total over the diff, sound areas named |
 | audit | Judge a codebase: sampled by blast radius, unexamined areas named |
 | test | Derive checks from the lens's own laws |
-| teach | Explain a judgment, calibrated to audience |
+| tell | Explain a judgment, calibrated to audience |
 | help | Quick-reference card |
 
-* Apply changes only in `build` and `refactor`; every other verb read-only.
+* Apply changes only in `write` and `refactor`; every other verb read-only.
 * Read-only verb: name what is outside lens; route it to sibling skill in
   slash form.
 * Load one verb file per invocation, registered under verb's name.
-* Add verbs beyond core freely (`ponytail` carries `debt` and `stats`). One
-  meaning per verb name across library; reuse name another skill carries
+* Add verbs beyond core freely (`ponytail` carries `debt` and `measure`).
+  One meaning per verb name across library; reuse name another skill carries
   only with that skill's meaning.
-* Offer levels only where lens needs them: `lite | full | ultra` (advise /
-  enforce, the default / maximalist). Level persists until changed;
+* Offer levels only where lens needs them: `basic | full | maximum` (advise
+  / enforce, the default / maximalist). Level persists until changed;
   orthogonal to verbs.
 
 ## Output
@@ -190,7 +190,7 @@ lens can honor, each with table's contract in every persona; vary only lens.
 Before finalizing, check edit for lost meaning, altered scope or order,
 weakened gates, broken references. Skill's value is judgment (persona,
 review, reading): also test draft. Brief delegate through `/summon` with
-draft and held-out case, score return against criteria fixed in advance,
+draft and held-out case, score output against criteria fixed in advance,
 change text until it holds. Keep scores and runs out of skill. Then write
 finished `SKILL.md` into codebase, or return it as one raw Markdown block
 with nothing around it.
@@ -201,7 +201,7 @@ with nothing around it.
   <item>Every bundled file cited by registered name; examples, templates, payloads in closed-set XML tags.</item>
   <item>Every bundled file spares some invocation text it does not need; what every run loads at start sits in spine; files always loaded together are one file.</item>
   <item>Every step names exact tools, flags, inputs, outputs, stopping conditions; project-specific values parameterized or derived.</item>
-  <item>Delegation, where any, through `/summon` with only caller's unit, record, rules, return shape, cap, gate.</item>
+  <item>Delegation, where any, through `/summon` with only caller's unit, record, rules, output shape, cap, gate.</item>
   <item>Each sentence supplies action, condition, rule, context, or example; `/humanize` sweep finds no filler; negations, numbers, literals, boundaries survived every cut.</item>
   <item>Any bundled script follows `scripts` on responsibility placement, heuristic signals, skipped-check reporting, member layout, request-origin chain; no `SKILL.md` names `BTM_USER_AGENT` or `BTM_CONTACT`.</item>
   <item>Gotchas hold non-obvious traps; no placeholder text outside templates.</item>

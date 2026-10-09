@@ -1,4 +1,4 @@
-# Ponytail Stats Verb
+# Ponytail Measure Verb
 
 Display this scoreboard. One-shot: do NOT change level, write files, or
 persist anything.
@@ -14,7 +14,7 @@ Render plain ASCII bars. Bar length shows measured range; label carries
 exact figure:
 
 <template for="scoreboard">
-  ponytail stats                    benchmark median · 5 tasks · 3 models
+  ponytail measure                  benchmark median · 5 tasks · 3 models
 
   Lines of code   no-skill  ████████████████████  100%
                   ponytail  ██▌·················    6-20%   ▼ 80-94%
