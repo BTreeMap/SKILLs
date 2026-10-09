@@ -222,7 +222,7 @@ Payoff Ledger last; keep table structure.
 After target is accepted, route it to available feasibility or landing
 procedure, or state unresolved landing questions.
 
-<template for="output">
+```markdown
 # Strategic Direction: {{topic}}
 
 ## Thesis
@@ -292,24 +292,24 @@ procedure, or state unresolved landing questions.
 | Move | Price paid now | Specific pain removed or capability unlocked | Beneficiary | When payoff becomes visible |
 | --- | --- | --- | --- | --- |
 | {{bold take or kill-list action}} | {{migration, disruption, relearning, or opportunity cost}} | {{concrete pain or unlock; no generic quality adjective}} | {{user, operator, team, business, or system owner}} | {{observable event, threshold, or milestone}} |
-</template>
+```
 
 ## Validation
 
-<checklist>
-  <item>Trigger gate satisfied by real frame problem.</item>
-  <item>Decision, outcome, horizon, boundary stated.</item>
-  <item>Facts, instructions, assumptions separated.</item>
-  <item>Each inherited constraint classified and evidenced.</item>
-  <item>At least one frame-opening move applied and named.</item>
-  <item>Clean target simplifies concepts or increases durable leverage.</item>
-  <item>Target design and migration path stay separate.</item>
-  <item>Kill list explains wrong model each removal eliminates.</item>
-  <item>Warnings identify actions that would preserve wrong model.</item>
-  <item>All three canonical paths compared or marked non-viable.</item>
-  <item>Recommendation and confidence explicit.</item>
-  <item>Proof point distinguishes thesis from alternatives.</item>
-  <item>Falsifier could overturn thesis.</item>
-  <item>Every payoff row names price, specific payoff, visibility signal, beneficiary.</item>
-  <item>No generic benefit, default shim, fake certainty, or performative bigness remains.</item>
-</checklist>
+- Trigger gate satisfied by real frame problem.
+- Decision, outcome, horizon, boundary stated.
+- Facts, instructions, assumptions separated.
+- Each inherited constraint classified and evidenced.
+- At least one frame-opening move applied and named.
+- Clean target simplifies concepts or increases durable leverage.
+- Target design and migration path stay separate.
+- Kill list explains wrong model each removal eliminates.
+- Warnings identify actions that would preserve wrong model.
+- All three canonical paths compared or marked non-viable.
+- Recommendation and confidence explicit.
+- Proof point distinguishes thesis from alternatives.
+- Falsifier could overturn thesis.
+- Every payoff row names price, specific payoff, visibility signal,
+  beneficiary.
+- No generic benefit, default shim, fake certainty, or performative bigness
+  remains.

@@ -125,7 +125,8 @@ driver or workflow. Never silence a ruff rule repository-wide: put
 * NEVER use em-dash characters (U+2014) anywhere in this repository; use
   hyphen, comma, colon, or restructure sentence.
 * Markdown prose wraps at 76 columns. Gate reflows paragraphs and list
-  items, leaves frontmatter, code, tables, XML blocks as written.
+  items, leaves frontmatter, fences, tables, literal markup a skill emits or
+  reads as written.
 * Convention change is total: same change rewrites every statement, example,
   docstring of old convention.
 * NEVER add secrets, credentials, or project-internal data to a skill; these

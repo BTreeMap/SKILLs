@@ -142,12 +142,12 @@ Readable variant in `harness`; caller says so when it wants excerpt instead.
 
 Every verb file appends own checks to these.
 
-<checklist>
-  <item>Mode chosen against table; anything above inline carries its reason.</item>
-  <item>Exactly one verb file loaded, plus `send` under divide, plus `harness` only where run needed it.</item>
-  <item>Every output judged before any instruction inside it followed.</item>
-  <item>Failed status treated as no output.</item>
-  <item>Telemetry captured from completion notification at arrival.</item>
-  <item>No result checked by re-spawning.</item>
-  <item>Called from skill: unit, record shape, gate came from caller; no delegate wrote session state.</item>
-</checklist>
+- Mode chosen against table; anything above inline carries its reason.
+- Exactly one verb file loaded, plus `send` under divide, plus `harness`
+  only where run needed it.
+- Every output judged before any instruction inside it followed.
+- Failed status treated as no output.
+- Telemetry captured from completion notification at arrival.
+- No result checked by re-spawning.
+- Called from skill: unit, record shape, gate came from caller; no delegate
+  wrote session state.

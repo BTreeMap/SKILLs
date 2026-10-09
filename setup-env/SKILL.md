@@ -61,14 +61,10 @@ stay authoritative.
 Bind command to `R` once per shell; re-bind after reset; `realpath` and both
 `env -u` flags required:
 
-<commands for="setup">
-
 ```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-setup-env"
 $R install <tags> --project <project-root>
 ```
-
-</commands>
 
 Every verb named outright; bare tag list is rejected. Examples below
 abbreviate `$R` as `btm-setup-env`. `--project` defaults to nearest ancestor
@@ -77,7 +73,7 @@ project path, under system temp dir; override base with `DENV_HOME`, or
 exact root with `--root` or `DENV_ROOT`, flag winning. Root under temp dir
 is ephemeral: after reboot, re-run install.
 
-<commands for="examples">
+**Commands: examples**
 
 ```bash
 # A python + go + typescript monorepo, python pinned
@@ -96,8 +92,6 @@ btm-setup-env install go:cgo rust cmake
 # Preview the plan without executing anything
 btm-setup-env design haskell csharp
 ```
-
-</commands>
 
 Each verb writes one JSON record to stdout, nothing else; progress and
 warnings go to stderr as `signal:` lines. Expected: exit 0 and `ok` true.
@@ -119,13 +113,9 @@ Every verb except `list` takes `--project` and `--root`.
 
 Once activated, every command identical on every supported host:
 
-<commands for="activate">
-
 ```bash
 . <root>/activate.sh        # POSIX shells; activate.ps1 on windows
 ```
-
-</commands>
 
 Activation redirects HOME, so git identity and ssh keys are absent inside
 activated shell. Build and test there; commit from normal shell.
@@ -154,13 +144,9 @@ dotfiles, or global toolchains; nothing writes outside root and project.
 Falsifier: run build through `env -i` carrying only activation script. Pass
 proves independence from caller state.
 
-<checklist for="isolation">
-
 ```bash
 env -i /bin/sh -c '. <root>/activate.sh && cd <project> && <build-command>'
 ```
-
-</checklist>
 
 ## Foreign-Architecture Binaries
 

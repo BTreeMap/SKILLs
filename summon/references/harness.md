@@ -45,7 +45,7 @@ Unfamiliar harness, or agent definition with restricted tool list: send one
 probe delegate before first real brief; it settles access for every later
 delegation.
 
-<template for="probe">
+```text
 TASK
 Report what you start with. Do no other work.
 
@@ -59,7 +59,7 @@ cwd: <your working directory>
 
 LIMIT
 Three tool calls. On hitting it, output the lines you have settled.
-</template>
+```
 
 Read probe against access table. Skill-load succeeding puts delegate at
 Invocable, reachable file with no skill tool at Readable, neither at Sealed.

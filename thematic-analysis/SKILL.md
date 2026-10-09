@@ -130,11 +130,13 @@ After report, offer next step whose condition holds. Invoke none unasked.
 
 ## Completion checks
 
-<checklist>
-  <item>Analysis header records one approach with reason, chosen before any coding.</item>
-  <item>Codebook size, agreement sample, theme count within defaults, or override recorded in header.</item>
-  <item>Where school calls for agreement, statistic and threshold predate coding; per-code figures appear in report.</item>
-  <item>Every theme carries one-sentence claim, verbatim extracts with unit identifiers, corpus-bounded counts.</item>
-  <item>Feedback or ticket data: adaptation disclosure appears in report.</item>
-  <item>Report's quality evidence matches chosen row's standard.</item>
-</checklist>
+- Analysis header records one approach with reason, chosen before any
+  coding.
+- Codebook size, agreement sample, theme count within defaults, or override
+  recorded in header.
+- Where school calls for agreement, statistic and threshold predate coding;
+  per-code figures appear in report.
+- Every theme carries one-sentence claim, verbatim extracts with unit
+  identifiers, corpus-bounded counts.
+- Feedback or ticket data: adaptation disclosure appears in report.
+- Report's quality evidence matches chosen row's standard.

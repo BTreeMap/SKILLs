@@ -10,17 +10,18 @@ already names, or emoji unless project uses them.
 
 ## Examples
 
-<examples for="commit">
+**Example: register**
 
-  <example for="register">
-    <before>feat: add a new endpoint to get user profile information from the database</before>
-    <after>
+Before: feat: add a new endpoint to get user profile information from the
+database
+
+After:
+
+```text
 feat(api): Add GET /users/:id/profile
 
 Mobile client needs profile data without the full user payload to
 reduce LTE bandwidth on cold-launch screens.
 
 Closes #128
-    </after>
-  </example>
-</examples>
+```

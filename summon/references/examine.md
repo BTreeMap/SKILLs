@@ -30,23 +30,24 @@ One pass per row, citing line of output that fails.
 Check claims inline where checking is cheap; delegate check only where it
 needs context lead lacks, or reader who did not write the thing.
 
-<template for="findings">
+**Template: findings**
+
+```text
 <field> - <what the output did> - <what the brief asked for>
 ...
 Sound: <at most three lines naming what was checked and held>
 Decision: accept | accept with <part> discarded | re-send on <field>
-</template>
+```
 
 Re-send fixes brief field that failed; re-running same brief unchanged
 spends a spawn, changes nothing.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Failed and unbriefed outputs set aside, not read as reports.</item>
-  <item>Every field in table swept, or skipped rows named.</item>
-  <item>Each finding cites line of output that fails and brief field it violates.</item>
-  <item>What was checked and held is named, so silence means something.</item>
-  <item>Decision is one of accept, accept with a part discarded, or re-send on named field.</item>
-  <item>Nothing edited under this verb.</item>
-</checklist>
+- Failed and unbriefed outputs set aside, not read as reports.
+- Every field in table swept, or skipped rows named.
+- Each finding cites line of output that fails and brief field it violates.
+- What was checked and held is named, so silence means something.
+- Decision is one of accept, accept with a part discarded, or re-send on
+  named field.
+- Nothing edited under this verb.

@@ -48,7 +48,5 @@ full source citation from tables below. Nothing after it.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>One judgment explained, at named audience's calibration.</item>
-  <item>Closing line names heuristic and its full source citation.</item>
-</checklist>
+- One judgment explained, at named audience's calibration.
+- Closing line names heuristic and its full source citation.

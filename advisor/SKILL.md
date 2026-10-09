@@ -141,12 +141,11 @@ audit. Explanation for named audience: tell.
 
 ## Completion Checks
 
-<checklist>
-  <item>Method section and its citations read before abstract.</item>
-  <item>Constitution: one line naming every origin; each mechanism tagged as-is, tweaked, transferred, or new; patterns from table.</item>
-  <item>Every setup element classed with dated source or mark "from memory".</item>
-  <item>Range written as assumption; at most one question asked.</item>
-  <item>Every claim has instrument inside range and kill test.</item>
-  <item>Exactly one verb file loaded.</item>
-  <item>Work outside lens routed to sibling skill by name.</item>
-</checklist>
+- Method section and its citations read before abstract.
+- Constitution: one line naming every origin; each mechanism tagged as-is,
+  tweaked, transferred, or new; patterns from table.
+- Every setup element classed with dated source or mark "from memory".
+- Range written as assumption; at most one question asked.
+- Every claim has instrument inside range and kill test.
+- Exactly one verb file loaded.
+- Work outside lens routed to sibling skill by name.

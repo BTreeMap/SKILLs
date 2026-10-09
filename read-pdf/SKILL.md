@@ -36,9 +36,9 @@ Bind command once per shell; re-bind after reset; `realpath` required.
 Invoke it, read its output; source reading belongs to user-instructed
 troubleshooting.
 
-<commands for="bind">
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-read-pdf"
-</commands>
+```
 
 `$R <document> [flags]` takes local path or http(s) URL.
 
@@ -58,7 +58,9 @@ that selected pages have no extractable text (likely scanned document), is
 `signal:` line on stderr. Owner-locked PDF (empty user password) opens
 without asking.
 
-<template for="extraction">
+**Template: extraction**
+
+```markdown
 # Extracted from document.pdf
 
 Selected PDF pages: 2, 3
@@ -74,7 +76,7 @@ Extracted source text.
 ## PDF page 3
 
 More extracted source text.
-</template>
+```
 
 Read exit code before acting:
 
@@ -138,10 +140,9 @@ skill's only state.
 
 ## Completion Checks
 
-<checklist>
-  <item>Requested PDF file unmodified.</item>
-  <item>Every analyzed passage traceable to `PDF page N` marker.</item>
-  <item>Response distinguishes extracted facts from interpretation.</item>
-  <item>Empty or unreliable pages, encryption, layout ambiguity disclosed when relevant.</item>
-  <item>No PDF package or tool other than bundled extractor used.</item>
-</checklist>
+- Requested PDF file unmodified.
+- Every analyzed passage traceable to `PDF page N` marker.
+- Response distinguishes extracted facts from interpretation.
+- Empty or unreliable pages, encryption, layout ambiguity disclosed when
+  relevant.
+- No PDF package or tool other than bundled extractor used.

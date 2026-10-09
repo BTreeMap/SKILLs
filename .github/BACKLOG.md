@@ -91,8 +91,8 @@ R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath asd-
 grep -E '^#+ ' asd-ste100/SKILL.md | sed -E 's/^#+ //' | while read -r h; do
   m=description; [ "$h" = Procedure ] && m=procedure
   $R check --text:file asd-ste100/SKILL.md --format markdown --section "$h" \
-    --mode "$m" --accept:file asd-ste100/scripts/terms.txt | grep -q '"ok": true' \
-    || echo "read findings: $h"
+    --mode "$m" --accept:file asd-ste100/scripts/terms.txt | python3 -c "import json,sys
+for f in json.load(sys.stdin)['findings']: print('$h:', f['type'], f.get('token', ''), f.get('lines', f.get('line')))"
 done
 ```
 

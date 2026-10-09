@@ -11,7 +11,9 @@ Read-only: no file changes, no re-run of experiments. Output template alone.
 * Routed: each piece of work outside lens, one line, with sibling spine's
   Redirects name for it; word none when nothing left lens.
 
-<template for="examine">
+**Template: examine**
+
+```markdown
 # Review: <artifact title>
 <path, URL, or DOI>; read <YYYY-MM-DD>.
 
@@ -42,16 +44,14 @@ Read-only: no file changes, no re-run of experiments. Output template alone.
 
 ## Ask
 <the one question whose answer changes the direction, or the word none>
-</template>
+```
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Template's header and sections in order, nothing around them.</item>
-  <item>Routed names each item outside lens with its sibling, or says none.</item>
-  <item>Every mechanism line names origin and tag, or is tagged new.</item>
-  <item>Setup table: one row per element, each classed and sourced.</item>
-  <item>Every claim carries concrete instrument and kill test.</item>
-  <item>Direction names first claim to test and what stops.</item>
-  <item>Nothing edited.</item>
-</checklist>
+- Template's header and sections in order, nothing around them.
+- Routed names each item outside lens with its sibling, or says none.
+- Every mechanism line names origin and tag, or is tagged new.
+- Setup table: one row per element, each classed and sourced.
+- Every claim carries concrete instrument and kill test.
+- Direction names first claim to test and what stops.
+- Nothing edited.

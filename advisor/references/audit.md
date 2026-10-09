@@ -15,7 +15,9 @@ Read-only.
 | Project's delta is composition alone | Sound when pattern's "what it has to show" met; otherwise replication |
 | Two projects test one claim with two instruments | Merge them, keep cheaper instrument |
 
-<template for="audit">
+**Template: audit**
+
+```markdown
 ## Program
 <one line: the shared origins and the set of compositions>
 
@@ -31,14 +33,12 @@ Read-only.
 
 ## Ask
 <the one question whose answer changes the direction, or the word none>
-</template>
+```
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Sampled by leverage; rule stated.</item>
-  <item>Every sampled project has one-line constitution and kill test.</item>
-  <item>Unsampled projects named with reason.</item>
-  <item>Direction names at least one merge, stop, or first run.</item>
-  <item>Nothing edited.</item>
-</checklist>
+- Sampled by leverage; rule stated.
+- Every sampled project has one-line constitution and kill test.
+- Unsampled projects named with reason.
+- Direction names at least one merge, stop, or first run.
+- Nothing edited.

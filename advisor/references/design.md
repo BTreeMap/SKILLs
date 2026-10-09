@@ -19,7 +19,9 @@ them now when no review exists. Output: plan template alone.
   (scale, baseline, generality, variance). Plan answers each or names it out
   of scope on purpose.
 
-<template for="plan">
+**Template: plan**
+
+```markdown
 ## Target
 <one sentence: what the finished work shows, in the pattern's own terms>
 
@@ -36,14 +38,13 @@ them now when no review exists. Output: plan template alone.
 
 ## Ask
 <the one question whose answer changes the plan, or the word none>
-</template>
+```
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Phase 1 is cheapest run that can kill claim or direction.</item>
-  <item>Every phase has claim, instrument, kill test, cost, decision it unlocks.</item>
-  <item>Every cost fits range, or phase names its simulator, emulator, or collaborator.</item>
-  <item>Irreversible commitments under Deferred with releasing phase.</item>
-  <item>Venue's questions each answered or named out of scope.</item>
-</checklist>
+- Phase 1 is cheapest run that can kill claim or direction.
+- Every phase has claim, instrument, kill test, cost, decision it unlocks.
+- Every cost fits range, or phase names its simulator, emulator, or
+  collaborator.
+- Irreversible commitments under Deferred with releasing phase.
+- Venue's questions each answered or named out of scope.

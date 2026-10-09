@@ -10,9 +10,9 @@ atomic writes. Script never writes target file until validation passes.
 
 Bind guard command once per shell; re-bind after reset; `realpath` required:
 
-<commands for="bind">
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-caveman"
-</commands>
+```
 
 Command surface: `prepare`, `apply`, `replace`, `clean`, used as steps below
 show. Invoke script, read its output; read its source only when user
@@ -23,9 +23,9 @@ stdout; advisories arrive on stderr as `signal:` lines.
 
 1. Prepare:
 
-<commands for="prepare">
-$R prepare <absolute-filepath> [--project <name>]
-</commands>
+   ```bash
+   $R prepare <absolute-filepath> [--project <name>]
+   ```
 
    Refusal exits 1 with `error: <reason>`, nothing changed. Refusals are
    hard invariants: report reason and stop; trust them, never bypass one
@@ -56,9 +56,9 @@ $R prepare <absolute-filepath> [--project <name>]
 3. Apply. Compressed body reaches script through its own slot, never as
    argument:
 
-<commands for="apply">
-$R apply <absolute-filepath> --body:file <compressed-body-file>
-</commands>
+   ```bash
+   $R apply <absolute-filepath> --body:file <compressed-body-file>
+   ```
 
    On pass it atomically writes target, reports `chars_before`,
    `chars_after`, `percent_smaller`. Exit 1 returns rejection record
@@ -77,10 +77,10 @@ writes nothing; `--project NAME` keeps one project's. Only when user
 EXPLICITLY asks to clear compression copies (never unprompted, never as
 routine tidying), run one of:
 
-<commands for="clean">
+```bash
 $R clean <filepath>
 $R clean --all
-</commands>
+```
 
 First removes one file's copy; second removes every copy this tool ever
 made. Each reports `removed` and `bytes_freed`. Removed copy destroys only

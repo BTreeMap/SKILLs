@@ -3,7 +3,7 @@
 Print card, nothing else; load no other file. User asked something specific:
 answer in one line above card.
 
-<template for="help">
+```text
 advisor - read a project the way its principal investigator would
 
 Usage: /advisor [examine|design|audit|tell|help] <paper, proposal, or results>
@@ -32,4 +32,4 @@ Instruments
 Outside the lens
   Refereeing: /peer-review. Literature survey: /lit-review. A fact in the
   text: /fact-check. Engineering direction: /reframe.
-</template>
+```

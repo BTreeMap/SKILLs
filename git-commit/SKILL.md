@@ -44,7 +44,9 @@ first. Run `git push` ONLY when user passed push verb or asked to push.
 
 ## Message Rules
 
-<template for="commit">
+**Template: commit**
+
+```text
 <type>(<scope>): <subject>
 <BLANK LINE>
 
@@ -52,67 +54,85 @@ first. Run `git push` ONLY when user passed push verb or asked to push.
 <BLANK LINE>
 
 <footer>
-</template>
+```
 
-<instructions for="message">
-  <rule>Limit entire subject line to 70 characters or fewer.</rule>
-  <rule>Select lowercase type from allowed list: feat, fix, refactor, docs, style, perf, test, build, ci, chore, revert.</rule>
-  <rule>Enclose optional lowercase scope in parentheses.</rule>
-  <rule>Write subject description in strict imperative mood (e.g., Add, Fix, Refactor): "Add", not "Added" or "Adding".</rule>
-  <rule>Capitalize first letter of subject description.</rule>
-  <rule>End subject line without period or any other punctuation.</rule>
-  <rule>Breaking change always requires footer starting `BREAKING CHANGE: ` followed by detailed migration path.</rule>
-  <rule>Retain bot-authored commits and platform-generated merge commits exactly as they are; reformat nothing.</rule>
-</instructions>
+**Rules: message**
 
-<instructions for="output">
-  <rule>Output strictly raw commit text or executable `git commit -m` command, no conversational filler, preamble, formatting acknowledgment, or concluding remark.</rule>
-  <rule>Beyond that, add only push verb's one-line pushed range, review's violations, and at maximum split proposal before draft and synonym note after it.</rule>
-</instructions>
+- Limit entire subject line to 70 characters or fewer.
+- Select lowercase type from allowed list: feat, fix, refactor, docs, style,
+  perf, test, build, ci, chore, revert.
+- Enclose optional lowercase scope in parentheses.
+- Write subject description in strict imperative mood (e.g., Add, Fix,
+  Refactor): "Add", not "Added" or "Adding".
+- Capitalize first letter of subject description.
+- End subject line without period or any other punctuation.
+- Breaking change always requires footer starting `BREAKING CHANGE: `
+  followed by detailed migration path.
+- Retain bot-authored commits and platform-generated merge commits exactly
+  as they are; reformat nothing.
+
+**Rules: output**
+
+- Output strictly raw commit text or executable `git commit -m` command, no
+  conversational filler, preamble, formatting acknowledgment, or concluding
+  remark.
+- Beyond that, add only push verb's one-line pushed range, review's
+  violations, and at maximum split proposal before draft and synonym note
+  after it.
 
 ## Basic
 
-<procedure for="basic">
-  <step>Derive scope from staged file paths: single top-level directory, package, or module touched. Omit scope when changes span several.</step>
-  <step>Reuse scope visible in `git log --oneline -10`; run no wider history scan.</step>
-  <step>Output subject line only. Add body and footer solely for breaking change.</step>
-</procedure>
+1. Derive scope from staged file paths: single top-level directory, package,
+   or module touched. Omit scope when changes span several.
+2. Reuse scope visible in `git log --oneline -10`; run no wider history
+   scan.
+3. Output subject line only. Add body and footer solely for breaking change.
 
 ## Full
 
-<procedure for="scope">
-  <step>Inspect recent history, e.g. `git log --pretty=format:'%s' -50`.</step>
-  <step>Reuse existing scope from log when it fits change; synonym fragments history.</step>
-  <step>None fits: derive new scope from repository's top-level packages, crates, modules, or directories: one short lowercase token, hyphens joining multiple words.</step>
-  <step>Omit scope entirely for repository-wide change.</step>
-</procedure>
+**Procedure: scope**
 
-<instructions for="body">
-  <rule>Separate subject line and body with exactly one blank line; git tooling requires it.</rule>
-  <rule>Wrap all body lines at 72 characters.</rule>
-  <rule>Explain exactly what changed and rationale behind chosen solution; leave the how to diff, never restate it.</rule>
-  <rule>Write body in `/caveman` register: terse, why over what, no filler.</rule>
-</instructions>
+1. Inspect recent history, e.g. `git log --pretty=format:'%s' -50`.
+2. Reuse existing scope from log when it fits change; synonym fragments
+   history.
+3. None fits: derive new scope from repository's top-level packages, crates,
+   modules, or directories: one short lowercase token, hyphens joining
+   multiple words.
+4. Omit scope entirely for repository-wide change.
 
-<instructions for="footer">
-  <rule>Place issue tracker references in footer (e.g., Fixes #123, Resolves #456).</rule>
-</instructions>
+**Rules: body**
 
-<checklist for="full">
-  <item>Subject follows `<type>(<scope>): <subject>`, is 70 characters or fewer, takes type from allowed list.</item>
-  <item>Scope, if present, lowercase, single token, verified via `git log`.</item>
-  <item>Subject description imperative, capitalized, ends without punctuation.</item>
-  <item>One blank line separates subject and body.</item>
-  <item>Body lines wrap at 72 characters, give what and why without restating diff.</item>
-  <item>Issue references and breaking changes reside only in the footer.</item>
-  <item>Output contains no conversational filler.</item>
-</checklist>
+- Separate subject line and body with exactly one blank line; git tooling
+  requires it.
+- Wrap all body lines at 72 characters.
+- Explain exactly what changed and rationale behind chosen solution; leave
+  the how to diff, never restate it.
+- Write body in `/caveman` register: terse, why over what, no filler.
 
-<examples for="message">
+**Rules: footer**
 
-  <example for="valid">
-    <context>Feature commit with scope, body, issue reference.</context>
-    <variant>
+- Place issue tracker references in footer (e.g., Fixes #123, Resolves
+  #456).
+
+**Checklist: full**
+
+- Subject follows `<type>(<scope>): <subject>`, is 70 characters or fewer,
+  takes type from allowed list.
+- Scope, if present, lowercase, single token, verified via `git log`.
+- Subject description imperative, capitalized, ends without punctuation.
+- One blank line separates subject and body.
+- Body lines wrap at 72 characters, give what and why without restating
+  diff.
+- Issue references and breaking changes reside only in the footer.
+- Output contains no conversational filler.
+
+**Example: valid**
+
+Context: Feature commit with scope, body, issue reference.
+
+Variant:
+
+```text
 feat(auth): Reject tokens that omit an expiry claim
 
 Tokens minted before the rotation fix lacked an `exp` claim, so the
@@ -120,14 +140,18 @@ validator treated them as non-expiring. Requiring `exp` closes the
 window in which a leaked token would stay valid indefinitely.
 
 Resolves #142
-    </variant>
-  </example>
+```
 
-  <example for="invalid">
-    <context>Intentional counterexample. Violations: missing type and scope; past tense ("fixed", "added") instead of imperative mood; no blank line between subject and body; body lines exceed 72 characters; missing capitalization.</context>
-    <variant>
+**Example: invalid**
+
+Context: Intentional counterexample. Violations: missing type and scope;
+past tense ("fixed", "added") instead of imperative mood; no blank line
+between subject and body; body lines exceed 72 characters; missing
+capitalization.
+
+Variant:
+
+```text
 fixed the bug
 added a token refresh thing so users dont get logged out randomly anymore. also updated the ui to show a loading spinner while it happens
-    </variant>
-  </example>
-</examples>
+```

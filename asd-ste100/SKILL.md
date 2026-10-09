@@ -47,16 +47,16 @@ again. You must use `realpath`. Use these commands and read their output.
 Read the source code only when the user tells you to find the cause of a
 problem.
 
-<commands for="bind">
+```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-asd-ste100"
-</commands>
+```
 
-<commands for="surface">
+```bash
 $R get [--version TAG]
 $R check --text:file draft.txt [--accept:file accept.txt] [--mode procedure|description] [--format text|markdown] [--section HEADING] [--jsonl] [--version TAG | --data DIR]
 $R find WORD [WORD ...] [--version TAG | --data DIR]
 $R clean
-</commands>
+```
 
 * `check` reads the text from one of these sources: `--text` for a short
   text, `--text:file PATH`, `--text:stdin`, or the pipe if no flag uses it.
@@ -237,43 +237,59 @@ in the accept file before the first check.
 
 ## Procedure
 
-<procedure>
-  <phase name="prepare">
-    <step>Select the mode: `procedure` for instructions, or `description` for text that gives information. A short text that gives only a fact or a value, for example a result that you calculated, gives information.</step>
-    <step>If a text has instructions and information, examine each part in its applicable mode. For a Markdown file, use `--format markdown` and one `--section` for each part.</step>
-    <step>Find the technical nouns and verbs (refer to Technical nouns and verbs).</step>
-  </phase>
-  <phase name="draft">
-    <step>For `write`, write a draft from the brief in STE (refer to Write STE).</step>
-    <step>For `refactor`, write a draft from the source, one sentence at a time. Keep all facts, numbers, conditions, and warnings.</step>
-    <step>For `examine`, go to the loop. Do not change the text.</step>
-  </phase>
-  <phase name="loop">
-    <step>Use the command `$R check --text:file draft.txt --accept:file accept.txt --mode MODE`.</step>
-    <step>Replace each `not_approved` word with an alternative, or write the sentence differently.</step>
-    <step>Divide each sentence that is too long. Divide each paragraph that is too long.</step>
-    <step>Remove each contraction and each semicolon.</step>
-    <step>Examine each signal. If a signal is correct, correct the text.</step>
-    <step>Do the check again. Stop when you corrected each finding, or have the cause to keep it.</step>
-  </phase>
-  <phase name="deliver">
-    <step>Compare the meaning of the last draft with the source or the brief. Make sure that the facts, the sequence of steps, and the warnings are the same.</step>
-    <step>Give the text and the last report. For each finding that stays, give one line with the cause to keep it. Also give the signals that you did not correct.</step>
-    <step>For `refactor`, give a list of each location where STE changed the meaning or removed information.</step>
-    <step>For `examine`, give the report as a list of corrections with line numbers. Also give the items in `skipped`.</step>
-  </phase>
-</procedure>
+**Prepare**
+
+1. Select the mode: `procedure` for instructions, or `description` for text
+   that gives information. A short text that gives only a fact or a value,
+   for example a result that you calculated, gives information.
+2. If a text has instructions and information, examine each part in its
+   applicable mode. For a Markdown file, use `--format markdown` and one
+   `--section` for each part.
+3. Find the technical nouns and verbs (refer to Technical nouns and verbs).
+
+**Draft**
+
+1. For `write`, write a draft from the brief in STE (refer to Write STE).
+2. For `refactor`, write a draft from the source, one sentence at a time.
+   Keep all facts, numbers, conditions, and warnings.
+3. For `examine`, go to the loop. Do not change the text.
+
+**Loop**
+
+1. Use the command
+   `$R check --text:file draft.txt --accept:file accept.txt --mode MODE`.
+2. Replace each `not_approved` word with an alternative, or write the
+   sentence differently.
+3. Divide each sentence that is too long. Divide each paragraph that is too
+   long.
+4. Remove each contraction and each semicolon.
+5. Examine each signal. If a signal is correct, correct the text.
+6. Do the check again. Stop when you corrected each finding, or have the
+   cause to keep it.
+
+**Give**
+
+1. Compare the meaning of the last draft with the source or the brief. Make
+   sure that the facts, the sequence of steps, and the warnings are the
+   same.
+2. Give the text and the last report. For each finding that stays, give one
+   line with the cause to keep it. Also give the signals that you did not
+   correct.
+3. For `refactor`, give a list of each location where STE changed the
+   meaning or removed information.
+4. For `examine`, give the report as a list of corrections with line
+   numbers. Also give the items in `skipped`.
 
 ## The `help` card
 
-<template for="help">
+```text
 asd-ste100: write, refactor, or examine text in ASD-STE100 STE (Issue 9).
   write    <brief>   write new STE text, and read the report
   refactor <file>    change a text into STE, and keep its meaning
   examine  <file>    give only the report, and do not change the text
   help               show this card
 The report shows possible errors. Correct each one, or give the cause to keep it.
-</template>
+```
 
 ## Possible problems
 
@@ -301,10 +317,14 @@ The report shows possible errors. Correct each one, or give the cause to keep it
 
 ## Checks before you stop
 
-<checklist>
-  <item>The accept file, if you used one, contains only technical nouns and technical verbs.</item>
-  <item>The result gives the last report, and one line with the cause to keep each finding that stays.</item>
-  <item>You examined each signal, and the result gives the signals that you did not correct.</item>
-  <item>The text keeps all facts, numbers, conditions, and warnings of its source or brief.</item>
-  <item>You do not tell the user that a text agrees with STE only because of `ok`. If the check did not occur, you do not tell the user that the text agrees with STE.</item>
-</checklist>
+- The accept file, if you used one, contains only technical nouns and
+  technical verbs.
+- The result gives the last report, and one line with the cause to keep each
+  finding that stays.
+- You examined each signal, and the result gives the signals that you did
+  not correct.
+- The text keeps all facts, numbers, conditions, and warnings of its source
+  or brief.
+- You do not tell the user that a text agrees with STE only because of `ok`.
+  If the check did not occur, you do not tell the user that the text agrees
+  with STE.

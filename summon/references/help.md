@@ -3,7 +3,7 @@
 Print card below, adapted to what user asked about. Load no other file for
 this.
 
-<template for="help">
+```text
 summon - hand work to another agent so the result comes back usable
 
 Usage: /summon [send|divide|examine|help] [task]
@@ -42,7 +42,7 @@ Called from a skill
   The caller supplies the unit, the record it hands over, its own rules,
   its output shape, and the gate; summon supplies the rest. The lead is
   the sole writer; the branch leaves no trace.
-</template>
+```
 
 ## Output Contract
 

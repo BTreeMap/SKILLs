@@ -21,7 +21,9 @@ all six lines. Session scratch directory harness shares across delegates is
 file territory too: two delegates writing `notes.md` there lose an update,
 so each group gets own subdirectory, named for group.
 
-<template for="bounds">
+**Template: bounds**
+
+```text
 BOUNDS
 Your group: <the work this delegate closes>
 Sibling territory, not yours: <the other groups by name and subject>
@@ -29,7 +31,7 @@ On meeting sibling material: name it in one line under `handoffs`, do not follow
 Files: you own <paths>. Do not write <paths>.
 Scratch: write temporary files only under <scratch root>/<group name>/.
 Spawning: no.
-</template>
+```
 
 ## Sizing and resumability
 
@@ -46,11 +48,9 @@ lines, re-send only work no group claimed.
 
 ## Completion Checks
 
-<checklist for="verb">
-  <item>Groups pairwise disjoint on topic and files; union is open work.</item>
-  <item>Every group names neighbouring territory, carries refusal rule.</item>
-  <item>Every group names owned and forbidden files and own scratch subdirectory.</item>
-  <item>Each brief closes its group alone, so any one can be re-sent.</item>
-  <item>Groups plus children fit concurrency cap.</item>
-  <item>Handoff lines reconciled; unclaimed work named or re-sent.</item>
-</checklist>
+- Groups pairwise disjoint on topic and files; union is open work.
+- Every group names neighbouring territory, carries refusal rule.
+- Every group names owned and forbidden files and own scratch subdirectory.
+- Each brief closes its group alone, so any one can be re-sent.
+- Groups plus children fit concurrency cap.
+- Handoff lines reconciled; unclaimed work named or re-sent.
