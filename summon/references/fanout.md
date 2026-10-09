@@ -17,7 +17,10 @@ spend and buys nothing. Enforce both axes in every bundle's bounds.
 ## Bounds
 
 A boundary names the neighbouring agent's territory. Every bundle's bounds
-carry all five lines:
+carry all six lines. A session scratch directory the harness shares across
+delegates is a file territory too: two delegates writing `notes.md` there
+lose an update, so each bundle gets its own subdirectory, named for the
+bundle.
 
 <template for="bounds">
 BOUNDS
@@ -25,6 +28,7 @@ Your bundle: <the work this delegate closes>
 Sibling territory, not yours: <the other bundles by name and subject>
 On meeting sibling material: name it in one line under `handoffs`, do not follow it.
 Files: you own <paths>. Do not write <paths>.
+Scratch: write temporary files only under <scratch root>/<bundle name>/.
 Spawning: no.
 </template>
 
@@ -46,7 +50,7 @@ the handoff lines, and re-dispatch only the work no bundle claimed.
 <checklist for="verb">
   <item>Bundles are pairwise disjoint on topic and on files, and their union is the open work.</item>
   <item>Every bundle names the neighbouring territory and carries the refusal rule.</item>
-  <item>Every bundle names its owned and forbidden files.</item>
+  <item>Every bundle names its owned and forbidden files, and its own scratch subdirectory.</item>
   <item>Each brief closes its bundle alone, so any one can be re-dispatched.</item>
   <item>The fan plus its children fits the concurrency cap.</item>
   <item>Handoff lines were reconciled, and unclaimed work is named or re-dispatched.</item>
