@@ -218,7 +218,7 @@ the first check, write them in the allow file.
 
 <procedure>
   <phase name="prepare">
-    <step>Select the mode: `procedure` for instructions, or `description` for text that gives information.</step>
+    <step>Select the mode: `procedure` for instructions, or `description` for text that gives information. A short text that gives only a fact or a value, for example a result that you calculated, gives information.</step>
     <step>If a text has instructions and information, examine each part in its applicable mode. For a Markdown file, use `--format markdown` and one `--section` for each part.</step>
     <step>Write the allow file from the text and the brief (refer to Technical nouns and verbs).</step>
   </phase>
