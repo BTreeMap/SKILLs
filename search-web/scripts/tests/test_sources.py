@@ -9,7 +9,8 @@ import pytest
 from btm_search_web import sources
 from btm_search_web.records import Result, trimmed
 
-from btm_corekit import CommandError, dump
+from btm_corekit import ByArxiv, ByDoi, ByNative, CommandError, Passage, dump
+from btm_corekit.indexes import arxiv, semanticscholar
 
 ARXIV_FEED = """<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom"
@@ -30,6 +31,14 @@ def answering(payload: bytes, status: int = 200):
             lambda request: httpx.Response(status, content=payload)
         )
     )
+
+
+@pytest.fixture(autouse=True)
+def _unpaced(monkeypatch):
+    """The kernel's paces are tested there; here they cost nothing."""
+    paces = (arxiv.PACE, semanticscholar.KEYED_PACE, semanticscholar.KEYLESS_PACE)
+    for pace in paces:
+        monkeypatch.setattr(pace, "interval", 0.0)
 
 
 @pytest.fixture
@@ -89,7 +98,7 @@ class TestScholar:
                 ]
             }
         )
-        [row] = sources.scholar("x", 1, sources.Scholar.OPENALEX)
+        [row] = sources.scholar("x", 1, "openalex")
         assert row.doi == "10.1/a" and row.year == 2000 and row.cited_by == 464
         assert row.snippet == "the chaotic"
 
@@ -109,15 +118,107 @@ class TestScholar:
                 }
             }
         )
-        [row] = sources.scholar("x", 1, sources.Scholar.CROSSREF)
+        [row] = sources.scholar("x", 1, "crossref")
         assert row.year == 2019 and row.cited_by == 7
 
     def test_arxiv_reads_the_atom_feed(self, served):
         served(ARXIV_FEED.encode())
-        [row] = sources.scholar("x", 1, sources.Scholar.ARXIV)
+        [row] = sources.scholar("x", 1, "arxiv")
         assert row.title == "A Title With Space"
         assert row.published == "2025-01-02" and row.year == 2025
         assert row.doi == "10.1/x"
+
+    def test_semanticscholar_answers_in_the_one_shape(self, served):
+        served(
+            {
+                "total": 1,
+                "data": [
+                    {
+                        "paperId": "abc",
+                        "title": "A paper",
+                        "year": 2012,
+                        "citationCount": 9,
+                        "externalIds": {"DOI": "10.1/S"},
+                    }
+                ],
+            }
+        )
+        [row] = sources.scholar("x", 1, "semanticscholar")
+        assert row.source == "semanticscholar"
+        assert (row.doi, row.year, row.cited_by) == ("10.1/s", 2012, 9)
+        assert row.url == "https://doi.org/10.1/s"
+
+    def test_firecrawl_answers_in_the_one_shape(self, served):
+        served(
+            {
+                "success": True,
+                "results": [
+                    {
+                        "paperId": "8319239866974784291",
+                        "primaryId": "arxiv:1706.03762",
+                        "title": "Attention Is All You Need",
+                        "abstract": "The dominant models.",
+                        "score": 0.98,
+                    }
+                ],
+            }
+        )
+        [row] = sources.scholar("x", 1, "firecrawl")
+        assert row.source == "firecrawl"
+        assert row.url == "https://arxiv.org/abs/1706.03762"
+        assert row.snippet == "The dominant models."
+
+
+class TestParseRef:
+    @pytest.mark.parametrize(
+        ("token", "ref"),
+        [
+            ("10.1145/3065386", ByDoi("10.1145/3065386")),
+            ("https://doi.org/10.1145/3065386", ByDoi("10.1145/3065386")),
+            ("1706.03762", ByArxiv("1706.03762")),
+            ("arXiv:1706.03762v7", ByArxiv("1706.03762")),
+            ("https://arxiv.org/abs/hep-th/9901001", ByArxiv("hep-th/9901001")),
+            ("10.48550/arXiv.1706.03762", ByArxiv("1706.03762")),
+            ("8319239866974784291", ByNative("8319239866974784291")),
+            (" W2741809807 ", ByNative("W2741809807")),
+        ],
+    )
+    def test_every_written_form_parses_to_one_ref(self, token, ref):
+        """The DOI arXiv registers names the arXiv paper: an index holding the
+        preprint knows it by that id, not by the DataCite DOI."""
+        assert sources.parse_ref(token) == ref
+
+    def test_an_empty_reference_is_refused(self):
+        with pytest.raises(CommandError, match="DOI, an arXiv id"):
+            sources.parse_ref("  ")
+
+    @pytest.mark.parametrize(
+        ("ref", "spelled"),
+        [
+            (ByDoi("10.1/a"), "doi:10.1/a"),
+            (ByArxiv("1706.03762"), "arxiv:1706.03762"),
+            (ByNative("123"), "123"),
+        ],
+    )
+    def test_the_parsed_ref_is_echoed_in_one_spelling(self, ref, spelled):
+        assert sources.spelled(ref) == spelled
+
+
+class TestRead:
+    def test_passages_come_back_ranked(self, served):
+        served(
+            {
+                "success": True,
+                "paper": {"paperId": "1", "title": "T", "abstract": "A."},
+                "passages": [{"text": "Multi-head attention.", "score": 0.8}],
+            }
+        )
+        found = sources.read(ByArxiv("1706.03762"), "heads", 4, "firecrawl")
+        assert found == (Passage(text="Multi-head attention.", score=0.8),)
+
+    def test_an_index_without_passages_names_the_ones_with(self):
+        with pytest.raises(CommandError, match="indexes that do: firecrawl"):
+            sources.read(ByArxiv("1706.03762"), "heads", 4, "openalex")
 
 
 class TestFetch:

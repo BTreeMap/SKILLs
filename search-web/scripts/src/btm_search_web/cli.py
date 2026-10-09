@@ -1,4 +1,4 @@
-"""Argument surface: one query in, one JSON document of results out."""
+"""Argument surface: one query or paper in, one JSON document out."""
 
 from __future__ import annotations
 
@@ -7,14 +7,17 @@ from collections.abc import Callable, Sequence
 
 import btm_search_web
 from btm_corekit import (
+    INDEXES,
     JSON,
     Commands,
+    Optional,
     Parser,
     Required,
     add_slot,
     clean_cache,
     dump,
     emit,
+    having,
     run_cli,
     signal,
     text,
@@ -23,14 +26,16 @@ from btm_corekit import (
 from btm_search_web import sources
 from btm_search_web.cache import remember, remembered
 from btm_search_web.constants import (
+    DEFAULT_PASSAGES,
     DEFAULT_RESULTS,
     MAX_RESULTS,
-    SCHOLAR_SOURCES,
-    Scholar,
 )
 from btm_search_web.records import Result
 
 QUERY = Required("query")
+QUESTION = Optional("query")
+SCHOLAR_SOURCES = tuple(INDEXES)
+PASSAGE_SOURCES = having("passages")
 
 
 def answered(
@@ -91,7 +96,7 @@ def cmd_wiki(args: argparse.Namespace) -> int:
 
 def cmd_scholar(args: argparse.Namespace) -> int:
     limit, asked = args.limit, text(QUERY, args)
-    source: Scholar = args.source
+    source: str = args.source
     return answered(
         f"scholar:{source}:{limit}:{asked}",
         f"scholar {source}",
@@ -99,6 +104,26 @@ def cmd_scholar(args: argparse.Namespace) -> int:
         lambda: sources.scholar(asked, limit, source),
         limit,
     )
+
+
+def cmd_passages(args: argparse.Namespace) -> int:
+    """One paper's passages for a question, or its abstract with none."""
+    asked = text(QUESTION, args)
+    ref = sources.parse_ref(args.ref)
+    found = sources.read(ref, asked, args.limit, args.source)
+    document: dict[str, JSON] = {
+        "verb": "passages",
+        "ref": sources.spelled(ref),
+        "source": args.source,
+        "query": asked,
+        "limit": args.limit,
+        "passages": [dump(passage) for passage in found],
+        "count": len(found),
+    }
+    if not found:
+        document["next"] = "ask another question, or read the paper with fetch"
+    emit(document)
+    return 0
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
@@ -157,7 +182,18 @@ def build_parser() -> argparse.ArgumentParser:
     scholar.set_defaults(func=cmd_scholar)
     add_query(scholar)
     scholar.add_argument(
-        "--source", type=Scholar, choices=SCHOLAR_SOURCES, default=Scholar.OPENALEX
+        "--source", choices=SCHOLAR_SOURCES, default=SCHOLAR_SOURCES[0]
+    )
+
+    reader = commands.add_parser(
+        "passages", help="full-text passages of one paper for a question"
+    )
+    reader.set_defaults(func=cmd_passages)
+    reader.add_argument("ref", help="a DOI, an arXiv id, or the index's own id")
+    add_slot(reader, QUESTION, "the question the passages answer")
+    reader.add_argument("--source", choices=PASSAGE_SOURCES, default=PASSAGE_SOURCES[0])
+    wire_limit(
+        reader, what="passages to ask for", default=DEFAULT_PASSAGES, cap=MAX_RESULTS
     )
 
     fetch = commands.add_parser("fetch", help="readable text of one page")

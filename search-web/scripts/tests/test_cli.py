@@ -10,6 +10,7 @@ from btm_search_web import cli, sources
 from btm_search_web.constants import MAX_RESULTS
 from btm_search_web.records import Result
 
+from btm_corekit import ByArxiv, CommandError, Passage
 from btm_corekit.store.cache import cache_dir
 
 
@@ -64,6 +65,66 @@ class TestVerbs:
         run(["web", "--query", "chaos", "--limit", "3"], capsys)
         run(["web", "--query", "chaos", "--limit", "5"], capsys)
         assert calls == [3, 5]
+
+
+class TestScholarSource:
+    def test_the_choices_are_the_registry_and_openalex_leads(self, capsys, monkeypatch):
+        asked: list[str] = []
+        monkeypatch.setattr(
+            sources,
+            "scholar",
+            lambda query, limit, source: asked.append(source) or [],
+        )
+        run(["scholar", "--query", "q"], capsys)
+        run(["scholar", "--query", "q", "--source", "semanticscholar"], capsys)
+        assert asked == ["openalex", "semanticscholar"]
+
+    def test_an_unregistered_index_is_refused_where_it_is_written(self):
+        with pytest.raises(CommandError, match="invalid choice"):
+            cli.build_parser().parse_args(["scholar", "--query", "q", "--source", "x"])
+
+
+class TestPassages:
+    def test_one_document_of_passages_for_the_parsed_ref(self, capsys, monkeypatch):
+        calls = []
+
+        def read(ref, query, limit, source):
+            calls.append((ref, query, limit, source))
+            return (Passage(text="Heads attend.", score=0.9),)
+
+        monkeypatch.setattr(sources, "read", read)
+        code, document, _ = run(
+            ["passages", "arXiv:1706.03762v7", "--query", "multi-head attention"],
+            capsys,
+        )
+        assert code == 0
+        assert calls == [
+            (ByArxiv("1706.03762"), "multi-head attention", 4, "firecrawl")
+        ]
+        assert document == {
+            "verb": "passages",
+            "ref": "arxiv:1706.03762",
+            "source": "firecrawl",
+            "query": "multi-head attention",
+            "limit": 4,
+            "passages": [{"text": "Heads attend.", "score": 0.9}],
+            "count": 1,
+        }
+
+    def test_the_query_is_optional_and_an_empty_answer_names_a_move(
+        self, capsys, monkeypatch
+    ):
+        monkeypatch.setattr(sources, "read", lambda ref, query, limit, source: ())
+        _, document, _ = run(["passages", "10.1145/3065386"], capsys)
+        assert document["query"] is None
+        assert document["ref"] == "doi:10.1145/3065386"
+        assert document["count"] == 0 and "fetch" in document["next"]
+
+    def test_only_an_index_with_passages_is_a_choice(self):
+        with pytest.raises(CommandError, match="invalid choice"):
+            cli.build_parser().parse_args(
+                ["passages", "1706.03762", "--source", "openalex"]
+            )
 
 
 class TestFetch:

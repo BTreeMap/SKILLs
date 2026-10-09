@@ -5,8 +5,8 @@ copied out of its workspace fails loudly at environment build.
 An index is the exception, and imports as a module: `openalex.page` and
 `crossref.page` are two calls that mean different things, and flattening
 them would leave two names to invent. A member reaching an index by name
-goes through `INDEXES` and the registry's `search`, `references`, and
-`citations` instead, and never touches the module."""
+goes through `INDEXES` and the registry's `search`, `references`,
+`citations`, and `passages` instead, and never touches the module."""
 
 from __future__ import annotations
 
@@ -33,11 +33,22 @@ from btm_corekit.cli import (
     wire_view,
 )
 from btm_corekit.indexes import arxiv, crossref, doi, openalex
-from btm_corekit.indexes.registry import INDEXES, citations, references, search
+from btm_corekit.indexes.registry import (
+    INDEXES,
+    citations,
+    having,
+    passages,
+    references,
+    search,
+)
 from btm_corekit.indexes.work import (
+    ByArxiv,
+    ByDoi,
     ByNative,
     MaybeArxivId,
     MaybeDoi,
+    Passage,
+    Ref,
     Window,
     Work,
     collapsed,
@@ -124,6 +135,8 @@ __all__ = [
     "PAD_SCHEMA",
     "REFS_SCHEMA",
     "Admission",
+    "ByArxiv",
+    "ByDoi",
     "ByNative",
     "CommandError",
     "Commands",
@@ -139,8 +152,10 @@ __all__ = [
     "NonEmpty",
     "Optional",
     "Parser",
+    "Passage",
     "Pool",
     "Positive",
+    "Ref",
     "Required",
     "SessionStore",
     "Slug",
@@ -178,6 +193,7 @@ __all__ = [
     "emit",
     "gated",
     "get_bytes",
+    "having",
     "heading_words",
     "is_digits",
     "json_body",
@@ -191,6 +207,7 @@ __all__ = [
     "pad_ids",
     "parse_model",
     "parse_with",
+    "passages",
     "prefixed_number",
     "read_jsonl",
     "references",

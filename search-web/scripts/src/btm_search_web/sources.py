@@ -11,17 +11,26 @@ from ddgs.exceptions import DDGSException
 
 from btm_corekit import (
     INDEXES,
+    ByArxiv,
+    ByDoi,
+    ByNative,
     CommandError,
+    Passage,
+    Ref,
     UpstreamError,
     Window,
     Work,
     client_for,
     get_bytes,
     json_body,
+    normalize_arxiv_id,
+    normalize_doi,
+    passages,
     search,
 )
 from btm_search_web.constants import (
     APP,
+    ARXIV_REGISTRANT,
     INSTANT_ANSWER,
     PAGE_CAP_BYTES,
     RESPONSE_CAP_BYTES,
@@ -30,7 +39,6 @@ from btm_search_web.constants import (
     TOPIC_CHARS,
     WIKI_SEARCH,
     WIKI_SUMMARY,
-    Scholar,
 )
 from btm_search_web.records import Result, trimmed
 from btm_search_web.upstream import InstantAnswer, WikiSearch, WikiSummary
@@ -150,10 +158,43 @@ def _hit(work: Work, source: str) -> Result:
     )
 
 
-def scholar(query: str, limit: int, source: Scholar) -> list[Result]:
-    index = INDEXES[source.value]
+def scholar(query: str, limit: int, source: str) -> list[Result]:
+    """One search of the index the registry names `source`."""
+    index = INDEXES[source]
     found = search(index, client(), RESPONSE_CAP_BYTES, query, limit, Window())
     return [_hit(work, index.name) for work in found.works]
+
+
+def parse_ref(token: str) -> Ref:
+    """A paper reference as typed: a DOI, an arXiv id in any written form, or
+    else the index's own id. The DOI arXiv registers names the arXiv paper,
+    since an index that holds the preprint knows it by that id."""
+    doi = normalize_doi(token)
+    if doi and not doi.startswith(ARXIV_REGISTRANT):
+        return ByDoi(doi)
+    if arxiv_id := normalize_arxiv_id(token):
+        return ByArxiv(arxiv_id)
+    if doi:
+        return ByDoi(doi)
+    if not token.strip():
+        raise CommandError("passages takes a DOI, an arXiv id, or an index's id")
+    return ByNative(token.strip())
+
+
+def spelled(ref: Ref) -> str:
+    """The reference as parsed, echoed so the caller sees what was asked."""
+    match ref:
+        case ByDoi(doi):
+            return f"doi:{doi}"
+        case ByArxiv(arxiv_id):
+            return f"arxiv:{arxiv_id}"
+        case ByNative(key):
+            return key
+
+
+def read(ref: Ref, query: str | None, limit: int, source: str) -> tuple[Passage, ...]:
+    """Passages of one paper from an index that reads full text."""
+    return passages(INDEXES[source], client(), RESPONSE_CAP_BYTES, ref, query, limit)
 
 
 def fetch(url: str) -> str:

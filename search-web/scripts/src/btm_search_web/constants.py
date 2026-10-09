@@ -1,8 +1,7 @@
-"""Endpoints, caps, and the closed vocabularies the verbs are built from."""
+"""Endpoints, caps, and the defaults the verbs are built from. The scholarly
+indexes are the kernel registry's, named there."""
 
 from __future__ import annotations
-
-from enum import StrEnum
 
 INSTANT_ANSWER = "https://api.duckduckgo.com/"
 WIKI_SEARCH = "https://en.wikipedia.org/w/rest.php/v1/search/page"
@@ -19,13 +18,5 @@ TITLE_CHARS = 300  # a title an index padded with a subtitle still fits
 TOPIC_CHARS = 80  # a related term names itself; its text is the snippet
 
 
-class Scholar(StrEnum):
-    """Which scholarly index answers. OpenAlex spans every field; Crossref is
-    the DOI registry; arXiv is preprints and the only one with full text."""
-
-    OPENALEX = "openalex"
-    CROSSREF = "crossref"
-    ARXIV = "arxiv"
-
-
-SCHOLAR_SOURCES = tuple(Scholar)
+DEFAULT_PASSAGES = 4  # the index's own default; enough to judge a paper
+ARXIV_REGISTRANT = "10.48550/"  # the DOI prefix arXiv registers its papers under

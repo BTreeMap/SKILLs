@@ -3,5 +3,6 @@
 Five backends, one result shape: `web` for a general search, `instant` for a
 definition, `wiki` for an encyclopedia summary, `scholar` for papers, and
 `fetch` for the readable text of one page. Every row carries where it came
-from, so a caller can weigh it.
+from, so a caller can weigh it. `passages` reads one paper's full text for a
+question, from an index that holds it.
 """
