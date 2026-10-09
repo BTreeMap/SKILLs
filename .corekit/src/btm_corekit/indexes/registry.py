@@ -15,7 +15,7 @@ from typing import Literal, TypeVar
 
 import httpx
 
-from btm_corekit.indexes import arxiv, crossref, openalex
+from btm_corekit.indexes import arxiv, crossref, openalex, semanticscholar
 from btm_corekit.indexes.work import Found, Passage, Ref, Window, Work
 from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError
@@ -72,6 +72,15 @@ INDEXES: Mapping[str, Index] = MappingProxyType(
             citations=None,
             passages=None,
             windows=False,
+        ),
+        "semanticscholar": Index(
+            name="semanticscholar",
+            search=semanticscholar.search,
+            lookup=semanticscholar.lookup,
+            references=semanticscholar.references,
+            citations=semanticscholar.citations,
+            passages=None,
+            windows=True,
         ),
     }
 )

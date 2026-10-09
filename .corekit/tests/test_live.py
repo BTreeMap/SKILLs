@@ -17,7 +17,9 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from btm_corekit import arxiv, build_client, crossref, doi, openalex
+from btm_corekit import UpstreamError, arxiv, build_client, crossref, doi, openalex
+from btm_corekit.indexes import semanticscholar
+from btm_corekit.indexes.work import ByDoi
 
 pytestmark = pytest.mark.network
 
@@ -155,3 +157,22 @@ class TestDoi:
 
     def test_an_unknown_handle_does_not(self, client):
         assert doi.resolves(client, UNREGISTERED_DOI) == 404
+
+
+class TestSemanticScholar:
+    def test_a_doi_lookup_answers_with_the_paper(self, client):
+        """One call. The keyless pool answers 429 under load, which is the
+        service being busy rather than this decoder being wrong."""
+        try:
+            work = semanticscholar.lookup(client, CAP, ByDoi(ALEXNET_DOI))
+        except UpstreamError as err:
+            if err.status == 429:
+                pytest.skip("Semantic Scholar throttled the shared pool")
+            raise
+        assert work is not None
+        assert work.title and ALEXNET_TITLE in work.title.lower()
+        assert work.doi == ALEXNET_DOI
+        assert work.year == 2012, "dated to the NeurIPS original, unlike Crossref"
+        assert work.published, "publicationDate still decodes"
+        assert work.authors, "the authors field still decodes"
+        assert work.cited_by and work.cited_by > 0
