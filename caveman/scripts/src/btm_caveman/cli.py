@@ -30,6 +30,7 @@ from btm_corekit import (
     run_cli,
     signal,
     text,
+    wire_project,
     write_atomic,
 )
 
@@ -70,7 +71,8 @@ def cmd_prepare(args: argparse.Namespace) -> int:
             " first, refusing to overwrite a prior original"
         )
     # Identity before content: a backup must never exist anonymously.
-    STORE.write_meta(slot.directory, SlotMeta(source=str(plan.path)))
+    meta = SlotMeta(source=str(plan.path), project=args.project)
+    STORE.write_meta(slot.directory, meta)
     write_atomic(slot.backup_path, plan.original)
     if read_utf8(slot.backup_path) != plan.original:
         slot.backup_path.unlink(missing_ok=True)
@@ -85,6 +87,7 @@ def cmd_prepare(args: argparse.Namespace) -> int:
     emit(
         {
             "file": str(plan.path),
+            "project": meta.project,
             "backup": str(slot.backup_path),
             "body": str(slot.body_path),
             "frontmatter": bool(plan.frontmatter),
@@ -140,7 +143,7 @@ def cmd_clean(args: argparse.Namespace) -> int:
     """List the backups, or delete some. Deletion destroys the undo, so it
     runs only on an explicit request."""
     if args.file is None:
-        listing = STORE.clean(None, args.all)
+        listing = STORE.clean(None, args.all, args.project)
         # A slot is addressed by the file it backs up, never by its own name.
         emit(
             listing
@@ -154,7 +157,7 @@ def cmd_clean(args: argparse.Namespace) -> int:
     if meta is not None and meta.source != str(target):
         raise CommandError(f"{slot.directory} records {meta.source}; not cleaning it")
     # Removal demands the marker, so only what prepare wrote can be removed.
-    emit(STORE.clean(str(slot.directory), args.all))
+    emit(STORE.clean(str(slot.directory), args.all, args.project))
     return 0
 
 
@@ -176,6 +179,7 @@ def build_parser() -> argparse.ArgumentParser:
         sub = commands.add_parser(verb, help=summary)
         sub.set_defaults(func=run)
         sub.add_argument("file")
+    wire_project(commands.choices["prepare"])
     applier = commands.add_parser(
         "apply", help="validate a compressed body and write it in place"
     )
@@ -188,6 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
     cleaner.set_defaults(func=cmd_clean)
     cleaner.add_argument("file", nargs="?")
     cleaner.add_argument("--all", action="store_true")
+    wire_project(cleaner, "list only backups tagged NAME")
     return parser
 
 

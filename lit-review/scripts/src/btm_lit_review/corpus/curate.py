@@ -24,6 +24,7 @@ from btm_corekit import (
     compile_match,
     content,
     digest,
+    dump,
     emit,
     gated,
     now_iso,
@@ -432,6 +433,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     emit(
         {
             "question": protocol.question,
+            "project": protocol.project,
+            "links": [dump(link) for link in protocol.links],
             "level": protocol.level,
             "criteria_ready": protocol.ready,
             "criteria_hash": current_hash,

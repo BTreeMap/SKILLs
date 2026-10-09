@@ -7,7 +7,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import CommandError, Shelf, pad_entries, read_shelf, signal
+from btm_corekit import CommandError, Shelf, dump, pad_entries, read_shelf, signal
 from btm_draft_paper.run import GATE_STAGE, Gate
 from btm_draft_paper.trace import (
     EVIDENCED,
@@ -73,6 +73,8 @@ def status_view(run: Run) -> dict[str, Any]:
     pad = pad_entries(run.directory)
     document: dict[str, Any] = {
         "session": run.directory.name,
+        "project": run.meta.project,
+        "links": [dump(link) for link in run.meta.links],
         "verb": run.meta.verb,
         "format": run.meta.format,
         "state": run.meta.state,

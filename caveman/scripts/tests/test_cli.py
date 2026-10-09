@@ -211,3 +211,13 @@ class TestRefusals:
     def test_an_unknown_verb_names_the_ones_that_exist(self, capsys):
         assert main(["fly"]) == 1
         assert "invalid choice" in capsys.readouterr().err
+
+
+class TestProject:
+    def test_prepare_tags_the_backup_and_clean_filters_by_it(self, note, capsys):
+        assert main(["prepare", str(note), "--project", "ste-tax"]) == 0
+        assert record(capsys)["project"] == "ste-tax"
+        assert main(["clean", "--project", "ste-tax"]) == 0
+        assert [row["project"] for row in record(capsys)["sessions"]] == ["ste-tax"]
+        assert main(["clean", "--project", "other"]) == 0
+        assert record(capsys)["sessions"] == []

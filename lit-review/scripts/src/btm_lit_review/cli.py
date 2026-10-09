@@ -17,6 +17,7 @@ from btm_corekit import (
     wire_clean,
     wire_limit,
     wire_pad,
+    wire_project,
 )
 from btm_lit_review.constants import (
     DEFAULT_LIMIT,
@@ -83,6 +84,7 @@ def wire_gather(commands: Commands) -> None:
     add_common(init)
     add_slot(init, FRAMING, '{"question": "the research question"}')
     init.add_argument("--level", type=Level, choices=LEVELS, default=Level.FULL)
+    wire_project(init)
     init.set_defaults(func=cmd_init)
 
     search = commands.add_parser("search", help="run one logged search")

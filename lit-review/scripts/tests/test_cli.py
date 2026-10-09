@@ -426,3 +426,17 @@ class TestUpdateEnvelope:
         assert code == 1
         assert document["unchanged"] == "papers"
         assert document["rejected"][0]["where"] == "$"
+
+
+class TestProject:
+    def test_init_tags_the_review_and_status_shows_it(self, capsys):
+        code, opened, _ = run(
+            ["init", "ste tax", "--project", "ste-tax"],
+            capsys,
+            stdin='{"question": "q"}',
+        )
+        assert code == 0
+        code, document, _ = run(["status", opened["session"]], capsys)
+        assert (document["project"], document["links"]) == ("ste-tax", [])
+        code, listing, _ = run(["clean", "--project", "ste-tax"], capsys)
+        assert [row["session"] for row in listing["sessions"]] == [opened["session"]]

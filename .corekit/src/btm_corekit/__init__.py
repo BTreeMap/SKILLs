@@ -31,10 +31,11 @@ from btm_corekit.cli import (
     wire_clean,
     wire_limit,
     wire_pad,
+    wire_project,
     wire_view,
 )
 from btm_corekit.indexes import arxiv, crossref, doi, openalex
-from btm_corekit.indexes.cite import Shelf, corpus_path, read_shelf
+from btm_corekit.indexes.cite import Shelf, corpus_link, corpus_path, read_shelf
 from btm_corekit.indexes.registry import (
     INDEXES,
     citations,
@@ -109,7 +110,9 @@ from btm_corekit.store.pad import (
 from btm_corekit.store.sessions import (
     LIT_REVIEW_CORPUS,
     LIT_REVIEW_SESSIONS,
+    Link,
     SessionStore,
+    Tagged,
 )
 from btm_corekit.text import (
     ASCII_WORD,
@@ -150,6 +153,7 @@ __all__ = [
     "Doi",
     "EventLog",
     "Item",
+    "Link",
     "MaybeArxivId",
     "MaybeDoi",
     "Model",
@@ -166,6 +170,7 @@ __all__ = [
     "Shelf",
     "Slug",
     "Stamped",
+    "Tagged",
     "Trimmed",
     "Upstream",
     "UpstreamError",
@@ -187,6 +192,7 @@ __all__ = [
     "collapsed",
     "compile_match",
     "content",
+    "corpus_link",
     "corpus_path",
     "count_lines",
     "crossref",
@@ -239,6 +245,7 @@ __all__ = [
     "wire_clean",
     "wire_limit",
     "wire_pad",
+    "wire_project",
     "wire_view",
     "write_atomic",
 ]

@@ -434,6 +434,24 @@ class TestCorpus:
         assert document["records"] == 2
         _, status, _ = run(["status", session], capsys)
         assert status["corpus"] == str(corpus / "papers.jsonl")
+        assert status["links"] == [
+            {"skill": "lit-review", "session": "lit", "path": str(corpus)}
+        ]
+
+    def test_init_takes_a_project_status_shows(
+        self, capsys: pytest.CaptureFixture[str], artifacts: Path
+    ) -> None:
+        code, document, err = run(
+            [
+                *("init", "tail latency", "--verb", "build", "--format", "full"),
+                *("--state", "partial", "--venue", "v", "--model", "m"),
+                *("--artifacts", str(artifacts), "--project", "ste-tax"),
+            ],
+            capsys,
+        )
+        assert code == 0, err
+        _, status, _ = run(["status", document["session"]], capsys)
+        assert status["project"] == "ste-tax"
 
     def test_check_resolves_each_citation_against_the_linked_corpus(
         self, capsys: pytest.CaptureFixture[str], artifacts: Path, corpus: Path

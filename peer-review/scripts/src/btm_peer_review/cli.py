@@ -22,6 +22,7 @@ from btm_corekit import (
     Required,
     add_slot,
     content,
+    corpus_link,
     dump,
     emit,
     gated,
@@ -36,6 +37,7 @@ from btm_corekit import (
     wire_cite,
     wire_clean,
     wire_pad,
+    wire_project,
     write_atomic,
 )
 from btm_peer_review.batch import BATCH_KEYS, SCHEMA, Context, NoteResult, expand_batch
@@ -85,6 +87,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             "date": args.date,
             "level": args.level,
             "created": now_iso(),
+            "project": args.project,
         },
         "the session",
     )
@@ -147,7 +150,8 @@ def cmd_link(args: argparse.Namespace) -> int:
     directory, meta = _session(args.session)
     papers = LIT_REVIEW_SESSIONS.dir_of(args.corpus) / LIT_REVIEW_CORPUS
     corpus = load_corpus(papers)
-    STORE.write_meta(directory, meta.with_(corpus=str(papers)))
+    linked = meta.with_(corpus=str(papers)).with_link(corpus_link(papers))
+    STORE.write_meta(directory, linked)
     later = sum(1 for r in corpus.records if r.year is not None and r.year > meta.year)
     emit(
         {
@@ -278,6 +282,8 @@ def cmd_status(args: argparse.Namespace) -> int:
         {
             "session": directory.name,
             "title": meta.title,
+            "project": meta.project,
+            "links": [dump(link) for link in meta.links],
             "level": meta.level,
             "pages": meta.pages,
             "corpus": meta.corpus,
@@ -332,6 +338,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--date", required=True, help="YYYY[-MM[-DD]] of the version reviewed"
     )
     init.add_argument("--level", type=Level, choices=list(Level), default=Level.FULL)
+    wire_project(init)
     ingest = commands.add_parser("ingest", help="store the paper's extracted text")
     ingest.set_defaults(func=cmd_ingest)
     ingest.add_argument("session")

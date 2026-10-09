@@ -647,3 +647,15 @@ class TestCite:
             "doi": "10.1/a",
             "year": 2021,
         }
+
+
+class TestProject:
+    def test_init_tags_the_session_and_status_shows_it(self, capsys):
+        code, opened_doc, _ = run(
+            ["init", "rent length", "--project", "ste-tax"],
+            capsys,
+            stdin='{"question": "q"}',
+        )
+        assert code == 0
+        _, document, _ = run(["status", opened_doc["session"]], capsys)
+        assert (document["project"], document["links"]) == ("ste-tax", [])

@@ -544,14 +544,25 @@ def wire_cite(commands: Commands, skill: str, linked: CorpusOf | None = None) ->
         )
 
 
+TAG_HELP = "free project name grouping sessions across skills"
+
+
+def wire_project(parser: argparse.ArgumentParser, purpose: str = TAG_HELP) -> None:
+    """The one spelling of the project tag, on whichever command opens a
+    session and on every `clean`; the meta model decodes the value."""
+    parser.add_argument("--project", metavar="NAME", help=purpose)
+
+
 def wire_clean(commands: Commands, store: SessionStore) -> None:
     def cmd_clean(args: argparse.Namespace) -> int:
-        emit(store.clean(args.session, args.all))
+        emit(store.clean(args.session, args.all, args.project))
         return 0
 
     clean = commands.add_parser(
-        "clean", help="list sessions with sizes; remove one or --all"
+        "clean",
+        help="list sessions with sizes and projects; remove one or --all",
     )
     clean.set_defaults(func=cmd_clean)
     clean.add_argument("session", nargs="?")
     clean.add_argument("--all", action="store_true")
+    wire_project(clean, "list only sessions tagged NAME")

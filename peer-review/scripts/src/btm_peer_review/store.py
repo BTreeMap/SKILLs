@@ -16,6 +16,7 @@ from btm_corekit import (
     Model,
     NonEmpty,
     SessionStore,
+    Tagged,
     parse_model,
     read_jsonl,
 )
@@ -39,7 +40,7 @@ Date = Annotated[str, AfterValidator(_dated)]
 backtracking engine stays linear."""
 
 
-class Meta(Model):
+class Meta(Tagged):
     """Session facts fixed at init, extended by ingest and link."""
 
     title: NonEmpty

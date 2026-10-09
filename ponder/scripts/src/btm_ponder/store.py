@@ -6,7 +6,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from btm_corekit import EventLog, Model, NonEmpty, SessionStore
+from btm_corekit import EventLog, NonEmpty, SessionStore, Tagged, dump
 from btm_ponder.ledger import replay
 from btm_ponder.state import Ledger, Mode, Open
 from btm_ponder.views import counts_of, yield_table
@@ -15,7 +15,7 @@ STORE = SessionStore("ponder", marker="session.json", hint="run init first")
 LEDGER = "ledger.jsonl"
 
 
-class SessionMeta(Model):
+class SessionMeta(Tagged):
     """What one session is about, fixed at init."""
 
     question: NonEmpty
@@ -53,6 +53,8 @@ def orient(directory: Path) -> dict[str, Any]:
         "session": directory.name,
         "question": meta.question,
         "focus": meta.focus,
+        "project": meta.project,
+        "links": [dump(link) for link in meta.links],
         "mode": meta.mode,
         "counts": counts_of(ledger),
         "sources": len(ledger.sources),

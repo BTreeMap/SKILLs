@@ -35,7 +35,7 @@ from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError, UpstreamError
 from btm_corekit.store.clock import now_iso
 from btm_corekit.store.fsio import read_jsonl
-from btm_corekit.store.sessions import LIT_REVIEW_CORPUS, LIT_REVIEW_SESSIONS
+from btm_corekit.store.sessions import LIT_REVIEW_CORPUS, LIT_REVIEW_SESSIONS, Link
 
 CITE_CAP_BYTES = 16 * 1024 * 1024
 """One record is kilobytes; the cap bounds a stall, as in lit-review."""
@@ -136,6 +136,14 @@ def read_shelf(path: Path) -> Shelf:
 def corpus_path(ref: str) -> Path:
     """The `papers.jsonl` a lit-review session id or directory names."""
     return LIT_REVIEW_SESSIONS.dir_of(ref) / LIT_REVIEW_CORPUS
+
+
+def corpus_link(path: Path) -> Link:
+    """The link a session records to the lit-review session holding `path`."""
+    session = path.parent
+    return Link(
+        skill=LIT_REVIEW_SESSIONS.skill, session=session.name, path=str(session)
+    )
 
 
 def parsed_ref(raw: str) -> ByDoi | ByArxiv | None:

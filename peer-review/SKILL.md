@@ -146,14 +146,14 @@ re-read or authors could settle it.
 
 | Command | Contract |
 | --- | --- |
-| `init` | Takes two or three keywords, or directory path to place session, plus paper's date and its title on pipe; mints session identifier, echoes it with directory. Keyword subset recovers lost identifier |
+| `init` | Takes two or three keywords, or directory path to place session, plus paper's date and its title on pipe; mints session identifier, echoes it with directory. Keyword subset recovers lost identifier. `--project NAME` tags session with free project name shared across skills |
 | `ingest` | Splits extraction on `## PDF page N` lines into per-page anchors |
-| `link` | Attaches lit-review corpus as prior work |
+| `link` | Attaches lit-review corpus as prior work; records link to its session, relinking replaces it |
 | `cite` | Returns one citable record for corpus key, DOI, or arXiv id: linked corpus (`--session`) first, then indexes; carries `key`, `source`, `retrieved` date; exit 1 when nothing resolves |
-| `status` | Ledger counts, banks walked, advisory `next`, never a gate |
+| `status` | Project, links, ledger counts, banks walked, advisory `next`, never a gate |
 | `cite-check` | Requires every `[On]` and `[Cn]` in draft to resolve to grounded record and every grounded fatal or major objection to appear |
 | `schema` | Prints batch shape and each bank's kinds |
-| `clean` | Lists sessions with sizes; removes one or `--all`, reporting bytes freed |
+| `clean` | Lists sessions with sizes and projects (`--project NAME` keeps one project's); removes one or `--all`, reporting bytes freed |
 
 Exit codes: 0 done (stderr `signal:` lines advisory); 1 fix input and
 resend. Bind command once per shell, re-bind after reset; `realpath`
@@ -168,7 +168,7 @@ escape; empty one is rejection, not fallback.
 
 <commands>
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-peer-review"
-$R init "<two or three keywords>" --date 2026-03 [--level full] <<'JSON'
+$R init "<two or three keywords>" --date 2026-03 [--level full] [--project <name>] <<'JSON'
 {"title": "..."}
 JSON
 S="<the session identifier the init output echoed>"
@@ -184,7 +184,7 @@ JSON
 $R jot "$S" --entry:file <entry.json>
 $R recall "$S" [--kind note] [--match <regex>] [--since j9] [--limit 20]
 $R cite-check "$S" --draft:file review.md
-$R clean ["$S" | --all]
+$R clean ["$S" | --all | --project <name>]
 </commands>
 
 ## Pad and gate

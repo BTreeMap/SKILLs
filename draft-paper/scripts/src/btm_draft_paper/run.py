@@ -7,7 +7,7 @@ from enum import StrEnum
 
 from pydantic import model_validator
 
-from btm_corekit import Diagnostic, Model, NonEmpty, SessionStore, refuse
+from btm_corekit import Diagnostic, NonEmpty, SessionStore, Tagged, refuse
 
 STORE = SessionStore("draft-paper", marker="run.json", hint="run init first")
 TRACE = "trace.jsonl"
@@ -57,8 +57,9 @@ class Gate(StrEnum):
 GATE_STAGE: dict[Gate, int] = {Gate.PLAN: 1, Gate.LEDGER: 2, Gate.DRAFT: 8}
 
 
-class RunMeta(Model):
-    """Fixed at init; the marker file that witnesses a session."""
+class RunMeta(Tagged):
+    """Fixed at init but for the corpus and links `link` sets; the marker
+    file that witnesses a session."""
 
     run: NonEmpty
     verb: Verb

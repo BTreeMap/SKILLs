@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from btm_corekit import CommandError, Model, SessionStore
+from btm_corekit import CommandError, SessionStore, Tagged
 
 UNSAFE_NAME = re.compile(r"[^A-Za-z0-9._-]")
 """Everything a directory component may not carry, replaced in one C pass."""
@@ -18,8 +18,9 @@ STORE = SessionStore("caveman", marker="meta.json", hint="run prepare first")
 skill auto-loaders never re-ingest a backup."""
 
 
-class SlotMeta(Model):
-    """The identity a slot records: the one file its backup belongs to."""
+class SlotMeta(Tagged):
+    """The identity a slot records: the one file its backup belongs to, and
+    the project the rewrite serves, when named."""
 
     source: str
 

@@ -15,6 +15,7 @@ from btm_corekit import (
     CommandError,
     Model,
     NonEmpty,
+    Tagged,
     dump,
     read_jsonl,
     write_atomic,
@@ -33,7 +34,7 @@ class Criteria(Model):
     exclude: tuple[NonEmpty, ...] = ()
 
 
-class Protocol(Model):
+class Protocol(Tagged):
     """The review's frame, written at init and edited by hand thereafter."""
 
     question: NonEmpty

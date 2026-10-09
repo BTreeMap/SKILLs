@@ -24,7 +24,7 @@ stdout; advisories arrive on stderr as `signal:` lines.
 1. Prepare:
 
 <commands for="prepare">
-$R prepare <absolute-filepath>
+$R prepare <absolute-filepath> [--project <name>]
 </commands>
 
    Refusal exits 1 with `error: <reason>`, nothing changed. Refusals are
@@ -36,7 +36,9 @@ $R prepare <absolute-filepath>
    over 500KB; non-UTF-8 files.
 
    On success record carries `backup` and `body` paths, `frontmatter` saying
-   whether one was split off (preserved verbatim), body's `chars`.
+   whether one was split off (preserved verbatim), body's `chars`, `project`
+   (`--project NAME` tags backup with free project name shared across
+   skills).
 
    `signal:` lines are advisory heuristics for you to weigh: content
    assessed as code, config, or inconclusive, with observed ratios; filename
@@ -71,9 +73,10 @@ $R apply <absolute-filepath> --body:file <compressed-body-file>
 
 ## Cleanup
 
-`$R clean` with no argument lists backups held, with sizes, writes nothing.
-Only when user EXPLICITLY asks to clear compression backups (never
-unprompted, never as routine tidying), run one of:
+`$R clean` with no argument lists backups held, with sizes and projects,
+writes nothing; `--project NAME` keeps one project's. Only when user
+EXPLICITLY asks to clear compression backups (never unprompted, never as
+routine tidying), run one of:
 
 <commands for="clean">
 $R clean <filepath>

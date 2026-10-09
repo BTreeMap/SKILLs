@@ -31,6 +31,7 @@ from btm_corekit import (
     wire_cite,
     wire_clean,
     wire_pad,
+    wire_project,
     wire_view,
 )
 from btm_ponder.batch import BATCH_KEYS, SCHEMA, NoteResult, expand_batch
@@ -73,6 +74,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         focus=framing.focus,
         mode=args.mode,
         created=now_iso(),
+        project=args.project,
     )
     STORE.write_meta(made.directory, meta)
     EventLog(made.directory / LEDGER).touch()
@@ -195,6 +197,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=Mode.FULL,
         help="lite demotes draft blockers to advisories",
     )
+    wire_project(init)
     note = commands.add_parser(
         "note", help="admit one round of leaves, sources, and closes"
     )

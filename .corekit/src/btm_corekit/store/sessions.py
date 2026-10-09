@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from btm_corekit.records.models import M, dump, parse_model
+from btm_corekit.records.models import M, Model, NonEmpty, dump, parse_model
 from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError
 from btm_corekit.store.fsio import remove_tree, state_root, tree_bytes, write_atomic
@@ -20,6 +20,35 @@ from btm_corekit.store.identifiers import (
     mint,
     resolve,
 )
+
+
+class Link(Model):
+    """One session of another skill this session draws on: the skill, the
+    session's identifier, and the directory it lives in."""
+
+    skill: NonEmpty
+    session: NonEmpty
+    path: NonEmpty
+
+
+class Tagged(Model):
+    """What every session meta carries beside its own fields: a free project
+    name, set at init, that groups sessions across skills, and the sessions
+    of other skills it links. A member's meta model subclasses this."""
+
+    project: NonEmpty | None = None
+    links: tuple[Link, ...] = ()
+
+    def with_link(self, link: Link) -> Self:
+        """One link per linked skill: relinking replaces the earlier one."""
+        kept = tuple(held for held in self.links if held.skill != link.skill)
+        return self.with_(links=(*kept, link))
+
+
+class Tags(Tagged):
+    """The tags alone, read from any member's meta; its own fields ignored."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,28 +130,47 @@ class SessionStore:
             json.dumps(dump(meta), indent=2, ensure_ascii=False) + "\n",
         )
 
-    def clean(self, ref: str | None, remove_all: bool) -> dict[str, Any]:
-        """List sessions with sizes, remove one, or remove them all, reporting
-        bytes freed. Every removal demands the marker, never an arbitrary tree:
-        `--all` removes the root only when every entry under it is a session."""
+    def project_of(self, directory: Path) -> str | None:
+        """The project a session's meta names. A listing is a view, so an
+        unreadable meta lists with none and a signal, never a refusal."""
+        if not self.meta_path(directory).is_file():
+            return None
+        try:
+            return self.read_meta(directory, Tags).project
+        except CommandError as err:
+            signal(f"listing {directory.name} without its project: {err}")
+            return None
+
+    def clean(
+        self, ref: str | None, remove_all: bool, project: str | None = None
+    ) -> dict[str, Any]:
+        """List sessions with sizes and projects, `project` keeping only its
+        own; remove one; or remove them all, reporting bytes freed. Every
+        removal demands the marker, never an arbitrary tree: `--all` removes
+        the root only when every entry under it is a session."""
         root = self.root()
         if remove_all and ref:
             raise CommandError("pass a session or --all, one of the two")
+        if project is not None and (remove_all or ref):
+            raise CommandError("--project filters the listing; pass it alone")
         if remove_all:
             return self._remove_all(root)
         if ref is None:
-            listing = (
-                [
-                    {"session": entry.name, "bytes": tree_bytes(entry)}
-                    for entry in sorted(root.iterdir())
-                    if entry.is_dir()
-                ]
-                if root.is_dir()
-                else []
-            )
+            entries = sorted(root.iterdir()) if root.is_dir() else []
+            listing = [
+                {
+                    "session": entry.name,
+                    "project": self.project_of(entry),
+                    "bytes": tree_bytes(entry),
+                }
+                for entry in entries
+                if entry.is_dir()
+            ]
             return {
                 "sessions_root": str(root),
-                "sessions": listing,
+                "sessions": [
+                    row for row in listing if project in (None, row["project"])
+                ],
                 "next": "pass a session identifier or --all to remove and free space",
             }
         target = self.dir_of(ref)

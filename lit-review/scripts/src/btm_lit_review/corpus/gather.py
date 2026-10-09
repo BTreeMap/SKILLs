@@ -132,7 +132,12 @@ def cmd_init(args: argparse.Namespace) -> int:
     root, name = made.directory, made.name
     session = Session(root)
     root.mkdir(parents=True, exist_ok=True)
-    protocol = Protocol(question=framing.question, level=args.level, created=now_iso())
+    protocol = Protocol(
+        question=framing.question,
+        level=args.level,
+        created=now_iso(),
+        project=args.project,
+    )
     STORE.write_meta(root, protocol)
     session.papers_path.touch()
     session.log_path.touch()

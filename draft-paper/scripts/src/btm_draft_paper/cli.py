@@ -17,6 +17,7 @@ from btm_corekit import (
     EventLog,
     Parser,
     add_slot,
+    corpus_link,
     corpus_path,
     dump,
     emit,
@@ -29,6 +30,7 @@ from btm_corekit import (
     wire_cite,
     wire_clean,
     wire_pad,
+    wire_project,
 )
 from btm_draft_paper.batch import SCHEMA, NoteResult, expand_batch
 from btm_draft_paper.run import (
@@ -74,6 +76,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             "model": args.model,
             "artifacts": str(artifacts),
             "created": now_iso(),
+            "project": args.project,
         },
         "init",
     )
@@ -120,7 +123,8 @@ def cmd_link(args: argparse.Namespace) -> int:
     run = load(args.session)
     path = corpus_path(args.corpus)
     shelf = read_shelf(path)
-    STORE.write_meta(run.directory, run.meta.with_(corpus=str(path)))
+    meta = run.meta.with_(corpus=str(path)).with_link(corpus_link(path))
+    STORE.write_meta(run.directory, meta)
     emit(
         {
             "session": run.directory.name,
@@ -185,6 +189,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=".",
         help="root that claim artifact paths resolve against",
     )
+    wire_project(init)
     note = commands.add_parser("note", help="admit one batch of trace events")
     note.set_defaults(func=cmd_note)
     note.add_argument("session", help="session identifier or directory")

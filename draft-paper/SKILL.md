@@ -119,7 +119,7 @@ read source only when user asks for troubleshooting.
 
 <commands>
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-draft-paper"
-$R init "<two or three keywords>" --verb build --format full --state partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>]
+$R init "<two or three keywords>" --verb build --format full --state partial --venue "<venue and track>" --model "<backbone model version>" [--artifacts <artifact-root>] [--project <name>]
 S="<the session identifier the init output echoed>"
 $R schema
 $R note "$S" --batch:file <events.json> && $R status "$S"
@@ -130,7 +130,7 @@ $R jot "$S" [--prose] <<'JSON'
 {"kind": "punch", ...}
 JSON
 $R recall "$S" [--kind punch] [--match <regex>] [--since j9] [--limit 20]
-$R clean ["$S" | --all]
+$R clean ["$S" | --all | --project <name>]
 </commands>
 
 Bind `R` and `S` per shell; re-bind after reset; `realpath` required. Unique
@@ -141,15 +141,15 @@ counts four keywords and signals; pass `tail-latency study` instead.
 
 | Command | Contract |
 | --- | --- |
-| `init` | Takes two or three keywords, or directory path as session location. Mints session, pins verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), artifact root claim paths resolve against (default: current directory; `artifacts-repinned` event moves it). |
+| `init` | Takes two or three keywords, or directory path as session location. Mints session, pins verb, format, input state, venue, backbone model version (reliability assumptions do not transfer across models), artifact root claim paths resolve against (default: current directory; `artifacts-repinned` event moves it). `--project NAME` tags run with free project name shared across skills. |
 | `schema` | Prints every event shape. |
 | `note` | Admits one batch of events to trace. |
-| `status` | Cheap resume view: stage, gate standings, claim counts, live artifact root, linked corpus, pad tail, advisory `next`. |
+| `status` | Cheap resume view: project, links, stage, gate standings, claim counts, live artifact root, linked corpus, pad tail, advisory `next`. |
 | `check` | Derives gate summary, evidence ledger, `citations` block. |
-| `link` | Attaches `/lit-review` session's corpus to run; its records count as retrieved. Re-linking replaces it. |
+| `link` | Attaches `/lit-review` session's corpus to run and records link to that session; its records count as retrieved. Re-linking replaces it. |
 | `cite` | Returns one citable record for corpus key, DOI, or arXiv id: linked corpus (`--session`) or named one (`--corpus`) first, then indexes. Record carries `key` (corpus records only), `source` (corpus session or index), `retrieved` date. Exit 1 when nothing resolves. |
 | `jot`, `recall` | Write to and read from pad. |
-| `clean` | Lists sessions with sizes; removes one or `--all`, reporting bytes freed. |
+| `clean` | Lists sessions with sizes and projects (`--project NAME` keeps one project's); removes one or `--all`, reporting bytes freed. |
 
 Commands print one JSON document on stdout; `signal:` lines on stderr
 advisory. Exit 0 done, 1 fix input and resend, 2 upstream failure worth

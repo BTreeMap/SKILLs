@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from btm_corekit import CommandError, Model, SessionStore
+from btm_corekit import CommandError, Link, Model, SessionStore, Tagged
 
 
 @pytest.fixture
@@ -95,3 +95,43 @@ class TestCreateAndMeta:
         assert store.directory("sea") == store.root() / "deep-sea-abc123"
         with pytest.raises(CommandError, match="run init first"):
             store.directory("absent")
+
+
+class Meta(Tagged):
+    name: str = ""
+
+
+class TestProjectAndLinks:
+    def tagged(self, store: SessionStore, name: str, project: str | None) -> None:
+        store.write_meta(store.root() / name, Meta(project=project))
+
+    def test_the_listing_names_each_project_and_filters_by_one(self, store):
+        self.tagged(store, "a-1", "ste-tax")
+        self.tagged(store, "b-2", None)
+        listing = store.clean(None, remove_all=False)
+        assert [(r["session"], r["project"]) for r in listing["sessions"]] == [
+            ("a-1", "ste-tax"),
+            ("b-2", None),
+        ]
+        only = store.clean(None, remove_all=False, project="ste-tax")
+        assert [r["session"] for r in only["sessions"]] == ["a-1"]
+
+    def test_an_unreadable_meta_lists_without_a_project(self, store, capsys):
+        make_session(store, "c-3")
+        (store.root() / "c-3" / "meta.json").write_text("{", encoding="utf-8")
+        listing = store.clean(None, remove_all=False)
+        assert listing["sessions"][0]["project"] is None
+        assert "without its project" in capsys.readouterr().err
+
+    def test_a_project_filter_never_reaches_a_removal(self, store):
+        self.tagged(store, "a-1", "ste-tax")
+        with pytest.raises(CommandError, match="filters the listing"):
+            store.clean("a-1", remove_all=False, project="ste-tax")
+        assert store.ids() == ["a-1"]
+
+    def test_relinking_a_skill_replaces_its_link(self):
+        first = Link(skill="lit-review", session="a", path="/a")
+        other = Link(skill="ponder", session="p", path="/p")
+        second = Link(skill="lit-review", session="b", path="/b")
+        meta = Meta().with_link(first).with_link(other).with_link(second)
+        assert meta.links == (other, second)

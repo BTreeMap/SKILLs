@@ -203,3 +203,23 @@ class TestCite:
         code, document, _ = run(["cite", "2401.00001", "--session", session], capsys)
         assert code == 0
         assert (document["key"], document["title"]) == ("doi:10.1/b", "Later work")
+
+
+class TestProjectAndLinks:
+    def test_link_records_a_link_status_shows_beside_the_project(
+        self, capsys, paper_file, corpus_dir
+    ):
+        code, opened, _ = run(
+            ["init", "ada route", "--date", "2026-03", "--project", "ste-tax"],
+            capsys,
+            stdin='{"title": "AdaRoute"}',
+        )
+        assert code == 0
+        session = opened["session"]
+        run(["link", session, "--corpus", str(corpus_dir)], capsys)
+        run(["link", session, "--corpus", str(corpus_dir)], capsys)
+        _, document, _ = run(["status", session], capsys)
+        assert document["project"] == "ste-tax"
+        assert document["links"] == [
+            {"skill": "lit-review", "session": "lit", "path": str(corpus_dir)}
+        ]
