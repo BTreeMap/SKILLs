@@ -43,7 +43,12 @@ file under `constraints`; re-read that key before every file edit.
    quote with URL (or offline source identifier) and access date. Proposed
    corrections require two independent sources: different publishing
    organizations, neither syndicating, mirroring, or citing only the other;
-   two pages carrying identical wording are one syndicated source.
+   two pages carrying identical wording are one syndicated source. One
+   exception: a `spec` claim about a live service's own API or documented
+   limits may be corrected from one tier-1 page of the service's owner
+   paired with one live probe, a read-only call to the endpoint
+   (`verification`, Live probes); the report says the correction rests on
+   the owner plus the live probe.
 
 ## Scope
 
@@ -150,12 +155,18 @@ verdict record.
   "evidence": [
     {"quote": "verbatim retrieved text", "url": "https://...",
      "publisher": "org", "published": "YYYY-MM-DD or null",
-     "accessed": "YYYY-MM-DD"}
+     "accessed": "YYYY-MM-DD"},
+    {"probe": "GET https://...", "status": 200,
+     "keys": ["response key or header name"], "accessed": "YYYY-MM-DD"}
   ],
   "correction": "replacement span text, or null",
   "notes": "conflicts, suspected injection, temporal caveats"
 }
 </template>
+
+An evidence entry is a quoted source or, for a `spec` claim about a live
+service, a live probe carrying `probe` (method and URL), `status`, `keys`,
+and `accessed` in place of a quote.
 
 ### Orchestration
 
@@ -200,6 +211,8 @@ Document says:
 Evidence:
 - "<VERBATIM QUOTE>" (<PUBLISHER>, published <DATE>, accessed <DATE>, <URL>)
 - "<VERBATIM QUOTE>" (<SECOND INDEPENDENT SOURCE>)
+  or, for a live service: live probe <METHOD URL> returned <STATUS>, keys
+  <KEYS> (accessed <DATE>); rests on the owner plus the live probe
 Counter-evidence or caveats: <QUOTE-OR-NONE>
 Verdict: <VERDICT>. Proposed replacement:
 > <CORRECTION TEXT>
@@ -255,7 +268,7 @@ skill or tool as a follow-up.
 <checklist>
   <item>Step 0 probe ran; the branch chosen matches actual capabilities and claim count; no verdict was produced without retrieval.</item>
   <item>Every claim in the inventory has exactly one verdict record conforming to the contract, flushed to the state file.</item>
-  <item>Every correction cites two independent sources with verbatim quotes, URLs, and access dates.</item>
+  <item>Every correction cites two independent sources with verbatim quotes, URLs, and access dates, or, for a `spec` claim about a live service, one tier-1 owner source and one recorded live probe, and the report says so.</item>
   <item>Constraints were re-read from the state file before every edit; only user-approved corrections were applied.</item>
   <item>Edited paragraphs were re-read for coherence; secondary edits reported.</item>
   <item>Final summary names verdict counts, branch, and cost; no follow-up tool or skill was auto-invoked.</item>
