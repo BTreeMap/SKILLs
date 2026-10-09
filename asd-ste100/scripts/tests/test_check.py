@@ -140,9 +140,9 @@ class TestFindings:
         (f,) = run("Remove the pump. Install the pump.")["findings"]
         assert f["sentences"] == [0, 1]
 
-    def test_an_ing_form_names_its_verb(self, run):
+    def test_an_ing_word_outside_the_approved_few(self, run):
         (f,) = run("Do the installing.")["findings"]
-        assert (f["rule"], f["verb"]) == ("3.5", "install")
+        assert (f["rule"], f["type"]) == ("3.5", "ing_form")
 
     def test_an_approved_ing_word_passes(self, run):
         assert run("Remove the opening.")["ok"]
@@ -182,11 +182,6 @@ class TestFindings:
         assert (f["alternatives"], f["help"]) == ([], "Use a different construction.")
         assert "next" not in f
 
-    def test_a_re_word_points_to_the_prefix_help(self, run):
-        report = run("Reinstall the test. Re-remove the test.")
-        assert [f.get("headword") for f in report["findings"]] == ["re-", "re-"]
-        assert "AGAIN" in report["findings"][0]["help"]
-
     def test_alternatives_are_listed_once(self, run):
         (f,) = run("Return the test.")["findings"]
         assert f["alternatives"] == ["do (v)"]
@@ -209,31 +204,9 @@ class TestFindings:
 class TestPhrases:
     """Rule 1.1 for unapproved headwords of more than one word."""
 
-    def test_a_phrasal_verb_of_approved_words_is_a_signal(self, run):
-        """TURN (v) and OFF (adv) pass alone, so the words can be the verb and
-        a particle used apart: 'turn on the sleeves'."""
-        report = run("Turn off the test.")
-        assert report["ok"]
-        (s,) = [s for s in report["signals"] if s["type"] == "phrasal_verb"]
-        assert (s["token"], s["headword"], s["alternatives"]) == (
-            "Turn off",
-            "turn off",
-            ["set to off"],
-        )
-
     def test_an_inflected_phrasal_verb_names_its_headword(self, run):
-        report = run("Then the test turned off.", accept="then")
-        (s,) = [s for s in report["signals"] if s["type"] == "phrasal_verb"]
-        assert (s["token"], s["headword"]) == ("turned off", "turn off")
-
-    def test_a_declared_word_passes_alone_in_a_phrasal_verb(self, run):
-        """'the test switch off the opening': SWITCH is a declared technical
-        noun, and the words read as SWITCH (TN) and OFF."""
-        text = "Remove the test switch off the opening."
-        assert not run(text)["ok"]
-        report = run(text, accept="switch")
-        assert report["ok"]
-        assert "phrasal_verb" in types(report, "signals")
+        (f,) = run("Then the test turned off.", accept="then")["findings"]
+        assert (f["token"], f["headword"]) == ("turned off", "turn off")
 
     def test_a_phrasal_verb_with_a_word_that_fails_alone_is_a_finding(self, run):
         """AWAY is approved only in AWAY FROM, so 'get away' stays a finding."""
@@ -254,12 +227,6 @@ class TestPhrases:
         (f,) = run("The test is no longer fast.")["findings"]
         assert (f["token"], f["alternatives"]) == ("no longer", ["not (adv)"])
 
-    def test_a_phrase_after_an_article_is_a_noun_phrase(self, run):
-        """'the rear of the unit' uses REAR (n), not rear of (prep)."""
-        assert run("Remove the rear of the test.")["ok"]
-        (f,) = run("Install the test rear of the opening.")["findings"]
-        assert f["token"] == "rear of"
-
     def test_a_phrase_that_overlaps_an_approved_one_is_found(self, run):
         """'Get away from': get away starts first; away from is approved."""
         report = run("Get away from the test.")
@@ -276,10 +243,6 @@ class TestAcceptList:
         accept = "# technical nouns\npump\nfuel line\n"
         assert run("Remove the pump. Remove the pumps.", accept=accept)["ok"]
         assert run("Remove the fuel line.", accept=accept)["ok"]
-
-    def test_a_hyphenated_word_of_declared_and_approved_parts(self, run):
-        assert run("Remove the one-pump test.", accept="pump\n")["ok"]
-        assert not run("Remove the one-pump test.")["ok"]
 
     def test_a_declared_noun_passes_as_a_possessive(self, run):
         assert run("Remove the pump's test.", accept="pump\n")["ok"]
@@ -362,9 +325,6 @@ class TestSignals:
     def test_a_second_instruction_after_and(self, run):
         report = run("Remove it and install it.")
         assert "second_instruction" in types(report, "signals")
-
-    def test_a_sentence_that_opens_with_then_has_one_instruction(self, run):
-        assert "second_instruction" not in types(run("Then remove it."), "signals")
 
 
 class TestLimits:

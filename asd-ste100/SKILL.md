@@ -79,7 +79,7 @@ $R clean
   word, and the report shows it in a `quotation` signal.
 * `--accept:file PATH` is optional. It gives your technical nouns and
   technical verbs, one term on each line. A comment starts with `#`. The
-  checker accepts a one-word term and the regular plural of a noun. It
+  checker accepts a term of one word and the regular plural of a noun. It
   accepts a term of two or more words only when all its words are together.
   It does not accept one of these words without the other words.
 * `--mode procedure` (the default) sets the sentence limit for procedures,
@@ -149,7 +149,7 @@ $R clean
     it, and the `alternatives` for a headword that is not approved. For a
     form of that headword, it also gives the `headword`. If the
     specification gives an instruction for the headword, `help` shows it.
-    For a word with "re-", read `help`.
+    For a word that starts with "re", use `find re-`.
   * For a `not_approved` word that is not in the dictionary, `alternatives`
     is empty, and `next` gives an instruction. Write the sentence with
     approved words. If the word is a technical noun or a technical verb,
@@ -157,8 +157,9 @@ $R clean
   * The report gives one `not_approved` item for each different word, not
     for each time the word occurs. A headword of two or more words, for
     example "carry out" or "a few", is one item. Its `token` shows the words
-    of the text.
-  * `ing_form` gives the verb of the -ing word.
+    of the text. The same words can be a verb and a preposition, for example
+    in "turn on the sleeves". If the words are not the verb, keep them.
+  * `ing_form` gives a word that ends in -ing and is not approved.
   * `contraction` gives the word. `punctuation` gives the mark, which is a
     semicolon.
 * Each item in `signals` is a possible error. Examine each signal, and
@@ -171,11 +172,6 @@ $R clean
     comes before it. A number word, for example "zero", is a technical noun.
     If it is also a word that is not approved in a different part of speech,
     this signal shows it.
-  * `phrasal_verb` shows a verb of two or more words that is not approved,
-    for example "turn off", if each of its words is an approved word. The
-    same words can be a verb and a preposition, for example in "turn on the
-    sleeves". It gives the `headword` and the alternatives. If the words are
-    the verb, replace them.
   * `abbreviation` shows a word in capital letters that the checker accepted
     as a label.
   * `quotation` shows text in quotation marks, which the checker accepts as

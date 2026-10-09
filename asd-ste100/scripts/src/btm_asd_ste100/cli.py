@@ -63,7 +63,7 @@ ACCEPT = Optional("accept", inline=False)
 UNCHANGED = "nothing: check writes no state"
 # The shape of the check and find documents; a change to a field that
 # SKILL.md names raises it.
-REPORT_SCHEMA = 2
+REPORT_SCHEMA = 3
 
 
 def cmd_get(args: argparse.Namespace) -> int:

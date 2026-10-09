@@ -78,7 +78,7 @@ class TestCheckJsonl:
         ]
         code, doc, _ = run(["check", "--jsonl", "--text", "\n".join(lines)], capsys)
         assert code == 0 and built == [1] and doc["version"] == "v0.1.2"
-        assert (doc["schema_version"], doc["data"]) == (2, None)
+        assert (doc["schema_version"], doc["data"]) == (3, None)
         assert (doc["ok"], doc["texts"], doc["accepted"]) == (False, 2, 0)
         first, second = doc["reports"]
         assert (first["line"], first["id"], first["ok"]) == (1, "a", True)
@@ -235,8 +235,8 @@ class TestLocalData:
             _, cached, _ = run(argv, capsys)
             _, read, _ = run([*argv, "--data", str(local)], capsys)
             assert list(cached) == list(read), "same keys in the same order"
-            assert (cached["schema_version"], cached["data"]) == (2, None)
-            assert (read["schema_version"], read["version"]) == (2, None)
+            assert (cached["schema_version"], cached["data"]) == (3, None)
+            assert (read["schema_version"], read["version"]) == (3, None)
 
     def test_a_file_off_its_digest_is_exit_one_and_kept(self, local, capsys):
         lexicon = local / "lexicon.json"

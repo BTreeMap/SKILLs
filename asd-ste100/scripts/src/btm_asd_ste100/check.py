@@ -1,17 +1,17 @@
 """The checker: text in, one report out. Pure; the shell supplies the
 lexicon, the rules, and the accept list.
 
-Decidable findings: sentence over the word limit (5.1 or 6.3; a note in a
+Advisory: code does lookup and counting, the agent judges grammar and
+meaning. Findings: sentence over the word limit (5.1 or 6.3; a note in a
 procedure 25, under 5.1), paragraph over the sentence limit (6.6), a word
-not approved and not accepted (1.1), an -ing form outside the approved few
-(3.5), a contraction (4.2), a semicolon (8.1). Signals, never findings:
-passive voice candidates (3.6), a second instruction in one sentence
-(5.2), an approved word that is also an unapproved headword (1.2), an
-unapproved phrasal verb whose every word passes alone (1.1), an all-caps
-token passed as an abbreviation. Number words pass as technical
-nouns (1.5, category 9), signaled when also an unapproved headword (zero
-(v)), and quoted text (1.5, category 10) is signaled, not checked. Every
-finding and signal names its source line.
+or hyphenated whole not approved and not accepted (1.1), one ending in -ing
+outside the approved few (3.5), a contraction (4.2), a semicolon (8.1).
+Signals: passive voice candidates (3.6), a second instruction in one
+sentence (5.2), an approved word that is also an unapproved headword
+(1.2), an all-caps token passed as an abbreviation. Number words pass as
+technical nouns (1.5, category 9), signaled when also an unapproved
+headword (zero (v)), and quoted text (1.5, category 10) is signaled, not
+checked. Every finding and signal names its source line.
 
 Cost: n tokens. Splitting and tokenizing are compiled patterns with one
 class per quantifier, linear in characters and run in C; every lookup is
@@ -189,20 +189,15 @@ NUMBERS = frozenset(
     ]
 )
 TECHNICAL_NOUN = "tn"  # the part of speech rule 1.5 gives a number word
-PARTICLE_POS = frozenset(["prep", "adv"])  # what may close a phrasal verb
-ARTICLES = frozenset(["a", "an", "the"])
 BE_FORMS = frozenset(["am", "is", "are", "was", "were", "be", "been", "being"])
 CONTRACTED = ("n't", "'re", "'ve", "'ll", "'d", "'m")
 S_CONTRACTIONS = frozenset(
     f"{w}'s" for w in ("it", "that", "there", "here", "what", "let", "who")
 )
 POSSESSIVE = "'s"
-ING_MIN = 5  # shorter words ending in -ing (bring, sing) are not -ing forms
-DOUBLED = 3  # a stem this long may end in a doubled consonant (running)
-PARTICIPLE_MIN = 5  # shorter words ending in -ed (bed, red) are not participles
+DOUBLED = 3  # a stem this long may end in a doubled consonant (planned)
 PASSIVE_REACH = 2  # tokens between a form of BE and its participle, at most
 CONTEXTS = 8  # distinct contexts a part-of-speech signal shows, at most
-REPREFIX = "re-"  # the spec's prefix entry: use AGAIN or BACK instead
 
 
 @dataclass(frozen=True, slots=True)
@@ -268,7 +263,6 @@ class Vocabulary:
     unapproved_phrases: Phrases  # headwords of two or more words
     verbs: frozenset[str]  # base form of every verb headword, approved or not
     participles: frozenset[str]
-    particles: frozenset[str]  # one-word forms approved as a preposition or adverb
 
 
 def longest_first(table: dict[str, set[tuple[str, ...]]]) -> Phrases:
@@ -282,7 +276,6 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
     multi: dict[str, set[tuple[str, ...]]] = {}
     verbs: set[str] = set()
     participles: set[str] = set()
-    particles: set[str] = set()
     for a in lexicon.approved:
         for form in [*a.forms, *([a.plural] if a.plural else [])]:
             if "..." in form or "…" in form:
@@ -293,8 +286,6 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
             else:
                 approved.add(form)
                 pos_of.setdefault(form, set()).add(a.pos or "")
-                if a.pos in PARTICLE_POS:
-                    particles.add(form)
         if a.pos == "v":
             verbs.add(a.word)
             participles.update(f for f in a.forms[2:] if " " not in f)
@@ -321,7 +312,6 @@ def vocabulary(lexicon: Lexicon) -> Vocabulary:
         unapproved_phrases=longest_first(bad_multi),
         verbs=frozenset(verbs),
         participles=frozenset(participles),
-        particles=frozenset(particles),
     )
 
 
@@ -465,7 +455,7 @@ def check(
     for item in (*report.findings, *report.signals):
         locate(item, report.lines)
     skipped = [
-        "meaning (1.3) and part of speech (1.2) are not decided; read the signals",
+        "meaning (1.3), part of speech (1.2), and grammar are not decided",
         "technical nouns and technical verbs pass only when --accept declares them",
         "text in parentheses counts as one word, not as a sentence of its own",
         "an inline code span counts as one word and its words are not checked",
@@ -590,13 +580,9 @@ def scan(sent: str, index: int, ctx: Context, report: Report) -> None:
         base = tok.removesuffix(POSSESSIVE)
         if base in ctx.accepted.words:
             continue
-        if headword_compound(base, ctx.vocab):
-            unknown(orig, base, index, ctx.vocab, report)
-        elif approved(base, ctx.vocab):
+        if base in ctx.vocab.approved:
             before = tokens[i - 1] if i else ""
             pos_signal(base, (index, f"{before} {orig}".strip()), ctx.vocab, report)
-        elif compound(base, ctx):
-            continue
         elif not shouting and orig.isupper() and len(orig) > 1:
             per_word(report, "abbreviation", orig, index, {
                 "token": orig,
@@ -617,9 +603,8 @@ def phrase_findings(
     report: Report,
 ) -> set[int]:
     """Report each unapproved multi-word headword in one sentence; return
-    the token indices it covers. A phrasal verb whose words all pass alone
-    is only a signal and covers nothing: "turn on the sleeves" is TURN (v)
-    and ON (prep). `words` is the tokens as written and in lowercase."""
+    the token indices it covers. "turn on the sleeves" is found as "turn
+    on": the agent judges. `words` is the tokens as written and in lowercase."""
     originals, tokens = words
     vocab = ctx.vocab
     covers: set[int] = set()
@@ -627,15 +612,6 @@ def phrase_findings(
         tokens, inside, vocab.unapproved_phrases
     ).items():
         shown = " ".join(originals[start : start + length])
-        if phrasal(key, tokens[start : start + length], ctx):
-            hints = vocab.unapproved[key]
-            per_word(report, "phrasal_verb", key, index, {
-                "rule": "1.1", "token": shown, "headword": key,
-                "alternatives": unique(a for h in hints for a in h.alternatives),
-                "evidence": "each word is approved alone; a verb and a "
-                "preposition can have the same spelling",
-            })  # fmt: skip
-            continue
         unknown(shown, key, index, vocab, report)
         if shown.lower() != key:
             report.words[key].setdefault("headword", key)
@@ -643,34 +619,18 @@ def phrase_findings(
     return covers
 
 
-def phrasal(key: str, words: list[str], ctx: Context) -> bool:
-    """An unapproved verb headword that ends in a particle, each word of
-    which is approved or declared alone; without parts of speech the
-    checker cannot tell the phrasal verb from the words used apart."""
-    hints = ctx.vocab.unapproved.get(key, ())
-    return (
-        bool(hints)
-        and all(h.pos == "v" for h in hints)
-        and words[-1] in ctx.vocab.particles
-        and all(approved(w, ctx.vocab) or w in ctx.accepted.words for w in words)
-    )
-
-
 def bad_phrases(
     tokens: list[str], inside: set[int], table: Phrases
 ) -> dict[int, tuple[str, int]]:
     """Start index -> (headword, length) of each unapproved multi-word
     headword. The first word may carry a regular ending: "turned off" is
-    "turn off". No match starts inside an approved or accepted term, or
-    after an article: "the rear of the unit" uses the noun REAR."""
+    "turn off". No match starts inside an approved or accepted term."""
     out: dict[int, tuple[str, int]] = {}
     i = 0
     while i < len(tokens):
         hit = None
-        if i not in inside and (i == 0 or tokens[i - 1] not in ARTICLES):
-            firsts = dict.fromkeys(
-                (tokens[i], *stems(tokens[i]), *ing_stems(tokens[i]))
-            )
+        if i not in inside:
+            firsts = dict.fromkeys((tokens[i], *stems(tokens[i])))
             hit = next(
                 (
                     p
@@ -688,15 +648,6 @@ def bad_phrases(
     return out
 
 
-def ing_stems(tok: str) -> tuple[str, ...]:
-    """Candidate bases of an -ing token, without the verb list."""
-    if len(tok) < ING_MIN or not tok.endswith("ing"):
-        return ()
-    stem = tok[:-3]
-    undoubled = (stem[:-1],) if len(stem) >= DOUBLED and stem[-1] == stem[-2] else ()
-    return (stem, stem + "e", *undoubled)
-
-
 def cited(item: dict[str, Any], index: int) -> None:
     """Add a sentence to an item's list once."""
     if item["sentences"][-1] != index:
@@ -712,39 +663,6 @@ def per_word(
         cited(seen, index)
     else:
         report.per_word[(type_, key)] = {"type": type_, **body, "sentences": [index]}
-
-
-def approved(tok: str, vocab: Vocabulary) -> bool:
-    """A form of an approved word; a hyphenated word passes when the whole
-    is approved or every part is."""
-    if tok in vocab.approved:
-        return True
-    parts = tok.split("-")
-    return len(parts) > 1 and all(p in vocab.approved for p in parts)
-
-
-def headword_compound(tok: str, vocab: Vocabulary) -> bool:
-    """A hyphenated unapproved headword (air-dry): checked before its parts
-    can pass as a compound of approved or declared words."""
-    return "-" in tok and tok in vocab.unapproved and tok not in vocab.approved
-
-
-def compound(tok: str, ctx: Context) -> bool:
-    """A hyphenated word whose every part is approved, declared, or a
-    number (rule 8.2: words that belong together)."""
-    parts = tok.split("-")
-    return len(parts) > 1 and all(
-        p in ctx.vocab.approved
-        or p in ctx.accepted.words
-        or p in NUMBERS
-        or bool(DIGIT.search(p))
-        for p in parts
-    )
-
-
-def ing_base(tok: str, vocab: Vocabulary) -> str | None:
-    """The verb headword an -ing token inflects, if any."""
-    return next((b for b in ing_stems(tok) if b in vocab.verbs), None)
 
 
 def stems(tok: str) -> tuple[str, ...]:
@@ -771,21 +689,18 @@ def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) 
         cited(seen, index)
         return
     hints = vocab.unapproved.get(tok, ())
-    verb = None if hints else ing_base(tok, vocab)
+    ing = not hints and tok.endswith("ing")
     base = None
-    if not hints and not verb:
+    if not hints and not ing:
         base = next((b for b in stems(tok) if b in vocab.unapproved), None)
-        base = base or prefixed(tok, vocab)
         hints = vocab.unapproved.get(base, ()) if base else ()
     entry: dict[str, Any] = {
-        "rule": "3.5" if verb else "1.1",
-        "type": "ing_form" if verb else "not_approved",
+        "rule": "3.5" if ing else "1.1",
+        "type": "ing_form" if ing else "not_approved",
         "token": orig,
         "sentences": [index],
         "alternatives": unique(a for h in hints for a in h.alternatives),
     }
-    if verb:
-        entry["verb"] = verb
     if base:
         entry["headword"] = base
     notes = [h.note for h in hints if h.note]
@@ -794,20 +709,11 @@ def unknown(orig: str, tok: str, index: int, vocab: Vocabulary, report: Report) 
     helps = unique(h.help for h in hints if h.help)
     if helps:
         entry["help"] = " ".join(helps)
-    if not hints and not verb:
+    if not hints and not ing:
         entry["next"] = (
             "not in the dictionary: rephrase, or declare it as a technical term"
         )
     report.words[tok] = entry
-
-
-def prefixed(tok: str, vocab: Vocabulary) -> str | None:
-    """The `re-` prefix entry for a word built on it (re-bind, rerun), when
-    the lexicon has one; its help names what to write instead."""
-    if not tok.startswith("re") or REPREFIX not in vocab.unapproved:
-        return None
-    rest = tok.removeprefix(REPREFIX) if tok.startswith(REPREFIX) else tok[2:]
-    return REPREFIX if rest in vocab.verbs else None
 
 
 def unique(items: Iterable[str]) -> list[str]:
@@ -855,9 +761,7 @@ def passive(tokens: list[str], index: int, vocab: Vocabulary, report: Report) ->
             continue
         for j in range(i + 1, min(i + 1 + PASSIVE_REACH, len(tokens))):
             nxt = tokens[j]
-            if nxt in vocab.participles or (
-                nxt.endswith("ed") and len(nxt) >= PARTICIPLE_MIN
-            ):
+            if nxt in vocab.participles or nxt.endswith("ed"):
                 report.signals.append({
                     "rule": "3.6", "type": "passive_candidate", "sentence": index,
                     "evidence": " ".join(tokens[i : j + 1]),
@@ -869,10 +773,10 @@ def passive(tokens: list[str], index: int, vocab: Vocabulary, report: Report) ->
 def instructions(
     tokens: list[str], index: int, vocab: Vocabulary, report: Report
 ) -> None:
-    """An approved verb right after 'and' or 'then' may open a second
-    instruction (rule 5.2); a sentence that opens with 'then' has one."""
-    for tok, nxt in pairwise(tokens[1:] if tokens[:1] == ["then"] else tokens):
-        if tok in ("and", "then") and nxt in vocab.verbs and nxt in vocab.approved:
+    """A verb headword right after 'and' or 'then' may open a second
+    instruction (rule 5.2)."""
+    for tok, nxt in pairwise(tokens):
+        if tok in ("and", "then") and nxt in vocab.verbs:
             report.signals.append({
                 "rule": "5.2", "type": "second_instruction", "sentence": index,
                 "evidence": f"{tok} {nxt}",
