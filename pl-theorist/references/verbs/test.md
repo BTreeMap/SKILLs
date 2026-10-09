@@ -21,6 +21,16 @@ the implementation implicitly relies on. Typical harvest:
 | Cache/index/memo | Coherence: cached answer equals recomputed answer |
 | Optimized structure (heap, index, automaton) | Equivalence against the naive $O(n^2)$ oracle on small inputs |
 
+When the tests accompany a refactor that changes the API (renamed functions,
+new types, changed signatures), audit the laws on the pre-refactor code
+before the suite exists. Write each law against the old API in a throwaway
+script outside the test tree, run it on the old code, record which laws
+held, then delete the script and write the suite against the new API.
+Running the new suite on the old code instead mixes two kinds of failure: a
+name or signature error (`ImportError`, `AttributeError`, a wrong-arity
+`TypeError`) is an API difference; only a failed assertion is a law failure.
+Report the two apart.
+
 ### 2. Choose the harness
 
 Use the repository's existing test framework and directory conventions. Use
@@ -68,4 +78,5 @@ Deliver the tests, then report:
   <item>Optimized structures are checked against a naive oracle or operation count.</item>
   <item>Tests use the repository's existing frameworks and conventions.</item>
   <item>Failing law tests are reported as code findings and kept as written.</item>
+  <item>Where a refactor changed the API, the laws were audited on the old code first, and API errors were reported apart from law failures.</item>
 </checklist>
