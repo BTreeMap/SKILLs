@@ -133,8 +133,8 @@ non-experts in the opening, impress experts in the body.
 
 Organize by approach or problem facet, not by paper. Per thread: what it
 does, what it cannot do that motivates this work, with citations. End with
-an explicit novelty paragraph naming what differs and the closest prior
-art. Write it so the closest competitor recognizes itself.
+an explicit novelty paragraph naming what differs and the closest prior art.
+Write it so the closest competitor recognizes itself.
 
 ### Method
 

@@ -3,8 +3,8 @@
 Fill this in during `design` (pipeline stage 1) and revisit it in the
 best-paper lens (stage 7). It carries no total, no kill threshold, and no
 award-probability estimate; direct causal evidence on what wins awards is
-too sparse to support any of them (evidence section 6). Never quote an
-award probability.
+too sparse to support any of them (evidence section 6). Never quote an award
+probability.
 
 ## Threshold dimensions: must hold before anything else
 

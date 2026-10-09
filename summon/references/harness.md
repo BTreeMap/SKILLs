@@ -1,7 +1,7 @@
 # Harness and reach
 
-"Not documented" means the vendor documentation surveyed does not state
-it: probe it, never assume it.
+"Not documented" means the vendor documentation surveyed does not state it:
+probe it, never assume it.
 
 ## Inheritance
 
