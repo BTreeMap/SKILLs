@@ -147,6 +147,10 @@ $R clean
     form of that headword, it also gives the `headword`. If the
     specification gives an instruction for the headword, `help` shows it.
     For a word with "re-", read `help`.
+  * For a `not_approved` word that is not in the dictionary, `alternatives`
+    is empty, and `next` gives an instruction. Write the sentence with
+    approved words. If the word is a technical noun or a technical verb,
+    write it in the allow file.
   * The report gives one `not_approved` item for each different word, not
     for each time the word occurs. A headword of two or more words, for
     example "turn off" or "a few", is one item. Its `token` shows the words
