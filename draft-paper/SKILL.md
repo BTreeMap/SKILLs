@@ -280,14 +280,23 @@ A skipped stage is admitted with a signal, but its work is still owed: a
 0. Intake: detect state and verb, confirm the format, and ask for the target
    venue if it is unknown. Run `init`. Study the current CFP per
    `venue-standards`, file the venue brief from its template, and fetch the
-   venue's LaTeX template now.
+   venue's LaTeX template now. If the human has not chosen a venue for a
+   `design` run, init with `--venue undecided`, note a `decision` naming the
+   candidate venues, and skip the CFP study and the template fetch; the
+   award assessment then weighs each candidate's venue family from
+   `venue-standards`, and the `build` run that follows studies the chosen
+   venue's CFP. A `build` run settles the venue before `init`, or takes
+   `--venue none` per invariant 9.
 1. Positioning (`design`; `build` from a shaped idea): sweep the literature
    with `/lit-review`, analyze the gap, argue novelty from retrieved full
    text, state falsifiable claims, and write a pre-registration-style
-   experiment plan. Write the design plan from `design-plan-template`; its
-   award section is filled from `award-assessment`. In a `design` run, note
-   each falsifiable claim as `to-run` before requesting the gate. Gate:
-   `plan`.
+   experiment plan. If a `/lit-review` review of the same question already
+   exists, reuse its corpus as the sweep: note a `decision` naming its
+   session and retrieval date, and sweep with `/lit-review` only the claims
+   its question does not cover. Write the design plan from
+   `design-plan-template`; its award section is filled from
+   `award-assessment`. In a `design` run, note each falsifiable claim as
+   `to-run` before requesting the gate. Gate: `plan`.
 2. Evidence (`build`): note one claim per empirical claim, per the evidence
    ledger above. Gate: `ledger`.
 3. Outline: rank 2-3 framings in the pad; freeze one against the outline
