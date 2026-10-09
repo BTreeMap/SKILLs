@@ -7,7 +7,8 @@ import json
 import httpx
 import pytest
 
-from btm_corekit import CommandError, UpstreamError, openalex
+from btm_corekit import CommandError, UpstreamError, Window, openalex
+from btm_corekit.indexes.work import ByArxiv, ByDoi, ByNative
 
 
 def serving(record: object, status: int = 200) -> httpx.Client:
@@ -140,3 +141,109 @@ class TestQueryHelpers:
             ["6"],
         ]
         assert openalex.batched([], 3) == []
+
+
+def routed(answer) -> tuple[httpx.Client, list[httpx.Request]]:
+    """A client answered per request, keeping every request it saw."""
+    seen: list[httpx.Request] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        status, body = answer(request)
+        return httpx.Response(status, content=json.dumps(body).encode())
+
+    return httpx.Client(transport=httpx.MockTransport(handle)), seen
+
+
+@pytest.fixture
+def keyed(monkeypatch):
+    monkeypatch.setenv("BTM_OPENALEX_KEY", "k-123")
+    monkeypatch.setattr(openalex, "BATCH_PAUSE_SECONDS", 0.0)
+
+
+class TestSearch:
+    def test_the_window_rides_as_a_publication_date_filter(self, keyed):
+        client, seen = routed(
+            lambda request: (200, {"meta": {"count": 9}, "results": [{"id": "W1"}]})
+        )
+        found = openalex.search(client, 10_000, "q", 5, Window(2020, None))
+        assert dict(seen[0].url.params) == {
+            "search": "q",
+            "per-page": "5",
+            "filter": "from_publication_date:2020-01-01",
+            "api_key": "k-123",
+        }
+        assert found.total == 9 and found.works[0].openalex_id == "W1"
+
+    def test_no_window_sends_no_filter(self, keyed):
+        client, seen = routed(lambda request: (200, {}))
+        assert openalex.search(client, 10_000, "q", 5, Window()).works == ()
+        assert "filter" not in seen[0].url.params
+
+
+class TestLookup:
+    @pytest.mark.parametrize(
+        ("ref", "segment"),
+        [
+            (ByNative("W2741809807"), "W2741809807"),
+            (ByDoi("10.1145/3065386"), "doi:10.1145/3065386"),
+            (ByArxiv("1706.03762"), "doi:10.48550/arxiv.1706.03762"),
+        ],
+    )
+    def test_every_ref_renders_as_a_works_path(self, ref, segment):
+        """An arXiv id travels as the DOI arXiv registers, which OpenAlex holds."""
+        assert openalex.render(ref) == segment
+
+    def test_a_work_it_does_not_hold_is_absence(self, keyed):
+        client, _ = routed(lambda request: (404, {}))
+        assert openalex.lookup(client, 10_000, ByDoi("10.9/x")) is None
+
+    def test_a_held_work_crosses(self, keyed):
+        client, seen = routed(lambda request: (200, {"id": "W1", "display_name": "T"}))
+        work = openalex.lookup(client, 10_000, ByDoi("10.1/a"))
+        assert work is not None and work.title == "T"
+        assert seen[0].url.path == "/works/doi:10.1/a"
+
+
+class TestGraph:
+    def test_references_walk_the_seed_then_its_ids_in_batches(self, keyed):
+        """The walk lifted from lit-review: same requests, same order."""
+        cited = [f"https://openalex.org/W{n}" for n in range(60)]
+
+        def answer(request):
+            if request.url.path == "/works/W1":
+                return 200, {"id": "W1", "referenced_works": cited}
+            ids = request.url.params["filter"].removeprefix("openalex_id:")
+            return 200, {"results": [{"id": key} for key in ids.split("|")]}
+
+        client, seen = routed(answer)
+        found = openalex.references(client, 10_000, ByNative("W1"), 55)
+        assert found.total == 60, "every reference the seed lists"
+        assert len(found.works) == 55
+        paths = [request.url.path for request in seen]
+        assert paths == ["/works/W1", "/works", "/works"]
+        assert seen[1].url.params["per-page"] == "50"
+        assert seen[2].url.params["filter"].count("|") == 4
+
+    def test_references_of_a_work_it_does_not_hold_refuse(self, keyed):
+        client, _ = routed(lambda request: (404, {}))
+        with pytest.raises(CommandError, match="holds no work"):
+            openalex.references(client, 10_000, ByDoi("10.9/x"), 5)
+
+    def test_citations_of_a_native_seed_are_one_request(self, keyed):
+        client, seen = routed(lambda request: (200, {"meta": {"count": 3}}))
+        found = openalex.citations(client, 10_000, ByNative("W1"), 7)
+        assert found.total == 3
+        assert len(seen) == 1
+        assert seen[0].url.params["filter"] == "cites:W1"
+        assert seen[0].url.params["per-page"] == "7"
+
+    def test_citations_of_a_doi_seed_resolve_its_id_first(self, keyed):
+        def answer(request):
+            if request.url.path.startswith("/works/doi:"):
+                return 200, {"id": "https://openalex.org/W9"}
+            return 200, {"meta": {"count": 0}}
+
+        client, seen = routed(answer)
+        openalex.citations(client, 10_000, ByDoi("10.1/a"), 7)
+        assert seen[1].url.params["filter"] == "cites:W9"

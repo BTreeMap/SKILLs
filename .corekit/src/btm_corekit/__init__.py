@@ -4,7 +4,9 @@ copied out of its workspace fails loudly at environment build.
 
 An index is the exception, and imports as a module: `openalex.page` and
 `crossref.page` are two calls that mean different things, and flattening
-them would leave two names to invent."""
+them would leave two names to invent. A member reaching an index by name
+goes through `INDEXES` and the registry's `search`, `references`, and
+`citations` instead, and never touches the module."""
 
 from __future__ import annotations
 
@@ -31,9 +33,12 @@ from btm_corekit.cli import (
     wire_view,
 )
 from btm_corekit.indexes import arxiv, crossref, doi, openalex
+from btm_corekit.indexes.registry import INDEXES, citations, references, search
 from btm_corekit.indexes.work import (
+    ByNative,
     MaybeArxivId,
     MaybeDoi,
+    Window,
     Work,
     collapsed,
     normalize_arxiv_id,
@@ -110,6 +115,7 @@ __all__ = [
     "ASCII_WORD",
     "BATCH",
     "CLUSTER_CAP",
+    "INDEXES",
     "JSON",
     "LIT_REVIEW_CORPUS",
     "LIT_REVIEW_SESSIONS",
@@ -118,6 +124,7 @@ __all__ = [
     "PAD_SCHEMA",
     "REFS_SCHEMA",
     "Admission",
+    "ByNative",
     "CommandError",
     "Commands",
     "Count",
@@ -142,6 +149,7 @@ __all__ = [
     "Upstream",
     "UpstreamError",
     "View",
+    "Window",
     "Work",
     "add_slot",
     "append_jsonl",
@@ -151,6 +159,7 @@ __all__ = [
     "bracketed",
     "build_client",
     "cache_slot",
+    "citations",
     "clean_cache",
     "client_for",
     "collapse_whitespace",
@@ -184,6 +193,7 @@ __all__ = [
     "parse_with",
     "prefixed_number",
     "read_jsonl",
+    "references",
     "refuse",
     "rejection",
     "remove_tree",
@@ -191,6 +201,7 @@ __all__ = [
     "run_cli",
     "runs",
     "salvage",
+    "search",
     "signal",
     "slugify",
     "state_root",

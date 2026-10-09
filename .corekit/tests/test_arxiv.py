@@ -5,7 +5,8 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from btm_corekit import arxiv
+from btm_corekit import Window, arxiv
+from btm_corekit.indexes.work import ByArxiv, ByDoi, ByNative
 
 FEED = """<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom"
@@ -73,22 +74,6 @@ class TestQuery:
         assert arxiv.fielded('ti:"exact title"') == 'ti:"exact title"'
 
 
-class TestPace:
-    def test_the_first_call_waits_for_nothing(self):
-        pace = arxiv.Pace(interval=10.0)
-        pace.wait()
-
-    def test_a_second_call_waits_out_the_interval(self, monkeypatch):
-        """arXiv's terms ask for one request every three seconds, so the
-        sleep belongs to the caller who owes it rather than to advice."""
-        slept: list[float] = []
-        monkeypatch.setattr("btm_corekit.indexes.arxiv.time.sleep", slept.append)
-        pace = arxiv.Pace(interval=3.0)
-        pace.wait()
-        pace.wait()
-        assert slept and 0 < slept[0] <= 3.0
-
-
 class TestRecord:
     def test_an_entry_crosses_with_what_it_knew(self):
         [entry] = arxiv.parse(FEED.encode()).entries
@@ -104,3 +89,57 @@ class TestRecord:
     def test_a_search_reaches_the_query_endpoint(self):
         feed = arxiv.feed(answering(FEED), 10_000, "things", 1)
         assert feed.total == 412
+
+
+def recording(payload: str) -> tuple[httpx.Client, list[httpx.Request]]:
+    seen: list[httpx.Request] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, content=payload.encode())
+
+    return httpx.Client(transport=httpx.MockTransport(answer)), seen
+
+
+class TestRegistryShape:
+    def test_a_search_sends_the_fielded_query(self):
+        client, seen = recording(FEED)
+        found = arxiv.search(client, 10_000, "things", 4, Window())
+        assert dict(seen[0].url.params) == {
+            "search_query": 'all:"things"',
+            "max_results": "4",
+        }
+        assert found.total == 412 and found.works[0].arxiv_id == "2401.01234"
+
+    def test_a_bare_phrase_matching_nothing_says_how_to_retry(self, capsys):
+        client, _ = recording(BARE)
+        arxiv.search(client, 10_000, "things", 4, Window())
+        assert 'all:"<phrase>"' in capsys.readouterr().err
+
+    def test_a_fielded_query_matching_nothing_is_quiet(self, capsys):
+        client, _ = recording(BARE)
+        arxiv.search(client, 10_000, "ti:things", 4, Window())
+        assert capsys.readouterr().err == ""
+
+    @pytest.mark.parametrize(
+        "ref",
+        [
+            ByArxiv("2401.01234"),
+            ByNative("arXiv:2401.01234v2"),
+            ByDoi("10.48550/arxiv.2401.01234"),
+        ],
+    )
+    def test_every_form_naming_an_arxiv_paper_asks_by_id_list(self, ref):
+        client, seen = recording(FEED)
+        work = arxiv.lookup(client, 10_000, ref)
+        assert seen[0].url.params["id_list"] == "2401.01234"
+        assert work is not None and work.title == "A Study of Things"
+
+    def test_a_journal_doi_is_not_an_arxiv_paper(self):
+        client, seen = recording(FEED)
+        assert arxiv.lookup(client, 10_000, ByDoi("10.1145/3065386")) is None
+        assert seen == []
+
+    def test_an_unknown_id_is_absence(self):
+        client, _ = recording(BARE)
+        assert arxiv.lookup(client, 10_000, ByArxiv("2401.99999")) is None

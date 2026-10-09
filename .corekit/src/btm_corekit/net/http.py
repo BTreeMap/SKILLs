@@ -19,6 +19,7 @@ from btm_corekit.net.origin import user_agent
 from btm_corekit.report.errors import CommandError, UpstreamError
 
 HTTP_BAD_REQUEST = 400
+HTTP_NOT_FOUND = 404
 HTTP_REQUEST_TIMEOUT = 408
 HTTP_CONFLICT = 409
 HTTP_TOO_MANY_REQUESTS = 429
@@ -86,6 +87,7 @@ def stream(  # noqa: PLR0913 - the request, the sink, and the limit are all flat
     cap: int,
     *,
     params: Mapping[str, str] | None = None,
+    headers: Mapping[str, str] | None = None,
     remedy: str = RAISE_THE_CAP,
 ) -> None:
     """Feed the body to `sink` in chunks, refusing past `cap`.
@@ -93,10 +95,12 @@ def stream(  # noqa: PLR0913 - the request, the sink, and the limit are all flat
     The cap is what keeps a slow drip from growing without bound inside the
     per-read timeout. Exceeding it is the caller's limit, not the server's
     fault, so it asks for a bigger cap rather than a retry. A caller that
-    exposes the cap as a flag passes `remedy` to name it.
+    exposes the cap as a flag passes `remedy` to name it. `headers` joins the
+    client's own for this request alone, so a per-service credential needs no
+    second client.
     """
     try:
-        with client.stream("GET", url, params=params) as response:
+        with client.stream("GET", url, params=params, headers=headers) as response:
             if response.status_code >= HTTP_BAD_REQUEST:
                 raise status_failure(response.status_code, str(response.url))
             written = 0
@@ -114,10 +118,11 @@ def get_bytes(
     url: str,
     cap: int,
     params: Mapping[str, str] | None = None,
+    headers: Mapping[str, str] | None = None,
 ) -> bytes:
     """The whole body, under the cap."""
     chunks: list[bytes] = []
-    stream(client, url, chunks.append, cap, params=params)
+    stream(client, url, chunks.append, cap, params=params, headers=headers)
     return b"".join(chunks)
 
 

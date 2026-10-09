@@ -7,7 +7,8 @@ import json
 import httpx
 import pytest
 
-from btm_corekit import UpstreamError, crossref
+from btm_corekit import UpstreamError, Window, crossref
+from btm_corekit.indexes.work import ByArxiv, ByDoi, ByNative
 
 
 def serving(record: object, status: int = 200) -> httpx.Client:
@@ -105,3 +106,32 @@ class TestQueryHelpers:
 
     def test_no_bounds_is_no_filter(self):
         assert crossref.date_filter(None, None) == ""
+
+
+class TestRegistryShape:
+    def test_the_window_rides_as_a_date_filter(self):
+        seen: list[httpx.Request] = []
+
+        def answer(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            body = {"message": {"total-results": 2, "items": [{"DOI": "10.1/a"}]}}
+            return httpx.Response(200, content=json.dumps(body).encode())
+
+        client = httpx.Client(transport=httpx.MockTransport(answer))
+        found = crossref.search(client, 10_000, "q", 3, Window(None, 2024))
+        params = seen[0].url.params
+        assert (params["query"], params["rows"]) == ("q", "3")
+        assert params["filter"] == "until-pub-date:2024-12-31"
+        assert found.total == 2 and found.works[0].doi == "10.1/a"
+
+    @pytest.mark.parametrize("ref", [ByDoi("10.1/a"), ByNative("10.1/a")])
+    def test_a_doi_is_its_native_id(self, ref):
+        work = crossref.lookup(serving({"message": {"DOI": "10.1/a"}}), 10_000, ref)
+        assert work is not None and work.doi == "10.1/a"
+
+    def test_an_arxiv_id_is_never_held_and_costs_no_request(self):
+        def refuse(request: httpx.Request) -> httpx.Response:
+            raise AssertionError("a request went out")
+
+        client = httpx.Client(transport=httpx.MockTransport(refuse))
+        assert crossref.lookup(client, 10_000, ByArxiv("1706.03762")) is None

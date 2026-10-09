@@ -63,15 +63,17 @@ def decode(model: type[W], body: Any, url: str) -> W:
         ) from err
 
 
-def json_body(
+def json_body(  # noqa: PLR0913 - the request is flat; the credential is keyword-only
     model: type[W],
     client: httpx.Client,
     url: str,
     cap: int,
     params: Mapping[str, str] | None = None,
+    *,
+    headers: Mapping[str, str] | None = None,
 ) -> W:
     """One JSON response, capped, decoded into its wire record."""
-    payload = get_bytes(client, url, cap, params)
+    payload = get_bytes(client, url, cap, params, headers)
     try:
         body = json.loads(payload)
     except json.JSONDecodeError as err:

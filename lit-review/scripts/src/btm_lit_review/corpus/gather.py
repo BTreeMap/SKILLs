@@ -8,10 +8,14 @@ from collections.abc import Mapping
 from typing import Any
 
 from btm_corekit import (
+    INDEXES,
+    ByNative,
     CommandError,
     Model,
     NonEmpty,
+    Window,
     append_jsonl,
+    citations,
     content,
     count_lines,
     emit,
@@ -19,16 +23,12 @@ from btm_corekit import (
     normalize_doi,
     now_iso,
     openalex,
+    references,
     signal,
 )
 from btm_lit_review.constants import MAX_LIMIT, RESPONSE_CAP_BYTES
 from btm_lit_review.corpus.paper import Paper, absorb, paper_aliases, paper_from
-from btm_lit_review.corpus.sources import (
-    fetch_arxiv,
-    fetch_crossref,
-    fetch_openalex,
-    fetch_openalex_by_ids,
-)
+from btm_lit_review.corpus.sources import fetch
 from btm_lit_review.http import client
 from btm_lit_review.session import (
     STORE,
@@ -115,16 +115,8 @@ def cmd_search(args: argparse.Namespace) -> int:
     protocol = load_protocol(session)
     require_criteria(protocol)
     limit = args.limit
-    if args.source == "openalex":
-        fetched, total = fetch_openalex(asked, limit, args.from_year, args.to_year)
-    elif args.source == "arxiv":
-        if args.from_year or args.to_year:
-            signal("arxiv source ignores year bounds; filter after fetching")
-        fetched, total = fetch_arxiv(asked, limit)
-        if total == 0 and ":" not in asked:
-            signal('arXiv matched nothing; retry with field syntax: all:"<phrase>"')
-    else:
-        fetched, total = fetch_crossref(asked, limit, args.from_year, args.to_year)
+    window = Window(args.from_year, args.to_year)
+    fetched, total = fetch(args.source, asked, limit, window)
     entry = {
         "command": "search",
         "source": args.source,
@@ -171,24 +163,17 @@ def cmd_snowball(args: argparse.Namespace) -> int:
     limit = args.limit
     papers = load_papers(session)
     seed_key, work_id = resolve_openalex_id(papers, args.seed)
-    if args.direction == "backward":
-        work = openalex.work(client(), RESPONSE_CAP_BYTES, work_id)
-        referenced = [url.rsplit("/", 1)[-1] for url in work.referenced_works]
-        total = len(referenced)
-        if not referenced:
-            signal(
-                f"OpenAlex lists no references for {seed_key}: upstream metadata "
-                "gap; snowball another seed or read the paper's own reference list"
-            )
-        fetched = fetch_openalex_by_ids(referenced[:limit])
-    else:
-        page = openalex.page(
-            client(),
-            RESPONSE_CAP_BYTES,
-            {"filter": f"cites:{work_id}", "per-page": str(limit)},
+    walk = references if args.direction == "backward" else citations
+    found = walk(
+        INDEXES["openalex"], client(), RESPONSE_CAP_BYTES, ByNative(work_id), limit
+    )
+    total = found.total or 0
+    if args.direction == "backward" and not total:
+        signal(
+            f"OpenAlex lists no references for {seed_key}: upstream metadata "
+            "gap; snowball another seed or read the paper's own reference list"
         )
-        total = page.total or 0
-        fetched = [paper_from(openalex.record(found)) for found in page.results]
+    fetched = list(map(paper_from, found.works))
     entry = {
         "command": "snowball",
         "seed": seed_key,

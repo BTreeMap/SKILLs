@@ -12,6 +12,7 @@ without three decoders remembering the same rule.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Annotated, Any
 
 from pydantic import BeforeValidator
@@ -74,6 +75,9 @@ with any other word is some other site's path."""
 ARXIV_MARKERS = ("arxiv:", "arxiv.")
 """What precedes a bare id in a citation (`arXiv:hep-th/9901001`) and in the
 registered DOI (`10.48550/arXiv.hep-th/9901001`), compared case-folded."""
+
+ARXIV_DOI_PREFIX = "10.48550/arxiv."
+"""The DataCite DOI arXiv registers for every paper, in normalized case."""
 
 EARLIEST_YEAR = 1000
 LATEST_YEAR = 2999
@@ -212,3 +216,69 @@ class Work(Model):
     def names(self) -> str:
         """The title an agent should show, absence included."""
         return self.title or "(untitled)"
+
+
+class Found(Model):
+    """One answer to a search or a graph walk: the works in index order, and
+    the total the index reports, None where it reports none."""
+
+    total: int | None
+    works: tuple[Work, ...]
+
+
+class Passage(Model):
+    """A stretch of a paper's text an index returned for a question; `score`
+    is None where the index ranked nothing."""
+
+    text: str
+    score: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class Window:
+    """Inclusive publication-year bounds; either may be open, and an empty
+    window is falsy so a caller asks `if window` rather than about each end."""
+
+    from_year: int | None = None
+    to_year: int | None = None
+
+    def __bool__(self) -> bool:
+        return self.from_year is not None or self.to_year is not None
+
+
+@dataclass(frozen=True, slots=True)
+class ByNative:
+    """An index's own id for a paper, meaningful only to that index."""
+
+    id: str
+
+    def __post_init__(self) -> None:
+        if not self.id.strip():
+            raise ValueError("a native id is not empty")
+
+
+@dataclass(frozen=True, slots=True)
+class ByDoi:
+    """A DOI already in bare form: parse with `normalize_doi` first."""
+
+    doi: str
+
+    def __post_init__(self) -> None:
+        if normalize_doi(self.doi) != self.doi:
+            raise ValueError(f"not a bare DOI: {self.doi!r}")
+
+
+@dataclass(frozen=True, slots=True)
+class ByArxiv:
+    """An arXiv id already bare: parse with `normalize_arxiv_id` first."""
+
+    id: str
+
+    def __post_init__(self) -> None:
+        if normalize_arxiv_id(self.id) != self.id:
+            raise ValueError(f"not a bare arXiv id: {self.id!r}")
+
+
+Ref = ByNative | ByDoi | ByArxiv
+"""How a caller names one paper to an index: closed, so each index renders
+every form or says which it cannot."""

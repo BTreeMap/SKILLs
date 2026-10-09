@@ -4,11 +4,15 @@ Since 2026-02-13 a call spends credits against a key, and a keyless call
 draws on a small daily allowance before the service answers 409. The
 allowance is worth roughly ten searches, so an agent meets that wall inside
 one session; the refusal names the fix rather than the status.
+
+Every call is one request and linear in the works it decodes, except the
+reference walk: one request for the seed, then one per 50 cited ids, paced.
 """
 
 from __future__ import annotations
 
 import os
+import urllib.parse
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -16,8 +20,19 @@ from functools import cache
 
 import httpx
 
-from btm_corekit.indexes.work import Work, collapsed
-from btm_corekit.net.http import HTTP_CONFLICT
+from btm_corekit.indexes.work import (
+    ARXIV_DOI_PREFIX,
+    ByArxiv,
+    ByDoi,
+    ByNative,
+    Found,
+    Ref,
+    Window,
+    Work,
+    collapsed,
+)
+from btm_corekit.net.http import HTTP_CONFLICT, HTTP_NOT_FOUND
+from btm_corekit.net.pace import Pace
 from btm_corekit.net.wire import Upstream, json_body
 from btm_corekit.report.channels import signal
 from btm_corekit.report.errors import CommandError, UpstreamError
@@ -28,6 +43,9 @@ KEY_ENV = "BTM_OPENALEX_KEY"
 
 ID_BATCH_SIZE = 50
 """Ids per `openalex_id:a|b|c` filter, which the service caps at 50."""
+
+BATCH_PAUSE_SECONDS = 0.2
+"""A courtesy gap between the id pages one reference walk sends."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,3 +253,93 @@ def work(client: httpx.Client, cap: int, ref: str) -> OpenAlexWork:
     """One work by its id or `doi:<doi>` form."""
     with _budget():
         return json_body(OpenAlexWork, client, f"{WORKS}/{ref}", cap, query())
+
+
+def render(ref: Ref) -> str:
+    """The path segment `/works/{segment}` accepts. An arXiv id travels as
+    the DOI arXiv registers for it, which OpenAlex indexes."""
+    match ref:
+        case ByNative(key):
+            return key
+        case ByDoi(doi):
+            return f"doi:{urllib.parse.quote(doi)}"
+        case ByArxiv(arxiv_id):
+            return f"doi:{urllib.parse.quote(ARXIV_DOI_PREFIX + arxiv_id)}"
+
+
+def held(client: httpx.Client, cap: int, ref: Ref) -> OpenAlexWork | None:
+    """The work, or None where OpenAlex answers 404 for it."""
+    try:
+        return work(client, cap, render(ref))
+    except UpstreamError:
+        raise
+    except CommandError as err:
+        if err.status == HTTP_NOT_FOUND:
+            return None
+        raise
+
+
+def _seed(client: httpx.Client, cap: int, ref: Ref) -> OpenAlexWork:
+    seed = held(client, cap, ref)
+    if seed is None:
+        raise CommandError(f"OpenAlex holds no work for {render(ref)}")
+    return seed
+
+
+def crossed(answer: Page) -> Found:
+    return Found(total=answer.total, works=tuple(map(record, answer.results)))
+
+
+def search(
+    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+) -> Found:
+    """One relevance page, the year window as a publication-date filter."""
+    params = {"search": query, "per-page": str(limit)}
+    if bounds := year_filter(window.from_year, window.to_year):
+        params["filter"] = bounds
+    return crossed(page(client, cap, params))
+
+
+def lookup(client: httpx.Client, cap: int, ref: Ref) -> Work | None:
+    seed = held(client, cap, ref)
+    return record(seed) if seed else None
+
+
+def by_ids(client: httpx.Client, cap: int, ids: Sequence[str]) -> tuple[Work, ...]:
+    """Works for bare ids, in batches of `ID_BATCH_SIZE`, paced between pages."""
+    pace = Pace(BATCH_PAUSE_SECONDS)
+    works: list[Work] = []
+    for batch in batched(ids):
+        pace.wait()
+        filtered = page(
+            client,
+            cap,
+            {
+                "filter": "openalex_id:" + "|".join(batch),
+                "per-page": str(ID_BATCH_SIZE),
+            },
+        )
+        works.extend(map(record, filtered.results))
+    return tuple(works)
+
+
+def references(client: httpx.Client, cap: int, ref: Ref, limit: int) -> Found:
+    """The first `limit` works the seed cites; the total is every one it lists."""
+    cited = [url.rsplit("/", 1)[-1] for url in _seed(client, cap, ref).referenced_works]
+    return Found(total=len(cited), works=by_ids(client, cap, cited[:limit]))
+
+
+def citations(client: httpx.Client, cap: int, ref: Ref, limit: int) -> Found:
+    """One page of works citing the seed. The `cites:` filter takes a bare
+    work id, so a DOI or arXiv seed costs one lookup first."""
+    match ref:
+        case ByNative(key):
+            pass
+        case ByDoi() | ByArxiv():
+            seed = _seed(client, cap, ref).key
+            if seed is None:
+                raise UpstreamError(f"OpenAlex answered {render(ref)} with no id")
+            key = seed
+    return crossed(
+        page(client, cap, {"filter": f"cites:{key}", "per-page": str(limit)})
+    )

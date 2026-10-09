@@ -7,6 +7,9 @@ author list are frequently absent where a DOI is not.
 Two endpoints answer under one key. A search puts a list of items under
 `message`; a single DOI puts the item itself there. They are different
 shapes, so they are different records.
+
+Each call is one request, linear in the items it decodes. An arXiv id has no
+Crossref record: arXiv registers its DOIs with DataCite.
 """
 
 from __future__ import annotations
@@ -16,7 +19,18 @@ from collections.abc import Mapping
 import httpx
 from pydantic import Field
 
-from btm_corekit.indexes.work import Work, collapsed
+from btm_corekit.indexes.work import (
+    ByArxiv,
+    ByDoi,
+    ByNative,
+    Ref,
+    Window,
+    Work,
+    collapsed,
+)
+from btm_corekit.indexes.work import (
+    Found as Answer,
+)
 from btm_corekit.net.origin import polite_params
 from btm_corekit.net.wire import Upstream, json_body
 from btm_corekit.report.errors import CommandError, UpstreamError
@@ -141,3 +155,24 @@ def registration(client: httpx.Client, cap: int, doi: str) -> Item | None:
     except CommandError:
         return None
     return body.message
+
+
+def search(
+    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+) -> Answer:
+    """One relevance page, the year window as a publication-date filter."""
+    params = {"query": query, "rows": str(limit)}
+    if bounds := date_filter(window.from_year, window.to_year):
+        params["filter"] = bounds
+    message = page(client, cap, params)
+    return Answer(total=message.total, works=tuple(map(record, message.items)))
+
+
+def lookup(client: httpx.Client, cap: int, ref: Ref) -> Work | None:
+    """A DOI is Crossref's native id; an arXiv id is never held here."""
+    match ref:
+        case ByDoi(doi) | ByNative(doi):
+            item = registration(client, cap, doi)
+        case ByArxiv():
+            return None
+    return record(item) if item else None

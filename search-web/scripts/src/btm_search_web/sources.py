@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import urllib.parse
-from collections.abc import Callable
 
 import httpx
 import trafilatura
@@ -11,15 +10,15 @@ from ddgs import DDGS
 from ddgs.exceptions import DDGSException
 
 from btm_corekit import (
+    INDEXES,
     CommandError,
     UpstreamError,
+    Window,
     Work,
-    arxiv,
     client_for,
-    crossref,
     get_bytes,
     json_body,
-    openalex,
+    search,
 )
 from btm_search_web.constants import (
     APP,
@@ -136,14 +135,14 @@ def wiki(query: str, limit: int) -> list[Result]:
     return found
 
 
-def _hit(work: Work, source: Scholar) -> Result:
+def _hit(work: Work, source: str) -> Result:
     """One crossed index record as a result row. Written once: what differs
     between the indexes is upstream of here."""
     return Result(
         title=trimmed(work.names, TITLE_CHARS),
         url=work.landing_url or "",
         snippet=trimmed(work.abstract),
-        source=source.value,
+        source=source,
         published=work.published,
         doi=work.doi,
         year=work.year,
@@ -151,34 +150,10 @@ def _hit(work: Work, source: Scholar) -> Result:
     )
 
 
-def _openalex(query: str, limit: int) -> list[Result]:
-    page = openalex.page(
-        client(), RESPONSE_CAP_BYTES, {"search": query, "per-page": str(limit)}
-    )
-    return [_hit(openalex.record(work), Scholar.OPENALEX) for work in page.results]
-
-
-def _crossref(query: str, limit: int) -> list[Result]:
-    message = crossref.page(
-        client(), RESPONSE_CAP_BYTES, {"query": query, "rows": str(limit)}
-    )
-    return [_hit(crossref.record(item), Scholar.CROSSREF) for item in message.items]
-
-
-def _arxiv(query: str, limit: int) -> list[Result]:
-    feed = arxiv.feed(client(), RESPONSE_CAP_BYTES, query, limit)
-    return [_hit(arxiv.record(entry), Scholar.ARXIV) for entry in feed.entries]
-
-
-SCHOLARS: dict[Scholar, Callable[[str, int], list[Result]]] = {
-    Scholar.OPENALEX: _openalex,
-    Scholar.CROSSREF: _crossref,
-    Scholar.ARXIV: _arxiv,
-}
-
-
 def scholar(query: str, limit: int, source: Scholar) -> list[Result]:
-    return SCHOLARS[source](query, limit)
+    index = INDEXES[source.value]
+    found = search(index, client(), RESPONSE_CAP_BYTES, query, limit, Window())
+    return [_hit(work, index.name) for work in found.works]
 
 
 def fetch(url: str) -> str:

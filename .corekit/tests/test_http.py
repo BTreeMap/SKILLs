@@ -104,3 +104,21 @@ def test_stream_feeds_the_sink_in_order():
     seen: list[bytes] = []
     stream(answering(status_code=200, content=b"abc"), "https://x", seen.append, 100)
     assert b"".join(seen) == b"abc"
+
+
+def test_a_per_request_header_joins_the_clients_own():
+    """A per-index credential rides on the one shared client."""
+    seen: list[httpx.Request] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, content=b"ok")
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(answer), headers={"User-Agent": "ua"}
+    )
+    get_bytes(client, "https://x", 100, headers={"x-api-key": "k"})
+    get_bytes(client, "https://x", 100)
+    assert seen[0].headers["x-api-key"] == "k"
+    assert seen[0].headers["user-agent"] == "ua"
+    assert "x-api-key" not in seen[1].headers, "the credential is per request"

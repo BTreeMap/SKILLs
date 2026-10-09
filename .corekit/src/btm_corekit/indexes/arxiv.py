@@ -8,19 +8,32 @@ Two facts about the feed are easy to get wrong and silent when wrong. A
 paper's journal reference and its published DOI live in arXiv's own
 namespace, not Atom's, so reading them as Atom yields nothing at all. And
 arXiv ranks a fielded query far better than a bare phrase.
+
+Each call is one paced request, linear in the entries it parses.
 """
 
 from __future__ import annotations
 
-import time
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
 
 import httpx
 
-from btm_corekit.indexes.work import Work, collapsed
+from btm_corekit.indexes.work import (
+    ARXIV_DOI_PREFIX,
+    ByArxiv,
+    ByDoi,
+    ByNative,
+    Found,
+    Ref,
+    Window,
+    Work,
+    collapsed,
+    normalize_arxiv_id,
+)
 from btm_corekit.net.http import get_bytes
+from btm_corekit.net.pace import Pace
 from btm_corekit.records.models import Model
+from btm_corekit.report.channels import signal
 
 QUERY = "https://export.arxiv.org/api/query"
 
@@ -32,27 +45,9 @@ MIN_INTERVAL_SECONDS = 3.0
 """arXiv's terms of use: no more than one request every three seconds from
 one caller, counted across every machine that caller runs."""
 
-
-@dataclass
-class Pace:
-    """The wait arXiv asks for, taken by the caller who owes it.
-
-    An agent that fans out over a reading list would otherwise send a burst
-    and be throttled for it, so the sleep belongs in the one place every
-    request passes rather than in advice to the agent.
-    """
-
-    interval: float
-    last: float = field(default=0.0)
-
-    def wait(self) -> None:
-        remaining = self.interval - (time.monotonic() - self.last)
-        if remaining > 0:
-            time.sleep(remaining)
-        self.last = time.monotonic()
-
-
 PACE = Pace(MIN_INTERVAL_SECONDS)
+"""Every request this process sends arXiv waits here, so a fan-out over a
+reading list cannot burst."""
 
 
 class Entry(Model):
@@ -142,3 +137,43 @@ def feed(client: httpx.Client, cap: int, query: str, limit: int) -> Feed:
         {"search_query": fielded(query), "max_results": str(limit)},
     )
     return parse(payload)
+
+
+def search(
+    client: httpx.Client, cap: int, query: str, limit: int, window: Window
+) -> Found:
+    """One ranked feed. The API has no date filter, so the window is the
+    registry's to disclaim; an empty answer to a bare phrase says how to
+    retry."""
+    answer = feed(client, cap, query, limit)
+    if not answer.total and ":" not in query:
+        signal('arXiv matched nothing; retry with field syntax: all:"<phrase>"')
+    return Found(total=answer.total, works=tuple(map(record, answer.entries)))
+
+
+def _arxiv_id(ref: Ref) -> str | None:
+    """arXiv's native id is the arXiv id; a DOI names a paper here only when
+    it is the one arXiv registered."""
+    parsed: str | None
+    match ref:
+        case ByArxiv(arxiv_id):
+            parsed = arxiv_id
+        case ByNative(raw):
+            parsed = normalize_arxiv_id(raw)
+        case ByDoi(doi):
+            registered = doi.startswith(ARXIV_DOI_PREFIX)
+            parsed = normalize_arxiv_id(doi) if registered else None
+    return parsed
+
+
+def lookup(client: httpx.Client, cap: int, ref: Ref) -> Work | None:
+    """One entry by `id_list`. An unknown id comes back as an error entry
+    whose id is no arXiv id, which reads as absence."""
+    arxiv_id = _arxiv_id(ref)
+    if arxiv_id is None:
+        return None
+    PACE.wait()
+    payload = get_bytes(client, QUERY, cap, {"id_list": arxiv_id, "max_results": "1"})
+    entry = next(iter(parse(payload).entries), None)
+    work = record(entry) if entry else None
+    return work if work and work.arxiv_id else None
