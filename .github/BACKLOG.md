@@ -168,3 +168,22 @@ The lead reads the return before the diff and stops at the first failure:
 
 A return that passes all six is merged as is. A return that fails one is
 sent back with that one line; nothing is fixed on the lead's side.
+
+## 9. In-session agents
+
+When the lead spawns you inside this checkout, sections 1 and 7 change and
+the rest stands:
+
+- Work on `main` directly; do not push. The lead reviews the commit and
+  pushes it. Claim the issue with a comment naming "in-session" and the date
+  instead of a branch.
+- The handback to the lead is the return, in the shape of section 7.
+- Disk on this machine is near full. Build no new environment: run uv from
+  the workspace root only, never in a worktree, never with `uv sync` beyond
+  `--locked`, and install nothing. Run `df -h /` first and stop if free
+  space is under 1.2 GB. Download no file over 5 MB.
+- An issue the lead has put on hold is named in your handoff prompt; skip
+  it. An issue whose body ends with a lead decision comment is ready:
+  implement that decision.
+- Close the issue with `gh issue comment` naming the commit when the lead
+  has pushed it; until then, leave it open.
