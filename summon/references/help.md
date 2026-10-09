@@ -1,7 +1,7 @@
 # Verb: help
 
-Print the card below, adapted to what the user asked about. Load no other
-file for this.
+Print card below, adapted to what user asked about. Load no other file for
+this.
 
 <template for="help">
 summon - hand work to another agent so the result comes back usable
@@ -46,5 +46,5 @@ Called from a skill
 
 ## Output Contract
 
-The card, nothing else. Where the user asked something specific ("fanout or
-one delegate?"), answer in one line above the card.
+Card, nothing else. User asked something specific ("fanout or one
+delegate?"): answer in one line above card.

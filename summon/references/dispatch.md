@@ -5,14 +5,14 @@ back.
 
 ## 1. Settle the mode and the delegate
 
-Confirm against the spine's mode table that the work is not inline, and
-state in one clause why not. Load `harness` when the delegate must follow a
-named skill, or when delegating on a harness whose inheritance, caps, or
-skill access you cannot state from memory.
+Confirm against spine's mode table that work is not inline; state in one
+clause why not. Load `harness` when delegate must follow named skill, or
+when delegating on harness whose inheritance, caps, or skill access you
+cannot state from memory.
 
-Read-only explorer delegates skip the project instruction files: the right
-target for a review that must not write, the wrong target when the project's
-conventions are the task.
+Read-only explorer delegates skip project instruction files: right target
+for review that must not write, wrong target when project's conventions are
+the task.
 
 ## 2. Fill six fields
 
@@ -22,29 +22,28 @@ limits".
 
 | Field | Content |
 | --- | --- |
-| objective | One sentence naming the deliverable. |
-| evidence | Resolved values and absolute paths the delegate cannot derive, plus the decision rules its judgments range over. |
-| rules | The binding excerpt: a rule earns its place only if this task can break it. |
-| bounds | The neighbouring agent's territory by name, files not to touch, and whether spawning is permitted (default: no). |
-| contract | The exact return shape, with nothing before or after it. |
-| budget | The tool-call or search cap, and what to return when it is hit. |
+| objective | One sentence naming deliverable. |
+| evidence | Resolved values and absolute paths delegate cannot derive, plus decision rules its judgments range over. |
+| rules | Binding excerpt: rule earns its place only if this task can break it. |
+| bounds | Neighbouring agent's territory by name, files not to touch, whether spawning is permitted (default: no). |
+| contract | Exact return shape, nothing before or after it. |
+| budget | Tool-call or search cap, and what to return when it is hit. |
 
 State spawn permission in every brief: delegates spawned children unasked.
 
 ### evidence: values and decision rules
 
-Evidence carries two kinds: a **value** the delegate cannot see, resolved by
-the lead, and a **rule** the delegate applies to evidence it already holds.
-A rule that ranges over evidence the delegate lacks produces a confident
-wrong answer, so resolve that evidence into a value instead. Rules do not
-substitute for evidence: a delegate handed a whole skill still ran `git log`
-for the scope convention.
+Evidence carries two kinds: **value** delegate cannot see, resolved by lead,
+and **rule** delegate applies to evidence it already holds. Rule ranging
+over evidence delegate lacks produces confident wrong answer: resolve that
+evidence into value instead. Rules do not substitute for evidence: delegate
+handed whole skill still ran `git log` for scope convention.
 
-The caller owns why the work is being done and states it here.
+Caller owns why work is being done; states it here.
 
-When evidence is data, the brief says: cite numbers as calibration, never as
-events. A writer handed measurement files reproduced the measurements as
-narrative ("six of twelve died here").
+Evidence is data: brief says cite numbers as calibration, never as events.
+Writer handed measurement files reproduced measurements as narrative ("six
+of twelve died here").
 
 ### rules: excerpt, never dump
 
@@ -55,9 +54,8 @@ reliability degrades with input length, and one distractor already hurts
 
 ## 3. Write the prose
 
-Load `/caveman` and write the brief under it; then load `/humanize` and
-sweep the draft. Both loads happen, whatever register the lead already
-writes in.
+Load `/caveman`, write brief under it; then load `/humanize`, sweep draft.
+Both loads happen, whatever register lead already writes in.
 
 ## 4. Hand it off
 
@@ -87,15 +85,15 @@ BUDGET
 
 ## 5. On return
 
-When the return arrives, judge it under `review` before acting on it.
+Return arrives: judge it under `review` before acting on it.
 
 ## Completion Checks
 
 <checklist for="verb">
-  <item>All six fields are present, each either stated or marked not applicable with its reason.</item>
-  <item>Every judgment the delegate must make has either its evidence resolved or its decision rule stated.</item>
-  <item>The rules field is an excerpt of what this task can break, not a pasted document.</item>
-  <item>The contract names one return shape and forbids anything around it.</item>
-  <item>Spawn permission is stated.</item>
-  <item>The brief carries no hedge, pleasantry, or instruction that binds nothing.</item>
+  <item>All six fields present, each stated or marked not applicable with reason.</item>
+  <item>Every judgment delegate must make has its evidence resolved or its decision rule stated.</item>
+  <item>Rules field is excerpt of what this task can break, not pasted document.</item>
+  <item>Contract names one return shape, forbids anything around it.</item>
+  <item>Spawn permission stated.</item>
+  <item>Brief carries no hedge, pleasantry, or instruction that binds nothing.</item>
 </checklist>

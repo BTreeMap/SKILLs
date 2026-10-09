@@ -1,26 +1,25 @@
 # Verb: fanout
 
-Partition the open work, then run one dispatch per bundle. Load `dispatch`
-first: every bundle ships the full six-field brief defined there.
+Partition open work, then run one dispatch per bundle. Load `dispatch`
+first: every bundle ships full six-field brief defined there.
 
 ## Partition law
 
-The bundles are pairwise disjoint and their union is the open work. Overlap
-is a design error, not redundancy: it duplicates its share of the fan's
-spend and buys nothing. Enforce both axes in every bundle's bounds.
+Bundles pairwise disjoint; their union is open work. Overlap is design
+error, not redundancy: duplicates its share of fan's spend, buys nothing.
+Enforce both axes in every bundle's bounds.
 
 | Axis | Failure it prevents |
 | --- | --- |
 | Topic | Two delegates researching one question: duplicated spend, lost coverage. |
-| Files | Two delegates writing one file: a lost update, which is a correctness bug. |
+| Files | Two delegates writing one file: lost update, a correctness bug. |
 
 ## Bounds
 
-A boundary names the neighbouring agent's territory. Every bundle's bounds
-carry all six lines. A session scratch directory the harness shares across
-delegates is a file territory too: two delegates writing `notes.md` there
-lose an update, so each bundle gets its own subdirectory, named for the
-bundle.
+Boundary names neighbouring agent's territory. Every bundle's bounds carry
+all six lines. Session scratch directory harness shares across delegates is
+file territory too: two delegates writing `notes.md` there lose an update,
+so each bundle gets own subdirectory, named for bundle.
 
 <template for="bounds">
 BOUNDS
@@ -34,24 +33,24 @@ Spawning: no.
 
 ## Sizing and resumability
 
-Size the fan against the spine's cited sizing and its concurrency cap; a
-bundle too small to justify a context goes back inline. A fanout is not
-transactional, so each brief closes its own bundle without reference to
-another bundle's output, and a dead bundle re-dispatches alone.
+Size fan against spine's cited sizing and its concurrency cap; bundle too
+small to justify a context goes back inline. Fanout not transactional, so
+each brief closes own bundle without reference to another bundle's output;
+dead bundle re-dispatches alone.
 
 ## Joining returns
 
-Returns arrive one per completion notification. Judge each under `review`
-when it arrives, then join. The lead owns coverage across bundles: reconcile
-the handoff lines, and re-dispatch only the work no bundle claimed.
+Returns arrive one per completion notification. Judge each under `review` on
+arrival, then join. Lead owns coverage across bundles: reconcile handoff
+lines, re-dispatch only work no bundle claimed.
 
 ## Completion Checks
 
 <checklist for="verb">
-  <item>Bundles are pairwise disjoint on topic and on files, and their union is the open work.</item>
-  <item>Every bundle names the neighbouring territory and carries the refusal rule.</item>
-  <item>Every bundle names its owned and forbidden files, and its own scratch subdirectory.</item>
+  <item>Bundles pairwise disjoint on topic and files; union is open work.</item>
+  <item>Every bundle names neighbouring territory, carries refusal rule.</item>
+  <item>Every bundle names owned and forbidden files and own scratch subdirectory.</item>
   <item>Each brief closes its bundle alone, so any one can be re-dispatched.</item>
-  <item>The fan plus its children fits the concurrency cap.</item>
-  <item>Handoff lines were reconciled, and unclaimed work is named or re-dispatched.</item>
+  <item>Fan plus children fits concurrency cap.</item>
+  <item>Handoff lines reconciled; unclaimed work named or re-dispatched.</item>
 </checklist>
