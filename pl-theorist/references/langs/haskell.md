@@ -8,41 +8,39 @@
   accumulation; forcing too much can destroy productivity or infinite-stream
   behavior.
 - List/stream fusion depends on exact producers, consumers, rewrite rules,
-  and optimization settings; point-free syntax guarantees none of it.
+  optimization settings; point-free syntax guarantees none of it.
 - Monad transformer stacks and generalized effects can improve composition
-  while worsening inference, errors, allocation, and operational visibility.
+  while worsening inference, errors, allocation, operational visibility.
 
 ## Domain Shapes
 
-- Use algebraic data types, total pattern matching, pure functions,
-  currying, and point-free composition by default.
-- Use `data` for sums/products and `newtype` for zero-cost semantic
-  distinctions. Hide constructors and export smart constructors when values
-  carry invariants.
-- Use `Maybe` for expected absence and `Either DomainError` for expected
-  failure. Avoid `Maybe` when callers need to know why construction failed.
-- Keep exported paths free of partial functions unless the type or
-  constructor proves their preconditions. Eliminate partial list functions
-  from production paths with `NonEmpty`, total folds, or pattern matching at
-  the refinement boundary.
+- Algebraic data types, total pattern matching, pure functions, currying,
+  point-free composition by default.
+- `data` for sums/products, `newtype` for zero-cost semantic distinctions.
+  Hide constructors, export smart constructors when values carry invariants.
+- `Maybe` for expected absence, `Either DomainError` for expected failure.
+  Avoid `Maybe` when callers need to know why construction failed.
+- Keep exported paths free of partial functions unless type or constructor
+  proves their preconditions. Eliminate partial list functions from
+  production paths with `NonEmpty`, total folds, or pattern matching at
+  refinement boundary.
 - Derive or define instances only when their laws hold. State
   `Semigroup`/`Monoid` identity and associativity before using `foldMap` or
   parallel reduction.
-- Prefer `foldMap` when a monoid states the aggregation, `traverse` when
-  effects preserve shape, and `foldl'` for strict left accumulation.
+- Prefer `foldMap` when monoid states aggregation, `traverse` when effects
+  preserve shape, `foldl'` for strict left accumulation.
 
 ## Effects
 
-- Use `Maybe`, `Either`, `IO`, established project effects, applicative
-  traversal, and monadic bind according to dependency structure. Applicative
-  structure does not itself promise parallel execution.
-- Use the project's existing streaming and effect abstractions over a
-  competing transformer stack.
-- Use `bracket`/`finally` or the project's resource abstraction. Scope async
-  work, propagate cancellation, and use bounded queues/streaming
-  combinators.
-- Keep retries and transactions in the effect interpreter; require
-  idempotency or a transaction before replaying effects.
+- `Maybe`, `Either`, `IO`, established project effects, applicative
+  traversal, monadic bind per dependency structure. Applicative structure
+  does not itself promise parallel execution.
+- Project's existing streaming and effect abstractions over competing
+  transformer stack.
+- `bracket`/`finally` or project's resource abstraction. Scope async work,
+  propagate cancellation, use bounded queues/streaming combinators.
+- Retries and transactions in effect interpreter; require idempotency or
+  transaction before replaying effects.
 
 ## Teaching Example
 
@@ -65,27 +63,27 @@ configuredPort :: Maybe Int -> Either PortError Port
 configuredPort = maybe (mkPort 8080) mkPort
 ]]></example>
 
-Taste: hide `Port` outside the module, making the smart constructor the only
-admission path. `Maybe` means absent configuration; `Either` preserves the
-reason construction failed; `maybe` eliminates absence totally.
+Taste: hide `Port` outside module, making smart constructor only admission
+path. `Maybe` means absent configuration; `Either` preserves reason
+construction failed; `maybe` eliminates absence totally.
 
 ## Cost Guard
 
-1. Check whether consumers stream, retain the input spine, or build
-   accumulator thunks.
-2. Introduce only the narrowest strictness annotation, strict field,
-   `foldl'`, or streaming fold needed.
-3. If point-free composition hides sharing, strictness, or resource
-   lifetime, restore named arguments and bindings.
-4. If an effect stack obscures types or profiling, simplify to the
-   established base effect or an explicit interpreter.
+1. Check whether consumers stream, retain input spine, or build accumulator
+   thunks.
+2. Introduce only narrowest strictness annotation, strict field, `foldl'`,
+   or streaming fold needed.
+3. Point-free composition hides sharing, strictness, or resource lifetime:
+   restore named arguments and bindings.
+4. Effect stack obscures types or profiling: simplify to established base
+   effect or explicit interpreter.
 5. Require profiling evidence before asserting fusion or allocation
    behavior.
-6. Preserve bracketed resources and strictness/productivity under the chosen
+6. Preserve bracketed resources and strictness/productivity under chosen
    effect interpreter.
 
 ## Validation
 
 Test finite and infinite producers when productivity is contractual. Use
-existing time/space profiling for strictness-sensitive paths and inspect
+existing time/space profiling for strictness-sensitive paths; inspect
 exception/resource behavior in `IO`.

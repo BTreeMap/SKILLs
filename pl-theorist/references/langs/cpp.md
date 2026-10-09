@@ -2,49 +2,49 @@
 
 ## Cost Model
 
-- Derive the language standard and library availability from the build. Do
-  not assume ranges, coroutines, concepts, or `std::expected` when the
-  target does not provide them.
+- Derive language standard and library availability from build. Do not
+  assume ranges, coroutines, concepts, or `std::expected` when target does
+  not provide them.
 - Templates and standard algorithms can be zero-overhead abstractions, but
   code size, compile time, iterator category, proxy references, captures,
-  type erasure, and allocation remain material.
-- Value semantics, moves, copies, exceptions, destruction order, and
-  aliasing are observable. `const` and `const` methods do not imply deep
+  type erasure, allocation remain material.
+- Value semantics, moves, copies, exceptions, destruction order, aliasing
+  are observable. `const` and `const` methods do not imply deep
   immutability.
 - Recursive algorithms lack guaranteed TCO. Lazy range views can dangle when
   they outlive borrowed sources.
 
 ## Domain Shapes
 
-- Use `std::variant` for closed sums, structs/tuples for products,
-  `std::optional` for absence, and `std::expected` for expected failure when
-  the configured standard provides it. Otherwise use the project's result
-  type or a small `std::variant<T, E>`.
-- Visit every `variant` alternative with an overload set or exhaustive
-  visitor. Avoid `get` when `get_if`, `visit`, or a proven state is total.
-- Use classes with private representation and static factories for refined
-  values. Keep constructors private when construction can fail. A successful
-  object must satisfy its invariant; a temporarily invalid object "finished"
-  later is a defect. Prefer value semantics.
-- Use standard algorithms/ranges when they clarify intent and preserve
-  traversal and allocation cost. Prefer `transform_reduce`, `any_of`,
-  `all_of`, and `find_if` over a generic fold when they name the algebra.
-- Capture lambdas narrowly and by value/reference deliberately. Avoid
-  `std::function` when a template parameter or concrete callable avoids type
+- `std::variant` for closed sums, structs/tuples for products,
+  `std::optional` for absence, `std::expected` for expected failure when
+  configured standard provides it. Otherwise project's result type or small
+  `std::variant<T, E>`.
+- Visit every `variant` alternative with overload set or exhaustive visitor.
+  Avoid `get` when `get_if`, `visit`, or proven state is total.
+- Classes with private representation and static factories for refined
+  values. Constructors private when construction can fail. Successful object
+  must satisfy its invariant; temporarily invalid object "finished" later is
+  defect. Prefer value semantics.
+- Standard algorithms/ranges when they clarify intent and preserve traversal
+  and allocation cost. Prefer `transform_reduce`, `any_of`, `all_of`,
+  `find_if` over generic fold when they name algebra.
+- Capture lambdas narrowly, by value/reference deliberately. Avoid
+  `std::function` when template parameter or concrete callable avoids type
   erasure and allocation.
 
 ## Effects
 
-- Use RAII guards and deterministic destruction for memory, files, locks,
-  and transactions. Never let a view, span, iterator, callback, or coroutine
-  frame outlive its owner.
-- Use futures/coroutines only through project-standard executors and
-  cancellation facilities; the core language does not provide universal
-  structured concurrency. Distinguish independent scheduled work from
-  dependent continuation chains, and preserve executor and exception
-  aggregation semantics.
-- Mark functions `noexcept` only when the complete call graph contract
-  supports it; an unexpected throw then terminates the process.
+- RAII guards and deterministic destruction for memory, files, locks,
+  transactions. Never let view, span, iterator, callback, or coroutine frame
+  outlive its owner.
+- Futures/coroutines only through project-standard executors and
+  cancellation facilities; core language provides no universal structured
+  concurrency. Distinguish independent scheduled work from dependent
+  continuation chains; preserve executor and exception aggregation
+  semantics.
+- Mark functions `noexcept` only when complete call graph contract supports
+  it; unexpected throw then terminates process.
 
 ## Teaching Example
 
@@ -73,25 +73,23 @@ private:
 ]]></example>
 
 Taste: private construction makes invalid ports unrepresentable; `variant`
-provides a C++17 result without dependencies. If C++23 `std::expected` is
-already available, prefer it for the same domain meaning.
+provides C++17 result without dependencies. C++23 `std::expected` already
+available: prefer it for same domain meaning.
 
 ## Cost Guard
 
-1. Replace unbounded recursion with algorithms, iterators, or a direct loop.
+1. Replace unbounded recursion with algorithms, iterators, or direct loop.
 2. Inspect copies, moves, allocations, type erasure, iterator invalidation,
-   and borrowed-range lifetimes.
-3. Fuse passes only when profiling or data size justifies the readability
-   cost.
+   borrowed-range lifetimes.
+3. Fuse passes only when profiling or data size justifies readability cost.
 4. Prefer stack/value representation, but do not enlarge hot variants or
    copy large aggregates blindly; measure layout and ownership choices.
-5. Preserve RAII destruction order, exception safety guarantee, and executor
+5. Preserve RAII destruction order, exception safety guarantee, executor
    affinity.
 
 ## Validation
 
-Build under the configured standard with warnings, static analysis, and
-sanitizers when available. Test every variant, factory boundary, move/copy
-path, exception guarantee, lifetime edge, and cancellation path. Benchmark
-before claiming algorithm/range abstraction or hand-written loops are
-faster.
+Build under configured standard with warnings, static analysis, sanitizers
+when available. Test every variant, factory boundary, move/copy path,
+exception guarantee, lifetime edge, cancellation path. Benchmark before
+claiming algorithm/range abstraction or hand-written loops are faster.

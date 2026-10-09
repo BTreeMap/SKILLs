@@ -2,61 +2,58 @@
 
 ## Cost Model
 
-- A Python-level loop costs roughly 50 to 100 ns per iteration, while `str`
-  methods, `bytes.translate`, and `re` run in C at 1 to 5 ns per character.
-  Linear complexity is necessary, not sufficient: a per-character `for` loop
-  is the wrong backend even at O(n). Scan with `find`, `split`, `partition`,
-  `translate`, or a compiled pattern, and keep Python iteration proportional
-  to the tokens produced, never the characters read.
-- A backtracking engine is linear on an unambiguous pattern and exponential
-  on an ambiguous one. Nested or adjacent quantifiers over overlapping
-  classes (`(a+)+`, `[\w.]+@`) and `\s*` under `re.MULTILINE` are the
-  blow-up shapes; one character class with one quantifier is safe. Untrusted
-  or agent-supplied patterns need a length cap regardless, since `re` has no
-  timeout.
+- Python-level loop costs roughly 50 to 100 ns per iteration; `str` methods,
+  `bytes.translate`, `re` run in C at 1 to 5 ns per character. Linear
+  complexity necessary, not sufficient: per-character `for` loop is wrong
+  backend even at O(n). Scan with `find`, `split`, `partition`, `translate`,
+  or compiled pattern; keep Python iteration proportional to tokens
+  produced, never characters read.
+- Backtracking engine is linear on unambiguous pattern, exponential on
+  ambiguous one. Nested or adjacent quantifiers over overlapping classes
+  (`(a+)+`, `[\w.]+@`) and `\s*` under `re.MULTILINE` are blow-up shapes;
+  one character class with one quantifier is safe. Untrusted or
+  agent-supplied patterns need length cap regardless; `re` has no timeout.
 - No tail-call optimization. Unbounded structural recursion consumes one
   frame per element.
-- Slicing, concatenation, eager intermediates, and transient wrappers
-  increase allocation and GC pressure; recursive head/tail list code can
-  become quadratic.
-- `map`, `filter`, and generators are lazy and single-pass. Deferral changes
-  exception timing, resource lifetime, and when effects occur.
+- Slicing, concatenation, eager intermediates, transient wrappers increase
+  allocation and GC pressure; recursive head/tail list code can become
+  quadratic.
+- `map`, `filter`, generators are lazy and single-pass. Deferral changes
+  exception timing, resource lifetime, when effects occur.
 - Type hints cannot make runtime input valid without boundary checks.
 
 ## Domain Shapes
 
 - Python has no sealed algebraic data types. Approximate closed sums with
-  frozen dataclass variants, enums, or tagged unions plus a union and
+  frozen dataclass variants, enums, or tagged unions plus union and
   exhaustive type-checker-supported `match` where project tooling permits;
-  runtime closure is a project convention.
-- Use `T | None` for expected absence. For expected failure, use an
-  established project `Result` type only when present; otherwise return a
-  small tagged union or raise at the imperative boundary according to local
-  convention. Do not introduce a runtime monad hierarchy solely for syntax.
-- Put invariant checks in one parsing factory. A dataclass constructor
-  cannot be made truly private, so document and type-check the construction
-  convention.
-- Frozen dataclasses and tuples are only shallowly immutable. Copy or freeze
-  nested values only at the ownership boundary that requires it.
+  runtime closure is project convention.
+- `T | None` for expected absence. Expected failure: established project
+  `Result` type only when present; otherwise small tagged union or raise at
+  imperative boundary per local convention. No runtime monad hierarchy
+  solely for syntax.
+- Invariant checks in one parsing factory. Dataclass constructor cannot be
+  made truly private: document and type-check construction convention.
+- Frozen dataclasses and tuples only shallowly immutable. Copy or freeze
+  nested values only at ownership boundary that requires it.
 - Prefer explicit `map` and `filter` composition over equivalent
-  comprehension syntax so the filter-transform algebra remains visible.
-  Yield only when a named predicate, required concrete collection, or
-  repository convention makes another form materially clearer.
-- Prefer `sum`, `any`, `all`, `min`, `max`, and `next` over generic
-  reduction; use `functools.reduce` only for a genuine fold with an explicit
-  accumulator invariant.
-- Prefer generators for streaming and $O(1)$ auxiliary memory. Use named
-  curried helpers through `functools.partial` when partial application
-  clarifies a reusable operation.
+  comprehension syntax so filter-transform algebra stays visible. Yield only
+  when named predicate, required concrete collection, or repository
+  convention makes another form materially clearer.
+- Prefer `sum`, `any`, `all`, `min`, `max`, `next` over generic reduction;
+  `functools.reduce` only for genuine fold with explicit accumulator
+  invariant.
+- Generators for streaming and $O(1)$ auxiliary memory. Named curried
+  helpers through `functools.partial` when partial application clarifies
+  reusable operation.
 
 ## Effects
 
-- Keep files, locks, transactions, and generators inside
-  `with`/`async with`.
-- Use `asyncio.TaskGroup` where available for scoped child tasks; preserve
-  cancellation rather than swallowing `CancelledError`.
+- Keep files, locks, transactions, generators inside `with`/`async with`.
+- `asyncio.TaskGroup` where available for scoped child tasks; preserve
+  cancellation, never swallow `CancelledError`.
 - Bound producer/consumer pipelines with finite iterators, semaphore limits,
-  or bounded queues. Do not create every coroutine before applying a
+  or bounded queues. Do not create every coroutine before applying
   concurrency limit.
 
 ## Teaching Example
@@ -94,28 +91,28 @@ def valid_emails(raw_values: Iterable[str]) -> Iterator[str]:
     return map(email_value, filter(is_email, map(Email.parse, raw_values)))
 ]]></example>
 
-Taste: untrusted strings cross one smart-constructor boundary; absence is
-explicit; the result streams. Named functions preserve type narrowing and
-domain meaning; point-free cleverness would make this version worse.
-`__post_init__` also protects direct construction because Python cannot hide
-the constructor.
+Taste: untrusted strings cross one smart-constructor boundary; absence
+explicit; result streams. Named functions preserve type narrowing and domain
+meaning; point-free cleverness would make this version worse.
+`__post_init__` also protects direct construction, since Python cannot hide
+constructor.
 
 ## Cost Guard
 
-1. Replace collection-sized recursion with an iterator or generator.
-2. If the caller requires eager output, materialize exactly once at the
-   public boundary.
-3. If lazy conversion changes exception/effect timing or closes a resource
-   too early, preserve eager evaluation inside the resource scope.
-4. If a pipeline needs early exit or complex error recovery, use a native
-   short-circuit primitive or a local loop with pure helpers.
-5. If repeated lambdas hide domain meaning, name the predicate/projector; do
-   not pursue point-free style past debuggability.
+1. Replace collection-sized recursion with iterator or generator.
+2. Caller requires eager output: materialize exactly once at public
+   boundary.
+3. Lazy conversion changes exception/effect timing or closes resource too
+   early: preserve eager evaluation inside resource scope.
+4. Pipeline needs early exit or complex error recovery: native short-circuit
+   primitive or local loop with pure helpers.
+5. Repeated lambdas hide domain meaning: name predicate/projector; do not
+   pursue point-free past debuggability.
 6. Preserve context-manager lifetime and task cancellation across lazy or
    async refactors.
 
 ## Validation
 
-Test empty, large, one-shot iterator, and exception-producing inputs. Verify
-whether callers require a list, reusable iterable, or lazy iterator. Measure
-peak memory before claiming a streaming improvement.
+Test empty, large, one-shot iterator, exception-producing inputs. Verify
+whether callers require list, reusable iterable, or lazy iterator. Measure
+peak memory before claiming streaming improvement.

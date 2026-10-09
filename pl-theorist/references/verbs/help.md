@@ -1,11 +1,11 @@
 # Verb: help
 
-Print a compact reference card. Do not load other verb files or language
-profiles for this.
+Print compact reference card. Load no other verb files or language profiles
+for this.
 
 ## Card
 
-Render the following, adapted to what the user asked about:
+Render following, adapted to what user asked about:
 
 <template for="help">
 pl-theorist - one discipline, eight verbs, per-language cost models
@@ -39,5 +39,5 @@ Always on (kernel)
 
 ## Output Contract
 
-The card, nothing else. If the user asked a specific question ("which verb
-for X?"), answer it in one line above the card.
+Card, nothing else. User asked specific question ("which verb for X?"):
+answer in one line above card.

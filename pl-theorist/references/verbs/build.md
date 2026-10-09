@@ -1,65 +1,60 @@
 # Verb: build
 
-Write new code functionally from the start: domain model first, pure core
+Write new code functionally from start: domain model first, pure core
 second, shell last.
 
 ## Pipeline
 
 ### 1. Pin the contract
 
-From the request, callers-to-be, and repository conventions, fix: input and
-output domains, error channel (`Option`, `Result`, exception at the
-boundary), effects performed, expected input sizes, and the public API
-surface. State the assumptions that could change the design; ask one focused
-question only if an answer would.
+From request, callers-to-be, repository conventions, fix: input and output
+domains, error channel (`Option`, `Result`, exception at boundary), effects
+performed, expected input sizes, public API surface. State assumptions that
+could change design; ask one focused question only if answer would.
 
 ### 2. Model the domain
 
-Run the kernel's Domain Modeling steps at the scale the task warrants: a
-full model for a new module, a single refined type for a small function. If
-the repository already owns a matching domain type, reuse it; never mint a
-parallel one.
+Run kernel's Domain Modeling steps at scale task warrants: full model for
+new module, single refined type for small function. Repository already owns
+matching domain type: reuse it; never mint parallel one.
 
 ### 3. Choose algebra and structures
 
-Pick the `map`/`filter`/`fold` vocabulary for each transformation and the
-data structure for each dominant operation from the cost-signal table. State
-the intended bound before writing the body: the shape of the code follows
-from the bound, not the reverse.
+Pick `map`/`filter`/`fold` vocabulary for each transformation and data
+structure for each dominant operation from cost-signal table. State intended
+bound before writing body: code's shape follows from bound, not reverse.
 
 ### 4. Write pure core, then shell
 
-- Pure core: total functions over the domain types, native combinators,
+- Pure core: total functions over domain types, native combinators,
   exhaustive elimination, no I/O, no clock, no randomness.
-- Thin shell: one explicit boundary performing effects, honoring the loaded
-  profile's resource, cancellation, and boundedness constraints.
-- Apply the kernel's Cost Guard as you write, with the loaded profile's
-  steps.
+- Thin shell: one explicit boundary performing effects, honoring loaded
+  profile's resource, cancellation, boundedness constraints.
+- Apply kernel's Cost Guard as you write, with loaded profile's steps.
 
 ### 5. Validate
 
-Write tests alongside the code, not after, under the kernel's Validation:
-add empty and large inputs, effect order, and resource cleanup, and
-property-based tests, where the repository already supports them, for any
-law you relied on (fold identity/associativity, roundtrips, idempotence).
-Run the new tests.
+Write tests alongside code, not after, under kernel's Validation: add empty
+and large inputs, effect order, resource cleanup, and property-based tests,
+where repository already supports them, for any law relied on (fold
+identity/associativity, roundtrips, idempotence). Run new tests.
 
 ## Output Contract
 
-Deliver the code, then report briefly:
+Deliver code, then report briefly:
 
-1. Language profile loaded and standard/edition targeted.
-2. Domain types introduced or reused, and the invalid states they exclude.
-3. Complexity of the dominant operations against expected sizes.
+1. Language profile loaded; standard/edition targeted.
+2. Domain types introduced or reused; invalid states they exclude.
+3. Complexity of dominant operations against expected sizes.
 4. Effect boundary and its bounds (concurrency, retries, resources).
-5. Validation run and remaining uncertainty.
+5. Validation run; remaining uncertainty.
 
 ## Completion Checks
 
 <checklist for="verb">
-  <item>Domain types existed before the function bodies that use them.</item>
-  <item>Existing repository types and helpers were reused over parallel inventions.</item>
-  <item>The pure core performs no I/O, clock, or randomness access.</item>
-  <item>Stated bounds preceded the implementation and the code achieves them.</item>
-  <item>Tests cover every variant and rejection path and shipped with the code.</item>
+  <item>Domain types existed before function bodies using them.</item>
+  <item>Existing repository types and helpers reused over parallel inventions.</item>
+  <item>Pure core performs no I/O, clock, or randomness access.</item>
+  <item>Stated bounds preceded implementation; code achieves them.</item>
+  <item>Tests cover every variant and rejection path, shipped with code.</item>
 </checklist>
