@@ -117,7 +117,7 @@ Pattern: `[thing] [action] [reason]. [next step].`
 
 ## Verbs
 
-One-shot sub-commands. On `/caveman <verb>` or matching trigger phrase,
+One-shot verbs. On `/caveman <verb>` or matching trigger phrase,
 load ONLY file registered under that verb, follow it, report. Active level
 untouched. Reference files load only this way or through wenyan level.
 

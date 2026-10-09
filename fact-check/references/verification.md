@@ -47,7 +47,7 @@ author, or pages that themselves cite no source.
 - Fetch the page a search result points to before quoting it; quote the
   fetched text, and record the fetched URL and access date.
 - If the harness fetch fails on a host (timeout, bot wall, redirect to a
-  login), try in order: the same page through `/search-web` `fetch`; a PDF
+  login), try in order: the same page through `/search-web fetch`; a PDF
   of the page through `/read-pdf`; another tier-1 page of the same owner
   (its docs, registry, or repository). Quote only text one of these
   returned; a search-result summary is a lead, never evidence.
