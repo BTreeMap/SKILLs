@@ -9,6 +9,8 @@ deletes.
 1. Read target and every caller first.
 2. Climb ladder from SKILL.md per site. On existing code, rung 1 means
    deleting dead flexibility; rung 6 means same logic in fewer lines.
+   Mechanical cleanup: run repository formatter on touched files; rewrite no
+   unchanged line.
 3. Preserve behavior: values, ordering, errors, effect order, public names
    stay.
 4. Mark cut with real ceiling with `ponytail:` comment naming ceiling and

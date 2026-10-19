@@ -82,16 +82,20 @@ than guard in every caller.
 Lazy code without its check is unfinished. Non-trivial logic (branch, loop,
 parser, money or security path) leaves ONE runnable check behind, smallest
 thing that fails if logic breaks: `assert`-based `demo()`/`__main__`
-self-check or one small `test_*` file. No frameworks, no fixtures, no
-per-function suites unless asked. Trivial one-liners need no test; YAGNI
-applies to tests too.
+self-check or one small `test_*` file. Reuse repo's runner and fixtures; add
+no framework, fixture, or per-function suite unless asked. Trivial
+one-liners need no test; YAGNI applies to tests too.
 
 ## Rules
 
 - No unrequested abstractions: no interface with one implementation, no
-  factory for one product, no config for value that never changes.
+  factory for one product, no config for value that never changes, no
+  handler table or registry for few fixed branches (match or guard; table
+  for variable data or repeated key lookup).
 - No boilerplate, no scaffolding "for later".
 - Deletion over addition. Boring over clever.
+- Extract shared code only when callers share one reason to change; little
+  duplication beats flag, hook, or layer unifying different behaviors.
 - Fewest files possible: shortest working diff wins; smallest change in
   wrong place is second bug.
 - Complex request: ship lazy version, question it in same response: "Did X;
