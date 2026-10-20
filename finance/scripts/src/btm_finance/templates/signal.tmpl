@@ -1,7 +1,8 @@
-"""Baseline placeholder: equal weight over the research names the view serves.
+"""Static multi-factor baseline: the comparator every candidate is shown beside.
 
-Static comparator for every candidate strategy. Replace with the static
-multi-factor baseline before scoring it; imports stay within the whitelist.
+Equal weight on the top third of names by the average rank of 12-1 momentum,
+inverse 12-month volatility, and book-to-market where filings are loaded.
+Imports stay within the whitelist; reads data only through `market`.
 """
 
 import numpy as np
@@ -9,9 +10,42 @@ import numpy as np
 from btm_finance import api
 
 
-def signal(view: "api.View") -> dict[str, float]:
-    names = list(view.names)
+def ranked(values):
+    """Percentile rank in (0, 1], NaN kept as NaN."""
+    out = np.full(values.shape, np.nan)
+    known = np.flatnonzero(np.isfinite(values))
+    if known.size:
+        order = np.argsort(np.argsort(values[known], kind="stable"), kind="stable")
+        out[known] = (order + 1.0) / known.size
+    return out
+
+
+def signal(market: "api.Market", params):
+    momentum_days = int(round(params["momentum_days"]))
+    skip_days = int(round(params["skip_days"]))
+    vol_days = int(round(params["vol_days"]))
+    names = market.names
     if not names:
         return {}
-    weights = np.full(len(names), 1.0 / len(names))
-    return dict(zip(names, weights.tolist(), strict=True))
+    close = market.close(momentum_days + 1)
+    momentum = close[-1 - skip_days] / close[0] - 1.0
+    recent = market.close(vol_days + 1)
+    daily = recent[1:] / recent[:-1] - 1.0
+    complete = np.isfinite(daily).all(axis=0)
+    vol = np.where(complete, np.nan_to_num(daily).std(axis=0), np.nan)
+    ranks = [ranked(momentum), ranked(-vol)]
+    equity = market.fundamental("StockholdersEquity")
+    shares = market.fundamental("CommonStockSharesOutstanding")
+    value = equity / (close[-1] * shares)
+    if np.isfinite(value).any():
+        ranks.append(ranked(value))
+    stacked = np.vstack(ranks)
+    usable = np.isfinite(stacked[:2]).all(axis=0)
+    counts = np.isfinite(stacked).sum(axis=0)
+    score = np.where(usable, np.nansum(stacked, axis=0) / np.maximum(counts, 1), np.nan)
+    chosen = np.flatnonzero(np.isfinite(score))
+    if chosen.size == 0:
+        return {}
+    keep = max(chosen.size // 3, 1)
+    top = chosen[np.argsort(-score[chosen], kind="stable")[:keep]]
+    return {names[i]: 1.0 / keep for i in top.tolist()}

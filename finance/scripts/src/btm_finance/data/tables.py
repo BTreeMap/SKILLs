@@ -30,8 +30,11 @@ class Source(StrEnum):
 
 
 class Table(StrEnum):
+    """`returns` is a run's own series, written by `score`, never loaded."""
+
     BARS = "bars"
     EVENTS = "events"
+    RETURNS = "returns"
 
 
 BAR_PRICES = ("open", "high", "low", "close", "volume", "adj_factor")
@@ -49,7 +52,14 @@ EVENTS_SCHEMA = pa.schema(
         ("value", pa.float64()),
     ]
 )
-SCHEMAS = {Table.BARS: BARS_SCHEMA, Table.EVENTS: EVENTS_SCHEMA}
+RETURNS_SCHEMA = pa.schema(
+    [("date", pa.date32()), ("gross", pa.float64()), ("net", pa.float64())]
+)
+SCHEMAS = {
+    Table.BARS: BARS_SCHEMA,
+    Table.EVENTS: EVENTS_SCHEMA,
+    Table.RETURNS: RETURNS_SCHEMA,
+}
 
 
 def day_of(value: date) -> int:

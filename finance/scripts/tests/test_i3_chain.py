@@ -24,9 +24,10 @@ def record_two(book: Path, run, make_hypothesis) -> Path:
 
 def test_each_prev_is_the_digest_of_the_previous_line(book, run, make_hypothesis):
     lines = record_two(book, run, make_hypothesis).read_bytes().splitlines()
-    first, second = (json.loads(line) for line in lines)
-    assert first["prev"] is None
-    assert second["prev"] == line_digest(lines[0])
+    baseline, first, second = (json.loads(line) for line in lines)
+    assert baseline["prev"] is None  # start registers the baseline hypothesis
+    assert first["prev"] == line_digest(lines[0])
+    assert second["prev"] == line_digest(lines[1])
     assert list(first)[:3] == ["id", "ts", "prev"]
 
 
@@ -35,20 +36,20 @@ def test_an_intact_chain_reports_no_break(book, run, make_hypothesis):
     code, view, _ = run(["check", str(book)])
     assert code == 0
     assert view["incidents"]["ledger"] == []
-    assert view["chain"] == {"files": 1, "lines": 2, "breaks": 0}
+    assert view["chain"] == {"files": 1, "lines": 3, "breaks": 0}
 
 
 def test_one_edited_byte_is_reported_with_file_and_line(book, run, make_hypothesis):
     path = record_two(book, run, make_hypothesis)
     before = path.read_bytes()
-    edited = before.replace(b"12 months", b"13 months", 1)
+    edited = before.replace(b"12 months", b"13 months", 1)  # line 2: first idea
     assert edited != before
     path.write_bytes(edited)
     code, view, err = run(["check", str(book)])
     assert code == 0
     assert "ledger break" in err
     breaks = view["incidents"]["ledger"]
-    assert [(b["file"], b["line"]) for b in breaks] == [("ledger/hypotheses.jsonl", 2)]
+    assert [(b["file"], b["line"]) for b in breaks] == [("ledger/hypotheses.jsonl", 3)]
     assert path.read_bytes() == edited  # reported, never repaired
     assert "restore from backup" in view["next"]
 

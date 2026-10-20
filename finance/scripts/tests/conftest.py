@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 from btm_finance.cli import main
+from btm_finance.synthetic import make_book
 
 Run = Callable[..., tuple[int, Any, str]]
 
@@ -106,3 +107,79 @@ def send(book: Path) -> Callable[..., Any]:
         )
 
     return invoke
+
+
+@pytest.fixture
+def synthetic(tmp_path: Path) -> Callable[..., Path]:
+    """A started book holding a seeded synthetic panel; see `make_book`."""
+
+    def make(seed: int = 7, **options: Any) -> Path:
+        root = tmp_path / f"synthetic-{seed}"
+        make_book(root, seed, **options)
+        return root
+
+    return make
+
+
+STRATEGY: dict[str, Any] = {
+    "params": {},
+    "rebalance": "monthly",
+    "holding_days": 21,
+    "long_only": False,
+    "family_id": "baseline",
+}
+
+
+def write_strategy(book: Path, name: str, source: str, **config: Any) -> Path:
+    """`strategies/<name>/` with `source` as signal.py and `config` over the
+    default monthly long-short config."""
+    folder = book / "strategies" / name
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "signal.py").write_text(source)
+    (folder / "config.json").write_text(json.dumps(STRATEGY | config))
+    (folder / "status").write_text("research\n")
+    return folder
+
+
+@pytest.fixture
+def plant(run: Run) -> Callable[..., str]:
+    """Write a strategy, then register its hypothesis; returns the id."""
+
+    def make(
+        book: Path,
+        name: str,
+        source: str,
+        hypothesis: dict[str, Any] | None = None,
+        **config: Any,
+    ) -> str:
+        folder = write_strategy(book, name, source, **config)
+        settings = json.loads((folder / "config.json").read_text())
+        entry = {
+            "kw": [*name.split("-"), "idea"],
+            "strategy": name,
+            "family_id": settings["family_id"],
+            "capacity_class": "in_band",
+            "falsifier": "net Sharpe at or below zero out of sample",
+            "counterparty": "planted by the test",
+            "min_holding_days": settings["holding_days"],
+        } | (hypothesis or {})
+        code, receipt, err = run(
+            ["record", str(book), "--batch:stdin"], json.dumps({"hypotheses": [entry]})
+        )
+        assert code == 0, err
+        return str(next(iter(receipt["new"]["hypotheses"].values())))
+
+    return make
+
+
+def set_families(book: Path, **families: dict[str, Any]) -> None:
+    """The human's edit to `limits.json`: add or replace families."""
+    path = book / "limits.json"
+    limits = json.loads(path.read_text())
+    limits["families"] |= families
+    path.write_text(json.dumps(limits))
+
+
+@pytest.fixture
+def families() -> Callable[..., None]:
+    return set_families

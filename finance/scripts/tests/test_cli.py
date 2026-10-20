@@ -57,7 +57,7 @@ def test_the_quarter_is_stable_for_one_salt_and_per_sector():
 @pytest.mark.parametrize(
     ("argv", "stage"),
     [
-        (["score", "B", "baseline"], "stage 3b"),
+        (["score", "B", "baseline", "--repeat", "r1"], "stage 5"),
         (["advise", "B", "2026-01-02"], "stage 4"),
     ],
 )
@@ -67,11 +67,13 @@ def test_later_verbs_are_refused_by_stage(run, argv, stage):
     assert stage in err
 
 
-def test_check_refuses_a_target_and_live_by_stage(book, run):
-    code, _, err = run(["check", str(book), "baseline"])
-    assert (code, "stage 3b" in err) == (1, True)
+def test_check_refuses_a_proposal_and_live_by_stage(book, run):
+    code, _, err = run(["check", str(book), "2026-01-02"])
+    assert (code, "stage 4" in err) == (1, True)
     code, _, err = run(["check", str(book), "--live"])
     assert (code, "stage 5" in err) == (1, True)
+    code, _, err = run(["check", str(book), "nothing"])
+    assert (code, "no strategy or run named" in err) == (1, True)
 
 
 def test_verbs_refuse_a_path_without_a_book(tmp_path, run):
@@ -86,7 +88,8 @@ def test_the_pad_lives_inside_the_book(book, run):
     assert (book / "ledger" / "pad" / "scratch.jsonl").is_file()
     code, found, _ = run(["read", str(book), "--type", "hunch"])
     assert found["shown"] == 1
-    assert run(["check", str(book)])[1]["chain"]["files"] == 0  # pad is not chained
+    view = run(["check", str(book)])[1]
+    assert view["chain"]["files"] == 1  # the baseline hypothesis; pad is not chained
 
 
 def test_schema_names_every_batch_key_and_the_pad(run):

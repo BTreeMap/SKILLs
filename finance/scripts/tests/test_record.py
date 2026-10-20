@@ -48,6 +48,7 @@ def test_every_problem_comes_back_in_one_verdict_and_nothing_moves(
             }
         ],
     }
+    before = {p.name: p.read_bytes() for p in (book / "ledger").glob("*.jsonl")}
     code, verdict, _ = batch(run, book, payload)
     assert code == 1
     where = [problem["where"] for problem in verdict["rejected"]]
@@ -58,7 +59,8 @@ def test_every_problem_comes_back_in_one_verdict_and_nothing_moves(
         "fills[0].id",
     ]
     assert verdict["unchanged"] == "book"
-    assert not list((book / "ledger").glob("*.jsonl"))
+    after = {p.name: p.read_bytes() for p in (book / "ledger").glob("*.jsonl")}
+    assert after == before
 
 
 def test_a_critique_lands_once_its_run_exists(book, run):
@@ -131,11 +133,13 @@ def test_a_decision_supersedes_only_an_existing_id(book, run, make_hypothesis):
     fixed = wrong | {"supersedes": decision_id, "action": "override"}
     assert batch(run, book, {"decisions": [fixed]})[0] == 0
     view = run(["check", str(book)])[1]
-    assert view["families"]["baseline"]["open"][0]["id"] == hypothesis_id
+    opened = [entry["id"] for entry in view["families"]["baseline"]["open"]]
+    assert hypothesis_id in opened  # beside the baseline hypothesis start made
 
 
 def test_an_empty_batch_is_a_located_rejection(book, run):
     code, verdict, _ = batch(run, book, {})
     assert code == 1
     assert verdict["rejected"][0]["where"] == "$"
-    assert open_book(str(book)).path_of(Kind.HYPOTHESIS).exists() is False
+    path = open_book(str(book)).path_of(Kind.HYPOTHESIS)
+    assert len(path.read_bytes().splitlines()) == 1  # start's baseline line only

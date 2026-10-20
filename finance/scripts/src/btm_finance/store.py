@@ -84,6 +84,22 @@ def held_out_path(book_id: str) -> Path:
     return state_root(SKILL) / book_id / "held-out.json"
 
 
+def held_out_list(book: Book) -> tuple[str, frozenset[str]]:
+    """The salt and member digests `start` wrote; read by `score` alone."""
+    path = held_out_path(book.meta.id)
+    if not path.is_file():
+        raise CommandError(
+            f"no held-out list for book {book.meta.id} on this machine; "
+            "the operator restores it from backup before any score"
+        )
+    data = read_json(path)
+    data = data if isinstance(data, dict) else {}
+    salt, members = data.get("salt"), data.get("members")
+    if not isinstance(salt, str) or not isinstance(members, list):
+        raise CommandError(f"unreadable held-out list {path}: salt or members missing")
+    return salt, frozenset(str(member) for member in members)
+
+
 def ledger_files(book: Book) -> list[Path]:
     """Every chained file under `ledger/`; the pad is not chained."""
     pad = book.root / PAD_DIR

@@ -128,6 +128,19 @@ class Panel:
             **grids,
         )
 
+    def only(self, names: frozenset[str]) -> Panel:
+        """The columns of `names`, order kept; a copy. O(T N)."""
+        keep = [i for i, name in enumerate(self.names) if name in names]
+        grids = {name: getattr(self, name)[:, keep] for name in PANEL_ARRAYS}
+        return Panel(
+            dates=self.dates,
+            names=tuple(self.names[i] for i in keep),
+            exchange=tuple(self.exchange[i] for i in keep),
+            sector=tuple(self.sector[i] for i in keep),
+            delisted=tuple(self.delisted[i] for i in keep),
+            **grids,
+        )
+
     def delisting(self, index: int) -> Delisting | None:
         """Name `index`'s newest delisting record, or None."""
         records = self.delisted[index]
@@ -181,6 +194,17 @@ class Events:
     def asof(self, day: int) -> Events:
         """Rows known on or before `day`, order kept. O(n)."""
         keep = self.knowledge_time <= day
+        return Events(
+            self.name[keep],
+            self.field[keep],
+            self.event_time[keep],
+            self.knowledge_time[keep],
+            self.value[keep],
+        )
+
+    def only(self, names: frozenset[str]) -> Events:
+        """Rows of `names` plus market-wide rows (a name starting `_`). O(n)."""
+        keep = np.isin(self.name, list(names)) | np.char.startswith(self.name, "_")
         return Events(
             self.name[keep],
             self.field[keep],

@@ -7,7 +7,7 @@ from datetime import date
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import ConfigDict, Field, StringConstraints
+from pydantic import ConfigDict, Field, StrictFloat, StrictInt, StringConstraints
 
 from btm_corekit import Model, Named, NonEmpty, Slug, Trimmed
 
@@ -44,6 +44,14 @@ class Status(StrEnum):
 class Cadence(StrEnum):
     MONTHLY = "monthly"
     QUARTERLY = "quarterly"
+
+
+class Rebalance(StrEnum):
+    """When a strategy trades: the last trading day of each period."""
+
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    ANNUAL = "annual"
 
 
 StrategyName = Annotated[
@@ -132,9 +140,13 @@ class Preferences(Model):
 
 
 class Family(Model):
+    """`touches` names `quality` or `low_risk` to add QMJ or BAB to the
+    factor regression."""
+
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     trials: Annotated[int, Field(ge=0)]
+    touches: Texts = ()
 
 
 class Thresholds(Model):
@@ -152,6 +164,7 @@ class Thresholds(Model):
     paper_months: int
     paper_months_long: int
     long_holding_days: int
+    folds: Annotated[int, Field(ge=2)] = 5
 
 
 class Sizing(Model):
@@ -180,6 +193,39 @@ class Limits(Model):
     sizing: Sizing
     repeat_tolerance: float
     families: dict[str, Family]
+
+
+class StrategyConfig(Model):
+    """`strategies/<name>/config.json`, agent-written, so unknown keys are
+    refused; `params` are numbers only, each perturbed by 20% when scored."""
+
+    params: dict[str, StrictInt | StrictFloat] = Field(default_factory=dict)
+    rebalance: Rebalance
+    holding_days: Annotated[int, Field(ge=1)]
+    long_only: bool
+    family_id: NonEmpty
+
+
+BASELINE_CONFIG: dict[str, object] = {
+    "params": {"momentum_days": 252, "skip_days": 21, "vol_days": 252},
+    "rebalance": "annual",
+    "holding_days": 252,
+    "long_only": True,
+    "family_id": "baseline",
+}
+
+
+BASELINE_HYPOTHESIS: dict[str, object] = {
+    "kw": ["baseline", "static"],
+    "strategy": "baseline",
+    "family_id": "baseline",
+    "capacity_class": "crowded",
+    "falsifier": "net Sharpe at or below zero over the paper stage, or below "
+    "the equal-weight universe net of costs",
+    "counterparty": "investors who shun recent losers, volatile names, and "
+    "cheap names; the premia are known and crowded",
+    "min_holding_days": 252,
+}
 
 
 class BookMeta(Model):
@@ -215,6 +261,7 @@ def limits_template(cap: int) -> dict[str, object]:
             "paper_months": 6,
             "paper_months_long": 12,
             "long_holding_days": 63,
+            "folds": 5,
         },
         "sizing": {"vol_target": 0.10, "kelly_fraction": 0.25, "max_weight": 0.05},
         "repeat_tolerance": 1e-4,

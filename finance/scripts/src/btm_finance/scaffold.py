@@ -23,7 +23,13 @@ from btm_corekit import (
     signal,
     write_atomic,
 )
-from btm_finance.models import PREFERENCES_TEMPLATE, BookMeta, Status, limits_template
+from btm_finance.models import (
+    BASELINE_CONFIG,
+    PREFERENCES_TEMPLATE,
+    BookMeta,
+    Status,
+    limits_template,
+)
 from btm_finance.store import MARKER, held_out_path
 
 DIRECTORIES = (
@@ -47,9 +53,10 @@ HELD_OUT_SHARE = 4  # one name in four per sector, rounded half up
 
 BASELINE_README = """# baseline
 
-Static comparator every candidate strategy is shown beside. `signal.py` is a
-placeholder (equal weight); replace it with the static multi-factor baseline
-before scoring. The human alone edits `status`.
+Static comparator every candidate strategy is shown beside: equal weight on
+the top third of names by average rank of 12-1 momentum, low volatility, and
+book-to-market where filings are loaded; rebalanced annually. `start`
+registers its hypothesis. The human alone edits `status`.
 """
 
 
@@ -146,9 +153,12 @@ def stratified(rows: Sequence[tuple[str, str]], salt: str) -> dict[str, list[str
     }
 
 
-def held_out(book_id: str, universe: str | None) -> dict[str, Any]:
-    """The salted membership list: digests only, so the file names no symbol."""
-    salt = secrets.token_hex(16)
+def held_out(
+    book_id: str, universe: str | None, salt: str | None = None
+) -> dict[str, Any]:
+    """The salted membership list: digests only, so the file names no symbol.
+    A fixed `salt` is for synthetic books only."""
+    salt = salt if salt is not None else secrets.token_hex(16)
     rows = universe_rows(universe) if universe is not None else []
     chosen = stratified(rows, salt)
     if universe is None:
@@ -189,7 +199,7 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     write_new(baseline / "status", f"{Status.RESEARCH.value}\n")
     write_new(
         baseline / "config.json",
-        json.dumps({"name": "baseline", "comparator": True}, indent=2) + "\n",
+        json.dumps(BASELINE_CONFIG, indent=2) + "\n",
     )
     write_new(baseline / "README.md", BASELINE_README)
     write_new(baseline / "signal.py", template("signal.tmpl"))
@@ -219,6 +229,6 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
         ],
-        "next": "import holdings and preferences with record, then register "
-        "the baseline hypothesis",
+        "next": "load data, then score baseline; import holdings and "
+        "preferences with record",
     }

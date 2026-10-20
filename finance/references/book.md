@@ -13,7 +13,8 @@ operator's private git repository; skill holds methods, book holds state.
   bin/send                    operator-only sender; adapter stub inside
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
-  data/manifest.json          sha256, rows, dates per stored file
+  data/returns/<run_id>.parquet  each run's gross and net series, immutable
+  data/manifest.json          sha256, rows, dates per stored file; written under lock
   data/features/              materialized features (later stage)
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
@@ -29,6 +30,10 @@ operator's private git repository; skill holds methods, book holds state.
 ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/
   held-out.json               salted digests of held-out names
 ```
+
+`data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
+`data/returns/` files stay in manifest for integrity checks but never move
+snapshot, so later run cannot change earlier run's.
 
 `status` holds one word: `research`, `paper`, `live`, or `retired`.
 `runs.jsonl` is lead's; each delegate writes own `runs/<agent>.jsonl`; views
@@ -47,7 +52,7 @@ and line. Edit to last line shows only when next line lands.
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
 | decision | `kw`, `subject`, `action`, `reason` |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard` |
+| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent` |
 
 Fill from `holdings` carries `holdings: true` and `price` equal to
 `cost_basis`, `null` when none given. Fill from `bin/send` carries
@@ -84,7 +89,9 @@ Rules hold absolute paths: if book moves, ask operator to update them.
 ## What start writes
 
 1. Directories above, `strategies/baseline/` with `status` `research`,
-   placeholder `signal.py`, `config.json`, `README.md`.
+   static multi-factor `signal.py`, `config.json`, `README.md`; baseline
+   hypothesis (`capacity_class: crowded`) through gate into
+   `hypotheses.jsonl`.
 2. `.claude/settings.json` deny rules; existing settings kept.
 3. `bin/send` (mode 755) with `RECORD` bound to this skill's realpath.
 4. `preferences.json`, `limits.json` defaults, then `book.json`.
