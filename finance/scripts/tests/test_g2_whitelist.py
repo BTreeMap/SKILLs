@@ -31,7 +31,7 @@ FORBIDDEN = [
 def test_each_forbidden_construct_is_refused_by_node(book, run, plant, case):
     code, line, node = case
     plant(book, "probe", code + RETURN)
-    exit_code, document, err = run(["score", str(book), "probe"])
+    exit_code, document, err = run(["measure", str(book), "probe"])
     assert exit_code == 1
     assert document is None
     assert f"strategies/probe/signal.py:{line}: refused {node}" in err
@@ -66,7 +66,7 @@ def test_an_unregistered_strategy_is_refused(book, run):
     folder = book / "strategies" / "ghost"
     folder.mkdir()
     (folder / "signal.py").write_text(RETURN)
-    code, _, err = run(["score", str(book), "ghost"])
+    code, _, err = run(["measure", str(book), "ghost"])
     assert code == 1
     assert "unregistered" in err
     assert not (book / "ledger" / "runs.jsonl").exists()

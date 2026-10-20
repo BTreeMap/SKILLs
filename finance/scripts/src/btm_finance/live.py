@@ -1,5 +1,5 @@
 """`check --live`, pure: each paper or live sleeve's realized path from its
-fills against the scorer's model path, the review bounds, and the report.
+fills against `measure`'s model path, the review bounds, and the report.
 
 A sleeve's capital is its first fill day's gross traded value; later fills
 self-finance from its cash, which earns `rf`. Opening holdings belong to no
@@ -22,8 +22,8 @@ from btm_finance.data.panel import Panel
 from btm_finance.data.tables import Days, Floats, date_of, day_of
 from btm_finance.engine import max_drawdown
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
+from btm_finance.measuring import Setting, Strategy, run_variant
 from btm_finance.models import Side, Status
-from btm_finance.scoring import Setting, Strategy, run_variant
 
 STALE_DAYS = 5  # trading days without a new bar before data counts as stale
 WEEK = 7  # calendar days one recorded breach covers
@@ -71,7 +71,7 @@ def fill_of(row: Mapping[str, Any], reference: float | None) -> Fill:
 
 def reference_prices(proposals: Mapping[str, Any]) -> dict[tuple[str, str, str], float]:
     """(proposal stem, symbol, side) to that order's `price`, the reference
-    close `advise` sized it at. O(orders)."""
+    close `recommend` sized it at. O(orders)."""
     found: dict[tuple[str, str, str], float] = {}
     for stem, document in proposals.items():
         orders = document.get("orders") if isinstance(document, Mapping) else None
@@ -156,7 +156,7 @@ def realized(fills: Sequence[Fill], panel: Panel, rf: Floats) -> Sleeve | None:
 def model_path(
     setting: Setting, strategy: Strategy, params: Mapping[str, float]
 ) -> Series | None:
-    """The scorer's base run, net of modeled costs: one simulation."""
+    """`measure`'s base run, net of modeled costs: one simulation."""
     variant = run_variant(setting, strategy, params)
     return None if variant is None else (variant.dates, variant.cost.net)
 

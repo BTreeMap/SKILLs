@@ -1,4 +1,4 @@
-"""G3: only slow-money edges score. A holding period under the floor is
+"""G3: only slow-money edges pass. A holding period under the floor is
 refused by name before running; a strategy that churns its whole book every
 rebalance still writes its run line, marked refused, and exits 1."""
 
@@ -24,7 +24,7 @@ CHURN = dedent(
 
 def test_a_two_day_holding_is_refused_before_running(book, run, plant):
     plant(book, "fast", "def signal(market, params):\n    return {}\n", holding_days=2)
-    code, document, err = run(["score", str(book), "fast"])
+    code, document, err = run(["measure", str(book), "fast"])
     assert code == 1
     assert document is None
     assert "holding_days 2 is under limits.min_holding_days 5" in err
@@ -36,7 +36,7 @@ def test_a_churning_book_is_refused_after_running_and_still_counts(
 ):
     book = synthetic(seed=3)
     plant(book, "churn", CHURN)
-    code, document, err = run(["score", str(book), "churn"])
+    code, document, err = run(["measure", str(book), "churn"])
     assert code == 1
     assert "error: refused cost_share" in err
     assert document["refused"][0].startswith("cost_share: ")

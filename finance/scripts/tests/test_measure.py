@@ -1,4 +1,4 @@
-"""`score` and `check <strategy>` as bridge code: the run line and its returns
+"""`measure` and `check <strategy>` as bridge code: the run line and its returns
 file, the family trial count, the held-out split, per-agent run files, and the
 standing derived from the ledger."""
 
@@ -46,10 +46,10 @@ def test_start_registers_the_baseline_hypothesis(book, run):
     assert (config["rebalance"], config["holding_days"]) == ("annual", 252)
 
 
-def test_score_appends_the_run_line_and_lists_its_returns(synthetic, run):
+def test_measure_appends_the_run_line_and_lists_its_returns(synthetic, run):
     book = synthetic(seed=7)
     before = data_snapshot(read_manifest(open_book(str(book))))
-    code, document, err = run(["score", str(book), "baseline"])
+    code, document, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     (line,) = run_lines(book)
     assert set(line) >= SPEC_KEYS
@@ -59,7 +59,7 @@ def test_score_appends_the_run_line_and_lists_its_returns(synthetic, run):
     listed = {e.path: e for e in read_manifest(open_book(str(book))).files}
     assert listed[line["returns"]].rows == line["span"]["periods"]
     assert line["scorecard"]["trials"] == 1
-    code, again, _ = run(["score", str(book), "baseline"])
+    code, again, _ = run(["measure", str(book), "baseline"])
     assert again["scorecard"]["trials"] == 2
     second = run_lines(book)[1]
     assert second["data_snapshot"] == before  # returns files never move it
@@ -67,7 +67,7 @@ def test_score_appends_the_run_line_and_lists_its_returns(synthetic, run):
     assert (line["peers"], second["peers"]) == ([], [line["run_id"]])
 
 
-def test_held_out_scores_only_the_complement(synthetic, run):
+def test_held_out_measures_only_the_complement(synthetic, run):
     book = synthetic(seed=7)
     names = [f"S{i:03d}" for i in range(60)]
     research = scoped(open_book(str(book)), names, held_out=False)
@@ -75,7 +75,7 @@ def test_held_out_scores_only_the_complement(synthetic, run):
     assert research.isdisjoint(hidden)
     assert research | hidden == set(names)
     assert 10 <= len(hidden) <= 20  # a quarter per sector, rounded half up
-    code, _, err = run(["score", str(book), "baseline", "--held-out"])
+    code, _, err = run(["measure", str(book), "baseline", "--held-out"])
     assert code == 0, err
     assert run_lines(book)[0]["held_out"] is True
     view = run(["check", str(book), "baseline"])[1]
@@ -84,7 +84,7 @@ def test_held_out_scores_only_the_complement(synthetic, run):
 
 def test_an_agent_writes_its_own_run_file(synthetic, run):
     book = synthetic(seed=7)
-    code, document, _ = run(["score", str(book), "baseline", "--agent", "a1"])
+    code, document, _ = run(["measure", str(book), "baseline", "--agent", "a1"])
     assert code == 0
     assert run_lines(book, "runs/a1.jsonl")[0]["agent"] == "a1"
     assert not (book / "ledger" / "runs.jsonl").exists()
@@ -94,7 +94,7 @@ def test_an_agent_writes_its_own_run_file(synthetic, run):
 
 def test_standing_names_each_blocker_with_value_and_limit(synthetic, run):
     book = synthetic(seed=7)
-    code, document, _ = run(["score", str(book), "baseline"])
+    code, document, _ = run(["measure", str(book), "baseline"])
     view = run(["check", str(book), "baseline"])[1]
     assert view["standing"] in {"blocked", "discard"}
     assert "no critique" in view["blockers"]

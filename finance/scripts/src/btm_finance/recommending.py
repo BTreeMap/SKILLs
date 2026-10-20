@@ -151,7 +151,7 @@ class Summary(Model):
 
 
 class Proposal(Model):
-    """`proposals/<date>.json`, written once by `advise`."""
+    """`proposals/<date>.json`, written once by `recommend`."""
 
     date: str
     as_of: str
@@ -189,8 +189,8 @@ def approval_of(proposal: Proposal, stem: str) -> Approval:
 
 @dataclass(frozen=True, slots=True)
 class Candidate:
-    """One sleeve as scored, and its target weights on the as-of day as
-    `score` would set them."""
+    """One sleeve as measured, and its target weights on the as-of day as
+    `measure` would set them."""
 
     strategy: str
     account: Account
@@ -461,7 +461,7 @@ def summary_of(
     commission_bps: float,
 ) -> Summary:
     """Gross, net, cash, sector and top-10 weights of the whole-share
-    targets; cost at each sleeve's scored half-spread plus commission."""
+    targets; cost at each sleeve's measured half-spread plus commission."""
     weights = {
         name: sum(target.quantity.values()) * target.price / cap
         for name, target in targets.items()

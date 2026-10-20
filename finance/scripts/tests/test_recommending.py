@@ -5,7 +5,8 @@ from __future__ import annotations
 import math
 
 import pytest
-from btm_finance.advising import (
+from btm_finance.models import Sizing
+from btm_finance.recommending import (
     Account,
     Candidate,
     Quote,
@@ -15,7 +16,6 @@ from btm_finance.advising import (
     replay,
     sleeve_weights,
 )
-from btm_finance.models import Sizing
 
 SIZING = Sizing(vol_target=0.10, kelly_fraction=0.25, max_weight=0.05)
 

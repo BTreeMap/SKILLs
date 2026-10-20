@@ -50,7 +50,7 @@ through ten items below on one run and returns one `critiques` batch entry.
 * Inspect: `data/manifest.json` for delisting and membership `csv` loads;
   universe source in `config.json`; delisting convention in `limits.json`
   `delisting` against run line `config`.
-* Settles: delisted names present over scored period with terminal return.
+* Settles: delisted names present over measured period with terminal return.
 * Blocker: universe from current names only, or no delisting return, in
   family whose names delist often (small, micro, reorganized, forced sale).
   Concern: gap recorded per `sources` ladder in other families.
@@ -101,7 +101,7 @@ through ten items below on one run and returns one `critiques` batch entry.
 ### access-wall
 
 * Inspect: `ledger/incidents.jsonl`; manifest `rows`, `since`, `through` per
-  source against scored period; `signal.py` handling of missing data.
+  source against measured period; `signal.py` handling of missing data.
 * Settles: missing rows trace to true absence, not failed load, paywall, or
   blocked route.
 * Blocker: load gap treated as zero events or zero value in signal. Concern:

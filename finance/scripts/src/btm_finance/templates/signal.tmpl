@@ -42,10 +42,10 @@ def signal(market: "api.Market", params):
     stacked = np.vstack(ranks)
     usable = np.isfinite(stacked[:2]).all(axis=0)
     counts = np.isfinite(stacked).sum(axis=0)
-    score = np.where(usable, np.nansum(stacked, axis=0) / np.maximum(counts, 1), np.nan)
-    chosen = np.flatnonzero(np.isfinite(score))
+    composite = np.where(usable, np.nansum(stacked, axis=0) / np.maximum(counts, 1), np.nan)
+    chosen = np.flatnonzero(np.isfinite(composite))
     if chosen.size == 0:
         return {}
     keep = max(chosen.size // 3, 1)
-    top = chosen[np.argsort(-score[chosen], kind="stable")[:keep]]
+    top = chosen[np.argsort(-composite[chosen], kind="stable")[:keep]]
     return {names[i]: 1.0 / keep for i in top.tolist()}

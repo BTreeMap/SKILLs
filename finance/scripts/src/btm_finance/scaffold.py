@@ -208,6 +208,6 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
         ],
-        "next": "load data, then score baseline; import holdings and "
+        "next": "load data, then measure baseline; import holdings and "
         "preferences with record",
     }

@@ -15,8 +15,8 @@ from btm_finance.cli import scoped
 from btm_finance.data.assemble import assemble
 from btm_finance.data.tables import date_of
 from btm_finance.live import Fill, Sleeve, Watch, months_below, slippage
+from btm_finance.measuring import Setting, rebalance_rows, rules_of, target_weights
 from btm_finance.models import Rebalance, StrategyConfig
-from btm_finance.scoring import Setting, rebalance_rows, rules_of, target_weights
 from btm_finance.store import load_limits, load_preferences, open_book
 from btm_finance.synthetic import trading_days
 from btm_finance.whitelist import load_signal
@@ -35,7 +35,7 @@ def paper(synthetic, run):
     limits["sizing"]["max_weight"] = 1.0
     limits["max_adv_participation"] = 0.05
     path.write_text(json.dumps(limits))
-    code, _, err = run(["score", str(book), "baseline"])
+    code, _, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     (book / "strategies" / "baseline" / "status").write_text("paper\n")
     return book
@@ -43,7 +43,7 @@ def paper(synthetic, run):
 
 def model_fills(book: Path) -> list[dict[str, object]]:
     """Buys at the next open after the baseline's last rebalance, at the
-    model's target weights: the trades the scorer itself makes."""
+    model's target weights: the trades `measure` itself makes."""
     handle = open_book(str(book))
     folder = book / "strategies" / "baseline"
     config = StrategyConfig.model_validate_json((folder / "config.json").read_text())

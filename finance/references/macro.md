@@ -53,8 +53,8 @@ Variant: debt in own currency gives deflationary deleveraging; much debt in
 foreign currency plus stopped capital inflows gives inflationary one, where
 currency, not asset prices alone, takes adjustment.
 
-Bubble checklist, scored as set (0 to 7 items present, evidence per item; no
-single item decides): (1) prices high against traditional measures; (2)
+Bubble checklist, counted as set (0 to 7 items present, evidence per item;
+no single item decides): (1) prices high against traditional measures; (2)
 prices discounting further rapid gains; (3) broad bullish sentiment; (4)
 purchases financed by leverage; (5) buyers extended forward (inventory,
 forward contracts); (6) new entrants not in market before; (7) easy policy
@@ -101,7 +101,7 @@ Cite chain by id. Mark "inference, test before relying on it" is unverified.
 | Chain | Trigger | Mechanism | Observable and falsifier | Second-order effect | Implication for favoured families |
 | --- | --- | --- | --- | --- | --- |
 | `tightening-into-leverage` | Policy rate rising while private debt service to income is high | Debt service on floating and refinanced debt outruns incomes; weakest borrowers cut first | Debt service ratio, refinancing wall, credit spreads; falsified if spreads stay tight two quarters after rate peak | Forced sellers appear in most levered, least liquid names; fund redemptions follow | `forced-selling` and `spin-offs` (post-reorganization) get more candidates; register tightening as counterparty's constraint |
-| `easing-into-bubble` | Real rates negative for years, debt growth outrunning income growth | Cheap money bids up long-duration cash flows and assets with no cash flows; new entrants and leverage arrive | Bubble checklist score; falsified if score stays low while prices rise | Small and micro cap anomalies compress as everything rises; crowding risk at momentum peaks (inference, test before relying on it) | Critique flags momentum or quality strategy whose evidence window sits inside high-score period as regime-concentrated |
+| `easing-into-bubble` | Real rates negative for years, debt growth outrunning income growth | Cheap money bids up long-duration cash flows and assets with no cash flows; new entrants and leverage arrive | Bubble checklist count; falsified if count stays low while prices rise | Small and micro cap anomalies compress as everything rises; crowding risk at momentum peaks (inference, test before relying on it) | Critique flags momentum or quality strategy whose evidence window sits inside high-count period as regime-concentrated |
 | `deleveraging-printing` | Policy rate at floor, asset purchases begin | Nominal growth pushed above nominal rates; financial assets reprice before incomes | Real yield, breakeven inflation, central bank balance sheet; falsified if nominal growth stays below rates; for fund-discount claim, discount series must narrow within stated window | Closed-end fund discounts and illiquid spreads close fast, then stay closed (inference, test before relying on it) | `closed-end-discount`: entry in depression phase, exit in early reflation; chain gives holding period |
 | `deletion-under-stress` | Rebalance or index review during drawdown | Mechanical sellers sell on date regardless of price; buy side thin in small names | Announcement date, effective date, ADV of deleted names; falsified if price impact absorbed by effective date | Deleted names drift as forced flow ends and fundamentals reassert | `forced-selling`: opportunity scales with stress, so regime record is budget input, not filter |
 | `currency-inflation` | Capital inflows stop in country with foreign-currency debt | Currency falls, import prices rise, central bank cannot print its way out | Current account, reserves, external debt share; falsified if currency stabilizes without rate defence | Exporters gain margin, importers lose; cross-listed names misprice against home market | Only if universe holds such markets; otherwise critique item for names with foreign-currency revenue, not family |
@@ -138,7 +138,7 @@ quarterly, and whenever chain falsifier fires. Correct by new line with
 | Consumer | Use | Not allowed |
 | --- | --- | --- |
 | Hypothesis generation | Weights which families get delegate slots; supplies counterparty constraint registration must name | Hypothesis whose signal is regime itself |
-| `score` | Stamps every run line with regime ids its evidence window spans | Conditioning returns on regime unless hypothesis declared it and scorecard regime split tests it |
+| `measure` | Stamps every run line with regime ids its evidence window spans | Conditioning returns on regime unless hypothesis declared it and scorecard regime split tests it |
 | Critique | Checks evidence concentration in one regime, mechanism survival in next phase, holding period crossing likely phase change | Rejecting strategy because critic forecasts regime change |
 | `check <proposal>` | Shows regime record date and live chains beside diff | Changing any weight in proposal |
 | Human | Confirms, edits, rejects draft; states confidence | Nothing |
@@ -169,7 +169,7 @@ If family carries `event: true`, add to hypothesis fields `families` lists:
 * Price is what is discounted: if hypothesis cannot state where it disagrees
   with price, treat it as factor exposure, not hypothesis.
 * Size for being wrong: no strategy exceeds `limits.max_strategy_risk_share`
-  of risk budget; `advise` enforces cap.
+  of risk budget; `recommend` enforces cap.
 * Drawdown tolerance: human sets review threshold before strategy goes live;
   use regime record to tell drawdown chain predicts from one it does not.
 * Believability: discount claim whose source cannot state mechanism. Show
@@ -179,7 +179,7 @@ If family carries `event: true`, add to hypothesis fields `families` lists:
   critique, and regime record; show it beside recommendation.
 * Third order: ask what happens to strategy when everyone seeing same
   first-order effect acts on it.
-* Diagnose before act: if live strategy deviates from scored path, record
+* Diagnose before act: if live strategy deviates from measured path, record
   decision with action `diagnose` and reason naming broken link (mechanism,
   data, regime, or crowd). Pause or retire on diagnosis, never on pain
   alone.
@@ -193,7 +193,7 @@ never block on critic's regime forecast.
 | Item | Inspect | Settles | Blocker | Concern |
 | --- | --- | --- | --- | --- |
 | `chain` | Hypothesis `chain`, `mechanism`; chain table row; regime record observables at hypothesis `ts` | Mechanism relies on named chain; trigger observed at registration, not forecast | Event family with `chain` absent, or cited trigger forecast, not observed | `chain` is `none` where table row fits |
-| `regime-band` | Run line regime ids; regime records' `bubble_score` over evidence window; `signal.py` reads of macro variables | Evidence spans more than one regime and bubble-score band, or hypothesis names regime as mechanism | Signal conditions on macro variable hypothesis did not register | Evidence inside one regime or one band |
+| `regime-band` | Run line regime ids; regime records' `bubble_score` over evidence window; `signal.py` reads of macro variables | Evidence spans more than one regime and bubble-count band, or hypothesis names regime as mechanism | Signal conditions on macro variable hypothesis did not register | Evidence inside one regime or one band |
 | `next-phase` | Chain table row; `holding_days` in `config.json`; current regime record | Mechanism holds in next phase of its chain, or holding period ends before likely phase change | None | Mechanism fails in next phase and holding period crosses it |
 | `third-order` | Hypothesis `counterparty`, `mechanism`; scorecard `capacity` | Hypothesis states what happens when everyone seeing same first-order effect acts on it | None | Crowding answer absent or contradicted by `capacity` |
 | `discounted` | Hypothesis `discounted`, `expectation_source`; `signal.py` surprise construction | Hypothesis names what price discounts and where it disagrees; surprise measured against expectation known before event | Event family signal uses outcome level, not surprise, or reads expectation not known at decision date | Disagreement with price unstated (factor exposure in disguise) |

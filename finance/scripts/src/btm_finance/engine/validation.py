@@ -40,7 +40,7 @@ def cscv(returns_matrix: Floats, *, blocks: int = 16) -> Cscv:
     """Probability of backtest overfitting (Bailey, Borwein, Lopez de Prado, Zhu
     2017) on T by N per-period trial returns; O(T N + C B N), C = comb(B, B/2).
 
-    The T mod B trailing rows are dropped; a zero-spread block set scores Sharpe 0.
+    The T mod B trailing rows are dropped; a zero-spread block set gives Sharpe 0.
     """
     matrix = np.asarray(returns_matrix, dtype=np.float64)
     if matrix.ndim != 2 or matrix.shape[1] < 2:  # noqa: PLR2004 - T by N, N >= 2
@@ -136,10 +136,10 @@ def ols_hac(y: Floats, X: Floats, *, lags: int | None = None) -> Ols:
         raise ValueError("lags must be >= 0")
     coef, *_ = np.linalg.lstsq(design, target, rcond=None)
     residual = target - design @ coef
-    scores = design * residual[:, None]
-    meat = scores.T @ scores
+    moments = design * residual[:, None]
+    meat = moments.T @ moments
     for lag in range(1, min(lag_count, n - 1) + 1):
-        cross = scores[lag:].T @ scores[:-lag]
+        cross = moments[lag:].T @ moments[:-lag]
         meat += (1.0 - lag / (lag_count + 1.0)) * (cross + cross.T)
     bread = np.linalg.pinv(design.T @ design)
     errors = np.sqrt(np.maximum(np.diag(bread @ meat @ bread), 0.0))

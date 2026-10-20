@@ -221,7 +221,7 @@ def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
             critique=None,
             status=status,
             paper=None,
-            next=f"score {evidence.strategy} after registering its hypothesis",
+            next=f"measure {evidence.strategy} after registering its hypothesis",
         )
     card = run.get("scorecard")
     card = card if isinstance(card, Mapping) else {}

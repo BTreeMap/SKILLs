@@ -88,12 +88,12 @@ def held_out_path(book_id: str) -> Path:
 
 
 def held_out_list(book: Book) -> frozenset[str]:
-    """The held-out symbols `start` wrote, per sector; read by `score` alone."""
+    """The held-out symbols `start` wrote, per sector; read by `measure` alone."""
     path = held_out_path(book.meta.id)
     if not path.is_file():
         raise CommandError(
             f"no held-out list for book {book.meta.id} on this machine; "
-            "the operator restores it from backup before any score"
+            "the operator restores it from backup before any measure"
         )
     data = read_json(path)
     if not isinstance(data, dict) or not all(
@@ -240,7 +240,7 @@ def proposal_versions(book: Book, day: str) -> list[Path]:
 
 
 def proposal_target(book: Book, day: str, *, force: bool) -> Path:
-    """Where `advise` writes: `<day>.json` once; with `force`, the next
+    """Where `recommend` writes: `<day>.json` once; with `force`, the next
     `<day>.<n>.json`, n from 2."""
     taken = proposal_versions(book, day)
     if not taken:

@@ -2,7 +2,7 @@
 name: finance
 description: >-
   Keeps a private book for slow-money stock research: hypotheses registered
-  before testing, scored by deflated Sharpe, purged walk-forward, and factor
+  before testing, measured by deflated Sharpe, purged walk-forward, and factor
   regression; append-only records; held-out names kept outside the book;
   rebalances proposed, and a human approves every trade. Use when setting
   up or continuing an equity research book, or recording holdings,
@@ -14,7 +14,7 @@ compatibility: >-
   that every skill's scripts share, about 430 MB with this skill's numeric
   libraries.
 metadata:
-  argument-hint: "[start|schema|load|record|score|check|advise|write|read] <book path>"
+  argument-hint: "[start|schema|load|record|measure|check|recommend|write|read] <book path>"
 ---
 
 # Finance
@@ -61,10 +61,10 @@ No agent, script, or cron changes these four.
 1. Agent process never holds broker adapter or credential. Enforced: sender
    is book's `bin/send`, stdlib only, adapter a stub operator replaces;
    broker key stays in OS keychain.
-2. Held-out names stay hidden from agent. Enforced: `score` serves strategy
-   code only research names, through `Market`; held-out list is outside
-   book, agent does not read it; paper stage is out-of-sample test that
-   holds regardless.
+2. Held-out names stay hidden from agent. Enforced: `measure` serves
+   strategy code only research names, through `Market`; held-out list is
+   outside book, agent does not read it; paper stage is out-of-sample test
+   that holds regardless.
 3. Ledger is append-only. Enforced: `record` is only writer; `ledger/` owned
    by `record` user; corrections are new lines with `supersedes`.
 4. Orders leave only through `bin/send`, run by operator in terminal,
@@ -89,9 +89,9 @@ $R start "$B" [--cap N] [--universe:file names.csv]
 $R schema
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
-$R score "$B" <strategy> [--agent <name>] [--held-out] [--repeat <run id>]
+$R measure "$B" <strategy> [--agent <name>] [--held-out] [--repeat <run id>]
 $R check "$B" [<strategy> | <run id> | <proposal date>] [--live]
-$R advise "$B" <YYYY-MM-DD> [--force]
+$R recommend "$B" <YYYY-MM-DD> [--force]
 $R write "$B" --entry:file <entry.json> [--prose] [--known]
 $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 ```
@@ -102,9 +102,9 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
-| `score` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
+| `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
 | `check` | Nothing, strategy, run id, or proposal date; `--live`; `--today` tests only | Nothing: continue view (strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: undecodable lines and dangling `supersedes` by file and line). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. Every output has advisory `next` |
-| `advise` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
+| `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
 
@@ -154,7 +154,7 @@ under `pad`.
 
 ## Strategy
 
-Register hypothesis first; `score` refuses strategy no hypothesis line
+Register hypothesis first; `measure` refuses strategy no hypothesis line
 names. Then write `strategies/<name>/`:
 
 - `signal.py` defines `signal(market, params)`, returns target weights by
@@ -166,7 +166,7 @@ names. Then write `strategies/<name>/`:
 - `config.json`: `params` (numbers only, each perturbed 20% down and up),
   `rebalance` (`monthly|quarterly|annual`), `holding_days` (at least
   `limits.min_holding_days`), `long_only`, `family_id` (same as
-  hypothesis's; `score` refuses a mismatch).
+  hypothesis's; `measure` refuses a mismatch).
 - Imports: only `numpy`, `math`, `statistics`, `itertools`, `functools`,
   `operator`, `collections`, `dataclasses`, `typing`, and
   `from btm_finance import api` or `from btm_finance.api import Market`
@@ -179,8 +179,8 @@ Scorer trades next open after each period's last day, normalizes to gross 1,
 drops excluded, under-floor, and thin names, caps weight at
 `sizing.max_weight`. Run breaking cost, participation, or holding bound
 still writes its line: every run counts as trial, refused or not. Never
-rescore to shop for better number; change hypothesis, register again. Cite a
-run only after `score --repeat` reproduces it.
+measure again to shop for better number; change hypothesis, register again.
+Cite a run only after `measure --repeat` reproduces it.
 
 `check <strategy>` derives standing of newest research run on every call:
 `promotable`, `blocked`, or `discard` (PBO at or above `pbo_discard`). Each
@@ -212,7 +212,7 @@ Unit of work is one registered hypothesis:
    reached its `trials` from `limits.families`.
 2. `record` hypothesis; copy its id from `new`.
 3. Hand author delegate the unit (table below): it writes
-   `strategies/<name>/` and runs `score "$B" <name> --agent <agent>`.
+   `strategies/<name>/` and runs `measure "$B" <name> --agent <agent>`.
 4. Hand a different critique delegate the run id; `record` its `critiques`
    batch.
 5. Run `check "$B" <name>`; read standing and every blocker.
@@ -223,16 +223,17 @@ operator for more through `question` pad entry, quoting `trials_used`; never
 edit `limits.json`.
 
 Commit book changes on branch `agent/<date>-<topic>` in book repository;
-operator merges. Method change (scorer, guards, data model, sources) is pull
-request to this skill through `/author-skill`, never edit to installed copy.
+operator merges. Method change (`measure`, guards, data model, sources) is
+pull request to this skill through `/author-skill`, never edit to installed
+copy.
 
 Delegate through `/summon`, one unit per delegate:
 
 | Caller supplies | Author delegate | Critique delegate |
 | --- | --- | --- |
-| Unit | one registered hypothesis: write strategy, score it | one run, every item of `critique` |
+| Unit | one registered hypothesis: write strategy, measure it | one run, every item of `critique` |
 | Record | hypothesis line; absolute paths of `families` and `scorecard`; book path, binding | run id; absolute path of `critique`; book path, read only |
-| Rules it can break | none of four invariants; writes only `strategies/<name>/` on its branch and own `ledger/runs/<agent>.jsonl` through `score --agent`; never `record`, `advise`, `bin/send` | none of four invariants; writes only its batch file; never reads author's session or pad |
+| Rules it can break | none of four invariants; writes only `strategies/<name>/` on its branch and own `ledger/runs/<agent>.jsonl` through `measure --agent`; never `record`, `recommend`, `bin/send` | none of four invariants; writes only its batch file; never reads author's session or pad |
 | Output | run id, or one `friction` pad body saying why it stopped | one `critiques` batch file |
 | Cap | that family's remaining trials | one run |
 | Gate | `check "$B" <strategy>` | lead's `record`, then `check "$B" <strategy>` |
@@ -256,16 +257,16 @@ In every mode:
 
 ## Propose and approve
 
-Sleeve is strategy whose `status` reads `paper` or `live`. `advise` diffs
+Sleeve is strategy whose `status` reads `paper` or `live`. `recommend` diffs
 live sleeves against real account (live fills plus opening holdings) and
 paper sleeves against own dry-run fills; `check --live` monitors each sleeve
 from its own fills only. `unmanaged` lists held names outside research set,
 never sold; never reason from it about held-out membership. Load `book`
 before explaining sizing, cuts, carried orders, or proposal fields.
 
-1. On rebalance day, after close, run `advise "$B" <date>`. When it names a
-   skipped sleeve, score that strategy, then run
-   `advise "$B" <date> --force`.
+1. On rebalance day, after close, run `recommend "$B" <date>`. When it names
+   a skipped sleeve, measure that strategy, then run
+   `recommend "$B" <date> --force`.
 2. Run `check "$B" <date>`. Read result to operator in its order: every
    `blockers` entry verbatim, `baseline` row beside every other sleeve,
    `stale` flags, then `diff`, `cuts`, `unmanaged`, `summary`. Never argue
@@ -281,11 +282,11 @@ before explaining sizing, cuts, carried orders, or proposal fields.
 ## Live
 
 Weekly, run `check "$B" --live`. Per sleeve it measures realized path
-against scorer's model path, slippage against run's spread plus commission,
-drawdown, months below baseline sleeve, data age; each breach appends one
-incident line, once per strategy and kind per 7 days. Show operator `report`
-whole, every breach included. Never pause anything: pause is operator's
-decision line plus edit of `strategies/<name>/status`.
+against `measure`'s model path, slippage against run's spread plus
+commission, drawdown, months below baseline sleeve, data age; each breach
+appends one incident line, once per strategy and kind per 7 days. Show
+operator `report` whole, every breach included. Never pause anything: pause
+is operator's decision line plus edit of `strategies/<name>/status`.
 
 ## Operator cadence
 
@@ -293,9 +294,9 @@ decision line plus edit of `strategies/<name>/status`.
 | --- | --- | --- |
 | Nightly | cron | `load` per source |
 | Continuous; weekly | lead and delegates; cron or lead | Research loop; `check --live` |
-| Rebalance day after close | lead | `advise`, then `check <date>` read to operator |
+| Rebalance day after close | lead | `recommend`, then `check <date>` read to operator |
 | Send day, market hours | operator, in terminal | approval file, `bin/send` |
-| Monthly; quarterly | operator | promotion decisions, `score --held-out`, `status` edits; cost refit, branch merges |
+| Monthly; quarterly | operator | promotion decisions, `measure --held-out`, `status` edits; cost refit, branch merges |
 
 ## Continue
 
@@ -309,24 +310,24 @@ settle to `/fact-check` or state it open.
 - `approval_template` holds proposal date in `date`; `bin/send` refuses any
   `date` but today (UTC). Operator sets `date` and file name to send day and
   keeps `proposal`: `check --live` finds slippage reference through it.
-- `score --repeat` compares sha256 of `signal.py` and `config.json` bytes:
-  any reformat, whitespace included, refuses repeat. Edit scored strategy
+- `measure --repeat` compares sha256 of `signal.py` and `config.json` bytes:
+  any reformat, whitespace included, refuses repeat. Edit measured strategy
   files only for new run.
 - No `_factors` loaded (`load french`, or `csv` with symbol `_factors`):
   `factor` null, `check` blocks on `factor: null`. Load factors before first
-  `score`.
+  `measure`.
 
 ## Completion checks
 
 - Every `record` exited 0, or its rejection was corrected and resent.
-- Nothing under `ledger/` written except through `record`, `score`, or
+- Nothing under `ledger/` written except through `record`, `measure`, or
   `check --live`. Bare `check` shows no `warnings`; any warning or line
   `record` refused was reported to operator, not repaired.
 - Every new hypothesis names family, capacity class, falsifier,
-  counterparty, and was recorded before its strategy code and its `score`;
+  counterparty, and was recorded before its strategy code and its `measure`;
   ids quoted to operator copied from `new`.
-- Refused runs reported as trials, not hidden; no family scored past budget
-  without operator's answer.
+- Refused runs reported as trials, not hidden; no family measured past
+  budget without operator's answer.
 - Every delegate return judged before anything from it was recorded; every
   critique came from delegate other than run's author.
 - Operator saw every blocker of every standing and proposal read to them.

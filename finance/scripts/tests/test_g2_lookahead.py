@@ -1,6 +1,6 @@
 """G2: a strategy cannot see past its as-of day. Foresight computed outside
-the API from future closes scores far above chance on the synthetic panel; the
-same intent written against `Market` gets only the past and scores at chance;
+the API from future closes gets far above chance on the synthetic panel; the
+same intent written against `Market` gets only the past and gets chance;
 no `Market` accessor changes when everything after the day is poisoned."""
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ import pytest
 from btm_finance.api import Market
 from btm_finance.data.assemble import build_events, build_panel, parse_universe
 from btm_finance.data.panel import PANEL_ARRAYS, Events, Panel
+from btm_finance.measuring import Peers, Setting, evaluate, rules_of
 from btm_finance.models import (
     PREFERENCES_TEMPLATE,
     Limits,
@@ -17,7 +18,6 @@ from btm_finance.models import (
     StrategyConfig,
     limits_template,
 )
-from btm_finance.scoring import Peers, Setting, evaluate, rules_of
 from btm_finance.synthetic import make_panel
 
 HORIZON = 63  # one quarter: the rebalance period of both strategies
@@ -39,16 +39,16 @@ def setting(panel: Panel, events: Events) -> Setting:
     return Setting.of(panel, events, rules_of(limits, preferences, config))
 
 
-def long_short(names: tuple[str, ...], score: np.ndarray) -> dict[str, float]:
-    known = np.flatnonzero(np.isfinite(score))
+def long_short(names: tuple[str, ...], key: np.ndarray) -> dict[str, float]:
+    known = np.flatnonzero(np.isfinite(key))
     third = known.size // 3
-    order = known[np.argsort(score[known], kind="stable")]
+    order = known[np.argsort(key[known], kind="stable")]
     weights = {names[i]: 1.0 for i in order[-third:].tolist()}
     return weights | {names[i]: -1.0 for i in order[:third].tolist()}
 
 
 def foresight(panel: Panel):
-    """Next quarter's closes, read from the full panel the scorer holds."""
+    """Next quarter's closes, read from the full panel `measure` holds."""
 
     def pick(market: Market, params: object) -> dict[str, float]:
         row = int(np.searchsorted(panel.dates, market.day))
@@ -67,7 +67,7 @@ def through_market(market: Market, params: object) -> dict[str, float]:
     return long_short(market.names, closes[-1] / closes[0] - 1.0)
 
 
-def test_foresight_outside_the_api_scores_far_above_chance():
+def test_foresight_outside_the_api_beats_chance_far():
     panel, events = world(1)
     card = evaluate(setting(panel, events), foresight(panel), {}, NONE).scorecard
     assert card.sharpe_net is not None
@@ -75,7 +75,7 @@ def test_foresight_outside_the_api_scores_far_above_chance():
 
 
 @pytest.mark.parametrize("seed", [1, 2, 3])
-def test_the_same_intent_through_the_market_scores_at_chance(seed):
+def test_the_same_intent_through_the_market_stays_at_chance(seed):
     panel, events = world(seed)
     card = evaluate(setting(panel, events), through_market, {}, NONE).scorecard
     assert card.sharpe_net is not None

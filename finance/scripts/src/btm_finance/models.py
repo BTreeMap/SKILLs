@@ -198,7 +198,7 @@ class Limits(Model):
 
 class StrategyConfig(Model):
     """`strategies/<name>/config.json`, agent-written, so unknown keys are
-    refused; `params` are numbers only, each perturbed by 20% when scored."""
+    refused; `params` are numbers only, each perturbed by 20% when measured."""
 
     params: dict[str, StrictInt | StrictFloat] = Field(default_factory=dict)
     rebalance: Rebalance

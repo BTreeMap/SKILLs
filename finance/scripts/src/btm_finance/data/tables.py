@@ -30,7 +30,7 @@ class Source(StrEnum):
 
 
 class Table(StrEnum):
-    """`returns` is a run's own series, written by `score`, never loaded."""
+    """`returns` is a run's own series, written by `measure`, never loaded."""
 
     BARS = "bars"
     EVENTS = "events"

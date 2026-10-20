@@ -24,10 +24,10 @@ def by_status(names: Mapping[str, Status]) -> dict[str, list[str]]:
 def open_hypotheses(
     hypotheses: Sequence[Row], runs: Sequence[Row], decisions: Sequence[Row]
 ) -> list[Row]:
-    """Registered, never scored, never rejected or retired by a decision."""
-    scored = {run.get("hypothesis_id") for run in runs}
+    """Registered, never measured, never rejected or retired by a decision."""
+    measured = {run.get("hypothesis_id") for run in runs}
     closed = {d.get("subject") for d in decisions if d.get("action") in CLOSING}
-    return [h for h in hypotheses if h.get("id") not in scored | closed]
+    return [h for h in hypotheses if h.get("id") not in measured | closed]
 
 
 def families(
@@ -88,5 +88,5 @@ def next_step(
     if not hypotheses:
         return "register a hypothesis for each strategy with record, baseline first"
     if pending:
-        return f"{pending} open hypotheses await strategy code and scoring"
+        return f"{pending} open hypotheses await strategy code and measure"
     return "register the next hypothesis within its family budget"

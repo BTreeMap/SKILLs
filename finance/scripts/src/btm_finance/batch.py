@@ -154,7 +154,7 @@ class _Expansion(Acceptance):
                 self.advisories.append(
                     f"{where}: min_holding_days {entry.min_holding_days} is under "
                     f"limits.min_holding_days {self.context.min_holding_days}; "
-                    "scoring will refuse it"
+                    "measure will refuse it"
                 )
             if entry.strategy not in self.context.strategies:
                 self.advisories.append(

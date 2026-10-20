@@ -16,10 +16,10 @@ DRIFT = dedent(
     import numpy as np
 
 
-    def long_short(names, score):
-        known = np.flatnonzero(np.isfinite(score))
+    def long_short(names, key):
+        known = np.flatnonzero(np.isfinite(key))
         third = known.size // 3
-        order = known[np.argsort(score[known], kind="stable")]
+        order = known[np.argsort(key[known], kind="stable")]
         weights = {names[i]: 1.0 for i in order[-third:].tolist()}
         weights.update({names[i]: -1.0 for i in order[:third].tolist()})
         return weights
@@ -52,7 +52,7 @@ def critique(run_id: str) -> dict:
 
 
 def edge_book(synthetic, run, plant, families):
-    """Two weaker cousins (short lookbacks) scored first: the family PBO ranks
+    """Two weaker cousins (short lookbacks) measured first: the family PBO ranks
     the candidate's variants against them and DSR counts them."""
     book = synthetic(seed=5, alpha=0.0015)
     families(book, g9={"trials": 20})
@@ -66,14 +66,14 @@ def edge_book(synthetic, run, plant, families):
             long_only=True,
             **EDGE,
         )
-        assert run(["score", str(book), name])[1]["run_id"]  # refused or not
+        assert run(["measure", str(book), name])[1]["run_id"]  # refused or not
     return book
 
 
 def test_flat_but_negative_capacity_is_blocked_by_name(synthetic, run, plant, families):
     book = edge_book(synthetic, run, plant, families)
     plant(book, "fade", "SIGN = -1.0\n" + DRIFT, params={"lookback": 252}, **EDGE)
-    code, document, _ = run(["score", str(book), "fade"])
+    code, document, _ = run(["measure", str(book), "fade"])
     assert code == 1  # negative gross: every cost is lost, so cost_share is 1
     small, cap = (
         document["scorecard"]["capacity"]["0.1x"],
@@ -98,7 +98,7 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
         long_only=True,  # no flips from short to long: trades stay under 2% of ADV
         **EDGE,
     )
-    code, document, err = run(["score", str(book), "drift"])
+    code, document, err = run(["measure", str(book), "drift"])
     assert code == 0, err
     batch(run, book, {"critiques": [critique(document["run_id"])]})
     view = run(["check", str(book), "drift"])[1]

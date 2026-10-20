@@ -1,4 +1,4 @@
-"""G7 and G1 end to end: the baseline as a paper sleeve runs advise, approve,
+"""G7 and G1 end to end: the baseline as a paper sleeve runs recommend, approve,
 and `bin/send --dry-run` for two annual rebalances; the second proposal diffs
 against the first's dry-run fills. Also the refusals and the two books kept
 apart: a real fill never lands in a paper sleeve's position."""
@@ -23,13 +23,13 @@ def batch(run, book: Path, payload: dict) -> None:
 def paper_book(synthetic, run) -> Path:
     book = synthetic(seed=7)
     (book / "strategies" / "baseline" / "status").write_text("paper\n")
-    code, _, err = run(["score", str(book), "baseline"])
+    code, _, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     return book
 
 
-def advise(run, book: Path, day: str, *extra: str) -> dict:
-    code, receipt, err = run(["advise", str(book), day, *extra])
+def recommend(run, book: Path, day: str, *extra: str) -> dict:
+    code, receipt, err = run(["recommend", str(book), day, *extra])
     assert code == 0, err
     return receipt
 
@@ -75,7 +75,7 @@ def targets(document: dict) -> dict[str, int]:
 
 def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
     book = paper_book(synthetic, run)
-    advise(run, book, FIRST)
+    recommend(run, book, FIRST)
     first = proposal(book, FIRST)
     assert first["orders"], "the baseline sleeve proposes trades"
     view = run(["check", str(book), FIRST])[1]
@@ -103,7 +103,7 @@ def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
     }
     assert positions(landed) == targets(first)
 
-    advise(run, book, SECOND)
+    recommend(run, book, SECOND)
     second = proposal(book, SECOND)
     held = positions(landed)
     kept = set(held) & set(targets(second))
@@ -121,11 +121,11 @@ def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
 
 def test_no_sleeve_exits_1_naming_the_reason(synthetic, run):
     book = synthetic(seed=7)
-    code, _, err = run(["advise", str(book), FIRST])
+    code, _, err = run(["recommend", str(book), FIRST])
     assert code == 1
     assert "no sleeve" in err
     (book / "strategies" / "baseline" / "status").write_text("paper\n")
-    code, _, err = run(["advise", str(book), FIRST])
+    code, _, err = run(["recommend", str(book), FIRST])
     assert code == 1
     assert "skipped baseline" in err
     assert not (book / "proposals" / f"{FIRST}.json").exists()
@@ -136,19 +136,20 @@ def test_a_proposal_is_written_once_and_check_needs_one(synthetic, run):
     code, _, err = run(["check", str(book), FIRST])
     assert code == 1
     assert "no proposal" in err
-    advise(run, book, FIRST)
-    code, _, err = run(["advise", str(book), FIRST])
+    recommend(run, book, FIRST)
+    code, _, err = run(["recommend", str(book), FIRST])
     assert code == 1
     assert "--force" in err
     assert (
-        advise(run, book, FIRST, "--force")["proposal"] == f"proposals/{FIRST}.2.json"
+        recommend(run, book, FIRST, "--force")["proposal"]
+        == f"proposals/{FIRST}.2.json"
     )
     assert run(["check", str(book), FIRST])[1]["proposal"].endswith(".2.json")
 
 
 def test_a_real_fill_never_lands_in_a_paper_position(synthetic, run):
     book = paper_book(synthetic, run)
-    advise(run, book, FIRST)
+    recommend(run, book, FIRST)
     symbol = proposal(book, FIRST)["orders"][0]["symbol"]
     real = {
         "symbol": symbol,
@@ -161,7 +162,7 @@ def test_a_real_fill_never_lands_in_a_paper_position(synthetic, run):
     }
     opening = {"date": FIRST, "positions": [{"symbol": "ZZZ", "quantity": 5}]}
     batch(run, book, {"fills": [real], "holdings": [opening]})
-    advise(run, book, FIRST, "--force")
+    recommend(run, book, FIRST, "--force")
     again = proposal(book, f"{FIRST}.2")
     order = next(o for o in again["orders"] if o["symbol"] == symbol)
     assert (order["held"], order["account"]) == (0.0, "paper")
@@ -176,7 +177,7 @@ def test_an_order_over_the_adv_bound_is_cut_and_reported(synthetic, run):
     limits = json.loads(path.read_text())
     limits["max_adv_participation"] = 0.001  # the human's edit
     path.write_text(json.dumps(limits))
-    advise(run, book, FIRST)
+    recommend(run, book, FIRST)
     document = proposal(book, FIRST)
     assert document["cuts"]
     for cut in document["cuts"]:
@@ -190,7 +191,7 @@ def test_an_order_over_the_adv_bound_is_cut_and_reported(synthetic, run):
 @pytest.mark.parametrize("rejected", [False, True])
 def test_an_unfilled_order_carries_once(synthetic, run, rejected):
     book = paper_book(synthetic, run)
-    advise(run, book, FIRST)
+    recommend(run, book, FIRST)
     if rejected:
         reject = {
             "kw": ["skip", "first"],
@@ -199,7 +200,7 @@ def test_an_unfilled_order_carries_once(synthetic, run, rejected):
             "reason": "operator skipped the day",
         }
         batch(run, book, {"decisions": [reject]})
-    advise(run, book, SECOND)
+    recommend(run, book, SECOND)
     second = proposal(book, SECOND)
     keys = [(o["symbol"], o["strategy"]) for o in second["orders"]]
     assert len(keys) == len(set(keys))

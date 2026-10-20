@@ -31,8 +31,8 @@ data/manifest.json                        per file: path, sha256, rows, source, 
   file, nothing fetched. File stays in place: tell operator, never delete or
   rewrite it; operator restores from backup.
 - `data_snapshot` is sha256 over sorted digests of source files only; runs'
-  returns files stay listed for integrity but never move it. `score` stamps
-  it on every run line.
+  returns files stay listed for integrity but never move it. `measure`
+  stamps it on every run line.
 - Same `(symbol, date)` bar in two files: latest `loaded_at` wins. Same
   `(symbol, field, event_time, knowledge_time)` event: same rule. Correct
   vendor error by loading fixed rows with `--since` at their first date.

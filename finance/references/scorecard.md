@@ -1,11 +1,11 @@
 # Scorecard
 
 Load before reading, explaining, or arguing from scorecard or standing.
-`score` writes one per run line under `scorecard`, with `reasons` beside it
-naming why any field is null; `check <strategy>` applies thresholds from
+`measure` writes one per run line under `scorecard`, with `reasons` beside
+it naming why any field is null; `check <strategy>` applies thresholds from
 `limits.json`. Run line key `peers` lists run ids whose stored series fed
-`sr_var` and PBO matrix, in order used; `score --repeat` rebuilds from that
-list.
+`sr_var` and PBO matrix, in order used; `measure --repeat` rebuilds from
+that list.
 
 ## Units
 
@@ -76,8 +76,8 @@ list.
 
 ## Repeat
 
-`score <strategy> --repeat <run id>` reruns one line from its own inputs and
-writes nothing: no run line, no returns file, no incident.
+`measure <strategy> --repeat <run id>` reruns one line from its own inputs
+and writes nothing: no run line, no returns file, no incident.
 
 * Refuses before running, naming each moved input: `signal.py` or
   `config.json` whose sha256 differs from line's `code_files`, or
@@ -92,4 +92,4 @@ writes nothing: no run line, no returns file, no incident.
   larger above; null must meet null; text must match. Each diff names field
   path, recorded, recomputed, rule.
 * `numpy` or `pyarrow` version moved: advisory only. Exit 0 reproduced, 1
-  otherwise. Cost: one scorer run plus one re-hash of the store.
+  otherwise. Cost: one `measure` run plus one re-hash of the store.

@@ -1,4 +1,4 @@
-"""`score --repeat`, pure: what stops a rerun, and the scorecard diff.
+"""`measure --repeat`, pure: what stops a rerun, and the scorecard diff.
 
 A rerun is refused, never approximated, when its inputs moved: code, raw
 data, or a peer's stored series. The shell hashes; this module judges.
@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 from enum import StrEnum
 
 from btm_corekit import Model
-from btm_finance.scoring import number
+from btm_finance.measuring import number
 
 CODE_FILES = ("signal.py", "config.json")
 ENGINE_KEY = "btm_finance"

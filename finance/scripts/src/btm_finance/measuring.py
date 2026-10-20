@@ -1,8 +1,8 @@
-"""The scorer, pure given panel, events, rules, strategy, and params: target
+"""The `measure` core, pure given panel, events, rules, strategy, and params: target
 weights at each period's last trading day, trades at the next open, holdings
 drift close to close, every trade costed, then the scorecard.
 
-Panel and events must already hold only the names being scored. One run is
+Panel and events must already hold only the names being measured. One run is
 O(T N + R N L) for T days, N names, R rebalances, L the strategy's lookback.
 """
 
@@ -220,7 +220,7 @@ def number(value: object) -> float | None:
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Setting:
-    """One scoring's fixed inputs: the scoped data, its arrays, the rules."""
+    """One measure's fixed inputs: the scoped data, its arrays, the rules."""
 
     panel: Panel
     events: Events
@@ -499,17 +499,17 @@ def walk_forward(
 ) -> tuple[WalkForward | None, str | None]:
     if len(excess) < 2 * folds:
         return None, f"{len(excess)} periods, under 2 per fold for {folds} folds"
-    scores = [
+    sharpes = [
         finite(sharpe(excess[test]))
         for _, test in purged_folds(len(excess), folds=folds, embargo=embargo)
     ]
-    known = [score for score in scores if score is not None]
+    known = [value for value in sharpes if value is not None]
     return WalkForward(
         folds=folds,
         embargo=embargo,
-        sharpe=tuple(scores),
+        sharpe=tuple(sharpes),
         mean=finite(float(np.mean(known))) if known else None,
-        positive=sum(score > 0 for score in known) / len(scores),
+        positive=sum(value > 0 for value in known) / len(sharpes),
     ), None
 
 
@@ -583,7 +583,7 @@ def evaluate(
     base = run_variant(setting, strategy, params)
     if base is None:
         raise CommandError(
-            "signal held no weight on any rebalance day; nothing to score"
+            "signal held no weight on any rebalance day; nothing to measure"
         )
     if len(base.dates) < 2:  # noqa: PLR2004 - a Sharpe needs two periods
         raise CommandError("the first trade falls on the last day; load more history")

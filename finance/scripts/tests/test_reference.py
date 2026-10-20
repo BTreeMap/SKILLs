@@ -1,7 +1,7 @@
 """The skill's reference scorecard: the baseline strategy on a seeded synthetic
 book, pinned field by field within `limits.repeat_tolerance`.
 
-Moving this pin is a method change: a scorer, cost, data API, or synthetic
+Moving this pin is a method change: a `measure`, cost, data API, or synthetic
 generator edit that shifts any number here needs a pull request whose notes
 say which field moved and why. Regenerate only then, with
 `BTM_FINANCE_REPIN=1`, and commit the new `reference/baseline.json`.
@@ -52,7 +52,7 @@ def differences(pinned: Any, found: Any, where: str = "scorecard") -> list[str]:
 
 def test_the_baseline_scorecard_matches_the_pin(synthetic, run):
     book = synthetic(seed=SEED, names=NAMES, days=DAYS)
-    code, document, err = run(["score", str(book), "baseline"])
+    code, document, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     card = document["scorecard"]
     if os.environ.get("BTM_FINANCE_REPIN") == "1":

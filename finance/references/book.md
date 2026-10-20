@@ -85,7 +85,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | --- | --- | --- |
 | `limits.json`, `approvals/`, `strategies/*/status` | human | read |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
-| `ledger/` | `record`; run lines `score`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only |
+| `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only |
 | `strategies/` except `status`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
 | `bin/send` | operator | read; run only `--dry-run`, by operator's hand |
@@ -137,10 +137,10 @@ on held-out path is convenience; held-out list stays out of book.
 
 ## Proposal file
 
-`advise <date>` writes `proposals/<date>.json` once; `--force` writes
+`recommend <date>` writes `proposals/<date>.json` once; `--force` writes
 `<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
 research names only, through `Market` on `as_of`, last bar on or before
-`date`, weights set exactly as `score` sets them.
+`date`, weights set exactly as `measure` sets them.
 
 | Field | Holds |
 | --- | --- |

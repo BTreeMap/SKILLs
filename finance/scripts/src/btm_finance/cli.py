@@ -43,18 +43,6 @@ from btm_corekit import (
     wire_pad,
     write_atomic,
 )
-from btm_finance.advising import (
-    Account,
-    Candidate,
-    Inputs,
-    Previous,
-    Proposal,
-    Quote,
-    Skipped,
-    account_of,
-    approval_of,
-    propose,
-)
 from btm_finance.api import FACTORS, Market, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
@@ -113,6 +101,15 @@ from btm_finance.live import (
     row_of,
     trading_days_after,
 )
+from btm_finance.measuring import (
+    Peers,
+    Prepared,
+    Setting,
+    bounds,
+    evaluate,
+    rules_of,
+    target_weights,
+)
 from btm_finance.models import (
     BASELINE_HYPOTHESIS,
     Action,
@@ -122,6 +119,18 @@ from btm_finance.models import (
     Preferences,
     Status,
     StrategyConfig,
+)
+from btm_finance.recommending import (
+    Account,
+    Candidate,
+    Inputs,
+    Previous,
+    Proposal,
+    Quote,
+    Skipped,
+    account_of,
+    approval_of,
+    propose,
 )
 from btm_finance.repeat import (
     Presence,
@@ -134,15 +143,6 @@ from btm_finance.repeat import (
 from btm_finance.repeat import advisories as engine_advisories
 from btm_finance.scaffold import scaffold
 from btm_finance.scorecard import RunLine, Span
-from btm_finance.scoring import (
-    Peers,
-    Prepared,
-    Setting,
-    bounds,
-    evaluate,
-    rules_of,
-    target_weights,
-)
 from btm_finance.standing import Evidence, standing_of
 from btm_finance.store import (
     PAD,
@@ -314,7 +314,7 @@ def hypothesis_for(book: Book, run: Row | None, strategy: str) -> Row | None:
 
 
 def standing_view(book: Book, target: str) -> BaseModel:
-    """`check <strategy>` or `check <run id>`: standing of the newest scored
+    """`check <strategy>` or `check <run id>`: standing of the newest measured
     research run, or of the named run."""
     runs = all_runs(book)
     named = {str(row.get("run_id")): row for row in runs}
@@ -492,7 +492,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the "
             "record",
             "corrections": '"supersedes": "<id>" on a new line; newest wins',
-            "run_line": f"{', '.join(RunLine.model_fields)} (written by score only)",
+            "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
             "strategy_config": '{"params": {"<name>": 1.0}, "rebalance": '
             '"monthly|quarterly|annual", "holding_days": 21, "long_only": true, '
             '"family_id": "<key of limits.families>"}',
@@ -533,7 +533,9 @@ def scoped(book: Book, names: Sequence[str], *, held_out: bool) -> frozenset[str
     listed = held_out_list(book)
     chosen = frozenset(n for n in names if (n in listed) == held_out)
     if held_out and not chosen:
-        raise CommandError("the held-out list names no loaded symbol; nothing to score")
+        raise CommandError(
+            "the held-out list names no loaded symbol; nothing to measure"
+        )
     return chosen
 
 
@@ -572,7 +574,7 @@ def registered(book: Book, strategy: str) -> Row:
     if not named:
         raise CommandError(
             f"strategy {strategy} is unregistered: no hypothesis names it; "
-            "record its hypothesis first, then score"
+            "record its hypothesis first, then measure"
         )
     return named[-1]
 
@@ -584,7 +586,7 @@ def file_bytes(path: Path) -> bytes:
         raise CommandError(f"cannot read {path}: {err}") from err
 
 
-def cmd_score(args: argparse.Namespace) -> int:
+def cmd_measure(args: argparse.Namespace) -> int:
     """Refusals before running write nothing; bounds broken after running
     still append the run line, then exit 1."""
     if args.repeat is not None:
@@ -716,7 +718,7 @@ def half_spread(run: Row) -> float:
 
 @dataclass(frozen=True, slots=True)
 class Day:
-    """The scoped data and the as-of row `advise` reads every sleeve on."""
+    """The scoped data and the as-of row `recommend` reads every sleeve on."""
 
     panel: Panel
     events: Events
@@ -734,7 +736,7 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     account: Account,
 ) -> Candidate:
     """The sleeve's weights on the as-of row through `Market.at` and
-    `target_weights`, as `score` sets them; vol from the run's net series."""
+    `target_weights`, as `measure` sets them; vol from the run's net series."""
     name = str(run.get("strategy"))
     folder = book.root / "strategies" / name
     config_bytes = file_bytes(folder / "config.json")
@@ -830,7 +832,7 @@ def sleeves_of(book: Book) -> tuple[list[tuple[Row, Account]], list[Skipped]]:
             continue
         run = newest_run(runs, found.name)
         if run is None:
-            reason = f"{found.status} with no run line: score {found.name} first"
+            reason = f"{found.status} with no run line: measure {found.name} first"
             signal(f"sleeve {found.name} skipped: {reason}")
             skipped.append(Skipped(strategy=found.name, reason=reason))
             continue
@@ -838,7 +840,7 @@ def sleeves_of(book: Book) -> tuple[list[tuple[Row, Account]], list[Skipped]]:
     return chosen, skipped
 
 
-def cmd_advise(args: argparse.Namespace) -> int:
+def cmd_recommend(args: argparse.Namespace) -> int:
     """Writes `proposals/<date>.json` and nothing else."""
     book = open_book(args.book)
     when: date = args.date
@@ -848,7 +850,7 @@ def cmd_advise(args: argparse.Namespace) -> int:
         raise CommandError(
             "no sleeve: no strategies/*/status reads paper or live with a run line"
             + (f" (skipped {named})" if named else "")
-            + "; the operator sets status, the agent scores"
+            + "; the operator sets status, the agent measures"
         )
     target = proposal_target(book, when.isoformat(), force=args.force)
     limits, preferences = load_limits(book), load_preferences(book)
@@ -919,7 +921,7 @@ def stale_flags(proposal: Proposal, cadence: Cadence, today: date) -> list[str]:
     if behind > STALE_BARS:
         flags.append(
             f"as-of bar {proposal.as_of} is {behind} trading days before "
-            f"{proposal.date}; load prices, then advise again with --force"
+            f"{proposal.date}; load prices, then recommend again with --force"
         )
     return flags
 
@@ -958,7 +960,7 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
     """`check <date>`: blockers, baseline, stale flags, then the diff."""
     versions = proposal_versions(book, when.isoformat())
     if not versions:
-        raise CommandError(f"no proposal for {when}: run advise {when} first")
+        raise CommandError(f"no proposal for {when}: run recommend {when} first")
     path = versions[-1]
     proposal = parse_model(Proposal, read_json(path), book.relative(path))
     known = {str(row.get("run_id")) for row in all_runs(book)}
@@ -1085,12 +1087,12 @@ def recorded_peers(book: Book, manifest: Manifest, line: RunLine) -> Peers:
 
 
 def cmd_repeat(args: argparse.Namespace) -> int:
-    """Rerun one line from its own inputs: one scorer run, nothing written."""
+    """Rerun one line from its own inputs: one `measure` run, nothing written."""
     book = open_book(args.book)
     name = name_of(args.strategy, "strategy")
     row, line = run_line_of(book, args.repeat)
     if line.strategy != name:
-        raise CommandError(f"run {line.run_id} scored {line.strategy}, not {name}")
+        raise CommandError(f"run {line.run_id} measured {line.strategy}, not {name}")
     folder = book.root / "strategies" / name
     source = file_bytes(folder / "signal.py")
     config_bytes = file_bytes(folder / "config.json")
@@ -1142,7 +1144,7 @@ def cmd_repeat(args: argparse.Namespace) -> int:
             "next": f"run {line.run_id} reproduces; cite it"
             if report.reproduced
             else "read each diff; a moved number is a method change to explain, "
-            "never a run to rescore",
+            "never a run to measure again",
         }
     )
     return 0 if report.reproduced else 1
@@ -1206,7 +1208,7 @@ def sleeve_fills(
 def modeled(
     book: Book, name: str, setting_of: Callable[[StrategyConfig], Setting]
 ) -> tuple[tuple[Days, Floats] | None, str | None]:
-    """The scorer's base path with current code and params, or why not."""
+    """`measure`'s base path with current code and params, or why not."""
     folder = book.root / "strategies" / name
     try:
         config = parse_model(
@@ -1370,23 +1372,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--today", type=iso_day, help="tests only: the day --live measures from"
     )
 
-    score = commands.add_parser("score", help="score a registered strategy")
-    score.set_defaults(func=cmd_score)
-    score.add_argument("book", help="book directory")
-    score.add_argument("strategy", help="directory under strategies/")
-    score.add_argument(
+    measure = commands.add_parser("measure", help="measure a registered strategy")
+    measure.set_defaults(func=cmd_measure)
+    measure.add_argument("book", help="book directory")
+    measure.add_argument("strategy", help="directory under strategies/")
+    measure.add_argument(
         "--held-out", action="store_true", help="the human's one run on held-out names"
     )
-    score.add_argument("--agent", help="append to ledger/runs/<agent>.jsonl")
-    score.add_argument(
+    measure.add_argument("--agent", help="append to ledger/runs/<agent>.jsonl")
+    measure.add_argument(
         "--repeat", metavar="RUN_ID", help="rerun a recorded run; writes nothing"
     )
 
-    advise = commands.add_parser("advise", help="write the rebalance proposal")
-    advise.set_defaults(func=cmd_advise)
-    advise.add_argument("book", help="book directory")
-    advise.add_argument("date", type=iso_day, help="rebalance date, YYYY-MM-DD")
-    advise.add_argument(
+    recommend = commands.add_parser("recommend", help="write the rebalance proposal")
+    recommend.set_defaults(func=cmd_recommend)
+    recommend.add_argument("book", help="book directory")
+    recommend.add_argument("date", type=iso_day, help="rebalance date, YYYY-MM-DD")
+    recommend.add_argument(
         "--force", action="store_true", help="write <date>.<n>.json beside the first"
     )
 

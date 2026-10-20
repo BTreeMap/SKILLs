@@ -19,14 +19,14 @@ RANDOM = dedent(
 
 
     def signal(market, params):
-        """A fixed random score per name: a static long-short book of noise."""
-        score = np.asarray([
+        """A fixed random rank key per name: a static long-short book of noise."""
+        key = np.asarray([
             np.random.default_rng([SEED, *[ord(c) for c in name]]).standard_normal()
             for name in market.names
         ])
-        known = np.arange(score.size)
+        known = np.arange(key.size)
         third = known.size // 3
-        order = np.argsort(score, kind="stable")
+        order = np.argsort(key, kind="stable")
         weights = {market.names[i]: 1.0 for i in order[-third:].tolist()}
         weights.update({market.names[i]: -1.0 for i in order[:third].tolist()})
         return weights
@@ -73,7 +73,7 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
         )
     record(run, book, {"hypotheses": hypotheses})
     run_ids = [
-        run(["score", str(book), f"noise-{seed}"])[1]["run_id"]
+        run(["measure", str(book), f"noise-{seed}"])[1]["run_id"]
         for seed in range(FAMILY)
     ]
     record(

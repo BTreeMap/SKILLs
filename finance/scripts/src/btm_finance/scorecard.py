@@ -80,7 +80,7 @@ class Span(Model):
 
 
 class RunLine(Model):
-    """One `score`: every key `score --repeat` needs to rerun it. `refused`
+    """One `measure` run: every key `measure --repeat` needs to rerun it. `refused`
     lists bounds broken after running; the line counts as a trial anyway.
     `peers` are the run ids whose series fed `sr_var` and PBO, in order;
     `code_files` the sha256 of `signal.py` and `config.json`."""
