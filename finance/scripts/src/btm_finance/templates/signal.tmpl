@@ -1,0 +1,17 @@
+"""Baseline placeholder: equal weight over the research names the view serves.
+
+Static comparator for every candidate strategy. Replace with the static
+multi-factor baseline before scoring it; imports stay within the whitelist.
+"""
+
+import numpy as np
+
+from btm_finance import api
+
+
+def signal(view: "api.View") -> dict[str, float]:
+    names = list(view.names)
+    if not names:
+        return {}
+    weights = np.full(len(names), 1.0 / len(names))
+    return dict(zip(names, weights.tolist(), strict=True))

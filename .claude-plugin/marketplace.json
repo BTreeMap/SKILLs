@@ -22,6 +22,7 @@
         "./caveman",
         "./draft-paper",
         "./fact-check",
+        "./finance",
         "./git-commit",
         "./humanize",
         "./lit-review",

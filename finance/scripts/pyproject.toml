@@ -1,0 +1,19 @@
+[project]
+name = "btm-finance"
+version = "0.1.0"
+description = "Book, ledger, and guards for a slow-money research-to-approval pipeline"
+requires-python = ">=3.11"
+license = "MIT"
+# numpy below 2.5: its stubs use the 3.12 `type` statement, and the workspace
+# typechecks at python_version 3.11; lift with that floor.
+dependencies = ["btm-corekit", "numpy>=2.1,<2.5", "pyarrow>=18"]
+
+[project.scripts]
+btm-finance = "btm_finance.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+btm-corekit = { workspace = true }
