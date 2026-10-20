@@ -30,13 +30,17 @@ strategy status, sending.
 | Name | Path |
 | --- | --- |
 | `book` | [references/book.md](references/book.md) |
+| `critique` | [references/critique.md](references/critique.md) |
+| `families` | [references/families.md](references/families.md) |
 | `scorecard` | [references/scorecard.md](references/scorecard.md) |
 | `sources` | [references/sources.md](references/sources.md) |
 
 Load `book` before making a book, or before reading or explaining one file
-by hand. Load `scorecard` before reading, explaining, or arguing from a
+by hand. Load `families` before registering hypothesis or proposing family
+to operator. Load `scorecard` before reading, explaining, or arguing from a
 scorecard or standing. Load `sources` before first `load` of any source, or
-when load fails upstream.
+when load fails upstream. Never load `critique` as lead: hand its path to
+critique delegate through `/summon`.
 
 ## Redirects
 
