@@ -1,10 +1,11 @@
 # Scorecard
 
-Load only when reading or explaining a scorecard. `score` writes one per run
-line under `scorecard`, with `reasons` beside it naming why any field is
-null; `check <strategy>` applies thresholds from `limits.json`. Run line key
-`peers` lists run ids whose stored series fed `sr_var` and PBO matrix, in
-order used; `score --repeat` rebuilds from that list.
+Load before reading, explaining, or arguing from scorecard or standing.
+`score` writes one per run line under `scorecard`, with `reasons` beside it
+naming why any field is null; `check <strategy>` applies thresholds from
+`limits.json`. Run line key `peers` lists run ids whose stored series fed
+`sr_var` and PBO matrix, in order used; `score --repeat` rebuilds from that
+list.
 
 ## Units
 
@@ -13,8 +14,6 @@ order used; `score --repeat` rebuilds from that list.
   `_factors` `rf` (0 where none loaded); cash earns `rf`.
 * Probabilities in [0, 1]. Costs proportional decimals; `commission_bps`
   only is basis points.
-* Engine: `btm_finance.engine`, pure numpy, no I/O. Each function states
-  units and complexity in its docstring.
 
 ## Fields
 
@@ -25,24 +24,25 @@ order used; `score --repeat` rebuilds from that list.
 | `dsr` | deflated Sharpe, probability true Sharpe beats best of `trials` noise trials | promote at or above 0.95 (`thresholds.dsr`) | Bailey and Lopez de Prado 2014 |
 | `trials` | run lines in family including this one, refused and held-out ones too | within `families.<id>.trials` budget | Bailey and Lopez de Prado 2014 |
 | `pbo` | probability of backtest overfitting by CSCV, 16 blocks | promote below 0.10 (`pbo_promote`); discard at or above 0.50 (`pbo_discard`) | Bailey, Borwein, Lopez de Prado, Zhu 2017 |
-| `walk_forward` | `folds` (`thresholds.folds`), `embargo` (= `holding_days`), net `sharpe` per purged test fold, `mean`, `positive` share | none; critique reads it | Lopez de Prado 2018 ch. 7 |
+| `walk_forward` | `folds` (`thresholds.folds`, default 5), `embargo` (= `holding_days`), `sharpe` list of net Sharpe per purged test fold, `mean`, `positive` share | none; critique reads it | Lopez de Prado 2018 ch. 7 |
 | `regimes` | annualized net Sharpe under `year` by calendar year and under `vol` by tercile `low`, `mid`, `high` | none; critique reads concentration | |
 | `perturbation` | net Sharpe per param under `-20%` and `+20%` | none; critique reads cliff edges | |
-| `factor` | annualized alpha (decimal), Newey-West t, loadings, model label, R^2, n | t at or above 3.0 (`t_empirical`); 2.0 with stated `mechanism` (`t_mechanism`) | Harvey, Liu, Zhu 2016; Fama and French 2015; Carhart 1997 |
+| `factor` | `alpha_annual` (decimal), `t_alpha` (Newey-West), `loadings` per factor, `model` label, factor names joined by `+` (`ff5+mom`), `r2`, `n` periods | t at or above 3.0 (`t_empirical`); 2.0 with stated `mechanism` (`t_mechanism`) | Harvey, Liu, Zhu 2016; Fama and French 2015; Carhart 1997 |
 | `turnover_annual` | one-way turnover per year, half of summed absolute weight change, decimal of capital | none; drives `cost_share` | |
 | `cost_share` | share of gross excess PnL lost to costs, [0, 1]; 1 when gross excess PnL is not positive | at most 0.25 (`max_cost_share`) | |
 | `adv_participation_max` | largest trade over trailing 21-day dollar ADV at `asset_cap`, decimal | at most 0.02 (`max_adv_participation`) | |
 | `min_holding_days_realized` | turnover-implied mean holding, trading days: periods times mean gross exposure over one-way weight traded | at least 5 (`min_holding_days`) | |
 | `capacity` | net Sharpe at `0.1x`, `1x`, `20x` `asset_cap`, square-root impact on; `1x` equals `sharpe_net` | see Rules | |
-| `spread_model` | trade-weighted half-spread charged, mean of each estimator on traded cells, mean gap, share of cells where Abdi-Ranaldo was primary, fallback count | none; logged for quarterly refit | Corwin and Schultz 2012; Abdi and Ranaldo 2017 |
+| `spread_model` | `half_spread_mean` (trade-weighted, charged), `abdi_ranaldo_mean` and `corwin_schultz_mean` on traded cells, `gap_mean`, `abdi_ranaldo_share` (cells where it was primary), `fallbacks` count, `primary` rule text | none; logged for quarterly refit | Corwin and Schultz 2012; Abdi and Ranaldo 2017 |
 | `max_drawdown` | largest peak-to-trough fall of net wealth, positive decimal | live review at 1.5x (`drawdown_review_multiple`) | |
 
 ## Rules
 
 * Score refuses before running: no hypothesis names strategy; `holding_days`
-  under `min_holding_days`; `signal.py` failing whitelist. After running,
-  `cost_share`, `adv_participation_max`, or `min_holding_days_realized` out
-  of bound: run line still written with `refused`, exit 1.
+  under `min_holding_days`; `config.json` `family_id` other than
+  hypothesis's; `signal.py` failing whitelist. After running, `cost_share`,
+  `adv_participation_max`, or `min_holding_days_realized` out of bound: run
+  line still written with `refused`, exit 1.
 * DSR: promote at or above 0.95. `sr` per period; `sr_var` is variance of
   per-period net Sharpe across family's runs, this one included. One trial:
   SR0 is 0, DSR is probabilistic Sharpe against zero.

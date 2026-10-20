@@ -47,3 +47,4 @@ desktop.ini
 *.swp
 *.swo
 *~
+.claude/worktrees/

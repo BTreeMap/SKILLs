@@ -13,8 +13,8 @@ first, crowded large-cap families last.
   means ceiling between asset cap and 20 times it, `under_cap` below asset
   cap, `crowded` above 20 times it.
 * Read origin paper as search key only. Retrieve it with `/lit-review`
-  before relying on any figure, sign, or sample from it. This file carries
-  no return figure and no claim of what works now.
+  before relying on any figure, sign, or sample from it. This file holds no
+  return figure and no claim of what works now.
 * Load data through `load` routes named per family; `sources` owns route
   ladder.
 

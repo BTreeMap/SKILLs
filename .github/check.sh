@@ -54,7 +54,7 @@ check_lock() { uv lock --check; }
 # it silently.
 check_dashes() {
   local hits status=0
-  hits=$(grep -rnP --exclude-dir=.venv --include='*.md' --include='*.py' \
+  hits=$(grep -rnP --exclude-dir=.venv --exclude-dir=worktrees --include='*.md' --include='*.py' \
     '\x{2014}|\x{2013}' .) || status=$?
   if ((status > 1)); then
     return "$status"

@@ -82,7 +82,8 @@ fields.
   dropped.
 - `event_time` = `knowledge_time` = return date. Approximation: library
   publishes with lag and revises history; true knowledge time is later.
-- Factors feed only scorecard's factor regression, never a signal.
+- Factors feed scorecard's factor regression and `factor(field, n)` in
+  strategy code; knowledge-time approximation above holds for both.
 - Trap: file layout (header line starting with comma, `YYYYMMDD` rows,
   copyright footer) is parsed strictly; changed layout exits 2 naming
   column. North America factors for Canadian names are approximation; load

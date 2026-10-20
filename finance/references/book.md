@@ -59,9 +59,9 @@ repaired, no incident line.
 | run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files` |
 | incident | `kind`; see Incidents |
 
-Fill from `holdings` carries `holdings: true` and `price` equal to
-`cost_basis`, `null` when none given. Fill from `bin/send` carries
-`approval`, the approval file's name.
+Fill from `holdings` has `holdings: true` and `price` equal to `cost_basis`,
+`null` when none given. Fill from `bin/send` has `approval`, the approval
+file's name.
 
 ## Incidents
 
@@ -76,7 +76,7 @@ Fill from `holdings` carries `holdings: true` and `price` equal to
 | `tracking` | `check --live` | annualized std of realized minus model daily return over `thresholds.tracking_error` (default 0.05) |
 | `stale` | `check --live` | trading days since last bar over 5 |
 
-Every `check --live` line carries `strategy`, `value`, `limit`, `as_of`.
+Every `check --live` line has `strategy`, `value`, `limit`, `as_of`, `by`.
 Same strategy and kind within 7 days of `as_of`: not appended again.
 
 ## Ownership
@@ -85,7 +85,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | --- | --- | --- |
 | `limits.json`, `approvals/`, `strategies/*/status` | human | read |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
-| `ledger/` | `record` (fills also through `bin/send`) | append through `record` only |
+| `ledger/` | `record`; run lines `score`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only |
 | `strategies/` except `status`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
 | `bin/send` | operator | read; run only `--dry-run`, by operator's hand |
@@ -150,7 +150,7 @@ research names only, through `Market` on `as_of`, last bar on or before
 | `targets` | Per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, reference `price`, `sector` |
 | `orders` | `symbol`, `side`, `quantity`, `price`, `adv_participation`, `strategy`, `limit` (null: market-on-open), `account`, `held`, `target`, `carried_from` |
 | `summary` | `gross`, `net`, `cash` (1 minus net), `sectors` net weights, `top10` share of gross, `cost` in currency, one-way `turnover`, order count |
-| `unmanaged` | Positions in names sleeves do not see; never sold |
+| `unmanaged` | Held positions in names sleeves do not see (outside research set; can include held-out names); never sold |
 | `carried` | Unfilled orders of previous proposal; `merged` when an order here carries it |
 | `cuts` | Orders cut to ADV bound: `wanted`, `kept`, participation, bound |
 
@@ -167,15 +167,16 @@ Sizing, annual units, vol is std of run's stored net series times sqrt(252):
    Order is target minus held. Order whose quantity times price over 21-day
    dollar ADV passes `max_adv_participation` is cut to bound and listed
    under `cuts`; unknown ADV cuts it to zero.
-5. Live sleeves share one real book: real shares no live sleeve filled
+5. Live sleeves share one real account: real shares no live sleeve filled
    (opening holdings, retired sleeves) first cover sleeves' buys in name
    order; rest lands on last sleeve, whose diff sells it. Paper sleeve holds
    only own dry-run fills.
 
 Order of previous proposal carries when no fill of same symbol, sleeve,
-side, and book is dated on or after that proposal, and no `reject` decision
-names its stem. Estimated cost: notional times run's trade-weighted
-half-spread plus `commission_bps`. `ext/` plug-ins stay deferred.
+side, and account (paper or real) is dated on or after that proposal, and no
+`reject` decision names its stem. Estimated cost: notional times run's
+trade-weighted half-spread plus `commission_bps`. `ext/` plug-ins stay
+deferred.
 
 ## Approval file
 
