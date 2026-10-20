@@ -14,7 +14,7 @@ compatibility: >-
   that every skill's scripts share, about 430 MB with this skill's numeric
   libraries.
 metadata:
-  argument-hint: "[start|schema|load|record|score|check|write|read] <book path>"
+  argument-hint: "[start|schema|load|record|score|check|advise|write|read] <book path>"
 ---
 
 # Finance
@@ -86,7 +86,8 @@ $R schema
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
 $R score "$B" <strategy> [--agent <name>]
-$R check "$B" [<strategy> | <run id>]
+$R check "$B" [<strategy> | <run id> | <proposal date>]
+$R advise "$B" <YYYY-MM-DD> [--force]
 $R write "$B" --entry:file <entry.json> [--known]
 $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 ```
@@ -98,7 +99,8 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `score` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`; `--held-out` is human's one run, never agent's | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound |
-| `check` | Nothing, strategy, or run id | Nothing: continue view (strategies by status, open hypotheses per family with trials used against budget, open proposals with age, incidents, chain totals). Strategy or run: `standing`, `blockers`, compact scorecard. Both carry advisory `next` |
+| `check` | Nothing, strategy, run id, or proposal date | Nothing: continue view (strategies by status, open hypotheses per family with trials used against budget, open proposals with age, incidents, chain totals). Strategy or run: `standing`, `blockers`, compact scorecard. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `summary`, `approval_template`; exit 1 when none. All carry advisory `next` |
+| `advise` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, order, cut, carried counts, `summary`; exit 1 when no sleeve has run line |
 | `write` | Any JSON object; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
 
@@ -183,6 +185,28 @@ limit: `dsr`, `pbo`, `t_alpha`, `factor`, `capacity`, `crowded`,
 `trials`, `no critique`, `critique: <text>`, `status`, `paper_months`.
 `crowded` clears only by human's `override` decision. Show operator every
 blocker, never summary omitting one.
+
+## Propose and approve
+
+Sleeve is strategy whose `status` reads `paper` or `live`. Paper sleeve
+diffs against own dry-run fills; live sleeves share real fills plus opening
+holdings; two books never net. Load `book` before explaining sizing, cuts,
+carried orders, or proposal fields.
+
+1. On rebalance day, after close, run `advise "$B" <date>`. When it names a
+   skipped sleeve, score that strategy, then advise again.
+2. Run `check "$B" <date>`. Read result to operator in its order: every
+   `blockers` entry verbatim, `baseline` row beside every other sleeve,
+   `stale` flags, then diff, `cuts`, `unmanaged`, `summary`. Label own view
+   as own, give it once and only when asked; never argue for proposal, never
+   offer default answer.
+3. Hand operator `approval_template`, `approval_path`, exact command:
+   `<book>/bin/send approvals/<date>.json --dry-run` for paper orders,
+   without `--dry-run` for live ones. Operator copies template, edits it,
+   sets `date` and file name to send day. Never write under `approvals/`.
+4. When operator rejects proposal or overrides blocker, record `decision`
+   with `subject` the proposal file stem, `action` `reject` or `override`,
+   operator's reason verbatim.
 
 ## Continue
 

@@ -10,6 +10,7 @@ import re
 import secrets
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
@@ -42,9 +43,23 @@ from btm_corekit import (
     wire_pad,
     write_atomic,
 )
+from btm_finance.advising import (
+    Account,
+    Candidate,
+    Inputs,
+    Previous,
+    Proposal,
+    Quote,
+    Skipped,
+    account_of,
+    approval_of,
+    propose,
+)
+from btm_finance.api import Market
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
+from btm_finance.data.panel import Events, Panel
 from btm_finance.data.raw import (
     Manifest,
     data_snapshot,
@@ -72,13 +87,25 @@ from btm_finance.ledger import (
 )
 from btm_finance.models import (
     BASELINE_HYPOTHESIS,
+    Action,
+    Cadence,
     Exclusions,
+    Limits,
+    Preferences,
     Status,
     StrategyConfig,
 )
 from btm_finance.scaffold import member, scaffold
 from btm_finance.scorecard import RunLine, Span
-from btm_finance.scoring import Peers, Setting, bounds, evaluate, rules_of
+from btm_finance.scoring import (
+    Peers,
+    Prepared,
+    Setting,
+    bounds,
+    evaluate,
+    rules_of,
+    target_weights,
+)
 from btm_finance.standing import Evidence, standing_of
 from btm_finance.store import (
     PAD,
@@ -90,7 +117,10 @@ from btm_finance.store import (
     load_limits,
     load_preferences,
     open_book,
+    previous_proposal,
     proposal_dates,
+    proposal_target,
+    proposal_versions,
     read_bytes,
     read_json,
     run_files,
@@ -107,9 +137,10 @@ from btm_finance.whitelist import load_signal
 
 UNIVERSE = Optional("universe", inline=False)
 CONFIG = Optional("config", inline=False)
-LATER: dict[str, str] = {
-    "advise": "stage 4",
-}
+LATER: dict[str, str] = {}
+MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
+STALE_BARS = 5  # trading days an as-of bar may trail the proposal date
+BASELINE = "baseline"
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
 INCIDENT_TAIL = 10
 M = TypeVar("M", bound=BaseModel)
@@ -207,14 +238,12 @@ def cmd_check(args: argparse.Namespace) -> int:
         emit(continue_view(book))
         return 0
     try:
-        date.fromisoformat(args.target)
+        when = date.fromisoformat(args.target)
     except ValueError:
         emit(standing_view(book, args.target).model_dump(mode="json"))
         return 0
-    raise CommandError(
-        f"check {args.target}: a proposal arrives in stage 4; check a strategy "
-        "or run id today"
-    )
+    emit(proposal_view(book, when))
+    return 0
 
 
 def kind_rows(book: Book, kind: Kind) -> list[Numbered]:
@@ -429,10 +458,11 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "strategy_config": '{"params": {"<name>": 1.0}, "rebalance": '
             '"monthly|quarterly|annual", "holding_days": 21, "long_only": true, '
             '"family_id": "<key of limits.families>"}',
-            "approval": '{"date": "YYYY-MM-DD", "orders": [{"symbol": "...", '
-            '"side": "buy|sell", "quantity": 10, "price": 12.5, '
-            '"strategy": "<name>", "adv_participation": 0.004}]} '
-            "(the operator writes it; bin/send reads it)",
+            "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '
+            '"orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, '
+            '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
+            '"limit": null}]} (check <date> prints it as approval_template; '
+            "the operator writes it; bin/send reads it)",
             "refs": REFS_SCHEMA + "; receipts echo every new id under new",
             "pad": PAD_SCHEMA,
         }
@@ -623,6 +653,314 @@ def cmd_score(args: argparse.Namespace) -> int:
     return 1 if refused else 0
 
 
+def newest_run(runs: Sequence[Row], strategy: str) -> Row | None:
+    own = [r for r in runs if r.get("strategy") == strategy and not r.get("held_out")]
+    return own[-1] if own else None
+
+
+def card_number(run: Row, key: str) -> float | None:
+    card = run.get("scorecard")
+    value = card.get(key) if isinstance(card, dict) else None
+    return float(value) if isinstance(value, int | float) else None
+
+
+def half_spread(run: Row) -> float:
+    card = run.get("scorecard")
+    model = card.get("spread_model") if isinstance(card, dict) else None
+    value = model.get("half_spread_mean") if isinstance(model, dict) else None
+    return float(value) if isinstance(value, int | float) else 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class Day:
+    """The scoped data and the as-of row `advise` reads every sleeve on."""
+
+    panel: Panel
+    events: Events
+    prep: Prepared
+    row: int
+
+
+def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
+    book: Book,
+    limits: Limits,
+    preferences: Preferences,
+    day: Day,
+    *,
+    run: Row,
+    account: Account,
+) -> Candidate:
+    """The sleeve's weights on the as-of row through `Market.at` and
+    `target_weights`, as `score` sets them; vol from the run's net series."""
+    name = str(run.get("strategy"))
+    folder = book.root / "strategies" / name
+    config_bytes = file_bytes(folder / "config.json")
+    config = parse_model(
+        StrategyConfig,
+        read_json(folder / "config.json"),
+        f"strategies/{name}/config.json",
+    )
+    source = file_bytes(folder / "signal.py")
+    module = f"btm_strategy_{name.replace('-', '_')}_{secrets.token_hex(4)}"
+    strategy = load_signal(
+        source.decode("utf-8", errors="replace"), f"strategies/{name}/signal.py", module
+    )
+    rules = rules_of(limits, preferences, config)
+    setting = Setting(day.panel, day.events, day.prep, rules)
+    market = Market.at(day.panel, day.events, int(day.panel.dates[day.row]))
+    try:
+        raw = strategy(market, dict(config.params))
+    except Exception as err:  # the strategy's failure, named for its author
+        raise CommandError(f"{name} signal raised: {err!r}") from err
+    index = {symbol: column for column, symbol in enumerate(day.panel.names)}
+    weights, unknown = target_weights(raw, market, setting, index, day.row)
+    series = read_returns(book, read_manifest(book), str(run.get("run_id")))
+    vol = None
+    if series is not None and len(series[1]) > 1:
+        vol = float(np.std(series[1], ddof=1)) * math.sqrt(PERIODS_PER_YEAR)
+    changed = code_hash(source, config_bytes) != run.get("code_hash")
+    if changed:
+        signal(f"{name}: signal.py or config.json changed since run {run['run_id']}")
+    return Candidate(
+        strategy=name,
+        account=account,
+        run_id=str(run.get("run_id")),
+        sharpe_net=card_number(run, "sharpe_net"),
+        vol_net=vol,
+        max_drawdown=card_number(run, "max_drawdown"),
+        half_spread=half_spread(run),
+        code_changed=changed,
+        unknown=unknown,
+        signal={
+            str(k): float(v)
+            for k, v in (raw.items() if isinstance(raw, dict) else [])
+            if isinstance(v, int | float)
+        },
+        weights={
+            symbol: float(w)
+            for symbol, w in zip(day.panel.names, weights.tolist(), strict=True)
+            if w
+        },
+    )
+
+
+def quotes_of(day: Day) -> dict[str, Quote]:
+    """Per name its last close on or before the row and its ADV. O(T N)."""
+    panel, adv = day.panel, day.prep.adv[day.row]
+    seen = np.isfinite(panel.close[: day.row + 1])
+    rows = np.arange(day.row + 1)[:, None]
+    last = np.where(seen, rows, -1).max(axis=0, initial=-1)
+    return {
+        name: Quote(
+            price=float(panel.close[int(at), column]),
+            adv=float(adv[column]),
+            sector=panel.sector[column],
+        )
+        for column, (name, at) in enumerate(
+            zip(panel.names, last.tolist(), strict=True)
+        )
+        if at >= 0
+    }
+
+
+def previous_of(book: Book, day: str) -> Previous | None:
+    path = previous_proposal(book, day)
+    if path is None:
+        return None
+    stem = path.stem
+    rejected = any(
+        row.get("subject") == stem and row.get("action") == Action.REJECT.value
+        for row in current(kind_rows(book, Kind.DECISION))
+    )
+    proposal = parse_model(Proposal, read_json(path), book.relative(path))
+    return Previous(stem=stem, proposal=proposal, rejected=rejected)
+
+
+def sleeves_of(book: Book) -> tuple[list[tuple[Row, Account]], list[Skipped]]:
+    """Paper and live strategies with their newest research run line."""
+    runs = all_runs(book)
+    chosen: list[tuple[Row, Account]] = []
+    skipped: list[Skipped] = []
+    for found in strategies(book):
+        account = account_of(found.status)
+        if account is None:
+            continue
+        run = newest_run(runs, found.name)
+        if run is None:
+            reason = f"{found.status} with no run line: score {found.name} first"
+            signal(f"sleeve {found.name} skipped: {reason}")
+            skipped.append(Skipped(strategy=found.name, reason=reason))
+            continue
+        chosen.append((run, account))
+    return chosen, skipped
+
+
+def cmd_advise(args: argparse.Namespace) -> int:
+    """Writes `proposals/<date>.json` and nothing else."""
+    book = open_book(args.book)
+    when: date = args.date
+    chosen, skipped = sleeves_of(book)
+    if not chosen:
+        named = ", ".join(s.strategy for s in skipped)
+        raise CommandError(
+            "no sleeve: no strategies/*/status reads paper or live with a run line"
+            + (f" (skipped {named})" if named else "")
+            + "; the operator sets status, the agent scores"
+        )
+    target = proposal_target(book, when.isoformat(), force=args.force)
+    limits, preferences = load_limits(book), load_preferences(book)
+    panel, events = assemble(book)
+    names = scoped(book, panel.names, held_out=False)
+    panel, events = panel.only(names), events.only(names)
+    row = panel.through(day_of(when)) - 1
+    if row < 0:
+        raise CommandError(f"no bar on or before {when}; load prices first")
+    day = Day(panel, events, Prepared.of(panel, events, limits.delisting), row)
+    candidates = tuple(
+        candidate(book, limits, preferences, day, run=run, account=account)
+        for run, account in chosen
+    )
+    proposal = propose(
+        Inputs(
+            date=when.isoformat(),
+            as_of=date_of(int(panel.dates[row])).isoformat(),
+            cap=limits.asset_cap,
+            sizing=limits.sizing,
+            bound=limits.max_adv_participation,
+            commission_bps=limits.commission_bps,
+            candidates=candidates,
+            skipped=tuple(skipped),
+            quotes=quotes_of(day),
+            fills=current(kind_rows(book, Kind.FILL)),
+            previous=previous_of(book, when.isoformat()),
+        )
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    write_atomic(target, json.dumps(proposal.model_dump(mode="json"), indent=2) + "\n")
+    for cut in proposal.cuts:
+        signal(
+            f"{cut.symbol} ({cut.strategy}) cut from {cut.wanted} to {cut.kept}: "
+            f"ADV participation {cut.adv_participation:.4g} over {cut.bound}"
+        )
+    emit(
+        {
+            "book": book.meta.id,
+            "proposal": book.relative(target),
+            "as_of": proposal.as_of,
+            "sleeves": {s: v.weight for s, v in proposal.sleeves.items()},
+            "skipped": [s.model_dump(mode="json") for s in proposal.skipped],
+            "orders": len(proposal.orders),
+            "cuts": len(proposal.cuts),
+            "carried": len(proposal.carried),
+            "unmanaged": len(proposal.unmanaged),
+            "summary": proposal.summary.model_dump(mode="json"),
+            "next": f"check {target.stem}; read it to the operator, blockers first",
+        }
+    )
+    return 0
+
+
+def stale_flags(proposal: Proposal, cadence: Cadence, today: date) -> list[str]:
+    """Proposal older than one cadence period; as-of bar over 5 trading days
+    before the proposal date."""
+    match cadence:
+        case Cadence.MONTHLY:
+            period = MONTH_DAYS
+        case Cadence.QUARTERLY:
+            period = QUARTER_DAYS
+    flags: list[str] = []
+    age = (today - date.fromisoformat(proposal.date)).days
+    if age > period:
+        flags.append(f"proposal is {age} days old, over the {cadence} period")
+    behind = int(np.busday_count(proposal.as_of, proposal.date))
+    if behind > STALE_BARS:
+        flags.append(
+            f"as-of bar {proposal.as_of} is {behind} trading days before "
+            f"{proposal.date}; load prices, then advise again with --force"
+        )
+    return flags
+
+
+def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
+    """The baseline's row first, then each other sleeve's."""
+    rows: list[dict[str, Any]] = []
+    for name, sleeve in proposal.sleeves.items():
+        rows.append(
+            {
+                "strategy": name,
+                "run_id": sleeve.run_id,
+                "sharpe_net": sleeve.sharpe_net,
+                "max_drawdown": sleeve.max_drawdown,
+                "weight": sleeve.weight,
+            }
+        )
+    if BASELINE not in proposal.sleeves:
+        run = newest_run(all_runs(book), BASELINE)
+        rows.append(
+            {
+                "strategy": BASELINE,
+                "run_id": None if run is None else run.get("run_id"),
+                "sharpe_net": None if run is None else card_number(run, "sharpe_net"),
+                "max_drawdown": None
+                if run is None
+                else card_number(run, "max_drawdown"),
+                "weight": 0.0,
+                "note": "baseline is no sleeve here: its status is not paper or live",
+            }
+        )
+    return sorted(rows, key=lambda row: row["strategy"] != BASELINE)
+
+
+def proposal_view(book: Book, when: date) -> dict[str, Any]:
+    """`check <date>`: blockers, baseline, stale flags, then the diff."""
+    versions = proposal_versions(book, when.isoformat())
+    if not versions:
+        raise CommandError(f"no proposal for {when}: run advise {when} first")
+    path = versions[-1]
+    proposal = parse_model(Proposal, read_json(path), book.relative(path))
+    known = {str(row.get("run_id")) for row in all_runs(book)}
+    blockers = {
+        name: standing_view(book, s.run_id if s.run_id in known else name).model_dump(
+            mode="json"
+        )["blockers"]
+        for name, s in proposal.sleeves.items()
+    }
+    today = datetime.now(UTC).date()
+    template = approval_of(proposal, path.stem)
+    return {
+        "book": book.meta.id,
+        "proposal": book.relative(path),
+        "blockers": blockers,
+        "baseline": comparison(book, proposal),
+        "stale": stale_flags(proposal, load_preferences(book).cadence, today),
+        "diff": [
+            {
+                "symbol": o.symbol,
+                "side": o.side.value,
+                "quantity": o.quantity,
+                "price": o.price,
+                "held": o.held,
+                "target": o.target,
+                "strategy": o.strategy,
+                "account": o.account.value,
+                "carried_from": o.carried_from,
+            }
+            for o in proposal.orders
+        ],
+        "cuts": [cut.model_dump(mode="json") for cut in proposal.cuts],
+        "unmanaged": [h.model_dump(mode="json") for h in proposal.unmanaged],
+        "skipped": [s.model_dump(mode="json") for s in proposal.skipped],
+        "summary": proposal.summary.model_dump(mode="json"),
+        "approval_template": template.model_dump(mode="json"),
+        "approval_path": f"approvals/{proposal.date}.json",
+        "next": "read blockers to the operator first, baseline beside each "
+        "sleeve; the operator alone copies approval_template to approval_path, "
+        "edits it, sets date and file name to the send day, runs bin/send on "
+        f"it; record a reject or override of {path.stem} as a decision with "
+        "the operator's reason",
+    }
+
+
 def later(verb: str) -> int:
     def refuse() -> int:
         raise CommandError(f"{verb} arrives in {LATER[verb]}; not available yet")
@@ -651,14 +989,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_slot(record, BATCH, ", ".join(BATCH_KEYS))
 
     check = commands.add_parser(
-        "check", help="continue view, or a strategy's promotion standing"
+        "check", help="continue view, a strategy's standing, or a proposal"
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("book", help="book directory")
     check.add_argument(
         "target",
         nargs="?",
-        help="strategy or run id; a proposal date arrives in stage 4",
+        help="strategy, run id, or proposal date",
     )
     check.add_argument("--live", action="store_true", help="refused until stage 5")
 
@@ -671,6 +1009,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     score.add_argument("--agent", help="append to ledger/runs/<agent>.jsonl")
     score.add_argument("--repeat", metavar="RUN_ID", help="refused until stage 5")
+
+    advise = commands.add_parser("advise", help="write the rebalance proposal")
+    advise.set_defaults(func=cmd_advise)
+    advise.add_argument("book", help="book directory")
+    advise.add_argument("date", type=iso_day, help="rebalance date, YYYY-MM-DD")
+    advise.add_argument(
+        "--force", action="store_true", help="write <date>.<n>.json beside the first"
+    )
 
     for verb, stage in LATER.items():
         stub = commands.add_parser(verb, help=f"arrives in {stage}; refused today")

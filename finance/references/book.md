@@ -99,12 +99,56 @@ Rules hold absolute paths: if book moves, ask operator to update them.
    rounded up, whose salted digests sort first; without universe, empty list
    and `signal:` saying so.
 
+## Proposal file
+
+`advise <date>` writes `proposals/<date>.json` once; `--force` writes
+`<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
+research names only, through `Market` on `as_of`, last bar on or before
+`date`, weights set exactly as `score` sets them.
+
+| Field | Holds |
+| --- | --- |
+| `date`, `as_of`, `cap` | Proposal date, last bar used, `limits.asset_cap` |
+| `sleeves` | Per strategy: `account` (`paper` or `live`), `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `vol_weight`, `kelly_cap`, `weight`, `code_changed`, `unknown`, raw `signal` per name |
+| `skipped` | Paper or live strategy with no run line, with reason |
+| `targets` | Per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, reference `price`, `sector` |
+| `orders` | `symbol`, `side`, `quantity`, `price`, `adv_participation`, `strategy`, `limit` (null: market-on-open), `account`, `held`, `target`, `carried_from` |
+| `summary` | `gross`, `net`, `cash` (1 minus net), `sectors` net weights, `top10` share of gross, `cost` in currency, one-way `turnover`, order count |
+| `unmanaged` | Positions in names sleeves do not see; never sold |
+| `carried` | Unfilled orders of previous proposal; `merged` when an order here carries it |
+| `cuts` | Orders cut to ADV bound: `wanted`, `kept`, participation, bound |
+
+Sizing, annual units, vol is std of run's stored net series times sqrt(252):
+
+1. Sleeve weight is min(`vol_target / vol_net`,
+   `kelly_fraction * sharpe_net / vol_net`); zero when Sharpe is null or
+   negative.
+2. Sum of sleeve weights above 1 scales every sleeve down to sum 1; rest is
+   cash.
+3. Name's net weight across sleeves above `sizing.max_weight` scales that
+   name down in every sleeve alike.
+4. Target is whole shares at last close on or before `date`, toward zero.
+   Order is target minus held. Order whose quantity times price over 21-day
+   dollar ADV passes `max_adv_participation` is cut to bound and listed
+   under `cuts`; unknown ADV cuts it to zero.
+5. Live sleeves share one real book: real shares no live sleeve filled
+   (opening holdings, retired sleeves) first cover sleeves' buys in name
+   order; rest lands on last sleeve, whose diff sells it. Paper sleeve holds
+   only own dry-run fills.
+
+Order of previous proposal carries when no fill of same symbol, sleeve,
+side, and book is dated on or after that proposal, and no `reject` decision
+names its stem. Estimated cost: notional times run's trade-weighted
+half-spread plus `commission_bps`. `ext/` plug-ins stay deferred.
+
 ## Approval file
 
-Operator writes `approvals/<YYYY-MM-DD>.json`:
+`check <date>` prints `approval_template` with every order, `date` set to
+proposal date. Operator copies it to `approvals/<YYYY-MM-DD>.json`, edits
+quantities, sets `date` and file name to send day:
 
 ```json
-{"date": "YYYY-MM-DD", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "strategy": "<name>", "adv_participation": 0.004}]}
+{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
 ```
 
 `bin/send` checks, in order: file resolves under `approvals/`; `date` is

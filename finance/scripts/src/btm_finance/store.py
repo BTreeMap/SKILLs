@@ -185,3 +185,39 @@ def strategies(book: Book) -> list[Strategy]:
 def proposal_dates(book: Book) -> list[str]:
     root = book.root / "proposals"
     return sorted(path.stem for path in root.glob("*.json")) if root.is_dir() else []
+
+
+def version_of(path: Path) -> int:
+    """1 for `<day>.json`, n for `<day>.<n>.json`."""
+    tail = path.stem.partition(".")[2]
+    return int(tail) if tail.isdigit() else 1
+
+
+def proposal_versions(book: Book, day: str) -> list[Path]:
+    """`proposals/<day>.json`, then each `<day>.<n>.json`, by version."""
+    root = book.root / "proposals"
+    found = [root / f"{day}.json", *root.glob(f"{day}.*.json")]
+    kept = [path for path in found if path.is_file() and version_of(path) > 0]
+    return sorted(set(kept), key=version_of)
+
+
+def proposal_target(book: Book, day: str, *, force: bool) -> Path:
+    """Where `advise` writes: `<day>.json` once; with `force`, the next
+    `<day>.<n>.json`, n from 2."""
+    taken = proposal_versions(book, day)
+    if not taken:
+        return book.root / "proposals" / f"{day}.json"
+    if not force:
+        raise CommandError(
+            f"proposals/{taken[-1].name} exists; a proposal is written once: "
+            "pass --force to write the next version beside it"
+        )
+    return book.root / "proposals" / f"{day}.{version_of(taken[-1]) + 1}.json"
+
+
+def previous_proposal(book: Book, day: str) -> Path | None:
+    """The newest version of the latest proposal dated before `day`."""
+    days = sorted({stem.partition(".")[0] for stem in proposal_dates(book)})
+    earlier = [d for d in days if d < day]
+    versions = proposal_versions(book, earlier[-1]) if earlier else []
+    return versions[-1] if versions else None

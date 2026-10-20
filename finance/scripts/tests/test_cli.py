@@ -58,7 +58,6 @@ def test_the_quarter_is_stable_for_one_salt_and_per_sector():
     ("argv", "stage"),
     [
         (["score", "B", "baseline", "--repeat", "r1"], "stage 5"),
-        (["advise", "B", "2026-01-02"], "stage 4"),
     ],
 )
 def test_later_verbs_are_refused_by_stage(run, argv, stage):
@@ -69,7 +68,7 @@ def test_later_verbs_are_refused_by_stage(run, argv, stage):
 
 def test_check_refuses_a_proposal_and_live_by_stage(book, run):
     code, _, err = run(["check", str(book), "2026-01-02"])
-    assert (code, "stage 4" in err) == (1, True)
+    assert (code, "no proposal" in err) == (1, True)
     code, _, err = run(["check", str(book), "--live"])
     assert (code, "stage 5" in err) == (1, True)
     code, _, err = run(["check", str(book), "nothing"])
