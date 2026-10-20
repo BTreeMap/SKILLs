@@ -73,3 +73,23 @@ order used; `score --repeat` rebuilds from that list.
   close under `price_floor`, ADV under `adv_multiple` times largest intended
   position at `asset_cap`. Delisted name returns its terminal return by
   exchange from `limits.delisting` on delisting day, then cash.
+
+## Repeat
+
+`score <strategy> --repeat <run id>` reruns one line from its own inputs and
+writes nothing: no run line, no returns file, no incident.
+
+* Refuses before running, naming each moved input: `signal.py` or
+  `config.json` whose sha256 differs from line's `code_files`, or
+  `btm_finance` version folded into `code_hash`; source file under
+  `data/raw/` changed or vanished since listed in manifest, or loaded after
+  run; listed peer whose returns file is unlisted, changed, or gone.
+* Reruns with line's `config`, `params`, `held_out`, `exclusions`, and
+  exactly its `peers` for `sr_var` and PBO, trial count `trials - 1`;
+  `limits.json` is read as it stands now.
+* Compares every scorecard leaf: numbers within line's `tolerance`
+  (`repeat_tolerance`), absolute when both are at or below 1, relative to
+  larger above; null must meet null; text must match. Each diff names field
+  path, recorded, recomputed, rule.
+* `numpy` or `pyarrow` version moved: advisory only. Exit 0 reproduced, 1
+  otherwise. Cost: one scorer run plus one re-hash of the store.

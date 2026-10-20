@@ -9,7 +9,7 @@ import math
 import re
 import secrets
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -55,24 +55,34 @@ from btm_finance.advising import (
     approval_of,
     propose,
 )
-from btm_finance.api import Market
+from btm_finance.api import FACTORS, Market, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
 from btm_finance.data.panel import Events, Panel
 from btm_finance.data.raw import (
+    Entry,
     Manifest,
     data_snapshot,
     default_since,
     read_manifest,
     read_returns,
     returns_path,
+    sha256_of,
     store,
     verify_all,
     write_returns,
 )
 from btm_finance.data.sources import csv, edgar, french, tiingo
-from btm_finance.data.tables import Loaded, Source, Table, date_of, day_of
+from btm_finance.data.tables import (
+    Days,
+    Floats,
+    Loaded,
+    Source,
+    Table,
+    date_of,
+    day_of,
+)
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.ledger import (
     ENVELOPE,
@@ -85,6 +95,25 @@ from btm_finance.ledger import (
     dangling,
     rows_of,
 )
+from btm_finance.live import NEXT as LIVE_NEXT
+from btm_finance.live import (
+    Bounds,
+    Case,
+    Fill,
+    LiveReport,
+    LiveRow,
+    RunFacts,
+    Sleeve,
+    breaches_of,
+    fill_of,
+    fresh,
+    model_path,
+    realized,
+    reference_prices,
+    report_of,
+    row_of,
+    trading_days_after,
+)
 from btm_finance.models import (
     BASELINE_HYPOTHESIS,
     Action,
@@ -95,6 +124,15 @@ from btm_finance.models import (
     Status,
     StrategyConfig,
 )
+from btm_finance.repeat import (
+    Presence,
+    RepeatReport,
+    code_drift,
+    compare,
+    data_drift,
+    peer_drift,
+)
+from btm_finance.repeat import advisories as engine_advisories
 from btm_finance.scaffold import member, scaffold
 from btm_finance.scorecard import RunLine, Span
 from btm_finance.scoring import (
@@ -231,9 +269,11 @@ def cmd_record(args: argparse.Namespace) -> int:
 
 
 def cmd_check(args: argparse.Namespace) -> int:
-    if args.live:
-        raise CommandError("check --live arrives in stage 5; not available yet")
     book = open_book(args.book)
+    if args.live:
+        today = args.today or datetime.now(UTC).date()
+        emit(live_view(book, today).model_dump(mode="json"))
+        return 0
     if args.target is None:
         emit(continue_view(book))
         return 0
@@ -486,6 +526,10 @@ def code_hash(*parts: bytes) -> str:
     return digest.hexdigest()
 
 
+def code_files(source: bytes, config: bytes) -> dict[str, str]:
+    return {"signal.py": sha256_of(source), "config.json": sha256_of(config)}
+
+
 def scoped(book: Book, names: Sequence[str], *, held_out: bool) -> frozenset[str]:
     """Research names, or with `held_out` their complement."""
     salt, members = held_out_list(book)
@@ -546,7 +590,7 @@ def cmd_score(args: argparse.Namespace) -> int:
     """Refusals before running write nothing; bounds broken after running
     still append the run line, then exit 1."""
     if args.repeat is not None:
-        raise CommandError("score --repeat arrives in stage 5; not available yet")
+        return cmd_repeat(args)
     book = open_book(args.book)
     limits, preferences = load_limits(book), load_preferences(book)
     name = name_of(args.strategy, "strategy")
@@ -601,6 +645,7 @@ def cmd_score(args: argparse.Namespace) -> int:
         strategy=name,
         data_snapshot=snapshot,
         code_hash=code_hash(source, config_bytes),
+        code_files=code_files(source, config_bytes),
         config=config.model_dump(mode="json"),
         params={key: float(value) for key, value in params.items()},
         scorecard=outcome.scorecard,
@@ -961,6 +1006,328 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
     }
 
 
+def run_line_of(book: Book, run_id: str) -> tuple[Row, RunLine]:
+    """The run line any runs file holds for `run_id`, decoded."""
+    found = [row for row in all_runs(book) if row.get("run_id") == run_id]
+    if not found:
+        raise CommandError(f"no run line {run_id} in any runs file")
+    row = found[-1]
+    body = {key: value for key, value in row.items() if key not in ENVELOPE}
+    return row, parse_model(RunLine, body, f"run line {run_id}")
+
+
+def presence_of(book: Book, entry: Entry) -> Presence:
+    """A listed file against its digest; unlike a read, logs no incident."""
+    try:
+        data = (book.root / entry.path).read_bytes()
+    except FileNotFoundError:
+        return Presence.VANISHED
+    return Presence.INTACT if sha256_of(data) == entry.sha256 else Presence.CHANGED
+
+
+def drift_of(  # noqa: PLR0913 - one rerun's recorded and current inputs
+    book: Book,
+    row: Row,
+    line: RunLine,
+    *,
+    source: bytes,
+    config: bytes,
+    manifest: Manifest,
+) -> list[str]:
+    """Every reason the rerun would not be the recorded run. Re-hashes every
+    listed source file and peer series once: O(store bytes)."""
+    problems: list[str] = []
+    if code_hash(source, config) != line.code_hash:
+        moved = code_drift(
+            line.code_files,
+            code_files(source, config),
+            (line.engine.get("btm_finance", ""), btm_finance.__version__),
+        )
+        problems.append(f"code moved: {', '.join(moved) or 'code_hash differs'}")
+    sources = [e for e in manifest.files if e.table != Table.RETURNS]
+    stamp = str(row.get("ts", ""))
+    problems += data_drift(
+        line.data_snapshot,
+        data_snapshot(manifest),
+        [(e.path, presence_of(book, e)) for e in sources],
+        [e.path for e in sources if e.loaded_at > stamp],
+    )
+    listed = {e.path: e for e in manifest.files}
+    problems += peer_drift(
+        {
+            peer: presence_of(book, listed[returns_path(peer)])
+            if returns_path(peer) in listed
+            else None
+            for peer in line.peers
+        }
+    )
+    return problems
+
+
+def recorded_peers(book: Book, manifest: Manifest, line: RunLine) -> Peers:
+    """Exactly the line's peers, in its order, with the trial count it saw."""
+    rows = {str(row.get("run_id")): row for row in all_runs(book)}
+    sharpes: list[float] = []
+    series = []
+    for peer in line.peers:
+        card = rows.get(peer, {}).get("scorecard")
+        value = card.get("sharpe_net") if isinstance(card, dict) else None
+        if isinstance(value, int | float):
+            sharpes.append(float(value) / math.sqrt(PERIODS_PER_YEAR))
+        found = read_returns(book, manifest, peer)
+        if found is None:  # drift_of refused this already
+            raise CommandError(f"peer {peer}: returns file not listed")
+        series.append(found)
+    return Peers(
+        trials=line.scorecard.trials - 1,
+        sharpes=tuple(sharpes),
+        series=tuple(series),
+        ids=line.peers,
+    )
+
+
+def cmd_repeat(args: argparse.Namespace) -> int:
+    """Rerun one line from its own inputs: one scorer run, nothing written."""
+    book = open_book(args.book)
+    name = name_of(args.strategy, "strategy")
+    row, line = run_line_of(book, args.repeat)
+    if line.strategy != name:
+        raise CommandError(f"run {line.run_id} scored {line.strategy}, not {name}")
+    folder = book.root / "strategies" / name
+    source = file_bytes(folder / "signal.py")
+    config_bytes = file_bytes(folder / "config.json")
+    manifest = read_manifest(book)
+    problems = drift_of(
+        book, row, line, source=source, config=config_bytes, manifest=manifest
+    )
+    if problems:
+        raise CommandError(f"refused to repeat {line.run_id}: " + "; ".join(problems))
+    config = parse_model(StrategyConfig, line.config, f"run {line.run_id} config")
+    limits, preferences = load_limits(book), load_preferences(book)
+    preferences = preferences.with_(exclusions=line.exclusions.model_dump())
+    module = f"btm_repeat_{name.replace('-', '_')}_{secrets.token_hex(4)}"
+    strategy = load_signal(
+        source.decode("utf-8", errors="replace"), f"strategies/{name}/signal.py", module
+    )
+    panel, events = assemble(book)
+    names = scoped(book, panel.names, held_out=line.held_out)
+    panel, events = panel.only(names), events.only(names)
+    setting = Setting.of(panel, events, rules_of(limits, preferences, config))
+    peers = recorded_peers(book, manifest, line)
+    outcome = evaluate(setting, strategy, line.params, peers)
+    compared, diffs = compare(
+        line.scorecard.model_dump(mode="json"),
+        outcome.scorecard.model_dump(mode="json"),
+        line.tolerance,
+    )
+    current_engine = {
+        "btm_finance": btm_finance.__version__,
+        "numpy": np.__version__,
+        "pyarrow": pa.__version__,
+    }
+    report = RepeatReport(
+        run_id=line.run_id,
+        strategy=name,
+        reproduced=not diffs,
+        tolerance=line.tolerance,
+        compared=compared,
+        diffs=tuple(diffs),
+        advisories=tuple(engine_advisories(line.engine, current_engine)),
+    )
+    for note in report.advisories:
+        signal(f"engine moved: {note}")
+    emit(
+        {
+            "book": book.meta.id,
+            **report.model_dump(mode="json"),
+            "rule": "absolute when both values are at or below 1, relative above",
+            "next": f"run {line.run_id} reproduces; cite it"
+            if report.reproduced
+            else "read each diff; a moved number is a method change to explain, "
+            "never a run to rescore",
+        }
+    )
+    return 0 if report.reproduced else 1
+
+
+def run_facts(book: Book, strategy: str) -> RunFacts | None:
+    """The strategy's newest research run line, as `check --live` reads it."""
+    run = newest_run(all_runs(book), strategy)
+    drawdown = None if run is None else card_number(run, "max_drawdown")
+    if run is None or drawdown is None:
+        return None
+    card = run.get("scorecard")
+    spread = card.get("spread_model") if isinstance(card, dict) else None
+    half = spread.get("half_spread_mean") if isinstance(spread, dict) else None
+    return RunFacts(
+        run_id=str(run.get("run_id")),
+        max_drawdown=drawdown,
+        half_spread=float(half) if isinstance(half, int | float) else None,
+    )
+
+
+def approved_proposals(book: Book) -> dict[str, str]:
+    """Approval file name to the proposal stem it names, from `approvals/`
+    and `sent/`; a file naming none maps to its own stem."""
+    found: dict[str, str] = {}
+    for folder in ("approvals", "sent"):
+        for path in sorted((book.root / folder).glob("*.json")):
+            try:
+                document = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            stem = document.get("proposal") if isinstance(document, dict) else None
+            found[path.name] = stem if isinstance(stem, str) else path.stem
+    return found
+
+
+def sleeve_fills(
+    rows: Sequence[Row],
+    name: str,
+    status: Status,
+    prices: Mapping[tuple[str, str, str], float],
+    proposals: Mapping[str, str],
+) -> tuple[Fill, ...]:
+    """Paper sleeves count dry-run fills, live sleeves real ones; a fill's
+    reference is its proposal order's `price`, by approval, symbol, side."""
+    paper = status is Status.PAPER
+    chosen = [
+        row
+        for row in rows
+        if row.get("strategy") == name and bool(row.get("dry_run")) is paper
+    ]
+
+    def reference(row: Row) -> float | None:
+        approval = str(row.get("approval", ""))
+        stem = proposals.get(approval, Path(approval).stem)
+        return prices.get((stem, str(row.get("symbol")), str(row.get("side"))))
+
+    return tuple(fill_of(row, reference(row)) for row in chosen)
+
+
+def modeled(
+    book: Book, name: str, setting_of: Callable[[StrategyConfig], Setting]
+) -> tuple[tuple[Days, Floats] | None, str | None]:
+    """The scorer's base path with current code and params, or why not."""
+    folder = book.root / "strategies" / name
+    try:
+        config = parse_model(
+            StrategyConfig, read_json(folder / "config.json"), f"strategies/{name}"
+        )
+        module = f"btm_live_{name.replace('-', '_')}_{secrets.token_hex(4)}"
+        strategy = load_signal(
+            file_bytes(folder / "signal.py").decode("utf-8", errors="replace"),
+            f"strategies/{name}/signal.py",
+            module,
+        )
+        path = model_path(setting_of(config), strategy, dict(config.params))
+    except CommandError as err:
+        return None, f"no model path: {err}"
+    return path, None if path is not None else "no model path: signal held nothing"
+
+
+def live_view(book: Book, today: date) -> LiveReport:
+    """Every paper or live sleeve: one model simulation each, O(S (T N + R N
+    L)), plus O(D S + F) per realized path; appends incidents only."""
+    limits, preferences = load_limits(book), load_preferences(book)
+    tracked = [
+        (s.name, s.status)
+        for s in strategies(book)
+        if s.status in {Status.PAPER, Status.LIVE}
+    ]
+    rows: list[LiveRow] = []
+    last_bar: str | None = None
+    if tracked:
+        panel, events = assemble(book)
+        rf = np.nan_to_num(on_dates(events, FACTORS, "rf", panel.dates), nan=0.0)
+        last = int(panel.dates[-1])
+        last_bar = date_of(last).isoformat()
+        research = scoped(book, panel.names, held_out=False)
+        model_panel, model_events = panel.only(research), events.only(research)
+
+        def setting_of(config: StrategyConfig) -> Setting:
+            rules = rules_of(limits, preferences, config)
+            return Setting.of(model_panel, model_events, rules)
+
+        prices = reference_prices(
+            {
+                day: read_json(book.root / "proposals" / f"{day}.json")
+                for day in proposal_dates(book)
+            }
+        )
+        fills = [
+            row
+            for row in current(kind_rows(book, Kind.FILL))
+            if row.get("strategy") != "opening"
+        ]
+        approved = approved_proposals(book)
+        own = {
+            name: sleeve_fills(fills, name, status, prices, approved)
+            for name, status in tracked
+        }
+        sleeves: dict[str, Sleeve | None] = {
+            name: realized(own[name], panel, rf) for name, _ in tracked
+        }
+        stale = trading_days_after(last, today)
+        bounds = Bounds(
+            drawdown_multiple=limits.thresholds.drawdown_review_multiple,
+            underperform_months=limits.thresholds.underperform_months,
+            tracking=limits.thresholds.tracking_error,
+            commission=limits.commission_bps / 1e4,
+        )
+        for name, status in tracked:
+            path, why = modeled(book, name, setting_of)
+            run = run_facts(book, name)
+            notes = [note for note in (why,) if note]
+            if run is None:
+                notes.append("no research run line: drawdown and slippage unbounded")
+            if not own[name]:
+                notes.append(
+                    f"no {'dry-run' if status is Status.PAPER else 'real'} fills"
+                )
+            case = Case(
+                strategy=name,
+                status=status,
+                fills=own[name],
+                sleeve=sleeves[name],
+                model=path,
+                baseline=None if name == "baseline" else sleeves.get("baseline"),
+                run=run,
+                stale_days=stale,
+                notes=tuple(notes),
+            )
+            rows.append(row_of(case, bounds))
+    found = breaches_of(rows)
+    new, repeated = fresh(found, current(kind_rows(book, Kind.INCIDENT)), today)
+    stamp = now_iso()
+    records = [
+        {
+            "id": make_id(["live", breach.kind.value, *ascii_words(breach.strategy)]),
+            "ts": stamp,
+            "kind": breach.kind.value,
+            "strategy": breach.strategy,
+            "value": breach.value,
+            "limit": breach.limit,
+            "as_of": today.isoformat(),
+            "by": "check --live",
+        }
+        for breach in new
+    ]
+    if records:
+        append_chained(book.path_of(Kind.INCIDENT), records)
+    return LiveReport(
+        book=book.meta.id,
+        as_of=today.isoformat(),
+        last_bar=last_bar,
+        strategies=tuple(rows),
+        breaches=tuple(found),
+        new=tuple(str(record["id"]) for record in records),
+        repeated=len(repeated),
+        report=report_of(rows, today, last_bar),
+        next=LIVE_NEXT,
+    )
+
+
 def later(verb: str) -> int:
     def refuse() -> int:
         raise CommandError(f"{verb} arrives in {LATER[verb]}; not available yet")
@@ -998,7 +1365,12 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         help="strategy, run id, or proposal date",
     )
-    check.add_argument("--live", action="store_true", help="refused until stage 5")
+    check.add_argument(
+        "--live", action="store_true", help="weekly tracking of paper and live sleeves"
+    )
+    check.add_argument(
+        "--today", type=iso_day, help="tests only: the day --live measures from"
+    )
 
     score = commands.add_parser("score", help="score a registered strategy")
     score.set_defaults(func=cmd_score)
@@ -1008,7 +1380,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--held-out", action="store_true", help="the human's one run on held-out names"
     )
     score.add_argument("--agent", help="append to ledger/runs/<agent>.jsonl")
-    score.add_argument("--repeat", metavar="RUN_ID", help="refused until stage 5")
+    score.add_argument(
+        "--repeat", metavar="RUN_ID", help="rerun a recorded run; writes nothing"
+    )
 
     advise = commands.add_parser("advise", help="write the rebalance proposal")
     advise.set_defaults(func=cmd_advise)

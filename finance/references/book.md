@@ -52,11 +52,28 @@ and line. Edit to last line shows only when next line lands.
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
 | decision | `kw`, `subject`, `action`, `reason` |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent` |
+| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files` |
+| incident | `kind`; see Incidents |
 
 Fill from `holdings` carries `holdings: true` and `price` equal to
 `cost_basis`, `null` when none given. Fill from `bin/send` carries
 `approval`, the approval file's name.
+
+## Incidents
+
+`incidents.jsonl` lines come from scripts, never from `record`:
+
+| `kind` | Writer | Keys, or breach |
+| --- | --- | --- |
+| `integrity` | any read of `data/` | `file`, `problem`, `expected`, `found` |
+| `drawdown` | `check --live` | realized drawdown over `drawdown_review_multiple` times run's `max_drawdown` |
+| `underperform` | `check --live` | consecutive months below baseline sleeve, at `underperform_months` or over |
+| `slippage` | `check --live` | mean fill-minus-reference share, signed by side (reference: `price` of order with fill's symbol and side in proposal its approval names), over run's `half_spread_mean` plus commission |
+| `tracking` | `check --live` | annualized std of realized minus model daily return over `thresholds.tracking_error` (default 0.05) |
+| `stale` | `check --live` | trading days since last bar over 5 |
+
+Every `check --live` line carries `strategy`, `value`, `limit`, `as_of`.
+Same strategy and kind within 7 days of `as_of`: not appended again.
 
 ## Ownership
 

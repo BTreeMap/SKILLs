@@ -85,8 +85,8 @@ $R start "$B" [--cap N] [--universe:file names.csv]
 $R schema
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
-$R score "$B" <strategy> [--agent <name>]
-$R check "$B" [<strategy> | <run id> | <proposal date>]
+$R score "$B" <strategy> [--agent <name>] [--repeat <run id>]
+$R check "$B" [<strategy> | <run id> | <proposal date>] [--live]
 $R advise "$B" <YYYY-MM-DD> [--force]
 $R write "$B" --entry:file <entry.json> [--known]
 $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
@@ -98,8 +98,8 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `schema` | No book | Every record shape, ledger line, approval shape, pad types |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
-| `score` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`; `--held-out` is human's one run, never agent's | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound |
-| `check` | Nothing, strategy, run id, or proposal date | Nothing: continue view (strategies by status, open hypotheses per family with trials used against budget, open proposals with age, incidents, chain totals). Strategy or run: `standing`, `blockers`, compact scorecard. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `summary`, `approval_template`; exit 1 when none. All carry advisory `next` |
+| `score` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`; `--held-out` is human's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
+| `check` | Nothing, strategy, run id, or proposal date; `--live` | Nothing: continue view (strategies by status, open hypotheses per family with trials used against budget, open proposals with age, incidents, chain totals). Strategy or run: `standing`, `blockers`, compact scorecard. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `summary`, `approval_template`; exit 1 when none. `--live`: per-sleeve table, `breaches`, `report`. All carry advisory `next` |
 | `advise` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, order, cut, carried counts, `summary`; exit 1 when no sleeve has run line |
 | `write` | Any JSON object; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
@@ -207,6 +207,17 @@ carried orders, or proposal fields.
 4. When operator rejects proposal or overrides blocker, record `decision`
    with `subject` the proposal file stem, `action` `reject` or `override`,
    operator's reason verbatim.
+
+## Live
+
+Weekly, run `check "$B" --live`. Per `paper` sleeve (dry-run fills) or
+`live` sleeve (real fills), it measures realized path against scorer's model
+path, slippage against run's spread plus commission, drawdown, months below
+baseline sleeve, data age; each breach appends one incident line, once per
+strategy and kind per 7 days. Show operator `report` whole, every breach
+included. Never pause anything: pause is operator's decision line plus edit
+of `strategies/<name>/status`. Cite a run only after `score --repeat`
+reproduces it.
 
 ## Continue
 

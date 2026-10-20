@@ -165,6 +165,7 @@ class Thresholds(Model):
     paper_months_long: int
     long_holding_days: int
     folds: Annotated[int, Field(ge=2)] = 5
+    tracking_error: Annotated[float, Field(gt=0)] = 0.05
 
 
 class Sizing(Model):

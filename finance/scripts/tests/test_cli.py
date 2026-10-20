@@ -1,12 +1,11 @@
-"""The command surface: what start writes and refuses, later stages refused by
-name, the pad inside the book, and the held-out list outside it."""
+"""The command surface: what start writes and refuses, check naming a missing
+target, the pad inside the book, and the held-out list outside it."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import pytest
 from btm_finance.scaffold import stratified
 
 
@@ -54,23 +53,9 @@ def test_the_quarter_is_stable_for_one_salt_and_per_sector():
     assert {sector: len(names) for sector, names in chosen.items()} == {"a": 3, "b": 0}
 
 
-@pytest.mark.parametrize(
-    ("argv", "stage"),
-    [
-        (["score", "B", "baseline", "--repeat", "r1"], "stage 5"),
-    ],
-)
-def test_later_verbs_are_refused_by_stage(run, argv, stage):
-    code, _, err = run(argv)
-    assert code == 1
-    assert stage in err
-
-
-def test_check_refuses_a_proposal_and_live_by_stage(book, run):
+def test_check_names_a_missing_proposal_or_strategy(book, run):
     code, _, err = run(["check", str(book), "2026-01-02"])
     assert (code, "no proposal" in err) == (1, True)
-    code, _, err = run(["check", str(book), "--live"])
-    assert (code, "stage 5" in err) == (1, True)
     code, _, err = run(["check", str(book), "nothing"])
     assert (code, "no strategy or run named" in err) == (1, True)
 

@@ -6,6 +6,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from pydantic import Field
+
 from btm_corekit import Model
 from btm_finance.models import Exclusions
 
@@ -80,7 +82,8 @@ class Span(Model):
 class RunLine(Model):
     """One `score`: every key `score --repeat` needs to rerun it. `refused`
     lists bounds broken after running; the line counts as a trial anyway.
-    `peers` are the run ids whose series fed `sr_var` and PBO, in order."""
+    `peers` are the run ids whose series fed `sr_var` and PBO, in order;
+    `code_files` the sha256 of `signal.py` and `config.json`."""
 
     run_id: str
     hypothesis_id: str
@@ -101,3 +104,4 @@ class RunLine(Model):
     span: Span
     returns: str
     agent: str | None
+    code_files: dict[str, str] = Field(default_factory=dict)
