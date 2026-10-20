@@ -14,7 +14,7 @@ compatibility: >-
   that every skill's scripts share, about 430 MB with this skill's numeric
   libraries.
 metadata:
-  argument-hint: "[start|schema|record|check|write|read] <book path>"
+  argument-hint: "[start|schema|load|record|check|write|read] <book path>"
 ---
 
 # Finance
@@ -30,9 +30,11 @@ strategy status, sending.
 | Name | Path |
 | --- | --- |
 | `book` | [references/book.md](references/book.md) |
+| `sources` | [references/sources.md](references/sources.md) |
 
 Load `book` before making a book, or before reading or explaining one file
-by hand.
+by hand. Load `sources` before first `load` of any source, or when load
+fails upstream.
 
 ## Redirects
 
@@ -74,6 +76,7 @@ R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <ski
 B="<book path>"
 $R start "$B" [--cap N] [--universe:file names.csv]
 $R schema
+$R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
 $R check "$B"
 $R write "$B" --entry:file <entry.json> [--known]
@@ -84,6 +87,7 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | --- | --- | --- |
 | `start` | New path; `--cap` asset cap, default 10000000; `--universe:file` CSV with `symbol`, optional `sector` | Book id, held-out count; refuses path holding `limits.json` |
 | `schema` | No book | Every record shape, ledger line, approval shape, pad types |
+| `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `check` | Nothing | Continue view: strategies by status, open hypotheses per family with trials used against budget, open proposals with age, incidents, chain totals, advisory `next` |
 | `write` | Any JSON object; `--known` writes skill's cross-session pad | Pad id; never rejects content |

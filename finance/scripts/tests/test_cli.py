@@ -22,6 +22,7 @@ def test_start_writes_the_book_and_the_held_out_list_outside_it(tmp_path, run):
     for name in ("limits.json", "preferences.json", "book.json", "bin/send"):
         assert (book / name).is_file(), name
     assert (book / "strategies" / "baseline" / "status").read_text() == "research\n"
+    assert (book / "universe.csv").read_text() == universe.read_text()
     assert receipt["held_out"]["names"] == 3
     hidden = json.loads(Path(receipt["held_out"]["path"]).read_text())
     assert hidden["by_sector"]["tech"] == {"held_out": 2, "universe": 8}
@@ -56,7 +57,6 @@ def test_the_quarter_is_stable_for_one_salt_and_per_sector():
 @pytest.mark.parametrize(
     ("argv", "stage"),
     [
-        (["load", "B", "csv", "--since", "2026-01-01"], "stage 2"),
         (["score", "B", "baseline"], "stage 3b"),
         (["advise", "B", "2026-01-02"], "stage 4"),
     ],

@@ -6,9 +6,11 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
+
+from pydantic import BaseModel
 
 import btm_finance
 from btm_corekit import (
@@ -26,6 +28,7 @@ from btm_corekit import (
     gated,
     make_id,
     now_iso,
+    parse_model,
     run_cli,
     signal,
     text,
@@ -33,6 +36,17 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
+from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
+from btm_finance.data.assemble import parse_universe
+from btm_finance.data.raw import (
+    data_snapshot,
+    default_since,
+    read_manifest,
+    store,
+    verify_all,
+)
+from btm_finance.data.sources import csv, edgar, french, tiingo
+from btm_finance.data.tables import Loaded, Source, Table, day_of
 from btm_finance.ledger import (
     ENVELOPE,
     Break,
@@ -67,12 +81,13 @@ from btm_finance.views import (
 )
 
 UNIVERSE = Optional("universe", inline=False)
+CONFIG = Optional("config", inline=False)
 LATER: dict[str, str] = {
-    "load": "stage 2",
     "score": "stage 3b",
     "advise": "stage 4",
 }
 INCIDENT_TAIL = 10
+M = TypeVar("M", bound=BaseModel)
 
 
 def positive(raw: str) -> int:
@@ -204,6 +219,89 @@ def continue_view(book: Book) -> dict[str, Any]:
     }
 
 
+def iso_day(raw: str) -> date:
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{raw!r} is no YYYY-MM-DD date") from None
+
+
+def config_of(model: type[M], raw: str | None) -> M:
+    """The `--config` slot as the source's settings; absent is all defaults."""
+    if raw is None:
+        return model()
+    try:
+        data = json.loads(raw)
+    except ValueError as err:
+        raise CommandError(f"make the config valid JSON: {err}") from err
+    return parse_model(model, data, "the config")
+
+
+def universe_symbols(book: Book, given: Sequence[str] | None) -> list[str]:
+    if given is not None:
+        return list(given)
+    path = book.root / UNIVERSE_FILE
+    if not path.is_file():
+        raise CommandError(
+            f"no {UNIVERSE_FILE} in the book: name symbols in the config, or copy "
+            "the universe CSV there"
+        )
+    return sorted(parse_universe(path.read_text(encoding="utf-8")))
+
+
+def fetched(book: Book, source: Source, raw: str | None, since: date) -> Loaded:
+    match source:
+        case Source.CSV:
+            if raw is None:
+                raise CommandError("load csv needs --config:file naming bars or events")
+            return csv.fetch(config_of(csv.CsvConfig, raw))
+        case Source.FRENCH:
+            return french.fetch(config_of(french.FrenchConfig, raw))
+        case Source.EDGAR:
+            edgar_config = config_of(edgar.EdgarConfig, raw)
+            symbols = universe_symbols(book, edgar_config.symbols)
+            return edgar.fetch(edgar_config, symbols)
+        case Source.TIINGO:
+            tiingo_config = config_of(tiingo.TiingoConfig, raw)
+            symbols = universe_symbols(book, tiingo_config.symbols)
+            return tiingo.fetch(symbols, since, datetime.now(UTC).date())
+
+
+def cmd_load(args: argparse.Namespace) -> int:
+    book = open_book(args.book)
+    source = Source(args.source)
+    manifest = read_manifest(book)
+    verified = verify_all(book, manifest)
+    today = datetime.now(UTC).date()
+    since: date = args.since or default_since(manifest, source, today)
+    if since > today:
+        raise CommandError(f"--since {since} is after today; nothing to load")
+    raw = text(CONFIG, args)
+    loaded, dropped = fetched(book, source, raw, since).since(day_of(since))
+    if dropped:
+        signal(f"{dropped} row(s) before {since} dropped; pass an earlier --since")
+    manifest, added = store(book, manifest, source, loaded, since=since, today=today)
+    if not added:
+        signal(f"{source.value} yielded no rows from {since}; nothing written")
+    emit(
+        {
+            "book": book.meta.id,
+            "source": source.value,
+            "since": since.isoformat(),
+            "files": [
+                {"path": e.path, "rows": e.rows, "sha256": e.sha256} for e in added
+            ],
+            "rows": {
+                table.value: sum(e.rows for e in added if e.table == table)
+                for table in Table
+            },
+            "verified": verified,
+            "data_snapshot": data_snapshot(manifest),
+        }
+    )
+    return 0
+
+
 def cmd_schema(args: argparse.Namespace) -> int:
     del args
     emit(
@@ -264,6 +362,17 @@ def build_parser() -> argparse.ArgumentParser:
     for verb, stage in LATER.items():
         stub = commands.add_parser(verb, help=f"arrives in {stage}; refused today")
         stub.add_argument("rest", nargs=argparse.REMAINDER)
+    load = commands.add_parser("load", help="pull one source into the raw store")
+    load.set_defaults(func=cmd_load)
+    load.add_argument("book", help="book directory")
+    load.add_argument("source", choices=[source.value for source in Source])
+    load.add_argument(
+        "--since",
+        type=iso_day,
+        help="first date to keep; default the day after the source's last",
+    )
+    add_slot(load, CONFIG, "JSON object; required for csv: bars, events, columns")
+
     wire_pad(commands, PAD)
     return parser
 

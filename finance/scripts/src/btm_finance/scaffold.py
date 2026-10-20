@@ -193,6 +193,8 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     )
     write_new(baseline / "README.md", BASELINE_README)
     write_new(baseline / "signal.py", template("signal.tmpl"))
+    if universe is not None:
+        write_new(root / "universe.csv", universe)
     claude = root / ".claude" / "settings.json"
     write_new(claude, settings(claude, deny_rules(root, hidden)))
     send = root / "bin" / "send"
@@ -215,6 +217,7 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
             "bin/send",
             ".claude/settings.json",
             "strategies/baseline/",
+            *(["universe.csv"] if universe is not None else []),
         ],
         "next": "import holdings and preferences with record, then register "
         "the baseline hypothesis",

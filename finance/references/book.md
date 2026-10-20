@@ -11,7 +11,10 @@ operator's private git repository; skill holds methods, book holds state.
   limits.json                 human: asset cap, bounds, thresholds, families
   preferences.json            human: focus sectors, exclusions, cadence
   bin/send                    operator-only sender; adapter stub inside
-  data/raw/  data/features/   loaded data (later stage)
+  universe.csv                copy of start's --universe:file
+  data/raw/<source>/          immutable parquet per load; see sources
+  data/manifest.json          sha256, rows, dates per stored file
+  data/features/              materialized features (later stage)
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
     runs.jsonl  runs/<agent>.jsonl  incidents.jsonl
@@ -58,6 +61,7 @@ Fill from `holdings` carries `holdings: true` and `price` equal to
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` | `record` (fills also through `bin/send`) | append through `record` only |
 | `strategies/` except `status`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
+| `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
 | `bin/send` | operator | read; run only `--dry-run`, by operator's hand |
 | held-out list | `start` | never read |
 
