@@ -18,7 +18,7 @@ operator's private git repository; skill holds methods, book holds state.
   data/features/              materialized features (later stage)
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
-    runs.jsonl  runs/<agent>.jsonl  incidents.jsonl
+    runs.jsonl  runs/<agent>.jsonl  incidents.jsonl  regimes.jsonl
     pad/scratch.jsonl         kernel pad: free memory, not ledger
   proposals/  approvals/  rejected/  sent/
   strategies/<name>/
@@ -52,12 +52,29 @@ repaired, no incident line.
 
 | Kind | Required keys |
 | --- | --- |
-| hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `counterparty`, `min_holding_days` |
+| hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `counterparty`, `min_holding_days`; in family with `event: true` also `chain`, `expectation_source`, `discounted`, `confidence` |
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
 | decision | `kw`, `subject`, `action`, `reason` |
+| regime | `kw`, `as_of`, `short_cycle`, `long_cycle`, `bubble_count`, `policy_mix`, `other_forces`, `observables`, `confidence`; optional `falsified`, `supersedes` |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files` |
+| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files`, `regimes`, `regime_days` |
 | incident | `kind`; see Incidents |
+
+`confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`
+is chain id from `macro` table or `none`.
+
+Regime line, as `record` accepts it:
+
+```json
+{"id": "<id>", "ts": "<ts>", "kw": ["late", "cycle"], "as_of": "YYYY-MM-DD", "short_cycle": "easing|mid-expansion|late-expansion|tightening|contraction", "long_cycle": "early|bubble|top|depression|deleveraging|normalization", "bubble_count": {"count": 2, "evidence": ["<item 1 evidence>", "<item 4 evidence>"]}, "policy_mix": ["austerity|defaults|transfers|printing"], "other_forces": {"internal_order": "...", "external_order": "...", "nature": "...", "technology": "..."}, "observables": {"<name>": {"value": "<as reported>", "as_of": "YYYY-MM-DD", "source": "<url>"}}, "confidence": 0.6, "falsified": ["<chain id>"], "supersedes": "<regime id>"}
+```
+
+Gate refuses value outside these vocabularies, `bubble_count.count` outside
+0 to 7, `confidence` outside 0 to 1, unknown chain id, dangling
+`supersedes`; `evidence` count other than `count` is signal only. Regime
+record is newest live line by `as_of`, later line winning tie; `stale` when
+`as_of` is more than `limits.regime_stale_days` (default 90) before today,
+or before proposal date in proposal file.
 
 Fill from `holdings` has `holdings: true` and `price` equal to `cost_basis`,
 `null` when none given. Fill from `bin/send` has `approval`, the approval
@@ -145,29 +162,40 @@ research names only, through `Market` on `as_of`, last bar on or before
 | Field | Holds |
 | --- | --- |
 | `date`, `as_of`, `cap` | Proposal date, last bar used, `limits.asset_cap` |
-| `sleeves` | Per strategy: `account` (`paper` or `live`), `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `vol_weight`, `kelly_cap`, `weight`, `code_changed`, `unknown`, raw `signal` per name |
+| `sleeves` | Per strategy: `account` (`paper` or `live`), `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `vol_weight`, `kelly_cap`, `divisor`, `weight`, `code_changed`, `unknown`, raw `signal` per name |
 | `skipped` | Paper or live strategy with no run line, with reason |
 | `targets` | Per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, reference `price`, `sector` |
 | `orders` | `symbol`, `side`, `quantity`, `price`, `adv_participation`, `strategy`, `limit` (null: market-on-open), `account`, `held`, `target`, `carried_from` |
 | `summary` | `gross`, `net`, `cash` (1 minus net), `sectors` net weights, `top10` share of gross, `cost` in currency, one-way `turnover`, order count |
 | `unmanaged` | Held positions in names sleeves do not see (outside research set; can include held-out names); never sold |
 | `carried` | Unfilled orders of previous proposal; `merged` when an order here carries it |
-| `cuts` | Orders cut to ADV bound: `wanted`, `kept`, participation, bound |
+| `cuts` | `kind: adv`: order cut to ADV bound, `symbol`, `strategy`, `wanted`, `kept` shares, `adv_participation`, `bound`. `kind: risk_share`: sleeve cut to risk-share cap, `strategy`, `wanted`, `kept` weights, `share` before cap, `bound` |
+| `regime` | Regime record at proposal date: `id`, `as_of`, `stale`; null when none |
+| `effective_streams` | Of sleeves with stored series; see `scorecard`; null when none |
 
 Sizing, annual units, vol is std of run's stored net series times sqrt(252):
 
 1. Sleeve weight is min(`vol_target / vol_net`,
    `kelly_fraction * sharpe_net / vol_net`); zero when Sharpe is null or
    negative.
-2. Sum of sleeve weights above 1 scales every sleeve down to sum 1; rest is
-   cash.
-3. Name's net weight across sleeves above `sizing.max_weight` scales that
+2. Correlation divisor: weight over `divisor = 1 + sum_j |rho_ij|`, rho
+   Pearson correlation of stored net series with each other sleeve on common
+   dates; pair with under 20 common periods or no series adds 0.
+3. Risk-share cap: risk is `weight * vol_net`; each sleeve's risk at most
+   `max_strategy_risk_share` times sum of capped risks. Water-fill: riskiest
+   sleeves share one level `s * U / (1 - k s)`, U uncapped risk, k capped
+   count. Cap holds only with at least 1 / `max_strategy_risk_share` sleeves
+   carrying risk; fewer, it is skipped. Each capped sleeve listed under
+   `cuts` with `kind: risk_share`.
+4. Sum of sleeve weights above 1 scales every sleeve down to sum 1, which
+   keeps risk shares; rest is cash.
+5. Name's net weight across sleeves above `sizing.max_weight` scales that
    name down in every sleeve alike.
-4. Target is whole shares at last close on or before `date`, toward zero.
+6. Target is whole shares at last close on or before `date`, toward zero.
    Order is target minus held. Order whose quantity times price over 21-day
    dollar ADV passes `max_adv_participation` is cut to bound and listed
    under `cuts`; unknown ADV cuts it to zero.
-5. Live sleeves share one real account: real shares no live sleeve filled
+7. Live sleeves share one real account: real shares no live sleeve filled
    (opening holdings, retired sleeves) first cover sleeves' buys in name
    order; rest lands on last sleeve, whose diff sells it. Paper sleeve holds
    only own dry-run fills.

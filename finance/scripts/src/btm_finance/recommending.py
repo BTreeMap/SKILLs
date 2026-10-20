@@ -1,9 +1,10 @@
 """Proposal arithmetic, pure: positions replayed from fills, sleeves sized by
-volatility target under a fractional Kelly cap, per-name caps, whole-share
-orders diffed against held positions, ADV cuts, carried orders, summary.
+volatility target under a fractional Kelly cap, divided by correlation and
+capped by risk share, per-name caps, whole-share orders diffed against held
+positions, ADV cuts, carried orders, summary.
 
-Sizing and the diff are O(S N) for S sleeves and N names; replay is O(F) for
-F fills. Paper and live positions are separate books and never net.
+Sizing and the diff are O(S N + S^2 T log T) for S sleeves, N names, T
+periods; replay is O(F) for F fills. Paper and live books never net.
 """
 
 from __future__ import annotations
@@ -13,13 +14,21 @@ from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field
 
 from btm_corekit import Model
 from btm_finance.ledger import Row
 from btm_finance.models import Price, Side, Sizing, Status
+from btm_finance.regimes import RegimeRef
+from btm_finance.streams import (
+    Series,
+    divisors,
+    effective_streams,
+    pairs_of,
+    risk_capped,
+)
 
 TOP = 10  # names in the concentration figure
 BPS = 1e-4
@@ -75,8 +84,8 @@ class Proposed(Order):
 
 
 class Sleeve(Model):
-    """One sleeve's sizing: `weight` is min(`vol_weight`, `kelly_cap`) after
-    the sum over sleeves is scaled to at most 1."""
+    """One sleeve's sizing: `weight` is min(`vol_weight`, `kelly_cap`) over
+    `divisor`, risk-share capped, the sum over sleeves scaled to at most 1."""
 
     strategy: str
     account: Account
@@ -86,6 +95,7 @@ class Sleeve(Model):
     max_drawdown: float | None
     vol_weight: float
     kelly_cap: float
+    divisor: float
     weight: float
     code_changed: bool
     unknown: int
@@ -102,13 +112,36 @@ class Target(Model):
     sector: str
 
 
-class Cut(Model):
+class CutKind(StrEnum):
+    ADV = "adv"
+    RISK_SHARE = "risk_share"
+
+
+class AdvCut(Model):
+    """An order cut to the ADV bound: `wanted` and `kept` in shares."""
+
+    kind: Literal[CutKind.ADV] = CutKind.ADV
     symbol: str
     strategy: str
     wanted: int
     kept: int
     adv_participation: float
     bound: float
+
+
+class RiskCut(Model):
+    """A sleeve cut to the risk-share cap: `wanted` and `kept` are sleeve
+    weights, `share` its risk share before the cap."""
+
+    kind: Literal[CutKind.RISK_SHARE] = CutKind.RISK_SHARE
+    strategy: str
+    wanted: float
+    kept: float
+    share: float
+    bound: float
+
+
+Cut = Annotated[AdvCut | RiskCut, Field(discriminator="kind")]
 
 
 class Holding(Model):
@@ -164,6 +197,8 @@ class Proposal(Model):
     unmanaged: tuple[Holding, ...]
     carried: tuple[Carried, ...]
     cuts: tuple[Cut, ...]
+    regime: RegimeRef | None
+    effective_streams: float | None
 
 
 class Approval(Model):
@@ -203,6 +238,7 @@ class Candidate:
     unknown: int
     signal: Mapping[str, float]
     weights: Mapping[str, float]
+    series: Series | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,6 +273,8 @@ class Inputs:
     quotes: Mapping[str, Quote]
     fills: Sequence[Row]
     previous: Previous | None
+    risk_share: float = 1.0
+    regime: RegimeRef | None = None
 
 
 def sleeve_size(
@@ -249,16 +287,42 @@ def sleeve_size(
     return sizing.vol_target / vol, max(sizing.kelly_fraction * sharpe / vol, 0.0)
 
 
-def sleeve_weights(candidates: Sequence[Candidate], sizing: Sizing) -> dict[str, float]:
-    """Each sleeve at min(vol weight, Kelly cap), scaled so the sum is at
-    most 1. O(S)."""
+@dataclass(frozen=True, slots=True)
+class SleeveSizes:
+    weights: dict[str, float]
+    cuts: tuple[RiskCut, ...]
+
+
+def sleeve_weights(
+    candidates: Sequence[Candidate],
+    sizing: Sizing,
+    divisor: Mapping[str, float] | None = None,
+    share: float = 1.0,
+) -> SleeveSizes:
+    """min(vol weight, Kelly cap) over `divisor`, risk-share capped, then
+    scaled so the sum is at most 1. O(S log S)."""
     raw = {
         c.strategy: min(sleeve_size(c.sharpe_net, c.vol_net, sizing))
+        / (divisor or {}).get(c.strategy, 1.0)
         for c in candidates
     }
-    total = sum(raw.values())
+    vols = {c.strategy: c.vol_net or 0.0 for c in candidates}
+    capped = risk_capped(raw, vols, share)
+    total_risk = sum(w * vols[name] for name, w in raw.items())
+    total = sum(capped.values())
     scale = 1.0 / total if total > 1.0 else 1.0
-    return {name: weight * scale for name, weight in raw.items()}
+    cuts = tuple(
+        RiskCut(
+            strategy=name,
+            wanted=raw[name] * scale,
+            kept=capped[name] * scale,
+            share=raw[name] * vols[name] / total_risk,
+            bound=share,
+        )
+        for name in raw
+        if capped[name] < raw[name]
+    )
+    return SleeveSizes({name: w * scale for name, w in capped.items()}, cuts)
 
 
 def combined(
@@ -347,7 +411,7 @@ def capped(quantity: int, quote: Quote, bound: float) -> int:
 @dataclass(frozen=True, slots=True)
 class Diffed:
     orders: tuple[Proposed, ...]
-    cuts: tuple[Cut, ...]
+    cuts: tuple[AdvCut, ...]
     unmanaged: tuple[Holding, ...]
 
 
@@ -363,7 +427,7 @@ def diff(  # noqa: PLR0913 - one sleeve's whole diff
     """Orders moving `held` to `target`, each cut to `bound` of ADV; held
     names without a quote are unmanaged. O(N)."""
     orders: list[Proposed] = []
-    cuts: list[Cut] = []
+    cuts: list[AdvCut] = []
     unmanaged: list[Holding] = []
     for symbol in sorted(set(held) | set(target)):
         now = held.get(symbol, 0.0)
@@ -383,7 +447,7 @@ def diff(  # noqa: PLR0913 - one sleeve's whole diff
         kept = capped(wanted, quote, bound)
         if kept < wanted:
             cuts.append(
-                Cut(
+                AdvCut(
                     symbol=symbol,
                     strategy=strategy,
                     wanted=wanted,
@@ -552,14 +616,18 @@ def propose(inputs: Inputs) -> Proposal:
     """The whole proposal from its inputs; deterministic given them."""
     sizing, cap = inputs.sizing, inputs.cap
     candidates = inputs.candidates
-    weights = sleeve_weights(candidates, sizing)
+    names = [c.strategy for c in candidates]
+    pairs = pairs_of({c.strategy: c.series for c in candidates})
+    divisor = divisors(names, pairs)
+    sized = sleeve_weights(candidates, sizing, divisor, inputs.risk_share)
+    weights = sized.weights
     shares = combined(candidates, weights, sizing.max_weight)
     targets = targets_of(shares, inputs.quotes, cap)
     wanted = by_sleeve(targets)
     books = replay(inputs.fills)
     held = held_of(candidates, books, wanted)
     orders: list[Proposed] = []
-    cuts: list[Cut] = []
+    cuts: list[AdvCut | RiskCut] = list(sized.cuts)
     unmanaged: list[Holding] = []
     for candidate in candidates:
         done = diff(
@@ -590,6 +658,7 @@ def propose(inputs: Inputs) -> Proposal:
             max_drawdown=c.max_drawdown,
             vol_weight=sizes[c.strategy][0],
             kelly_cap=sizes[c.strategy][1],
+            divisor=divisor[c.strategy],
             weight=weights[c.strategy],
             code_changed=c.code_changed,
             unknown=c.unknown,
@@ -610,4 +679,8 @@ def propose(inputs: Inputs) -> Proposal:
         unmanaged=tuple(unmanaged),
         carried=carried,
         cuts=tuple(cuts),
+        regime=inputs.regime,
+        effective_streams=effective_streams(
+            [c.strategy for c in candidates if c.series is not None], pairs
+        ),
     )

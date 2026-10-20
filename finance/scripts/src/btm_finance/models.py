@@ -7,7 +7,14 @@ from datetime import date
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import ConfigDict, Field, StrictFloat, StrictInt, StringConstraints
+from pydantic import (
+    AfterValidator,
+    ConfigDict,
+    Field,
+    StrictFloat,
+    StrictInt,
+    StringConstraints,
+)
 
 from btm_corekit import Model, Named, NonEmpty, Slug, Trimmed
 
@@ -25,6 +32,7 @@ class Action(StrEnum):
     PAUSE = "pause"
     RETIRE = "retire"
     APPROVE = "approve"
+    DIAGNOSE = "diagnose"
 
 
 class Side(StrEnum):
@@ -59,9 +67,61 @@ StrategyName = Annotated[
 ]
 """A directory under `strategies/`: lowercase, digits, `-`, `_`; never a path."""
 
+
+class Chain(StrEnum):
+    """Chain ids of the `macro` reference's chain table; `none` cites none."""
+
+    NONE = "none"
+    TIGHTENING_INTO_LEVERAGE = "tightening-into-leverage"
+    EASING_INTO_BUBBLE = "easing-into-bubble"
+    DELEVERAGING_PRINTING = "deleveraging-printing"
+    DELETION_UNDER_STRESS = "deletion-under-stress"
+    CURRENCY_INFLATION = "currency-inflation"
+    EXPECTATION_VS_OUTCOME = "expectation-vs-outcome"
+    SPIN_OFF_SUPPLY = "spin-off-supply"
+
+
+class ShortCycle(StrEnum):
+    EASING = "easing"
+    MID_EXPANSION = "mid-expansion"
+    LATE_EXPANSION = "late-expansion"
+    TIGHTENING = "tightening"
+    CONTRACTION = "contraction"
+
+
+class LongCycle(StrEnum):
+    EARLY = "early"
+    BUBBLE = "bubble"
+    TOP = "top"
+    DEPRESSION = "depression"
+    DELEVERAGING = "deleveraging"
+    NORMALIZATION = "normalization"
+
+
+class Lever(StrEnum):
+    """Deleveraging levers, in the order policy reaches for them."""
+
+    AUSTERITY = "austerity"
+    DEFAULTS = "defaults"
+    TRANSFERS = "transfers"
+    PRINTING = "printing"
+
+
 Quantity = Annotated[float, Field(gt=0)]
 Price = Annotated[float, Field(gt=0)]
 Texts = tuple[str, ...]
+Confidence = Annotated[float, Field(ge=0, le=1)]
+
+
+def _cited(chain: Chain) -> Chain:
+    if chain is Chain.NONE:
+        raise ValueError("name a chain id; none is no chain to falsify")
+    return chain
+
+
+Cited = Annotated[Chain, AfterValidator(_cited)]
+EVENT_FIELDS = ("chain", "expectation_source", "discounted", "confidence")
+"""Hypothesis fields an event family (`limits.families.<id>.event`) requires."""
 
 
 class OpenRow(Model):
@@ -84,6 +144,10 @@ class HypothesisEntry(OpenNamed):
     mechanism: NonEmpty | None = None
     sector: NonEmpty | None = None
     supersedes: NonEmpty | None = None
+    chain: Chain | None = None
+    expectation_source: NonEmpty | None = None
+    discounted: NonEmpty | None = None
+    confidence: Confidence | None = None
 
 
 class CritiqueEntry(OpenNamed):
@@ -91,6 +155,7 @@ class CritiqueEntry(OpenNamed):
     blockers: Texts
     concerns: Texts
     by: NonEmpty
+    confidence: Confidence | None = None
     supersedes: NonEmpty | None = None
 
 
@@ -98,6 +163,43 @@ class DecisionEntry(OpenNamed):
     subject: NonEmpty
     action: Action
     reason: NonEmpty
+    confidence: Confidence | None = None
+    supersedes: NonEmpty | None = None
+
+
+class BubbleCount(Model):
+    """Bubble checklist items present, with evidence per item."""
+
+    count: Annotated[int, Field(ge=0, le=7)]
+    evidence: tuple[NonEmpty, ...]
+
+
+class OtherForces(Model):
+    internal_order: str
+    external_order: str
+    nature: str
+    technology: str
+
+
+class Observable(Model):
+    value: str | int | float
+    as_of: date
+    source: NonEmpty
+
+
+class RegimeEntry(OpenNamed):
+    """A human-confirmed regime record; `falsified` names chains whose
+    falsifier fired."""
+
+    as_of: date
+    short_cycle: ShortCycle
+    long_cycle: LongCycle
+    bubble_count: BubbleCount
+    policy_mix: tuple[Lever, ...]
+    other_forces: OtherForces
+    observables: dict[str, Observable]
+    confidence: Confidence
+    falsified: tuple[Cited, ...] = ()
     supersedes: NonEmpty | None = None
 
 
@@ -147,6 +249,7 @@ class Family(Model):
 
     trials: Annotated[int, Field(ge=0)]
     touches: Texts = ()
+    event: bool = False
 
 
 class Thresholds(Model):
@@ -194,6 +297,9 @@ class Limits(Model):
     sizing: Sizing
     repeat_tolerance: float
     families: dict[str, Family]
+    regime_stale_days: Annotated[int, Field(ge=0)] = 90
+    max_strategy_risk_share: Annotated[float, Field(gt=0, le=1)] = 0.5
+    min_effective_streams: Annotated[float, Field(ge=1)] = 2.0
 
 
 class StrategyConfig(Model):
@@ -267,6 +373,9 @@ def limits_template(cap: int) -> dict[str, object]:
         "sizing": {"vol_target": 0.10, "kelly_fraction": 0.25, "max_weight": 0.05},
         "repeat_tolerance": 1e-4,
         "families": {"baseline": {"trials": 1}},
+        "regime_stale_days": 90,
+        "max_strategy_risk_share": 0.5,
+        "min_effective_streams": 2,
     }
 
 

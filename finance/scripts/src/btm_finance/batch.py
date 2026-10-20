@@ -15,15 +15,21 @@ from pydantic import ConfigDict
 from btm_corekit import Acceptance, Diagnostic, Model, Named, Pool, dump
 from btm_finance.ledger import ENVELOPE, Kind, Row
 from btm_finance.models import (
+    EVENT_FIELDS,
     Action,
     Cadence,
     CapacityClass,
+    Chain,
     CritiqueEntry,
     DecisionEntry,
     FillEntry,
     HoldingsEntry,
     HypothesisEntry,
+    Lever,
+    LongCycle,
     Preferences,
+    RegimeEntry,
+    ShortCycle,
     Side,
 )
 
@@ -40,12 +46,27 @@ SCHEMA: dict[str, str] = {
     '"family_id": "<key of limits.families>", '
     f'"capacity_class": "{_choices(CapacityClass)}", "falsifier": "...", '
     '"counterparty": "...", "min_holding_days": 21, "mechanism": "..." '
-    '(optional), "sector": "..." (optional), "supersedes": "<id>" (optional)}',
+    '(optional), "sector": "..." (optional), "supersedes": "<id>" (optional), '
+    f'"chain": "{_choices(Chain)}", "expectation_source": "...", '
+    '"discounted": "...", "confidence": 0.4 (these four required when '
+    "limits.families.<family_id>.event is true)}",
     "critiques": '{"kw": ["two", "words"], "run_id": "<run id>", '
-    '"blockers": ["..."], "concerns": ["..."], "by": "<delegate>"}',
+    '"blockers": ["..."], "concerns": ["..."], "by": "<delegate>", '
+    '"confidence": 0.6 (optional)}',
     "decisions": '{"kw": ["two", "words"], "subject": "<strategy, run id, '
     f'hypothesis id, or proposal date>", "action": "{_choices(Action)}", '
-    '"reason": "...", "supersedes": "<id>" (optional)}',
+    '"reason": "...", "confidence": 0.6 (optional), "supersedes": "<id>" '
+    "(optional)}",
+    "regimes": '{"kw": ["two", "words"], "as_of": "YYYY-MM-DD", '
+    f'"short_cycle": "{_choices(ShortCycle)}", '
+    f'"long_cycle": "{_choices(LongCycle)}", '
+    '"bubble_count": {"count": 2, "evidence": ["one per item present"]}, '
+    f'"policy_mix": ["{_choices(Lever)}"], "other_forces": '
+    '{"internal_order": "...", "external_order": "...", "nature": "...", '
+    '"technology": "..."}, "observables": {"<name>": {"value": "...", '
+    '"as_of": "YYYY-MM-DD", "source": "<url>"}}, "confidence": 0.6, '
+    f'"falsified": ["{_choices(c for c in Chain if c is not Chain.NONE)}"] '
+    '(optional), "supersedes": "<id>" (optional)}',
     "fills": '{"symbol": "...", '
     f'"side": "{_choices(Side)}", "quantity": 10, "price": 12.5, '
     '"date": "YYYY-MM-DD", "strategy": "<name>|opening", "dry_run": false}',
@@ -65,6 +86,7 @@ class RecordBatch(Model):
     hypotheses: Rows = ()
     critiques: Rows = ()
     decisions: Rows = ()
+    regimes: Rows = ()
     fills: Rows = ()
     holdings: Rows = ()
     preferences: Rows = ()
@@ -78,6 +100,7 @@ class Context:
     """Live book state the gate resolves references against."""
 
     families: frozenset[str]
+    events: frozenset[str]
     min_holding_days: int
     ids: Mapping[Kind, list[str]]
     strategies: list[str]
@@ -104,7 +127,7 @@ class _Expansion(Acceptance):
         self.staged: dict[Kind, list[Row]] = {}
         self.pools = {
             kind: Pool(kind.value, list(context.ids.get(kind, [])))
-            for kind in (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION)
+            for kind in (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.REGIME)
         }
 
     def stage(self, kind: Kind, full: str, body: Mapping[str, Any]) -> None:
@@ -150,6 +173,7 @@ class _Expansion(Acceptance):
                     + ", ".join(sorted(self.context.families))
                     + "; the human adds families to limits.json",
                 )
+            event_ok = self.event_fields(entry, where)
             if entry.min_holding_days < self.context.min_holding_days:
                 self.advisories.append(
                     f"{where}: min_holding_days {entry.min_holding_days} is under "
@@ -161,8 +185,21 @@ class _Expansion(Acceptance):
                     f"{where}: strategies/{entry.strategy}/ does not exist yet"
                 )
             full = self.named(Kind.HYPOTHESIS, entry, where, entry.supersedes)
-            if full is not None and family_ok:
+            if full is not None and family_ok and event_ok:
                 self.stage(Kind.HYPOTHESIS, full, dump(entry))
+
+    def event_fields(self, entry: HypothesisEntry, where: str) -> bool:
+        """An event family's hypothesis carries all four macro fields."""
+        if entry.family_id not in self.context.events:
+            return True
+        missing = [key for key in EVENT_FIELDS if getattr(entry, key) is None]
+        for key in missing:
+            self.fail(
+                f"{where}.{key}",
+                f"add '{key}': family {entry.family_id} is an event family",
+                SCHEMA["hypotheses"],
+            )
+        return not missing
 
     def take_critiques(self, rows: Rows) -> None:
         runs = self.context.ids.get(Kind.RUN, [])
@@ -208,6 +245,24 @@ class _Expansion(Acceptance):
             full = self.named(Kind.DECISION, entry, where, entry.supersedes)
             if full is not None and subject is not None:
                 self.stage(Kind.DECISION, full, {**dump(entry), "subject": subject})
+
+    def take_regimes(self, rows: Rows) -> None:
+        for index, row in enumerate(rows):
+            where = f"regimes[{index}]"
+            if not self.envelope_free(row, where):
+                continue
+            entry = self.decode(RegimeEntry, row, where, SCHEMA["regimes"])
+            if entry is None:
+                continue
+            listed = len(entry.bubble_count.evidence)
+            if listed != entry.bubble_count.count:
+                self.advisories.append(
+                    f"{where}.bubble_count: count {entry.bubble_count.count} but "
+                    f"{listed} evidence line(s); give one per item present"
+                )
+            full = self.named(Kind.REGIME, entry, where, entry.supersedes)
+            if full is not None:
+                self.stage(Kind.REGIME, full, dump(entry))
 
     def take_fills(self, rows: Rows) -> list[str]:
         made: list[str] = []
@@ -276,14 +331,15 @@ def expand_batch(
     context: Context, batch: Mapping[str, Any], maker: Maker, stamp: str
 ) -> RecordResult:
     """Every row decoded, resolved, and staged, or every problem located.
-    Order: hypotheses, critiques, decisions, fills, holdings, preferences, so
-    a decision may name a hypothesis made earlier in the same batch."""
+    Order: hypotheses, critiques, decisions, regimes, fills, holdings,
+    preferences, so a decision may name a hypothesis made earlier."""
     expansion = _Expansion(context, maker, stamp)
     expansion.known_keys(batch, RecordBatch)
     record = expansion.families(batch, RecordBatch, SCHEMA)
     expansion.take_hypotheses(record.hypotheses)
     expansion.take_critiques(record.critiques)
     expansion.take_decisions(record.decisions)
+    expansion.take_regimes(record.regimes)
     fills = expansion.take_fills(record.fills)
     opening = expansion.take_holdings(record.holdings)
     preferences = expansion.take_preferences(record.preferences)
@@ -297,6 +353,7 @@ def expand_batch(
             "hypotheses": pools[Kind.HYPOTHESIS].new,
             "critiques": pools[Kind.CRITIQUE].new,
             "decisions": pools[Kind.DECISION].new,
+            "regimes": pools[Kind.REGIME].new,
             "fills": fills,
             "holdings": opening,
         },

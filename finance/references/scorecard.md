@@ -38,11 +38,11 @@ that list.
 
 ## Rules
 
-* Score refuses before running: no hypothesis names strategy; `holding_days`
-  under `min_holding_days`; `config.json` `family_id` other than
-  hypothesis's; `signal.py` failing whitelist. After running, `cost_share`,
-  `adv_participation_max`, or `min_holding_days_realized` out of bound: run
-  line still written with `refused`, exit 1.
+* `measure` refuses before running: no hypothesis names strategy;
+  `holding_days` under `min_holding_days`; `config.json` `family_id` other
+  than hypothesis's; `signal.py` failing whitelist. After running,
+  `cost_share`, `adv_participation_max`, or `min_holding_days_realized` out
+  of bound: run line still written with `refused`, exit 1.
 * DSR: promote at or above 0.95. `sr` per period; `sr_var` is variance of
   per-period net Sharpe across family's runs, this one included. One trial:
   SR0 is 0, DSR is probabilistic Sharpe against zero.
@@ -73,6 +73,30 @@ that list.
   close under `price_floor`, ADV under `adv_multiple` times largest intended
   position at `asset_cap`. Delisted name returns its terminal return by
   exchange from `limits.delisting` on delisting day, then cash.
+
+## Regimes and streams
+
+Run line, beside scorecard and outside it (reference pin never covers it):
+
+* `regimes`: ids of regime records whose span overlaps evidence window.
+  Record holds from its `as_of` to next live record's `as_of`; last holds
+  open-ended. `regime_days`: evidence periods per id, `none` for periods
+  before first record. Cost O(R log R + R log T).
+
+`check <strategy>` adds three advisory fields, never blockers:
+
+* `regime_concentration`: share of run's `regime_days` per id, `none`
+  included; empty when run predates stamp.
+* `correlation`: per paper or live sleeve (strategy itself left out),
+  Pearson correlation of run's stored net series with sleeve's newest
+  research run series on common dates; null under 20 common periods or zero
+  variance.
+* `effective_streams`: over paper and live sleeves plus this strategy, each
+  with stored series: `N_eff = 1 / mean(R)`, R correlation matrix with 1 on
+  diagonal, null pairs left out, mean floored at 1/n so `1 <= N_eff <= n`.
+  Copy of sleeve gives 1; n independent streams give n. Under
+  `limits.min_effective_streams` (default 2): `signal:` line, strategy adds
+  trial, not stream.
 
 ## Repeat
 

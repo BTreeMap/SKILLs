@@ -103,8 +103,8 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--today` tests only | Nothing: continue view (strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: undecodable lines and dangling `supersedes` by file and line). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. Every output has advisory `next` |
-| `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
+| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: undecodable lines and dangling `supersedes` by file and line, and each hypothesis citing a falsified chain). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. Every output has advisory `next` |
+| `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
 
@@ -123,7 +123,8 @@ all, resend. Arrays optional; order below is acceptance order:
 {
   "hypotheses":  [{"kw": ["two", "words"], "strategy": "<name>", "family_id": "<key of limits.families>", "capacity_class": "under_cap|in_band|crowded", "falsifier": "...", "counterparty": "...", "min_holding_days": 21, "mechanism": "...", "sector": "..."}],
   "critiques":   [{"kw": ["two", "words"], "run_id": "<run id>", "blockers": ["..."], "concerns": ["..."], "by": "<delegate>"}],
-  "decisions":   [{"kw": ["two", "words"], "subject": "<strategy|run id|hypothesis id|proposal date>", "action": "promote|reject|override|pause|retire|approve", "reason": "..."}],
+  "decisions":   [{"kw": ["two", "words"], "subject": "<strategy|run id|hypothesis id|proposal date>", "action": "promote|reject|override|pause|retire|approve|diagnose", "reason": "..."}],
+  "regimes":     [{"kw": ["two", "words"], "as_of": "YYYY-MM-DD", "short_cycle": "...", "long_cycle": "...", "bubble_count": {"count": 2, "evidence": ["...", "..."]}, "policy_mix": ["printing"], "other_forces": {"internal_order": "...", "external_order": "...", "nature": "...", "technology": "..."}, "observables": {"<name>": {"value": "...", "as_of": "YYYY-MM-DD", "source": "<url>"}}, "confidence": 0.6, "falsified": ["<chain id>"]}],
   "fills":       [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "date": "YYYY-MM-DD", "strategy": "<name>|opening", "dry_run": false}],
   "holdings":    [{"date": "YYYY-MM-DD", "positions": [{"symbol": "...", "quantity": 10, "cost_basis": 12.5}]}],
   "preferences": [{"focus_sectors": ["..."], "exclusions": {"symbols": [], "sectors": [], "countries": []}, "cadence": "monthly|quarterly"}]
@@ -133,6 +134,10 @@ all, resend. Arrays optional; order below is acceptance order:
 - Supply two or three keywords as `kw`; copy full ids from `new` receipt.
   Unique keyword subset recovers lost id, with signal.
 - `family_id` must be key of `limits.families`; only operator adds family.
+  Family with `event: true` requires hypothesis `chain`,
+  `expectation_source`, `discounted`, `confidence` (`macro`).
+- `confidence` (0 to 1) rides on any hypothesis, critique, decision.
+- `regimes` vocabularies and chain ids: `schema`, `macro`.
 - Register hypothesis before any strategy code for it exists. `mechanism`
   states ex-ante economic mechanism; omit it when none.
 - `critique.run_id` must name a run some runs file holds.
@@ -175,8 +180,8 @@ names. Then write `strategies/<name>/`:
   name starting `__`. Script refuses every other import and name by file and
   line, before any of the file runs.
 
-Scorer trades next open after each period's last day, normalizes to gross 1,
-drops excluded, under-floor, and thin names, caps weight at
+`measure` trades next open after each period's last day, normalizes to gross
+1, drops excluded, under-floor, and thin names, caps weight at
 `sizing.max_weight`. Run breaking cost, participation, or holding bound
 still writes its line: every run counts as trial, refused or not. Never
 measure again to shop for better number; change hypothesis, register again.
@@ -216,6 +221,14 @@ Unit of work is one registered hypothesis:
 4. Hand a different critique delegate the run id; `record` its `critiques`
    batch.
 5. Run `check "$B" <name>`; read standing and every blocker.
+
+Regime record: lead drafts it from `macro` observables and chains; operator
+confirms, edits, or rejects it and states `confidence`; lead `record`s only
+confirmed text, never number script derived. Record at most quarterly, and
+when chain falsifier fires: list chain under `falsified`, and write one
+`objection` pad entry per open hypothesis citing it. `measure` stamps run
+lines with regimes spanned; bare `check` flags record older than
+`limits.regime_stale_days` as `stale`.
 
 Every run line counts against family budget, refused and held-out ones too;
 `trials` past budget blocks promotion. When family's budget is spent, ask
@@ -269,8 +282,8 @@ before explaining sizing, cuts, carried orders, or proposal fields.
    `recommend "$B" <date> --force`.
 2. Run `check "$B" <date>`. Read result to operator in its order: every
    `blockers` entry verbatim, `baseline` row beside every other sleeve,
-   `stale` flags, then `diff`, `cuts`, `unmanaged`, `summary`. Never argue
-   for proposal.
+   `stale` flags, `regime` (say when stale) and `effective_streams`, then
+   `diff`, `cuts`, `unmanaged`, `summary`. Never argue for proposal.
 3. Hand operator `approval_template`, `approval_path`, exact command:
    `<book>/bin/send approvals/<date>.json --dry-run` for paper orders,
    without `--dry-run` for live ones. Operator copies template, edits it,
@@ -287,6 +300,11 @@ commission, drawdown, months below baseline sleeve, data age; each breach
 appends one incident line, once per strategy and kind per 7 days. Show
 operator `report` whole, every breach included. Never pause anything: pause
 is operator's decision line plus edit of `strategies/<name>/status`.
+
+On live deviation from model path, first move is diagnosis: with operator,
+`record` decision `action: diagnose`, `reason` naming broken link
+(mechanism, data, regime, or crowd). Pause or retire follows diagnosis,
+never pain alone.
 
 ## Operator cadence
 

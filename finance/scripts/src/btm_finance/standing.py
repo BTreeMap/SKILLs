@@ -9,6 +9,8 @@ from datetime import date
 from enum import StrEnum
 from typing import Any
 
+from pydantic import Field
+
 from btm_corekit import Model
 from btm_finance.ledger import Row
 from btm_finance.models import Action, CapacityClass, Limits, Status
@@ -43,6 +45,9 @@ class StandingView(Model):
     status: str
     paper: dict[str, Any] | None
     next: str
+    regime_concentration: dict[str, float] = Field(default_factory=dict)
+    correlation: dict[str, float | None] = Field(default_factory=dict)
+    effective_streams: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

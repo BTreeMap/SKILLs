@@ -122,15 +122,25 @@ from btm_finance.models import (
 )
 from btm_finance.recommending import (
     Account,
+    AdvCut,
     Candidate,
     Inputs,
     Previous,
     Proposal,
     Quote,
+    RiskCut,
     Skipped,
     account_of,
     approval_of,
     propose,
+)
+from btm_finance.regimes import (
+    Dated,
+    concentration,
+    dated,
+    falsified_warnings,
+    regime_record,
+    regime_stamp,
 )
 from btm_finance.repeat import (
     Presence,
@@ -143,7 +153,7 @@ from btm_finance.repeat import (
 from btm_finance.repeat import advisories as engine_advisories
 from btm_finance.scaffold import scaffold
 from btm_finance.scorecard import RunLine, Span
-from btm_finance.standing import Evidence, standing_of
+from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
     PAD,
     PAD_DIR,
@@ -163,7 +173,9 @@ from btm_finance.store import (
     seal,
     strategies,
 )
+from btm_finance.streams import Series, effective_streams, pairs_of
 from btm_finance.views import (
+    CLOSING,
     by_status,
     families,
     next_step,
@@ -200,6 +212,7 @@ def start(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     limits = load_limits(book)
     context = Context(
         families=frozenset(limits.families),
+        events=event_families(limits),
         min_holding_days=limits.min_holding_days,
         ids={},
         strategies=["baseline"],
@@ -214,6 +227,10 @@ def start(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     receipt["wrote"].append("ledger/hypotheses.jsonl")
     receipt["new"] = result.new["hypotheses"]
     return receipt
+
+
+def event_families(limits: Limits) -> frozenset[str]:
+    return frozenset(name for name, f in limits.families.items() if f.event)
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -236,10 +253,11 @@ def run_ids(book: Book) -> list[str]:
 def cmd_record(args: argparse.Namespace) -> int:
     book = open_book(args.book)
     limits = load_limits(book)
-    kinds = (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.FILL)
+    kinds = (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.REGIME, Kind.FILL)
     ids = {kind: ids_of(book.path_of(kind)) for kind in kinds}
     context = Context(
         families=frozenset(limits.families),
+        events=event_families(limits),
         min_holding_days=limits.min_holding_days,
         ids={**ids, Kind.RUN: run_ids(book)},
         strategies=[strategy.name for strategy in strategies(book)],
@@ -280,7 +298,8 @@ def cmd_check(args: argparse.Namespace) -> int:
     try:
         when = date.fromisoformat(args.target)
     except ValueError:
-        emit(standing_view(book, args.target).model_dump(mode="json"))
+        view = standing_view(book, args.target, advisory=True)
+        emit(view.model_dump(mode="json"))
         return 0
     emit(proposal_view(book, when))
     return 0
@@ -313,9 +332,57 @@ def hypothesis_for(book: Book, run: Row | None, strategy: str) -> Row | None:
     return next((row for _, row in rows if row.get("id") == wanted), None)
 
 
-def standing_view(book: Book, target: str) -> BaseModel:
+def regime_rows(book: Book) -> list[Dated]:
+    return dated(current(kind_rows(book, Kind.REGIME)))
+
+
+def sleeve_series(book: Book, manifest: Manifest, skip: str) -> dict[str, Series]:
+    """Each paper or live sleeve's newest research run series, but `skip`'s;
+    a sleeve with no stored series is left out."""
+    runs = all_runs(book)
+    found: dict[str, Series] = {}
+    for listed in strategies(book):
+        if listed.name == skip or account_of(listed.status) is None:
+            continue
+        run = newest_run(runs, listed.name)
+        series = (
+            None if run is None else read_returns(book, manifest, str(run["run_id"]))
+        )
+        if series is not None:
+            found[listed.name] = series
+    return found
+
+
+def advisory_of(
+    book: Book, view: StandingView, run: Row, limits: Limits
+) -> StandingView:
+    """Regime concentration, correlation with each sleeve, effective streams;
+    never a blocker. O(S^2 T log T)."""
+    manifest = read_manifest(book)
+    own = read_returns(book, manifest, str(run.get("run_id")))
+    sleeves = sleeve_series(book, manifest, view.strategy)
+    series = {**sleeves, **({view.strategy: own} if own is not None else {})}
+    pairs = pairs_of(series)
+    streams = effective_streams(sorted(series), pairs)
+    if streams is not None and streams < limits.min_effective_streams:
+        signal(
+            f"effective_streams {streams:.3g} under limits.min_effective_streams "
+            f"{limits.min_effective_streams}: {view.strategy} adds a trial, "
+            "not a stream"
+        )
+    return view.with_(
+        regime_concentration=concentration(run.get("regime_days")),
+        correlation={
+            name: None if own is None else pairs[frozenset((name, view.strategy))]
+            for name in sorted(sleeves)
+        },
+        effective_streams=streams,
+    )
+
+
+def standing_view(book: Book, target: str, *, advisory: bool = False) -> StandingView:
     """`check <strategy>` or `check <run id>`: standing of the newest measured
-    research run, or of the named run."""
+    research run, or of the named run; `advisory` adds the stream fields."""
     runs = all_runs(book)
     named = {str(row.get("run_id")): row for row in runs}
     listed = {s.name: s for s in strategies(book)}
@@ -344,7 +411,9 @@ def standing_view(book: Book, target: str) -> BaseModel:
         raw_status=found.raw if found else "",
         today=datetime.now(UTC).date(),
     )
-    return standing_of(evidence, load_limits(book))
+    limits = load_limits(book)
+    view = standing_of(evidence, limits)
+    return advisory_of(book, view, run, limits) if advisory and run else view
 
 
 def ledger_warnings(book: Book) -> list[dict[str, Any]]:
@@ -386,15 +455,27 @@ def continue_view(book: Book) -> dict[str, Any]:
     today = datetime.now(UTC).date()
     proposals = open_proposals(proposal_dates(book), decisions, today)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
+    records = regime_rows(book)
+    regime = regime_record(records, today, limits.regime_stale_days)
+    if regime is not None and regime.stale:
+        signal(f"regime record {regime.id} as of {regime.as_of} is stale; draft one")
+    closed = {d.get("subject") for d in decisions if d.get("action") in CLOSING}
+    fired = falsified_warnings(records, hypotheses, closed)
+    for entry in fired:
+        signal(
+            f"hypothesis {entry['hypothesis']} cites chain {entry['chain']}, "
+            f"falsified in regime {entry['regime']}; write an objection pad entry"
+        )
     return {
         "book": book.meta.id,
         "as_of": now_iso(),
+        "regime": None if regime is None else regime.model_dump(mode="json"),
         "strategies": {**by_status(known), "unknown": unknown},
         "families": families(limits, hypotheses, runs, decisions),
         "proposals": proposals,
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
-        "warnings": warnings,
+        "warnings": [*warnings, *fired],
         "next": next_step(hypotheses, pending, proposals),
     }
 
@@ -487,8 +568,9 @@ def cmd_schema(args: argparse.Namespace) -> int:
     emit(
         {
             "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
-            "sequence": "hypotheses, critiques, decisions, fills, holdings, "
-            "preferences; a decision may name a hypothesis made earlier in the batch",
+            "sequence": "hypotheses, critiques, decisions, regimes, fills, "
+            "holdings, preferences; a decision may name a hypothesis made earlier "
+            "in the batch",
             "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the "
             "record",
             "corrections": '"supersedes": "<id>" on a new line; newest wins',
@@ -630,6 +712,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
     outcome = evaluate(setting, strategy, params, peers)
     refused = bounds(outcome.scorecard, limits)
     snapshot = data_snapshot(manifest)
+    spanned, regime_days = regime_stamp(outcome.dates, regime_rows(book))
     run_id = make_id([*ascii_words(name), "run"])
     write_returns(
         book,
@@ -667,6 +750,8 @@ def cmd_measure(args: argparse.Namespace) -> int:
         ),
         returns=returns_path(run_id),
         agent=agent,
+        regimes=spanned,
+        regime_days=regime_days,
     )
     target = (
         book.ledger / "runs" / f"{agent}.jsonl" if agent else book.path_of(Kind.RUN)
@@ -687,6 +772,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             "scorecard": outcome.scorecard.model_dump(mode="json"),
             "reasons": outcome.reasons,
             "refused": refused,
+            "regime_days": regime_days,
             "next": f"fix {', '.join(r.split(':')[0] for r in refused)}; the run "
             "still counts as a trial"
             if refused
@@ -786,6 +872,7 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
             for symbol, w in zip(day.panel.names, weights.tolist(), strict=True)
             if w
         },
+        series=series,
     )
 
 
@@ -878,15 +965,25 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             quotes=quotes_of(day),
             fills=current(kind_rows(book, Kind.FILL)),
             previous=previous_of(book, when.isoformat()),
+            risk_share=limits.max_strategy_risk_share,
+            regime=regime_record(regime_rows(book), when, limits.regime_stale_days),
         )
     )
     target.parent.mkdir(parents=True, exist_ok=True)
     write_atomic(target, json.dumps(proposal.model_dump(mode="json"), indent=2) + "\n")
     for cut in proposal.cuts:
-        signal(
-            f"{cut.symbol} ({cut.strategy}) cut from {cut.wanted} to {cut.kept}: "
-            f"ADV participation {cut.adv_participation:.4g} over {cut.bound}"
-        )
+        match cut:
+            case AdvCut():
+                signal(
+                    f"{cut.symbol} ({cut.strategy}) cut from {cut.wanted} to "
+                    f"{cut.kept}: ADV participation {cut.adv_participation:.4g} "
+                    f"over {cut.bound}"
+                )
+            case RiskCut():
+                signal(
+                    f"sleeve {cut.strategy} cut from {cut.wanted:.4g} to "
+                    f"{cut.kept:.4g}: risk share {cut.share:.3g} over {cut.bound}"
+                )
     emit(
         {
             "book": book.meta.id,
@@ -899,6 +996,10 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             "carried": len(proposal.carried),
             "unmanaged": len(proposal.unmanaged),
             "summary": proposal.summary.model_dump(mode="json"),
+            "regime": None
+            if proposal.regime is None
+            else proposal.regime.model_dump(mode="json"),
+            "effective_streams": proposal.effective_streams,
             "next": f"check {target.stem}; read it to the operator, blockers first",
         }
     )
@@ -978,6 +1079,10 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         "blockers": blockers,
         "baseline": comparison(book, proposal),
         "stale": stale_flags(proposal, load_preferences(book).cadence, today),
+        "regime": None
+        if proposal.regime is None
+        else proposal.regime.model_dump(mode="json"),
+        "effective_streams": proposal.effective_streams,
         "diff": [
             {
                 "symbol": o.symbol,

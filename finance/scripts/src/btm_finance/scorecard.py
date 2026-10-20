@@ -105,3 +105,5 @@ class RunLine(Model):
     returns: str
     agent: str | None
     code_files: dict[str, str] = Field(default_factory=dict)
+    regimes: tuple[str, ...] = ()
+    regime_days: dict[str, int] = Field(default_factory=dict)

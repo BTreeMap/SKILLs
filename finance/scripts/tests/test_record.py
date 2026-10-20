@@ -187,3 +187,66 @@ def test_record_refuses_to_append_after_an_undecodable_line(book, run, make_hypo
     assert code == 1
     assert "line 2 is not a JSON object" in err and "operator repairs" in err
     assert path.read_bytes() == before
+
+
+EVENT_FIELDS = {
+    "chain": "expectation-vs-outcome",
+    "expectation_source": "consensus estimate the day before filing",
+    "discounted": "price holds consensus; hypothesis disagrees on speed",
+    "confidence": 0.4,
+}
+
+
+def test_an_event_family_hypothesis_needs_the_four_macro_fields(
+    book, run, families, make_hypothesis
+):
+    families(book, **{"event-drift": {"trials": 8, "event": True}}, quiet={"trials": 2})
+    bare = make_hypothesis(["bare", "event"], family_id="event-drift")
+    code, verdict, _ = batch(run, book, {"hypotheses": [bare]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == [
+        "hypotheses[0].chain",
+        "hypotheses[0].expectation_source",
+        "hypotheses[0].discounted",
+        "hypotheses[0].confidence",
+    ]
+    full = make_hypothesis(["full", "event"], family_id="event-drift", **EVENT_FIELDS)
+    plain = make_hypothesis(["plain", "idea"], family_id="quiet")
+    code, receipt, err = batch(run, book, {"hypotheses": [full, plain]})
+    assert code == 0, err
+    assert receipt["accepted"] == {"hypothesis": 2}
+    line = json.loads(
+        (book / "ledger" / "hypotheses.jsonl").read_text().splitlines()[-2]
+    )
+    assert line["chain"] == "expectation-vs-outcome"
+    assert line["confidence"] == 0.4
+
+
+def test_an_unknown_chain_is_refused_and_none_accepted(
+    book, run, families, make_hypothesis
+):
+    families(book, **{"event-drift": {"trials": 8, "event": True}})
+    odd = make_hypothesis(
+        ["odd", "chain"], family_id="event-drift", **(EVENT_FIELDS | {"chain": "x"})
+    )
+    code, verdict, _ = batch(run, book, {"hypotheses": [odd]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == ["hypotheses[0].chain"]
+    none = make_hypothesis(
+        ["no", "chain"], family_id="event-drift", **(EVENT_FIELDS | {"chain": "none"})
+    )
+    code, _, err = batch(run, book, {"hypotheses": [none]})
+    assert code == 0, err
+
+
+def test_diagnose_is_a_decision_action(book, run):
+    diagnosis = {
+        "kw": ["drift", "diagnosis"],
+        "subject": "baseline",
+        "action": "diagnose",
+        "reason": "mechanism link broke: forced flow ended early",
+        "confidence": 0.5,
+    }
+    code, receipt, err = batch(run, book, {"decisions": [diagnosis]})
+    assert code == 0, err
+    assert receipt["accepted"] == {"decision": 1}

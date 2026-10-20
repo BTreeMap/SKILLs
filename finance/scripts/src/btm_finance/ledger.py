@@ -22,22 +22,23 @@ class Kind(StrEnum):
     FILL = "fill"
     RUN = "run"
     INCIDENT = "incident"
+    REGIME = "regime"
 
     @property
     def file(self) -> str:
         match self:
             case Kind.HYPOTHESIS:
-                return "hypotheses.jsonl"
-            case Kind.CRITIQUE:
-                return "critiques.jsonl"
-            case Kind.DECISION:
-                return "decisions.jsonl"
-            case Kind.FILL:
-                return "fills.jsonl"
-            case Kind.RUN:
-                return "runs.jsonl"
-            case Kind.INCIDENT:
-                return "incidents.jsonl"
+                stem = "hypotheses"
+            case (
+                Kind.CRITIQUE
+                | Kind.DECISION
+                | Kind.FILL
+                | Kind.RUN
+                | Kind.INCIDENT
+                | Kind.REGIME
+            ):
+                stem = f"{self.value}s"
+        return f"{stem}.jsonl"
 
 
 def lines_of(records: Iterable[Mapping[str, Any]]) -> list[bytes]:

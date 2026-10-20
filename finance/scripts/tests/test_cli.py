@@ -82,6 +82,7 @@ def test_schema_names_every_batch_key_and_the_pad(run):
         "hypotheses",
         "critiques",
         "decisions",
+        "regimes",
         "fills",
         "holdings",
         "preferences",

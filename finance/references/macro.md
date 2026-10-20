@@ -109,16 +109,15 @@ Cite chain by id. Mark "inference, test before relying on it" is unverified.
 | `spin-off-supply` | Parent distributes subsidiary, or company exits restructuring | Holders get shares they did not choose; mandates force sales; coverage and index membership lag | Form 10 filings, days since distribution, holder turnover; falsified if spin trades at parent-like valuation from day one | Supply overhang clears over weeks to months; chain gives entry window | `spin-offs`: holding period and exit rule come from chain, not parameter sweep |
 
 * Walk chain forward only from observed trigger, never from forecast of one.
-* If chain's falsifier fires, write one `objection` pad entry per open
-  hypothesis citing that chain in `chain`, naming chain id, falsifier, and
-  observable value with source.
+* If chain's falsifier fires, list its id under regime `falsified` (bare
+  `check` warns each hypothesis citing it); write one `objection` pad entry
+  per such open hypothesis: chain id, falsifier, observable with source.
 
 ## Regime record
 
 Lead drafts from observables and chains; human confirms, edits, or rejects,
-and states `confidence` (number 0 to 1, never set by agent). Draft at most
-quarterly, and whenever chain falsifier fires. Correct by new line with
-`supersedes`.
+states `confidence` (0 to 1, never set by agent). Draft at most quarterly
+and when falsifier fires; correct by new line with `supersedes`.
 
 ```json
 {
@@ -126,11 +125,12 @@ quarterly, and whenever chain falsifier fires. Correct by new line with
   "as_of": "<date>",
   "short_cycle": "easing | mid-expansion | late-expansion | tightening | contraction",
   "long_cycle": "early | bubble | top | depression | deleveraging | normalization",
-  "bubble_score": "<0 to 7 checklist items present, evidence for each>",
-  "policy_mix": "<which of four levers are in use>",
-  "other_forces": "<one line each: internal order, external order, nature, technology>",
+  "bubble_count": {"count": 2, "evidence": ["<one line per item present>", "..."]},
+  "policy_mix": ["austerity | defaults | transfers | printing"],
+  "other_forces": {"internal_order": "...", "external_order": "...", "nature": "...", "technology": "..."},
   "observables": {"<name>": {"value": "<as reported>", "as_of": "<date>", "source": "<url>"}},
   "confidence": 0.6,
+  "falsified": ["<chain id whose falsifier fired>"],
   "supersedes": "<previous regime id>"
 }
 ```
@@ -140,7 +140,7 @@ quarterly, and whenever chain falsifier fires. Correct by new line with
 | Hypothesis generation | Weights which families get delegate slots; supplies counterparty constraint registration must name | Hypothesis whose signal is regime itself |
 | `measure` | Stamps every run line with regime ids its evidence window spans | Conditioning returns on regime unless hypothesis declared it and scorecard regime split tests it |
 | Critique | Checks evidence concentration in one regime, mechanism survival in next phase, holding period crossing likely phase change | Rejecting strategy because critic forecasts regime change |
-| `check <proposal>` | Shows regime record date and live chains beside diff | Changing any weight in proposal |
+| `check <proposal>` | Shows regime record id, `as_of`, `stale`, and effective streams beside diff | Changing any weight in proposal |
 | Human | Confirms, edits, rejects draft; states confidence | Nothing |
 
 * If newest regime record is older than `limits.regime_stale_days`, `check`
@@ -193,7 +193,7 @@ never block on critic's regime forecast.
 | Item | Inspect | Settles | Blocker | Concern |
 | --- | --- | --- | --- | --- |
 | `chain` | Hypothesis `chain`, `mechanism`; chain table row; regime record observables at hypothesis `ts` | Mechanism relies on named chain; trigger observed at registration, not forecast | Event family with `chain` absent, or cited trigger forecast, not observed | `chain` is `none` where table row fits |
-| `regime-band` | Run line regime ids; regime records' `bubble_score` over evidence window; `signal.py` reads of macro variables | Evidence spans more than one regime and bubble-count band, or hypothesis names regime as mechanism | Signal conditions on macro variable hypothesis did not register | Evidence inside one regime or one band |
+| `regime-band` | Run line regime ids; regime records' `bubble_count` over evidence window; `signal.py` reads of macro variables | Evidence spans more than one regime and bubble-count band, or hypothesis names regime as mechanism | Signal conditions on macro variable hypothesis did not register | Evidence inside one regime or one band |
 | `next-phase` | Chain table row; `holding_days` in `config.json`; current regime record | Mechanism holds in next phase of its chain, or holding period ends before likely phase change | None | Mechanism fails in next phase and holding period crosses it |
 | `third-order` | Hypothesis `counterparty`, `mechanism`; scorecard `capacity` | Hypothesis states what happens when everyone seeing same first-order effect acts on it | None | Crowding answer absent or contradicted by `capacity` |
 | `discounted` | Hypothesis `discounted`, `expectation_source`; `signal.py` surprise construction | Hypothesis names what price discounts and where it disagrees; surprise measured against expectation known before event | Event family signal uses outcome level, not surprise, or reads expectation not known at decision date | Disagreement with price unstated (factor exposure in disguise) |

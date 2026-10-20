@@ -7,8 +7,11 @@ first, crowded large-cap families last.
 
 ## Using this list
 
-* Only human adds family to `limits.families`; propose `family_id` and
-  `trials` below to operator, never edit `limits.json`.
+* Only human adds family to `limits.families`; propose `family_id` and its
+  suggested entry below to operator, never edit `limits.json`.
+* Entry with `event: true` marks event family: its hypotheses must carry
+  `chain`, `expectation_source`, `discounted`, `confidence` (load `macro`),
+  and its critique adds five `macro` items.
 * Treat `capacity_class` as prior. Scorecard `capacity` tests it: `in_band`
   means ceiling between asset cap and 20 times it, `under_cap` below asset
   cap, `crowded` above 20 times it.
@@ -33,7 +36,7 @@ first, crowded large-cap families last.
 * Trap: membership file built from current constituents erases deletions
   that later delisted; announce date versus effective date mixed up gives
   look-ahead.
-* `trials`: 8.
+* `limits.families` entry: `"forced-selling": {"trials": 8, "event": true}`.
 * Origin: Harris and Gurel 1986, Journal of Finance; Coval and Stafford
   2007, Journal of Financial Economics.
 
@@ -52,7 +55,7 @@ first, crowded large-cap families last.
 * Trap: survivorship (failed spin-offs and re-bankruptcies delist);
   delisting return convention is material here; first-day price often
   missing in bars.
-* `trials`: 6.
+* `limits.families` entry: `"spin-offs": {"trials": 6, "event": true}`.
 * Origin: Cusatis, Miles and Woolridge 1993, Journal of Financial Economics;
   Eberhart, Altman and Aggarwal 1999, Journal of Finance.
 
@@ -118,7 +121,7 @@ first, crowded large-cap families last.
   filing knowledge time.
 * Trap: restated figures used at original date; surprise measured against
   value known only after filing; event time read instead of knowledge time.
-* `trials`: 8.
+* `limits.families` entry: `"event-drift": {"trials": 8, "event": true}`.
 * Origin: Bernard and Thomas 1989, Journal of Accounting Research; Cohen,
   Malloy and Nguyen 2020, Journal of Finance.
 
@@ -142,7 +145,8 @@ first, crowded large-cap families last.
 1. Pick `capacity_class` first: prefer families above `large-cap-factor`.
 2. Pick `sector` from `focus_sectors` in `preferences.json`.
 3. Write falsifier before any code exists under `strategies/<name>/`.
+4. Event family (`forced-selling` below): add four `macro` fields.
 
 ```json
-{"hypotheses": [{"kw": ["index", "deletion"], "strategy": "index-deletion", "family_id": "forced-selling", "capacity_class": "in_band", "falsifier": "Deleted names show no excess return over matched non-deleted names across 21 trading days after effective date.", "counterparty": "Index funds that must sell deleted names at effective date regardless of price.", "min_holding_days": 21, "mechanism": "Rule-forced selling pushes price below value; price recovers once forced flow ends.", "sector": "Industrials"}]}
+{"hypotheses": [{"kw": ["index", "deletion"], "strategy": "index-deletion", "family_id": "forced-selling", "capacity_class": "in_band", "falsifier": "Deleted names show no excess return over matched non-deleted names across 21 trading days after effective date.", "counterparty": "Index funds that must sell deleted names at effective date regardless of price.", "min_holding_days": 21, "mechanism": "Rule-forced selling pushes price below value; price recovers once forced flow ends.", "sector": "Industrials", "chain": "deletion-under-stress", "expectation_source": "Index provider announcement before effective date.", "discounted": "Price discounts announced deletion; hypothesis disagrees that forced flow is fully absorbed by effective date.", "confidence": 0.4}]}
 ```
