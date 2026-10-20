@@ -189,8 +189,9 @@ def append_ledger(path: Path, records: Sequence[Mapping[str, Any]]) -> list[str]
 
 
 def status_of(raw: str) -> Status | None:
+    """Absent or empty `status` is `research`; an unknown word is None."""
     try:
-        return Status(raw)
+        return Status(raw or Status.RESEARCH.value)
     except ValueError:
         return None
 
@@ -203,8 +204,8 @@ class Strategy:
 
 
 def strategies(book: Book) -> list[Strategy]:
-    """Each `strategies/<name>/` with its one-word `status`; an unknown word
-    keeps its raw text so the view can name it."""
+    """Each `strategies/<name>/` with its one-word `status`, `research` when
+    absent; an unknown word keeps its raw text so the view can name it."""
     root = book.root / "strategies"
     found: list[Strategy] = []
     for directory in sorted(root.iterdir() if root.is_dir() else []):

@@ -214,7 +214,7 @@ def next_of(standing: Standing, blockers: Sequence[str], status: Status | None) 
 
 def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
     """Every blocker named with value and limit; `discard` outranks `blocked`."""
-    status = evidence.raw_status or "none"
+    status = evidence.raw_status if evidence.status is None else evidence.status.value
     run = evidence.run
     if run is None:
         return StandingView(

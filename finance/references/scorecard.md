@@ -45,7 +45,7 @@ that list.
   of bound: run line still written with `refused`, exit 1.
 * DSR: promote at or above 0.95. `sr` per period; `sr_var` is variance of
   per-period net Sharpe across family's runs, this one included. One trial:
-  SR0 is 0, DSR is probabilistic Sharpe against zero.
+  SR0 is 0, DSR is probabilistic Sharpe against zero, still held to 0.95.
 * PBO: trial matrix is this strategy's 2k + 1 variants (each of k params at
   -20%, 0, +20%, one at a time) plus stored net series of family's other
   research runs, on dates all cover. Null when fewer than 2 trials or fewer
@@ -59,7 +59,9 @@ that list.
 * Capacity: net Sharpe at 1x must be positive and within 20%
   (`capacity_tolerance`) of 0.1x. Net Sharpe at 20x still within 20% of
   0.1x, or hypothesis `capacity_class: crowded`: blocked as `crowded` until
-  decision line with `action: override` names strategy.
+  decision line with `action: override` names strategy. Edge surviving at
+  twenty times cap is one institutions can hold, so likely crowded;
+  hypothesis registered `in_band` showing it needs `override` with reason.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
 * Regimes: vol tercile from 21-day volatility of equal-weight universe

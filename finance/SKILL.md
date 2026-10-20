@@ -172,6 +172,10 @@ names. Then write `strategies/<name>/`:
   `rebalance` (`monthly|quarterly|annual`), `holding_days` (at least
   `limits.min_holding_days`), `long_only`, `family_id` (same as
   hypothesis's; `measure` refuses a mismatch).
+- Write no `status` file; absent means `research`; operator alone writes
+  `paper`, `live`, `retired`. Operator moves strategy to `paper` or `live`
+  by writing `status` and recording `promote` decision naming it in same
+  step; `paper_months` counts from that decision.
 - Imports: only `numpy`, `math`, `statistics`, `itertools`, `functools`,
   `operator`, `collections`, `dataclasses`, `typing`, and
   `from btm_finance import api` or `from btm_finance.api import Market`
@@ -182,10 +186,13 @@ names. Then write `strategies/<name>/`:
 
 `measure` trades next open after each period's last day, normalizes to gross
 1, drops excluded, under-floor, and thin names, caps weight at
-`sizing.max_weight`. Run breaking cost, participation, or holding bound
-still writes its line: every run counts as trial, refused or not. Never
-measure again to shop for better number; change hypothesis, register again.
-Cite a run only after `measure --repeat` reproduces it.
+`sizing.max_weight`. Size each weight so quantity at asset cap stays under
+`max_adv_participation` of 21-day dollar ADV (`market.adv_dollar(21)`):
+`measure` refuses breach after run, and refused run still spends trial. Run
+breaking cost, participation, or holding bound still writes its line: every
+run counts as trial, refused or not. Never measure again to shop for better
+number; change hypothesis, register again. Cite a run only after
+`measure --repeat` reproduces it.
 
 `check <strategy>` derives standing of newest research run on every call:
 `promotable`, `blocked`, or `discard` (PBO at or above `pbo_discard`). Each
@@ -193,7 +200,11 @@ blocker names value and limit: `no run`, `dsr`, `pbo`, `t_alpha`, `factor`,
 `capacity`, `crowded`, `cost_share`, `adv_participation_max`,
 `min_holding_days_realized`, `trials`, `no critique`, `critique: <text>`,
 `status`, `paper_months`. `crowded` clears only by operator's `override`
-decision. Show operator every blocker, never summary omitting one.
+decision: net Sharpe at 20x cap still within tolerance of 0.1x means edge
+survives at twenty times cap, so institutions can hold it and it is likely
+crowded; `in_band` hypothesis showing this needs `override` with reason.
+With `trials` 1, DSR is probabilistic Sharpe against zero, still held to
+threshold. Show operator every blocker, never summary omitting one.
 
 ## Research loop
 
@@ -218,8 +229,10 @@ Unit of work is one registered hypothesis:
 2. `record` hypothesis; copy its id from `new`.
 3. Hand author delegate the unit (table below): it writes
    `strategies/<name>/` and runs `measure "$B" <name> --agent <agent>`.
-4. Hand a different critique delegate the run id; `record` its `critiques`
-   batch.
+   Delegating nothing, lead authors inline (`/summon` inline default).
+4. Hand run id to critique delegate, agent other than run's author, lead or
+   delegate; `record` its `critiques` batch. Only critique needs agent other
+   than author.
 5. Run `check "$B" <name>`; read standing and every blocker.
 
 Regime record: lead drafts it from `macro` observables and chains; operator
@@ -235,10 +248,11 @@ Every run line counts against family budget, refused and held-out ones too;
 operator for more through `question` pad entry, quoting `trials_used`; never
 edit `limits.json`.
 
-Commit book changes on branch `agent/<date>-<topic>` in book repository;
-operator merges. Method change (`measure`, guards, data model, sources) is
-pull request to this skill through `/author-skill`, never edit to installed
-copy.
+`start` makes book git repository (`data/` ignored) unless already inside
+one. Commit book changes on branch `agent/<date>-<topic>` in book
+repository; operator merges. Method change (`measure`, guards, data model,
+sources) is pull request to this skill through `/author-skill`, never edit
+to installed copy.
 
 Delegate through `/summon`, one unit per delegate:
 
@@ -277,9 +291,11 @@ from its own fills only. `unmanaged` lists held names outside research set,
 never sold; never reason from it about held-out membership. Load `book`
 before explaining sizing, cuts, carried orders, or proposal fields.
 
-1. On rebalance day, after close, run `recommend "$B" <date>`. When it names
-   a skipped sleeve, measure that strategy, then run
-   `recommend "$B" <date> --force`.
+1. On rebalance day, after close, run `recommend "$B" <date>`. Sleeve with
+   no run line lands in `skipped` with reason; with no sleeve left, exit 1
+   names each skipped one and writes nothing. Measure it (baseline's measure
+   spends its one trial), then rerun `recommend "$B" <date>` plain.
+   `--force` only adds `<date>.<n>.json` beside existing proposal.
 2. Run `check "$B" <date>`. Read result to operator in its order: every
    `blockers` entry verbatim, `baseline` row beside every other sleeve,
    `stale` flags, `regime` (say when stale) and `effective_streams`, then
@@ -331,6 +347,9 @@ settle to `/fact-check` or state it open.
 - `measure --repeat` compares sha256 of `signal.py` and `config.json` bytes:
   any reformat, whitespace included, refuses repeat. Edit measured strategy
   files only for new run.
+- `paper` or `live` without `promote` decision naming strategy: `check`
+  blocks with `paper_months: no promote decision names the strategy`.
+  Operator writes `status` and records `promote` in same step.
 - No `_factors` loaded (`load french`, or `csv` with symbol `_factors`):
   `factor` null, `check` blocks on `factor: null`. Load factors before first
   `measure`.

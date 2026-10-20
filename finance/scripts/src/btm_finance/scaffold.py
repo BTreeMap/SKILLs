@@ -6,6 +6,8 @@ from __future__ import annotations
 import csv
 import io
 import json
+import shutil
+import subprocess
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from importlib import resources
@@ -159,6 +161,36 @@ def write_new(path: Path, text: str) -> None:
     write_atomic(path, text)
 
 
+def ignore(path: Path) -> None:
+    """`data/` joined to `.gitignore`; other lines kept."""
+    held = path.read_text(encoding="utf-8") if path.is_file() else ""
+    lines = held.splitlines()
+    if "data/" not in lines:
+        write_atomic(path, "\n".join([*lines, "data/"]) + "\n")
+
+
+def repository(root: Path) -> str:
+    """`git init` unless `root` is inside a work tree; `absent` without git."""
+    git = shutil.which("git")
+    if git is None:
+        signal("no git on PATH; book is not a repository: run git init in it")
+        return "absent"
+    inside = subprocess.run(
+        [git, "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+        capture_output=True,
+        check=False,
+    )
+    if inside.returncode == 0:
+        return "inside"
+    done = subprocess.run(
+        [git, "-C", str(root), "init", "-q"], capture_output=True, check=False
+    )
+    if done.returncode != 0:
+        signal(f"git init failed: {done.stderr.decode(errors='replace').strip()}")
+        return "failed"
+    return "init"
+
+
 def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     """Make the book; refuse a directory that already holds `limits.json`."""
     if (root / "limits.json").exists():
@@ -192,6 +224,8 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     write_new(root / "limits.json", json.dumps(limits_template(cap), indent=2) + "\n")
     meta = BookMeta(id=book_id, created=now_iso(), engine=btm_finance.__version__)
     write_new(root / MARKER, json.dumps(meta.model_dump(mode="json"), indent=2) + "\n")
+    ignore(root / ".gitignore")
+    git = repository(root)
     return {
         "book": book_id,
         "path": str(root.resolve()),
@@ -202,12 +236,14 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
         "wrote": [
             "limits.json",
             "preferences.json",
+            ".gitignore",
             MARKER,
             "bin/send",
             ".claude/settings.json",
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
         ],
+        "git": git,
         "next": "load data, then measure baseline; import holdings and "
         "preferences with record",
     }

@@ -4,8 +4,10 @@ target, the pad inside the book, and the held-out list outside it."""
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
+import pytest
 from btm_finance.scaffold import stratified
 
 
@@ -88,3 +90,32 @@ def test_schema_names_every_batch_key_and_the_pad(run):
         "preferences",
     ]
     assert "hunch" in schema["pad"]
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git is not on PATH")
+def test_start_makes_the_book_a_git_repository_ignoring_data(tmp_path, run):
+    code, receipt, _ = run(["start", str(tmp_path / "b")])
+    assert code == 0
+    assert receipt["git"] == "init"
+    assert (tmp_path / "b" / ".git").is_dir()
+    assert (tmp_path / "b" / ".gitignore").read_text() == "data/\n"
+    code, receipt, _ = run(["start", str(tmp_path / "b" / "inner")])
+    assert code == 0
+    assert receipt["git"] == "inside"
+    assert not (tmp_path / "b" / "inner" / ".git").exists()
+
+
+def test_absent_status_reads_research_and_a_foreign_word_stays_unknown(book, run):
+    (book / "strategies" / "quiet").mkdir()
+    (book / "strategies" / "empty").mkdir()
+    (book / "strategies" / "empty" / "status").write_text("\n")
+    (book / "strategies" / "odd").mkdir()
+    (book / "strategies" / "odd" / "status").write_text("testing\n")
+    _, view, _ = run(["check", str(book)])
+    assert {"quiet", "empty"} <= set(view["strategies"]["research"])
+    assert view["strategies"]["unknown"] == [{"strategy": "odd", "status": "testing"}]
+    _, quiet, _ = run(["check", str(book), "quiet"])
+    assert quiet["status"] == "research"
+    assert not [b for b in quiet["blockers"] if b.startswith("status")]
+    _, odd, _ = run(["check", str(book), "odd"])
+    assert odd["status"] == "testing"

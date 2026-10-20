@@ -407,7 +407,7 @@ def standing_view(book: Book, target: str, *, advisory: bool = False) -> Standin
         hypothesis=hypothesis_for(book, run, strategy),
         critique=critiques[-1] if critiques else None,
         decisions=current(kind_rows(book, Kind.DECISION)),
-        status=found.status if found else None,
+        status=found.status if found else Status.RESEARCH,
         raw_status=found.raw if found else "",
         today=datetime.now(UTC).date(),
     )

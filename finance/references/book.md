@@ -26,6 +26,7 @@ operator's private git repository; skill holds methods, book holds state.
   features/  ext/
   tests/reference/            this book's pinned scorecard
   .claude/settings.json       deny rules
+  .gitignore                  data/
 
 ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/
   held-out.json               {"<sector>": ["SYM", ...]}, sorted
@@ -35,7 +36,9 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/
 `data/returns/` files stay in manifest for integrity checks but never move
 snapshot, so later run cannot change earlier run's.
 
-`status` holds one word: `research`, `paper`, `live`, or `retired`.
+`status` holds one word: `research`, `paper`, `live`, or `retired`; absent
+or empty reads `research`. Operator writes `paper` or `live` with `promote`
+decision naming strategy in same step; `paper_months` counts from it.
 `runs.jsonl` is lead's; each delegate writes own `runs/<agent>.jsonl`; views
 read union.
 
@@ -151,6 +154,9 @@ on held-out path is convenience; held-out list stays out of book.
    sector to symbols; receipt reports count only. Without universe, empty
    list and `signal:` saying so.
 6. Ledger sealed: modes as in Ledger permissions.
+7. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
+   path is inside git work tree. Receipt `git`: `init`, `inside`, `failed`,
+   or `absent` (no `git` on PATH, with `signal:` line).
 
 ## Proposal file
 
