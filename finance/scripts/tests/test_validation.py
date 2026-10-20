@@ -46,6 +46,18 @@ def test_cscv_logit_hand_value():
     assert result.pbo == 0.0
 
 
+def test_cscv_ignores_floating_order_noise_between_coinciding_trials():
+    # Two trials with the same series tie exactly; summation-order noise far
+    # below TIE must not break the tie, or PBO moves per machine.
+    rng = np.random.default_rng(3)
+    base = rng.normal(0.0, 0.01, (640, 4))
+    base[:, 1] = base[:, 0]
+    noisy = base.copy()
+    noisy[:, 1] += rng.normal(0.0, 1e-16, 640)
+    assert cscv(noisy).pbo == cscv(base).pbo
+    assert np.array_equal(cscv(noisy).logits, cscv(base).logits)
+
+
 @pytest.mark.parametrize(
     ("shape", "blocks", "message"),
     [

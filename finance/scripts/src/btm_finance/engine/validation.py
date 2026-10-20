@@ -12,6 +12,10 @@ import numpy as np
 
 from btm_finance.engine.metrics import PERIODS_PER_YEAR, Floats, Ints
 
+TIE = 1e-9
+"""Per-period block Sharpes closer than this are one value; below it,
+differences are floating-point order noise, not evidence."""
+
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Cscv:
@@ -58,9 +62,14 @@ def cscv(returns_matrix: Floats, *, blocks: int = 16) -> Cscv:
     half = size * blocks // 2
     in_sr = _block_sharpe(in_sums, in_squares, half)
     out_sr = _block_sharpe(sums.sum(0) - in_sums, squares.sum(0) - in_squares, half)
-    best = np.argmax(in_sr, axis=1)
+    # Ties within TIE: trials whose series coincide on a block set tie exactly
+    # in arithmetic, and BLAS summation order would otherwise break the tie
+    # differently per machine and move PBO by a few counts. The first trial
+    # within TIE of the maximum wins; only trials worse by more than TIE rank
+    # below it.
+    best = np.argmax(in_sr >= in_sr.max(axis=1, keepdims=True) - TIE, axis=1)
     best_out = np.take_along_axis(out_sr, best[:, None], axis=1)
-    rank = 1 + (out_sr < best_out).sum(axis=1)
+    rank = 1 + (out_sr < best_out - TIE).sum(axis=1)
     relative = rank / (trials + 1)
     logits = np.log(relative / (1.0 - relative))
     return Cscv(float(np.mean(logits < 0.0)), logits, size, periods - size * blocks)
