@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from datetime import date
 from typing import Any
 
-from btm_finance.ledger import Break, Row
+from btm_finance.ledger import Row
 from btm_finance.models import Action, Limits, Status
 
 CLOSING = frozenset({Action.REJECT, Action.RETIRE})
@@ -80,18 +80,9 @@ def open_proposals(
 
 
 def next_step(
-    breaks: Sequence[Break],
-    hypotheses: Sequence[Row],
-    pending: int,
-    proposals: Sequence[Mapping[str, Any]],
+    hypotheses: Sequence[Row], pending: int, proposals: Sequence[Mapping[str, Any]]
 ) -> str:
     """The cheapest useful next action; advisory only."""
-    if breaks:
-        first = breaks[0]
-        return (
-            f"tell the operator: {first.file} line {first.line} breaks the ledger; "
-            "restore from backup, never edit"
-        )
     if proposals:
         return f"walk the operator through proposal {proposals[0]['date']}"
     if not hypotheses:

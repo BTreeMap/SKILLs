@@ -86,14 +86,13 @@ from btm_finance.data.tables import (
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.ledger import (
     ENVELOPE,
-    Break,
     Kind,
     Numbered,
     Row,
-    audit,
     current,
     dangling,
     rows_of,
+    undecodable,
 )
 from btm_finance.live import NEXT as LIVE_NEXT
 from btm_finance.live import (
@@ -133,7 +132,7 @@ from btm_finance.repeat import (
     peer_drift,
 )
 from btm_finance.repeat import advisories as engine_advisories
-from btm_finance.scaffold import member, scaffold
+from btm_finance.scaffold import scaffold
 from btm_finance.scorecard import RunLine, Span
 from btm_finance.scoring import (
     Peers,
@@ -149,9 +148,8 @@ from btm_finance.store import (
     PAD,
     PAD_DIR,
     Book,
-    append_chained,
+    append_ledger,
     held_out_list,
-    ledger_files,
     load_limits,
     load_preferences,
     open_book,
@@ -162,6 +160,7 @@ from btm_finance.store import (
     read_bytes,
     read_json,
     run_files,
+    seal,
     strategies,
 )
 from btm_finance.views import (
@@ -210,7 +209,8 @@ def start(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     result = expand_batch(context, batch, make_id, now_iso())
     if result.problems:
         raise CommandError(f"baseline hypothesis refused: {result.problems}")
-    append_chained(book.path_of(Kind.HYPOTHESIS), result.staged[Kind.HYPOTHESIS])
+    append_ledger(book.path_of(Kind.HYPOTHESIS), result.staged[Kind.HYPOTHESIS])
+    seal(book)
     receipt["wrote"].append("ledger/hypotheses.jsonl")
     receipt["new"] = result.new["hypotheses"]
     return receipt
@@ -252,7 +252,7 @@ def cmd_record(args: argparse.Namespace) -> int:
     def commit(result: RecordResult) -> dict[str, Any]:
         accepted: dict[str, int] = {}
         for kind, rows in sorted(result.staged.items()):
-            append_chained(book.path_of(kind), rows)
+            append_ledger(book.path_of(kind), rows)
             accepted[kind.value] = len(rows)
         document: dict[str, Any] = {"book": book.meta.id, "accepted": accepted}
         if result.preferences is not None:
@@ -347,28 +347,31 @@ def standing_view(book: Book, target: str) -> BaseModel:
     return standing_of(evidence, load_limits(book))
 
 
+def ledger_warnings(book: Book) -> list[dict[str, Any]]:
+    """Undecodable lines and dangling `supersedes`, per file; derived on every
+    call, never stored or repaired. Run files share one id set."""
+    groups = [[book.path_of(kind)] for kind in Kind if kind is not Kind.RUN]
+    found: list[dict[str, Any]] = []
+    for paths in [*groups, run_files(book)]:
+        read = [(book.relative(path), read_bytes(path)) for path in paths]
+        rows = {name: rows_of(data) for name, data in read}
+        ids = {row.get("id") for numbered in rows.values() for _, row in numbered}
+        for name, data in read:
+            found += undecodable(name, data) + dangling(name, rows[name], ids)
+    return found
+
+
 def continue_view(book: Book) -> dict[str, Any]:
-    """Every ledger file audited and replayed once: O(ledger bytes)."""
+    """Every ledger file replayed: O(ledger bytes)."""
     limits = load_limits(book)
-    breaks: list[Break] = []
-    lines = 0
-    rows: dict[str, list[Numbered]] = {}
-    for path in ledger_files(book):
-        name = book.relative(path)
-        data = read_bytes(path)
-        breaks += audit(name, data)
-        rows[name] = rows_of(data)
-        breaks += dangling(name, rows[name])
-        lines += len(rows[name])
+    warnings = ledger_warnings(book)
+    if warnings:
+        signal(f"{len(warnings)} ledger warning(s) under warnings; tell the operator")
 
     def live(kind: Kind) -> list[dict[str, Any]]:
-        return current(rows.get(f"ledger/{kind.file}", []))
+        return current(kind_rows(book, kind))
 
-    runs = [
-        row
-        for path in run_files(book)
-        for row in current(rows.get(book.relative(path), []))
-    ]
+    runs = all_runs(book)
     hypotheses, decisions = live(Kind.HYPOTHESIS), live(Kind.DECISION)
     listed = strategies(book)
     known = {s.name: s.status for s in listed if s.status is not None}
@@ -380,8 +383,6 @@ def continue_view(book: Book) -> dict[str, Any]:
             f"strategies/{entry['strategy']}/status reads {entry['status']!r}, "
             f"not one of {'|'.join(Status)}"
         )
-    if breaks:
-        signal(f"{len(breaks)} ledger break(s); details under incidents.ledger")
     today = datetime.now(UTC).date()
     proposals = open_proposals(proposal_dates(book), decisions, today)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
@@ -391,13 +392,10 @@ def continue_view(book: Book) -> dict[str, Any]:
         "strategies": {**by_status(known), "unknown": unknown},
         "families": families(limits, hypotheses, runs, decisions),
         "proposals": proposals,
-        "incidents": {
-            "ledger": [found.view() for found in breaks],
-            "logged": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
-        },
-        "chain": {"files": len(rows), "lines": lines, "breaks": len(breaks)},
+        "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
-        "next": next_step(breaks, hypotheses, pending, proposals),
+        "warnings": warnings,
+        "next": next_step(hypotheses, pending, proposals),
     }
 
 
@@ -492,7 +490,7 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "sequence": "hypotheses, critiques, decisions, fills, holdings, "
             "preferences; a decision may name a hypothesis made earlier in the batch",
             "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the "
-            "record; prev is the sha256 hex of the previous line's bytes",
+            "record",
             "corrections": '"supersedes": "<id>" on a new line; newest wins',
             "run_line": f"{', '.join(RunLine.model_fields)} (written by score only)",
             "strategy_config": '{"params": {"<name>": 1.0}, "rebalance": '
@@ -532,8 +530,8 @@ def code_files(source: bytes, config: bytes) -> dict[str, str]:
 
 def scoped(book: Book, names: Sequence[str], *, held_out: bool) -> frozenset[str]:
     """Research names, or with `held_out` their complement."""
-    salt, members = held_out_list(book)
-    chosen = frozenset(n for n in names if (member(salt, n) in members) == held_out)
+    listed = held_out_list(book)
+    chosen = frozenset(n for n in names if (n in listed) == held_out)
     if held_out and not chosen:
         raise CommandError("the held-out list names no loaded symbol; nothing to score")
     return chosen
@@ -671,7 +669,7 @@ def cmd_score(args: argparse.Namespace) -> int:
     target = (
         book.ledger / "runs" / f"{agent}.jsonl" if agent else book.path_of(Kind.RUN)
     )
-    append_chained(
+    append_ledger(
         target, [{"id": run_id, "ts": now_iso(), **line.model_dump(mode="json")}]
     )
     if outcome.unknown:
@@ -1314,7 +1312,7 @@ def live_view(book: Book, today: date) -> LiveReport:
         for breach in new
     ]
     if records:
-        append_chained(book.path_of(Kind.INCIDENT), records)
+        append_ledger(book.path_of(Kind.INCIDENT), records)
     return LiveReport(
         book=book.meta.id,
         as_of=today.isoformat(),

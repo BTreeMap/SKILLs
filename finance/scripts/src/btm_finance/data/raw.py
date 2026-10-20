@@ -44,7 +44,7 @@ from btm_finance.data.tables import (
     floats_of,
 )
 from btm_finance.ledger import Kind
-from btm_finance.store import Book, append_chained, locked
+from btm_finance.store import Book, append_ledger, locked
 
 MANIFEST = Path("data", "manifest.json")
 MANIFEST_LOCK = Path("data", "manifest.lock")
@@ -131,7 +131,7 @@ def incident(book: Book, entry: Entry, problem: str, found: str | None) -> None:
         "expected": entry.sha256,
         "found": found,
     }
-    append_chained(book.path_of(Kind.INCIDENT), [record])
+    append_ledger(book.path_of(Kind.INCIDENT), [record])
 
 
 def verified_bytes(book: Book, entry: Entry) -> bytes:

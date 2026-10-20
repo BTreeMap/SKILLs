@@ -1,6 +1,6 @@
 """Book, ledger, and guards for a slow-money research-to-approval pipeline.
 
-The agent researches and records; this engine holds the book's chained
+The agent researches and records; this engine holds the book's append-only
 ledger, accepts a batch only when every reference resolves, and derives the
 continue view from live state. Subcommands print one JSON document to stdout;
 `signal:` lines on stderr advise and never block; `error:` exits 1.

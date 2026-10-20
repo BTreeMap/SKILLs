@@ -1,10 +1,11 @@
-"""Book filesystem: the marker, human-owned files, chained appends under a
-lock, and the strategy and proposal listings."""
+"""Book filesystem: the marker, human-owned files, atomic ledger appends
+under a lock, and the strategy and proposal listings."""
 
 from __future__ import annotations
 
 import json
 import os
+import stat
 import sys
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -13,13 +14,15 @@ from pathlib import Path
 from typing import IO, Any
 
 from btm_corekit import CommandError, SessionStore, parse_model, state_root
-from btm_finance.ledger import Kind, chained, last_line
+from btm_finance.ledger import Kind, lines_of, undecodable
 from btm_finance.models import BookMeta, Limits, Preferences, Status
 
 SKILL = "finance"
 MARKER = "book.json"
 HINT = "run start <book path> first"
 PAD_DIR = Path("ledger", "pad")
+SEALED_DIR, SEALED_FILE = 0o555, 0o444  # what `start` leaves on `ledger/`
+OPEN_DIR, OPEN_FILE = 0o755, 0o644  # lifted for one append, then restored
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,8 +87,8 @@ def held_out_path(book_id: str) -> Path:
     return state_root(SKILL) / book_id / "held-out.json"
 
 
-def held_out_list(book: Book) -> tuple[str, frozenset[str]]:
-    """The salt and member digests `start` wrote; read by `score` alone."""
+def held_out_list(book: Book) -> frozenset[str]:
+    """The held-out symbols `start` wrote, per sector; read by `score` alone."""
     path = held_out_path(book.meta.id)
     if not path.is_file():
         raise CommandError(
@@ -93,19 +96,22 @@ def held_out_list(book: Book) -> tuple[str, frozenset[str]]:
             "the operator restores it from backup before any score"
         )
     data = read_json(path)
-    data = data if isinstance(data, dict) else {}
-    salt, members = data.get("salt"), data.get("members")
-    if not isinstance(salt, str) or not isinstance(members, list):
-        raise CommandError(f"unreadable held-out list {path}: salt or members missing")
-    return salt, frozenset(str(member) for member in members)
+    if not isinstance(data, dict) or not all(
+        isinstance(names, list) for names in data.values()
+    ):
+        raise CommandError(f"unreadable held-out list {path}: want sector to symbols")
+    return frozenset(str(name) for names in data.values() for name in names)
 
 
-def ledger_files(book: Book) -> list[Path]:
-    """Every chained file under `ledger/`; the pad is not chained."""
-    pad = book.root / PAD_DIR
-    return sorted(
-        path for path in book.ledger.rglob("*.jsonl") if pad not in path.parents
-    )
+def seal(book: Book) -> None:
+    """Every ledger file 0444, `ledger/` and `ledger/runs/` 0555; the pad stays
+    0755, free memory and not ledger."""
+    runs = book.ledger / "runs"
+    for path in [*book.ledger.glob("*.jsonl"), *runs.glob("*.jsonl")]:
+        path.chmod(SEALED_FILE)
+    (book.root / PAD_DIR).chmod(OPEN_DIR)
+    runs.chmod(SEALED_DIR)
+    book.ledger.chmod(SEALED_DIR)
 
 
 def run_files(book: Book) -> list[Path]:
@@ -133,20 +139,52 @@ def locked(path: Path) -> Iterator[IO[bytes]]:
         yield handle
 
 
-def append_chained(path: Path, records: Sequence[Mapping[str, Any]]) -> list[str]:
-    """Append records as chained lines; the receipt is their ids. A file whose
-    last line lacks its newline is a cut write: refused, never repaired."""
-    with locked(path) as handle:
+@contextmanager
+def lifted(path: Path) -> Iterator[None]:
+    """The file 0644, or its directory 0755 when the file is new, for one
+    append; both modes restored after, a new file left 0444."""
+    parent = stat.S_IMODE(path.parent.stat().st_mode)
+    existed = path.is_file()
+    mode = stat.S_IMODE(path.stat().st_mode) if existed else SEALED_FILE
+    if existed:
+        path.chmod(OPEN_FILE)
+    else:
+        path.parent.chmod(OPEN_DIR)
+    try:
+        yield
+    finally:
+        if path.is_file():
+            path.chmod(mode)
+        path.parent.chmod(parent)
+
+
+def append_ledger(path: Path, records: Sequence[Mapping[str, Any]]) -> list[str]:
+    """Append records as lines, all or none, in one write; the receipt is
+    their ids. A cut or undecodable line in the file is refused."""
+    payload = b"".join(line + b"\n" for line in lines_of(records))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with lifted(path), locked(path) as handle:
         handle.seek(0)
         data = handle.read()
-        if data and not data.endswith(b"\n"):
+        size = len(data)
+        if size and not data.endswith(b"\n"):
             raise CommandError(
-                f"{path} ends in a cut line; restore it from backup, then record"
+                f"{path} ends in a cut line, which record never writes; "
+                "the operator repairs it, then record"
             )
-        lines = chained(last_line(data), records)
-        handle.write(b"".join(line + b"\n" for line in lines))
-        handle.flush()
-        os.fsync(handle.fileno())
+        if bad := undecodable(str(path), data):
+            raise CommandError(
+                f"{path} line {bad[0]['line']} is not a JSON object, which record "
+                "never writes; the operator repairs it, then record"
+            )
+        try:
+            written = os.write(handle.fileno(), payload)
+            if written != len(payload):
+                raise OSError(f"short write, {written} of {len(payload)} bytes")
+            os.fsync(handle.fileno())
+        except OSError as err:
+            os.ftruncate(handle.fileno(), size)
+            raise CommandError(f"{path} left as it was: append failed: {err}") from err
     return [str(record["id"]) for record in records]
 
 

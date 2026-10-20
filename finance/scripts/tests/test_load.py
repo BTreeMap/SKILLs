@@ -123,8 +123,8 @@ def test_a_one_byte_corruption_halts_load_and_assembly(tmp_path, book, run):
     assert len(incidents(book)) == 2
 
     code, view, _ = run(["check", str(book)])
-    assert code == 0 and view["chain"]["breaks"] == 0
-    assert view["incidents"]["logged"][-1]["kind"] == "integrity"
+    assert code == 0
+    assert view["incidents"][-1]["kind"] == "integrity"
 
 
 def test_a_listed_file_missing_on_disk_is_an_incident(tmp_path, book, run):

@@ -19,7 +19,7 @@ operator's private git repository; skill holds methods, book holds state.
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
     runs.jsonl  runs/<agent>.jsonl  incidents.jsonl
-    pad/scratch.jsonl         kernel pad, not chained
+    pad/scratch.jsonl         kernel pad: free memory, not ledger
   proposals/  approvals/  rejected/  sent/
   strategies/<name>/
     signal.py  config.json  README.md  status
@@ -28,7 +28,7 @@ operator's private git repository; skill holds methods, book holds state.
   .claude/settings.json       deny rules
 
 ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/
-  held-out.json               salted digests of held-out names
+  held-out.json               {"<sector>": ["SYM", ...]}, sorted
 ```
 
 `data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
@@ -41,10 +41,14 @@ read union.
 
 ## Ledger lines
 
-Every line: `id`, `ts`, `prev`, then record. `prev` is sha256 hex of
-previous line's exact bytes, newline excluded; `null` on line 1. Editing any
-line, or removing one, breaks chain at next line; bare `check` names file
-and line. Edit to last line shows only when next line lands.
+Every line: `id`, `ts`, then record. Ledger is append-only; correction is
+new line carrying `supersedes`. `record` writes each batch in one write
+under lock, whole or not at all. File ending in line without newline is cut
+by some other hand, as is line that is not JSON object: `record` refuses to
+append, names file and line; operator repairs it. Bare `check` derives
+`warnings` on every call: each undecodable line (file, line, first 40 bytes)
+and each `supersedes` naming no id of its kind; never stored, never
+repaired, no incident line.
 
 | Kind | Required keys |
 | --- | --- |
@@ -87,6 +91,18 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | `bin/send` | operator | read; run only `--dry-run`, by operator's hand |
 | held-out list | `start` | never read |
 
+## Ledger permissions
+
+`start` leaves `ledger/` and `ledger/runs/` at mode 0555, every ledger file
+at 0444. `record` lifts one file to 0644 (its directory to 0755 when file is
+new), appends, restores both. Any other write to `ledger/` fails on
+permissions. `ledger/pad/` stays 0755: pad is free memory, not ledger.
+
+Mode bits are what `start` installs for single-user book; owner can lift
+them. Setup that holds: second Unix user `record` owns `ledger/`; agent's
+user runs binding through `sudo -u record` rule naming `btm-finance` binary
+only.
+
 ## Deny rules
 
 `start` merges these into `.claude/settings.json` under `permissions.deny`,
@@ -101,7 +117,8 @@ Edit(//<book>/approvals/**)
 Write(//<book>/approvals/**)
 ```
 
-Rules hold absolute paths: if book moves, ask operator to update them.
+Rules hold absolute paths: if book moves, ask operator to update them. Deny
+on held-out path is convenience; held-out list stays out of book.
 
 ## What start writes
 
@@ -112,9 +129,11 @@ Rules hold absolute paths: if book moves, ask operator to update them.
 2. `.claude/settings.json` deny rules; existing settings kept.
 3. `bin/send` (mode 755) with `RECORD` bound to this skill's realpath.
 4. `preferences.json`, `limits.json` defaults, then `book.json`.
-5. Held-out list: per sector, quarter of `--universe:file` names, half
-   rounded up, whose salted digests sort first; without universe, empty list
-   and `signal:` saying so.
+5. Held-out list: per sector, first quarter of `--universe:file` names by
+   symbol sort, half rounded up; deterministic, no randomness. Plain JSON,
+   sector to symbols; receipt reports count only. Without universe, empty
+   list and `signal:` saying so.
+6. Ledger sealed: modes as in Ledger permissions.
 
 ## Proposal file
 

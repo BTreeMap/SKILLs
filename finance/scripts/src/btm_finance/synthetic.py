@@ -7,7 +7,6 @@ Never real data: every number comes from `numpy.random.default_rng(seed)`.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -28,8 +27,7 @@ from btm_finance.data.tables import (
     date_of,
     texts,
 )
-from btm_finance.scaffold import held_out
-from btm_finance.store import held_out_path, open_book
+from btm_finance.store import open_book
 
 FIRST = date(2015, 1, 5)
 SECTORS = ("energy", "finance", "health", "industrial", "tech", "utility")
@@ -195,13 +193,11 @@ def make_book(  # noqa: PLR0913 - one synthetic book's whole recipe
     structure: bool = True,
     alpha: float = 0.0,
 ) -> Synthetic:
-    """`start` at `root` with the synthetic universe, a held-out list salted by
-    `seed` so the research set repeats, and the panel stored as a csv load."""
+    """`start` at `root` with the synthetic universe, whose held-out list is
+    deterministic, and the panel stored as a csv load."""
     data = make_panel(seed, names, days, structure=structure, alpha=alpha)
     start(root, 10_000_000, data.universe)
     book = open_book(str(root))
-    listing = held_out(book.meta.id, data.universe, salt=f"synthetic-{seed}")
-    held_out_path(book.meta.id).write_text(json.dumps(listing, indent=2) + "\n")
     first = date_of(int(data.dates[0]))
     store(
         book,

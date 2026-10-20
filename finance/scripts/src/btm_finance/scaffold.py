@@ -4,10 +4,8 @@ the held-out list outside the book."""
 from __future__ import annotations
 
 import csv
-import hashlib
 import io
 import json
-import secrets
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from importlib import resources
@@ -136,46 +134,24 @@ def universe_rows(raw: str) -> list[tuple[str, str]]:
     return list(seen.items())
 
 
-def member(salt: str, symbol: str) -> str:
-    return hashlib.sha256(f"{salt}:{symbol}".encode()).hexdigest()
-
-
-def stratified(rows: Sequence[tuple[str, str]], salt: str) -> dict[str, list[str]]:
-    """Per sector, the quarter whose salted digests sort first. O(n log n)."""
+def stratified(rows: Sequence[tuple[str, str]]) -> dict[str, list[str]]:
+    """Per sector, the first quarter by symbol, rounded half up. Deterministic:
+    no randomness, no salt. O(n log n)."""
     sectors: dict[str, list[str]] = defaultdict(list)
     for symbol, sector in rows:
         sectors[sector].append(symbol)
     return {
-        sector: sorted(names, key=lambda symbol: member(salt, symbol))[
-            : (len(names) + HELD_OUT_SHARE // 2) // HELD_OUT_SHARE
-        ]
+        sector: sorted(names)[: (len(names) + HELD_OUT_SHARE // 2) // HELD_OUT_SHARE]
         for sector, names in sorted(sectors.items())
     }
 
 
-def held_out(
-    book_id: str, universe: str | None, salt: str | None = None
-) -> dict[str, Any]:
-    """The salted membership list: digests only, so the file names no symbol.
-    A fixed `salt` is for synthetic books only."""
-    salt = salt if salt is not None else secrets.token_hex(16)
-    rows = universe_rows(universe) if universe is not None else []
-    chosen = stratified(rows, salt)
+def held_out(universe: str | None) -> dict[str, list[str]]:
+    """The held-out list: sector to its held-out symbols, both sorted."""
     if universe is None:
         signal("no --universe:file; held-out list empty until start runs with one")
-    return {
-        "book": book_id,
-        "salt": salt,
-        "members": sorted(member(salt, s) for names in chosen.values() for s in names),
-        "universe": len(rows),
-        "by_sector": {
-            sector: {
-                "held_out": len(names),
-                "universe": sum(1 for _, s in rows if s == sector),
-            }
-            for sector, names in chosen.items()
-        },
-    }
+        return {}
+    return stratified(universe_rows(universe))
 
 
 def write_new(path: Path, text: str) -> None:
@@ -191,7 +167,7 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
         )
     book_id = make_id(ascii_words(root.resolve().name) or ["book"])
     hidden = held_out_path(book_id)
-    listing = held_out(book_id, universe)  # before any write: a bad CSV leaves nothing
+    listing = held_out(universe)  # before any write: a bad CSV leaves nothing
     for directory in DIRECTORIES:
         (root / directory).mkdir(parents=True, exist_ok=True)
     write_new(hidden, json.dumps(listing, indent=2) + "\n")
@@ -219,7 +195,10 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     return {
         "book": book_id,
         "path": str(root.resolve()),
-        "held_out": {"path": str(hidden), "names": len(listing["members"])},
+        "held_out": {
+            "path": str(hidden),
+            "names": sum(len(names) for names in listing.values()),
+        },
         "wrote": [
             "limits.json",
             "preferences.json",

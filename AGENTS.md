@@ -52,8 +52,7 @@ Current skills:
   sources, quotes behind every verdict; changes nothing until you approve
   each correction.
 * `finance/` - Keeps a private slow-money stock research book: agents
-  research and record into a hash-chained ledger, a human decides and sends
-  every trade.
+  research and record into a ledger, a human decides and sends every trade.
 * `git-commit/` - Drafts and reviews Conventional Commits messages; can
   commit and push in one step.
 * `humanize/` - Rewrites AI-sounding prose so it reads like its writer,

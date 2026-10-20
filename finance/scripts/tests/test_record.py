@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 
 from btm_finance.ledger import Kind
-from btm_finance.store import append_chained, open_book
+from btm_finance.store import append_ledger, open_book
 
 
 def batch(run, book, payload):
@@ -65,7 +65,7 @@ def test_every_problem_comes_back_in_one_verdict_and_nothing_moves(
 
 def test_a_critique_lands_once_its_run_exists(book, run):
     planted = book / "ledger" / "runs.jsonl"
-    append_chained(planted, [{"id": "r1", "ts": "t", "run_id": "momentum-small-r1"}])
+    append_ledger(planted, [{"id": "r1", "ts": "t", "run_id": "momentum-small-r1"}])
     critique = {
         "kw": ["first", "pass"],
         "run_id": "momentum-small-r1",
@@ -143,3 +143,47 @@ def test_an_empty_batch_is_a_located_rejection(book, run):
     assert verdict["rejected"][0]["where"] == "$"
     path = open_book(str(book)).path_of(Kind.HYPOTHESIS)
     assert len(path.read_bytes().splitlines()) == 1  # start's baseline line only
+
+
+def plant_bytes(path, extra: bytes) -> bytes:
+    """The operator's hand outside record: lift the mode, append, restore."""
+    mode = path.stat().st_mode & 0o777
+    path.chmod(0o644)
+    path.write_bytes(path.read_bytes() + extra)
+    path.chmod(mode)
+    return path.read_bytes()
+
+
+def test_an_undecodable_line_is_a_warning_never_repaired(book, run):
+    path = book / "ledger" / "hypotheses.jsonl"
+    after = plant_bytes(path, b"not json at all, but long enough to be cut at forty\n")
+    code, view, err = run(["check", str(book)])
+    assert code == 0 and "ledger warning" in err
+    assert view["warnings"] == [
+        {
+            "file": "ledger/hypotheses.jsonl",
+            "line": 2,
+            "head": "not json at all, but long enough to be c",
+        }
+    ]
+    assert path.read_bytes() == after
+    assert view["incidents"] == []
+
+
+def test_a_dangling_supersedes_is_a_warning(book, run):
+    path = book / "ledger" / "hypotheses.jsonl"
+    plant_bytes(path, b'{"id": "x1", "ts": "t", "supersedes": "ghost"}\n')
+    code, view, _ = run(["check", str(book)])
+    assert code == 0
+    assert view["warnings"] == [
+        {"file": "ledger/hypotheses.jsonl", "line": 2, "supersedes": "ghost"}
+    ]
+
+
+def test_record_refuses_to_append_after_an_undecodable_line(book, run, make_hypothesis):
+    path = book / "ledger" / "hypotheses.jsonl"
+    before = plant_bytes(path, b"[1, 2]\n")
+    code, _, err = batch(run, book, {"hypotheses": [make_hypothesis(["new", "idea"])]})
+    assert code == 1
+    assert "line 2 is not a JSON object" in err and "operator repairs" in err
+    assert path.read_bytes() == before

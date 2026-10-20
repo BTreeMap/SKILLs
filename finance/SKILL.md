@@ -3,7 +3,7 @@ name: finance
 description: >-
   Keeps a private book for slow-money stock research where agents research
   and a human decides every trade: hypotheses registered before testing,
-  append-only hash-chained records, held-out names kept outside the book,
+  append-only records, held-out names kept outside the book,
   orders sent only by the operator's sender against a same-day approval.
   Use when setting up or continuing an equity research book, or recording
   holdings, hypotheses, critiques, decisions.
@@ -21,9 +21,9 @@ metadata:
 
 Keep one private book per operator for stocks held weeks to years. Agent
 researches and records; human decides every trade. Script `btm-finance` owns
-book layout, chained ledger, gate, continue view; agent owns hypothesis
-quality, critique verdicts, narrative; operator owns limits, approvals,
-strategy status, sending.
+book layout, ledger, gate, continue view; agent owns hypothesis quality,
+critique verdicts, narrative; operator owns limits, approvals, strategy
+status, sending.
 
 ## Registry
 
@@ -58,12 +58,12 @@ No agent, script, or cron changes these four.
 1. Agent process never holds broker adapter or credential. Enforced: sender
    is book's `bin/send`, stdlib only, adapter a stub operator replaces;
    broker key stays in OS keychain.
-2. Held-out names stay hidden from agent. Enforced: `start` writes salted
-   digest list under XDG state, outside book; `score` serves strategy only
-   research names, only through `Market`; never read that path.
-3. Ledger is append-only. Enforced: `record` is only writer; each line
-   carries `prev`, sha256 of previous line; bare `check` reports every break
-   by file and line, never repairs.
+2. Held-out names stay hidden from agent. Enforced: `score` serves strategy
+   code only research names, through `Market`; held-out list lies outside
+   book, agent does not read it; paper stage is out-of-sample test that
+   holds regardless.
+3. Ledger is append-only. Enforced: `record` is only writer; `ledger/` owned
+   by `record` user; corrections are new lines carrying `supersedes`.
 4. Orders leave only through `bin/send`, run by human in terminal, against
    file in `approvals/` dated that UTC day, after typed `yes`. Enforced:
    sender refuses any other file before any fill.
@@ -99,7 +99,7 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `score` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`; `--held-out` is human's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live` | Nothing: continue view (strategies by status, open hypotheses per family with trials used against budget, open proposals with age, incidents, chain totals). Strategy or run: `standing`, `blockers`, compact scorecard. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `summary`, `approval_template`; exit 1 when none. `--live`: per-sleeve table, `breaches`, `report`. All carry advisory `next` |
+| `check` | Nothing, strategy, run id, or proposal date; `--live` | Nothing: continue view (strategies by status, open hypotheses per family with trials used against budget, open proposals with age, last incident lines, pad count, `warnings`: undecodable lines and dangling `supersedes` by file and line). Strategy or run: `standing`, `blockers`, compact scorecard. Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `diff`, `cuts`, `unmanaged`, `summary`, `approval_template`; exit 1 when none. `--live`: per-sleeve table, `breaches`, `report`. All carry advisory `next` |
 | `advise` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, order, cut, carried counts, `summary`; exit 1 when no sleeve has run line |
 | `write` | Any JSON object; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
@@ -139,7 +139,7 @@ all fixes, resend. Arrays optional; order below is acceptance order:
   from pasted table or broker export.
 - `preferences` rewrites `preferences.json` whole: confirm every field with
   user first; exclude no sector user did not name.
-- Extra fields ride along; `id`, `ts`, `prev` are reserved.
+- Extra fields ride along; `id`, `ts` are reserved.
 
 ### Pad
 
@@ -229,7 +229,8 @@ settle to `/fact-check` or state it open.
 ## Completion checks
 
 - Every `record` exited 0, or its rejection was fixed and resent.
-- Bare `check` shows no `incidents.ledger` entry; any break was reported to
+- Nothing under `ledger/` written except through `record`. Bare `check`
+  shows no `warnings`; any warning or line `record` refused was reported to
   operator, not repaired.
 - Every new hypothesis names family, capacity class, falsifier,
   counterparty; ids quoted to user copied from `new`.
