@@ -70,9 +70,10 @@ that list.
   those folds joined in order. Null, with `reasons.post_cutoff`, when cutoff
   is null or no fold starts after it. Positive overall Sharpe beside
   negative `post_cutoff` is `hindsight` concern in `critique`.
-* Probe: DSR at or above 0.80 (`thresholds.dsr_probe`), PBO below 0.25
-  (`pbo_probe`), every other gate passed: operator may set status `probe`,
-  sized live at fixed `sizing.probe_weight` so out-of-sample fills accrue.
+* Probe: `check <strategy>` reads standing `probe` when every blocker but
+  `dsr` and `pbo` is clear, DSR at or above 0.80 (`thresholds.dsr_probe`),
+  PBO below 0.25 (`pbo_probe`). Operator then sets status `probe`; sleeve
+  trades live at fixed `sizing.probe_weight` so out-of-sample fills accrue.
   `paper` or `live` still needs DSR 0.95.
 * DSR also sizes: `recommend` scales tier's Kelly fraction by
   `min(1, max(0, (dsr - 0.5) / 0.45))`; see `book` Proposal file.

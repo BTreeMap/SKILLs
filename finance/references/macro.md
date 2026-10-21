@@ -170,8 +170,10 @@ each one absent as concern.
   sleeves and effective streams from `check <strategy>`; both advisory.
 * Price is what is discounted: if hypothesis cannot state where it disagrees
   with price, treat it as factor exposure, not hypothesis.
-* Size for being wrong: no strategy exceeds `limits.max_strategy_risk_share`
-  of risk budget; `recommend` enforces cap.
+* Size for being wrong: `recommend` scales whole book to `sizing.ruin_bound`
+  and reports each sleeve's risk share against
+  `limits.max_strategy_risk_share` under `advisory`, never cut; sleeve past
+  it is concentration to name to operator.
 * Drawdown tolerance: human sets review threshold before strategy goes live;
   use regime record to tell drawdown chain predicts from one it does not.
 * Believability: discount claim whose source cannot state mechanism. Show
@@ -188,9 +190,9 @@ each one absent as concern.
 
 ## Critique items for macro
 
-Critic applies these beside ten items and `event-fields` in `critique`, same
-verdict rule, and adds each item name to `verdicts`. "None" under Blocker
-means concern at most; never block on critic's regime forecast.
+Critic applies these beside eleven items and `event-fields` in `critique`,
+same verdict rule, and adds each item name to `verdicts`. "None" under
+Blocker means concern at most; never block on critic's regime forecast.
 
 | Item | Inspect | Settles | Blocker | Concern |
 | --- | --- | --- | --- | --- |

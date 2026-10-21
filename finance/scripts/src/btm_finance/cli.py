@@ -1165,7 +1165,11 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             "proposal": book.relative(target),
             "as_of": proposal.as_of,
             "sleeves": {
-                s: {"weight": v.weight, "tier": v.tier.value}
+                s: {
+                    "weight": v.weight,
+                    "tier": v.tier.value,
+                    "edge_scale": v.edge_scale,
+                }
                 for s, v in proposal.sleeves.items()
             },
             "skipped": [s.model_dump(mode="json") for s in proposal.skipped],
@@ -1216,6 +1220,7 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
                 "strategy": name,
                 "run_id": sleeve.run_id,
                 "tier": sleeve.tier.value,
+                "edge_scale": sleeve.edge_scale,
                 "sharpe_net": sleeve.sharpe_net,
                 "max_drawdown": sleeve.max_drawdown,
                 "weight": sleeve.weight,
@@ -1228,6 +1233,7 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
                 "strategy": BASELINE,
                 "run_id": None if run is None else run.get("run_id"),
                 "tier": None,
+                "edge_scale": None,
                 "sharpe_net": None if run is None else card_number(run, "sharpe_net"),
                 "max_drawdown": None
                 if run is None
