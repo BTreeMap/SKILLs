@@ -91,7 +91,7 @@ $R schema
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
 $R measure "$B" <strategy> [--agent <name>] [--held-out] [--repeat <run id>]
-$R check "$B" [<strategy> | <run id> | <proposal date>] [--live]
+$R check "$B" [<strategy> | <run id> | <proposal date>] [--live | --brief]
 $R recommend "$B" <YYYY-MM-DD> [--force]
 $R write "$B" --entry:file <entry.json> [--prose] [--known]
 $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
@@ -104,7 +104,7 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, each hypothesis citing a falsified chain, and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. Every output has advisory `next` |
+| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines carrying `supersedes`) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
 | `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
@@ -122,9 +122,10 @@ all, resend. Arrays optional; order below is acceptance order:
 
 ```json
 {
-  "hypotheses":  [{"kw": ["two", "words"], "strategy": "<name>", "family_id": "<key of limits.families>", "capacity_class": "under_cap|in_band|crowded", "falsifier": "...", "counterparty": "...", "min_holding_days": 21, "mechanism": "...", "sector": "..."}],
+  "hypotheses":  [{"kw": ["two", "words"], "strategy": "<name>", "family_id": "<key of limits.families>", "capacity_class": "under_cap|in_band|crowded", "falsifier": "...", "falsifier_by": "YYYY-MM-DD", "counterparty": "...", "min_holding_days": 21, "odds": {"p_win": 0.55, "payoff": 1.5, "horizon_days": 63, "kelly_implied": 0.25}, "mechanism": "...", "sector": "..."}],
   "critiques":   [{"kw": ["two", "words"], "run_id": "<run id>", "blockers": ["..."], "concerns": ["..."], "by": "<delegate>"}],
-  "decisions":   [{"kw": ["two", "words"], "subject": "<strategy|run id|hypothesis id|proposal date>", "action": "promote|reject|override|pause|retire|approve|diagnose", "reason": "..."}],
+  "decisions":   [{"kw": ["two", "words"], "subject": "<strategy|run id|hypothesis id|proposal date>", "action": "promote|reject|override|pause|retire|approve|diagnose|forgo", "reason": "...", "odds": {"p_win": 0.55, "payoff": 1.5, "horizon_days": 63, "kelly_implied": 0.25}}],
+  "scored":      [{"kw": ["two", "words"], "subject": "<live hypothesis id>", "resolved": "YYYY-MM-DD", "outcome": "...", "realized_return": 0.04, "brier": 0.2, "log_score": -0.5, "attribution": {"market": 0.01, "factor": 0.02, "currency": 0.0, "idiosyncratic": 0.015, "costs": -0.005}}],
   "regimes":     [{"kw": ["two", "words"], "as_of": "YYYY-MM-DD", "short_cycle": "...", "long_cycle": "...", "bubble_count": {"count": 2, "evidence": ["...", "..."]}, "policy_mix": ["printing"], "other_forces": {"internal_order": "...", "external_order": "...", "nature": "...", "technology": "..."}, "observables": {"<name>": {"value": "...", "as_of": "YYYY-MM-DD", "source": "<url>"}}, "confidence": 0.6, "falsified": ["<chain id>"]}],
   "fills":       [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "date": "YYYY-MM-DD", "strategy": "<name>|opening", "dry_run": false}],
   "holdings":    [{"date": "YYYY-MM-DD", "positions": [{"symbol": "...", "quantity": 10, "cost_basis": 12.5}]}],
@@ -144,9 +145,27 @@ all, resend. Arrays optional; order below is acceptance order:
   in `schema` and `macro`.
 - Register hypothesis before any strategy code for it exists. `mechanism`
   states ex-ante economic mechanism; omit it when none.
+- `falsifier_by` required: kill date. Past it, bare `check` lists hypothesis
+  under `warnings` as `overdue` until `scored` line names it, or `reject` or
+  `retire` names it or its strategy, or strategy is `retired`. More time is
+  new hypothesis citing old in `supersedes`.
+- `odds` optional at registration, required before standing reads
+  `promotable` or `probe`. `payoff` is gain per unit lost; `record` refuses
+  `kelly_implied` more than 0.01 from `p_win - (1 - p_win) / payoff`.
+  Decision takes same `odds`, optional.
+- `scored` closes bet: `subject` names live hypothesis; `brier` 0 to 1,
+  `log_score` at most 0, `attribution` decimals summing to
+  `realized_return`. Hypothesis with `odds` whose strategy's newest
+  `promote` is over `horizon_days` calendar days old shows as `unscored`
+  until one lands.
+- `forgo` decision names strategy: passing sleeve left unproposed, with
+  reason.
 - `critique.run_id` must name a run some runs file holds.
 - Correct any line with new line holding `"supersedes": "<full id>"` of same
-  kind; newest wins in every view.
+  kind; newest wins in every view. Superseding hypothesis spends trial of
+  its family: bare `check` `trials_used` counts run lines plus hypothesis
+  lines carrying `supersedes`. Scorecard `trials`, DSR's count, still counts
+  backtests only.
 - `holdings` turns each position into opening buy fill
   (`strategy: "opening"`); `cost_basis` per share. Import holdings once,
   from pasted table or broker export.
@@ -184,9 +203,9 @@ names. Then write `strategies/<name>/`:
   `limits.min_holding_days`), `long_only`, `family_id` (same as
   hypothesis's; `measure` refuses a mismatch).
 - Write no `status` file; absent means `research`; operator alone writes
-  `paper`, `live`, `retired`. Operator moves strategy to `paper` or `live`
-  by writing `status` and recording `promote` decision naming it in same
-  step; `paper_months` counts from that decision.
+  `probe`, `paper`, `live`, `retired`. Operator moves strategy to `probe`,
+  `paper`, or `live` by writing `status` and recording `promote` decision
+  naming it in same step; `paper_months` counts from that decision.
 - Imports: `signal.py` may import book's `lib/` (`import lib.<module>`),
   helpers in `strategies/<name>/`, and any installed module, at module top
   or inside a function. Script refuses no import.
@@ -209,16 +228,25 @@ number; change hypothesis, register again. Cite a run only after
 `measure --repeat` reproduces it.
 
 `check <strategy>` derives standing of newest research run on every call:
-`promotable`, `blocked`, or `discard` (PBO at or above `pbo_discard`). Each
-blocker names value and limit: `no run`, `dsr`, `pbo`, `t_alpha`, `factor`,
-`capacity`, `crowded`, `cost_share`, `adv_participation_max`,
-`min_holding_days_realized`, `trials`, `no critique`, `critique: <text>`,
-`status`, `paper_months`. `crowded` clears only by operator's `override`
-decision: net Sharpe at 20x cap still within tolerance of 0.1x means edge
-survives at twenty times cap, so institutions can hold it and it is likely
-crowded; `in_band` hypothesis showing this needs `override` with reason.
-With `trials` 1, DSR is probabilistic Sharpe against zero, still held to
-threshold. Show operator every blocker, never summary omitting one.
+`promotable`, `probe`, `blocked`, or `discard` (PBO at or above
+`pbo_discard`). Each blocker names value and limit: `no run`, `dsr`, `pbo`,
+`t_alpha`, `factor`, `capacity`, `crowded`, `cost_share`,
+`adv_participation_max`, `min_holding_days_realized`, `trials`,
+`no critique`, `critique: <text>`, `status`, `paper_months`, `odds`.
+`probe`: every blocker clear but `dsr` and `pbo`, DSR at or above
+`thresholds.dsr_probe` (0.80), PBO under `pbo_probe` (0.25); `next` says
+propose probe to operator at `sizing.probe_weight`; operator writes `status`
+`probe` and records `promote` naming strategy in same step. Promotion to
+`paper` or `live` still needs DSR 0.95, PBO under 0.10.
+`odds: none registered on <hypothesis id>` blocks only when nothing else
+does, so neither `promotable` nor `probe` reads without odds; state them in
+superseding hypothesis, which spends trial. `crowded` clears only by
+operator's `override` decision: net Sharpe at 20x cap still within tolerance
+of 0.1x means edge survives at twenty times cap, so institutions can hold it
+and it is likely crowded; `in_band` hypothesis showing this needs `override`
+with reason. With `trials` 1, DSR is probabilistic Sharpe against zero,
+still held to threshold. Show operator every blocker, never summary omitting
+one.
 
 ## Research loop
 

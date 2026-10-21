@@ -19,6 +19,7 @@ operator's private git repository; skill holds methods, book holds state.
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
     runs.jsonl  runs/<agent>.jsonl  incidents.jsonl  regimes.jsonl
+    scored.jsonl
     pad/scratch.jsonl         kernel pad: free memory, not ledger
   proposals/  approvals/  rejected/  sent/
   strategies/<name>/
@@ -52,11 +53,12 @@ held-out names.
 `data/returns/` files stay in manifest for integrity checks but never move
 snapshot, so later run cannot change earlier run's.
 
-`status` holds one word: `research`, `paper`, `live`, or `retired`; absent
-or empty reads `research`. Operator writes `paper` or `live` with `promote`
-decision naming strategy in same step; `paper_months` counts from it.
-`runs.jsonl` is lead's; each delegate writes own `runs/<agent>.jsonl`; views
-read union.
+`status` holds one word: `research`, `probe`, `paper`, `live`, or `retired`;
+absent or empty reads `research`. Operator writes `probe`, `paper`, or
+`live` with `promote` decision naming strategy in same step; `paper_months`
+counts from it. `probe` trades live at fixed `sizing.probe_weight` so
+out-of-sample fills accrue. `runs.jsonl` is lead's; each delegate writes own
+`runs/<agent>.jsonl`; views read union.
 
 ## Ledger lines
 
@@ -72,16 +74,23 @@ Filesystem modes enforce nothing: these warnings are the append-only check.
 
 | Kind | Required keys |
 | --- | --- |
-| hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `counterparty`, `min_holding_days`; optional `chain`, `expectation_source`, `discounted`, `confidence` (critique flags each one absent in family with `event: true`) |
+| hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `falsifier_by`, `counterparty`, `min_holding_days`; optional `odds` (`p_win`, `payoff`, `horizon_days`, `kelly_implied`), `chain`, `expectation_source`, `discounted`, `confidence` (critique flags each one absent in family with `event: true`) |
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
-| decision | `kw`, `subject`, `action`, `reason` |
+| decision | `kw`, `subject`, `action`, `reason`; optional `odds`; `forgo` names strategy |
+| scored | `kw`, `subject` (live hypothesis id), `resolved`, `outcome`, `realized_return`, `brier`, `log_score`, `attribution` (`market`, `factor`, `currency`, `idiosyncratic`, `costs`) |
 | regime | `kw`, `as_of`, `confidence`; optional `falsified`, `supersedes`; any other field free JSON |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
 | run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files`, `regimes`, `regime_days`, `imports` |
 | incident | `kind`; see Incidents |
 
 `confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`
-is chain id from `macro` table or `none`.
+is chain id from `macro` table or `none`. `start` sets baseline's
+`falsifier_by` one year after start date. `record` refuses `kelly_implied`
+more than 0.01 from `p_win - (1 - p_win) / payoff`. Hypothesis line carrying
+`supersedes` spends one trial of its family in bare `check`'s `trials_used`;
+scorecard `trials` (DSR) counts backtests only. Bare `check` derives
+`overdue` and `unscored` warnings from hypothesis, decision, and scored
+lines; `scored` line naming hypothesis clears both.
 
 Regime line in suggested shape; `record` reads only `kw`, `as_of`,
 `confidence`, `falsified`, `supersedes`:
