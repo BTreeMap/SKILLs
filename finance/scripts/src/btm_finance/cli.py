@@ -22,9 +22,9 @@ from pydantic import BaseModel
 import btm_finance
 from btm_corekit import (
     BATCH,
-    PAD_SCHEMA,
     REFS_SCHEMA,
     CommandError,
+    Diagnostic,
     Optional,
     Parser,
     Required,
@@ -38,13 +38,14 @@ from btm_corekit import (
     make_id,
     now_iso,
     parse_model,
+    rejection,
     run_cli,
     signal,
     text,
-    wire_pad,
     write_atomic,
 )
-from btm_finance import onboarding
+from btm_corekit.cli import PAD_TYPES
+from btm_finance import approvals, onboarding
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import Bet, Open, brief, justifying
@@ -167,7 +168,7 @@ from btm_finance.scaffold import INDEX, onboard_files, scaffold, template
 from btm_finance.scorecard import RunLine, Span
 from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
-    PAD,
+    MARKER,
     PAD_DIR,
     Book,
     append_ledger,
@@ -199,8 +200,10 @@ from btm_finance.views import (
 UNIVERSE = Optional("universe", inline=False)
 CONFIG = Optional("config", inline=False)
 ANSWERS = Optional("answers", inline=False)
-ANSWERS_REQUIRED = Required("answers", inline=False)
-ANSWERS_HELP = "JSON object of onboarding answers; schema prints its shape"
+FILLS = Optional("fills", inline=False)
+FILLS_SLOT = Required("fills", inline=False)  # names the flag in a rejection
+ANSWERS_HELP = "JSON object of onboarding answers; check --schema answers prints it"
+SCHEMA_KINDS = ("record", "run", "answers", "pad", "approval")
 LATER: dict[str, str] = {}
 MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
 STALE_BARS = 5  # trading days an as-of bar may trail the proposal date
@@ -249,41 +252,48 @@ def start(
 
 
 def cmd_start(args: argparse.Namespace) -> int:
+    """A new book; on an existing one, with answers, its instruction files."""
     raw = text(ANSWERS, args)
     answers = None if raw is None else onboarding.answers_of(raw)
+    root = Path(args.book).expanduser()
     universe = text(UNIVERSE, args)
-    emit(
-        start(Path(args.book).expanduser(), args.cap, universe, args.held_out, answers)
-    )
+    if answers is not None and (root / MARKER).is_file():
+        if args.cap is not None or universe is not None or args.held_out is not None:
+            raise CommandError(
+                f"{root} is a book: start takes only --answers:file and --force there"
+            )
+        emit(onboard(open_book(str(root)), answers, force=args.force))
+        return 0
+    emit(start(root, args.cap, universe, args.held_out, answers))
     return 0
 
 
-def cmd_onboard(args: argparse.Namespace) -> int:
+def onboard(book: Book, answers: Answers, *, force: bool) -> dict[str, Any]:
     """Instruction files for an existing book; `limits.json`, `preferences.json`,
     and the ledger stay as they are: the receipt says what to change."""
-    book = open_book(args.book)
-    answers = onboarding.answers_of(text(ANSWERS_REQUIRED, args))
-    onboarding.refuse_existing(book.root, force=args.force)
+    onboarding.refuse_existing(book.root, force=force)
     limits = load_limits(book)
     claude = onboard_files(
         book.root,
         book.meta,
         answers,
         answers.capital.now or limits.asset_cap,
-        datetime.now(UTC).date().isoformat(),
+        utc_today().isoformat(),
     )
-    emit(
-        {
-            "book": book.meta.id,
-            "wrote": list(onboarding.FILES),
-            "claude_md": claude,
-            "limits": onboarding.limit_changes(answers, limits),
-            "preferences": onboarding.preference_batch(answers, load_preferences(book)),
-            "next": "hand the operator limits to set in limits.json; confirm "
-            "preferences with the operator, then record them as a batch",
-        }
-    )
-    return 0
+    return {
+        "book": book.meta.id,
+        "wrote": list(onboarding.FILES),
+        "claude_md": claude,
+        "limits": onboarding.limit_changes(answers, limits),
+        "preferences": onboarding.preference_batch(answers, load_preferences(book)),
+        "next": "hand the operator limits to set in limits.json; confirm "
+        "preferences with the operator, then record them as a batch",
+    }
+
+
+def utc_today() -> date:
+    """Today, UTC: the one day an approval holds."""
+    return datetime.now(UTC).date()
 
 
 def ids_of(path: Path, key: str = "id") -> list[str]:
@@ -343,11 +353,130 @@ def cmd_record(args: argparse.Namespace) -> int:
         document["next"] = "run check for the continue view"
         return document
 
-    return gated(BATCH, args, "book", expand, commit)
+    sugar = fills_batch(book, args)
+    if sugar is None:
+        return gated(BATCH, args, "book", expand, commit)
+    batch, problems = sugar
+    if problems:
+        emit(rejection(problems, "book", FILLS_SLOT))
+        return 1
+    result = expand(batch)
+    for advisory in result.advisories:
+        signal(advisory)
+    if result.problems:
+        emit(rejection(result.problems, "book", FILLS_SLOT))
+        return 1
+    emit(commit(result))
+    return 0
+
+
+def fills_batch(
+    book: Book, args: argparse.Namespace
+) -> tuple[dict[str, Any], list[Diagnostic]] | None:
+    """`--fills:file` or `--dry-run` against `--approval` as a `fills` batch
+    and the problems refusing it; None when the batch slot carries the batch."""
+    raw = text(FILLS, args)
+    if args.approval is None:
+        if raw is not None or args.dry_run:
+            raise CommandError("--fills:file and --dry-run need --approval <file>")
+        return None
+    if args.batch_file is not None or getattr(args, "stdin", None) == "batch":
+        raise CommandError("--approval builds the batch; drop --batch")
+    if (raw is None) is not args.dry_run:
+        raise CommandError("--approval takes one of --fills:file or --dry-run")
+    today = utc_today().isoformat()
+    path = approval_file(book, args.approval)
+    approval = approval_checked(book, path, today)
+    if raw is None:
+        fills, problems = approvals.dry_run(approval, today)
+    else:
+        rows = approvals.table_rows(raw, "the fills")
+        fills, problems = approvals.pasted(
+            rows, approval.orders, statuses_of(book), today
+        )
+    return {"fills": [fill | {"approval": path.stem} for fill in fills]}, problems
+
+
+def statuses_of(book: Book) -> dict[str, str]:
+    """Each strategy directory's raw `status` word, empty when absent."""
+    return {found.name: found.raw for found in strategies(book)}
+
+
+def approval_file(book: Book, raw: str) -> Path:
+    """`raw`, absolute or book-relative, resolving to a file under `approvals/`."""
+    folder = (book.root / "approvals").resolve()
+    given = Path(raw).expanduser()
+    path = (given if given.is_absolute() else book.root / given).resolve()
+    if not path.is_relative_to(folder) or not path.is_file():
+        raise CommandError(f"{raw} is no file under the book's approvals/")
+    return path
+
+
+def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
+    """The approval against its proposal, `limits.json`, and each status."""
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as err:
+        raise CommandError(f"unreadable approvals/{path.name}: {err}") from err
+    folder = (book.root / "proposals").resolve()
+
+    def orders_of(stem: str) -> list[Any] | None:
+        target = (folder / f"{stem}.json").resolve()
+        if target.parent != folder or not target.is_file():
+            return None
+        try:
+            found = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        orders = found.get("orders") if isinstance(found, dict) else None
+        return orders if isinstance(orders, list) else None
+
+    return approvals.checked(
+        document,
+        path.stem,
+        today=today,
+        cap=load_limits(book).max_adv_participation,
+        statuses=statuses_of(book),
+        proposal_orders=orders_of,
+    )
+
+
+def approval_view(book: Book, target: str, today: date) -> tuple[dict[str, Any], int]:
+    """`check <book> approvals/<date>.json`: the order table and every problem."""
+    path = approval_file(book, target)
+    found = approval_checked(book, path, today.isoformat())
+    for problem in found.problems:
+        signal(f"approval: {problem}")
+    shown = f"approvals/{path.name}"
+    return {
+        "book": book.meta.id,
+        "approval": shown,
+        "orders": list(found.orders),
+        "problems": list(found.problems),
+        "next": "fix each problem in the approval file, then check it again"
+        if found.problems
+        else "operator places each order by hand at the broker, then runs "
+        f"record --fills:file <table> --approval {shown}; paper orders: "
+        f"record --approval {shown} --dry-run",
+    }, 1 if found.problems else 0
 
 
 def cmd_check(args: argparse.Namespace) -> int:
+    if args.schema is not None:
+        emit(schema_view(args.schema))
+        return 0
+    if args.book is None:
+        raise CommandError("check needs a book path; only --schema runs without one")
     book = open_book(args.book)
+    if args.target is not None and args.target.endswith(".json"):
+        view, code = approval_view(book, args.target, args.today or utc_today())
+        emit(view)
+        return code
+    return book_check(book, args)
+
+
+def book_check(book: Book, args: argparse.Namespace) -> int:
+    """Continue view, `--live`, `--brief`, a standing, or a proposal."""
     if args.live:
         today = args.today or datetime.now(UTC).date()
         emit(live_view(book, today).model_dump(mode="json"))
@@ -363,8 +492,8 @@ def cmd_check(args: argparse.Namespace) -> int:
     try:
         when = date.fromisoformat(args.target)
     except ValueError:
-        view = standing_view(book, args.target, advisory=True)
-        emit(view.model_dump(mode="json"))
+        standing = standing_view(book, args.target, advisory=True)
+        emit(standing.model_dump(mode="json"))
         return 0
     emit(proposal_view(book, when))
     return 0
@@ -530,7 +659,11 @@ def continue_view(book: Book) -> dict[str, Any]:
             f"not one of {'|'.join(Status)}"
         )
     today = datetime.now(UTC).date()
-    proposals = open_proposals(proposal_dates(book), decisions, today)
+    proposals = with_approvals(
+        open_proposals(proposal_dates(book), decisions, today),
+        approved_proposals(book),
+        live(Kind.FILL),
+    )
     pending = len(open_hypotheses(hypotheses, runs, decisions))
     records = regime_rows(book)
     regime = regime_record(records, today, limits.regime_stale_days)
@@ -571,6 +704,22 @@ def continue_view(book: Book) -> dict[str, Any]:
         ],
         "next": next_step(hypotheses, pending, proposals, late, budgets),
     }
+
+
+def with_approvals(
+    proposals: Sequence[dict[str, Any]],
+    approved: Mapping[str, str],
+    fills: Sequence[Row],
+) -> list[dict[str, Any]]:
+    """Each open proposal with the approval files naming it, `filled` once a
+    fill carries the approval's stem. O(P + A + F)."""
+    filled = {str(row.get("approval", "")).removesuffix(".json") for row in fills}
+    named: dict[str, list[dict[str, Any]]] = {}
+    for stem, proposal in sorted(approved.items()):
+        named.setdefault(proposal, []).append(
+            {"file": f"approvals/{stem}.json", "filled": stem in filled}
+        )
+    return [entry | {"approvals": named.get(entry["date"], [])} for entry in proposals]
 
 
 def brief_view(book: Book) -> dict[str, Any]:
@@ -697,43 +846,70 @@ def cmd_load(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_schema(args: argparse.Namespace) -> int:
-    del args
-    emit(
-        {
-            "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
-            "sequence": "hypotheses, critiques, decisions, scored, regimes, "
-            "fills, holdings, preferences; a decision or scored line may name a "
-            "hypothesis made earlier in the batch",
-            "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the "
-            "record",
-            "corrections": '"supersedes": "<id>" on a new line; newest wins',
-            "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
-            "strategy_config": '{"params": {"<name>": 1.0}, "rebalance": '
-            '"monthly|quarterly|annual", "holding_days": 21, "long_only": true, '
-            '"family_id": "<key of limits.families>"}',
-            "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '
-            '"orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, '
-            '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
-            '"limit": null}]} (check <date> prints it as approval_template; '
-            "the operator writes it; bin/send checks it, prints the orders, "
-            "records fills)",
-            "fill_table": "CSV with header symbol,side,quantity,price,date "
-            "(optional strategy), or a JSON list of objects with those keys; "
-            "the operator pastes broker fills there for bin/send --fills",
-            "answers": ANSWERS_SHAPE,
-            "answers_rules": "start --answers:file or onboard --answers:file; "
-            "every key optional, a missing one takes its default (risk 0.35 "
-            "and 0.25, cadence monthly, sources csv edgar french, collaborators "
-            "none); accounts kind taxable|sheltered; sleeve_account names one "
-            "account; cadence monthly|quarterly; sources csv|edgar|french|tiingo; "
-            "collaborators kind agent|person; unknown keys refused, so no key "
-            "or secret fits: keys live in the environment only",
-            "refs": REFS_SCHEMA + "; receipts echo every new id under new",
-            "pad": PAD_SCHEMA,
-        }
-    )
-    return 0
+SCHEMA_VIEW: dict[str, dict[str, Any]] = {
+    "record": {
+        "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
+        "sequence": "hypotheses, critiques, decisions, scored, regimes, "
+        "fills, holdings, preferences; a decision or scored line may name a "
+        "hypothesis made earlier in the batch",
+        "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the record",
+        "corrections": '"supersedes": "<id>" on a new line; newest wins',
+        "refs": REFS_SCHEMA + "; receipts echo every new id under new",
+        "fill_table": "CSV with header symbol,side,quantity,price,date "
+        "(optional strategy), or a JSON list of objects with those keys; "
+        "record --fills:file <table> --approval <file> turns it into fills, "
+        "strategy taken from the approval's one order of that symbol and side "
+        "when absent; record --approval <file> --dry-run fills its paper "
+        "orders at price",
+    },
+    "run": {
+        "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
+        "strategy_config": '{"params": {"<name>": 1.0}, "rebalance": '
+        '"monthly|quarterly|annual", "holding_days": 21, "long_only": true, '
+        '"family_id": "<key of limits.families>"}',
+    },
+    "answers": {
+        "answers": ANSWERS_SHAPE,
+        "answers_rules": "start --answers:file, new book or existing; every "
+        "key optional, a missing one takes its default (risk 0.35 and 0.25, "
+        "cadence monthly, sources csv edgar french, collaborators none); "
+        "accounts kind taxable|sheltered; sleeve_account names one account; "
+        "cadence monthly|quarterly; sources csv|edgar|french|tiingo; "
+        "collaborators kind agent|person; unknown keys refused, so no key or "
+        "secret fits: keys live in the environment only",
+    },
+    "pad": {
+        "path": f"{PAD_DIR.as_posix()}/scratch.jsonl; agent appends and greps "
+        "it with its own file tools; never gated, never read by record",
+        "line": '{"ts": "<ISO 8601>", "type": "<type>", ...any fields}',
+        "types": {
+            name: meaning for name, meaning in PAD_TYPES.items() if name != "known"
+        },
+    },
+    "approval": {
+        "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '
+        '"orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, '
+        '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
+        '"limit": null}]}',
+        "rules": "check <book> approvals/<date>.json: date is today (UTC); "
+        "proposal names a file under proposals/; every order is one of that "
+        "proposal by symbol, side, strategy; adv_participation at most "
+        "limits.max_adv_participation; strategy status paper, probe, or live",
+    },
+}
+
+
+def schema_kind(raw: str) -> str:
+    if raw not in (*SCHEMA_KINDS, "all"):  # argparse types the const too
+        raise argparse.ArgumentTypeError(
+            f"{raw!r} is no shape; name one of {'|'.join(SCHEMA_KINDS)}"
+        )
+    return raw
+
+
+def schema_view(kind: str) -> dict[str, Any]:
+    """`check --schema [kind]`: one kind's shapes, or every kind's."""
+    return SCHEMA_VIEW if kind == "all" else {kind: SCHEMA_VIEW[kind]}
 
 
 def name_of(raw: str, what: str) -> str:
@@ -1355,10 +1531,10 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         "approval_path": f"approvals/{proposal.date}.json",
         "next": "read blockers to the operator first, baseline beside each "
         "sleeve; the operator alone copies approval_template to approval_path, "
-        "edits it, sets date and file name to the send day, runs bin/send on "
-        "it, places each order by hand, then records fills with bin/send "
-        f"--fills; record a reject or override of {path.stem} as a decision with "
-        "the operator's reason",
+        "edits it, sets date and file name to the send day, runs check on it, "
+        "places each order by hand at the broker, then records fills with "
+        f"record --fills:file; record a reject or override of {path.stem} as a "
+        "decision with the operator's reason",
     }
 
 
@@ -1514,17 +1690,16 @@ def run_facts(book: Book, strategy: str) -> RunFacts | None:
 
 
 def approved_proposals(book: Book) -> dict[str, str]:
-    """Approval file name to the proposal stem it names, from `approvals/`
-    and `sent/`; a file naming none maps to its own stem."""
+    """Approval file stem to the proposal stem it names, from `approvals/`; a
+    file naming none maps to its own stem."""
     found: dict[str, str] = {}
-    for folder in ("approvals", "sent"):
-        for path in sorted((book.root / folder).glob("*.json")):
-            try:
-                document = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
-            stem = document.get("proposal") if isinstance(document, dict) else None
-            found[path.name] = stem if isinstance(stem, str) else path.stem
+    for path in sorted((book.root / "approvals").glob("*.json")):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        stem = document.get("proposal") if isinstance(document, dict) else None
+        found[path.stem] = stem if isinstance(stem, str) else path.stem
     return found
 
 
@@ -1536,7 +1711,8 @@ def sleeve_fills(
     proposals: Mapping[str, str],
 ) -> tuple[Fill, ...]:
     """Paper sleeves count dry-run fills, probe and live ones real fills; a fill's
-    reference is its proposal order's `price`, by approval, symbol, side."""
+    reference is its proposal order's `price`, by approval, symbol, side. A
+    fill names its approval by stem, or by file name as older fills do."""
     paper = status is Status.PAPER
     chosen = [
         row
@@ -1545,8 +1721,8 @@ def sleeve_fills(
     ]
 
     def reference(row: Row) -> float | None:
-        approval = str(row.get("approval", ""))
-        stem = proposals.get(approval, Path(approval).stem)
+        approval = str(row.get("approval", "")).removesuffix(".json")
+        stem = proposals.get(approval, approval)
         return prices.get((stem, str(row.get("symbol")), str(row.get("side"))))
 
     return tuple(fill_of(row, reference(row)) for row in chosen)
@@ -1697,34 +1873,49 @@ def build_parser() -> argparse.ArgumentParser:
         "else under XDG_STATE_HOME",
     )
     add_slot(start, ANSWERS, ANSWERS_HELP)
-
-    onboard = commands.add_parser(
-        "onboard", help="write README.md, AGENTS.md, CLAUDE.md for a book"
+    start.add_argument(
+        "--force",
+        action="store_true",
+        help="existing book: rewrite README.md, AGENTS.md, CLAUDE.md when present",
     )
-    onboard.set_defaults(func=cmd_onboard)
-    onboard.add_argument("book", help="book directory")
-    add_slot(onboard, ANSWERS_REQUIRED, ANSWERS_HELP)
-    onboard.add_argument(
-        "--force", action="store_true", help="rewrite the three files when present"
-    )
-
-    schema = commands.add_parser("schema", help="print every record shape")
-    schema.set_defaults(func=cmd_schema)
 
     record = commands.add_parser("record", help="accept one batch through the gate")
     record.set_defaults(func=cmd_record)
     record.add_argument("book", help="book directory")
     add_slot(record, BATCH, ", ".join(BATCH_KEYS))
+    add_slot(
+        record,
+        FILLS,
+        "pasted broker fills, CSV header symbol,side,quantity,price,date "
+        "(optional strategy) or a JSON list; needs --approval",
+    )
+    record.add_argument(
+        "--approval", help="approvals/<date>.json the fills or dry run belong to"
+    )
+    record.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="record the approval's paper orders as dry-run fills at price",
+    )
 
     check = commands.add_parser(
-        "check", help="continue view, a strategy's standing, or a proposal"
+        "check",
+        help="continue view, a standing, a proposal, an approval, or --schema",
     )
     check.set_defaults(func=cmd_check)
-    check.add_argument("book", help="book directory")
+    check.add_argument("book", nargs="?", help="book directory; --schema needs none")
     check.add_argument(
         "target",
         nargs="?",
-        help="strategy, run id, or proposal date",
+        help="strategy, run id, proposal date, or approvals/<date>.json",
+    )
+    check.add_argument(
+        "--schema",
+        nargs="?",
+        const="all",
+        type=schema_kind,
+        metavar="|".join(SCHEMA_KINDS),
+        help="print record shapes, one kind or all; needs no book",
     )
     check.add_argument(
         "--live", action="store_true", help="weekly tracking of paper and live sleeves"
@@ -1770,7 +1961,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_slot(load, CONFIG, "JSON object; required for csv: bars, events, columns")
 
-    wire_pad(commands, PAD)
     return parser
 
 

@@ -1,16 +1,17 @@
 """G7 and G1 end to end: the baseline as a paper sleeve runs recommend, approve,
-and `bin/send --dry-run` for two annual rebalances; the second proposal diffs
+and `record --approval --dry-run` for two annual rebalances; the second proposal diffs
 against the first's dry-run fills. Also the refusals and the two books kept
 apart: a real fill never lands in a paper sleeve's position."""
 
 from __future__ import annotations
 
 import json
-import subprocess
 from collections import defaultdict
+from datetime import date
 from pathlib import Path
 
 import pytest
+from btm_finance import cli
 
 FIRST, SECOND = "2016-12-30", "2017-12-29"  # the baseline's annual rebalances
 
@@ -43,19 +44,28 @@ def fills(book: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
-def approve_and_send(run, book: Path, day: str) -> subprocess.CompletedProcess[str]:
-    """The operator's part: copy the template, then dry-run the sender."""
+SEND_DAY = [FIRST]  # the UTC day `check` and `record` read approvals on
+
+
+@pytest.fixture(autouse=True)
+def on_send_day(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "utc_today", lambda: date.fromisoformat(SEND_DAY[0]))
+
+
+def approve_and_send(run, book: Path, day: str) -> tuple[int, str]:
+    """The operator's part on `day`: copy the template, check it, then record
+    the paper orders as dry-run fills."""
     code, view, err = run(["check", str(book), day])
     assert code == 0, err
     target = book / view["approval_path"]
     target.write_text(json.dumps(view["approval_template"]))
-    return subprocess.run(
-        [str(book / "bin" / "send"), str(target), "--dry-run", "--today", day],
-        capture_output=True,
-        text=True,
-        timeout=300,
-        check=False,
+    SEND_DAY[0] = day
+    code, checked, err = run(["check", str(book), view["approval_path"]])
+    assert (code, checked["problems"]) == (0, []), err
+    code, _, err = run(
+        ["record", str(book), "--approval", view["approval_path"], "--dry-run"]
     )
+    return code, err
 
 
 def positions(rows: list[dict]) -> dict[str, float]:
@@ -94,8 +104,8 @@ def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
         "limit",
     }
 
-    sent = approve_and_send(run, book, FIRST)
-    assert sent.returncode == 0, sent.stderr
+    code, err = approve_and_send(run, book, FIRST)
+    assert code == 0, err
     landed = fills(book)
     assert len(landed) == len(first["orders"])
     assert {(f["dry_run"], f["strategy"], f["date"]) for f in landed} == {
@@ -114,8 +124,8 @@ def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
         assert order["held"] + sign * order["quantity"] == order["target"]
     assert not second["carried"]  # every first order filled
 
-    sent = approve_and_send(run, book, SECOND)
-    assert sent.returncode == 0, sent.stderr
+    code, err = approve_and_send(run, book, SECOND)
+    assert code == 0, err
     assert positions(fills(book)) == targets(second)
 
 
@@ -176,7 +186,7 @@ def test_an_order_over_the_adv_bound_is_cut_and_reported(synthetic, run):
     a looser bound is what passes it."""
     book = paper_book(synthetic, run)
     recommend(run, book, FIRST)
-    assert approve_and_send(run, book, FIRST).returncode == 0
+    assert approve_and_send(run, book, FIRST)[0] == 0
     path = book / "limits.json"
     limits = json.loads(path.read_text())
     limits["max_adv_participation"] = 0.001  # the human's edit

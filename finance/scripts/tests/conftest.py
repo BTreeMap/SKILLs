@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import json
-import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -100,23 +99,6 @@ def approval(where: Path, day: str, **order: Any) -> Path:
 @pytest.fixture
 def approve() -> Callable[..., Path]:
     return approval
-
-
-@pytest.fixture
-def send(book: Path) -> Callable[..., Any]:
-    """The scaffolded `bin/send`, run as the operator would: its own process."""
-
-    def invoke(*args: str, stdin: Any = None) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            [str(book / "bin" / "send"), *args],
-            stdin=stdin if stdin is not None else subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=300,
-            check=False,
-        )
-
-    return invoke
 
 
 @pytest.fixture

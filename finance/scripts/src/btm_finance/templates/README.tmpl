@@ -12,13 +12,12 @@ record; operator decides and sends every trade by hand. Agents read
 | `book.json` | marker: book id, created, engine version, held-out path |
 | `limits.json` | operator's bounds: asset cap, thresholds, sizing, families |
 | `preferences.json` | focus sectors, exclusions, cadence; changed only through `record` |
-| `bin/send` | operator's checker: approval check, order table, fill recorder |
 | `universe.csv` | research universe given at start |
 | `data/` | loaded prices, filings, factors, run series; git ignores it |
 | `ledger/` | append-only record: hypotheses, critiques, decisions, runs, fills, scores |
 | `proposals/` | rebalance proposals, written once each |
 | `approvals/` | operator's approval files, one per send day |
-| `sent/`, `rejected/` | approval files after sending or refusal |
+| `rejected/` | approval files operator refused |
 | `strategies/<name>/` | one strategy: `signal.py`, `config.json`, `README.md`, `status` |
 | `lib/`, `tools/` | agents' shared modules and scripts |
 | `research/<topic>/` | notes and sources per line of inquiry |
@@ -44,11 +43,13 @@ $sending
    result to you: blockers first.
 2. Copy its `approval_template` to `approvals/<send day>.json`; edit
    quantities; set `date` to send day (UTC).
-3. Run `bin/send approvals/<send day>.json` to check and print orders;
-   `--dry-run` records paper fills only.
-4. Place each order by hand$at.
-5. Run `bin/send approvals/<send day>.json --fills <table>` with pasted
-   fills: CSV header `symbol,side,quantity,price,date`.
+3. Run `$binding check . approvals/<send day>.json` to check and print
+   orders; fix every `problems` entry first. Paper orders:
+   `$binding record . --approval approvals/<send day>.json --dry-run`.
+4. Place each probe and live order by hand$at.
+5. Run `$binding record . --fills:file <table> --approval
+   approvals/<send day>.json` with pasted fills: CSV header
+   `symbol,side,quantity,price,date`.
 
 ## Held-out list
 

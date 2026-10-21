@@ -1,5 +1,5 @@
 """The command surface: what start writes and refuses, check naming a missing
-target, the pad inside the book, and the held-out list outside it."""
+target, the pad count, check --schema, and the held-out list outside it."""
 
 from __future__ import annotations
 
@@ -20,8 +20,9 @@ def test_start_writes_the_book_and_the_held_out_list_outside_it(tmp_path, run):
     )
     assert code == 0
     book = tmp_path / "b"
-    for name in ("limits.json", "preferences.json", "book.json", "bin/send"):
+    for name in ("limits.json", "preferences.json", "book.json"):
         assert (book / name).is_file(), name
+    assert not (book / "bin").exists() and not (book / "sent").exists()
     assert (book / "strategies" / "baseline" / "status").read_text() == "research\n"
     assert (book / "universe.csv").read_text() == universe.read_text()
     assert receipt["held_out"]["names"] == 3
@@ -92,20 +93,24 @@ def test_verbs_refuse_a_path_without_a_book(tmp_path, run):
     assert "no book at" in err
 
 
-def test_the_pad_lives_inside_the_book(book, run):
-    code, receipt, _ = run(["write", str(book), "--entry:stdin"], '{"type": "hunch"}')
-    assert (code, receipt["written"]) == (0, "j1")
-    assert (book / "ledger" / "pad" / "scratch.jsonl").is_file()
-    code, found, _ = run(["read", str(book), "--type", "hunch"])
-    assert found["shown"] == 1
-    view = run(["check", str(book)])[1]
-    assert view["pad"]["entries"] == 1
+def test_bare_check_counts_lines_the_agent_appends_to_the_pad(book, run):
+    pad = book / "ledger" / "pad" / "scratch.jsonl"
+    assert run(["check", str(book)])[1]["pad"]["entries"] == 0
+    pad.write_text('{"ts": "2026-01-02T00:00:00Z", "type": "hunch"}\n')
+    assert run(["check", str(book)])[1]["pad"]["entries"] == 1
 
 
-def test_schema_names_every_batch_key_and_the_pad(run):
-    code, schema, _ = run(["schema"])
+def test_the_pruned_verbs_are_gone(book, run):
+    for verb in ("onboard", "schema", "write", "read"):
+        code, _, err = run([verb, str(book)])
+        assert code == 1 and "invalid choice" in err, verb
+
+
+def test_check_schema_without_a_book_prints_every_kind(run):
+    code, schema, _ = run(["check", "--schema"])
     assert code == 0
-    assert list(schema["record_batch"]) == [
+    assert list(schema) == ["record", "run", "answers", "pad", "approval"]
+    assert list(schema["record"]["record_batch"]) == [
         "hypotheses",
         "critiques",
         "decisions",
@@ -115,7 +120,19 @@ def test_schema_names_every_batch_key_and_the_pad(run):
         "holdings",
         "preferences",
     ]
-    assert "hunch" in schema["pad"]
+    assert "hunch" in schema["pad"]["types"]
+    assert "known" not in schema["pad"]["types"]
+
+
+def test_check_schema_with_a_kind_prints_that_kind_only(book, run):
+    code, schema, _ = run(["check", "--schema", "approval"])
+    assert (code, list(schema)) == (0, ["approval"])
+    assert "adv_participation" in schema["approval"]["rules"]
+    assert run(["check", str(book), "--schema", "pad"])[1].keys() == {"pad"}
+    code, _, err = run(["check", "--schema", "fills"])
+    assert code == 1 and "record|run|answers|pad|approval" in err
+    code, _, err = run(["check"])
+    assert code == 1 and "only --schema runs without one" in err
 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="git is not on PATH")

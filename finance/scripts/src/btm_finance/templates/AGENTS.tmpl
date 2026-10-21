@@ -4,27 +4,36 @@ This file is standing instruction for every agent in this book;
 conversation is a view. Book and ledger hold all state. Each session: read
 this file, run bare `check`, then `check --brief`, resume from `next`.
 
-Run commands from book root through skill binding:
+Run commands from book root through skill binding; six verbs:
 
 ```bash
-$binding check .
+$binding start . --answers:file <answers.json> [--force]
+$binding load . <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
+$binding record . --batch:file <batch.json>
+$binding measure . <strategy> [--agent <name>] [--repeat <run id>]
+$binding check . [<strategy> | <run id> | <proposal date> | approvals/<date>.json] [--live | --brief]
+$binding check --schema [record|run|answers|pad|approval]
+$binding recommend . <YYYY-MM-DD> [--force]
 ```
+
+Pad: append one JSON object per line, with `ts` (ISO) and `type`, to
+`ledger/pad/scratch.jsonl` with own file tools; grep it to read.
 
 ## Invariants
 
 No agent, script, or cron changes these four.
 
-1. Book places no order and holds no broker credential. `bin/send`, stdlib
-   only, checks approval file, prints order table, records fills; no code
-   path reaches broker.
+1. No program in book or skill talks to broker; book holds no broker
+   credential.
 2. Held-out names stay hidden from agents. `measure` serves strategy code
    research names only. Held-out list lives outside book, at path in
    `book.json` `held_out`; agent never reads that file.
 3. Ledger is append-only. `record` is only writer; correction is new line
    with `supersedes`; bare `check` lists cut or non-JSON lines under
    `warnings`.
-4. Orders leave only by operator's hand, from approval file in
-   `approvals/` dated that UTC day; book records fills, never places them.
+4. Orders leave only by operator's hand at broker, from approval file in
+   `approvals/` dated that UTC day that `check` has passed; book records
+   fills, never places them.
 
 Agent never edits this section; `check` warns when it differs from
 template.
@@ -68,9 +77,10 @@ template.
 - `limits.json`; `preferences.json` except through `record`.
 - `approvals/`.
 - `strategies/*/status`.
-- `ledger/` except through `record`.
+- `ledger/` except through `record`; `ledger/pad/` is yours.
 
-Run `bin/send` only plain or with `--dry-run`; `--fills` is operator's.
+Run `record --approval` only with `--dry-run`; `--fills:file` records
+real fills: hand operator that command.
 
 ## Brief
 

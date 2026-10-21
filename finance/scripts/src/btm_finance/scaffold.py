@@ -1,5 +1,5 @@
-"""What `start` writes: the book's layout, templates, sender, and the
-held-out list outside the book."""
+"""What `start` writes: the book's layout, templates, and the held-out list
+outside the book."""
 
 from __future__ import annotations
 
@@ -36,7 +36,6 @@ from btm_finance.models import (
 from btm_finance.store import MARKER, held_out_path
 
 DIRECTORIES = (
-    "bin",
     "data/raw",
     "data/features",
     "ledger/pad",
@@ -44,7 +43,6 @@ DIRECTORIES = (
     "proposals",
     "approvals",
     "rejected",
-    "sent",
     "strategies/baseline",
     "features",
     "ext",
@@ -68,10 +66,10 @@ ROOT = str(Path(__file__).resolve().parents[1])
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 """
-SENTINEL = "RECORD: tuple[str, ...] = ()"
 UNONBOARDED = (
     "ask the operator the onboarding questions, write answers.json, run "
-    "onboard; then load data, measure baseline, import holdings with record"
+    "start with --answers:file; then load data, measure baseline, import "
+    "holdings with record"
 )
 HELD_OUT_SHARE = 4  # one name in four per sector, rounded half up
 
@@ -91,10 +89,11 @@ def template(name: str) -> str:
 
 
 def record_binding() -> tuple[str, ...]:
-    """The skill's own binding, through the member's realpath."""
+    """The skill's own binding, through the member's realpath, for the
+    commands `README.md` and `AGENTS.md` show."""
     scripts = Path(btm_finance.__file__).resolve().parents[2]
     if not (scripts / "pyproject.toml").is_file():
-        signal(f"no member manifest at {scripts}; edit RECORD in bin/send")
+        signal(f"no member manifest at {scripts}; fix the binding in AGENTS.md")
     return (
         "env",
         "-u",
@@ -107,13 +106,6 @@ def record_binding() -> tuple[str, ...]:
         str(scripts),
         "btm-finance",
     )
-
-
-def sender(binding: Sequence[str]) -> str:
-    text = template("send.py")
-    if text.count(SENTINEL) != 1:
-        raise CommandError("send template lost its RECORD line; reinstall the skill")
-    return text.replace(SENTINEL, f"RECORD: tuple[str, ...] = {tuple(binding)!r}")
 
 
 def universe_rows(raw: str) -> list[tuple[str, str]]:
@@ -260,9 +252,6 @@ def scaffold(
     write_new(root / "lib" / "__init__.py", "")
     write_new(root / "tests" / "conftest.py", BOOK_CONFTEST)
     write_new(root / INDEX, INDEX_TEXT)
-    send = root / "bin" / "send"
-    write_new(send, sender(record_binding()))
-    send.chmod(0o755)
     write_new(root / "preferences.json", json.dumps(preferences, indent=2) + "\n")
     write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
     meta = BookMeta(
@@ -291,7 +280,6 @@ def scaffold(
             "preferences.json",
             ".gitignore",
             MARKER,
-            "bin/send",
             INDEX,
             "lib/__init__.py",
             "tests/conftest.py",

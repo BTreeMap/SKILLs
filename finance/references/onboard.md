@@ -1,8 +1,8 @@
-# Onboard
+# Onboard through start
 
 Load only for book without `AGENTS.md`, or empty directory (Continue).
-Onboarding writes book-root instructions: `README.md` for humans,
-`AGENTS.md` for agents, `CLAUDE.md` pointing at `AGENTS.md`.
+`start --answers:file` writes book-root instructions: `README.md` for
+humans, `AGENTS.md` for agents, `CLAUDE.md` pointing at `AGENTS.md`.
 
 ## Questions
 
@@ -13,7 +13,7 @@ to.
 ```text
 1. Jurisdiction and base currency. [your locale]
 2. Broker and accounts: names, types (taxable, sheltered), which account
-   sleeves trade in, whether broker has an API. [no API: bin/send prints
+   sleeves trade in, whether broker has an API. [no API: check prints
    orders for hand entry]
 3. Capital: asset cap now, and expected in six months. [10000000]
 4. Risk in two numbers: largest one-year loss of book you accept
@@ -38,22 +38,22 @@ operator confirms.
 
 ## Answers file
 
-1. Write `answers.json` outside book in shape `schema` prints under
-   `answers`; omit every key operator left to default. `sources` records
-   which sources book uses and EDGAR contact string only; no key, token, or
+1. Write `answers.json` outside book in shape `check --schema answers`
+   prints; omit every key operator left to default. `sources` records which
+   sources book uses and EDGAR contact string only; no key, token, or
    password: unknown keys refuse.
 2. Empty directory: `$R start "$B" --answers:file answers.json` plus
    `--universe:file` when operator gave one. `start` fills `limits.json` and
    `preferences.json` from answers.
-3. Existing book: `$R onboard "$B" --answers:file answers.json`. It writes
+3. Existing book: `$R start "$B" --answers:file answers.json`. It writes
    three files only. Hand operator every `limits` entry (dotted path to
    value) to set in `limits.json`; never edit it. Read `preferences` batch
    to operator; on confirmation, `record` it.
 4. Run bare `check "$B"`; no `README.md`, `AGENTS.md`, or `CLAUDE.md`
    warning remains.
 
-`onboard` refuses when any of three files exists; `--force` rewrites all
-three, only on operator's word.
+On existing book, `start` refuses when any of three files exists; `--force`
+rewrites all three, only on operator's word.
 
 ## Editing the files
 
@@ -62,5 +62,5 @@ three, only on operator's word.
   it differs from template.
 - Keep `CLAUDE.md` relative symlink to `AGENTS.md`, or where symlinks fail,
   one line `Read AGENTS.md.`.
-- New answers later: rerun `onboard --force` with full `answers.json`;
-  hand-written prose in three files is lost.
+- New answers later: rerun `start --answers:file --force` with full
+  `answers.json`; hand-written prose in three files is lost.

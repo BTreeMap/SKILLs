@@ -14,7 +14,7 @@ compatibility: >-
   that every skill's scripts share, about 430 MB with this skill's numeric
   libraries.
 metadata:
-  argument-hint: "[start|onboard|schema|load|record|measure|check|recommend|write|read] <book path>"
+  argument-hint: "[start|load|record|measure|check|recommend] <book path>"
 ---
 
 # Finance
@@ -63,9 +63,9 @@ critique delegate (Research loop).
 
 No agent, script, or cron changes these four.
 
-1. Book places no order and holds no broker credential. Enforced: book's
-   `bin/send`, stdlib only, checks approval file, prints order table,
-   records fills; no code path reaches broker.
+1. No program in book or skill talks to broker; book holds no broker
+   credential. Enforced: no code path reaches broker; `check` prints orders,
+   operator keys them in.
 2. Held-out names stay hidden from agent. Enforced: `measure` serves
    strategy code only research names, through `Market`; held-out list lives
    outside book, at path `start` printed; agent never reads that file; paper
@@ -73,16 +73,17 @@ No agent, script, or cron changes these four.
 3. Ledger is append-only. Enforced: `record` is only writer; corrections are
    new lines with `supersedes`; bare `check` lists cut or non-JSON lines
    under `warnings`. Filesystem enforces nothing.
-4. Orders leave only by operator's hand, from approval file in `approvals/`
-   dated that UTC day; book records fills, never places them. Enforced:
-   `bin/send` refuses any other file, and any fill naming no order of it,
-   before any fill lands.
+4. Orders leave only by operator's hand at broker, from approval file in
+   `approvals/` dated that UTC day that `check` has passed; book records
+   fills, never places them. Enforced: `check` names every problem of
+   approval file; `record --approval` refuses whole table when any fill
+   names no order of it.
 
 Never edit by hand `limits.json`, `preferences.json`, `approvals/`,
-`strategies/*/status`, or anything under `ledger/`: operator owns first four
-(`preferences.json` changes only through `record`), `record` owns ledger.
-Run `bin/send` only plain (check, print) or with `--dry-run`; `--fills`
-records real fills: hand operator that command.
+`strategies/*/status`, or anything under `ledger/` but `pad/`: operator owns
+first four (`preferences.json` changes only through `record`), `record` owns
+ledger. Run `record --approval` only with `--dry-run`, after `check` passes;
+`--fills:file` records real fills: hand operator that command.
 
 ## Commands
 
@@ -92,32 +93,24 @@ Bind `R`, `U` (same environment, any program), `B` per shell:
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-finance"
 U="${R% btm-finance}"
 B="<book path>"
-$R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>] [--answers:file answers.json]
-$R onboard "$B" --answers:file answers.json [--force]
-$R schema
+$R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>] [--answers:file answers.json] [--force]
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
 $R measure "$B" <strategy> [--agent <name>] [--held-out] [--repeat <run id>]
-$R check "$B" [<strategy> | <run id> | <proposal date>] [--live | --brief]
+$R check "$B" [<strategy> | <run id> | <proposal date> | approvals/<date>.json] [--live | --brief | --schema [kind]]
 $R recommend "$B" <YYYY-MM-DD> [--force]
-$R write "$B" --entry:file <entry.json> [--prose] [--known]
-$R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 PYTHONPATH="$B" $U python "$B/tools/<verb>-<object>.py" [args]
 $U pytest "$B/tests"
 ```
 
 | Command | Takes after the book | Returns |
 | --- | --- | --- |
-| `start` | New path; `--cap` asset cap, default answers `capital.now`, else 10000000; `--universe:file` CSV with `symbol`, optional `sector`; `--held-out` list path outside book, default answers `held_out`, else under `XDG_STATE_HOME`; `--answers:file` onboarding answers: fill `limits.json` (`asset_cap`, `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`, `model_cutoff`) and `preferences.json`, write `README.md`, `AGENTS.md`, `CLAUDE.md` | Book id, held-out path and count, `onboarded`, `claude_md` (`symlink` or `file`); refuses path holding `limits.json`, held-out path inside book, answers key outside shape |
-| `onboard` | `--answers:file`; `--force` rewrites present files | Writes `README.md`, `AGENTS.md`, `CLAUDE.md` only; `limits`: dotted path to value for each answer differing from `limits.json`, operator's edit; `preferences`: `record` batch; exit 1 when any of three files exists without `--force` |
-| `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types, `answers` shape |
+| `start` | New path; `--cap` asset cap, default answers `capital.now`, else 10000000; `--universe:file` CSV with `symbol`, optional `sector`; `--held-out` list path outside book, default answers `held_out`, else under `XDG_STATE_HOME`; `--answers:file` onboarding answers: fill `limits.json` (`asset_cap`, `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`, `model_cutoff`) and `preferences.json`, write `README.md`, `AGENTS.md`, `CLAUDE.md`. Existing book: `--answers:file` alone, `--force` rewrites present files | Book id, held-out path and count, `onboarded`, `claude_md` (`symlink` or `file`); refuses path holding `limits.json` without answers, held-out path inside book, answers key outside shape. Existing book: writes three files only; `limits`: dotted path to value for each answer differing from `limits.json`, operator's edit; `preferences`: `record` batch; exit 1 when any of three files exists without `--force` |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
-| `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
+| `record` | One batch; or `--approval approvals/<date>.json` with `--fills:file <table>` (pasted fills: CSV `symbol,side,quantity,price,date`, optional `strategy`, or JSON list) or `--dry-run` (approval's paper orders at price), built into `fills` batch, same gate | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard with `walk_forward.post_cutoff` (net Sharpe of folds starting after `limits.model_cutoff`), `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines whose `supersedes` moves `falsifier_by` later) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `README.md` or `AGENTS.md` absent, `CLAUDE.md` neither symlink to `AGENTS.md` nor fallback line, `AGENTS.md` invariants section differing from template, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `regime`, `effective_streams`, `advisory` risk shares, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
+| `check` | Nothing, strategy, run id, proposal date, or approval file; `--live`; `--brief`, no target; `--schema [record\|run\|answers\|pad\|approval]`, book optional; `--today` tests only | `--schema`: that kind's shapes, all when bare. Approval file: `orders` with `account`, `problems` (date not today, proposal absent, order not in proposal, `adv_participation` over limit, strategy not `paper`, `probe`, `live`), `next`; exit 1 on any problem. Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines whose `supersedes` moves `falsifier_by` later) against `trials` and open hypotheses, open proposals with age and `approvals` naming each (`filled` once fills carry its stem), last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `README.md` or `AGENTS.md` absent, `CLAUDE.md` neither symlink to `AGENTS.md` nor fallback line, `AGENTS.md` invariants section differing from template, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `regime`, `effective_streams`, `advisory` risk shares, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
 | `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with per sleeve `weight`, `tier`, `edge_scale`, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`, `ruin` loss, `reasons` for null `ruin`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
-| `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
-| `read` | Filters | Matching pad entries |
 
 Output: one JSON document on stdout; `signal:` lines on stderr advisory.
 Exit 0 done, 1 fix input, 2 upstream failed. Content travels in slots:
@@ -152,7 +145,7 @@ all, resend. Arrays optional; order below is acceptance order:
 - `confidence` (0 to 1) rides on any hypothesis, critique, decision.
 - `regimes`: `record` checks `as_of`, `confidence`, `supersedes` (live
   regime id), `falsified` chain ids; other fields free JSON, suggested shape
-  in `schema` and `macro`.
+  in `check --schema record` and `macro`.
 - Register hypothesis before any strategy code for it exists. `mechanism`
   states ex-ante economic mechanism; omit it when none.
 - `falsifier_by` required: kill date. Past it, bare `check` lists hypothesis
@@ -186,10 +179,10 @@ all, resend. Arrays optional; order below is acceptance order:
 
 ### Pad
 
-Pad is free memory inside book (`ledger/pad/`), never gated. Write `hunch`,
-`objection`, `question` (only operator can answer), `friction`, `injection`
-there. `--known` keeps cross-book facts. `schema` prints full type list
-under `pad`.
+Pad is free memory, never gated: append one JSON object per line, with `ts`
+(ISO) and `type`, to `ledger/pad/scratch.jsonl` with own file tools; grep it
+to read. Types used here: `hunch`, `objection`, `question` (only operator
+can answer), `friction`, `injection`; `check --schema pad` lists all.
 
 ## Strategy
 
@@ -337,7 +330,7 @@ Delegate through `/summon`, one unit per delegate:
 | --- | --- | --- |
 | Unit | one registered hypothesis: write strategy, measure it | one run, every item of `critique` |
 | Record | hypothesis line; absolute paths of `families` and `scorecard`; book path, binding | run id; absolute path of `critique`; book path, read only |
-| Rules it can break | none of four invariants; writes only `strategies/<name>/` on its branch and own `ledger/runs/<agent>.jsonl` through `measure --agent`; never `record`, `recommend`, `bin/send` | none of four invariants; writes only its batch file; never reads author's session or pad |
+| Rules it can break | none of four invariants; writes only `strategies/<name>/` on its branch and own `ledger/runs/<agent>.jsonl` through `measure --agent`; never `record`, `recommend` | none of four invariants; writes only its batch file; never reads author's session or pad |
 | Output | run id, or one `friction` pad body saying why it stopped | one `critiques` batch file |
 | Cap | that family's remaining trials | one run |
 | Gate | `check "$B" <strategy>` | lead's `record`, then `check "$B" <strategy>` |
@@ -399,13 +392,12 @@ advisory, never a cut.
    each strategy whose standing reads `promotable` or `probe` but holds no
    sleeve here; with operator, record `decision` `action: forgo`, `subject`
    that strategy, reason.
-3. Hand operator `approval_template`, `approval_path`, exact commands:
-   `<book>/bin/send approvals/<date>.json --dry-run` for paper orders; for
-   probe and live ones `<book>/bin/send approvals/<date>.json` to check and
-   print orders, then, after operator places each order by hand at broker,
-   `<book>/bin/send approvals/<date>.json --fills <table>` with pasted
-   fills. Operator copies template, edits it, sets `date` and file name to
-   send day. Never write under `approvals/`.
+3. Hand operator `approval_template`, `approval_path`, and line: edit, then
+   `check "$B" approvals/<date>.json`, send at broker, paste fills to
+   `record "$B" --fills:file <table> --approval approvals/<date>.json`.
+   Operator copies template, edits it, sets `date` and file name to send
+   day. Never write under `approvals/`. Paper orders: once `check` passes,
+   run `record "$B" --approval approvals/<date>.json --dry-run`.
 4. When operator rejects proposal or overrides blocker, record `decision`
    with `subject` the proposal file stem, `action` `reject` or `override`,
    operator's reason verbatim.
@@ -439,14 +431,14 @@ never pain alone.
 | Nightly | cron | `load` per source |
 | Continuous; weekly | lead and delegates; cron or lead | Research loop; `check --live` |
 | Rebalance day after close | lead | `recommend`, then `check <date>` read to operator |
-| Send day, market hours | operator, in terminal and at broker | approval file, `bin/send` check, orders by hand, `bin/send --fills` |
+| Send day, market hours | operator, in terminal and at broker | approval file, `check` it, orders by hand, `record --fills:file` |
 | Monthly; quarterly | operator | promotion decisions, `measure --held-out`, `status` edits; cost refit, branch merges |
 
 ## Continue
 
 With no `$B`, first ask operator which directory is research monorepo,
 before any other step; treat answer as `$B`. Book there: continue. Empty:
-onboard it (below) through `start`. Neither: say what is there, ask again.
+make book through `start` (below). Neither: say what is there, ask again.
 
 At session start, or after context compaction, read `$B/AGENTS.md`, run bare
 `check "$B"`, then `check "$B" --brief`; read its `lines` to operator
@@ -458,7 +450,7 @@ first; route claim ledger cannot settle to `/fact-check` or state it open.
 
 ## Gotchas
 
-- `approval_template` holds proposal date in `date`; `bin/send` refuses any
+- `approval_template` holds proposal date in `date`; `check` fails any
   `date` but today (UTC). Operator sets `date` and file name to send day and
   keeps `proposal`: `check --live` finds slippage reference through it.
 - `measure --repeat` compares sha256 of `ast.dump` of `signal.py` and of
@@ -484,9 +476,9 @@ first; route claim ledger cannot settle to `/fact-check` or state it open.
 ## Completion checks
 
 - Every `record` exited 0, or its rejection was corrected and resent.
-- Nothing under `ledger/` written except through `record`, `measure`, or
-  `check --live`. Bare `check` shows no `warnings`; any warning or line
-  `record` refused was reported to operator, not repaired.
+- Nothing under `ledger/` but `pad/` written except through `record`,
+  `measure`, or `check --live`. Bare `check` shows no `warnings`; any
+  warning or line `record` refused was reported to operator, not repaired.
 - Every new hypothesis names family, capacity class, falsifier,
   `falsifier_by`, counterparty, and was recorded before its strategy code
   and its `measure`; ids quoted to operator copied from `new`.
@@ -505,4 +497,4 @@ first; route claim ledger cannot settle to `/fact-check` or state it open.
 - No file under `approvals/` and no operator-owned file was edited;
   `preferences.json` changed only through `record`.
 - `AGENTS.md` invariants section unchanged from template; operator got every
-  `limits` value `onboard` returned.
+  `limits` value `start` returned.

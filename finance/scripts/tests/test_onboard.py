@@ -1,6 +1,6 @@
-"""Onboarding: `start --answers` and `onboard` write `README.md`, `AGENTS.md`,
-`CLAUDE.md`; answers fill limits and preferences; bare `check` warns on each
-file absent or drifted."""
+"""Onboarding: `start --answers`, on a new book or an existing one, writes
+`README.md`, `AGENTS.md`, `CLAUDE.md`; answers fill limits and preferences;
+bare `check` warns on each file absent or drifted."""
 
 from __future__ import annotations
 
@@ -105,7 +105,7 @@ def test_start_without_answers_writes_none_of_the_three(tmp_path, run):
     assert code == 0
     assert receipt["onboarded"] is False
     assert "claude_md" not in receipt
-    assert "onboard" in receipt["next"]
+    assert "--answers:file" in receipt["next"]
     for name in onboarding.FILES:
         assert not (root / name).exists() and not (root / name).is_symlink()
     assert json.loads((root / "limits.json").read_text())["asset_cap"] == 10_000_000
@@ -161,7 +161,7 @@ def test_sleeve_account_must_name_an_account():
         )
 
 
-def test_onboard_writes_files_on_an_existing_book(tmp_path, run):
+def test_start_on_a_book_writes_files_on_an_existing_book(tmp_path, run):
     root = tmp_path / "book"
     started(run, root, None)
     limits_before = (root / "limits.json").read_bytes()
@@ -169,7 +169,7 @@ def test_onboard_writes_files_on_an_existing_book(tmp_path, run):
     ledger_before = (root / "ledger" / "hypotheses.jsonl").read_bytes()
     assert {w["file"] for w in problems(run, root)} == set(onboarding.FILES)
     code, receipt, err = run(
-        ["onboard", str(root), "--answers:stdin"], stdin=json.dumps(ANSWERS)
+        ["start", str(root), "--answers:stdin"], stdin=json.dumps(ANSWERS)
     )
     assert code == 0, err
     assert receipt["claude_md"] == "symlink"
@@ -200,24 +200,24 @@ def test_onboard_writes_files_on_an_existing_book(tmp_path, run):
     assert code == 0, err
 
 
-def test_onboard_returns_only_limits_that_differ(tmp_path, run):
+def test_start_on_a_book_returns_only_limits_that_differ(tmp_path, run):
     root = tmp_path / "book"
     started(run, root, None)
-    code, receipt, _ = run(["onboard", str(root), "--answers:stdin"], stdin="{}")
+    code, receipt, _ = run(["start", str(root), "--answers:stdin"], stdin="{}")
     assert code == 0
     assert receipt["limits"] == {}
 
 
-def test_onboard_refuses_existing_files_without_force(book, run):
+def test_start_on_a_book_refuses_existing_files_without_force(book, run):
     agents = (book / "AGENTS.md").read_bytes()
     code, _, err = run(
-        ["onboard", str(book), "--answers:stdin"], stdin=json.dumps(ANSWERS)
+        ["start", str(book), "--answers:stdin"], stdin=json.dumps(ANSWERS)
     )
     assert code == 1
     assert "--force" in err and "AGENTS.md" in err
     assert (book / "AGENTS.md").read_bytes() == agents
     code, _, err = run(
-        ["onboard", str(book), "--force", "--answers:stdin"],
+        ["start", str(book), "--force", "--answers:stdin"],
         stdin=json.dumps(ANSWERS),
     )
     assert code == 0, err
@@ -270,9 +270,24 @@ def test_each_warning_fires_and_clears(book, run):
     assert problems(run, book) == [{"file": "AGENTS.md", "problem": "absent"}]
 
 
+def test_start_on_a_book_without_answers_refuses_as_before(book, run):
+    code, _, err = run(["start", str(book)])
+    assert code == 1
+    assert "already holds limits.json" in err
+
+
+def test_start_on_a_book_refuses_new_book_flags(book, run):
+    code, _, err = run(
+        ["start", str(book), "--cap", "5", "--force", "--answers:stdin"], stdin="{}"
+    )
+    assert code == 1
+    assert "only --answers:file and --force" in err
+
+
 def test_schema_prints_answers_whose_shape_decodes(run):
-    code, document, _ = run(["schema"])
+    code, schema, _ = run(["check", "--schema", "answers"])
     assert code == 0
+    document = schema["answers"]
     assert document["answers"] == ANSWERS_SHAPE
     assert "keys live in the environment" in document["answers_rules"]
     Answers.model_validate(document["answers"])

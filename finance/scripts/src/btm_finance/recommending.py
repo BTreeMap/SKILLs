@@ -80,7 +80,7 @@ def account_of(status: Status | None) -> Account | None:
 
 
 class Order(Model):
-    """One order as `approvals/<date>.json` lists it and `bin/send` reads it;
+    """One order as `approvals/<date>.json` lists it and `check` reads it;
     `limit` null is market-on-open."""
 
     symbol: str

@@ -13,7 +13,6 @@ operator's private git repository; skill holds methods, book holds state.
   CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
   limits.json                 human: asset cap, bounds, thresholds, families
   preferences.json            human: focus sectors, exclusions, cadence
-  bin/send                    operator's checker: approval check, order table, fill recorder
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
@@ -23,8 +22,8 @@ operator's private git repository; skill holds methods, book holds state.
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
     runs.jsonl  runs/<agent>.jsonl  incidents.jsonl  regimes.jsonl
     scored.jsonl
-    pad/scratch.jsonl         kernel pad: free memory, not ledger
-  proposals/  approvals/  rejected/  sent/
+    pad/scratch.jsonl         agent's free memory, not ledger; agent appends and greps it
+  proposals/  approvals/  rejected/
   strategies/<name>/
     signal.py  config.json  README.md  status  strategy-local helpers
   lib/                        agent's shared modules; signal.py imports lib.<module>
@@ -127,8 +126,8 @@ line by `as_of`, later line winning tie; `stale` when `as_of` is more than
 date in proposal file.
 
 Fill from `holdings` has `holdings: true` and `price` equal to `cost_basis`,
-`null` when none given. Fill from `bin/send` has `approval`, the approval
-file's name.
+`null` when none given. Fill from `record --fills:file` or `--dry-run` has
+`approval`, approval file's stem.
 
 ## Incidents
 
@@ -152,11 +151,11 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | --- | --- | --- |
 | `limits.json`, `approvals/`, `strategies/*/status` | human | read |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
-| `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only; bare `check` warns on any other write it can see |
+| `ledger/` except `pad/` | `record`; run lines `measure`; incident lines `load`, `check --live` | append through `record` only; bare `check` warns on any other write it can see |
+| `ledger/pad/scratch.jsonl` | agent | append lines, grep; never gated |
 | `strategies/` except `status`, `lib/`, `tools/`, `research/`, `tests/` except `reference/`, `INDEX.md`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
-| `README.md`, `AGENTS.md`, `CLAUDE.md` | `start --answers:file`, `onboard` | edit operator-facing prose on branch; keep `AGENTS.md` `## Invariants` verbatim from template; keep `CLAUDE.md` link or fallback line |
+| `README.md`, `AGENTS.md`, `CLAUDE.md` | `start --answers:file` | edit operator-facing prose on branch; keep `AGENTS.md` `## Invariants` verbatim from template; keep `CLAUDE.md` link or fallback line |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
-| `bin/send` | operator | read; run plain or `--dry-run`; `--fills` is operator's |
 | held-out list, path in `book.json` `held_out` | `start` | never read |
 
 ## What start writes
@@ -168,25 +167,25 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    `INDEX.md` holding header and column line
    `path | purpose | last touched`, nothing else. Bare `check` warns when
    `INDEX.md` is absent.
-2. `bin/send` (mode 755) with `RECORD` bound to this skill's realpath.
-3. `preferences.json`, `limits.json` defaults, then `book.json` with
+2. `preferences.json`, `limits.json` defaults, then `book.json` with
    `held_out` path.
-4. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
+3. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
    inside book refused before any write. Per sector, first quarter of
    `--universe:file` names by symbol sort, half rounded up; deterministic,
    no randomness. Plain JSON, sector to symbols; receipt reports path and
    count only. Without universe, empty list and `signal:` saying so.
-5. With `--answers:file`: `limits.json` takes `asset_cap` (`--cap`, else
+4. With `--answers:file`: `limits.json` takes `asset_cap` (`--cap`, else
    `capital.now`), `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`,
    `model_cutoff`; `preferences.json` takes `focus_sectors`, `exclusions`,
    `cadence`; `README.md` and `AGENTS.md` render from skill templates,
    answers table dated `book.json` `created`; `CLAUDE.md` symlinks
    `AGENTS.md`, or holds `Read AGENTS.md.` where symlink fails. Receipt
    `onboarded` true, `claude_md` `symlink` or `file`. Without answers: none
-   of three files, `onboarded` false; `onboard` writes them later, answers
-   dated that day, and leaves `limits.json`, `preferences.json`, ledger
-   untouched. Bare `check` warns on each file absent or drifted.
-6. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
+   of three files, `onboarded` false; `start --answers:file` on existing
+   book writes them later, answers dated that day, and leaves `limits.json`,
+   `preferences.json`, ledger untouched. Bare `check` warns on each file
+   absent or drifted.
+5. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
    path is inside git work tree. Receipt `git`: `init`, `inside`, `failed`,
    or `absent` (no `git` on PATH, with `signal:` line).
 
@@ -272,16 +271,25 @@ quantities, sets `date` and file name to send day:
 {"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
 ```
 
-`bin/send` places no order. It checks, in order: file resolves under
-`approvals/`; `date` is today (UTC); `proposal` names file under
-`proposals/`; every order's `symbol`, `side`, `strategy` match order of that
-proposal, `adv_participation` at most `limits.max_adv_participation`,
-strategy `status` `live` or `probe`; with `--dry-run`, `paper` alone. Then
-it prints order table. Plain run stops there. `--dry-run` records fill per
-order at `price` with `dry_run: true`, moves nothing. Operator places each
-order by hand at broker, pastes fills into table, runs `--fills <table>`:
-CSV with header `symbol,side,quantity,price,date` (optional `strategy`
+No program places an order. `check <book> approvals/<date>.json` (path
+absolute or book-relative, resolving under `approvals/`) checks: `date` is
+today (UTC); `proposal` names file under `proposals/`; every order's
+`symbol`, `side`, `strategy` match order of that proposal;
+`adv_participation` at most `limits.max_adv_participation`; strategy
+`status` `paper`, `probe`, or `live`. Returns `orders` (each with `account`
+its strategy trades), `problems` (empty when valid), `next`; exit 1 on any
+problem.
+
+Paper orders: `record <book> --approval approvals/<date>.json --dry-run`
+records fill per order at `price` with `dry_run: true`; refuses file failing
+`check` or holding `probe` or `live` order. Probe and live orders: operator
+places each by hand at broker, pastes fills into table, runs
+`record <book> --fills:file <table> --approval approvals/<date>.json`. Table
+is CSV with header `symbol,side,quantity,price,date` (optional `strategy`
 column), or JSON list of objects with same keys. Each fill must name order's
-`symbol` and `side` (`strategy` too when two sleeves share both), positive
-`quantity` and `price`, `date` not after today; any miss refuses table
-whole. Fills go through `record` with `approval` set; file moves to `sent/`.
+`symbol` and `side` (`strategy` too when two sleeves share both), on
+non-`paper` strategy, positive `quantity` and `price`, `date` not after
+today; fills land `dry_run: false`. Either way `record` builds `fills` batch
+with `approval` set to file stem and sends it through gate: any miss refuses
+whole table. No file moves; bare `check` lists each approval naming open
+proposal, `filled` once fills carry its stem.

@@ -12,14 +12,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
 
-from btm_corekit import CommandError, SessionStore, parse_model, state_root
+from btm_corekit import CommandError, parse_model, state_root
 from btm_finance.ledger import Kind, lines_of, undecodable
 from btm_finance.models import BookMeta, Limits, Preferences, Status
 
 SKILL = "finance"
 MARKER = "book.json"
 HINT = "run start <book path> first"
-PAD_DIR = Path("ledger", "pad")
+PAD_DIR = Path("ledger", "pad")  # agent-written JSONL; no program writes it
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,18 +65,6 @@ def load_limits(book: Book) -> Limits:
 def load_preferences(book: Book) -> Preferences:
     path = book.root / "preferences.json"
     return parse_model(Preferences, read_json(path), str(path))
-
-
-@dataclass(frozen=True, slots=True)
-class PadStore(SessionStore):
-    """The kernel pad, kept inside the book under `ledger/pad/`; `--known`
-    stays the skill's cross-session pad."""
-
-    def directory(self, ref: str) -> Path:
-        return open_book(ref).root / PAD_DIR
-
-
-PAD = PadStore(SKILL, marker=MARKER, hint=HINT)
 
 
 def held_out_path(book_id: str) -> Path:

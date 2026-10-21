@@ -32,7 +32,9 @@ def answers_of(raw: str) -> Answers:
     except ValueError as err:
         raise CommandError(f"make the answers valid JSON: {err}") from err
     if not isinstance(data, dict):
-        raise CommandError("the answers are one JSON object; run schema for shape")
+        raise CommandError(
+            "the answers are one JSON object; check --schema answers prints it"
+        )
     return parse_model(Answers, data, "the answers")
 
 
@@ -85,7 +87,7 @@ def answer_rows(answers: Answers, setting: Setting) -> list[tuple[str, str]]:
     horizon, universe, sources = answers.horizon, answers.universe, answers.sources
     out = universe.exclusions
     accounts = ", ".join(f"{a.name} ({a.kind.value})" for a in broker.accounts)
-    api = "API" if broker.api else "no API: bin/send prints orders for hand entry"
+    api = "API" if broker.api else "no API: check prints orders for hand entry"
     people = "; ".join(
         f"{c.name} ({c.kind.value}, {'may' if c.may_propose else 'may not'} propose)"
         for c in answers.collaborators
@@ -181,7 +183,10 @@ def sending(answers: Answers) -> str:
             f"{broker} has API; book never calls it and holds no credential "
             "for it. Every order goes in by hand."
         )
-    return f"{broker} has no API in use: `bin/send` prints orders for hand entry."
+    return (
+        f"{broker} has no API in use: `check` on approval file prints orders "
+        "for hand entry."
+    )
 
 
 def collaborators(answers: Answers) -> str:
@@ -335,7 +340,7 @@ def warnings(root: Path, template: str) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     for name in (README, AGENTS):
         if not (root / name).is_file():
-            signal(f"no {name} in the book; onboard it (load onboard)")
+            signal(f"no {name} in the book; run start --answers:file (load onboard)")
             found.append({"file": name, "problem": "absent"})
     if not claude_ok(root):
         signal(f"{CLAUDE} is neither a symlink to {AGENTS} nor {FALLBACK.strip()!r}")
