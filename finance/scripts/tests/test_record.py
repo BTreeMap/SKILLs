@@ -116,7 +116,8 @@ def test_preferences_rewrite_the_file_whole_and_keep_extras(book, run):
     code, receipt, _ = batch(run, book, {"preferences": [prefs]})
     assert code == 0
     assert receipt["preferences"] == "rewritten"
-    assert json.loads((book / "preferences.json").read_text()) == prefs
+    held = json.loads((book / "preferences.json").read_text())
+    assert held == prefs | {"heartbeat_minutes": 45}
 
 
 def test_a_decision_supersedes_only_an_existing_id(book, run, make_hypothesis):

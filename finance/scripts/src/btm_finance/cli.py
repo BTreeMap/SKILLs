@@ -45,7 +45,7 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
-from btm_finance import approvals, governed, onboarding
+from btm_finance import approvals, governed, heartbeat, onboarding
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import WEEK, Bet, Open, Owed, brief, justifying
@@ -722,6 +722,18 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
     every_decision = [row for _, row in kind_rows(book, Kind.DECISION)]
     present = governed_files(book.root)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
+    preferences = load_preferences(book)
+    pad = [row for _, row in rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))]
+    pulse = heartbeat.pulse(
+        pad, preferences, datetime.now(UTC), datetime.now().astimezone().time()
+    )
+    stale_pulse = heartbeat.stale_warning(pulse, preferences.heartbeat_minutes)
+    if stale_pulse:
+        signal(
+            f"newest heartbeat is {pulse['minutes_since']} minutes old; "
+            "run the queue and schedule the next wake"
+        )
+    used_today = heartbeat.trials_today(runs, today)
     records = regime_rows(book)
     regime = regime_record(records, today, limits.regime_stale_days)
     if regime is not None and regime.stale:
@@ -759,16 +771,26 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
         "approvals": approval_rows(book, present, every_decision, live(Kind.FILL)),
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
+        "heartbeat": pulse,
+        "trials_today": {"used": used_today, "cap": limits.trials_per_day},
         "warnings": [
             *warnings,
+            *stale_pulse,
             *fired,
             *late,
             *unwitnessed,
             *index_warning(book),
             *onboarding.warnings(book.root, template("AGENTS.tmpl")),
         ],
-        "next": next_step(hypotheses, pending, proposals, late, budgets),
+        "next": started(
+            pulse, next_step(hypotheses, pending, proposals, late, budgets)
+        ),
     }
+
+
+def started(pulse: Mapping[str, Any], step: str) -> str:
+    """`next` prefixed with starting the heartbeat while no line exists."""
+    return step if pulse["last"] is not None else f"{heartbeat.START}; then {step}"
 
 
 def approval_rows(
@@ -1006,7 +1028,9 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         "it with its own file tools; never gated, never read by record",
         "line": '{"ts": "<ISO 8601>", "type": "<type>", ...any fields}',
         "types": {
-            name: meaning for name, meaning in PAD_TYPES.items() if name != "known"
+            **{name: meaning for name, meaning in PAD_TYPES.items() if name != "known"},
+            heartbeat.HEARTBEAT: "one wake of the always-on loop: item (tier "
+            "and unit in words), outcome (one line), next_wake (ISO)",
         },
     },
     "approval": {
@@ -1176,6 +1200,13 @@ def cmd_measure(args: argparse.Namespace) -> int:
         raise CommandError(
             f"config family_id {config.family_id} differs from hypothesis "
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
+        )
+    spent = heartbeat.trials_today(all_runs(book), utc_today())
+    if not args.held_out and spent >= limits.trials_per_day:
+        raise CommandError(
+            f"refused before running: {spent} run line(s) dated today reach "
+            f"limits.trials_per_day {limits.trials_per_day}; sharpen the "
+            "backlog and measure tomorrow"
         )
     code = code_of(book, name)
     loaded = load_strategy(book.root, name)

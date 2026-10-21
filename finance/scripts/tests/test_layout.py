@@ -18,9 +18,21 @@ def test_start_lays_out_lib_tools_research_tests_and_index(book):
     for folder in ("lib", "tools", "research", "tests"):
         assert (book / folder).is_dir(), folder
     assert (book / "lib" / "__init__.py").read_text() == ""
-    assert (
-        book / "INDEX.md"
-    ).read_text() == "# Index\n\npath | purpose | last touched\n"
+    index = (book / "INDEX.md").read_text().splitlines()
+    assert index[:3] == ["# Index", "", "path | purpose | last touched"]
+    queue = ("backlog", "calendar", "weekly")
+    assert [row.split(" | ")[0] for row in index[3:]] == [
+        f"research/{name}/" for name in queue
+    ]
+    for name in queue:
+        [status] = [
+            line
+            for line in (book / "research" / name / "README.md")
+            .read_text()
+            .splitlines()
+            if line.startswith("Status:")
+        ]
+        assert status
 
 
 def test_a_missing_index_is_a_warning(book, run):

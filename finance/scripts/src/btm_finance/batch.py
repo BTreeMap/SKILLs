@@ -87,7 +87,10 @@ SCHEMA: dict[str, str] = {
     "holdings": '{"date": "YYYY-MM-DD", "positions": [{"symbol": "...", '
     '"quantity": 10, "cost_basis": 12.5 (optional, per share)}]}',
     "preferences": '{"focus_sectors": ["..."], "exclusions": {"symbols": [], '
-    f'"sectors": [], "countries": []}}, "cadence": "{_choices(Cadence)}"}}',
+    f'"sectors": [], "countries": []}}, "cadence": "{_choices(Cadence)}", '
+    '"schedule": {"hour": 7, "days": "daily|weekdays"}, "heartbeat_minutes": 45, '
+    '"quiet_hours": {"start": "HH:MM", "end": "HH:MM"} (optional, local, may '
+    "wrap midnight)}",
 }
 
 

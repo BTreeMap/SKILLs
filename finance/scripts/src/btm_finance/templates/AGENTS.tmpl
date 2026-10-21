@@ -60,6 +60,56 @@ waits for reply; never act on it by default; research continues meanwhile.
 7. Commit branch. Post `check --brief` `lines` verbatim, at most 12, adding
    nothing between them.
 
+## Heartbeat
+
+Lead never idles. Every turn ends by scheduling next wake with harness's
+wake-up or scheduled-task tool (Claude Code: `/loop` or scheduled task;
+elsewhere `cron`), at most `heartbeat_minutes` (`preferences.json`) ahead,
+then stops. Each wake:
+
+1. Bare `check`; read `heartbeat`, `trials_today`, `next`.
+2. Pick lowest tier below with work; run one item inside time box.
+3. Append `heartbeat` pad line: `ts`, `item` (tier and unit in words),
+   `outcome` (one line), `next_wake` (ISO).
+4. Schedule next wake; stop.
+
+Nothing due: still run `check` and one tier 0 monitor. Operator message
+preempts every tier.
+
+## Work queue
+
+Measuring is scarce; reading, building, checking are free. Rank by
+information per trial spent, monitoring first. Run lower tiers before
+higher on every wake. Tier 3 runs at most `limits.trials_per_day` times a
+UTC day; `measure` refuses past it. Quiet hours (`quiet` true): tiers 0 and
+1 only.
+
+- Tier 0, every wake: act on `next` (kill dates, unscored bets, stale data,
+  open proposals). Monitor held names: filings, halts, corporate actions,
+  moves past run's modelled daily range; log move, never act on it;
+  thesis-relevant filing opens tier 2 drift check. Build next brief
+  incrementally.
+- Tier 1, as sources publish: `load` each source; reconcile prices across
+  two sources; log gaps and splits. Keep universe point in time: delistings,
+  listings, index changes with announcement and effective dates. Keep event
+  calendars in `research/calendar/`: earnings, rebalances, spin-off record
+  dates, lock-ups, shelf filings, insider windows.
+- Tier 2, spends no trial: read filings (10-K, 10-Q, 8-K, Form 10, 13D,
+  Form 4, SEDI, SEDAR+ MD&A), held names first; note one change per filing
+  in `research/<ticker>/`. Write backlog entries in `research/backlog/`,
+  rank weekly; only top gets registered. Build `lib/` features with as-of
+  tests. Map literature to families; replicate as research, never as runs.
+  Analyse stored runs from `data/returns/`. Score calibration (Brier, log)
+  by family. Second critique of newest promotable run; hindsight audit.
+  Update regime observables. Pre-mortem one open position per wake.
+  Book hygiene: `INDEX.md`, tests, dead code, status lines.
+- Tier 3, spends trials: register top backlog hypothesis, author,
+  `measure`, critique, `check`. One unit at a time; never measure same idea
+  again to shop for number.
+- Tier 4, weekly and at gates: `check --live`, scoring, `measure --held-out`
+  at promotion gate, `recommend` on rebalance day, weekly note in
+  `research/weekly/`.
+
 ## Replies
 
 - Approve: write `approvals/<send day>.json` from `check <date>`

@@ -51,8 +51,29 @@ DIRECTORIES = (
     "tools",
     "research",
 )
+RESEARCH = {
+    "backlog": "candidate hypotheses, one <id>.md each, ranked weekly",
+    "calendar": "event calendars and trigger lists, one file per event family",
+    "weekly": "weekly research note, one <YYYY-Www>.md each",
+}
+"""Queue folders under `research/`: name to purpose, one `INDEX.md` row
+each."""
 INDEX = "INDEX.md"
-INDEX_TEXT = "# Index\n\npath | purpose | last touched\n"
+INDEX_HEAD = "# Index\n\npath | purpose | last touched\n"
+
+
+def index_text(day: str) -> str:
+    """Header, column line, one row per queue folder touched `day`."""
+    rows = "".join(
+        f"research/{name}/ | {purpose} | {day}\n" for name, purpose in RESEARCH.items()
+    )
+    return INDEX_HEAD + rows
+
+
+def research_readme(name: str, purpose: str) -> str:
+    return f"# {name}\n\nStatus: empty; {purpose}.\n"
+
+
 BOOK_CONFTEST = """\"\"\"Book tests: book root first on sys.path, so
 `import lib.<module>` resolves.
 
@@ -227,7 +248,7 @@ def scaffold(
     preferences = (
         PREFERENCES_TEMPLATE
         if answers is None
-        else onboarding.preference_values(answers)
+        else {**PREFERENCES_TEMPLATE, **onboarding.preference_values(answers)}
     )
     limits = (
         limits_template(cap)
@@ -252,7 +273,11 @@ def scaffold(
         write_new(root / "universe.csv", universe)
     write_new(root / "lib" / "__init__.py", "")
     write_new(root / "tests" / "conftest.py", BOOK_CONFTEST)
-    write_new(root / INDEX, INDEX_TEXT)
+    for name, purpose in RESEARCH.items():
+        write_new(
+            root / "research" / name / "README.md", research_readme(name, purpose)
+        )
+    write_new(root / INDEX, index_text(now_iso()[:10]))
     write_new(root / "preferences.json", json.dumps(preferences, indent=2) + "\n")
     write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
     meta = BookMeta(
@@ -284,6 +309,7 @@ def scaffold(
             INDEX,
             "lib/__init__.py",
             "tests/conftest.py",
+            *(f"research/{name}/README.md" for name in RESEARCH),
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
             *(onboarding.FILES if claude is not None else ()),

@@ -45,6 +45,10 @@ def record(run, book, payload):
 def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, families):
     book = synthetic(seed=21, names=60, days=1200, structure=False)
     families(book, noise={"trials": FAMILY})
+    path = book / "limits.json"  # a hundred trials in one day: lift the cap
+    path.write_text(
+        json.dumps(json.loads(path.read_text()) | {"trials_per_day": FAMILY})
+    )
     hypotheses = []
     for seed in range(FAMILY):
         name = f"noise-{seed}"

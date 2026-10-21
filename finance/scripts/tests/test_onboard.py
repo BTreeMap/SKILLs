@@ -67,6 +67,7 @@ def test_start_with_answers_writes_the_three_files_and_fills_limits(tmp_path, ru
         "exclusions": {"symbols": [], "sectors": ["Tobacco"], "countries": []},
         "cadence": "quarterly",
         "schedule": {"hour": 7, "days": "weekdays"},
+        "heartbeat_minutes": 45,
     }
     readme = (root / "README.md").read_text()
     assert "Northbank" in readme and "account tfsa" in readme
@@ -192,6 +193,7 @@ def test_start_on_a_book_writes_files_and_limits_on_an_existing_book(tmp_path, r
                 "exclusions": {"symbols": [], "sectors": ["Tobacco"], "countries": []},
                 "cadence": "quarterly",
                 "schedule": {"hour": 7, "days": "weekdays"},
+                "heartbeat_minutes": 45,
             }
         ]
     }

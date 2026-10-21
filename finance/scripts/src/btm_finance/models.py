@@ -256,6 +256,21 @@ class Schedule(Model):
     days: RunDays = RunDays.WEEKDAYS
 
 
+Clock = Annotated[str, StringConstraints(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")]
+"""Local wall-clock time, `HH:MM`, 24-hour."""
+
+
+class QuietHours(Model):
+    """Local window when the heartbeat runs tiers 0 and 1 only; `start` after
+    `end` wraps midnight, `start` equal to `end` is empty."""
+
+    start: Clock
+    end: Clock
+
+
+HEARTBEAT_MINUTES = 45
+
+
 class Preferences(Model):
     """`preferences.json`, rewritten whole by `record`; extras survive."""
 
@@ -266,6 +281,9 @@ class Preferences(Model):
     cadence: Cadence
     schedule: Schedule | None = None
     """Absent in a book made before the daily loop."""
+    heartbeat_minutes: Annotated[int, Field(ge=1)] = HEARTBEAT_MINUTES
+    """Longest wait between wake-ups; `check` warns past twice it."""
+    quiet_hours: QuietHours | None = None
 
 
 class Family(Model):
@@ -352,6 +370,9 @@ class Limits(Model):
     model_cutoff: date | None = None
     """Training cutoff of the agent's model: folds whose test window starts
     after it are hindsight-free (`walk_forward.post_cutoff`)."""
+    trials_per_day: Annotated[int, Field(ge=0)] = 3
+    """Run lines per UTC day `measure` writes before refusing; `--held-out`
+    and `--repeat` pass."""
 
 
 class StrategyConfig(Model):
@@ -453,6 +474,7 @@ def limits_template(cap: int) -> dict[str, object]:
         "max_strategy_risk_share": 0.5,
         "min_effective_streams": 2,
         "model_cutoff": None,
+        "trials_per_day": 3,
     }
 
 
@@ -461,6 +483,7 @@ PREFERENCES_TEMPLATE: dict[str, object] = {
     "exclusions": {"symbols": [], "sectors": [], "countries": []},
     "cadence": "monthly",
     "schedule": {"hour": 7, "days": "weekdays"},
+    "heartbeat_minutes": HEARTBEAT_MINUTES,
 }
 
 

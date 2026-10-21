@@ -329,7 +329,12 @@ def preference_batch(answers: Answers, held: Preferences) -> dict[str, Any]:
     """A `record` batch rewriting `preferences.json`; fields outside the
     answers survive."""
     return {
-        "preferences": [{**held.model_dump(mode="json"), **preference_values(answers)}]
+        "preferences": [
+            {
+                **held.model_dump(mode="json", exclude_none=True),
+                **preference_values(answers),
+            }
+        ]
     }
 
 
