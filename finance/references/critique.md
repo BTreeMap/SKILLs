@@ -3,13 +3,14 @@
 Loaded only by critique delegate, never by run's author. Critic works
 through twelve items below on one run, plus `event-fields` and five `macro`
 items (`chain`, `regime-band`, `next-phase`, `third-order`, `discounted`)
-when hypothesis family carries `event: true` in `limits.families`, and
-returns one `critiques` batch entry.
+when hypothesis family carries `event: true` in `limits.families`, writes
+one `critiques` batch entry to `research/critiques/<run id>.json`, and
+returns receipt naming it.
 
 ## Inputs and limits
 
 * Critic receives run id, this file, and read access to book. Critic never
-  sees author's session, chat, or pad.
+  sees author's session, chat, pad, or receipt.
 * Read run line (`ledger/runs.jsonl` or `ledger/runs/<agent>.jsonl`),
   hypothesis line it names (`ledger/hypotheses.jsonl`), `strategies/<name>/`
   (`signal.py`, `config.json`, `README.md`), `research/backlog/`, and
@@ -175,7 +176,8 @@ Event family, eighteen items, with optional `confidence`:
 {"critiques": [{"kw": ["filing", "critique"], "run_id": "<full run id>", "blockers": [], "concerns": ["regime-band: run line regime_days puts 0.9 of evidence in one regime id"], "by": "<delegate name>", "confidence": 0.5, "verdicts": {"rationale": "clear", "look-ahead": "clear", "survivorship": "clear", "restatement": "clear", "universe": "clear", "regime": "clear", "crowding": "clear", "factor": "clear", "access-wall": "clear", "hindsight": "clear", "drift": "clear", "multiplicity": "clear", "event-fields": "clear", "chain": "clear", "regime-band": "concern", "next-phase": "clear", "third-order": "clear", "discounted": "clear"}}]}
 ```
 
-Hand batch file to lead; lead runs `record` and copies critique id from
+Final message is receipt (`unit` `critique`, `wrote` naming batch file,
+`ids.run_id`), nothing else; lead runs `record` and copies critique id from
 `new`.
 
 ## Completion checks

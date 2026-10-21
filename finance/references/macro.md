@@ -1,8 +1,9 @@
 # Macro
 
-Load when lead drafts regime record, when delegate registers hypothesis in
-family flagged `event: true` in `limits.families`, and in critique delegate
-beside `critique`. Three rules keep macro out of signals:
+Load when regime delegate drafts regime record, when lead puts draft to
+operator, when lead registers hypothesis in family flagged `event: true` in
+`limits.families`, and in critique delegate beside `critique`. Three rules
+keep macro out of signals:
 
 * No strategy conditions on macro variable unless its hypothesis registers
   that variable as mechanism and scorecard regime split tests it.
@@ -115,9 +116,11 @@ Cite chain by id. Mark "inference, test before relying on it" is unverified.
 
 ## Regime record
 
-Lead drafts from observables and chains; human confirms, edits, or rejects,
-states `confidence` (0 to 1, never set by agent). Draft at most quarterly
-and when falsifier fires; correct by new line with `supersedes`.
+Regime delegate drafts from observables and chains, writing
+`research/regime/<quarter>.md` and draft batch beside it; lead puts draft to
+human, who confirms, edits, or rejects, states `confidence` (0 to 1, never
+set by agent). Draft at most quarterly and when falsifier fires; correct by
+new line with `supersedes`.
 
 ```json
 {
@@ -144,7 +147,8 @@ and when falsifier fires; correct by new line with `supersedes`.
 | Human | Confirms, edits, rejects draft; states confidence | Nothing |
 
 * If newest regime record is older than `limits.regime_stale_days`, `check`
-  shows it stale on every proposal; tell operator, draft renewal.
+  shows it stale on every proposal; tell operator, dispatch regime delegate
+  for renewal.
 
 ## Registering event-family hypothesis
 

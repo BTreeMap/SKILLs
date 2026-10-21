@@ -71,6 +71,11 @@ that list.
   hypothesis registered `in_band` showing it needs `override` with reason.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
+* Miner split: `api.research(book).folds("train")` serves first
+  `thresholds.folds - 1` of `thresholds.folds` equal contiguous blocks of
+  book's bar dates; last block is reserved test block, closed to miner
+  (`folds("test")` and `.at` past training dates refuse). Feature chosen on
+  training blocks meets last block first inside `measure`.
 * Post-cutoff: `limits.model_cutoff` is training cutoff of agent's model
   (date or null). Fold whose first test date is strictly after it was
   unknown to model, so free of hindsight. `post_cutoff` is net Sharpe of

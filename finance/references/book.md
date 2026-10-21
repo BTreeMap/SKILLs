@@ -32,6 +32,8 @@ operator's private git repository; skill holds methods, book holds state.
   research/backlog/<id>.md    candidate hypothesis, ranked weekly; shape below
   research/calendar/          event calendars and trigger lists per event family
   research/weekly/            weekly research note, <YYYY-Www>.md
+  research/critiques/  research/scored/  research/regime/  research/runs/  research/literature/  research/universe/
+                              delegate outputs per kind; see delegates
   tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
   tests/reference/            this book's pinned scorecard
   INDEX.md                    one line per lib module, tool, research topic
@@ -73,7 +75,11 @@ Run book tests with `pytest <book>/tests` through skill's `uv run` binding.
 parquet files: `open_book(path)`; `ledger(book, kind)` for newest-wins rows
 of one kind, superseded lines dropped (`run` joins every runs file, oldest
 first); `research(book).at(day)` for `Market` on last bar on or before `day`
-over research names, `.dates` for bar dates. None serves held-out names.
+over research names, `.dates` for bar dates; `research(book).folds("train")`
+for same over training blocks only (first `thresholds.folds - 1` of
+`thresholds.folds` equal contiguous blocks of bar dates; `scorecard`), miner
+delegate's only price reader; `receipt(text)` checks delegate's final
+message. None serves held-out names.
 
 `data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
 `data/returns/` files stay in manifest for integrity checks but never move
