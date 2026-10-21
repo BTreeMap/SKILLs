@@ -10,7 +10,7 @@ operator's private git repository; skill holds methods, book holds state.
   book.json                   marker: book id, created, engine version, held-out path
   limits.json                 human: asset cap, bounds, thresholds, families
   preferences.json            human: focus sectors, exclusions, cadence
-  bin/send                    operator-only sender; adapter stub inside
+  bin/send                    operator's checker: approval check, order table, fill recorder
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
@@ -114,7 +114,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only; bare `check` warns on any other write it can see |
 | `strategies/` except `status`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
-| `bin/send` | operator | read; run only `--dry-run`, by operator's hand |
+| `bin/send` | operator | read; run plain or `--dry-run`; `--fills` is operator's |
 | held-out list, path in `book.json` `held_out` | `start` | never read |
 
 ## What start writes
@@ -199,9 +199,16 @@ quantities, sets `date` and file name to send day:
 {"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
 ```
 
-`bin/send` checks, in order: file resolves under `approvals/`; `date` is
-today (UTC); every order's `adv_participation` at most
-`limits.max_adv_participation` and strategy `status` `live` (`paper` too in
-dry run); then prints order table, asks typed `yes` on terminal, calls
-`submit`, records fills, moves file to `sent/`. `--dry-run` skips prompt,
-fills at `price` with `dry_run: true`, moves nothing.
+`bin/send` places no order. It checks, in order: file resolves under
+`approvals/`; `date` is today (UTC); `proposal` names file under
+`proposals/`; every order's `symbol`, `side`, `strategy` match order of that
+proposal, `adv_participation` at most `limits.max_adv_participation`,
+strategy `status` `live` (`paper` too with `--dry-run`). Then it prints
+order table. Plain run stops there. `--dry-run` records fill per order at
+`price` with `dry_run: true`, moves nothing. Operator places each order by
+hand at broker, pastes fills into table, runs `--fills <table>`: CSV with
+header `symbol,side,quantity,price,date` (optional `strategy` column), or
+JSON list of objects with same keys. Each fill must name order's `symbol`
+and `side` (`strategy` too when two sleeves share both), positive `quantity`
+and `price`, `date` not after today; any miss refuses table whole. Fills go
+through `record` with `approval` set; file moves to `sent/`.

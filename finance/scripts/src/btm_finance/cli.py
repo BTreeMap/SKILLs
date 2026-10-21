@@ -588,7 +588,11 @@ def cmd_schema(args: argparse.Namespace) -> int:
             '"orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, '
             '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
             '"limit": null}]} (check <date> prints it as approval_template; '
-            "the operator writes it; bin/send reads it)",
+            "the operator writes it; bin/send checks it, prints the orders, "
+            "records fills)",
+            "fill_table": "CSV with header symbol,side,quantity,price,date "
+            "(optional strategy), or a JSON list of objects with those keys; "
+            "the operator pastes broker fills there for bin/send --fills",
             "refs": REFS_SCHEMA + "; receipts echo every new id under new",
             "pad": PAD_SCHEMA,
         }
@@ -1112,7 +1116,8 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         "next": "read blockers to the operator first, baseline beside each "
         "sleeve; the operator alone copies approval_template to approval_path, "
         "edits it, sets date and file name to the send day, runs bin/send on "
-        f"it; record a reject or override of {path.stem} as a decision with "
+        "it, places each order by hand, then records fills with bin/send "
+        f"--fills; record a reject or override of {path.stem} as a decision with "
         "the operator's reason",
     }
 

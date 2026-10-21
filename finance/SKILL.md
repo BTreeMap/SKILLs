@@ -58,9 +58,9 @@ path to critique delegate (Research loop).
 
 No agent, script, or cron changes these four.
 
-1. Agent process never holds broker adapter or credential. Enforced: sender
-   is book's `bin/send`, stdlib only, adapter a stub operator replaces;
-   broker key stays in OS keychain.
+1. Book places no order and holds no broker credential. Enforced: book's
+   `bin/send`, stdlib only, checks approval file, prints order table,
+   records fills; no code path reaches broker.
 2. Held-out names stay hidden from agent. Enforced: `measure` serves
    strategy code only research names, through `Market`; held-out list lives
    outside book, at path `start` printed; agent never reads that file; paper
@@ -68,14 +68,16 @@ No agent, script, or cron changes these four.
 3. Ledger is append-only. Enforced: `record` is only writer; corrections are
    new lines with `supersedes`; bare `check` lists cut or non-JSON lines
    under `warnings`. Filesystem enforces nothing.
-4. Orders leave only through `bin/send`, run by operator in terminal,
-   against file in `approvals/` dated that UTC day, after typed `yes`.
-   Enforced: sender refuses any other file before any fill.
+4. Orders leave only by operator's hand, from approval file in `approvals/`
+   dated that UTC day; book records fills, never places them. Enforced:
+   `bin/send` refuses any other file, and any fill naming no order of it,
+   before any fill lands.
 
 Never edit by hand `limits.json`, `preferences.json`, `approvals/`,
 `strategies/*/status`, or anything under `ledger/`: operator owns first four
 (`preferences.json` changes only through `record`), `record` owns ledger.
-Never run `bin/send` without `--dry-run`; hand operator the command.
+Run `bin/send` only plain (check, print) or with `--dry-run`; `--fills`
+records real fills: hand operator that command.
 
 ## Commands
 
@@ -309,10 +311,13 @@ before explaining sizing, cuts, carried orders, or proposal fields.
    `blockers` entry verbatim, `baseline` row beside every other sleeve,
    `stale` flags, `regime` (say when stale) and `effective_streams`, then
    `diff`, `cuts`, `unmanaged`, `summary`. Never argue for proposal.
-3. Hand operator `approval_template`, `approval_path`, exact command:
-   `<book>/bin/send approvals/<date>.json --dry-run` for paper orders,
-   without `--dry-run` for live ones. Operator copies template, edits it,
-   sets `date` and file name to send day. Never write under `approvals/`.
+3. Hand operator `approval_template`, `approval_path`, exact commands:
+   `<book>/bin/send approvals/<date>.json --dry-run` for paper orders; for
+   live ones `<book>/bin/send approvals/<date>.json` to check and print
+   orders, then, after operator places each order by hand at broker,
+   `<book>/bin/send approvals/<date>.json --fills <table>` with pasted
+   fills. Operator copies template, edits it, sets `date` and file name to
+   send day. Never write under `approvals/`.
 4. When operator rejects proposal or overrides blocker, record `decision`
    with `subject` the proposal file stem, `action` `reject` or `override`,
    operator's reason verbatim.
@@ -338,7 +343,7 @@ never pain alone.
 | Nightly | cron | `load` per source |
 | Continuous; weekly | lead and delegates; cron or lead | Research loop; `check --live` |
 | Rebalance day after close | lead | `recommend`, then `check <date>` read to operator |
-| Send day, market hours | operator, in terminal | approval file, `bin/send` |
+| Send day, market hours | operator, in terminal and at broker | approval file, `bin/send` check, orders by hand, `bin/send --fills` |
 | Monthly; quarterly | operator | promotion decisions, `measure --held-out`, `status` edits; cost refit, branch merges |
 
 ## Continue

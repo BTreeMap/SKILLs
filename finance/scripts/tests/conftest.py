@@ -81,9 +81,14 @@ ORDER: dict[str, Any] = {
 
 
 def approval(where: Path, day: str, **order: Any) -> Path:
-    """One approval file holding one order, `order` overriding the default."""
+    """One approval file holding one order, `order` overriding the default,
+    and the proposal `proposals/<day>.json` it names, holding that order."""
+    entry = ORDER | order
+    proposals = where.parents[1] / "proposals"
+    proposals.mkdir(parents=True, exist_ok=True)
+    (proposals / f"{day}.json").write_text(json.dumps({"orders": [entry]}))
     where.parent.mkdir(parents=True, exist_ok=True)
-    where.write_text(json.dumps({"date": day, "orders": [ORDER | order]}))
+    where.write_text(json.dumps({"date": day, "proposal": day, "orders": [entry]}))
     return where
 
 
