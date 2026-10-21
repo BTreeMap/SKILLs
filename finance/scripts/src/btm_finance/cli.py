@@ -121,6 +121,8 @@ from btm_finance.measuring import (
 )
 from btm_finance.models import (
     ANSWERS_SHAPE,
+    RECEIPT_SHAPE,
+    SUMMARY_WORDS,
     Action,
     Answers,
     Cadence,
@@ -130,6 +132,7 @@ from btm_finance.models import (
     Status,
     StrategyConfig,
     baseline_hypothesis,
+    book_relative,
 )
 from btm_finance.recommending import (
     AdvCut,
@@ -204,7 +207,8 @@ ANSWERS = Optional("answers", inline=False)
 FILLS = Optional("fills", inline=False)
 FILLS_SLOT = Required("fills", inline=False)  # names the flag in a rejection
 ANSWERS_HELP = "JSON object of onboarding answers; check --schema answers prints it"
-SCHEMA_KINDS = ("record", "run", "answers", "pad", "approval")
+SCHEMA_KINDS = ("record", "run", "answers", "pad", "receipt", "approval")
+RECEIPT = "receipt"
 LATER: dict[str, str] = {}
 MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
 STALE_BARS = 5  # trading days an as-of bar may trail the proposal date
@@ -694,6 +698,29 @@ def index_warning(book: Book) -> list[dict[str, Any]]:
     return [{"file": INDEX, "problem": "absent"}]
 
 
+def absent_writes(root: Path, pad: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """One tagged warning per `wrote` path of a `receipt` pad line that is
+    outside the book or absent from it. O(pad lines + paths)."""
+    found: list[dict[str, Any]] = []
+    for row in pad:
+        wrote = row.get("wrote") if row.get("type") == RECEIPT else None
+        for path in wrote if isinstance(wrote, list) else []:
+            try:
+                present = (root / book_relative(str(path))).exists()
+            except ValueError:
+                present = False
+            if not present:
+                found.append(
+                    {
+                        "problem": "receipt path absent",
+                        "unit": row.get("unit"),
+                        "ts": row.get("ts"),
+                        "path": path,
+                    }
+                )
+    return found
+
+
 def continue_view(book: Book, today: date) -> dict[str, Any]:
     """Every ledger file replayed: O(ledger bytes)."""
     limits = load_limits(book)
@@ -734,6 +761,12 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
             "run the queue and schedule the next wake"
         )
     used_today = heartbeat.trials_today(runs, today)
+    absent = absent_writes(book.root, pad)
+    if absent:
+        signal(
+            f"{len(absent)} receipt path(s) absent under warnings; examine "
+            "those receipts again"
+        )
     records = regime_rows(book)
     regime = regime_record(records, today, limits.regime_stale_days)
     if regime is not None and regime.stale:
@@ -776,6 +809,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
         "warnings": [
             *warnings,
             *stale_pulse,
+            *absent,
             *fired,
             *late,
             *unwitnessed,
@@ -1031,7 +1065,17 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
             **{name: meaning for name, meaning in PAD_TYPES.items() if name != "known"},
             heartbeat.HEARTBEAT: "one wake of the always-on loop: item (tier "
             "and unit in words), outcome (one line), next_wake (ISO)",
+            RECEIPT: "a delegate receipt the lead accepted, verbatim, plus ts "
+            "and type; bare check warns on each wrote path absent",
         },
+    },
+    "receipt": {
+        "receipt": RECEIPT_SHAPE,
+        "rules": "a delegate's final message is this one JSON object and "
+        "nothing else; every key required, no other key; wrote paths "
+        f"book-relative; summary at most {SUMMARY_WORDS} words; next and "
+        "friction one line each, empty allowed; check it with "
+        "btm_finance.api.receipt(text)",
     },
     "approval": {
         "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '

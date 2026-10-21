@@ -227,6 +227,7 @@ def agents(template: str, answers: Answers, setting: Setting) -> str:
     return Template(template).substitute(
         title=setting.title,
         binding=setting.binding,
+        python=setting.binding.removesuffix("btm-finance") + "python",
         holding=answers.horizon.holding,
         cadence=answers.horizon.cadence.value,
         brief=when(answers),

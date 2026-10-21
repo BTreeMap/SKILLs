@@ -109,7 +109,7 @@ def test_the_pruned_verbs_are_gone(book, run):
 def test_check_schema_without_a_book_prints_every_kind(run):
     code, schema, _ = run(["check", "--schema"])
     assert code == 0
-    assert list(schema) == ["record", "run", "answers", "pad", "approval"]
+    assert list(schema) == ["record", "run", "answers", "pad", "receipt", "approval"]
     assert list(schema["record"]["record_batch"]) == [
         "hypotheses",
         "critiques",
@@ -130,7 +130,7 @@ def test_check_schema_with_a_kind_prints_that_kind_only(book, run):
     assert "adv_participation" in schema["approval"]["rules"]
     assert run(["check", str(book), "--schema", "pad"])[1].keys() == {"pad"}
     code, _, err = run(["check", "--schema", "fills"])
-    assert code == 1 and "record|run|answers|pad|approval" in err
+    assert code == 1 and "record|run|answers|pad|receipt|approval" in err
     code, _, err = run(["check"])
     assert code == 1 and "only --schema runs without one" in err
 

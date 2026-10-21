@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from datetime import date
 from enum import StrEnum
+from pathlib import PurePosixPath
 from typing import Annotated
 
 from pydantic import (
@@ -621,4 +622,76 @@ ANSWERS_SHAPE: dict[str, object] = {
     "model_cutoff": "2026-01-31",
     "held_out": "<absolute path outside the book>",
     "collaborators": [{"name": "<name>", "kind": "agent", "may_propose": False}],
+}
+
+
+class DelegateKind(StrEnum):
+    """The twelve delegate kinds; each has one brief in `AGENTS.md`."""
+
+    LOADER = "loader"
+    UNIVERSE = "universe"
+    CALENDAR = "calendar"
+    READER = "reader"
+    MINER = "miner"
+    AUTHOR = "author"
+    CRITIQUE = "critique"
+    ANALYST = "analyst"
+    SCORER = "scorer"
+    REGIME = "regime"
+    LIBRARIAN = "librarian"
+    JANITOR = "janitor"
+
+
+class ReceiptStatus(StrEnum):
+    DONE = "done"
+    PARTIAL = "partial"
+    STOPPED = "stopped"
+
+
+SUMMARY_WORDS = 40
+
+
+def book_relative(raw: str) -> str:
+    """Relative POSIX path with no `..`, drive, or backslash: under the book."""
+    path = PurePosixPath(raw)
+    if path.is_absolute() or ".." in path.parts or "\\" in raw or ":" in raw:
+        raise ValueError(f"{raw!r} is outside the book; give a book-relative path")
+    return raw
+
+
+def _short(raw: str) -> str:
+    words = len(raw.split())
+    if words > SUMMARY_WORDS:
+        raise ValueError(f"summary has {words} words; cut it to {SUMMARY_WORDS}")
+    return raw
+
+
+BookPath = Annotated[NonEmpty, AfterValidator(book_relative)]
+Line = Annotated[str, Trimmed, StringConstraints(pattern=r"^[^\n\r]*$")]
+"""One line of text; empty allowed."""
+
+
+class Receipt(Model):
+    """A delegate's whole final message. Extra keys refuse: a receipt longer
+    than the shape is a defect of that kind's brief."""
+
+    unit: DelegateKind
+    status: ReceiptStatus
+    wrote: tuple[BookPath, ...]
+    pad: tuple[NonEmpty, ...]
+    ids: dict[str, NonEmpty]
+    summary: Annotated[NonEmpty, AfterValidator(_short)]
+    next: Line
+    friction: Line
+
+
+RECEIPT_SHAPE: dict[str, object] = {
+    "unit": "|".join(DelegateKind),
+    "status": "|".join(ReceiptStatus),
+    "wrote": ["<book-relative path>"],
+    "pad": ["<pad id>"],
+    "ids": {"run_id": "...", "hypothesis": "..."},
+    "summary": f"<claim, at most {SUMMARY_WORDS} words>",
+    "next": "<one line or empty>",
+    "friction": "<one line or empty>",
 }
