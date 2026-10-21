@@ -1,10 +1,10 @@
 ---
 name: finance
 description: >-
-  Keeps a private book for slow-money stock research: hypotheses registered
-  before testing, measured by deflated Sharpe, purged walk-forward, and factor
-  regression; append-only records; held-out names kept outside the book;
-  rebalances proposed, and a human approves every trade. Use when setting
+  Keeps a private research monorepo of slow-money stock bets as a
+  disciplined bettor: hypotheses with stated odds and kill dates, measured
+  by deflated Sharpe, PBO, and purged walk-forward, sized by evidence tier
+  under a ruin bound; operator sends every trade by hand. Use when setting
   up or continuing an equity research book, or recording holdings,
   hypotheses, critiques, decisions.
 license: MIT
@@ -19,11 +19,13 @@ metadata:
 
 # Finance
 
-Keep one private book per operator, the human who owns it, for stocks held
-weeks to years. Agents research and record; operator decides every trade.
-Script `btm-finance` owns book layout, ledger, gate, continue view; agent
-owns hypothesis quality, critique verdicts, narrative; operator owns limits,
-approvals, strategy status, sending.
+Keep one private book per operator, the human who owns it: research monorepo
+of bets on stocks held weeks to years, each with stated odds, kill date,
+size from evidence. Agents research, write own code into book, and record;
+operator decides and sends every trade. Skill ships kernel (`btm-finance`:
+layout, ledger, gate, scorecard, sizing, continue view); agent owns
+hypothesis quality, critique verdicts, narrative, book's `lib/` and
+`tools/`; operator owns skill, limits, approvals, strategy status, sending.
 
 ## Registry
 
@@ -52,7 +54,8 @@ path to critique delegate (Research loop).
 - Anomaly literature: `/lit-review`
 - Second, independent critique of a run: `/summon`, delegate other than
   run's author
-- Change to this skill's methods: `/author-skill`, then pull request
+- Method agent needs: agent changes nothing under skill; write it in book's
+  `lib/` or `tools/` (Research loop)
 
 ## Invariants
 
@@ -81,10 +84,11 @@ records real fills: hand operator that command.
 
 ## Commands
 
-Bind `R` and `B` per shell:
+Bind `R`, `U` (same environment, any program), `B` per shell:
 
 ```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-finance"
+U="${R% btm-finance}"
 B="<book path>"
 $R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>]
 $R schema
@@ -95,6 +99,8 @@ $R check "$B" [<strategy> | <run id> | <proposal date>] [--live | --brief]
 $R recommend "$B" <YYYY-MM-DD> [--force]
 $R write "$B" --entry:file <entry.json> [--prose] [--known]
 $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
+PYTHONPATH="$B" $U python "$B/tools/<verb>-<object>.py" [args]
+$U pytest "$B/tests"
 ```
 
 | Command | Takes after the book | Returns |
@@ -293,9 +299,26 @@ edit `limits.json`.
 
 `start` makes book git repository (`data/` ignored) unless already inside
 one. Commit book changes on branch `agent/<date>-<topic>` in book
-repository; operator merges. Method change (`measure`, guards, data model,
-sources) is pull request to this skill through `/author-skill`, never edit
-to installed copy.
+repository, one commit per unit of work; operator merges. Skill is
+operator's: agent edits nothing under skill directory, installed copy or
+checkout; skill changes happen outside any research session.
+
+### Agent-written code
+
+Book is research monorepo: every line of code agent writes lives in book.
+Load `book` for layout.
+
+- Write script when step would otherwise repeat by hand or needs more than
+  few lines. Put it in `tools/` if it runs (`<verb>-<object>.py`), `lib/` if
+  it is imported.
+- Every script's docstring states what it reads and writes.
+- Read ledger and data only through `btm_finance.api`. Append to ledger only
+  through `record`: script writes batch file, lead runs `record`.
+- Accessor `Market` lacks: add it in `lib/market_ext.py`, wrapping `api`.
+- Delete dead script; add one-line note to `INDEX.md` history.
+- Update `INDEX.md` and `research/<topic>/README.md` in same commit as file
+  they describe.
+- Test `lib/` and `tools/` under `tests/`, run with `$U pytest "$B/tests"`.
 
 Delegate through `/summon`, one unit per delegate:
 
@@ -320,10 +343,16 @@ Delegate through `/summon`, one unit per delegate:
 
 In every mode:
 
-- Never ask operator for decision by deadline.
-- Never offer default answer when asking for decision.
+- State bet once, labeled as lead's: odds, size, kill observation and date.
+  Blockers first, verbatim. Operator decides.
+- Passing sleeve left unproposed is cost: record `decision` `action: forgo`
+  with reason (Propose and approve).
+- Variance inside `ruin_bound` is expected. Drawdown is evidence only when
+  `check --live` reports model-path breach; otherwise say so, propose no
+  change (Live).
+- When asking for decision, give lead's recommended answer and odds behind
+  it.
 - Never summarize proposal or standing without its open blockers.
-- Never persuade: state own view once, labeled as own, only when asked.
 
 ## Propose and approve
 
@@ -355,7 +384,10 @@ advisory, never a cut.
    sleeve's `tier`, `edge_scale`, `weight`, `stale` flags, `regime` (say
    when stale), `effective_streams` and `advisory` risk shares, `ruin` loss
    against bound (or its `reasons` entry), then `diff`, `cuts`, `unmanaged`,
-   `summary`. Never argue for proposal.
+   `summary`. Then state bet once as lead's: odds, size, kill date. Name
+   each strategy whose standing reads `promotable` or `probe` but holds no
+   sleeve here; with operator, record `decision` `action: forgo`, `subject`
+   that strategy, reason.
 3. Hand operator `approval_template`, `approval_path`, exact commands:
    `<book>/bin/send approvals/<date>.json --dry-run` for paper orders; for
    live ones `<book>/bin/send approvals/<date>.json` to check and print
@@ -378,6 +410,12 @@ is operator's decision line plus edit of `strategies/<name>/status`.
 Tracking within bound over `paper_min_days` lifts sleeve's tier at next
 `recommend`; breach holds it at lower tier.
 
+Variance inside `sizing.ruin_bound` is expected. Drawdown is evidence only
+when `check --live` reports model-path breach for that sleeve (`tracking`,
+or `drawdown` past `drawdown_review_multiple` times run's `max_drawdown`).
+Otherwise tell operator drawdown sits inside model and bound; propose no
+change.
+
 On live deviation from model path, first move is diagnosis: with operator,
 `record` decision `action: diagnose`, `reason` naming broken link
 (mechanism, data, regime, or crowd). Pause or retire follows diagnosis,
@@ -395,10 +433,15 @@ never pain alone.
 
 ## Continue
 
+With no `$B`, first ask operator which directory is research monorepo,
+before any other step; treat answer as `$B`. Book there: continue. Empty:
+`start` it. Neither: say what is there, ask again.
+
 After context compaction, or at session start, run bare `check "$B"` and
-resume from its `next`. Book and ledger hold all state; conversation is a
-view. Answer operator questions from ledger first; route claim ledger cannot
-settle to `/fact-check` or state it open.
+resume from its `next`. For daily brief run `check "$B" --brief`; read its
+`lines` to operator verbatim. Book and ledger hold all state; conversation
+is a view. Answer operator questions from ledger first; route claim ledger
+cannot settle to `/fact-check` or state it open.
 
 ## Gotchas
 
@@ -415,6 +458,12 @@ settle to `/fact-check` or state it open.
 - `paper` or `live` without `promote` decision naming strategy: `check`
   blocks with `paper_months: no promote decision names the strategy`.
   Operator writes `status` and records `promote` in same step.
+- Superseding hypothesis adding `odds` at same `falsifier_by` spends no
+  trial; one moving `falsifier_by` later spends one. Add odds in its own
+  line before moving kill date.
+- Proposal written before tiers reads back with `tier` `backtest`,
+  `edge_scale` 1, empty `advisory`, null `ruin`: it was sized on flat
+  backtest fraction, so its weights do not compare with newer proposals'.
 - No `_factors` loaded (`load french`, or `csv` with symbol `_factors`):
   `factor` null, `check` blocks on `factor: null`. Load factors before first
   `measure`.
@@ -426,8 +475,15 @@ settle to `/fact-check` or state it open.
   `check --live`. Bare `check` shows no `warnings`; any warning or line
   `record` refused was reported to operator, not repaired.
 - Every new hypothesis names family, capacity class, falsifier,
-  counterparty, and was recorded before its strategy code and its `measure`;
-  ids quoted to operator copied from `new`.
+  `falsifier_by`, counterparty, and was recorded before its strategy code
+  and its `measure`; ids quoted to operator copied from `new`.
+- Every hypothesis put to promotion carries `odds` and `falsifier_by`.
+- Every resolved bet has `scored` line; `overdue` and `unscored` warnings
+  reported to operator.
+- Every commit adding or changing `lib/` or `tools/` file updates `INDEX.md`
+  in same commit.
+- Nothing under skill directory edited.
+- When `--brief` ran, its `lines` were read to operator verbatim.
 - Refused runs reported as trials, not hidden; no family measured past
   budget without operator's answer.
 - Every delegate return judged before anything from it was recorded; every

@@ -176,6 +176,8 @@ each one absent as concern.
   it is concentration to name to operator.
 * Drawdown tolerance: human sets review threshold before strategy goes live;
   use regime record to tell drawdown chain predicts from one it does not.
+  Drawdown inside `sizing.ruin_bound` with no `check --live` model-path
+  breach is variance, not evidence.
 * Believability: discount claim whose source cannot state mechanism. Show
   family track record (critique survival, held-out, paper) as counts; never
   weight budgets by it.

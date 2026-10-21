@@ -41,13 +41,25 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
 `book.json` `held_out` holds absolute held-out path; `measure --held-out`
 reads list there. Agent never reads that file.
 
-Run book tests through binding `R` with `pytest <book>/tests` in place of
-`btm-finance`. `tools/` script reads book through `btm_finance.api`, never
-ledger or parquet files: `open_book(path)`; `ledger(book, kind)` for
-newest-wins rows of one kind, superseded lines dropped (`run` joins every
-runs file, oldest first); `research(book).at(day)` for `Market` on last bar
-on or before `day` over research names, `.dates` for bar dates. None serves
-held-out names.
+Agent-written layout:
+
+- `lib/`: one module per concern; docstring at top states purpose, inputs,
+  outputs.
+- `tools/`: `<verb>-<object>.py`, docstring header stating what it reads and
+  writes, `argparse` for arguments. Run with `PYTHONPATH` set to book root,
+  so `import lib.<module>` resolves.
+- `research/<topic>/README.md`: status and open questions of that line of
+  inquiry.
+- `INDEX.md`: one line per lib module, tool, research topic (path, purpose,
+  last touched), updated in same commit as file; history section keeps one
+  line per deleted script.
+
+Run book tests with `pytest <book>/tests` through skill's `uv run` binding.
+`tools/` script reads book through `btm_finance.api`, never ledger or
+parquet files: `open_book(path)`; `ledger(book, kind)` for newest-wins rows
+of one kind, superseded lines dropped (`run` joins every runs file, oldest
+first); `research(book).at(day)` for `Market` on last bar on or before `day`
+over research names, `.dates` for bar dates. None serves held-out names.
 
 `data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
 `data/returns/` files stay in manifest for integrity checks but never move
@@ -92,7 +104,9 @@ only when its `falsifier_by` is later than superseded line's; same or
 earlier kill date (odds added, text corrected) spends nothing; scorecard
 `trials` (DSR) counts backtests only. Bare `check` derives `overdue` and
 `unscored` warnings from hypothesis, decision, and scored lines; `scored`
-line naming hypothesis clears both.
+line naming hypothesis clears both. `scored` scores stated `p_win` against
+outcome: `brier` is squared error of probability, `log_score` log of
+probability given to what happened (Tetlock and Gardner 2015).
 
 Regime line in suggested shape; `record` reads only `kw`, `as_of`,
 `confidence`, `falsified`, `supersedes`:
