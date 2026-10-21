@@ -173,7 +173,7 @@ def stage(
             return [f"status: unknown {evidence.raw_status!r}"], None
         case Status.RETIRED:
             return ["status: retired"], None
-        case Status.RESEARCH | Status.LIVE:
+        case Status.RESEARCH | Status.PROBE | Status.LIVE:
             return [], None
         case Status.PAPER:
             required = (

@@ -33,6 +33,8 @@ class Action(StrEnum):
     RETIRE = "retire"
     APPROVE = "approve"
     DIAGNOSE = "diagnose"
+    FORGO = "forgo"
+    """A passing sleeve left unproposed, with the reason: forgoing is a cost."""
 
 
 class Side(StrEnum):
@@ -44,6 +46,9 @@ class Status(StrEnum):
     """A strategy's stage; the human alone writes `strategies/<name>/status`."""
 
     RESEARCH = "research"
+    PROBE = "probe"
+    """Live at the fixed `sizing.probe_weight`, so out-of-sample fills accrue
+    before the strategy clears the promotion thresholds."""
     PAPER = "paper"
     LIVE = "live"
     RETIRED = "retired"
@@ -95,6 +100,37 @@ def _cited(chain: Chain) -> Chain:
 
 Cited = Annotated[Chain, AfterValidator(_cited)]
 
+KELLY_TOLERANCE = 0.01
+"""How far `kelly_implied` may sit from `p_win - (1 - p_win) / payoff`."""
+
+
+class Odds(Model):
+    """The bet stated at entry: win probability, payoff (gain per unit lost,
+    the b of Kelly 1956), horizon, and the Kelly fraction those imply."""
+
+    p_win: Annotated[float, Field(gt=0, lt=1)]
+    payoff: Annotated[float, Field(gt=0)]
+    horizon_days: Annotated[int, Field(ge=1)]
+    kelly_implied: float
+
+    def model_post_init(self, _context: object) -> None:
+        implied = self.p_win - (1.0 - self.p_win) / self.payoff
+        if abs(self.kelly_implied - implied) > KELLY_TOLERANCE:
+            raise ValueError(
+                f"kelly_implied {self.kelly_implied} is not p_win - (1 - p_win) "
+                f"/ payoff = {implied:.4f} within {KELLY_TOLERANCE}"
+            )
+
+
+class Attribution(Model):
+    """Where a realized return came from, decimals summing to the return."""
+
+    market: float
+    factor: float
+    currency: float
+    idiosyncratic: float
+    costs: float
+
 
 class OpenRow(Model):
     """Batch entries keep fields the gate does not branch on."""
@@ -113,6 +149,10 @@ class HypothesisEntry(OpenNamed):
     falsifier: NonEmpty
     counterparty: NonEmpty
     min_holding_days: Annotated[int, Field(ge=1)]
+    falsifier_by: date | None = None
+    """Kill date: `check` lists the hypothesis as overdue past it."""
+    odds: Odds | None = None
+    """Required at promotion, not at registration."""
     mechanism: NonEmpty | None = None
     sector: NonEmpty | None = None
     supersedes: NonEmpty | None = None
@@ -135,7 +175,22 @@ class DecisionEntry(OpenNamed):
     subject: NonEmpty
     action: Action
     reason: NonEmpty
+    odds: Odds | None = None
     confidence: Confidence | None = None
+    supersedes: NonEmpty | None = None
+
+
+class ScoredEntry(OpenNamed):
+    """A bet scored at exit: `subject` is the hypothesis id, `outcome` what
+    happened in one line, scores against the odds stated at entry."""
+
+    subject: NonEmpty
+    resolved: date
+    outcome: NonEmpty
+    realized_return: float
+    brier: Annotated[float, Field(ge=0, le=1)]
+    log_score: Annotated[float, Field(le=0)]
+    attribution: Attribution
     supersedes: NonEmpty | None = None
 
 
@@ -215,14 +270,35 @@ class Thresholds(Model):
     long_holding_days: int
     folds: Annotated[int, Field(ge=2)] = 5
     tracking_error: Annotated[float, Field(gt=0)] = 0.05
+    dsr_probe: float = 0.80
+    pbo_probe: float = 0.25
+    paper_min_days: Annotated[int, Field(ge=1)] = 63
+    """Dry-run or live fill days within `tracking_error` of the model path
+    before a sleeve's tier moves up."""
+
+
+class KellyFractions(Model):
+    """Fraction of full Kelly per evidence tier (Thorp 2006; MacLean, Thorp,
+    Ziemba 2010): backtest only, paper fills, live fills."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    backtest: Annotated[float, Field(ge=0, le=1)]
+    paper: Annotated[float, Field(ge=0, le=1)]
+    live: Annotated[float, Field(ge=0, le=1)]
 
 
 class Sizing(Model):
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     vol_target: float
-    kelly_fraction: float
+    kelly_fraction: KellyFractions
     max_weight: float
+    ruin_bound: Annotated[float, Field(gt=0, lt=1)] = 0.35
+    """Largest 1st-percentile 252-day loss of the whole book allowed; a breach
+    scales every sleeve down (`cuts.kind: ruin`)."""
+    probe_weight: Annotated[float, Field(ge=0, le=1)] = 0.02
+    """Fixed weight of a `probe` sleeve."""
 
 
 class Limits(Model):
@@ -246,6 +322,9 @@ class Limits(Model):
     regime_stale_days: Annotated[int, Field(ge=0)] = 90
     max_strategy_risk_share: Annotated[float, Field(gt=0, le=1)] = 0.5
     min_effective_streams: Annotated[float, Field(ge=1)] = 2.0
+    model_cutoff: date | None = None
+    """Training cutoff of the agent's model: folds whose test window starts
+    after it are hindsight-free (`walk_forward.post_cutoff`)."""
 
 
 class StrategyConfig(Model):
@@ -317,13 +396,23 @@ def limits_template(cap: int) -> dict[str, object]:
             "paper_months_long": 12,
             "long_holding_days": 63,
             "folds": 5,
+            "dsr_probe": 0.80,
+            "pbo_probe": 0.25,
+            "paper_min_days": 63,
         },
-        "sizing": {"vol_target": 0.10, "kelly_fraction": 0.25, "max_weight": 0.05},
+        "sizing": {
+            "vol_target": 0.20,
+            "kelly_fraction": {"backtest": 0.25, "paper": 0.50, "live": 0.75},
+            "max_weight": 0.10,
+            "ruin_bound": 0.35,
+            "probe_weight": 0.02,
+        },
         "repeat_tolerance": 1e-4,
         "families": {"baseline": {"trials": 1}},
         "regime_stale_days": 90,
         "max_strategy_risk_share": 0.5,
         "min_effective_streams": 2,
+        "model_cutoff": None,
     }
 
 

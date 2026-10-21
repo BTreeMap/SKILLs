@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 import pytest
-from btm_finance.models import Sizing
+from btm_finance.models import KellyFractions, Sizing
 from btm_finance.recommending import (
     Account,
     Candidate,
@@ -21,7 +21,11 @@ from btm_finance.recommending import (
     sleeve_weights,
 )
 
-SIZING = Sizing(vol_target=0.10, kelly_fraction=0.25, max_weight=0.05)
+SIZING = Sizing(
+    vol_target=0.10,
+    kelly_fraction=KellyFractions(backtest=0.25, paper=0.50, live=0.75),
+    max_weight=0.05,
+)
 
 
 def sleeve(

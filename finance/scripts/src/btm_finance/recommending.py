@@ -51,11 +51,12 @@ class Account(StrEnum):
 
 
 def account_of(status: Status | None) -> Account | None:
-    """Paper and live strategies are sleeves; research and retired are not."""
+    """Paper, probe, and live strategies are sleeves; research and retired are
+    not. A probe trades the real account at `sizing.probe_weight`."""
     match status:
         case Status.PAPER:
             return Account.PAPER
-        case Status.LIVE:
+        case Status.LIVE | Status.PROBE:
             return Account.LIVE
         case Status.RESEARCH | Status.RETIRED | None:
             return None
@@ -284,7 +285,8 @@ def sleeve_size(
     when either input is missing or vol is not positive."""
     if sharpe is None or vol is None or not vol > 0.0:
         return 0.0, 0.0
-    return sizing.vol_target / vol, max(sizing.kelly_fraction * sharpe / vol, 0.0)
+    fraction = sizing.kelly_fraction.backtest
+    return sizing.vol_target / vol, max(fraction * sharpe / vol, 0.0)
 
 
 @dataclass(frozen=True, slots=True)

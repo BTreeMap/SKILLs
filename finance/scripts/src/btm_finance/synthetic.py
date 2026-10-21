@@ -7,6 +7,7 @@ Never real data: every number comes from `numpy.random.default_rng(seed)`.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -197,6 +198,12 @@ def make_book(  # noqa: PLR0913 - one synthetic book's whole recipe
     deterministic, and the panel stored as a csv load."""
     data = make_panel(seed, names, days, structure=structure, alpha=alpha)
     start(root, 10_000_000, data.universe)
+    # The synthetic ADV carries 5% positions at the cap, not the template's
+    # 10%: the operator's edit, so the pinned baseline scorecard stands.
+    limits_path = root / "limits.json"
+    limits = json.loads(limits_path.read_text(encoding="utf-8"))
+    limits["sizing"]["max_weight"] = 0.05
+    limits_path.write_text(json.dumps(limits, indent=2) + "\n", encoding="utf-8")
     book = open_book(str(root))
     first = date_of(int(data.dates[0]))
     store(
