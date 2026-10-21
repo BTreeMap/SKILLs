@@ -103,7 +103,7 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
-| `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
+| `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
 | `check` | Nothing, strategy, run id, or proposal date; `--live`; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: undecodable lines and dangling `supersedes` by file and line, and each hypothesis citing a falsified chain). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. Every output has advisory `next` |
 | `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
@@ -187,13 +187,14 @@ names. Then write `strategies/<name>/`:
   `paper`, `live`, `retired`. Operator moves strategy to `paper` or `live`
   by writing `status` and recording `promote` decision naming it in same
   step; `paper_months` counts from that decision.
-- Imports: only `numpy`, `math`, `statistics`, `itertools`, `functools`,
-  `operator`, `collections`, `dataclasses`, `typing`, and
-  `from btm_finance import api` or `from btm_finance.api import Market`
-  (then only `api.Market`); no `open`, `eval`, `exec`, `getattr`,
-  `__import__`, no file reader (for example `np.load`, `np.fromfile`), no
-  name starting `__`. Script refuses every other import and name by file and
-  line, before any of the file runs.
+- Imports: `signal.py` may import book's `lib/` (`import lib.<module>`) and
+  helpers in `strategies/<name>/`, at module top. Read prices and
+  fundamentals only through `market`: `measure` serves research names only,
+  so held-out stays hidden by data flow. Script refuses no import; `measure`
+  lists under run line `imports` every top-level module `signal.py` and
+  book-local modules it imports reach outside book, standard library,
+  `numpy`, `api.Market` aside; critique reads that list. Empty list is
+  normal.
 
 `measure` trades next open after each period's last day, normalizes to gross
 1, drops excluded, under-floor, and thin names, caps weight at
@@ -358,9 +359,12 @@ settle to `/fact-check` or state it open.
 - `approval_template` holds proposal date in `date`; `bin/send` refuses any
   `date` but today (UTC). Operator sets `date` and file name to send day and
   keeps `proposal`: `check --live` finds slippage reference through it.
-- `measure --repeat` compares sha256 of `signal.py` and `config.json` bytes:
-  any reformat, whitespace included, refuses repeat. Edit measured strategy
-  files only for new run.
+- `measure --repeat` compares sha256 of `ast.dump` of `signal.py` and of
+  parsed `config.json` as canonical JSON (keys sorted, fixed separators):
+  reformat, comment, or reindent of either reproduces; any change to code,
+  docstring, or value refuses repeat, as does Python upgrade that changes
+  AST dump. `lib/` modules are not hashed. Edit measured strategy files only
+  for new run.
 - `paper` or `live` without `promote` decision naming strategy: `check`
   blocks with `paper_months: no promote decision names the strategy`.
   Operator writes `status` and records `promote` in same step.

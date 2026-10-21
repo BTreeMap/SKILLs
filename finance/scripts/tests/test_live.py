@@ -15,11 +15,11 @@ from btm_finance.cli import scoped
 from btm_finance.data.assemble import assemble
 from btm_finance.data.tables import date_of
 from btm_finance.live import Fill, Sleeve, Watch, months_below, slippage
+from btm_finance.loader import load_strategy
 from btm_finance.measuring import Setting, rebalance_rows, rules_of, target_weights
 from btm_finance.models import Rebalance, StrategyConfig
 from btm_finance.store import load_limits, load_preferences, open_book
 from btm_finance.synthetic import trading_days
-from btm_finance.whitelist import load_signal
 
 CAPITAL = 1e6
 
@@ -52,7 +52,7 @@ def model_fills(book: Path) -> list[dict[str, object]]:
     panel, events = panel.only(names), events.only(names)
     rules = rules_of(load_limits(handle), load_preferences(handle), config)
     setting = Setting.of(panel, events, rules)
-    strategy = load_signal((folder / "signal.py").read_text(), "signal.py", "t_live")
+    strategy = load_strategy(book, "baseline").signal
     row = int(rebalance_rows(panel.dates, Rebalance.ANNUAL)[-1])
     market = Market.at(panel, events, int(panel.dates[row]))
     index = {name: column for column, name in enumerate(panel.names)}

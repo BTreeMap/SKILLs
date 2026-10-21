@@ -83,7 +83,8 @@ class RunLine(Model):
     """One `measure` run: every key `measure --repeat` needs to rerun it. `refused`
     lists bounds broken after running; the line counts as a trial anyway.
     `peers` are the run ids whose series fed `sr_var` and PBO, in order;
-    `code_files` the sha256 of `signal.py` and `config.json`."""
+    `code_files` the sha256 of the AST dump of `signal.py` and of canonical
+    `config.json`; `imports` what `signal.py` reaches from outside the book."""
 
     run_id: str
     hypothesis_id: str
@@ -107,3 +108,4 @@ class RunLine(Model):
     code_files: dict[str, str] = Field(default_factory=dict)
     regimes: tuple[str, ...] = ()
     regime_days: dict[str, int] = Field(default_factory=dict)
+    imports: tuple[str, ...] = ()

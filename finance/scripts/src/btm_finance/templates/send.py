@@ -188,9 +188,10 @@ def read_fills(path: Path) -> list[dict[str, Any]]:
             rows = json.loads(raw)
         except ValueError as err:
             halt(f"fill table {path} is not JSON: {err}")
-        if not all(isinstance(row, dict) for row in rows):
+        objects = [row for row in rows if isinstance(row, dict)]
+        if len(objects) != len(rows):
             halt(f"fill table {path}: every entry is one JSON object")
-        return rows
+        return objects
     reader = csv.DictReader(io.StringIO(raw))
     header = [name.strip() for name in reader.fieldnames or []]
     missing = [key for key in FILL_KEYS if key not in header]

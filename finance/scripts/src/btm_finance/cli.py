@@ -7,7 +7,6 @@ import hashlib
 import json
 import math
 import re
-import secrets
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -102,6 +101,7 @@ from btm_finance.live import (
     row_of,
     trading_days_after,
 )
+from btm_finance.loader import load_strategy
 from btm_finance.measuring import (
     Peers,
     Prepared,
@@ -146,6 +146,8 @@ from btm_finance.regimes import (
 from btm_finance.repeat import (
     Presence,
     RepeatReport,
+    canonical_config,
+    canonical_source,
     code_drift,
     compare,
     data_drift,
@@ -182,7 +184,6 @@ from btm_finance.views import (
     open_hypotheses,
     open_proposals,
 )
-from btm_finance.whitelist import load_signal
 
 UNIVERSE = Optional("universe", inline=False)
 CONFIG = Optional("config", inline=False)
@@ -608,16 +609,22 @@ def name_of(raw: str, what: str) -> str:
     return raw
 
 
-def code_hash(*parts: bytes) -> str:
-    """sha256 over each part's length and bytes, then the engine version."""
+def code_hash(source: bytes, config: bytes) -> str:
+    """sha256 over the AST dump of `signal.py` and canonical `config.json`,
+    each with its length, then the engine version: a reformat moves nothing."""
     digest = hashlib.sha256()
+    parts = (canonical_source(source), canonical_config(config))
     for part in (*parts, btm_finance.__version__.encode()):
         digest.update(len(part).to_bytes(8, "big") + part)
     return digest.hexdigest()
 
 
 def code_files(source: bytes, config: bytes) -> dict[str, str]:
-    return {"signal.py": sha256_of(source), "config.json": sha256_of(config)}
+    """Per file, sha256 of the same canonical forms `code_hash` folds."""
+    return {
+        "signal.py": sha256_of(canonical_source(source)),
+        "config.json": sha256_of(canonical_config(config)),
+    }
 
 
 def scoped(book: Book, names: Sequence[str], *, held_out: bool) -> frozenset[str]:
@@ -708,10 +715,8 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
     source = file_bytes(folder / "signal.py")
-    module = f"btm_strategy_{name.replace('-', '_')}_{secrets.token_hex(4)}"
-    strategy = load_signal(
-        source.decode("utf-8", errors="replace"), f"strategies/{name}/signal.py", module
-    )
+    loaded = load_strategy(book.root, name)
+    strategy = loaded.signal
     panel, events = assemble(book)
     names = scoped(book, panel.names, held_out=args.held_out)
     panel, events = panel.only(names), events.only(names)
@@ -762,6 +767,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         agent=agent,
         regimes=spanned,
         regime_days=regime_days,
+        imports=loaded.imports,
     )
     target = (
         book.ledger / "runs" / f"{agent}.jsonl" if agent else book.path_of(Kind.RUN)
@@ -773,6 +779,11 @@ def cmd_measure(args: argparse.Namespace) -> int:
         signal(
             f"signal named {outcome.unknown} name(s) the market did not serve; dropped"
         )
+    if loaded.imports:
+        signal(
+            f"signal.py reaches {', '.join(loaded.imports)} from outside the book; "
+            "listed under imports on the run line for the critique"
+        )
     emit(
         {
             "book": book.meta.id,
@@ -783,6 +794,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             "reasons": outcome.reasons,
             "refused": refused,
             "regime_days": regime_days,
+            "imports": list(loaded.imports),
             "next": f"fix {', '.join(r.split(':')[0] for r in refused)}; the run "
             "still counts as a trial"
             if refused
@@ -842,10 +854,7 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         f"strategies/{name}/config.json",
     )
     source = file_bytes(folder / "signal.py")
-    module = f"btm_strategy_{name.replace('-', '_')}_{secrets.token_hex(4)}"
-    strategy = load_signal(
-        source.decode("utf-8", errors="replace"), f"strategies/{name}/signal.py", module
-    )
+    strategy = load_strategy(book.root, name).signal
     rules = rules_of(limits, preferences, config)
     setting = Setting(day.panel, day.events, day.prep, rules)
     market = Market.at(day.panel, day.events, int(day.panel.dates[day.row]))
@@ -1221,10 +1230,7 @@ def cmd_repeat(args: argparse.Namespace) -> int:
     config = parse_model(StrategyConfig, line.config, f"run {line.run_id} config")
     limits, preferences = load_limits(book), load_preferences(book)
     preferences = preferences.with_(exclusions=line.exclusions.model_dump())
-    module = f"btm_repeat_{name.replace('-', '_')}_{secrets.token_hex(4)}"
-    strategy = load_signal(
-        source.decode("utf-8", errors="replace"), f"strategies/{name}/signal.py", module
-    )
+    strategy = load_strategy(book.root, name).signal
     panel, events = assemble(book)
     names = scoped(book, panel.names, held_out=line.held_out)
     panel, events = panel.only(names), events.only(names)
@@ -1330,12 +1336,7 @@ def modeled(
         config = parse_model(
             StrategyConfig, read_json(folder / "config.json"), f"strategies/{name}"
         )
-        module = f"btm_live_{name.replace('-', '_')}_{secrets.token_hex(4)}"
-        strategy = load_signal(
-            file_bytes(folder / "signal.py").decode("utf-8", errors="replace"),
-            f"strategies/{name}/signal.py",
-            module,
-        )
+        strategy = load_strategy(book.root, name).signal
         path = model_path(setting_of(config), strategy, dict(config.params))
     except CommandError as err:
         return None, f"no model path: {err}"

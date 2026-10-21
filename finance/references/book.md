@@ -64,7 +64,7 @@ Filesystem modes enforce nothing: these warnings are the append-only check.
 | decision | `kw`, `subject`, `action`, `reason` |
 | regime | `kw`, `as_of`, `confidence`; optional `falsified`, `supersedes`; any other field free JSON |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files`, `regimes`, `regime_days` |
+| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files`, `regimes`, `regime_days`, `imports` |
 | incident | `kind`; see Incidents |
 
 `confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`

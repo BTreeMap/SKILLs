@@ -49,11 +49,36 @@ def test_a_run_reproduces_and_writes_nothing(measured, run):
 def test_an_edited_config_is_refused_by_name(measured, run):
     book, (first, _) = measured
     path = book / "strategies" / "baseline" / "config.json"
-    path.write_text(json.dumps(json.loads(path.read_text()), indent=4))
+    config = json.loads(path.read_text())
+    config["params"]["vol_days"] = 126
+    path.write_text(json.dumps(config))
     code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
     assert code == 1
     assert "code moved: config.json" in err
     assert "signal.py" not in err
+
+
+def test_a_reformat_of_either_file_reproduces(measured, run):
+    book, (first, _) = measured
+    folder = book / "strategies" / "baseline"
+    config = folder / "config.json"
+    parsed = json.loads(config.read_text())
+    config.write_text(json.dumps(dict(reversed(parsed.items())), indent=7))
+    signal = folder / "signal.py"
+    spaced = signal.read_text().replace("\ndef ", "\n\n\ndef ")
+    signal.write_text("# reformatted\n\n\n" + spaced + "\n# end\n")
+    code, document, err = run(["measure", str(book), "baseline", "--repeat", first])
+    assert code == 0, err
+    assert document["reproduced"] is True
+
+
+def test_a_code_edit_is_refused_by_name(measured, run):
+    book, (first, _) = measured
+    signal = book / "strategies" / "baseline" / "signal.py"
+    signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
+    code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
+    assert code == 1
+    assert "code moved: signal.py" in err
 
 
 def test_a_corrupted_peer_series_is_refused(measured, run):

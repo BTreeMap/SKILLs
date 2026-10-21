@@ -7,10 +7,10 @@ from __future__ import annotations
 import numpy as np
 from btm_finance.api import Market
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
+from btm_finance.loader import load_strategy
 from btm_finance.measuring import Prepared, Rules, Track, costed
 from btm_finance.models import Rebalance
 from btm_finance.scaffold import template
-from btm_finance.whitelist import load_signal
 
 FIRST = 15_000  # days since 1970-01-01
 
@@ -65,7 +65,7 @@ def test_the_bar_after_a_hole_carries_the_move_since_the_last_close():
     assert np.isclose(prep.close_cc[3, 1], 23.0 / 22.0 - 1.0)
 
 
-def test_the_baseline_picks_names_on_a_union_calendar():
+def test_the_baseline_picks_names_on_a_union_calendar(tmp_path):
     rng = np.random.default_rng(3)
     days, width = 320, 12
     close = 50.0 * np.exp(np.cumsum(rng.normal(0.0, 0.01, (days, width)), axis=0))
@@ -75,7 +75,10 @@ def test_the_baseline_picks_names_on_a_union_calendar():
     panel = panel_of(
         close, (Exchange.TSX,) * (width // 2) + (Exchange.NYSE,) * (width // 2)
     )
-    signal = load_signal(template("signal.tmpl"), "signal.py", "calendar_baseline")
+    folder = tmp_path / "strategies" / "baseline"
+    folder.mkdir(parents=True)
+    (folder / "signal.py").write_text(template("signal.tmpl"))
+    signal = load_strategy(tmp_path, "baseline").signal
     market = Market.at(panel, no_events(), int(panel.dates[-1]))
     weights = signal(market, {"momentum_days": 252, "skip_days": 21, "vol_days": 252})
     assert weights

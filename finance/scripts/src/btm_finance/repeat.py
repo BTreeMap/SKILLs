@@ -6,10 +6,12 @@ data, or a peer's stored series. The shell hashes; this module judges.
 
 from __future__ import annotations
 
+import ast
+import json
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
 
-from btm_corekit import Model
+from btm_corekit import CommandError, Model
 from btm_finance.measuring import number
 
 CODE_FILES = ("signal.py", "config.json")
@@ -47,6 +49,26 @@ class RepeatReport(Model):
     compared: int
     diffs: tuple[Diff, ...]
     advisories: tuple[str, ...]
+
+
+def canonical_source(source: bytes) -> bytes:
+    """`ast.dump` of the module: whitespace and comments never move it; a
+    Python upgrade that changes the dump does."""
+    try:
+        return ast.dump(ast.parse(source)).encode()
+    except (SyntaxError, ValueError) as err:
+        raise CommandError(f"signal.py does not parse: {err}") from err
+
+
+def canonical_config(config: bytes) -> bytes:
+    """Parsed JSON, keys sorted, fixed separators: indentation never moves it."""
+    try:
+        parsed = json.loads(config)
+    except ValueError as err:
+        raise CommandError(f"config.json is not JSON: {err}") from err
+    return json.dumps(
+        parsed, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode()
 
 
 def code_drift(

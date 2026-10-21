@@ -42,8 +42,10 @@ returns one `critiques` batch entry.
 
 ### look-ahead
 
-* Inspect: `signal.py` as-of reads; universe construction in `config.json`;
-  fundamentals read by `event_time` instead of `knowledge_time`.
+* Inspect: `signal.py` as-of reads; run line `imports` (anything there may
+  read data around `market`) and the `lib/` and strategy-local modules
+  `signal.py` imports; universe construction in `config.json`; fundamentals
+  read by `event_time` instead of `knowledge_time`.
 * Settles: every value used at decision date has `knowledge_time` at or
   before that date; universe membership taken as of each date.
 * Blocker: any read of value not known at decision date. No concern grade.
