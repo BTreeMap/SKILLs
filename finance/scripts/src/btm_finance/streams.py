@@ -1,5 +1,5 @@
 """Return streams, pure: pairwise correlation on common dates, effective
-streams, the correlation divisor, and the risk-share cap."""
+streams, and the correlation divisor."""
 
 from __future__ import annotations
 
@@ -67,31 +67,3 @@ def divisors(names: Sequence[str], pairs: Pairs) -> dict[str, float]:
         )
         for name in names
     }
-
-
-def risk_capped(
-    weights: Mapping[str, float], vols: Mapping[str, float], share: float
-) -> dict[str, float]:
-    """Water-fill each sleeve's `weight * vol` to at most `share` of the capped
-    total; unchanged under 1 / share risk-carrying sleeves. O(n log n)."""
-    risk = {
-        name: weight * vols[name]
-        for name, weight in weights.items()
-        if weight > 0.0 and vols.get(name, 0.0) > 0.0
-    }
-    if len(risk) * share < 1.0:
-        return dict(weights)
-    order = sorted(risk, key=lambda name: -risk[name])
-    rest = sum(risk.values())
-    for k, name in enumerate(order):
-        if k * share >= 1.0:
-            break
-        level = share * rest / (1.0 - k * share)
-        if risk[name] <= level:
-            capped = order[:k]
-            return {
-                key: level / vols[key] if key in capped else weight
-                for key, weight in weights.items()
-            }
-        rest -= risk[name]
-    return dict(weights)
