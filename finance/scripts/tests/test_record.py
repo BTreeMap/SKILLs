@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date
 
 import pytest
 from btm_finance import store
 from btm_finance.ledger import Kind
+from btm_finance.models import year_after
 from btm_finance.store import append_ledger, open_book
 
 from btm_corekit import CommandError
@@ -283,3 +285,94 @@ def test_diagnose_is_a_decision_action(book, run):
     code, receipt, err = batch(run, book, {"decisions": [diagnosis]})
     assert code == 0, err
     assert receipt["accepted"] == {"decision": 1}
+
+
+def odds(kelly: float) -> dict:
+    """p_win 0.6 at even payoff: Kelly is 0.6 - 0.4 / 1 = 0.2."""
+    return {"p_win": 0.6, "payoff": 1.0, "horizon_days": 63, "kelly_implied": kelly}
+
+
+def test_odds_off_by_two_points_are_refused_and_half_a_point_accepted(
+    book, run, make_hypothesis
+):
+    off = make_hypothesis(["off", "odds"], odds=odds(0.22))
+    code, verdict, _ = batch(run, book, {"hypotheses": [off]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == ["hypotheses[0].odds"]
+    near = make_hypothesis(["near", "odds"], odds=odds(0.205))
+    code, receipt, err = batch(run, book, {"hypotheses": [near]})
+    assert (code, receipt["accepted"]) == (0, {"hypothesis": 1}), err
+
+
+def test_a_hypothesis_without_falsifier_by_is_refused(book, run, make_hypothesis):
+    bare = make_hypothesis(["no", "kill"])
+    del bare["falsifier_by"]
+    code, verdict, _ = batch(run, book, {"hypotheses": [bare]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == ["hypotheses[0].falsifier_by"]
+
+
+def test_start_registers_the_baseline_with_a_kill_date_a_year_out(book):
+    line = json.loads((book / "ledger" / "hypotheses.jsonl").read_text())
+    made = date.fromisoformat(line["ts"][:10])
+    assert date.fromisoformat(line["falsifier_by"]) == year_after(made)
+    assert year_after(date(2028, 2, 29)) == date(2029, 2, 28)
+
+
+SCORE = {
+    "kw": ["bet", "scored"],
+    "resolved": "2026-09-30",
+    "outcome": "drift held through the horizon",
+    "realized_return": 0.04,
+    "brier": 0.16,
+    "log_score": -0.51,
+    "attribution": {
+        "market": 0.01,
+        "factor": 0.02,
+        "currency": 0.0,
+        "idiosyncratic": 0.015,
+        "costs": -0.005,
+    },
+}
+
+
+def test_scored_names_a_live_hypothesis_and_a_dangling_subject_is_refused(
+    book, run, make_hypothesis
+):
+    code, receipt, err = batch(
+        run, book, {"hypotheses": [make_hypothesis(["first", "bet"])]}
+    )
+    assert code == 0, err
+    first = receipt["new"]["hypotheses"]["first-bet"]
+    code, verdict, _ = batch(run, book, {"scored": [SCORE | {"subject": "ghost"}]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == ["scored[0].subject"]
+    code, receipt, err = batch(run, book, {"scored": [SCORE | {"subject": first}]})
+    assert code == 0, err
+    assert receipt["accepted"] == {"scored": 1}
+    line = json.loads((book / "ledger" / "scored.jsonl").read_text())
+    assert (line["subject"], line["attribution"]["costs"]) == (first, -0.005)
+    later = make_hypothesis(["first", "again"], supersedes=first)
+    code, verdict, _ = batch(
+        run, book, {"hypotheses": [later], "scored": [SCORE | {"subject": first}]}
+    )
+    assert code == 1  # superseded in the same batch: no longer live
+    assert [p["where"] for p in verdict["rejected"]] == ["scored[0].subject"]
+
+
+def test_forgo_names_a_strategy(book, run):
+    forgo = {
+        "kw": ["skip", "baseline"],
+        "action": "forgo",
+        "reason": "sleeve passes; operator holds cash this month",
+    }
+    hypothesis = json.loads((book / "ledger" / "hypotheses.jsonl").read_text())
+    code, verdict, _ = batch(
+        run, book, {"decisions": [forgo | {"subject": hypothesis["id"]}]}
+    )
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == ["decisions[0].subject"]
+    code, receipt, err = batch(
+        run, book, {"decisions": [forgo | {"subject": "baseline"}]}
+    )
+    assert (code, receipt["accepted"]) == (0, {"decision": 1}), err

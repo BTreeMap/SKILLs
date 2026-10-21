@@ -52,6 +52,10 @@ def book(tmp_path: Path, run: Run) -> Path:
     return root
 
 
+KILL_DATE = "2099-12-31"
+"""Far enough out that no fixture hypothesis turns overdue."""
+
+
 def hypothesis(kw: list[str], **overrides: Any) -> dict[str, Any]:
     entry: dict[str, Any] = {
         "kw": kw,
@@ -61,6 +65,7 @@ def hypothesis(kw: list[str], **overrides: Any) -> dict[str, Any]:
         "falsifier": "net Sharpe under the baseline's over 12 months",
         "counterparty": "index funds rebalancing on schedule",
         "min_holding_days": 21,
+        "falsifier_by": KILL_DATE,
     }
     return entry | overrides
 
@@ -167,6 +172,7 @@ def plant(run: Run) -> Callable[..., str]:
             "falsifier": "net Sharpe at or below zero out of sample",
             "counterparty": "planted by the test",
             "min_holding_days": settings["holding_days"],
+            "falsifier_by": KILL_DATE,
         } | (hypothesis or {})
         code, receipt, err = run(
             ["record", str(book), "--batch:stdin"], json.dumps({"hypotheses": [entry]})

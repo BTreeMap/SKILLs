@@ -31,6 +31,8 @@ COMPACT = (
 
 class Standing(StrEnum):
     PROMOTABLE = "promotable"
+    PROBE = "probe"
+    """Every gate clear but DSR and PBO, which clear the probe thresholds."""
     BLOCKED = "blocked"
     DISCARD = "discard"
 
@@ -87,10 +89,11 @@ def newest(rows: Sequence[Row], subject: str, action: Action) -> Row | None:
     return max(found, key=lambda row: str(row.get("ts", "")), default=None)
 
 
-def statistics(
-    card: Mapping[str, Any], reasons: Mapping[str, str], limits: Limits, mechanism: bool
+def overfit(
+    card: Mapping[str, Any], reasons: Mapping[str, str], limits: Limits
 ) -> tuple[list[str], bool]:
-    """DSR, PBO, and residual t blockers, and whether PBO says discard."""
+    """DSR and PBO blockers against the promotion thresholds, and whether PBO
+    says discard."""
     th = limits.thresholds
     blockers: list[str] = []
     dsr = number(card, "dsr")
@@ -104,15 +107,34 @@ def statistics(
         blockers.append(f"pbo: {shown(pbo)} vs {th.pbo_discard} (discard)")
     elif pbo >= th.pbo_promote:
         blockers.append(f"pbo: {shown(pbo)} vs {th.pbo_promote}")
+    return blockers, discard
+
+
+def probe_clear(card: Mapping[str, Any], limits: Limits) -> bool:
+    """DSR at or above `dsr_probe` and PBO below `pbo_probe`."""
+    th = limits.thresholds
+    dsr, pbo = number(card, "dsr"), number(card, "pbo")
+    return (
+        dsr is not None
+        and dsr >= th.dsr_probe
+        and pbo is not None
+        and pbo < th.pbo_probe
+    )
+
+
+def residual(
+    card: Mapping[str, Any], reasons: Mapping[str, str], limits: Limits, mechanism: bool
+) -> list[str]:
+    """The factor regression's alpha t against its threshold."""
+    th = limits.thresholds
     factor = card.get("factor")
     limit = th.t_mechanism if mechanism else th.t_empirical
     if not isinstance(factor, Mapping):
-        blockers.append(f"factor: null ({reasons.get('factor', 'not computed')})")
-    else:
-        t = number(factor, "t_alpha")
-        if t is None or t < limit:
-            blockers.append(f"t_alpha: {'null' if t is None else shown(t)} vs {limit}")
-    return blockers, discard
+        return [f"factor: null ({reasons.get('factor', 'not computed')})"]
+    t = number(factor, "t_alpha")
+    if t is None or t < limit:
+        return [f"t_alpha: {'null' if t is None else shown(t)} vs {limit}"]
+    return []
 
 
 def capacity(
@@ -198,8 +220,26 @@ def stage(
             return [], paper
 
 
-def next_of(standing: Standing, blockers: Sequence[str], status: Status | None) -> str:
+def probe_next(status: Status | None, limits: Limits) -> str:
+    th, weight = limits.thresholds, limits.sizing.probe_weight
+    if status == Status.PROBE:
+        return (
+            f"probe runs at {weight}; paper or live needs dsr {th.dsr} and pbo "
+            f"under {th.pbo_promote}"
+        )
+    return (
+        f"propose a probe to the operator at sizing.probe_weight {weight}; the "
+        "human writes status probe and records promote naming the strategy in "
+        "the same step"
+    )
+
+
+def next_of(
+    standing: Standing, blockers: Sequence[str], status: Status | None, limits: Limits
+) -> str:
     match standing:
+        case Standing.PROBE:
+            return probe_next(status, limits)
         case Standing.DISCARD:
             return "record a reject decision; PBO says the result is overfit"
         case Standing.BLOCKED if "no critique" in blockers:
@@ -213,7 +253,8 @@ def next_of(standing: Standing, blockers: Sequence[str], status: Status | None) 
 
 
 def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
-    """Every blocker named with value and limit; `discard` outranks `blocked`."""
+    """Every blocker named with value and limit; `discard` outranks `blocked`,
+    `blocked` outranks `probe`. A hypothesis without odds blocks both others."""
     status = evidence.raw_status if evidence.status is None else evidence.status.value
     run = evidence.run
     if run is None:
@@ -233,7 +274,8 @@ def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
     reasons = run.get("reasons")
     reasons = reasons if isinstance(reasons, Mapping) else {}
     hypothesis = evidence.hypothesis or {}
-    blockers, discard = statistics(card, reasons, limits, "mechanism" in hypothesis)
+    stats, discard = overfit(card, reasons, limits)
+    blockers = residual(card, reasons, limits, "mechanism" in hypothesis)
     overridden = (
         newest(evidence.decisions, evidence.strategy, Action.OVERRIDE) is not None
     )
@@ -253,9 +295,22 @@ def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
     holding = config.get("holding_days", 0) if isinstance(config, Mapping) else 0
     found, paper = stage(evidence, limits, int(holding))
     blockers += found
+    probe = not blockers and bool(stats) and probe_clear(card, limits)
+    if (
+        not discard
+        and not blockers
+        and (probe or not stats)
+        and not isinstance(hypothesis.get("odds"), Mapping)
+    ):
+        named = hypothesis.get("id") or run.get("hypothesis_id")
+        blockers.append(f"odds: none registered on {named}")
+        probe = False
+    blockers = stats + blockers
     standing = (
         Standing.DISCARD
         if discard
+        else Standing.PROBE
+        if probe
         else Standing.BLOCKED
         if blockers
         else Standing.PROMOTABLE
@@ -272,5 +327,5 @@ def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
         critique=None if critique is None else str(critique.get("id")),
         status=status,
         paper=paper,
-        next=next_of(standing, blockers, evidence.status),
+        next=next_of(standing, blockers, evidence.status, limits),
     )

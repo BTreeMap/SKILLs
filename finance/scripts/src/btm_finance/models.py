@@ -149,7 +149,7 @@ class HypothesisEntry(OpenNamed):
     falsifier: NonEmpty
     counterparty: NonEmpty
     min_holding_days: Annotated[int, Field(ge=1)]
-    falsifier_by: date | None = None
+    falsifier_by: date
     """Kill date: `check` lists the hypothesis as overdue past it."""
     odds: Odds | None = None
     """Required at promotion, not at registration."""
@@ -358,6 +358,19 @@ BASELINE_HYPOTHESIS: dict[str, object] = {
     "cheap names; the premia are known and crowded",
     "min_holding_days": 252,
 }
+
+
+def year_after(day: date) -> date:
+    """Same day next year; 29 February lands on 28 February."""
+    try:
+        return day.replace(year=day.year + 1)
+    except ValueError:
+        return day.replace(year=day.year + 1, day=28)
+
+
+def baseline_hypothesis(start: date) -> dict[str, object]:
+    """What `start` registers; its kill date is one year after `start`."""
+    return {**BASELINE_HYPOTHESIS, "falsifier_by": year_after(start).isoformat()}
 
 
 class BookMeta(Model):

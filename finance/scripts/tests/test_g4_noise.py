@@ -1,5 +1,5 @@
 """G4: evidence survives multiple testing. A family of 100 random signals on a
-pure-noise synthetic panel yields fewer than 5 promotable standings.
+pure-noise synthetic panel yields fewer than 5 promotable or probe standings.
 
 Every non-statistical gate is opened first, so only DSR, PBO, the residual
 t-stat, and the capacity rule decide: each run gets a critique with no
@@ -69,6 +69,13 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
                 "falsifier": "chance",
                 "counterparty": "none: planted noise",
                 "min_holding_days": 21,
+                "falsifier_by": "2099-12-31",
+                "odds": {
+                    "p_win": 0.55,
+                    "payoff": 1.0,
+                    "horizon_days": 63,
+                    "kelly_implied": 0.1,
+                },
             }
         )
     record(run, book, {"hypotheses": hypotheses})
@@ -105,7 +112,9 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
         run(["check", str(book), f"noise-{seed}"])[1] for seed in range(FAMILY)
     ]
     promotable = [
-        view["strategy"] for view in standings if view["standing"] == "promotable"
+        view["strategy"]
+        for view in standings
+        if view["standing"] in {"promotable", "probe"}
     ]
     assert len(promotable) < 5, promotable
     assert all(view["scorecard"]["trials"] == k + 1 for k, view in enumerate(standings))

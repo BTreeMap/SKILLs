@@ -1,6 +1,7 @@
 """G9: capacity gates promotion. A strategy whose net Sharpe is flat from 0.1x
 to 1x but negative at 1x is blocked by name; a hypothesis registered crowded
-is blocked until a decision line overrides it, then promotable.
+is blocked until a decision line overrides it, then blocked on odds until a
+superseding hypothesis states them, then promotable.
 
 The synthetic panel plants a persistent per-name drift (`alpha`) that no
 factor spans, so trailing return ranks carry a real edge.
@@ -89,7 +90,7 @@ def test_flat_but_negative_capacity_is_blocked_by_name(synthetic, run, plant, fa
 
 def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, families):
     book = edge_book(synthetic, run, plant, families)
-    plant(
+    hypothesis_id = plant(
         book,
         "drift",
         "SIGN = 1.0\n" + DRIFT,
@@ -111,5 +112,29 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
         "reason": "capacity ceiling checked by hand",
     }
     batch(run, book, {"decisions": [override]})
+    view = run(["check", str(book), "drift"])[1]
+    assert (view["standing"], view["blockers"]) == (
+        "blocked",
+        [f"odds: none registered on {hypothesis_id}"],
+    )
+    stated = {
+        "kw": ["drift", "odds"],
+        "strategy": "drift",
+        "family_id": "g9",
+        "capacity_class": "crowded",
+        "mechanism": "planted drift",
+        "falsifier": "net Sharpe at or below zero out of sample",
+        "falsifier_by": "2099-12-31",
+        "counterparty": "planted by the test",
+        "min_holding_days": 63,
+        "odds": {
+            "p_win": 0.55,
+            "payoff": 1.2,
+            "horizon_days": 63,
+            "kelly_implied": 0.175,
+        },
+        "supersedes": hypothesis_id,
+    }
+    batch(run, book, {"hypotheses": [stated]})
     view = run(["check", str(book), "drift"])[1]
     assert (view["standing"], view["blockers"]) == ("promotable", [])

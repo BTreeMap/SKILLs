@@ -23,12 +23,15 @@ class Kind(StrEnum):
     RUN = "run"
     INCIDENT = "incident"
     REGIME = "regime"
+    SCORED = "scored"
 
     @property
     def file(self) -> str:
         match self:
             case Kind.HYPOTHESIS:
                 stem = "hypotheses"
+            case Kind.SCORED:
+                stem = "scored"
             case (
                 Kind.CRITIQUE
                 | Kind.DECISION

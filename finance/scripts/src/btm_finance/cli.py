@@ -8,6 +8,7 @@ import json
 import math
 import re
 import sys
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -44,6 +45,7 @@ from btm_corekit import (
 )
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
+from btm_finance.brief import Bet, Open, brief, justifying
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
 from btm_finance.data.panel import Events, Panel
@@ -112,7 +114,6 @@ from btm_finance.measuring import (
     target_weights,
 )
 from btm_finance.models import (
-    BASELINE_HYPOTHESIS,
     Action,
     Cadence,
     Exclusions,
@@ -120,6 +121,7 @@ from btm_finance.models import (
     Preferences,
     Status,
     StrategyConfig,
+    baseline_hypothesis,
 )
 from btm_finance.recommending import (
     Account,
@@ -183,6 +185,8 @@ from btm_finance.views import (
     next_step,
     open_hypotheses,
     open_proposals,
+    overdue,
+    unscored,
 )
 
 UNIVERSE = Optional("universe", inline=False)
@@ -220,7 +224,7 @@ def start(
         strategies=["baseline"],
         proposals=[],
     )
-    batch = {"hypotheses": [BASELINE_HYPOTHESIS]}
+    batch = {"hypotheses": [baseline_hypothesis(datetime.now(UTC).date())]}
     result = expand_batch(context, batch, make_id, now_iso())
     if result.problems:
         raise CommandError(f"baseline hypothesis refused: {result.problems}")
@@ -254,7 +258,14 @@ def run_ids(book: Book) -> list[str]:
 def cmd_record(args: argparse.Namespace) -> int:
     book = open_book(args.book)
     limits = load_limits(book)
-    kinds = (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.REGIME, Kind.FILL)
+    kinds = (
+        Kind.HYPOTHESIS,
+        Kind.CRITIQUE,
+        Kind.DECISION,
+        Kind.SCORED,
+        Kind.REGIME,
+        Kind.FILL,
+    )
     ids = {kind: ids_of(book.path_of(kind)) for kind in kinds}
     context = Context(
         families=frozenset(limits.families),
@@ -264,6 +275,9 @@ def cmd_record(args: argparse.Namespace) -> int:
         proposals=proposal_dates(book),
         live_regimes=frozenset(
             str(row.get("id")) for row in current(kind_rows(book, Kind.REGIME))
+        ),
+        live_hypotheses=frozenset(
+            str(row.get("id")) for row in current(kind_rows(book, Kind.HYPOTHESIS))
         ),
     )
 
@@ -294,6 +308,11 @@ def cmd_check(args: argparse.Namespace) -> int:
     if args.live:
         today = args.today or datetime.now(UTC).date()
         emit(live_view(book, today).model_dump(mode="json"))
+        return 0
+    if args.brief:
+        if args.target is not None:
+            raise CommandError("--brief takes no target; run check <book> --brief")
+        emit(brief_view(book))
         return 0
     if args.target is None:
         emit(continue_view(book))
@@ -454,7 +473,9 @@ def continue_view(book: Book) -> dict[str, Any]:
         return current(kind_rows(book, kind))
 
     runs = all_runs(book)
-    hypotheses, decisions = live(Kind.HYPOTHESIS), live(Kind.DECISION)
+    hypothesis_lines = kind_rows(book, Kind.HYPOTHESIS)
+    hypotheses, decisions = current(hypothesis_lines), live(Kind.DECISION)
+    scored = live(Kind.SCORED)
     listed = strategies(book)
     known = {s.name: s.status for s in listed if s.status is not None}
     unknown = [
@@ -479,18 +500,68 @@ def continue_view(book: Book) -> dict[str, Any]:
             f"hypothesis {entry['hypothesis']} cites chain {entry['chain']}, "
             f"falsified in regime {entry['regime']}; write an objection pad entry"
         )
+    retired = frozenset(name for name, s in known.items() if s is Status.RETIRED)
+    late = [
+        *overdue(hypotheses, decisions, scored, retired, today),
+        *unscored(hypotheses, decisions, scored, today),
+    ]
+    if late:
+        signal(f"{len(late)} overdue or unscored hypothesis(es) under warnings")
     return {
         "book": book.meta.id,
         "as_of": now_iso(),
         "regime": None if regime is None else regime.model_dump(mode="json"),
         "strategies": {**by_status(known), "unknown": unknown},
-        "families": families(limits, hypotheses, runs, decisions),
+        "families": families(
+            limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
+        ),
         "proposals": proposals,
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
-        "warnings": [*warnings, *fired, *index_warning(book)],
-        "next": next_step(hypotheses, pending, proposals),
+        "warnings": [*warnings, *fired, *late, *index_warning(book)],
+        "next": next_step(hypotheses, pending, proposals, late),
     }
+
+
+def brief_view(book: Book) -> dict[str, Any]:
+    """`check --brief`: the continue view cut to at most twelve lines."""
+    view = continue_view(book)
+    runs = {str(row.get("run_id")): row for row in all_runs(book)}
+    opened: list[Open] = []
+    for entry in view["proposals"]:
+        path = book.root / "proposals" / f"{entry['date']}.json"
+        document = read_json(path) if path.is_file() else {}
+        sleeves = document.get("sleeves") if isinstance(document, dict) else None
+        bets: list[Bet] = []
+        for name, sleeve in (sleeves if isinstance(sleeves, dict) else {}).items():
+            run = runs.get(str(sleeve.get("run_id")))
+            card = run.get("scorecard") if run else None
+            odds = (hypothesis_for(book, run, name) or {}).get("odds")
+            tier = str(sleeve.get("tier") or "-")
+            bets.append(
+                Bet(
+                    strategy=name,
+                    tier=tier,
+                    weight=sleeve.get("weight"),
+                    odds=odds if isinstance(odds, dict) else None,
+                    number=justifying(
+                        tier,
+                        sleeve.get("sharpe_net"),
+                        card.get("dsr") if isinstance(card, dict) else None,
+                    ),
+                )
+            )
+        opened.append(Open(entry["date"], entry["age_days"], tuple(bets)))
+    late = Counter(w.get("problem") for w in view["warnings"])
+    return brief(
+        regime=view["regime"],
+        proposals=opened,
+        incidents=current(kind_rows(book, Kind.INCIDENT)),
+        overdue=late["overdue"],
+        unscored=late["unscored"],
+        next_action=view["next"],
+        today=datetime.now(UTC).date(),
+    )
 
 
 def iso_day(raw: str) -> date:
@@ -581,9 +652,9 @@ def cmd_schema(args: argparse.Namespace) -> int:
     emit(
         {
             "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
-            "sequence": "hypotheses, critiques, decisions, regimes, fills, "
-            "holdings, preferences; a decision may name a hypothesis made earlier "
-            "in the batch",
+            "sequence": "hypotheses, critiques, decisions, scored, regimes, "
+            "fills, holdings, preferences; a decision or scored line may name a "
+            "hypothesis made earlier in the batch",
             "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the "
             "record",
             "corrections": '"supersedes": "<id>" on a new line; newest wins',
@@ -1513,6 +1584,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument(
         "--live", action="store_true", help="weekly tracking of paper and live sleeves"
+    )
+    check.add_argument(
+        "--brief", action="store_true", help="daily brief: at most twelve lines"
     )
     check.add_argument(
         "--today", type=iso_day, help="tests only: the day --live measures from"

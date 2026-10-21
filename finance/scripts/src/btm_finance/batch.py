@@ -26,6 +26,7 @@ from btm_finance.models import (
     HypothesisEntry,
     Preferences,
     RegimeEntry,
+    ScoredEntry,
     Side,
 )
 
@@ -41,8 +42,13 @@ SCHEMA: dict[str, str] = {
     "hypotheses": '{"kw": ["two", "words"], "strategy": "<name>", '
     '"family_id": "<key of limits.families>", '
     f'"capacity_class": "{_choices(CapacityClass)}", "falsifier": "...", '
-    '"counterparty": "...", "min_holding_days": 21, "mechanism": "..." '
-    '(optional), "sector": "..." (optional), "supersedes": "<id>" (optional), '
+    '"falsifier_by": "YYYY-MM-DD", "counterparty": "...", '
+    '"min_holding_days": 21, "odds": {"p_win": 0.55, "payoff": 1.5, '
+    '"horizon_days": 63, "kelly_implied": 0.25} (optional at registration, '
+    "required before check reads promotable or probe; kelly_implied is p_win "
+    '- (1 - p_win) / payoff within 0.01), "mechanism": "..." (optional), '
+    '"sector": "..." (optional), "supersedes": "<id>" (optional; spends a '
+    "trial of its family), "
     f'"chain": "{_choices(Chain)}", "expectation_source": "...", '
     '"discounted": "...", "confidence": 0.4 (these four optional; critique '
     "flags each one absent when limits.families.<family_id>.event is true)}",
@@ -51,8 +57,14 @@ SCHEMA: dict[str, str] = {
     '"confidence": 0.6 (optional)}',
     "decisions": '{"kw": ["two", "words"], "subject": "<strategy, run id, '
     f'hypothesis id, or proposal date>", "action": "{_choices(Action)}", '
-    '"reason": "...", "confidence": 0.6 (optional), "supersedes": "<id>" '
-    "(optional)}",
+    '"reason": "...", "odds": {"p_win": 0.55, "payoff": 1.5, '
+    '"horizon_days": 63, "kelly_implied": 0.25} (optional), "confidence": 0.6 '
+    '(optional), "supersedes": "<id>" (optional); forgo names a strategy}',
+    "scored": '{"kw": ["two", "words"], "subject": "<live hypothesis id>", '
+    '"resolved": "YYYY-MM-DD", "outcome": "...", "realized_return": 0.04, '
+    '"brier": 0.2 (0 to 1), "log_score": -0.5 (at most 0), "attribution": '
+    '{"market": 0.01, "factor": 0.02, "currency": 0.0, "idiosyncratic": 0.015, '
+    '"costs": -0.005}, "supersedes": "<scored id>" (optional)}',
     "regimes": '{"kw": ["two", "words"], "as_of": "YYYY-MM-DD", '
     '"confidence": 0.6, '
     f'"falsified": ["{_choices(c for c in Chain if c is not Chain.NONE)}"] '
@@ -84,6 +96,7 @@ class RecordBatch(Model):
     hypotheses: Rows = ()
     critiques: Rows = ()
     decisions: Rows = ()
+    scored: Rows = ()
     regimes: Rows = ()
     fills: Rows = ()
     holdings: Rows = ()
@@ -103,6 +116,7 @@ class Context:
     strategies: list[str]
     proposals: list[str]
     live_regimes: frozenset[str] = frozenset()
+    live_hypotheses: frozenset[str] = frozenset()
 
 
 @dataclass(slots=True)
@@ -125,7 +139,13 @@ class _Expansion(Acceptance):
         self.staged: dict[Kind, list[Row]] = {}
         self.pools = {
             kind: Pool(kind.value, list(context.ids.get(kind, [])))
-            for kind in (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.REGIME)
+            for kind in (
+                Kind.HYPOTHESIS,
+                Kind.CRITIQUE,
+                Kind.DECISION,
+                Kind.SCORED,
+                Kind.REGIME,
+            )
         }
 
     def stage(self, kind: Kind, full: str, body: Mapping[str, Any]) -> None:
@@ -226,9 +246,43 @@ class _Expansion(Acceptance):
             if entry is None:
                 continue
             subject = self.resolve_ref(entry.subject, subjects, f"{where}.subject")
+            if (
+                subject is not None
+                and entry.action is Action.FORGO
+                and subject not in self.context.strategies
+            ):
+                self.fail(
+                    f"{where}.subject",
+                    f"replace '{subject}': forgo names a strategy",
+                    "valid: " + ", ".join(sorted(self.context.strategies)),
+                )
+                subject = None
             full = self.named(Kind.DECISION, entry, where, entry.supersedes)
             if full is not None and subject is not None:
                 self.stage(Kind.DECISION, full, {**dump(entry), "subject": subject})
+
+    def take_scored(self, rows: Rows) -> None:
+        """`subject` names a live hypothesis: on file and not superseded, or
+        made earlier in this batch."""
+        made = self.pools[Kind.HYPOTHESIS].fresh
+        replaced = {
+            row.get("supersedes") for row in self.staged.get(Kind.HYPOTHESIS, [])
+        }
+        live = Pool(
+            "live hypothesis",
+            sorted((self.context.live_hypotheses | made) - replaced),
+        )
+        for index, row in enumerate(rows):
+            where = f"scored[{index}]"
+            if not self.envelope_free(row, where):
+                continue
+            entry = self.decode(ScoredEntry, row, where, SCHEMA["scored"])
+            if entry is None:
+                continue
+            subject = self.resolve_ref(entry.subject, live, f"{where}.subject")
+            full = self.named(Kind.SCORED, entry, where, entry.supersedes)
+            if full is not None and subject is not None:
+                self.stage(Kind.SCORED, full, {**dump(entry), "subject": subject})
 
     def take_regimes(self, rows: Rows) -> None:
         for index, row in enumerate(rows):
@@ -336,14 +390,16 @@ def expand_batch(
     context: Context, batch: Mapping[str, Any], maker: Maker, stamp: str
 ) -> RecordResult:
     """Every row decoded, resolved, and staged, or every problem located.
-    Order: hypotheses, critiques, decisions, regimes, fills, holdings,
-    preferences, so a decision may name a hypothesis made earlier."""
+    Order: hypotheses, critiques, decisions, scored, regimes, fills,
+    holdings, preferences, so a later kind may name a hypothesis made
+    earlier."""
     expansion = _Expansion(context, maker, stamp)
     expansion.known_keys(batch, RecordBatch)
     record = expansion.families(batch, RecordBatch, SCHEMA)
     expansion.take_hypotheses(record.hypotheses)
     expansion.take_critiques(record.critiques)
     expansion.take_decisions(record.decisions)
+    expansion.take_scored(record.scored)
     expansion.take_regimes(record.regimes)
     fills = expansion.take_fills(record.fills)
     opening = expansion.take_holdings(record.holdings)
@@ -358,6 +414,7 @@ def expand_batch(
             "hypotheses": pools[Kind.HYPOTHESIS].new,
             "critiques": pools[Kind.CRITIQUE].new,
             "decisions": pools[Kind.DECISION].new,
+            "scored": pools[Kind.SCORED].new,
             "regimes": pools[Kind.REGIME].new,
             "fills": fills,
             "holdings": opening,
