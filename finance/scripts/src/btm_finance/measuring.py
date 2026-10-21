@@ -18,7 +18,7 @@ from typing import Any
 import numpy as np
 
 from btm_corekit import CommandError
-from btm_finance.api import FACTORS, Market, on_dates
+from btm_finance.api import FACTORS, Market, carried_forward, on_dates
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
 from btm_finance.data.tables import Days, Floats, date_of
 from btm_finance.engine import (
@@ -130,7 +130,10 @@ def terminal(
 class Prepared:
     """Per-day arrays one panel needs, T by N unless named per name or per day.
     Returns are 0 where unknown; a delisted name returns its terminal return on
-    its delisting row and nothing after. Estimates at row t use days up to t."""
+    its delisting row and nothing after. A NaN close between a name's first
+    and last bar is a day its exchange held no session: price carried, return
+    0, no observation for volatility, spread, or ADV; the next bar returns the
+    whole move since the last close. Estimates at row t use days up to t."""
 
     close_cc: Floats
     overnight: Floats
@@ -151,7 +154,8 @@ class Prepared:
         days, width = panel.close.shape
         with np.errstate(invalid="ignore", divide="ignore"):
             price = panel.close * panel.adj
-            before = np.vstack((np.full((1, width), np.nan), price[:-1]))
+            carried = carried_forward(price)
+            before = np.vstack((np.full((1, width), np.nan), carried[:-1]))
             close_cc = price / before - 1.0
             overnight = panel.open * panel.adj / before - 1.0
             intraday = panel.close / panel.open - 1.0

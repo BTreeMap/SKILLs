@@ -28,6 +28,17 @@ def rows_of(lookback: int) -> int:
     return count
 
 
+def carried_forward(values: Floats) -> Floats:
+    """Each NaN cell takes the newest finite cell above it in its column; NaN
+    above a column's first finite cell stays. O(T N)."""
+    rows = np.arange(values.shape[0])[:, None]
+    last = np.maximum.accumulate(np.where(np.isfinite(values), rows, -1), axis=0)
+    out: Floats = np.where(
+        last >= 0, values[np.maximum(last, 0), np.arange(values.shape[1])], np.nan
+    )
+    return out
+
+
 @dataclass(frozen=True, slots=True)
 class Market:
     """One as-of day of the names a strategy may see. `names` holds those with
@@ -84,8 +95,20 @@ class Market:
         return np.asarray(factor / today, dtype=np.float64)
 
     def close(self, lookback: int) -> Floats:
-        """Total-return adjusted closes; the last row is the raw close."""
-        return self._window(self._bars.close, lookback) * self._scale(lookback)
+        """Total-return adjusted closes; the last row is the raw close. A row
+        with no bar after a name's first bar is a day its exchange held no
+        session (a universe spanning exchanges has them on each other's
+        holidays): it carries the last close. Open, high, low, volume, and
+        adj stay NaN there. O(T n) for n names served."""
+        bars = self._bars
+        price = bars.close[:, self._columns] * bars.adj[:, self._columns]
+        count = rows_of(lookback)
+        taken = carried_forward(price)[max(price.shape[0] - count, 0) :]
+        if taken.shape[0] < count:
+            pad = np.full((count - taken.shape[0], len(self._columns)), np.nan)
+            taken = np.vstack((pad, taken))
+        today = np.nan_to_num(self._window(bars.adj, 1)[-1], nan=1.0)
+        return np.asarray(taken / today, dtype=np.float64)
 
     def open(self, lookback: int) -> Floats:
         return self._window(self._bars.open, lookback) * self._scale(lookback)

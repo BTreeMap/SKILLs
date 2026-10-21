@@ -40,6 +40,9 @@ data/manifest.json                        per file: path, sha256, rows, source, 
   25 years back. Rows before `--since` are dropped with `signal:` count.
 - Bar knowledge time is bar date. Event `knowledge_time` is day value became
   public; every model accessor hides rows known after its day.
+- Bars from several exchanges share one date grid, union of their sessions;
+  missing bar between name's first and last bar is non-session day (price
+  carried, no trade), not a data gap to report.
 
 ## csv
 

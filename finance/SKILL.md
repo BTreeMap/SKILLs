@@ -168,6 +168,13 @@ names. Then write `strategies/<name>/`:
   `volume(n)`, `adj(n)` (last `n` rows, names as columns, closes
   total-return adjusted), `adv_dollar(n)`, `fundamental(field)`,
   `factor(field, n)`. Every accessor counts rows back; none takes a date.
+- Rows are union of every exchange's sessions, so universe spanning
+  exchanges (`tsx` with `nyse`) is supported. Missing bar between name's
+  first and last bar is day its exchange held no session: `close(n)` carries
+  last close there; `open`, `high`, `low`, `volume`, `adj` stay NaN;
+  `measure` returns 0 that day, carries whole move to next bar, fills
+  rebalance landing there at carried close. Name with no bar on as-of day is
+  absent from `names` that day.
 - `config.json`: `params` (numbers only, each perturbed 20% down and up),
   `rebalance` (`monthly|quarterly|annual`), `holding_days` (at least
   `limits.min_holding_days`), `long_only`, `family_id` (same as

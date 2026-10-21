@@ -75,6 +75,11 @@ that list.
   close under `price_floor`, ADV under `adv_multiple` times largest intended
   position at `asset_cap`. Delisted name returns its terminal return by
   exchange from `limits.delisting` on delisting day, then cash.
+* Interior missing bar (NaN close between name's first and last bar) is
+  non-session day on its exchange: price carried, return 0, no trade, no
+  volatility, spread, or ADV observation; next bar returns whole move since
+  last close; rebalance landing there fills at carried close. Universe
+  spanning exchanges is supported.
 
 ## Regimes and streams
 
