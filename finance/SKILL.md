@@ -193,11 +193,14 @@ Register hypothesis first; `measure` refuses strategy no hypothesis line
 names. Then write `strategies/<name>/`:
 
 - `signal.py` defines `signal(market, params)`, returns target weights by
-  name; missing names weigh zero. `market` serves one as-of day: `day`,
-  `names`, `sector`, `exchange`, `close(n)`, `open(n)`, `high(n)`, `low(n)`,
-  `volume(n)`, `adj(n)` (last `n` rows, names as columns, closes
-  total-return adjusted), `adv_dollar(n)`, `fundamental(field)`,
-  `factor(field, n)`. Every accessor counts rows back; none takes a date.
+  name; missing names weigh zero. `market` serves one as-of day: `day` (int,
+  days since 1970-01-01); `names`, tuple of symbols in column order;
+  `sector`, `exchange`, tuples aligned to `names`; `close(n)`, `open(n)`,
+  `high(n)`, `low(n)`, `volume(n)`, `adj(n)`, 2-D arrays of `n` rows by
+  `names`, newest row last, NaN-padded on top when history is shorter,
+  closes total-return adjusted; `adv_dollar(n)` and `fundamental(field)`,
+  1-D arrays aligned to `names`; `factor(field, n)`, 1-D array of length
+  `n`, newest last. Every accessor counts rows back; none takes a date.
 - Rows are union of every exchange's sessions, so universe spanning
   exchanges (`tsx` with `nyse`) is supported. Missing bar between name's
   first and last bar is day its exchange held no session: `close(n)` carries
@@ -279,7 +282,9 @@ Unit of work is one registered hypothesis:
    reached its `trials` from `limits.families`.
 2. `record` hypothesis; copy its id from `new`.
 3. Hand author delegate the unit (table below): it writes
-   `strategies/<name>/` and runs `measure "$B" <name> --agent <agent>`.
+   `strategies/<name>/`, runs `measure "$B" <name> --agent <agent>`, and
+   commits `strategies/<name>/` on its branch before critique: `critique`
+   compares hypothesis `ts` against first commit touching that folder.
    Delegating nothing, lead authors inline (`/summon` inline default).
 4. Hand run id to critique delegate, agent other than run's author, lead or
    delegate; `record` its `critiques` batch. Only critique needs agent other
