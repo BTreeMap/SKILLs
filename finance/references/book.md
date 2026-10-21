@@ -22,9 +22,14 @@ operator's private git repository; skill holds methods, book holds state.
     pad/scratch.jsonl         kernel pad: free memory, not ledger
   proposals/  approvals/  rejected/  sent/
   strategies/<name>/
-    signal.py  config.json  README.md  status
-  features/  ext/
+    signal.py  config.json  README.md  status  strategy-local helpers
+  lib/                        agent's shared modules; signal.py imports lib.<module>
+  tools/                      agent's scripts; read book through btm_finance.api
+  research/<topic>/           notes, tables, sources per line of inquiry
+  tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
   tests/reference/            this book's pinned scorecard
+  INDEX.md                    one line per lib module, tool, research topic
+  features/  ext/
   .gitignore                  data/
 
 <path start --held-out named>, default
@@ -34,6 +39,14 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
 
 `book.json` `held_out` holds absolute held-out path; `measure --held-out`
 reads list there. Agent never reads that file.
+
+Run book tests through binding `R` with `pytest <book>/tests` in place of
+`btm-finance`. `tools/` script reads book through `btm_finance.api`, never
+ledger or parquet files: `open_book(path)`; `ledger(book, kind)` for
+newest-wins rows of one kind, superseded lines dropped (`run` joins every
+runs file, oldest first); `research(book).at(day)` for `Market` on last bar
+on or before `day` over research names, `.dates` for bar dates. None serves
+held-out names.
 
 `data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
 `data/returns/` files stay in manifest for integrity checks but never move
@@ -112,7 +125,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | `limits.json`, `approvals/`, `strategies/*/status` | human | read |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only; bare `check` warns on any other write it can see |
-| `strategies/` except `status`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
+| `strategies/` except `status`, `lib/`, `tools/`, `research/`, `tests/` except `reference/`, `INDEX.md`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
 | `bin/send` | operator | read; run plain or `--dry-run`; `--fills` is operator's |
 | held-out list, path in `book.json` `held_out` | `start` | never read |
@@ -122,7 +135,10 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 1. Directories above, `strategies/baseline/` with `status` `research`,
    static multi-factor `signal.py`, `config.json`, `README.md`; baseline
    hypothesis (`capacity_class: crowded`) through gate into
-   `hypotheses.jsonl`.
+   `hypotheses.jsonl`. Empty `lib/__init__.py`; `tests/conftest.py`;
+   `INDEX.md` holding header and column line
+   `path | purpose | last touched`, nothing else. Bare `check` warns when
+   `INDEX.md` is absent.
 2. `bin/send` (mode 755) with `RECORD` bound to this skill's realpath.
 3. `preferences.json`, `limits.json` defaults, then `book.json` with
    `held_out` path.

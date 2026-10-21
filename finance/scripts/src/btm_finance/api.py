@@ -1,20 +1,49 @@
-"""The data API a strategy sees: `Market`, bound to one as-of day and one name
-set. Accessors count back from that day by rows; none takes a date.
+"""The data API: `Market`, which a strategy sees, and the book readers a
+`tools/` or `lib/` script uses instead of touching ledger or parquet files.
 
-Bars are cut at the day and events at their knowledge time before a `Market`
-exists, so no attribute, private or public, holds anything later.
+`Market` is bound to one as-of day and one name set. Accessors count back
+from that day by rows; none takes a date. Bars are cut at the day and events
+at their knowledge time before a `Market` exists, so no attribute, private
+or public, holds anything later.
+
+Book readers, all read-only; append to the ledger only through `record`:
+
+- `open_book(path)`: the `Book` at a path; refuses one without `book.json`.
+- `ledger(book, kind)`: newest-wins rows of one kind (`hypothesis`,
+  `critique`, `decision`, `fill`, `incident`, `regime`, `run`), superseded
+  lines dropped; `run` joins every runs file, oldest first by `ts`.
+- `research(book)`: research names' bars and events, built once;
+  `.at(day)` is the `Market` on the last bar on or before `day`, `.dates`
+  the bar dates. Held-out names never enter it.
 """
 
 from __future__ import annotations
 
 import operator
 from dataclasses import dataclass
+from datetime import date
 
 import numpy as np
 from numpy.typing import NDArray
 
+from btm_corekit import CommandError
+from btm_finance import ledger as lines
+from btm_finance.data.assemble import assemble
 from btm_finance.data.panel import Events, Panel
-from btm_finance.data.tables import Days, Floats
+from btm_finance.data.tables import Days, Floats, date_of, day_of
+from btm_finance.ledger import Kind, Row
+from btm_finance.store import Book, held_out_list, open_book, read_bytes, run_files
+
+__all__ = [
+    "FACTORS",
+    "Book",
+    "Market",
+    "Research",
+    "ledger",
+    "on_dates",
+    "open_book",
+    "research",
+]
 
 FACTORS = "_factors"
 Ints = NDArray[np.intp]
@@ -173,3 +202,51 @@ def on_dates(events: Events, name: str, field: str, dates: Days) -> Floats:
     hit = stamps[where] == dates
     out[hit] = values[where[hit]]
     return out
+
+
+def ledger(book: Book, kind: str) -> list[Row]:
+    """Newest-wins rows of one ledger kind; `run` joins every runs file,
+    oldest first by `ts`. O(ledger bytes of that kind)."""
+    try:
+        chosen = Kind(kind)
+    except ValueError:
+        raise CommandError(
+            f"no ledger kind {kind!r}: use one of {', '.join(Kind)}"
+        ) from None
+    if chosen is not Kind.RUN:
+        return lines.current(lines.rows_of(read_bytes(book.path_of(chosen))))
+    rows = [
+        row
+        for path in run_files(book)
+        for row in lines.current(lines.rows_of(read_bytes(path)))
+    ]
+    return sorted(rows, key=lambda row: str(row.get("ts", "")))
+
+
+@dataclass(frozen=True, slots=True)
+class Research:
+    """Research names' bars and events; build with `research(book)`."""
+
+    _panel: Panel
+    _events: Events
+
+    @property
+    def dates(self) -> tuple[date, ...]:
+        """Every bar date, oldest first."""
+        return tuple(date_of(int(day)) for day in self._panel.dates)
+
+    def at(self, day: date) -> Market:
+        """`Market` on the last bar on or before `day`. O(log T + N)."""
+        row = self._panel.through(day_of(day)) - 1
+        if row < 0:
+            raise CommandError(f"no bar on or before {day}; load prices first")
+        return Market.at(self._panel, self._events, int(self._panel.dates[row]))
+
+
+def research(book: Book) -> Research:
+    """Every stored file assembled, re-hashed on read, cut to research names.
+    O(store bytes)."""
+    panel, events = assemble(book)
+    hidden = held_out_list(book)
+    names = frozenset(name for name in panel.names if name not in hidden)
+    return Research(panel.only(names), events.only(names))

@@ -46,7 +46,25 @@ DIRECTORIES = (
     "features",
     "ext",
     "tests/reference",
+    "lib",
+    "tools",
+    "research",
 )
+INDEX = "INDEX.md"
+INDEX_TEXT = "# Index\n\npath | purpose | last touched\n"
+BOOK_CONFTEST = """\"\"\"Book tests: book root first on sys.path, so
+`import lib.<module>` resolves.
+
+    uv run --project <skill scripts> pytest <book>/tests
+\"\"\"
+
+import sys
+from pathlib import Path
+
+ROOT = str(Path(__file__).resolve().parents[1])
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+"""
 SENTINEL = "RECORD: tuple[str, ...] = ()"
 HELD_OUT_SHARE = 4  # one name in four per sector, rounded half up
 
@@ -195,6 +213,9 @@ def scaffold(
     write_new(baseline / "signal.py", template("signal.tmpl"))
     if universe is not None:
         write_new(root / "universe.csv", universe)
+    write_new(root / "lib" / "__init__.py", "")
+    write_new(root / "tests" / "conftest.py", BOOK_CONFTEST)
+    write_new(root / INDEX, INDEX_TEXT)
     send = root / "bin" / "send"
     write_new(send, sender(record_binding()))
     send.chmod(0o755)
@@ -224,6 +245,9 @@ def scaffold(
             ".gitignore",
             MARKER,
             "bin/send",
+            INDEX,
+            "lib/__init__.py",
+            "tests/conftest.py",
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
         ],

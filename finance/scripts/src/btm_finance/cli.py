@@ -42,7 +42,7 @@ from btm_corekit import (
     wire_pad,
     write_atomic,
 )
-from btm_finance.api import FACTORS, Market, on_dates
+from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
@@ -154,7 +154,7 @@ from btm_finance.repeat import (
     peer_drift,
 )
 from btm_finance.repeat import advisories as engine_advisories
-from btm_finance.scaffold import scaffold
+from btm_finance.scaffold import INDEX, scaffold
 from btm_finance.scorecard import RunLine, Span
 from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
@@ -314,10 +314,7 @@ def kind_rows(book: Book, kind: Kind) -> list[Numbered]:
 
 def all_runs(book: Book) -> list[Row]:
     """Live run lines of every runs file, oldest first by `ts`."""
-    rows = [
-        row for path in run_files(book) for row in current(rows_of(read_bytes(path)))
-    ]
-    return sorted(rows, key=lambda row: str(row.get("ts", "")))
+    return ledger(book, Kind.RUN)
 
 
 def hypothesis_for(book: Book, run: Row | None, strategy: str) -> Row | None:
@@ -437,6 +434,15 @@ def ledger_warnings(book: Book) -> list[dict[str, Any]]:
     return found
 
 
+def index_warning(book: Book) -> list[dict[str, Any]]:
+    """`INDEX.md` absent: the lead keeps one line per lib module, tool, and
+    research topic there."""
+    if (book.root / INDEX).is_file():
+        return []
+    signal(f"no {INDEX} in the book; write it with one line per lib, tool, topic")
+    return [{"file": INDEX, "problem": "absent"}]
+
+
 def continue_view(book: Book) -> dict[str, Any]:
     """Every ledger file replayed: O(ledger bytes)."""
     limits = load_limits(book)
@@ -482,7 +488,7 @@ def continue_view(book: Book) -> dict[str, Any]:
         "proposals": proposals,
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
-        "warnings": [*warnings, *fired],
+        "warnings": [*warnings, *fired, *index_warning(book)],
         "next": next_step(hypotheses, pending, proposals),
     }
 
