@@ -110,12 +110,12 @@ Run line, beside scorecard and outside it (reference pin never covers it):
 `measure <strategy> --repeat <run id>` reruns one line from its own inputs
 and writes nothing: no run line, no returns file, no incident.
 
-* Refuses before running, naming each moved input: `signal.py` whose
-  `ast.dump` sha256, or `config.json` whose canonical-JSON sha256, differs
-  from line's `code_files`, or `btm_finance` version folded into
-  `code_hash`; source file under `data/raw/` changed or vanished since
-  listed in manifest, or loaded after run; listed peer whose returns file is
-  unlisted, changed, or gone.
+* Refuses before running, naming each moved input: `signal.py` or book-local
+  module it imports whose `ast.dump` sha256, or `config.json` whose
+  canonical-JSON sha256, differs from line's `code_files`, or `btm_finance`
+  version folded into `code_hash`; source file under `data/raw/` changed or
+  vanished since listed in manifest, or loaded after run; listed peer whose
+  returns file is unlisted, changed, or gone.
 * Reruns with line's `config`, `params`, `held_out`, `exclusions`, and
   exactly its `peers` for `sr_var` and PBO, trial count `trials - 1`;
   `limits.json` is read as it stands now.

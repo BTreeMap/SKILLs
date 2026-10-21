@@ -187,14 +187,16 @@ names. Then write `strategies/<name>/`:
   `paper`, `live`, `retired`. Operator moves strategy to `paper` or `live`
   by writing `status` and recording `promote` decision naming it in same
   step; `paper_months` counts from that decision.
-- Imports: `signal.py` may import book's `lib/` (`import lib.<module>`) and
-  helpers in `strategies/<name>/`, at module top. Read prices and
-  fundamentals only through `market`: `measure` serves research names only,
-  so held-out stays hidden by data flow. Script refuses no import; `measure`
-  lists under run line `imports` every top-level module `signal.py` and
-  book-local modules it imports reach outside book, standard library,
-  `numpy`, `api.Market` aside; critique reads that list. Empty list is
-  normal.
+- Imports: `signal.py` may import book's `lib/` (`import lib.<module>`),
+  helpers in `strategies/<name>/`, and any installed module, at module top
+  or inside a function. Script refuses no import.
+- Read prices and fundamentals only through `market`. `measure` serves
+  research names only, so held-out stays hidden by data flow.
+- Run line `imports` lists top-level module names that `signal.py` and
+  book-local modules it imports reach outside book. Standard library and
+  `numpy` are not listed. Any api name other than `Market` is listed as
+  `btm_finance.api.<name>`.
+- Empty `imports` is normal. Critique reads list.
 
 `measure` trades next open after each period's last day, normalizes to gross
 1, drops excluded, under-floor, and thin names, caps weight at
@@ -360,11 +362,12 @@ settle to `/fact-check` or state it open.
   `date` but today (UTC). Operator sets `date` and file name to send day and
   keeps `proposal`: `check --live` finds slippage reference through it.
 - `measure --repeat` compares sha256 of `ast.dump` of `signal.py` and of
-  parsed `config.json` as canonical JSON (keys sorted, fixed separators):
-  reformat, comment, or reindent of either reproduces; any change to code,
-  docstring, or value refuses repeat, as does Python upgrade that changes
-  AST dump. `lib/` modules are not hashed. Edit measured strategy files only
-  for new run.
+  each book-local module it imports (`code_files` keys by path from book
+  root), and of parsed `config.json` as canonical JSON (keys sorted, fixed
+  separators): reformat, comment, or reindent reproduces; any change to
+  code, docstring, or value refuses repeat, naming file, as does Python
+  upgrade that changes AST dump. Edit measured strategy files and `lib/`
+  modules they import only for new run.
 - `paper` or `live` without `promote` decision naming strategy: `check`
   blocks with `paper_months: no promote decision names the strategy`.
   Operator writes `status` and records `promote` in same step.

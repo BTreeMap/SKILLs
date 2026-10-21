@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from btm_finance.loader import Roots, imports_of, load_strategy
+from btm_finance.loader import Roots, load_strategy, reach_of
 
 SIGNAL = """import json
 import numpy as np
@@ -64,8 +64,9 @@ def test_relative_imports_and_api_reach_are_walked(tmp_path):
         "from lib.a import f\nfrom btm_finance import api as A\nimport btm_finance\n"
         "rows = A.ledger\nkind = A.Market\n",
     )
-    found = imports_of(folder / "signal.py", Roots(tmp_path, folder))
-    assert found == ("btm_finance", "btm_finance.api.ledger", "httpx")
+    found = reach_of(folder / "signal.py", Roots(tmp_path.resolve(), folder))
+    assert found.imports == ("btm_finance", "btm_finance.api.ledger", "httpx")
+    assert found.modules == ("lib/__init__.py", "lib/a.py", "lib/b.py")
 
 
 def test_two_strategies_each_load_their_own_helper(tmp_path):
@@ -80,3 +81,21 @@ def test_two_strategies_each_load_their_own_helper(tmp_path):
     first = load_strategy(tmp_path, "one").signal
     second = load_strategy(tmp_path, "two").signal
     assert (first(None, {}), second(None, {})) == ({"A": 1.0}, {"A": 2.0})
+
+
+def test_an_import_inside_signal_finds_the_book_on_every_call(tmp_path):
+    for name, value in (("one", 1.0), ("two", 2.0)):
+        folder = tmp_path / "strategies" / name
+        write(folder / "helpers.py", f"VALUE = {value}\n")
+        write(
+            folder / "signal.py",
+            "\n\ndef signal(market, params):\n"
+            "    from helpers import VALUE\n\n    return {'A': VALUE}\n",
+        )
+    first = load_strategy(tmp_path, "one").signal
+    second = load_strategy(tmp_path, "two").signal
+    assert [f(None, {}) for f in (first, second, first)] == [
+        {"A": 1.0},
+        {"A": 2.0},
+        {"A": 1.0},
+    ]

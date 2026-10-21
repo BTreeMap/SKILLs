@@ -101,7 +101,7 @@ from btm_finance.live import (
     row_of,
     trading_days_after,
 )
-from btm_finance.loader import load_strategy
+from btm_finance.loader import load_strategy, strategy_reach
 from btm_finance.measuring import (
     Peers,
     Prepared,
@@ -615,21 +615,48 @@ def name_of(raw: str, what: str) -> str:
     return raw
 
 
-def code_hash(source: bytes, config: bytes) -> str:
-    """sha256 over the AST dump of `signal.py` and canonical `config.json`,
-    each with its length, then the engine version: a reformat moves nothing."""
+@dataclass(frozen=True, slots=True)
+class Code:
+    """A strategy's code inputs: `signal.py`, `config.json`, and each
+    book-local module it reaches, by path relative to the book root."""
+
+    source: bytes
+    config: bytes
+    modules: Mapping[str, bytes]
+
+
+def code_of(book: Book, name: str) -> Code:
+    folder = book.root / "strategies" / name
+    reach = strategy_reach(book.root, name)
+    return Code(
+        source=file_bytes(folder / "signal.py"),
+        config=file_bytes(folder / "config.json"),
+        modules={path: file_bytes(book.root / path) for path in reach.modules},
+    )
+
+
+def code_hash(code: Code) -> str:
+    """sha256 over the AST dump of `signal.py`, canonical `config.json`, then
+    each module's path and AST dump, each with its length, then the engine
+    version: a reformat moves nothing."""
     digest = hashlib.sha256()
-    parts = (canonical_source(source), canonical_config(config))
+    parts = [canonical_source(code.source), canonical_config(code.config)]
+    for path in sorted(code.modules):
+        parts += [path.encode(), canonical_source(code.modules[path], path)]
     for part in (*parts, btm_finance.__version__.encode()):
         digest.update(len(part).to_bytes(8, "big") + part)
     return digest.hexdigest()
 
 
-def code_files(source: bytes, config: bytes) -> dict[str, str]:
+def code_files(code: Code) -> dict[str, str]:
     """Per file, sha256 of the same canonical forms `code_hash` folds."""
     return {
-        "signal.py": sha256_of(canonical_source(source)),
-        "config.json": sha256_of(canonical_config(config)),
+        "signal.py": sha256_of(canonical_source(code.source)),
+        "config.json": sha256_of(canonical_config(code.config)),
+        **{
+            path: sha256_of(canonical_source(data, path))
+            for path, data in sorted(code.modules.items())
+        },
     }
 
 
@@ -704,7 +731,6 @@ def cmd_measure(args: argparse.Namespace) -> int:
     if not folder.is_dir():
         raise CommandError(f"no strategies/{name}/ in the book")
     hypothesis = registered(book, name)
-    config_bytes = file_bytes(folder / "config.json")
     config = parse_model(
         StrategyConfig,
         read_json(folder / "config.json"),
@@ -720,7 +746,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"config family_id {config.family_id} differs from hypothesis "
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
-    source = file_bytes(folder / "signal.py")
+    code = code_of(book, name)
     loaded = load_strategy(book.root, name)
     strategy = loaded.signal
     panel, events = assemble(book)
@@ -748,8 +774,8 @@ def cmd_measure(args: argparse.Namespace) -> int:
         family_id=config.family_id,
         strategy=name,
         data_snapshot=snapshot,
-        code_hash=code_hash(source, config_bytes),
-        code_files=code_files(source, config_bytes),
+        code_hash=code_hash(code),
+        code_files=code_files(code),
         config=config.model_dump(mode="json"),
         params={key: float(value) for key, value in params.items()},
         scorecard=outcome.scorecard,
@@ -853,13 +879,11 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     `target_weights`, as `measure` sets them; vol from the run's net series."""
     name = str(run.get("strategy"))
     folder = book.root / "strategies" / name
-    config_bytes = file_bytes(folder / "config.json")
     config = parse_model(
         StrategyConfig,
         read_json(folder / "config.json"),
         f"strategies/{name}/config.json",
     )
-    source = file_bytes(folder / "signal.py")
     strategy = load_strategy(book.root, name).signal
     rules = rules_of(limits, preferences, config)
     setting = Setting(day.panel, day.events, day.prep, rules)
@@ -874,9 +898,9 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     vol = None
     if series is not None and len(series[1]) > 1:
         vol = float(np.std(series[1], ddof=1)) * math.sqrt(PERIODS_PER_YEAR)
-    changed = code_hash(source, config_bytes) != run.get("code_hash")
+    changed = code_hash(code_of(book, name)) != run.get("code_hash")
     if changed:
-        signal(f"{name}: signal.py or config.json changed since run {run['run_id']}")
+        signal(f"{name}: strategy code changed since run {run['run_id']}")
     return Candidate(
         strategy=name,
         account=account,
@@ -1156,22 +1180,21 @@ def presence_of(book: Book, entry: Entry) -> Presence:
     return Presence.INTACT if sha256_of(data) == entry.sha256 else Presence.CHANGED
 
 
-def drift_of(  # noqa: PLR0913 - one rerun's recorded and current inputs
+def drift_of(
     book: Book,
     row: Row,
     line: RunLine,
     *,
-    source: bytes,
-    config: bytes,
+    code: Code,
     manifest: Manifest,
 ) -> list[str]:
     """Every reason the rerun would not be the recorded run. Re-hashes every
     listed source file and peer series once: O(store bytes)."""
     problems: list[str] = []
-    if code_hash(source, config) != line.code_hash:
+    if code_hash(code) != line.code_hash:
         moved = code_drift(
             line.code_files,
-            code_files(source, config),
+            code_files(code),
             (line.engine.get("btm_finance", ""), btm_finance.__version__),
         )
         problems.append(f"code moved: {', '.join(moved) or 'code_hash differs'}")
@@ -1224,13 +1247,8 @@ def cmd_repeat(args: argparse.Namespace) -> int:
     row, line = run_line_of(book, args.repeat)
     if line.strategy != name:
         raise CommandError(f"run {line.run_id} measured {line.strategy}, not {name}")
-    folder = book.root / "strategies" / name
-    source = file_bytes(folder / "signal.py")
-    config_bytes = file_bytes(folder / "config.json")
     manifest = read_manifest(book)
-    problems = drift_of(
-        book, row, line, source=source, config=config_bytes, manifest=manifest
-    )
+    problems = drift_of(book, row, line, code=code_of(book, name), manifest=manifest)
     if problems:
         raise CommandError(f"refused to repeat {line.run_id}: " + "; ".join(problems))
     config = parse_model(StrategyConfig, line.config, f"run {line.run_id} config")

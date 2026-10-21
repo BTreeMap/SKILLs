@@ -51,13 +51,13 @@ class RepeatReport(Model):
     advisories: tuple[str, ...]
 
 
-def canonical_source(source: bytes) -> bytes:
+def canonical_source(source: bytes, name: str = "signal.py") -> bytes:
     """`ast.dump` of the module: whitespace and comments never move it; a
     Python upgrade that changes the dump does."""
     try:
         return ast.dump(ast.parse(source)).encode()
     except (SyntaxError, ValueError) as err:
-        raise CommandError(f"signal.py does not parse: {err}") from err
+        raise CommandError(f"{name} does not parse: {err}") from err
 
 
 def canonical_config(config: bytes) -> bytes:
@@ -76,12 +76,18 @@ def code_drift(
     current: Mapping[str, str],
     engine: tuple[str, str],
 ) -> list[str]:
-    """Names of the moved code inputs: file digests, then the engine version
-    `code_hash` folds in. An empty `recorded` (a line without per-file
-    digests) names both files."""
+    """Names of the moved code inputs: `signal.py`, `config.json`, then each
+    book-local module by path (added, edited, or gone), then the engine
+    version `code_hash` folds in. An empty `recorded` (a line without
+    per-file digests) names both files."""
     if not recorded:
         return ["signal.py or config.json (line predates per-file digests)"]
-    moved = [name for name in CODE_FILES if recorded.get(name) != current.get(name)]
+    modules = sorted((set(recorded) | set(current)) - set(CODE_FILES))
+    moved = [
+        name
+        for name in (*CODE_FILES, *modules)
+        if recorded.get(name) != current.get(name)
+    ]
     then, now = engine
     if then != now:
         moved.append(f"{ENGINE_KEY} {then} -> {now}")

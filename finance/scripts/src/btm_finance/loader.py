@@ -1,14 +1,15 @@
 """Load `strategies/<name>/signal.py` with the strategy folder and the book
 root importable, so it may `import lib.<module>` and strategy-local helpers,
-and list what it imports from outside the book.
+at module top or inside a function: every call of `signal` runs with the
+same paths, and list what it imports from outside the book.
 
 `imports`: sorted top-level names that import statements reach in
 `signal.py` and, recursively, in every book-local module it imports (under
 `lib/` or the strategy folder). Left out: standard library, `numpy`,
 `btm_finance.api` with `Market`, book-local modules. Any other api name
 reached is listed as `btm_finance.api.<name>`; another `btm_finance` module
-as `btm_finance.<module>`. Import book-local modules at module top: the
-paths are restored once `signal.py` has run.
+as `btm_finance.<module>`. `modules`: the book-local files reached, paths
+relative to the book root, which `measure` hashes beside `signal.py`.
 """
 
 from __future__ import annotations
@@ -39,6 +40,16 @@ class Loaded:
 
     signal: Signal
     imports: tuple[str, ...]
+    modules: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class Reach:
+    """What `signal.py` reaches: outside names, and book-local files by
+    path relative to the book root."""
+
+    imports: tuple[str, ...]
+    modules: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,11 +197,12 @@ def reached(source: Source, roots: Roots) -> tuple[set[str], list[str]]:
     return listed, local
 
 
-def imports_of(signal_file: Path, roots: Roots) -> tuple[str, ...]:
+def reach_of(signal_file: Path, roots: Roots) -> Reach:
     """Walk `signal.py` and every book-local module it reaches, each once.
     O(total AST nodes)."""
     queue = [parse(signal_file, None, package=False)]
     seen: set[str] = set()
+    files: set[str] = set()
     listed: set[str] = set()
     while queue:
         found, local = reached(queue.pop(), roots)
@@ -200,8 +212,19 @@ def imports_of(signal_file: Path, roots: Roots) -> tuple[str, ...]:
             if dotted in seen or hit is None:
                 continue
             seen.add(dotted)
+            files.add(hit[0].resolve().relative_to(roots.book).as_posix())
             queue.append(parse(hit[0], dotted, package=hit[1]))
-    return tuple(sorted(listed))
+    return Reach(tuple(sorted(listed)), tuple(sorted(files)))
+
+
+def roots_of(book: Path, name: str) -> Roots:
+    return Roots(book.resolve(), (book / "strategies" / name).resolve())
+
+
+def strategy_reach(book: Path, name: str) -> Reach:
+    """`reach_of` for `strategies/<name>/signal.py`, running none of it."""
+    roots = roots_of(book, name)
+    return reach_of(roots.folder / "signal.py", roots)
 
 
 def top(name: str) -> str:
@@ -229,12 +252,12 @@ def importable(roots: Roots) -> Iterator[None]:
 def load_strategy(book: Path, name: str) -> Loaded:
     """`strategies/<name>/signal.py` run as a fresh module; its `signal` and
     `imports`. Any failure on import is the strategy's, named by file."""
-    roots = Roots(book.resolve(), (book / "strategies" / name).resolve())
+    roots = roots_of(book, name)
     path = roots.folder / "signal.py"
     shown = f"strategies/{name}/signal.py"
     if not path.is_file():
         raise CommandError(f"no {shown} in the book")
-    imports = imports_of(path, roots)
+    reach = reach_of(path, roots)
     module_name = f"btm_strategy_{name.replace('-', '_')}_{secrets.token_hex(4)}"
     spec = importlib.util.spec_from_file_location(module_name, path)
     if spec is None or spec.loader is None:  # pragma: no cover - a .py file
@@ -249,4 +272,15 @@ def load_strategy(book: Path, name: str) -> Loaded:
     if not callable(found):
         raise CommandError(f"{shown} defines no {ENTRY}(market, params)")
     entry: Signal = found
-    return Loaded(entry, imports)
+    return Loaded(guarded(entry, roots), reach.imports, reach.modules)
+
+
+def guarded(entry: Signal, roots: Roots) -> Signal:
+    """`entry` with every call inside `importable(roots)`, so an import in a
+    function body finds this book's modules and leaves none behind."""
+
+    def call(market: Any, params: Mapping[str, float]) -> Any:
+        with importable(roots):
+            return entry(market, params)
+
+    return call

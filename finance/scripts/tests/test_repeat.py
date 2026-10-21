@@ -115,3 +115,27 @@ def test_the_comparison_is_absolute_to_one_then_relative():
         ("scorecard.b", Rule.RELATIVE),
         ("scorecard.c", Rule.EXACT),
     ]
+
+
+def test_a_lib_module_is_hashed_beside_signal(synthetic, run):
+    book = synthetic(seed=7)
+    module = book / "lib" / "tilt.py"
+    module.write_text("def scale(weight):\n    return weight\n")
+    signal = book / "strategies" / "baseline" / "signal.py"
+    signal.write_text("import lib.tilt\n" + signal.read_text())
+    code, document, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    run_id = document["run_id"]
+    line = json.loads((book / "ledger" / "runs.jsonl").read_text().splitlines()[-1])
+    assert set(line["code_files"]) >= {"lib/__init__.py", "lib/tilt.py"}
+
+    module.write_text("# spaced\n\n\ndef scale(weight):\n\n    return weight\n")
+    code, document, err = run(["measure", str(book), "baseline", "--repeat", run_id])
+    assert code == 0, err
+    assert document["reproduced"] is True
+
+    module.write_text("def scale(weight):\n    return 2 * weight\n")
+    code, _, err = run(["measure", str(book), "baseline", "--repeat", run_id])
+    assert code == 1
+    assert "code moved: lib/tilt.py" in err
+    assert "signal.py" not in err.split("code moved:")[1]
