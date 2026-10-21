@@ -4,9 +4,14 @@ references resolved against live state, holdings and preferences expanded."""
 from __future__ import annotations
 
 import json
+import os
 
+import pytest
+from btm_finance import store
 from btm_finance.ledger import Kind
 from btm_finance.store import append_ledger, open_book
+
+from btm_corekit import CommandError
 
 
 def batch(run, book, payload):
@@ -146,12 +151,45 @@ def test_an_empty_batch_is_a_located_rejection(book, run):
 
 
 def plant_bytes(path, extra: bytes) -> bytes:
-    """The operator's hand outside record: lift the mode, append, restore."""
-    mode = path.stat().st_mode & 0o777
-    path.chmod(0o644)
+    """A hand outside record appends bytes."""
     path.write_bytes(path.read_bytes() + extra)
-    path.chmod(mode)
     return path.read_bytes()
+
+
+def test_a_line_is_id_ts_then_the_record(book, run, make_hypothesis):
+    code, _, err = batch(run, book, {"hypotheses": [make_hypothesis(["one", "idea"])]})
+    assert code == 0, err
+    lines = (book / "ledger" / "hypotheses.jsonl").read_bytes().splitlines()
+    row = json.loads(lines[1])
+    assert list(row)[:2] == ["id", "ts"]
+    assert row["strategy"] == "baseline"
+
+
+def test_a_short_write_leaves_the_file_as_it_was(book, monkeypatch):
+    path = book / "ledger" / "hypotheses.jsonl"
+    before = path.read_bytes()
+    real = os.write
+    monkeypatch.setattr(store.os, "write", lambda fd, data: real(fd, data[:5]))
+    with pytest.raises(CommandError, match="left as it was"):
+        append_ledger(path, [{"id": "a", "ts": "t"}, {"id": "b", "ts": "t"}])
+    assert path.read_bytes() == before
+
+
+def test_a_cut_line_is_a_warning_and_record_refuses_to_append(
+    book, run, make_hypothesis
+):
+    path = book / "ledger" / "hypotheses.jsonl"
+    path.write_bytes(path.read_bytes()[:-1])
+    before = path.read_bytes()
+    code, view, _ = run(["check", str(book)])
+    assert code == 0
+    assert view["warnings"] == [
+        {"file": "ledger/hypotheses.jsonl", "line": 1, "problem": "cut line"}
+    ]
+    code, _, err = batch(run, book, {"hypotheses": [make_hypothesis(["new", "idea"])]})
+    assert code == 1
+    assert "cut line" in err and "operator repairs" in err
+    assert path.read_bytes() == before
 
 
 def test_an_undecodable_line_is_a_warning_never_repaired(book, run):
@@ -197,19 +235,14 @@ EVENT_FIELDS = {
 }
 
 
-def test_an_event_family_hypothesis_needs_the_four_macro_fields(
+def test_an_event_family_hypothesis_lands_with_or_without_macro_fields(
     book, run, families, make_hypothesis
 ):
     families(book, **{"event-drift": {"trials": 8, "event": True}}, quiet={"trials": 2})
     bare = make_hypothesis(["bare", "event"], family_id="event-drift")
-    code, verdict, _ = batch(run, book, {"hypotheses": [bare]})
-    assert code == 1
-    assert [p["where"] for p in verdict["rejected"]] == [
-        "hypotheses[0].chain",
-        "hypotheses[0].expectation_source",
-        "hypotheses[0].discounted",
-        "hypotheses[0].confidence",
-    ]
+    code, receipt, err = batch(run, book, {"hypotheses": [bare]})
+    assert code == 0, err
+    assert receipt["accepted"] == {"hypothesis": 1}
     full = make_hypothesis(["full", "event"], family_id="event-drift", **EVENT_FIELDS)
     plain = make_hypothesis(["plain", "idea"], family_id="quiet")
     code, receipt, err = batch(run, book, {"hypotheses": [full, plain]})

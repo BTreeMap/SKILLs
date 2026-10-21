@@ -9,9 +9,10 @@ first, crowded large-cap families last.
 
 * Only human adds family to `limits.families`; propose `family_id` and its
   suggested entry below to operator, never edit `limits.json`.
-* Entry with `event: true` marks event family: its hypotheses must carry
-  `chain`, `expectation_source`, `discounted`, `confidence` (load `macro`),
-  and its critique adds five `macro` items.
+* Entry with `event: true` marks event family: its hypotheses carry `chain`,
+  `expectation_source`, `discounted`, `confidence` (load `macro`); `record`
+  accepts hypothesis without them, critique item `event-fields` flags each
+  one absent; critique adds five `macro` items.
 * Treat `capacity_class` as prior. Scorecard `capacity` tests it: `in_band`
   means ceiling between asset cap and 20 times it, `under_cap` below asset
   cap, `crowded` above 20 times it.

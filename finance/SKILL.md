@@ -62,21 +62,20 @@ No agent, script, or cron changes these four.
    is book's `bin/send`, stdlib only, adapter a stub operator replaces;
    broker key stays in OS keychain.
 2. Held-out names stay hidden from agent. Enforced: `measure` serves
-   strategy code only research names, through `Market`; held-out list is
-   outside book, agent does not read it; paper stage is out-of-sample test
-   that holds regardless.
-3. Ledger is append-only. Enforced: `record` is only writer; `ledger/` owned
-   by `record` user; corrections are new lines with `supersedes`.
+   strategy code only research names, through `Market`; held-out list lives
+   outside book, at path `start` printed; agent never reads that file; paper
+   stage is out-of-sample test that holds regardless.
+3. Ledger is append-only. Enforced: `record` is only writer; corrections are
+   new lines with `supersedes`; bare `check` lists cut or non-JSON lines
+   under `warnings`. Filesystem enforces nothing.
 4. Orders leave only through `bin/send`, run by operator in terminal,
    against file in `approvals/` dated that UTC day, after typed `yes`.
    Enforced: sender refuses any other file before any fill.
 
-Deny rules `start` writes into book's `.claude/settings.json` help; they
-never enforce. Never edit by hand `limits.json`, `preferences.json`,
-`approvals/`, `strategies/*/status`, or anything under `ledger/`: operator
-owns first four (`preferences.json` changes only through `record`), `record`
-owns ledger. Never run `bin/send` without `--dry-run`; hand operator the
-command.
+Never edit by hand `limits.json`, `preferences.json`, `approvals/`,
+`strategies/*/status`, or anything under `ledger/`: operator owns first four
+(`preferences.json` changes only through `record`), `record` owns ledger.
+Never run `bin/send` without `--dry-run`; hand operator the command.
 
 ## Commands
 
@@ -85,7 +84,7 @@ Bind `R` and `B` per shell:
 ```bash
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-finance"
 B="<book path>"
-$R start "$B" [--cap N] [--universe:file names.csv]
+$R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>]
 $R schema
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
@@ -98,7 +97,7 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 
 | Command | Takes after the book | Returns |
 | --- | --- | --- |
-| `start` | New path; `--cap` asset cap, default 10000000; `--universe:file` CSV with `symbol`, optional `sector` | Book id, held-out count; refuses path holding `limits.json` |
+| `start` | New path; `--cap` asset cap, default 10000000; `--universe:file` CSV with `symbol`, optional `sector`; `--held-out` list path outside book, default under `XDG_STATE_HOME` | Book id, held-out path and count; refuses path holding `limits.json`, held-out path inside book |
 | `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
@@ -134,10 +133,13 @@ all, resend. Arrays optional; order below is acceptance order:
 - Supply two or three keywords as `kw`; copy full ids from `new` receipt.
   Unique keyword subset recovers lost id, with signal.
 - `family_id` must be key of `limits.families`; only operator adds family.
-  Family with `event: true` requires hypothesis `chain`,
-  `expectation_source`, `discounted`, `confidence` (`macro`).
+  In family with `event: true`, add `chain`, `expectation_source`,
+  `discounted`, `confidence` (`macro`); `record` accepts hypothesis without
+  them, critique flags each one absent.
 - `confidence` (0 to 1) rides on any hypothesis, critique, decision.
-- `regimes` vocabularies and chain ids: `schema`, `macro`.
+- `regimes`: `record` checks `as_of`, `confidence`, `supersedes` (live
+  regime id), `falsified` chain ids; other fields free JSON, suggested shape
+  in `schema` and `macro`.
 - Register hypothesis before any strategy code for it exists. `mechanism`
   states ex-ante economic mechanism; omit it when none.
 - `critique.run_id` must name a run some runs file holds.

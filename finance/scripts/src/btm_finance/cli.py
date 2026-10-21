@@ -78,6 +78,7 @@ from btm_finance.ledger import (
     Numbered,
     Row,
     current,
+    cut_line,
     dangling,
     rows_of,
     undecodable,
@@ -170,7 +171,6 @@ from btm_finance.store import (
     read_bytes,
     read_json,
     run_files,
-    seal,
     strategies,
 )
 from btm_finance.streams import Series, effective_streams, pairs_of
@@ -205,14 +205,15 @@ def positive(raw: str) -> int:
     return value
 
 
-def start(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
+def start(
+    root: Path, cap: int, universe: str | None, held_out: Path | None = None
+) -> dict[str, Any]:
     """Make the book, then register the baseline hypothesis through the gate."""
-    receipt = scaffold(root, cap, universe)
+    receipt = scaffold(root, cap, universe, held_out)
     book = open_book(str(root))
     limits = load_limits(book)
     context = Context(
         families=frozenset(limits.families),
-        events=event_families(limits),
         min_holding_days=limits.min_holding_days,
         ids={},
         strategies=["baseline"],
@@ -223,18 +224,17 @@ def start(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     if result.problems:
         raise CommandError(f"baseline hypothesis refused: {result.problems}")
     append_ledger(book.path_of(Kind.HYPOTHESIS), result.staged[Kind.HYPOTHESIS])
-    seal(book)
     receipt["wrote"].append("ledger/hypotheses.jsonl")
     receipt["new"] = result.new["hypotheses"]
     return receipt
 
 
-def event_families(limits: Limits) -> frozenset[str]:
-    return frozenset(name for name, f in limits.families.items() if f.event)
-
-
 def cmd_start(args: argparse.Namespace) -> int:
-    emit(start(Path(args.book).expanduser(), args.cap, text(UNIVERSE, args)))
+    emit(
+        start(
+            Path(args.book).expanduser(), args.cap, text(UNIVERSE, args), args.held_out
+        )
+    )
     return 0
 
 
@@ -257,11 +257,13 @@ def cmd_record(args: argparse.Namespace) -> int:
     ids = {kind: ids_of(book.path_of(kind)) for kind in kinds}
     context = Context(
         families=frozenset(limits.families),
-        events=event_families(limits),
         min_holding_days=limits.min_holding_days,
         ids={**ids, Kind.RUN: run_ids(book)},
         strategies=[strategy.name for strategy in strategies(book)],
         proposals=proposal_dates(book),
+        live_regimes=frozenset(
+            str(row.get("id")) for row in current(kind_rows(book, Kind.REGIME))
+        ),
     )
 
     def expand(batch: dict[str, Any]) -> RecordResult:
@@ -417,8 +419,8 @@ def standing_view(book: Book, target: str, *, advisory: bool = False) -> Standin
 
 
 def ledger_warnings(book: Book) -> list[dict[str, Any]]:
-    """Undecodable lines and dangling `supersedes`, per file; derived on every
-    call, never stored or repaired. Run files share one id set."""
+    """Cut and undecodable lines and dangling `supersedes`, per file; derived
+    on every call, never stored or repaired. Run files share one id set."""
     groups = [[book.path_of(kind)] for kind in Kind if kind is not Kind.RUN]
     found: list[dict[str, Any]] = []
     for paths in [*groups, run_files(book)]:
@@ -426,7 +428,11 @@ def ledger_warnings(book: Book) -> list[dict[str, Any]]:
         rows = {name: rows_of(data) for name, data in read}
         ids = {row.get("id") for numbered in rows.values() for _, row in numbered}
         for name, data in read:
-            found += undecodable(name, data) + dangling(name, rows[name], ids)
+            found += (
+                cut_line(name, data)
+                + undecodable(name, data)
+                + dangling(name, rows[name], ids)
+            )
     return found
 
 
@@ -1451,6 +1457,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--cap", type=positive, default=10_000_000, help="asset cap, default 10000000"
     )
     add_slot(start, UNIVERSE, "CSV with a symbol column and an optional sector column")
+    start.add_argument(
+        "--held-out",
+        type=Path,
+        help="held-out list path outside the book; default under XDG_STATE_HOME",
+    )
 
     schema = commands.add_parser("schema", help="print every record shape")
     schema.set_defaults(func=cmd_schema)

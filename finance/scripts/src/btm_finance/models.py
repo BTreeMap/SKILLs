@@ -81,32 +81,6 @@ class Chain(StrEnum):
     SPIN_OFF_SUPPLY = "spin-off-supply"
 
 
-class ShortCycle(StrEnum):
-    EASING = "easing"
-    MID_EXPANSION = "mid-expansion"
-    LATE_EXPANSION = "late-expansion"
-    TIGHTENING = "tightening"
-    CONTRACTION = "contraction"
-
-
-class LongCycle(StrEnum):
-    EARLY = "early"
-    BUBBLE = "bubble"
-    TOP = "top"
-    DEPRESSION = "depression"
-    DELEVERAGING = "deleveraging"
-    NORMALIZATION = "normalization"
-
-
-class Lever(StrEnum):
-    """Deleveraging levers, in the order policy reaches for them."""
-
-    AUSTERITY = "austerity"
-    DEFAULTS = "defaults"
-    TRANSFERS = "transfers"
-    PRINTING = "printing"
-
-
 Quantity = Annotated[float, Field(gt=0)]
 Price = Annotated[float, Field(gt=0)]
 Texts = tuple[str, ...]
@@ -120,8 +94,6 @@ def _cited(chain: Chain) -> Chain:
 
 
 Cited = Annotated[Chain, AfterValidator(_cited)]
-EVENT_FIELDS = ("chain", "expectation_source", "discounted", "confidence")
-"""Hypothesis fields an event family (`limits.families.<id>.event`) requires."""
 
 
 class OpenRow(Model):
@@ -167,37 +139,11 @@ class DecisionEntry(OpenNamed):
     supersedes: NonEmpty | None = None
 
 
-class BubbleCount(Model):
-    """Bubble checklist items present, with evidence per item."""
-
-    count: Annotated[int, Field(ge=0, le=7)]
-    evidence: tuple[NonEmpty, ...]
-
-
-class OtherForces(Model):
-    internal_order: str
-    external_order: str
-    nature: str
-    technology: str
-
-
-class Observable(Model):
-    value: str | int | float
-    as_of: date
-    source: NonEmpty
-
-
 class RegimeEntry(OpenNamed):
-    """A human-confirmed regime record; `falsified` names chains whose
-    falsifier fired."""
+    """A human-confirmed regime record. The gate reads `as_of`, `confidence`,
+    `falsified`, `supersedes`; every other field is free JSON."""
 
     as_of: date
-    short_cycle: ShortCycle
-    long_cycle: LongCycle
-    bubble_count: BubbleCount
-    policy_mix: tuple[Lever, ...]
-    other_forces: OtherForces
-    observables: dict[str, Observable]
     confidence: Confidence
     falsified: tuple[Cited, ...] = ()
     supersedes: NonEmpty | None = None
@@ -341,6 +287,8 @@ class BookMeta(Model):
     id: Slug
     created: str
     engine: str
+    held_out: str | None = None
+    """Absolute path of the held-out list; None reads the XDG default."""
 
 
 def limits_template(cap: int) -> dict[str, object]:

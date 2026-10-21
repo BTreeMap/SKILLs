@@ -148,7 +148,9 @@ and when falsifier fires; correct by new line with `supersedes`.
 
 ## Registering event-family hypothesis
 
-If family carries `event: true`, add to hypothesis fields `families` lists:
+If family carries `event: true`, add to hypothesis fields `families` lists.
+`record` accepts hypothesis without them; critique item `event-fields` names
+each one absent as concern.
 
 * `chain`: chain id from table, or `none`.
 * `expectation_source`: where priced expectation is read before event.
@@ -186,13 +188,13 @@ If family carries `event: true`, add to hypothesis fields `families` lists:
 
 ## Critique items for macro
 
-Critic applies these beside ten in `critique`, same verdict rule, and adds
-each item name to `verdicts`. "None" under Blocker means concern at most;
-never block on critic's regime forecast.
+Critic applies these beside ten items and `event-fields` in `critique`, same
+verdict rule, and adds each item name to `verdicts`. "None" under Blocker
+means concern at most; never block on critic's regime forecast.
 
 | Item | Inspect | Settles | Blocker | Concern |
 | --- | --- | --- | --- | --- |
-| `chain` | Hypothesis `chain`, `mechanism`; chain table row; regime record observables at hypothesis `ts` | Mechanism relies on named chain; trigger observed at registration, not forecast | Event family with `chain` absent, or cited trigger forecast, not observed | `chain` is `none` where table row fits |
+| `chain` | Hypothesis `chain`, `mechanism`; chain table row; regime record observables at hypothesis `ts` | Mechanism relies on named chain; trigger observed at registration, not forecast | Cited trigger forecast, not observed (absent `chain`: `event-fields` concern) | `chain` is `none` where table row fits |
 | `regime-band` | Run line regime ids; regime records' `bubble_count` over evidence window; `signal.py` reads of macro variables | Evidence spans more than one regime and bubble-count band, or hypothesis names regime as mechanism | Signal conditions on macro variable hypothesis did not register | Evidence inside one regime or one band |
 | `next-phase` | Chain table row; `holding_days` in `config.json`; current regime record | Mechanism holds in next phase of its chain, or holding period ends before likely phase change | None | Mechanism fails in next phase and holding period crosses it |
 | `third-order` | Hypothesis `counterparty`, `mechanism`; scorecard `capacity` | Hypothesis states what happens when everyone seeing same first-order effect acts on it | None | Crowding answer absent or contradicted by `capacity` |

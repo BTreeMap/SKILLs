@@ -15,7 +15,6 @@ from pydantic import ConfigDict
 from btm_corekit import Acceptance, Diagnostic, Model, Named, Pool, dump
 from btm_finance.ledger import ENVELOPE, Kind, Row
 from btm_finance.models import (
-    EVENT_FIELDS,
     Action,
     Cadence,
     CapacityClass,
@@ -25,11 +24,8 @@ from btm_finance.models import (
     FillEntry,
     HoldingsEntry,
     HypothesisEntry,
-    Lever,
-    LongCycle,
     Preferences,
     RegimeEntry,
-    ShortCycle,
     Side,
 )
 
@@ -48,8 +44,8 @@ SCHEMA: dict[str, str] = {
     '"counterparty": "...", "min_holding_days": 21, "mechanism": "..." '
     '(optional), "sector": "..." (optional), "supersedes": "<id>" (optional), '
     f'"chain": "{_choices(Chain)}", "expectation_source": "...", '
-    '"discounted": "...", "confidence": 0.4 (these four required when '
-    "limits.families.<family_id>.event is true)}",
+    '"discounted": "...", "confidence": 0.4 (these four optional; critique '
+    "flags each one absent when limits.families.<family_id>.event is true)}",
     "critiques": '{"kw": ["two", "words"], "run_id": "<run id>", '
     '"blockers": ["..."], "concerns": ["..."], "by": "<delegate>", '
     '"confidence": 0.6 (optional)}',
@@ -58,15 +54,17 @@ SCHEMA: dict[str, str] = {
     '"reason": "...", "confidence": 0.6 (optional), "supersedes": "<id>" '
     "(optional)}",
     "regimes": '{"kw": ["two", "words"], "as_of": "YYYY-MM-DD", '
-    f'"short_cycle": "{_choices(ShortCycle)}", '
-    f'"long_cycle": "{_choices(LongCycle)}", '
-    '"bubble_count": {"count": 2, "evidence": ["one per item present"]}, '
-    f'"policy_mix": ["{_choices(Lever)}"], "other_forces": '
+    '"confidence": 0.6, '
+    f'"falsified": ["{_choices(c for c in Chain if c is not Chain.NONE)}"] '
+    '(optional), "supersedes": "<live regime id>" (optional); suggested free '
+    'fields, never checked: "short_cycle": "easing|mid-expansion|'
+    'late-expansion|tightening|contraction", "long_cycle": "early|bubble|top|'
+    'depression|deleveraging|normalization", "bubble_count": {"count": 2, '
+    '"evidence": ["one per item present"]}, "policy_mix": '
+    '["austerity|defaults|transfers|printing"], "other_forces": '
     '{"internal_order": "...", "external_order": "...", "nature": "...", '
     '"technology": "..."}, "observables": {"<name>": {"value": "...", '
-    '"as_of": "YYYY-MM-DD", "source": "<url>"}}, "confidence": 0.6, '
-    f'"falsified": ["{_choices(c for c in Chain if c is not Chain.NONE)}"] '
-    '(optional), "supersedes": "<id>" (optional)}',
+    '"as_of": "YYYY-MM-DD", "source": "<url>"}}}',
     "fills": '{"symbol": "...", '
     f'"side": "{_choices(Side)}", "quantity": 10, "price": 12.5, '
     '"date": "YYYY-MM-DD", "strategy": "<name>|opening", "dry_run": false}',
@@ -100,11 +98,11 @@ class Context:
     """Live book state the gate resolves references against."""
 
     families: frozenset[str]
-    events: frozenset[str]
     min_holding_days: int
     ids: Mapping[Kind, list[str]]
     strategies: list[str]
     proposals: list[str]
+    live_regimes: frozenset[str] = frozenset()
 
 
 @dataclass(slots=True)
@@ -173,7 +171,6 @@ class _Expansion(Acceptance):
                     + ", ".join(sorted(self.context.families))
                     + "; the human adds families to limits.json",
                 )
-            event_ok = self.event_fields(entry, where)
             if entry.min_holding_days < self.context.min_holding_days:
                 self.advisories.append(
                     f"{where}: min_holding_days {entry.min_holding_days} is under "
@@ -185,21 +182,8 @@ class _Expansion(Acceptance):
                     f"{where}: strategies/{entry.strategy}/ does not exist yet"
                 )
             full = self.named(Kind.HYPOTHESIS, entry, where, entry.supersedes)
-            if full is not None and family_ok and event_ok:
+            if full is not None and family_ok:
                 self.stage(Kind.HYPOTHESIS, full, dump(entry))
-
-    def event_fields(self, entry: HypothesisEntry, where: str) -> bool:
-        """An event family's hypothesis carries all four macro fields."""
-        if entry.family_id not in self.context.events:
-            return True
-        missing = [key for key in EVENT_FIELDS if getattr(entry, key) is None]
-        for key in missing:
-            self.fail(
-                f"{where}.{key}",
-                f"add '{key}': family {entry.family_id} is an event family",
-                SCHEMA["hypotheses"],
-            )
-        return not missing
 
     def take_critiques(self, rows: Rows) -> None:
         runs = self.context.ids.get(Kind.RUN, [])
@@ -254,15 +238,36 @@ class _Expansion(Acceptance):
             entry = self.decode(RegimeEntry, row, where, SCHEMA["regimes"])
             if entry is None:
                 continue
-            listed = len(entry.bubble_count.evidence)
-            if listed != entry.bubble_count.count:
-                self.advisories.append(
-                    f"{where}.bubble_count: count {entry.bubble_count.count} but "
-                    f"{listed} evidence line(s); give one per item present"
-                )
+            self.bubble_advisory(row.get("bubble_count"), where)
+            live = self.live_regime(entry.supersedes, where)
             full = self.named(Kind.REGIME, entry, where, entry.supersedes)
-            if full is not None:
+            if full is not None and live:
                 self.stage(Kind.REGIME, full, dump(entry))
+
+    def live_regime(self, target: str | None, where: str) -> bool:
+        """A regime correction replaces a live line, never one already replaced;
+        an unknown id is `supersedes`'s own refusal."""
+        known = target in self.context.ids.get(Kind.REGIME, [])
+        if not known or target in self.context.live_regimes:
+            return True
+        self.fail(
+            f"{where}.supersedes",
+            f"replace '{target}': a later regime line already supersedes it",
+            "supersede the live regime line, in full",
+        )
+        return False
+
+    def bubble_advisory(self, bubble: object, where: str) -> None:
+        """Suggested shape only: count against evidence lines; never refuses."""
+        if not isinstance(bubble, dict):
+            return
+        count, evidence = bubble.get("count"), bubble.get("evidence")
+        listed = len(evidence) if isinstance(evidence, list) else None
+        if isinstance(count, int) and listed is not None and listed != count:
+            self.advisories.append(
+                f"{where}.bubble_count: count {count} but {listed} "
+                "evidence line(s); give one per item present"
+            )
 
     def take_fills(self, rows: Rows) -> list[str]:
         made: list[str] = []

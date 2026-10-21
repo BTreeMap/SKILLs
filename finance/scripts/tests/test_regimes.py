@@ -46,7 +46,7 @@ def regime(kw: list[str], **overrides) -> dict:
 def test_the_regimes_gate_refuses_each_bad_field_by_location(book, run):
     payload = {
         "regimes": [
-            regime(["bad", "cycle"], short_cycle="boom"),
+            regime(["bad", "date"], as_of="mid 2017"),
             regime(["too", "sure"], confidence=1.5),
             regime(["ghost", "fix"], supersedes="no-such-regime"),
             regime(["odd", "chain"], falsified=["made-up-chain"]),
@@ -56,12 +56,39 @@ def test_the_regimes_gate_refuses_each_bad_field_by_location(book, run):
     assert code == 1
     where = [problem["where"] for problem in verdict["rejected"]]
     assert where == [
-        "regimes[0].short_cycle",
+        "regimes[0].as_of",
         "regimes[1].confidence",
         "regimes[2].supersedes",
         "regimes[3].falsified[0]",
     ]
     assert not (book / "ledger" / "regimes.jsonl").exists()
+
+
+def test_free_text_outside_the_four_checked_fields_lands(book, run):
+    entry = regime(
+        ["free", "text"],
+        short_cycle="boom, by the operator's read",
+        policy_mix="none yet",
+        bubble_count="not counted",
+        other_forces=None,
+    )
+    code, receipt, err = batch(run, book, {"regimes": [entry]})
+    assert code == 0, err
+    assert receipt["accepted"] == {"regime": 1}
+    line = json.loads((book / "ledger" / "regimes.jsonl").read_text())
+    assert line["short_cycle"] == "boom, by the operator's read"
+
+
+def test_a_correction_must_supersede_the_live_line(book, run):
+    code, receipt, err = batch(run, book, {"regimes": [regime(["first", "read"])]})
+    assert code == 0, err
+    first = receipt["new"]["regimes"]["first-read"]
+    fix = regime(["second", "read"], supersedes=first)
+    assert batch(run, book, {"regimes": [fix]})[0] == 0
+    again = regime(["third", "read"], supersedes=first)
+    code, verdict, _ = batch(run, book, {"regimes": [again]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == ["regimes[0].supersedes"]
 
 
 def test_a_regime_lands_and_a_correction_supersedes_it(book, run):

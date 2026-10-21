@@ -1,10 +1,10 @@
 # Critique
 
 Loaded only by critique delegate, never by run's author. Critic works
-through ten items below on one run, plus five `macro` items (`chain`,
-`regime-band`, `next-phase`, `third-order`, `discounted`) when hypothesis
-family carries `event: true` in `limits.families`, and returns one
-`critiques` batch entry.
+through ten items below on one run, plus `event-fields` and five `macro`
+items (`chain`, `regime-band`, `next-phase`, `third-order`, `discounted`)
+when hypothesis family carries `event: true` in `limits.families`, and
+returns one `critiques` batch entry.
 
 ## Inputs and limits
 
@@ -110,6 +110,15 @@ family carries `event: true` in `limits.families`, and returns one
 * Blocker: load gap treated as zero events or zero value in signal. Concern:
   `README.md` claims no events where coverage is partial.
 
+### event-fields
+
+* Event family only (`event: true` in `limits.families`).
+* Inspect: hypothesis `chain`, `expectation_source`, `discounted`,
+  `confidence`.
+* Settles: all four present.
+* Concern: any absent; name each missing field. No blocker grade: `record`
+  accepts hypothesis without them.
+
 ### drift
 
 * Inspect: `README.md` and any proposal text against run line `scorecard`.
@@ -129,10 +138,10 @@ Plain family, ten items:
 {"critiques": [{"kw": ["deletion", "critique"], "run_id": "<full run id>", "blockers": ["look-ahead: strategies/index-deletion/signal.py line 14 reads event_time, not knowledge_time"], "concerns": ["regime: scorecard.regimes year row carries most of net Sharpe"], "by": "<delegate name>", "verdicts": {"rationale": "clear", "look-ahead": "blocker", "survivorship": "clear", "restatement": "clear", "universe": "clear", "regime": "concern", "crowding": "clear", "factor": "clear", "access-wall": "clear", "drift": "clear"}}]}
 ```
 
-Event family, fifteen items, with optional `confidence`:
+Event family, sixteen items, with optional `confidence`:
 
 ```json
-{"critiques": [{"kw": ["filing", "critique"], "run_id": "<full run id>", "blockers": [], "concerns": ["regime-band: run line regime_days puts 0.9 of evidence in one regime id"], "by": "<delegate name>", "confidence": 0.5, "verdicts": {"rationale": "clear", "look-ahead": "clear", "survivorship": "clear", "restatement": "clear", "universe": "clear", "regime": "clear", "crowding": "clear", "factor": "clear", "access-wall": "clear", "drift": "clear", "chain": "clear", "regime-band": "concern", "next-phase": "clear", "third-order": "clear", "discounted": "clear"}}]}
+{"critiques": [{"kw": ["filing", "critique"], "run_id": "<full run id>", "blockers": [], "concerns": ["regime-band: run line regime_days puts 0.9 of evidence in one regime id"], "by": "<delegate name>", "confidence": 0.5, "verdicts": {"rationale": "clear", "look-ahead": "clear", "survivorship": "clear", "restatement": "clear", "universe": "clear", "regime": "clear", "crowding": "clear", "factor": "clear", "access-wall": "clear", "drift": "clear", "event-fields": "clear", "chain": "clear", "regime-band": "concern", "next-phase": "clear", "third-order": "clear", "discounted": "clear"}}]}
 ```
 
 Hand batch file to lead; lead runs `record` and copies critique id from
@@ -140,8 +149,8 @@ Hand batch file to lead; lead runs `record` and copies critique id from
 
 ## Completion checks
 
-* `verdicts` holds all ten items, plus five `macro` items for event family,
-  each `blocker`, `concern`, or `clear`.
+* `verdicts` holds all ten items, plus `event-fields` and five `macro` items
+  for event family, each `blocker`, `concern`, or `clear`.
 * Each `blocker` verdict has matching string in `blockers`; same for
   concerns.
 * Every blocker quotes field path or file and line.

@@ -1,5 +1,5 @@
-"""What `start` writes: the book's layout, templates, deny rules, sender, and
-the held-out list outside the book."""
+"""What `start` writes: the book's layout, templates, sender, and the
+held-out list outside the book."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import json
 import shutil
 import subprocess
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -46,7 +46,6 @@ DIRECTORIES = (
     "features",
     "ext",
     "tests/reference",
-    ".claude",
 )
 SENTINEL = "RECORD: tuple[str, ...] = ()"
 HELD_OUT_SHARE = 4  # one name in four per sector, rounded half up
@@ -90,35 +89,6 @@ def sender(binding: Sequence[str]) -> str:
     if text.count(SENTINEL) != 1:
         raise CommandError("send template lost its RECORD line; reinstall the skill")
     return text.replace(SENTINEL, f"RECORD: tuple[str, ...] = {tuple(binding)!r}")
-
-
-def deny_rules(root: Path, held_out: Path) -> list[str]:
-    """Claude Code deny entries for the four invariants; `//` is absolute."""
-    book = root.resolve().as_posix()
-    hidden = held_out.parent.resolve().as_posix()
-    return [
-        "Bash(*bin/send*)",
-        f"Read(/{hidden}/**)",
-        f"Edit(/{book}/ledger/**)",
-        f"Write(/{book}/ledger/**)",
-        f"Edit(/{book}/approvals/**)",
-        f"Write(/{book}/approvals/**)",
-    ]
-
-
-def settings(path: Path, rules: Iterable[str]) -> str:
-    """Existing settings kept; the deny rules joined into `permissions.deny`."""
-    held: dict[str, Any] = {}
-    if path.is_file():
-        try:
-            loaded = json.loads(path.read_text(encoding="utf-8"))
-        except ValueError as err:
-            raise CommandError(f"unreadable {path}: {err}") from err
-        held = loaded if isinstance(loaded, dict) else {}
-    permissions = held.setdefault("permissions", {})
-    deny = list(permissions.get("deny", []))
-    permissions["deny"] = deny + [rule for rule in rules if rule not in deny]
-    return json.dumps(held, indent=2) + "\n"
 
 
 def universe_rows(raw: str) -> list[tuple[str, str]]:
@@ -191,14 +161,26 @@ def repository(root: Path) -> str:
     return "init"
 
 
-def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
+def outside(root: Path, path: Path) -> Path:
+    """The held-out path, absolute; refused inside the book."""
+    resolved = path.expanduser().resolve()
+    if resolved.is_relative_to(root.resolve()):
+        raise CommandError(
+            f"--held-out {path} lies inside the book; name a path outside it"
+        )
+    return resolved
+
+
+def scaffold(
+    root: Path, cap: int, universe: str | None, held_out_at: Path | None = None
+) -> dict[str, Any]:
     """Make the book; refuse a directory that already holds `limits.json`."""
     if (root / "limits.json").exists():
         raise CommandError(
             f"{root} already holds limits.json; start makes new books only"
         )
     book_id = make_id(ascii_words(root.resolve().name) or ["book"])
-    hidden = held_out_path(book_id)
+    hidden = outside(root, held_out_at or held_out_path(book_id))
     listing = held_out(universe)  # before any write: a bad CSV leaves nothing
     for directory in DIRECTORIES:
         (root / directory).mkdir(parents=True, exist_ok=True)
@@ -213,8 +195,6 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
     write_new(baseline / "signal.py", template("signal.tmpl"))
     if universe is not None:
         write_new(root / "universe.csv", universe)
-    claude = root / ".claude" / "settings.json"
-    write_new(claude, settings(claude, deny_rules(root, hidden)))
     send = root / "bin" / "send"
     write_new(send, sender(record_binding()))
     send.chmod(0o755)
@@ -222,7 +202,12 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
         root / "preferences.json", json.dumps(PREFERENCES_TEMPLATE, indent=2) + "\n"
     )
     write_new(root / "limits.json", json.dumps(limits_template(cap), indent=2) + "\n")
-    meta = BookMeta(id=book_id, created=now_iso(), engine=btm_finance.__version__)
+    meta = BookMeta(
+        id=book_id,
+        created=now_iso(),
+        engine=btm_finance.__version__,
+        held_out=str(hidden),
+    )
     write_new(root / MARKER, json.dumps(meta.model_dump(mode="json"), indent=2) + "\n")
     ignore(root / ".gitignore")
     git = repository(root)
@@ -239,7 +224,6 @@ def scaffold(root: Path, cap: int, universe: str | None) -> dict[str, Any]:
             ".gitignore",
             MARKER,
             "bin/send",
-            ".claude/settings.json",
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
         ],

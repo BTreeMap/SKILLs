@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import os
-import stat
 import sys
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -21,8 +20,6 @@ SKILL = "finance"
 MARKER = "book.json"
 HINT = "run start <book path> first"
 PAD_DIR = Path("ledger", "pad")
-SEALED_DIR, SEALED_FILE = 0o555, 0o444  # what `start` leaves on `ledger/`
-OPEN_DIR, OPEN_FILE = 0o755, 0o644  # lifted for one append, then restored
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,16 +80,22 @@ PAD = PadStore(SKILL, marker=MARKER, hint=HINT)
 
 
 def held_out_path(book_id: str) -> Path:
-    """Outside the book, so nothing the agent edits on a branch holds it."""
+    """The default place: outside the book, so no branch the agent edits holds it."""
     return state_root(SKILL) / book_id / "held-out.json"
+
+
+def held_out_of(book: Book) -> Path:
+    """Where `start` wrote the list: `book.json` `held_out`, else the default."""
+    named = book.meta.held_out
+    return Path(named) if named is not None else held_out_path(book.meta.id)
 
 
 def held_out_list(book: Book) -> frozenset[str]:
     """The held-out symbols `start` wrote, per sector; read by `measure` alone."""
-    path = held_out_path(book.meta.id)
+    path = held_out_of(book)
     if not path.is_file():
         raise CommandError(
-            f"no held-out list for book {book.meta.id} on this machine; "
+            f"no held-out list for book {book.meta.id} at {path}; "
             "the operator restores it from backup before any measure"
         )
     data = read_json(path)
@@ -101,17 +104,6 @@ def held_out_list(book: Book) -> frozenset[str]:
     ):
         raise CommandError(f"unreadable held-out list {path}: want sector to symbols")
     return frozenset(str(name) for names in data.values() for name in names)
-
-
-def seal(book: Book) -> None:
-    """Every ledger file 0444, `ledger/` and `ledger/runs/` 0555; the pad stays
-    0755, free memory and not ledger."""
-    runs = book.ledger / "runs"
-    for path in [*book.ledger.glob("*.jsonl"), *runs.glob("*.jsonl")]:
-        path.chmod(SEALED_FILE)
-    (book.root / PAD_DIR).chmod(OPEN_DIR)
-    runs.chmod(SEALED_DIR)
-    book.ledger.chmod(SEALED_DIR)
 
 
 def run_files(book: Book) -> list[Path]:
@@ -139,31 +131,12 @@ def locked(path: Path) -> Iterator[IO[bytes]]:
         yield handle
 
 
-@contextmanager
-def lifted(path: Path) -> Iterator[None]:
-    """The file 0644, or its directory 0755 when the file is new, for one
-    append; both modes restored after, a new file left 0444."""
-    parent = stat.S_IMODE(path.parent.stat().st_mode)
-    existed = path.is_file()
-    mode = stat.S_IMODE(path.stat().st_mode) if existed else SEALED_FILE
-    if existed:
-        path.chmod(OPEN_FILE)
-    else:
-        path.parent.chmod(OPEN_DIR)
-    try:
-        yield
-    finally:
-        if path.is_file():
-            path.chmod(mode)
-        path.parent.chmod(parent)
-
-
 def append_ledger(path: Path, records: Sequence[Mapping[str, Any]]) -> list[str]:
     """Append records as lines, all or none, in one write; the receipt is
     their ids. A cut or undecodable line in the file is refused."""
     payload = b"".join(line + b"\n" for line in lines_of(records))
     path.parent.mkdir(parents=True, exist_ok=True)
-    with lifted(path), locked(path) as handle:
+    with locked(path) as handle:
         handle.seek(0)
         data = handle.read()
         size = len(data)

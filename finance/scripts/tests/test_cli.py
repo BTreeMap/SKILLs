@@ -28,11 +28,36 @@ def test_start_writes_the_book_and_the_held_out_list_outside_it(tmp_path, run):
     hidden = json.loads(Path(receipt["held_out"]["path"]).read_text())
     assert hidden == {"energy": ["E0"], "tech": ["S0", "S1"]}
     assert not str(receipt["held_out"]["path"]).startswith(str(book))
-    deny = json.loads((book / ".claude" / "settings.json").read_text())["permissions"][
-        "deny"
-    ]
-    assert deny[0] == "Bash(*bin/send*)"
-    assert len(deny) == 6
+    assert not (book / ".claude").exists()
+
+
+def test_start_writes_the_held_out_list_where_the_operator_names(tmp_path, run):
+    universe = tmp_path / "names.csv"
+    universe.write_text("symbol,sector\nA,x\nB,x\nC,x\nD,x\n")
+    hidden = tmp_path / "vault" / "held.json"
+    code, receipt, err = run(
+        [
+            "start",
+            str(tmp_path / "b"),
+            "--universe:file",
+            str(universe),
+            "--held-out",
+            str(hidden),
+        ]
+    )
+    assert code == 0, err
+    assert receipt["held_out"] == {"path": str(hidden.resolve()), "names": 1}
+    assert json.loads(hidden.read_text()) == {"x": ["A"]}
+    marker = json.loads((tmp_path / "b" / "book.json").read_text())
+    assert marker["held_out"] == str(hidden.resolve())
+
+
+def test_start_refuses_a_held_out_path_inside_the_book(tmp_path, run):
+    book = tmp_path / "b"
+    code, _, err = run(["start", str(book), "--held-out", str(book / "h.json")])
+    assert code == 1
+    assert "inside the book" in err
+    assert not (book / "limits.json").exists()
 
 
 def test_start_without_a_universe_signals_an_empty_list(book, run):

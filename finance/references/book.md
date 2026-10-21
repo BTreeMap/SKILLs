@@ -7,7 +7,7 @@ operator's private git repository; skill holds methods, book holds state.
 
 ```text
 <book>/
-  book.json                   marker: book id, created, engine version
+  book.json                   marker: book id, created, engine version, held-out path
   limits.json                 human: asset cap, bounds, thresholds, families
   preferences.json            human: focus sectors, exclusions, cadence
   bin/send                    operator-only sender; adapter stub inside
@@ -25,12 +25,15 @@ operator's private git repository; skill holds methods, book holds state.
     signal.py  config.json  README.md  status
   features/  ext/
   tests/reference/            this book's pinned scorecard
-  .claude/settings.json       deny rules
   .gitignore                  data/
 
-${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/
-  held-out.json               {"<sector>": ["SYM", ...]}, sorted
+<path start --held-out named>, default
+${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
+                              {"<sector>": ["SYM", ...]}, sorted
 ```
+
+`book.json` `held_out` holds absolute held-out path; `measure --held-out`
+reads list there. Agent never reads that file.
 
 `data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
 `data/returns/` files stay in manifest for integrity checks but never move
@@ -49,16 +52,17 @@ new line carrying `supersedes`. `record` writes each batch in one write
 under lock, whole or not at all. File ending in line without newline is cut
 by some other hand, as is line that is not JSON object: `record` refuses to
 append, names file and line; operator repairs it. Bare `check` derives
-`warnings` on every call: each undecodable line (file, line, first 40 bytes)
-and each `supersedes` naming no id of its kind; never stored, never
-repaired, no incident line.
+`warnings` on every call: each cut line (file, line, `problem: cut line`),
+each undecodable line (file, line, first 40 bytes), and each `supersedes`
+naming no id of its kind; never stored, never repaired, no incident line.
+Filesystem modes enforce nothing: these warnings are the append-only check.
 
 | Kind | Required keys |
 | --- | --- |
-| hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `counterparty`, `min_holding_days`; in family with `event: true` also `chain`, `expectation_source`, `discounted`, `confidence` |
+| hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `counterparty`, `min_holding_days`; optional `chain`, `expectation_source`, `discounted`, `confidence` (critique flags each one absent in family with `event: true`) |
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
 | decision | `kw`, `subject`, `action`, `reason` |
-| regime | `kw`, `as_of`, `short_cycle`, `long_cycle`, `bubble_count`, `policy_mix`, `other_forces`, `observables`, `confidence`; optional `falsified`, `supersedes` |
+| regime | `kw`, `as_of`, `confidence`; optional `falsified`, `supersedes`; any other field free JSON |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
 | run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files`, `regimes`, `regime_days` |
 | incident | `kind`; see Incidents |
@@ -66,18 +70,20 @@ repaired, no incident line.
 `confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`
 is chain id from `macro` table or `none`.
 
-Regime line, as `record` accepts it:
+Regime line in suggested shape; `record` reads only `kw`, `as_of`,
+`confidence`, `falsified`, `supersedes`:
 
 ```json
 {"id": "<id>", "ts": "<ts>", "kw": ["late", "cycle"], "as_of": "YYYY-MM-DD", "short_cycle": "easing|mid-expansion|late-expansion|tightening|contraction", "long_cycle": "early|bubble|top|depression|deleveraging|normalization", "bubble_count": {"count": 2, "evidence": ["<item 1 evidence>", "<item 4 evidence>"]}, "policy_mix": ["austerity|defaults|transfers|printing"], "other_forces": {"internal_order": "...", "external_order": "...", "nature": "...", "technology": "..."}, "observables": {"<name>": {"value": "<as reported>", "as_of": "YYYY-MM-DD", "source": "<url>"}}, "confidence": 0.6, "falsified": ["<chain id>"], "supersedes": "<regime id>"}
 ```
 
-Gate refuses value outside these vocabularies, `bubble_count.count` outside
-0 to 7, `confidence` outside 0 to 1, unknown chain id, dangling
-`supersedes`; `evidence` count other than `count` is signal only. Regime
-record is newest live line by `as_of`, later line winning tie; `stale` when
-`as_of` is more than `limits.regime_stale_days` (default 90) before today,
-or before proposal date in proposal file.
+Gate refuses `as_of` that is not ISO date, `confidence` outside 0 to 1,
+unknown chain id under `falsified`, `supersedes` naming no live regime id.
+Vocabularies above are `macro` guidance, never checked; `evidence` count
+other than `bubble_count.count` is signal only. Regime record is newest live
+line by `as_of`, later line winning tie; `stale` when `as_of` is more than
+`limits.regime_stale_days` (default 90) before today, or before proposal
+date in proposal file.
 
 Fill from `holdings` has `holdings: true` and `price` equal to `cost_basis`,
 `null` when none given. Fill from `bin/send` has `approval`, the approval
@@ -105,40 +111,11 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | --- | --- | --- |
 | `limits.json`, `approvals/`, `strategies/*/status` | human | read |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
-| `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only |
+| `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only; bare `check` warns on any other write it can see |
 | `strategies/` except `status`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
 | `bin/send` | operator | read; run only `--dry-run`, by operator's hand |
-| held-out list | `start` | never read |
-
-## Ledger permissions
-
-`start` leaves `ledger/` and `ledger/runs/` at mode 0555, every ledger file
-at 0444. `record` lifts one file to 0644 (its directory to 0755 when file is
-new), appends, restores both. Any other write to `ledger/` fails on
-permissions. `ledger/pad/` stays 0755: pad is free memory, not ledger.
-
-Mode bits are what `start` installs for single-user book; owner can lift
-them. Setup that holds: second Unix user `record` owns `ledger/`; agent's
-user runs binding through `sudo -u record` rule naming `btm-finance` binary
-only.
-
-## Deny rules
-
-`start` merges these into `.claude/settings.json` under `permissions.deny`,
-absolute paths with `//` prefix:
-
-```text
-Bash(*bin/send*)
-Read(//<state>/btm-skills/finance/<book-id>/**)
-Edit(//<book>/ledger/**)
-Write(//<book>/ledger/**)
-Edit(//<book>/approvals/**)
-Write(//<book>/approvals/**)
-```
-
-Rules hold absolute paths: if book moves, ask operator to update them. Deny
-on held-out path is convenience; held-out list stays out of book.
+| held-out list, path in `book.json` `held_out` | `start` | never read |
 
 ## What start writes
 
@@ -146,15 +123,15 @@ on held-out path is convenience; held-out list stays out of book.
    static multi-factor `signal.py`, `config.json`, `README.md`; baseline
    hypothesis (`capacity_class: crowded`) through gate into
    `hypotheses.jsonl`.
-2. `.claude/settings.json` deny rules; existing settings kept.
-3. `bin/send` (mode 755) with `RECORD` bound to this skill's realpath.
-4. `preferences.json`, `limits.json` defaults, then `book.json`.
-5. Held-out list: per sector, first quarter of `--universe:file` names by
-   symbol sort, half rounded up; deterministic, no randomness. Plain JSON,
-   sector to symbols; receipt reports count only. Without universe, empty
-   list and `signal:` saying so.
-6. Ledger sealed: modes as in Ledger permissions.
-7. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
+2. `bin/send` (mode 755) with `RECORD` bound to this skill's realpath.
+3. `preferences.json`, `limits.json` defaults, then `book.json` with
+   `held_out` path.
+4. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
+   inside book refused before any write. Per sector, first quarter of
+   `--universe:file` names by symbol sort, half rounded up; deterministic,
+   no randomness. Plain JSON, sector to symbols; receipt reports path and
+   count only. Without universe, empty list and `signal:` saying so.
+5. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
    path is inside git work tree. Receipt `git`: `init`, `inside`, `failed`,
    or `absent` (no `git` on PATH, with `signal:` line).
 

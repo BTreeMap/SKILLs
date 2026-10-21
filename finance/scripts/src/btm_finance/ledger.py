@@ -89,6 +89,13 @@ def undecodable(name: str, data: bytes) -> list[dict[str, Any]]:
     ]
 
 
+def cut_line(name: str, data: bytes) -> list[dict[str, Any]]:
+    """A last line without its newline: some hand other than `record` cut it."""
+    if not data or data.endswith(b"\n"):
+        return []
+    return [{"file": name, "line": len(split_lines(data)), "problem": "cut line"}]
+
+
 def dangling(
     name: str, rows: Sequence[Numbered], ids: set[Any]
 ) -> list[dict[str, Any]]:
