@@ -87,10 +87,12 @@ Filesystem modes enforce nothing: these warnings are the append-only check.
 is chain id from `macro` table or `none`. `start` sets baseline's
 `falsifier_by` one year after start date. `record` refuses `kelly_implied`
 more than 0.01 from `p_win - (1 - p_win) / payoff`. Hypothesis line carrying
-`supersedes` spends one trial of its family in bare `check`'s `trials_used`;
-scorecard `trials` (DSR) counts backtests only. Bare `check` derives
-`overdue` and `unscored` warnings from hypothesis, decision, and scored
-lines; `scored` line naming hypothesis clears both.
+`supersedes` spends one trial of its family in bare `check`'s `trials_used`
+only when its `falsifier_by` is later than superseded line's; same or
+earlier kill date (odds added, text corrected) spends nothing; scorecard
+`trials` (DSR) counts backtests only. Bare `check` derives `overdue` and
+`unscored` warnings from hypothesis, decision, and scored lines; `scored`
+line naming hypothesis clears both.
 
 Regime line in suggested shape; `record` reads only `kw`, `as_of`,
 `confidence`, `falsified`, `supersedes`:

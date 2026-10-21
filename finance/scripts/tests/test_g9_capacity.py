@@ -1,7 +1,8 @@
 """G9: capacity gates promotion. A strategy whose net Sharpe is flat from 0.1x
 to 1x but negative at 1x is blocked by name; a hypothesis registered crowded
 is blocked until a decision line overrides it, then blocked on odds until a
-superseding hypothesis states them, then promotable.
+superseding hypothesis states them at the same kill date, spending no trial,
+then promotable.
 
 The synthetic panel plants a persistent per-name drift (`alpha`) that no
 factor spans, so trailing return ranks carry a real edge.
@@ -135,6 +136,9 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
         },
         "supersedes": hypothesis_id,
     }
+    spent = run(["check", str(book)])[1]["families"]["g9"]["trials_used"]
     batch(run, book, {"hypotheses": [stated]})
     view = run(["check", str(book), "drift"])[1]
     assert (view["standing"], view["blockers"]) == ("promotable", [])
+    # same kill date: stating odds spends no trial
+    assert run(["check", str(book)])[1]["families"]["g9"]["trials_used"] == spent

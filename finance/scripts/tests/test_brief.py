@@ -77,13 +77,24 @@ def test_a_promoted_bet_past_its_horizon_warns_until_scored(book, run, make_hypo
     assert late(run(["check", str(book)])[1], "unscored") == []
 
 
-def test_a_superseding_hypothesis_spends_a_trial(book, run, make_hypothesis):
-    first = record(run, book, {"hypotheses": [make_hypothesis(["one", "bet"])]})
-    made = first["new"]["hypotheses"]["one-bet"]
-    assert run(["check", str(book)])[1]["families"]["baseline"]["trials_used"] == 0
-    longer = make_hypothesis(["one", "longer"], supersedes=made)
+def trials_used(run, book):
+    return run(["check", str(book)])[1]["families"]["baseline"]["trials_used"]
+
+
+def test_only_a_later_kill_date_spends_a_trial(book, run, make_hypothesis):
+    first = make_hypothesis(["one", "bet"], falsifier_by="2098-12-31")
+    made = record(run, book, {"hypotheses": [first]})["new"]["hypotheses"]["one-bet"]
+    assert trials_used(run, book) == 0
+    same = make_hypothesis(
+        ["one", "odds"], falsifier_by="2098-12-31", odds=ODDS, supersedes=made
+    )
+    same_id = record(run, book, {"hypotheses": [same]})["new"]["hypotheses"]
+    assert trials_used(run, book) == 0  # odds added, same kill date: free
+    longer = make_hypothesis(
+        ["one", "longer"], falsifier_by="2099-12-31", supersedes=same_id["one-odds"]
+    )
     record(run, book, {"hypotheses": [longer]})
-    assert run(["check", str(book)])[1]["families"]["baseline"]["trials_used"] == 1
+    assert trials_used(run, book) == 1
 
 
 def proposals(book, days):

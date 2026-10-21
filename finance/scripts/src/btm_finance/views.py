@@ -30,6 +30,20 @@ def open_hypotheses(
     return [h for h in hypotheses if h.get("id") not in measured | closed]
 
 
+def extensions(every_line: Sequence[Row]) -> list[Row]:
+    """Hypothesis lines whose `falsifier_by` is later than that of the line
+    they supersede, or whose target carries none: more time spends a trial."""
+    kill = {h.get("id"): day_of(h, "falsifier_by") for h in every_line}
+    found: list[Row] = []
+    for h in every_line:
+        if "supersedes" not in h:
+            continue
+        before, after = kill.get(h["supersedes"]), day_of(h, "falsifier_by")
+        if after is not None and (before is None or after > before):
+            found.append(h)
+    return found
+
+
 def families(
     limits: Limits,
     hypotheses: Sequence[Row],
@@ -37,10 +51,10 @@ def families(
     decisions: Sequence[Row],
     every_line: Sequence[Row],
 ) -> dict[str, Any]:
-    """Per family: open hypotheses, trials used (every run line and every
-    hypothesis line carrying `supersedes` counts), budget."""
+    """Per family: open hypotheses, trials used (every run line, and every
+    hypothesis line extending the kill date of the line it supersedes), budget."""
     used = Counter(str(run.get("family_id")) for run in runs)
-    used.update(str(h.get("family_id")) for h in every_line if "supersedes" in h)
+    used.update(str(h.get("family_id")) for h in extensions(every_line))
     pending = open_hypotheses(hypotheses, runs, decisions)
     names = sorted(
         set(limits.families) | set(used) | {str(h.get("family_id")) for h in pending}

@@ -104,7 +104,7 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines carrying `supersedes`) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
+| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines whose `supersedes` moves `falsifier_by` later) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
 | `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
@@ -163,9 +163,10 @@ all, resend. Arrays optional; order below is acceptance order:
 - `critique.run_id` must name a run some runs file holds.
 - Correct any line with new line holding `"supersedes": "<full id>"` of same
   kind; newest wins in every view. Superseding hypothesis spends trial of
-  its family: bare `check` `trials_used` counts run lines plus hypothesis
-  lines carrying `supersedes`. Scorecard `trials`, DSR's count, still counts
-  backtests only.
+  its family only when its `falsifier_by` is later than superseded line's:
+  bare `check` `trials_used` counts run lines plus those. Adding odds or
+  correcting text at same or earlier kill date spends nothing. Scorecard
+  `trials`, DSR's count, still counts backtests only.
 - `holdings` turns each position into opening buy fill
   (`strategy: "opening"`); `cost_basis` per share. Import holdings once,
   from pasted table or broker export.
@@ -240,13 +241,13 @@ propose probe to operator at `sizing.probe_weight`; operator writes `status`
 `paper` or `live` still needs DSR 0.95, PBO under 0.10.
 `odds: none registered on <hypothesis id>` blocks only when nothing else
 does, so neither `promotable` nor `probe` reads without odds; state them in
-superseding hypothesis, which spends trial. `crowded` clears only by
-operator's `override` decision: net Sharpe at 20x cap still within tolerance
-of 0.1x means edge survives at twenty times cap, so institutions can hold it
-and it is likely crowded; `in_band` hypothesis showing this needs `override`
-with reason. With `trials` 1, DSR is probabilistic Sharpe against zero,
-still held to threshold. Show operator every blocker, never summary omitting
-one.
+superseding hypothesis at same `falsifier_by`, which spends no trial.
+`crowded` clears only by operator's `override` decision: net Sharpe at 20x
+cap still within tolerance of 0.1x means edge survives at twenty times cap,
+so institutions can hold it and it is likely crowded; `in_band` hypothesis
+showing this needs `override` with reason. With `trials` 1, DSR is
+probabilistic Sharpe against zero, still held to threshold. Show operator
+every blocker, never summary omitting one.
 
 ## Research loop
 
