@@ -79,7 +79,7 @@ that list.
   negative `post_cutoff` is `hindsight` concern in `critique`.
 * Probe: `check <strategy>` reads standing `probe` when every blocker but
   `dsr` and `pbo` is clear, DSR at or above 0.80 (`thresholds.dsr_probe`),
-  PBO below 0.25 (`pbo_probe`). Operator then sets status `probe`; sleeve
+  PBO below 0.25 (`pbo_probe`). On operator's yes, status `probe`; sleeve
   trades live at fixed `sizing.probe_weight` so out-of-sample fills accrue.
   `paper` or `live` still needs DSR 0.95.
 * DSR also sizes: `recommend` scales tier's Kelly fraction by

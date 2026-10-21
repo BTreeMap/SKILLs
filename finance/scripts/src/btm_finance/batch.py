@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import ConfigDict
 
 from btm_corekit import Acceptance, Diagnostic, Model, Named, Pool, dump
+from btm_finance.governed import governed
 from btm_finance.ledger import ENVELOPE, Kind, Row
 from btm_finance.models import (
     Action,
@@ -59,7 +60,10 @@ SCHEMA: dict[str, str] = {
     f'hypothesis id, or proposal date>", "action": "{_choices(Action)}", '
     '"reason": "...", "odds": {"p_win": 0.55, "payoff": 1.5, '
     '"horizon_days": 63, "kelly_implied": 0.25} (optional), "confidence": 0.6 '
-    '(optional), "supersedes": "<id>" (optional); forgo names a strategy}',
+    '(optional), "applied": ["limits.json|strategies/<name>/status|'
+    'approvals/<date>.json"] (optional; each governed file the decision '
+    'changed, stored with its sha256), "supersedes": "<id>" (optional); forgo '
+    "names a strategy; onboard names the book id}",
     "scored": '{"kw": ["two", "words"], "subject": "<live hypothesis id>", '
     '"resolved": "YYYY-MM-DD", "outcome": "...", "realized_return": 0.04, '
     '"brier": 0.2 (0 to 1), "log_score": -0.5 (at most 0), "attribution": '
@@ -117,6 +121,10 @@ class Context:
     proposals: list[str]
     live_regimes: frozenset[str] = frozenset()
     live_hypotheses: frozenset[str] = frozenset()
+    book: str = ""
+    """The book id: a decision subject for `onboard` and book-wide changes."""
+    governed: Mapping[str, str] = field(default_factory=dict)
+    """Each governed file present, book-relative, to its sha256."""
 
 
 @dataclass(slots=True)
@@ -189,7 +197,7 @@ class _Expansion(Acceptance):
                     f"replace '{entry.family_id}': limits.families has no such key",
                     "valid: "
                     + ", ".join(sorted(self.context.families))
-                    + "; the human adds families to limits.json",
+                    + "; families change in limits.json on the operator's word",
                 )
             if entry.min_holding_days < self.context.min_holding_days:
                 self.advisories.append(
@@ -236,6 +244,7 @@ class _Expansion(Acceptance):
                 *self.context.ids.get(Kind.RUN, []),
                 *self.pools[Kind.HYPOTHESIS].ids,
                 *self.context.proposals,
+                *([self.context.book] if self.context.book else []),
             ],
         )
         for index, row in enumerate(rows):
@@ -257,9 +266,45 @@ class _Expansion(Acceptance):
                     "valid: " + ", ".join(sorted(self.context.strategies)),
                 )
                 subject = None
+            if (
+                subject is not None
+                and entry.action is Action.ONBOARD
+                and subject != self.context.book
+            ):
+                self.fail(
+                    f"{where}.subject",
+                    f"replace '{subject}': onboard names the book",
+                    f"valid: {self.context.book}",
+                )
+                subject = None
+            applied = self.applied(entry.applied or (), where)
             full = self.named(Kind.DECISION, entry, where, entry.supersedes)
-            if full is not None and subject is not None:
-                self.stage(Kind.DECISION, full, {**dump(entry), "subject": subject})
+            if full is not None and subject is not None and applied is not None:
+                body = {**dump(entry), "subject": subject}
+                self.stage(Kind.DECISION, full, body | applied)
+
+    def applied(self, paths: Iterable[str], where: str) -> dict[str, Any] | None:
+        """Each governed path with its sha256 as it stands; None on any miss."""
+        found: list[dict[str, str]] = []
+        ok = True
+        for index, path in enumerate(paths):
+            at = f"{where}.applied[{index}]"
+            digest = self.context.governed.get(path)
+            if not governed(path):
+                ok = False
+                self.fail(
+                    at,
+                    f"replace '{path}': only limits.json, strategies/<name>/status, "
+                    "approvals/<file>.json are governed",
+                )
+            elif digest is None:
+                ok = False
+                self.fail(at, f"write '{path}' first: no such file in the book")
+            else:
+                found.append({"path": path, "sha256": digest})
+        if not ok:
+            return None
+        return {"applied": found} if found else {}
 
     def take_scored(self, rows: Rows) -> None:
         """`subject` names a live hypothesis: on file and not superseded, or

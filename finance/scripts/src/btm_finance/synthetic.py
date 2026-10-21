@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
-from btm_finance.cli import start
+from btm_finance.cli import recorded, start
 from btm_finance.data.panel import DelistKind
 from btm_finance.data.raw import store
 from btm_finance.data.tables import (
@@ -199,12 +199,20 @@ def make_book(  # noqa: PLR0913 - one synthetic book's whole recipe
     data = make_panel(seed, names, days, structure=structure, alpha=alpha)
     start(root, 10_000_000, data.universe)
     # The synthetic ADV carries 5% positions at the cap, not the template's
-    # 10%: the operator's edit, so the pinned baseline scorecard stands.
+    # 10%: a decision hashes the edit, so the pinned baseline scorecard stands.
     limits_path = root / "limits.json"
     limits = json.loads(limits_path.read_text(encoding="utf-8"))
     limits["sizing"]["max_weight"] = 0.05
     limits_path.write_text(json.dumps(limits, indent=2) + "\n", encoding="utf-8")
     book = open_book(str(root))
+    edit = {
+        "kw": ["synthetic", "weight"],
+        "subject": book.meta.id,
+        "action": "override",
+        "reason": "max_weight 0.05: the synthetic ADV carries 5% positions",
+        "applied": ["limits.json"],
+    }
+    recorded(book, {"decisions": [edit]})
     first = date_of(int(data.dates[0]))
     store(
         book,

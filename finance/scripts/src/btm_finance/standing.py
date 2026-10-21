@@ -228,9 +228,9 @@ def probe_next(status: Status | None, limits: Limits) -> str:
             f"under {th.pbo_promote}"
         )
     return (
-        f"propose a probe to the operator at sizing.probe_weight {weight}; the "
-        "human writes status probe and records promote naming the strategy in "
-        "the same step"
+        f"propose a probe to the operator at sizing.probe_weight {weight}; on "
+        "their yes write status probe and record promote naming the strategy, "
+        "applied naming the status file, in the same step"
     )
 
 
@@ -247,9 +247,9 @@ def next_of(
         case Standing.BLOCKED:
             return f"address or explain: {blockers[0]}"
         case Standing.PROMOTABLE if status == Status.PAPER:
-            return "propose live to the operator; the human records the decision"
+            return "propose live to the operator; on their yes record the decision"
         case Standing.PROMOTABLE:
-            return "propose promotion to the operator; the human records the decision"
+            return "propose promotion to the operator; on their yes record it"
 
 
 def standing_of(evidence: Evidence, limits: Limits) -> StandingView:

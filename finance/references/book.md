@@ -8,11 +8,11 @@ operator's private git repository; skill holds methods, book holds state.
 ```text
 <book>/
   book.json                   marker: book id, created, engine version, held-out path
-  README.md                   humans: layout, resume, sending, held-out path, dated answers
-  AGENTS.md                   agents: invariants, conduct, code duty, never-edit list, brief, hindsight
+  README.md                   operator: what book is, when brief arrives, four replies, ledger/
+  AGENTS.md                   agents: verbs, invariants, daily loop, replies, governed files, conduct, code, hindsight, dated answers
   CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
-  limits.json                 human: asset cap, bounds, thresholds, families
-  preferences.json            human: focus sectors, exclusions, cadence
+  limits.json                 governed: asset cap, bounds, thresholds, families
+  preferences.json            focus sectors, exclusions, cadence, schedule; through record
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
@@ -68,11 +68,11 @@ over research names, `.dates` for bar dates. None serves held-out names.
 snapshot, so later run cannot change earlier run's.
 
 `status` holds one word: `research`, `probe`, `paper`, `live`, or `retired`;
-absent or empty reads `research`. Operator writes `probe`, `paper`, or
-`live` with `promote` decision naming strategy in same step; `paper_months`
-counts from it. `probe` trades live at fixed `sizing.probe_weight` so
-out-of-sample fills accrue. `runs.jsonl` is lead's; each delegate writes own
-`runs/<agent>.jsonl`; views read union.
+absent or empty reads `research`. On operator's yes, agent writes `probe`,
+`paper`, or `live` and records `promote` naming strategy, `applied` naming
+file, in same step; `paper_months` counts from it. `probe` trades live at
+fixed `sizing.probe_weight` so out-of-sample fills accrue. `runs.jsonl` is
+lead's; each delegate writes own `runs/<agent>.jsonl`; views read union.
 
 ## Ledger lines
 
@@ -80,11 +80,12 @@ Every line: `id`, `ts`, then record. Ledger is append-only; correction is
 new line carrying `supersedes`. `record` writes each batch in one write
 under lock, whole or not at all. File ending in line without newline is cut
 by some other hand, as is line that is not JSON object: `record` refuses to
-append, names file and line; operator repairs it. Bare `check` derives
-`warnings` on every call: each cut line (file, line, `problem: cut line`),
-each undecodable line (file, line, first 40 bytes), and each `supersedes`
-naming no id of its kind; never stored, never repaired, no incident line.
-Filesystem modes enforce nothing: these warnings are the append-only check.
+append, names file and line; repaired only on operator's word. Bare `check`
+derives `warnings` on every call: each cut line (file, line,
+`problem: cut line`), each undecodable line (file, line, first 40 bytes),
+and each `supersedes` naming no id of its kind; never stored, never
+repaired, no incident line. Filesystem modes enforce nothing: these warnings
+are the append-only check.
 
 | Kind | Required keys |
 | --- | --- |
@@ -149,7 +150,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 
 | Path | Writer | Agent may |
 | --- | --- | --- |
-| `limits.json`, `approvals/`, `strategies/*/status` | human | read |
+| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, then record `decision` quoting instruction, `applied` naming file; bare `check` warns on each governed file no decision hashed as it stands |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` except `pad/` | `record`; run lines `measure`; incident lines `load`, `check --live` | append through `record` only; bare `check` warns on any other write it can see |
 | `ledger/pad/scratch.jsonl` | agent | append lines, grep; never gated |
@@ -264,26 +265,31 @@ deferred.
 ## Approval file
 
 `check <date>` prints `approval_template` with every order, `date` set to
-proposal date. Operator copies it to `approvals/<YYYY-MM-DD>.json`, edits
-quantities, sets `date` and file name to send day:
+proposal date, `reply` empty. On operator's approve, agent copies it to
+`approvals/<YYYY-MM-DD>.json`, sets quantities as operator said, `date` and
+file name to send day, `reply` to operator's words verbatim, then records
+`approve` decision on proposal stem, same words as `reason`, `applied`
+naming file:
 
 ```json
-{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
+{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "reply": "<operator's words>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
 ```
 
 No program places an order. `check <book> approvals/<date>.json` (path
 absolute or book-relative, resolving under `approvals/`) checks: `date` is
-today (UTC); `proposal` names file under `proposals/`; every order's
-`symbol`, `side`, `strategy` match order of that proposal;
-`adv_participation` at most `limits.max_adv_participation`; strategy
-`status` `paper`, `probe`, or `live`. Returns `orders` (each with `account`
-its strategy trades), `problems` (empty when valid), `next`; exit 1 on any
-problem.
+today (UTC); `reply` non-empty; some `approve` decision's `applied` holds
+file's sha256 as it stands, so edit after yes fails until recorded again;
+`proposal` names file under `proposals/`; every order's `symbol`, `side`,
+`strategy` match order of that proposal; `adv_participation` at most
+`limits.max_adv_participation`; strategy `status` `paper`, `probe`, or
+`live`. Returns `orders` (each with `account` its strategy trades),
+`problems` (empty when valid), `next`; exit 1 on any problem.
 
 Paper orders: `record <book> --approval approvals/<date>.json --dry-run`
 records fill per order at `price` with `dry_run: true`; refuses file failing
 `check` or holding `probe` or `live` order. Probe and live orders: operator
-places each by hand at broker, pastes fills into table, runs
+places each by hand at broker and pastes fills in chat (table, screenshot,
+or sentence); agent transcribes them into table, shows it back, on yes runs
 `record <book> --fills:file <table> --approval approvals/<date>.json`. Table
 is CSV with header `symbol,side,quantity,price,date` (optional `strategy`
 column), or JSON list of objects with same keys. Each fill must name order's
@@ -291,5 +297,7 @@ column), or JSON list of objects with same keys. Each fill must name order's
 non-`paper` strategy, positive `quantity` and `price`, `date` not after
 today; fills land `dry_run: false`. Either way `record` builds `fills` batch
 with `approval` set to file stem and sends it through gate: any miss refuses
-whole table. No file moves; bare `check` lists each approval naming open
-proposal, `filled` once fills carry its stem.
+whole table. No file moves; bare `check` lists each approval under
+`approvals` with `proposal`, `date`, `approved`, and `filled` once fills
+carry its stem. `approve` decision answers proposal: it leaves open
+proposals.

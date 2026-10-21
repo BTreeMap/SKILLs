@@ -78,7 +78,8 @@ BASELINE_README = """# baseline
 Static comparator every candidate strategy is shown beside: equal weight on
 the top third of names by average rank of 12-1 momentum, low volatility, and
 book-to-market where filings are loaded; rebalanced annually. `start`
-registers its hypothesis. The human alone edits `status`.
+registers its hypothesis. `status` changes only on operator's word in chat,
+recorded as decision hashing it.
 """
 
 

@@ -169,7 +169,7 @@ def test_the_brief_fits_three_proposals_and_five_incidents_in_twelve_lines(book,
     assert lines[4].startswith("breaches, last 7 days: ")
     assert lines[4].count(",") == 5  # five strategy-kind pairs after the colon
     assert lines[5] == "overdue 0, unscored 0"
-    assert lines[6] == f"next: {brief['next']}"
+    assert lines[6] == "Reply approve, reject, or override 2026-07-31 with a reason."
 
 
 def test_more_proposals_than_fit_collapse_to_a_count_and_the_newest_two(book, run):

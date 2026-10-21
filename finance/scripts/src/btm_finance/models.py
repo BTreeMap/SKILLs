@@ -36,6 +36,8 @@ class Action(StrEnum):
     DIAGNOSE = "diagnose"
     FORGO = "forgo"
     """A passing sleeve left unproposed, with the reason: forgoing is a cost."""
+    ONBOARD = "onboard"
+    """`start` applying the operator's answers; `subject` is the book id."""
 
 
 class Side(StrEnum):
@@ -44,7 +46,8 @@ class Side(StrEnum):
 
 
 class Status(StrEnum):
-    """A strategy's stage; the human alone writes `strategies/<name>/status`."""
+    """A strategy's stage; `strategies/<name>/status` changes only on the
+    operator's word, hashed by a decision's `applied`."""
 
     RESEARCH = "research"
     PROBE = "probe"
@@ -58,6 +61,16 @@ class Status(StrEnum):
 class Cadence(StrEnum):
     MONTHLY = "monthly"
     QUARTERLY = "quarterly"
+
+
+class RunDays(StrEnum):
+    """Which days the scheduled loop runs and the brief arrives."""
+
+    DAILY = "daily"
+    WEEKDAYS = "weekdays"
+
+
+Hour = Annotated[int, Field(ge=0, le=23)]
 
 
 class Rebalance(StrEnum):
@@ -176,6 +189,9 @@ class DecisionEntry(OpenNamed):
     subject: NonEmpty
     action: Action
     reason: NonEmpty
+    applied: tuple[NonEmpty, ...] | None = None
+    """Governed files the decision changed, book-relative; `record` stores
+    each with its sha256 as it stands."""
     odds: Odds | None = None
     confidence: Confidence | None = None
     supersedes: NonEmpty | None = None
@@ -233,6 +249,13 @@ class Exclusions(Model):
     countries: Texts = ()
 
 
+class Schedule(Model):
+    """When the daily loop runs: hour (local, 0 to 23) and which days."""
+
+    hour: Hour = 7
+    days: RunDays = RunDays.WEEKDAYS
+
+
 class Preferences(Model):
     """`preferences.json`, rewritten whole by `record`; extras survive."""
 
@@ -241,6 +264,8 @@ class Preferences(Model):
     focus_sectors: Texts
     exclusions: Exclusions
     cadence: Cadence
+    schedule: Schedule | None = None
+    """Absent in a book made before the daily loop."""
 
 
 class Family(Model):
@@ -303,7 +328,8 @@ class Sizing(Model):
 
 
 class Limits(Model):
-    """`limits.json`: the human owns it, so unknown keys are ignored, not refused."""
+    """`limits.json`: changes only on the operator's word, so unknown keys are
+    ignored, not refused."""
 
     model_config = ConfigDict(frozen=True, extra="ignore")
 
@@ -434,6 +460,7 @@ PREFERENCES_TEMPLATE: dict[str, object] = {
     "focus_sectors": [],
     "exclusions": {"symbols": [], "sectors": [], "countries": []},
     "cadence": "monthly",
+    "schedule": {"hour": 7, "days": "weekdays"},
 }
 
 
@@ -484,11 +511,13 @@ class Risk(Model):
 
 
 class Horizon(Model):
-    """Question 5: holding period, rebalance cadence, hour of daily brief."""
+    """Question 5: holding period, rebalance cadence, hour and days of the
+    daily brief."""
 
     holding: NonEmpty = "weeks to years"
     cadence: Cadence = Cadence.MONTHLY
-    brief: NonEmpty = "before market open"
+    brief_hour: Hour = 7
+    schedule: RunDays = RunDays.WEEKDAYS
 
 
 class Universe(Model):
@@ -555,7 +584,8 @@ ANSWERS_SHAPE: dict[str, object] = {
     "horizon": {
         "holding": "weeks to years",
         "cadence": "monthly",
-        "brief": "before market open",
+        "brief_hour": 7,
+        "schedule": "weekdays",
     },
     "universe": {
         "index": "<index or list>",

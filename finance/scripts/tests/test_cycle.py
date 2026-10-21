@@ -53,12 +53,21 @@ def on_send_day(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def approve_and_send(run, book: Path, day: str) -> tuple[int, str]:
-    """The operator's part on `day`: copy the template, check it, then record
-    the paper orders as dry-run fills."""
+    """The operator's reply on `day`: the agent writes the template with the
+    reply quoted, records the approve decision hashing it, checks it, then
+    records the paper orders as dry-run fills."""
     code, view, err = run(["check", str(book), day])
     assert code == 0, err
     target = book / view["approval_path"]
-    target.write_text(json.dumps(view["approval_template"]))
+    target.write_text(json.dumps(view["approval_template"] | {"reply": "approve"}))
+    decision = {
+        "kw": ["approve", "rebalance"],
+        "subject": day,
+        "action": "approve",
+        "reason": "approve",
+        "applied": [view["approval_path"]],
+    }
+    batch(run, book, {"decisions": [decision]})
     SEND_DAY[0] = day
     code, checked, err = run(["check", str(book), view["approval_path"]])
     assert (code, checked["problems"]) == (0, []), err
@@ -189,7 +198,7 @@ def test_an_order_over_the_adv_bound_is_cut_and_reported(synthetic, run):
     assert approve_and_send(run, book, FIRST)[0] == 0
     path = book / "limits.json"
     limits = json.loads(path.read_text())
-    limits["max_adv_participation"] = 0.001  # the human's edit
+    limits["max_adv_participation"] = 0.001  # the operator's word, applied
     path.write_text(json.dumps(limits))
     recommend(run, book, SECOND)
     document = proposal(book, SECOND)

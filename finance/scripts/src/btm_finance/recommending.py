@@ -252,10 +252,12 @@ class Proposal(Model):
 
 
 class Approval(Model):
-    """The operator's `approvals/<date>.json`; `proposal` names the file."""
+    """`approvals/<date>.json`, written by the agent from the operator's
+    reply; `proposal` names the file, `reply` quotes the operator."""
 
     date: str
     proposal: str
+    reply: str = ""
     orders: tuple[Order, ...]
 
 

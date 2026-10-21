@@ -1,70 +1,39 @@
 # $title
 
-Private research book: bets on stocks held $holding, each with stated
-odds, kill date, size from evidence. Agents research, write code here, and
-record; operator decides and sends every trade by hand. Agents read
-`AGENTS.md` first.
+This is your private research book. Agents look for ways to invest in
+stocks held $holding. Each idea is written down as a bet before any testing:
+the odds, how much to put on it, and the date by which it must prove itself.
+The agents do the research and keep the books. You decide, and you place
+every trade yourself.
 
-## Layout
+## Your daily brief
 
-| Path | Holds |
-| --- | --- |
-| `book.json` | marker: book id, created, engine version, held-out path |
-| `limits.json` | operator's bounds: asset cap, thresholds, sizing, families |
-| `preferences.json` | focus sectors, exclusions, cadence; changed only through `record` |
-| `universe.csv` | research universe given at start |
-| `data/` | loaded prices, filings, factors, run series; git ignores it |
-| `ledger/` | append-only record: hypotheses, critiques, decisions, runs, fills, scores |
-| `proposals/` | rebalance proposals, written once each |
-| `approvals/` | operator's approval files, one per send day |
-| `rejected/` | approval files operator refused |
-| `strategies/<name>/` | one strategy: `signal.py`, `config.json`, `README.md`, `status` |
-| `lib/`, `tools/` | agents' shared modules and scripts |
-| `research/<topic>/` | notes and sources per line of inquiry |
-| `tests/` | tests for `lib/` and `tools/` |
-| `INDEX.md` | one line per lib module, tool, research topic |
+Each day the agents work on their own, then send you a short brief in chat
+at $when. It has at most twelve lines: the market picture, any proposed
+trades with their odds and size, warnings from the last week, and bets that
+are past due. Its last line names the one reply it needs from you, or says
+that nothing needs deciding.
 
-## Resume
+A proposal waits for your answer. Nothing is traded and no setting changes
+until you say so.
 
-From book root:
+## How to reply
 
-```bash
-$binding check .
-$binding check . --brief
-```
+Answer in plain words, in chat. There are four kinds of reply.
 
-First prints continue view with `next`; second, daily brief.
+1. Decide on a proposal. Say approve, reject, or override, with your reason
+   in your own words. The agents keep your words exactly as you wrote them.
+2. Report what you traded. $sending$account After trading, paste the
+   confirmation table from your broker, attach a screenshot, or describe the
+   trades in a sentence. The agents show you what they read; say yes if it
+   is right.
+3. Change a setting. Ask in a sentence, for example a lower risk limit or a
+   sector to leave out. The agents show you the change, make it when you say
+   yes, and keep your words beside it.
+4. Ask anything. The agents answer from the book's history first.
 
-## Approval and sending
+## Where the history is
 
-$sending
-
-1. On rebalance day lead runs `recommend` and reads `check <date>`
-   result to you: blockers first.
-2. Copy its `approval_template` to `approvals/<send day>.json`; edit
-   quantities; set `date` to send day (UTC).
-3. Run `$binding check . approvals/<send day>.json` to check and print
-   orders; fix every `problems` entry first. Paper orders:
-   `$binding record . --approval approvals/<send day>.json --dry-run`.
-4. Place each probe and live order by hand$at.
-5. Run `$binding record . --fills:file <table> --approval
-   approvals/<send day>.json` with pasted fills: CSV header
-   `symbol,side,quantity,price,date`.
-
-## Held-out list
-
-Held-out names live outside book, in this file:
-
-```text
-$held_out
-```
-
-Agents never read it; only operator runs `measure --held-out`.
-
-## Answers
-
-Onboarding answers as of $dated. `(default)` marks answer left to default.
-
-| Question | Answer |
-| --- | --- |
-$answers
+Everything the agents decided, tested, and traded is kept in the `ledger/`
+folder of this book. Lines are only ever added there, never changed, so it
+is the full history.

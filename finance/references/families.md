@@ -7,8 +7,9 @@ first, crowded large-cap families last.
 
 ## Using this list
 
-* Only human adds family to `limits.families`; propose `family_id` and its
-  suggested entry below to operator, never edit `limits.json`.
+* Family enters `limits.families` only on operator's yes: propose
+  `family_id` and its suggested entry below; on yes, add it and record
+  `decision` quoting reply, `applied` naming `limits.json`.
 * Entry with `event: true` marks event family: its hypotheses carry `chain`,
   `expectation_source`, `discounted`, `confidence` (load `macro`); `record`
   accepts hypothesis without them, critique item `event-fields` flags each

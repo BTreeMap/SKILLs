@@ -66,13 +66,15 @@ def test_start_with_answers_writes_the_three_files_and_fills_limits(tmp_path, ru
         "focus_sectors": ["Energy"],
         "exclusions": {"symbols": [], "sectors": ["Tobacco"], "countries": []},
         "cadence": "quarterly",
+        "schedule": {"hour": 7, "days": "weekdays"},
     }
     readme = (root / "README.md").read_text()
-    created = json.loads((root / "book.json").read_text())["created"][:10]
-    assert f"as of {created}" in readme
-    assert "| 3. Capital | now 50000; in six months 80000 |" in readme
     assert "Northbank" in readme and "account tfsa" in readme
+    assert "$" not in readme
     agents = (root / "AGENTS.md").read_text()
+    created = json.loads((root / "book.json").read_text())["created"][:10]
+    assert f"as of {created}" in agents
+    assert "| 3. Capital | now 50000; in six months 80000 |" in agents
     assert "codex (agent) may propose" in agents
     assert "rebalance quarterly" in agents
     assert "$" not in agents
@@ -96,7 +98,8 @@ def test_answers_held_out_path_is_used_when_no_flag(tmp_path, run):
     code, receipt, _ = started(run, tmp_path / "book", {"held_out": str(path)})
     assert code == 0
     assert receipt["held_out"]["path"] == str(path.resolve())
-    assert str(path.resolve()) in (tmp_path / "book" / "README.md").read_text()
+    assert str(path.resolve()) in (tmp_path / "book" / "AGENTS.md").read_text()
+    assert str(path.resolve()) not in (tmp_path / "book" / "README.md").read_text()
 
 
 def test_start_without_answers_writes_none_of_the_three(tmp_path, run):
@@ -112,7 +115,9 @@ def test_start_without_answers_writes_none_of_the_three(tmp_path, run):
 
 
 def test_partial_answers_take_defaults():
-    answers = Answers.model_validate({"capital": {"now": 1000}})
+    answers = Answers.model_validate(
+        {"capital": {"now": 1000}, "horizon": {"brief_hour": 18, "schedule": "daily"}}
+    )
     setting = onboarding.Setting(
         title="b",
         dated="2026-01-02",
@@ -122,15 +127,17 @@ def test_partial_answers_take_defaults():
         binding="btm-finance",
     )
     readme = onboarding.readme(template("README.tmpl"), answers, setting)
-    assert "as of 2026-01-02" in readme
-    assert "| 3. Capital | now 1000; in six months not given (default) |" in readme
-    assert "ruin_bound 0.35 (default); Kelly backtest 0.25 (default)" in readme
-    assert "rebalance monthly (default)" in readme
-    assert "csv, edgar, french (default)" in readme
-    assert "| 10. Collaborators | operator only (default) |" in readme
-    assert "| 9. Held-out path | /x/held.json (default) |" in readme
-    assert "no API in use" in readme
+    assert "at 18:00 every day" in readme
+    assert "You enter every order yourself at your broker." in readme
     agents = onboarding.agents(template("AGENTS.tmpl"), answers, setting)
+    assert "as of 2026-01-02" in agents
+    assert "| 3. Capital | now 1000; in six months not given (default) |" in agents
+    assert "ruin_bound 0.35 (default); Kelly backtest 0.25 (default)" in agents
+    assert "rebalance monthly (default); brief at 18:00; daily" in agents
+    assert "csv, edgar, french (default)" in agents
+    assert "| 10. Collaborators | operator only (default) |" in agents
+    assert "| 9. Held-out path | /x/held.json (default) |" in agents
+    assert "no API: check prints orders for hand entry (default)" in agents
     assert "Operator alone works here" in agents
     assert onboarding.section(agents) == onboarding.section(template("AGENTS.tmpl"))
 
@@ -161,10 +168,9 @@ def test_sleeve_account_must_name_an_account():
         )
 
 
-def test_start_on_a_book_writes_files_on_an_existing_book(tmp_path, run):
+def test_start_on_a_book_writes_files_and_limits_on_an_existing_book(tmp_path, run):
     root = tmp_path / "book"
     started(run, root, None)
-    limits_before = (root / "limits.json").read_bytes()
     preferences_before = (root / "preferences.json").read_bytes()
     ledger_before = (root / "ledger" / "hypotheses.jsonl").read_bytes()
     assert {w["file"] for w in problems(run, root)} == set(onboarding.FILES)
@@ -185,15 +191,22 @@ def test_start_on_a_book_writes_files_on_an_existing_book(tmp_path, run):
                 "focus_sectors": ["Energy"],
                 "exclusions": {"symbols": [], "sectors": ["Tobacco"], "countries": []},
                 "cadence": "quarterly",
+                "schedule": {"hour": 7, "days": "weekdays"},
             }
         ]
     }
-    assert (root / "limits.json").read_bytes() == limits_before
+    limits = json.loads((root / "limits.json").read_text())
+    assert (limits["asset_cap"], limits["sizing"]["ruin_bound"]) == (50000, 0.3)
+    decisions = (root / "ledger" / "decisions.jsonl").read_text().splitlines()
+    onboarded = [json.loads(line) for line in decisions][-1]
+    assert (onboarded["action"], onboarded["reason"]) == ("onboard", "start")
+    assert [a["path"] for a in onboarded["applied"]] == ["limits.json"]
     assert (root / "preferences.json").read_bytes() == preferences_before
     assert (root / "ledger" / "hypotheses.jsonl").read_bytes() == ledger_before
     today = datetime.now(UTC).date().isoformat()
-    assert f"as of {today}" in (root / "README.md").read_text()
+    assert f"as of {today}" in (root / "AGENTS.md").read_text()
     assert problems(run, root) == []
+    assert run(["check", str(root)])[1]["warnings"] == []
     code, _, err = run(
         ["record", str(root), "--batch:stdin"], stdin=json.dumps(receipt["preferences"])
     )
@@ -206,6 +219,7 @@ def test_start_on_a_book_returns_only_limits_that_differ(tmp_path, run):
     code, receipt, _ = run(["start", str(root), "--answers:stdin"], stdin="{}")
     assert code == 0
     assert receipt["limits"] == {}
+    assert "limits.json" not in receipt["wrote"]
 
 
 def test_start_on_a_book_refuses_existing_files_without_force(book, run):

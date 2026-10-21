@@ -1,6 +1,7 @@
-"""The operator's approval file and pasted fill table, pure: the problems
-`check` names on an approval, and the `fills` batch rows `record` builds
-from one. Callers read files; nothing here touches the book."""
+"""The approval file the agent writes from the operator's reply, and the
+pasted fill table, pure: the problems `check` names on an approval, and the
+`fills` batch rows `record` builds from one. Callers read files; nothing
+here touches the book."""
 
 from __future__ import annotations
 
@@ -100,10 +101,12 @@ def checked(  # noqa: PLR0913 - one approval against the book's live facts
     cap: float,
     statuses: Mapping[str, str],
     proposal_orders: Callable[[str], Sequence[Any] | None],
+    witnessed: bool,
 ) -> Checked:
-    """Every rule at once: `date` is today, `proposal` names a proposal, each
-    order is one of it within the ADV bound on a sleeve. O(orders + proposal
-    orders)."""
+    """Every rule at once: `date` is today, `reply` quotes the operator, an
+    `approve` decision hashed the file as it stands, `proposal` names a
+    proposal, each order is one of it within the ADV bound on a sleeve.
+    O(orders + proposal orders)."""
     if not isinstance(document, dict):
         return Checked(stem, (), ("approval is not one JSON object",))
     problems: list[str] = []
@@ -111,6 +114,14 @@ def checked(  # noqa: PLR0913 - one approval against the book's live facts
         problems.append(
             f"approval dated {document.get('date')!r}, today is {today} (UTC): "
             "write a new approval today"
+        )
+    reply = document.get("reply")
+    if not isinstance(reply, str) or not reply.strip():
+        problems.append('approval needs "reply": the operator\'s words verbatim')
+    if not witnessed:
+        problems.append(
+            f"no approve decision hashes approvals/{stem}.json as it stands: "
+            "record one quoting the reply, with applied naming this file"
         )
     named = document.get("proposal")
     listed = proposal_orders(named) if isinstance(named, str) and named else None

@@ -3,6 +3,8 @@
 This file is standing instruction for every agent in this book;
 conversation is a view. Book and ledger hold all state. Each session: read
 this file, run bare `check`, then `check --brief`, resume from `next`.
+Operator never types a verb: their whole surface is daily brief and plain
+replies in chat.
 
 Run commands from book root through skill binding; six verbs:
 
@@ -10,7 +12,9 @@ Run commands from book root through skill binding; six verbs:
 $binding start . --answers:file <answers.json> [--force]
 $binding load . <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $binding record . --batch:file <batch.json>
-$binding measure . <strategy> [--agent <name>] [--repeat <run id>]
+$binding record . --fills:file <table> --approval approvals/<date>.json
+$binding record . --approval approvals/<date>.json --dry-run
+$binding measure . <strategy> [--agent <name>] [--held-out] [--repeat <run id>]
 $binding check . [<strategy> | <run id> | <proposal date> | approvals/<date>.json] [--live | --brief]
 $binding check --schema [record|run|answers|pad|approval]
 $binding recommend . <YYYY-MM-DD> [--force]
@@ -38,9 +42,52 @@ No agent, script, or cron changes these four.
 Agent never edits this section; `check` warns when it differs from
 template.
 
+## Daily loop
+
+Scheduled session runs $brief, operator absent. Operator reply arriving
+mid-loop preempts: answer it from ledger first, then resume. Open proposal
+waits for reply; never act on it by default; research continues meanwhile.
+
+1. `load` every configured source.
+2. Bare `check`; act on `next`.
+3. Research within family budgets: pick next family and unit, register,
+   author, `measure`, critique, `record`. Stop when budgets are spent or
+   time box ends.
+4. Rebalance day: `recommend <date>`, then `check <date>`.
+5. Weekly: `check --live`. Promotion gate: `measure --held-out` (scorecard
+   only); propose promotion in brief.
+6. Score each hypothesis past its horizon: `record` `scored`.
+7. Commit branch. Post `check --brief` `lines` verbatim, at most 12, adding
+   nothing between them.
+
+## Replies
+
+- Approve: write `approvals/<send day>.json` from `check <date>`
+  `approval_template`, `date` send day, `reply` operator's words verbatim;
+  `record` decision `action: approve`, `subject` proposal stem, `reason`
+  reply verbatim, `applied` that file; then `check` it.
+- Reject or override: `record` decision `reject` or `override` on proposal
+  stem, reply verbatim as `reason`.
+- Fills: transcribe pasted table, screenshot, or sentence; show parsed fills
+  back; on yes `record --fills:file`. Paper orders: `--dry-run` once
+  approval passes `check`.
+- Change to limit, status, preference, or answer: show diff, get yes, apply
+  same turn, `record` decision quoting instruction verbatim, `applied`
+  naming each governed file changed.
+- Question: answer from ledger first.
+
+## Governed files
+
+`limits.json`, `strategies/*/status`, `approvals/*.json` change only on
+operator's instruction in chat, applied by agent same turn, recorded as
+`decision` quoting it, hashed in `applied`. Bare `check` warns on each
+governed file no decision hashed as it stands. `preferences.json` changes
+only through `record`. Never edit skill directory, or `ledger/` except
+through `record`; `ledger/pad/` is yours.
+
 ## Book
 
-- Holding period $holding; rebalance $cadence; daily brief $brief.
+- Holding period $holding; rebalance $cadence; brief $brief.
 - Asset cap $cap; ruin bound $ruin_bound; Kelly fraction for backtest-only
   edge $kelly.
 - $collaborators
@@ -57,6 +104,7 @@ template.
   propose no change.
 - Fold on kill date: past `falsifier_by`, score bet (`scored`), or reject
   or retire it. More time is new hypothesis citing old in `supersedes`.
+- Never hand operator a command: brief's last line names their reply.
 
 ## Code
 
@@ -71,24 +119,6 @@ template.
 - Commit on branch `agent/<date>-<topic>`, one commit per unit of work;
   operator merges.
 
-## Never edit
-
-- Skill directory, installed copy or checkout.
-- `limits.json`; `preferences.json` except through `record`.
-- `approvals/`.
-- `strategies/*/status`.
-- `ledger/` except through `record`; `ledger/pad/` is yours.
-
-Run `record --approval` only with `--dry-run`; `--fills:file` records
-real fills: hand operator that command.
-
-## Brief
-
-Daily, $brief: run `check . --brief`; read its `lines` to operator
-verbatim, at most 12: regime, open proposals with tier, weight, odds, net
-Sharpe, incidents of last 7 days, overdue and unscored counts, next action.
-Add nothing between lines.
-
 ## Hindsight
 
 `limits.json` `model_cutoff` is training cutoff of agent's model. Only test
@@ -96,3 +126,11 @@ folds starting after it are free of hindsight (`walk_forward.post_cutoff`).
 Name no symbol, dated event, or parameter chosen on outcome known only
 after cutoff. Positive `sharpe_net` with negative `post_cutoff` is
 hindsight concern: report it. Null cutoff: ask operator for it.
+
+## Answers
+
+Onboarding answers as of $dated. `(default)` marks answer left to default.
+
+| Question | Answer |
+| --- | --- |
+$answers

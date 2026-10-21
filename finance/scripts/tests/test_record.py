@@ -190,7 +190,7 @@ def test_a_cut_line_is_a_warning_and_record_refuses_to_append(
     ]
     code, _, err = batch(run, book, {"hypotheses": [make_hypothesis(["new", "idea"])]})
     assert code == 1
-    assert "cut line" in err and "operator repairs" in err
+    assert "cut line" in err and "on the operator's word" in err
     assert path.read_bytes() == before
 
 
@@ -225,7 +225,7 @@ def test_record_refuses_to_append_after_an_undecodable_line(book, run, make_hypo
     before = plant_bytes(path, b"[1, 2]\n")
     code, _, err = batch(run, book, {"hypotheses": [make_hypothesis(["new", "idea"])]})
     assert code == 1
-    assert "line 2 is not a JSON object" in err and "operator repairs" in err
+    assert "line 2 is not a JSON object" in err and "on the operator's word" in err
     assert path.read_bytes() == before
 
 

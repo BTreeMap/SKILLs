@@ -1,5 +1,6 @@
 """The daily brief, pure: at most twelve one-line strings the lead reads to
-the operator verbatim, derived from live state on every call."""
+the operator verbatim, derived from live state on every call. The last line
+is always one `Reply`: the operator learns these and no command."""
 
 from __future__ import annotations
 
@@ -7,14 +8,51 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
+from enum import StrEnum
 from typing import Any
 
 from btm_finance.views import day_of
 
 LINES = 12
 WEEK = 7
-FIXED = 4  # regime, breaches, counts, next
+FIXED = 4  # regime, breaches, counts, reply
 PROPOSAL_LINES = LINES - FIXED
+
+
+class Reply(StrEnum):
+    """The brief's last line, first that applies in this order."""
+
+    FILLS = "Paste your fills for {date}."
+    ANSWER = "Reply approve, reject, or override {date} with a reason."
+    CONFIRM = "Reply yes to apply, or say what to change."
+    SCORE = "Say what happened to {strategy} by {date}."
+    NOTHING = "Nothing to decide today; ask anything."
+
+
+@dataclass(frozen=True, slots=True)
+class Owed:
+    """What the operator owes, from live state: `unfilled` the date of an
+    approval checked but unfilled; `unanswered` an open proposal's stem;
+    `pending` a change the agent asked about today; `late` a bet's strategy
+    and date past due."""
+
+    unfilled: str | None = None
+    unanswered: str | None = None
+    pending: bool = False
+    late: tuple[str, str] | None = None
+
+
+def reply(owed: Owed) -> str:
+    if owed.unfilled is not None:
+        return Reply.FILLS.format(date=owed.unfilled)
+    if owed.unanswered is not None:
+        return Reply.ANSWER.format(date=owed.unanswered)
+    if owed.pending:
+        return Reply.CONFIRM.format()
+    if owed.late is not None:
+        strategy, day = owed.late
+        return Reply.SCORE.format(strategy=strategy, date=day)
+    return Reply.NOTHING.format()
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,9 +115,7 @@ def proposal_lines(proposals: Sequence[Open]) -> list[str]:
     if len(proposals) <= PROPOSAL_LINES:
         return [proposal_line(p) for p in proposals]
     newest = sorted(proposals, key=lambda p: p.stem)[-2:][::-1]
-    head = (
-        f"{len(proposals)} open proposals; newest two below, check <date> for the rest"
-    )
+    head = f"{len(proposals)} open proposals; newest two below"
     return [head, *(proposal_line(p) for p in newest)]
 
 
@@ -107,14 +143,16 @@ def brief(  # noqa: PLR0913 - one line per input, each read once
     incidents: Sequence[Mapping[str, Any]],
     overdue: int,
     unscored: int,
+    owed: Owed,
     next_action: str,
     today: date,
 ) -> dict[str, Any]:
+    """`next` is the agent's advisory; the operator's line is `reply`."""
     lines = [
         regime_line(regime),
         *proposal_lines(proposals),
         breaches_line(incidents, today),
         f"overdue {overdue}, unscored {unscored}",
-        f"next: {next_action}",
+        reply(owed),
     ]
     return {"lines": [" ".join(line.split()) for line in lines], "next": next_action}

@@ -30,8 +30,9 @@ STALE_DAYS = 5  # trading days without a new bar before data counts as stale
 WEEK = 7  # calendar days one recorded breach covers
 REPORT_LINES = 20
 NEXT = (
-    "read each breach with the operator; a pause is a decision line plus the "
-    "operator's edit of strategies/<name>/status, never this command"
+    "read each breach with the operator; a pause, on their word only, is "
+    "strategies/<name>/status written and a pause decision hashing it in "
+    "applied, never this command"
 )
 Series = tuple[Days, Floats]
 

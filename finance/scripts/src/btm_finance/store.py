@@ -1,8 +1,9 @@
-"""Book filesystem: the marker, human-owned files, atomic ledger appends
+"""Book filesystem: the marker, governed files, atomic ledger appends
 under a lock, and the strategy and proposal listings."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -13,6 +14,7 @@ from pathlib import Path
 from typing import IO, Any
 
 from btm_corekit import CommandError, parse_model, state_root
+from btm_finance.governed import LIMITS, governed
 from btm_finance.ledger import Kind, lines_of, undecodable
 from btm_finance.models import BookMeta, Limits, Preferences, Status
 
@@ -131,12 +133,12 @@ def append_ledger(path: Path, records: Sequence[Mapping[str, Any]]) -> list[str]
         if size and not data.endswith(b"\n"):
             raise CommandError(
                 f"{path} ends in a cut line, which record never writes; "
-                "the operator repairs it, then record"
+                "repair it on the operator's word, then record"
             )
         if bad := undecodable(str(path), data):
             raise CommandError(
                 f"{path} line {bad[0]['line']} is not a JSON object, which record "
-                "never writes; the operator repairs it, then record"
+                "never writes; repair it on the operator's word, then record"
             )
         try:
             written = os.write(handle.fileno(), payload)
@@ -221,3 +223,18 @@ def previous_proposal(book: Book, day: str) -> Path | None:
     earlier = [d for d in days if d < day]
     versions = proposal_versions(book, earlier[-1]) if earlier else []
     return versions[-1] if versions else None
+
+
+def governed_files(root: Path) -> dict[str, str]:
+    """Each governed file present, book-relative, to its sha256: one read of
+    `limits.json`, every `strategies/*/status`, every `approvals/*.json`."""
+    found = [
+        root / LIMITS,
+        *(root / "strategies").glob("*/status"),
+        *(root / "approvals").glob("*.json"),
+    ]
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in found
+        if path.is_file() and governed(path.relative_to(root).as_posix())
+    }

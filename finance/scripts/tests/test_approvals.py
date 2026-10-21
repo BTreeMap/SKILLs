@@ -139,16 +139,23 @@ def test_pasted_csv_fills_land_with_strategy_and_approval_stem(
         TODAY,
     )
     view = run(["check", str(book)])[1]
-    (entry,) = view["proposals"]
-    assert entry["approvals"] == [{"file": f"approvals/{TODAY}.json", "filled": True}]
+    assert view["proposals"] == []  # the approve decision answered it
+    assert view["approvals"] == [
+        {
+            "file": f"approvals/{TODAY}.json",
+            "proposal": TODAY,
+            "date": TODAY,
+            "approved": True,
+            "filled": True,
+        }
+    ]
 
 
 def test_pasted_json_fills_land(book, approve, run, tmp_path):
     approve(book / "approvals" / f"{TODAY}.json", TODAY)
     set_status(book, "probe")
-    assert run(["check", str(book)])[1]["proposals"][0]["approvals"] == [
-        {"file": f"approvals/{TODAY}.json", "filled": False}
-    ]
+    [row] = run(["check", str(book)])[1]["approvals"]
+    assert (row["approved"], row["filled"]) == (True, False)
     table = tmp_path / "fills.json"
     row = {"symbol": "ABC", "side": "buy", "quantity": 4, "price": 12.0}
     table.write_text(json.dumps([row | {"date": TODAY, "strategy": "baseline"}]))
@@ -157,8 +164,8 @@ def test_pasted_json_fills_land(book, approve, run, tmp_path):
     assert [f["quantity"] for f in fill_lines(book)] == [4]
 
 
-def two_sleeves(book: Path) -> str:
-    """One approval buying ABC in two live sleeves."""
+def two_sleeves(witness, book: Path) -> str:
+    """One approved approval buying ABC in two live sleeves."""
     orders = [
         {
             "symbol": "ABC",
@@ -171,18 +178,20 @@ def two_sleeves(book: Path) -> str:
         for name in ("baseline", "other")
     ]
     (book / "proposals" / f"{TODAY}.json").write_text(json.dumps({"orders": orders}))
-    (book / "approvals" / f"{TODAY}.json").write_text(
-        json.dumps({"date": TODAY, "proposal": TODAY, "orders": orders})
+    file = book / "approvals" / f"{TODAY}.json"
+    file.write_text(
+        json.dumps({"date": TODAY, "proposal": TODAY, "reply": "yes", "orders": orders})
     )
+    witness(file, TODAY)
     set_status(book, "live")
     set_status(book, "live", "other")
     return f"approvals/{TODAY}.json"
 
 
 def test_a_symbol_and_side_in_two_sleeves_needs_the_strategy_column(
-    book, run, tmp_path
+    book, run, witness, tmp_path
 ):
-    approval = two_sleeves(book)
+    approval = two_sleeves(witness, book)
     assert check(run, book, approval)[0] == 0
     table = tmp_path / "fills.csv"
     table.write_text(f"symbol,side,quantity,price,date\nABC,buy,10,12.4,{TODAY}\n")

@@ -45,10 +45,10 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
-from btm_finance import approvals, onboarding
+from btm_finance import approvals, governed, onboarding
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
-from btm_finance.brief import Bet, Open, brief, justifying
+from btm_finance.brief import WEEK, Bet, Open, Owed, brief, justifying
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
 from btm_finance.data.panel import Events, Panel
@@ -172,6 +172,7 @@ from btm_finance.store import (
     PAD_DIR,
     Book,
     append_ledger,
+    governed_files,
     held_out_list,
     load_limits,
     load_preferences,
@@ -230,25 +231,32 @@ def start(
     held_out: Path | None = None,
     answers: Answers | None = None,
 ) -> dict[str, Any]:
-    """Make the book, then register the baseline hypothesis through the gate."""
+    """Make the book, then register the baseline hypothesis and the `onboard`
+    decision hashing the governed files `start` wrote, through the gate."""
     receipt = scaffold(root, cap, universe, held_out, answers)
     book = open_book(str(root))
-    limits = load_limits(book)
-    context = Context(
-        families=frozenset(limits.families),
-        min_holding_days=limits.min_holding_days,
-        ids={},
-        strategies=["baseline"],
-        proposals=[],
-    )
-    batch = {"hypotheses": [baseline_hypothesis(datetime.now(UTC).date())]}
-    result = expand_batch(context, batch, make_id, now_iso())
-    if result.problems:
-        raise CommandError(f"baseline hypothesis refused: {result.problems}")
-    append_ledger(book.path_of(Kind.HYPOTHESIS), result.staged[Kind.HYPOTHESIS])
-    receipt["wrote"].append("ledger/hypotheses.jsonl")
+    batch = {
+        "hypotheses": [baseline_hypothesis(datetime.now(UTC).date())],
+        "decisions": [onboarded(book, [governed.LIMITS, BASELINE_STATUS])],
+    }
+    result = recorded(book, batch)
+    receipt["wrote"] += ["ledger/hypotheses.jsonl", "ledger/decisions.jsonl"]
     receipt["new"] = result.new["hypotheses"]
     return receipt
+
+
+BASELINE_STATUS = "strategies/baseline/status"
+
+
+def onboarded(book: Book, applied: list[str]) -> dict[str, Any]:
+    """The decision `start` records for the governed files it wrote."""
+    return {
+        "kw": ["book", "start"],
+        "subject": book.meta.id,
+        "action": Action.ONBOARD.value,
+        "reason": "start",
+        "applied": applied,
+    }
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -269,8 +277,9 @@ def cmd_start(args: argparse.Namespace) -> int:
 
 
 def onboard(book: Book, answers: Answers, *, force: bool) -> dict[str, Any]:
-    """Instruction files for an existing book; `limits.json`, `preferences.json`,
-    and the ledger stay as they are: the receipt says what to change."""
+    """Instruction files for an existing book, and each answered limit that
+    differs written into `limits.json` under an `onboard` decision;
+    `preferences.json` changes only through the returned batch."""
     onboarding.refuse_existing(book.root, force=force)
     limits = load_limits(book)
     claude = onboard_files(
@@ -280,13 +289,23 @@ def onboard(book: Book, answers: Answers, *, force: bool) -> dict[str, Any]:
         answers.capital.now or limits.asset_cap,
         utc_today().isoformat(),
     )
+    changes = onboarding.limit_changes(answers, limits)
+    wrote = list(onboarding.FILES)
+    if changes:
+        path = book.root / governed.LIMITS
+        write_atomic(
+            path,
+            json.dumps(onboarding.patched(read_json(path), changes), indent=2) + "\n",
+        )
+        recorded(book, {"decisions": [onboarded(book, [governed.LIMITS])]})
+        wrote += [governed.LIMITS, "ledger/decisions.jsonl"]
     return {
         "book": book.meta.id,
-        "wrote": list(onboarding.FILES),
+        "wrote": wrote,
         "claude_md": claude,
-        "limits": onboarding.limit_changes(answers, limits),
+        "limits": changes,
         "preferences": onboarding.preference_batch(answers, load_preferences(book)),
-        "next": "hand the operator limits to set in limits.json; confirm "
+        "next": "tell the operator each limits value written; confirm "
         "preferences with the operator, then record them as a batch",
     }
 
@@ -308,8 +327,8 @@ def run_ids(book: Book) -> list[str]:
     return [run_id for path in run_files(book) for run_id in ids_of(path, "run_id")]
 
 
-def cmd_record(args: argparse.Namespace) -> int:
-    book = open_book(args.book)
+def context_of(book: Book) -> Context:
+    """Live book state the gate resolves a batch against."""
     limits = load_limits(book)
     kinds = (
         Kind.HYPOTHESIS,
@@ -320,7 +339,7 @@ def cmd_record(args: argparse.Namespace) -> int:
         Kind.FILL,
     )
     ids = {kind: ids_of(book.path_of(kind)) for kind in kinds}
-    context = Context(
+    return Context(
         families=frozenset(limits.families),
         min_holding_days=limits.min_holding_days,
         ids={**ids, Kind.RUN: run_ids(book)},
@@ -332,22 +351,49 @@ def cmd_record(args: argparse.Namespace) -> int:
         live_hypotheses=frozenset(
             str(row.get("id")) for row in current(kind_rows(book, Kind.HYPOTHESIS))
         ),
+        book=book.meta.id,
+        governed=governed_files(book.root),
     )
+
+
+def committed(book: Book, result: RecordResult) -> dict[str, int]:
+    """Staged rows appended per kind, `preferences.json` rewritten when given;
+    accepted counts per kind."""
+    accepted: dict[str, int] = {}
+    for kind, rows in sorted(result.staged.items()):
+        append_ledger(book.path_of(kind), rows)
+        accepted[kind.value] = len(rows)
+    if result.preferences is not None:
+        write_atomic(
+            book.root / "preferences.json",
+            json.dumps(dump(result.preferences), indent=2) + "\n",
+        )
+    return accepted
+
+
+def recorded(book: Book, batch: dict[str, Any]) -> RecordResult:
+    """A batch the program builds itself, through the same gate; any problem
+    is a defect, so it raises."""
+    result = expand_batch(context_of(book), batch, make_id, now_iso())
+    if result.problems:
+        raise CommandError(f"record refused {batch}: {result.problems}")
+    committed(book, result)
+    return result
+
+
+def cmd_record(args: argparse.Namespace) -> int:
+    book = open_book(args.book)
+    context = context_of(book)
 
     def expand(batch: dict[str, Any]) -> RecordResult:
         return expand_batch(context, batch, make_id, now_iso())
 
     def commit(result: RecordResult) -> dict[str, Any]:
-        accepted: dict[str, int] = {}
-        for kind, rows in sorted(result.staged.items()):
-            append_ledger(book.path_of(kind), rows)
-            accepted[kind.value] = len(rows)
-        document: dict[str, Any] = {"book": book.meta.id, "accepted": accepted}
+        document: dict[str, Any] = {
+            "book": book.meta.id,
+            "accepted": committed(book, result),
+        }
         if result.preferences is not None:
-            write_atomic(
-                book.root / "preferences.json",
-                json.dumps(dump(result.preferences), indent=2) + "\n",
-            )
             document["preferences"] = "rewritten"
         document["new"] = result.new
         document["next"] = "run check for the continue view"
@@ -413,11 +459,17 @@ def approval_file(book: Book, raw: str) -> Path:
 
 
 def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
-    """The approval against its proposal, `limits.json`, and each status."""
+    """The approval against its proposal, `limits.json`, each status, and the
+    `approve` decisions that hashed it."""
     try:
-        document = json.loads(path.read_text(encoding="utf-8"))
+        data = path.read_bytes()
+        document = json.loads(data.decode("utf-8"))
     except (OSError, ValueError) as err:
         raise CommandError(f"unreadable approvals/{path.name}: {err}") from err
+    witness = (f"approvals/{path.name}", sha256_of(data))
+    approvals_seen = governed.witnesses(
+        (row for _, row in kind_rows(book, Kind.DECISION)), Action.APPROVE
+    )
     folder = (book.root / "proposals").resolve()
 
     def orders_of(stem: str) -> list[Any] | None:
@@ -438,6 +490,7 @@ def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
         cap=load_limits(book).max_adv_participation,
         statuses=statuses_of(book),
         proposal_orders=orders_of,
+        witnessed=witness in approvals_seen,
     )
 
 
@@ -453,10 +506,12 @@ def approval_view(book: Book, target: str, today: date) -> tuple[dict[str, Any],
         "approval": shown,
         "orders": list(found.orders),
         "problems": list(found.problems),
-        "next": "fix each problem in the approval file, then check it again"
+        "next": "fix each problem: rewrite the file from the operator's reply "
+        "and record its approve decision again, then check it"
         if found.problems
-        else "operator places each order by hand at the broker, then runs "
-        f"record --fills:file <table> --approval {shown}; paper orders: "
+        else "operator places each probe and live order by hand at the broker "
+        "and pastes fills in chat; show the parsed table back, on yes run "
+        f"record --fills:file <table> --approval {shown}; paper orders now: "
         f"record --approval {shown} --dry-run",
     }, 1 if found.problems else 0
 
@@ -475,19 +530,24 @@ def cmd_check(args: argparse.Namespace) -> int:
     return book_check(book, args)
 
 
+def today_of(args: argparse.Namespace) -> date:
+    """`--today` when a test sets it, else today (UTC)."""
+    found: date | None = args.today
+    return found or datetime.now(UTC).date()
+
+
 def book_check(book: Book, args: argparse.Namespace) -> int:
     """Continue view, `--live`, `--brief`, a standing, or a proposal."""
     if args.live:
-        today = args.today or datetime.now(UTC).date()
-        emit(live_view(book, today).model_dump(mode="json"))
+        emit(live_view(book, today_of(args)).model_dump(mode="json"))
         return 0
     if args.brief:
         if args.target is not None:
             raise CommandError("--brief takes no target; run check <book> --brief")
-        emit(brief_view(book))
+        emit(brief_view(book, today_of(args)))
         return 0
     if args.target is None:
-        emit(continue_view(book))
+        emit(continue_view(book, today_of(args)))
         return 0
     try:
         when = date.fromisoformat(args.target)
@@ -634,7 +694,7 @@ def index_warning(book: Book) -> list[dict[str, Any]]:
     return [{"file": INDEX, "problem": "absent"}]
 
 
-def continue_view(book: Book) -> dict[str, Any]:
+def continue_view(book: Book, today: date) -> dict[str, Any]:
     """Every ledger file replayed: O(ledger bytes)."""
     limits = load_limits(book)
     warnings = ledger_warnings(book)
@@ -658,12 +718,9 @@ def continue_view(book: Book) -> dict[str, Any]:
             f"strategies/{entry['strategy']}/status reads {entry['status']!r}, "
             f"not one of {'|'.join(Status)}"
         )
-    today = datetime.now(UTC).date()
-    proposals = with_approvals(
-        open_proposals(proposal_dates(book), decisions, today),
-        approved_proposals(book),
-        live(Kind.FILL),
-    )
+    proposals = open_proposals(proposal_dates(book), decisions, today)
+    every_decision = [row for _, row in kind_rows(book, Kind.DECISION)]
+    present = governed_files(book.root)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
     records = regime_rows(book)
     regime = regime_record(records, today, limits.regime_stale_days)
@@ -686,6 +743,12 @@ def continue_view(book: Book) -> dict[str, Any]:
     budgets = families(
         limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
     )
+    unwitnessed = governed.unwitnessed(present, every_decision)
+    for entry in unwitnessed:
+        signal(
+            f"{entry['file']} changed with no decision hashing it: tell the "
+            "operator; record their word as a decision with applied"
+        )
     return {
         "book": book.meta.id,
         "as_of": now_iso(),
@@ -693,12 +756,14 @@ def continue_view(book: Book) -> dict[str, Any]:
         "strategies": {**by_status(known), "unknown": unknown},
         "families": budgets,
         "proposals": proposals,
+        "approvals": approval_rows(book, present, every_decision, live(Kind.FILL)),
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
         "warnings": [
             *warnings,
             *fired,
             *late,
+            *unwitnessed,
             *index_warning(book),
             *onboarding.warnings(book.root, template("AGENTS.tmpl")),
         ],
@@ -706,25 +771,80 @@ def continue_view(book: Book) -> dict[str, Any]:
     }
 
 
-def with_approvals(
-    proposals: Sequence[dict[str, Any]],
-    approved: Mapping[str, str],
+def approval_rows(
+    book: Book,
+    present: Mapping[str, str],
+    decisions: Sequence[Row],
     fills: Sequence[Row],
 ) -> list[dict[str, Any]]:
-    """Each open proposal with the approval files naming it, `filled` once a
-    fill carries the approval's stem. O(P + A + F)."""
+    """Each approval file: `proposal` and `date` it names, `approved` while an
+    `approve` decision hashes it as it stands, `filled` once a fill carries
+    its stem. O(A + D + F)."""
+    hashed = governed.witnesses(decisions, Action.APPROVE)
     filled = {str(row.get("approval", "")).removesuffix(".json") for row in fills}
-    named: dict[str, list[dict[str, Any]]] = {}
-    for stem, proposal in sorted(approved.items()):
-        named.setdefault(proposal, []).append(
-            {"file": f"approvals/{stem}.json", "filled": stem in filled}
+    rows: list[dict[str, Any]] = []
+    for path, digest in sorted(present.items()):
+        if not path.startswith("approvals/"):
+            continue
+        try:
+            document = json.loads((book.root / path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            document = None
+        named = document if isinstance(document, dict) else {}
+        rows.append(
+            {
+                "file": path,
+                "proposal": named.get("proposal"),
+                "date": named.get("date"),
+                "approved": (path, digest) in hashed,
+                "filled": Path(path).stem in filled,
+            }
         )
-    return [entry | {"approvals": named.get(entry["date"], [])} for entry in proposals]
+    return rows
 
 
-def brief_view(book: Book) -> dict[str, Any]:
+def unfilled_approval(rows: Sequence[Mapping[str, Any]], today: date) -> str | None:
+    """The newest send date of an approved, unfilled approval of the last 7
+    days."""
+    found: list[str] = []
+    for row in rows:
+        try:
+            age = (today - date.fromisoformat(str(row["date"]))).days
+        except ValueError:
+            continue
+        if row["approved"] and not row["filled"] and 0 <= age < WEEK:
+            found.append(str(row["date"]))
+    return max(found, default=None)
+
+
+def owed_of(book: Book, view: Mapping[str, Any], today: date) -> Owed:
+    """What the operator owes, in `Reply` order: fills, an answer to the
+    oldest open proposal, a yes to a change asked today (`question` pad entry
+    of today), a word on the first overdue or unscored bet."""
+    pad = rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))
+    asked = any(
+        row.get("type") == "question"
+        and str(row.get("ts", ""))[:10] == today.isoformat()
+        for _, row in pad
+    )
+    late = [w for w in view["warnings"] if w.get("problem") in {"overdue", "unscored"}]
+    first = late[0] if late else None
+    return Owed(
+        unfilled=unfilled_approval(view["approvals"], today),
+        unanswered=view["proposals"][0]["date"] if view["proposals"] else None,
+        pending=asked,
+        late=None
+        if first is None
+        else (
+            str(first.get("strategy")),
+            str(first.get("falsifier_by") or first.get("due")),
+        ),
+    )
+
+
+def brief_view(book: Book, today: date) -> dict[str, Any]:
     """`check --brief`: the continue view cut to at most twelve lines."""
-    view = continue_view(book)
+    view = continue_view(book, today)
     runs = {str(row.get("run_id")): row for row in all_runs(book)}
     opened: list[Open] = []
     for entry in view["proposals"]:
@@ -758,8 +878,9 @@ def brief_view(book: Book) -> dict[str, Any]:
         incidents=current(kind_rows(book, Kind.INCIDENT)),
         overdue=late["overdue"],
         unscored=late["unscored"],
+        owed=owed_of(book, view, today),
         next_action=view["next"],
-        today=datetime.now(UTC).date(),
+        today=today,
     )
 
 
@@ -872,7 +993,9 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         "answers": ANSWERS_SHAPE,
         "answers_rules": "start --answers:file, new book or existing; every "
         "key optional, a missing one takes its default (risk 0.35 and 0.25, "
-        "cadence monthly, sources csv edgar french, collaborators none); "
+        "cadence monthly, brief_hour 7, schedule weekdays, sources csv edgar "
+        "french, collaborators none); brief_hour 0 to 23; schedule "
+        "daily|weekdays; "
         "accounts kind taxable|sheltered; sleeve_account names one account; "
         "cadence monthly|quarterly; sources csv|edgar|french|tiingo; "
         "collaborators kind agent|person; unknown keys refused, so no key or "
@@ -888,11 +1011,14 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
     },
     "approval": {
         "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '
+        '"reply": "<operator\'s reply, verbatim>", '
         '"orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, '
         '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
         '"limit": null}]}',
         "rules": "check <book> approvals/<date>.json: date is today (UTC); "
-        "proposal names a file under proposals/; every order is one of that "
+        "reply is non-empty; an approve decision's applied hashes the file as "
+        "it stands; proposal names a file under proposals/; every order is "
+        "one of that "
         "proposal by symbol, side, strategy; adv_participation at most "
         "limits.max_adv_participation; strategy status paper, probe, or live",
     },
@@ -1338,7 +1464,7 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             "no sleeve: no strategies/*/status reads probe, paper, or live with a "
             "run line"
             + (f" (skipped {named})" if named else "")
-            + "; the operator sets status, the agent measures"
+            + "; status changes on the operator's word, the agent measures"
         )
     target = proposal_target(book, when.isoformat(), force=args.force)
     limits, preferences = load_limits(book), load_preferences(book)
@@ -1530,11 +1656,11 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         "approval_template": template.model_dump(mode="json"),
         "approval_path": f"approvals/{proposal.date}.json",
         "next": "read blockers to the operator first, baseline beside each "
-        "sleeve; the operator alone copies approval_template to approval_path, "
-        "edits it, sets date and file name to the send day, runs check on it, "
-        "places each order by hand at the broker, then records fills with "
-        f"record --fills:file; record a reject or override of {path.stem} as a "
-        "decision with the operator's reason",
+        "sleeve, then wait for a reply. On approve: write approval_template to "
+        "approvals/<send day>.json with date the send day and reply the "
+        f"operator's words, record an approve decision on {path.stem} quoting "
+        "them with applied naming the file, then check it. On reject or "
+        f"override: record that decision on {path.stem} quoting the reply",
     }
 
 
@@ -1924,7 +2050,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--brief", action="store_true", help="daily brief: at most twelve lines"
     )
     check.add_argument(
-        "--today", type=iso_day, help="tests only: the day --live measures from"
+        "--today",
+        type=iso_day,
+        help="tests only: the day the view, --live, or --brief reads as today",
     )
 
     measure = commands.add_parser("measure", help="measure a registered strategy")
@@ -1932,7 +2060,9 @@ def build_parser() -> argparse.ArgumentParser:
     measure.add_argument("book", help="book directory")
     measure.add_argument("strategy", help="directory under strategies/")
     measure.add_argument(
-        "--held-out", action="store_true", help="the human's one run on held-out names"
+        "--held-out",
+        action="store_true",
+        help="one run on held-out names at a promotion gate; read its scorecard only",
     )
     measure.add_argument("--agent", help="append to ledger/runs/<agent>.jsonl")
     measure.add_argument(

@@ -84,21 +84,55 @@ ORDER: dict[str, Any] = {
 }
 
 
+REPLY = "approve, the quantities look right"
+
+
 def approval(where: Path, day: str, **order: Any) -> Path:
     """One approval file holding one order, `order` overriding the default,
-    and the proposal `proposals/<day>.json` it names, holding that order."""
+    quoting the operator's reply, and the proposal `proposals/<day>.json` it
+    names, holding that order."""
     entry = ORDER | order
     proposals = where.parents[1] / "proposals"
     proposals.mkdir(parents=True, exist_ok=True)
     (proposals / f"{day}.json").write_text(json.dumps({"orders": [entry]}))
     where.parent.mkdir(parents=True, exist_ok=True)
-    where.write_text(json.dumps({"date": day, "proposal": day, "orders": [entry]}))
+    document = {"date": day, "proposal": day, "reply": REPLY, "orders": [entry]}
+    where.write_text(json.dumps(document))
     return where
 
 
+def approved(run: Run, where: Path, stem: str) -> None:
+    """The `approve` decision hashing the approval file as it stands."""
+    decision = {
+        "kw": ["approve", "reply"],
+        "subject": stem,
+        "action": "approve",
+        "reason": REPLY,
+        "applied": [where.relative_to(where.parents[1]).as_posix()],
+    }
+    code, _, err = run(
+        ["record", str(where.parents[1]), "--batch:stdin"],
+        json.dumps({"decisions": [decision]}),
+    )
+    assert code == 0, err
+
+
 @pytest.fixture
-def approve() -> Callable[..., Path]:
-    return approval
+def witness(run: Run) -> Callable[[Path, str], None]:
+    """Record the `approve` decision hashing an approval file as it stands."""
+    return lambda where, stem: approved(run, where, stem)
+
+
+@pytest.fixture
+def approve(run: Run) -> Callable[..., Path]:
+    """`approval`, then its `approve` decision: the chat path."""
+
+    def make(where: Path, day: str, **order: Any) -> Path:
+        approval(where, day, **order)
+        approved(run, where, day)
+        return where
+
+    return make
 
 
 @pytest.fixture
@@ -166,7 +200,8 @@ def plant(run: Run) -> Callable[..., str]:
 
 
 def set_families(book: Path, **families: dict[str, Any]) -> None:
-    """The human's edit to `limits.json`: add or replace families."""
+    """An edit to `limits.json` adding or replacing families; bare `check`
+    warns on it until a decision hashes it."""
     path = book / "limits.json"
     limits = json.loads(path.read_text())
     limits["families"] |= families

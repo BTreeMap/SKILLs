@@ -15,7 +15,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from btm_corekit import CommandError, parse_model, signal, write_atomic
-from btm_finance.models import Answers, Limits, Preferences
+from btm_finance.models import Answers, Limits, Preferences, RunDays
 
 README, AGENTS, CLAUDE = "README.md", "AGENTS.md", "CLAUDE.md"
 FILES = (README, AGENTS, CLAUDE)
@@ -137,7 +137,8 @@ def answer_rows(answers: Answers, setting: Setting) -> list[tuple[str, str]]:
             joined(
                 "holding " + given(horizon, "holding", horizon.holding),
                 "rebalance " + given(horizon, "cadence", horizon.cadence.value),
-                "brief " + given(horizon, "brief", horizon.brief),
+                "brief at " + given(horizon, "brief_hour", hour(horizon.brief_hour)),
+                given(horizon, "schedule", horizon.schedule.value),
             ),
         ),
         (
@@ -176,17 +177,24 @@ def answer_rows(answers: Answers, setting: Setting) -> list[tuple[str, str]]:
     ]
 
 
+def hour(value: int) -> str:
+    return f"{value:02d}:00"
+
+
+def when(answers: Answers) -> str:
+    """When the brief arrives, in words: `07:00 on weekdays`."""
+    days = "every day" if answers.horizon.schedule is RunDays.DAILY else "on weekdays"
+    return f"{hour(answers.horizon.brief_hour)} {days}"
+
+
 def sending(answers: Answers) -> str:
     broker = answers.broker.name or "your broker"
     if answers.broker.api:
         return (
-            f"{broker} has API; book never calls it and holds no credential "
-            "for it. Every order goes in by hand."
+            f"{broker} has an API, but this book never calls it and holds no "
+            "password or key for it. You enter every order yourself."
         )
-    return (
-        f"{broker} has no API in use: `check` on approval file prints orders "
-        "for hand entry."
-    )
+    return f"You enter every order yourself at {broker}."
 
 
 def collaborators(answers: Answers) -> str:
@@ -200,36 +208,34 @@ def collaborators(answers: Answers) -> str:
 
 
 def readme(template: str, answers: Answers, setting: Setting) -> str:
+    """For a person who never reads the skill: no command, flag, or path but
+    `ledger/`."""
     account = answers.broker.sleeve_account
-    at = f" at {answers.broker.name or 'your broker'}" + (
-        f", account {account}" if account else ""
+    return Template(template).substitute(
+        title=setting.title,
+        holding=answers.horizon.holding,
+        when=when(answers),
+        sending=sending(answers),
+        account=f" Orders for this book go to account {account}." if account else "",
     )
+
+
+def agents(template: str, answers: Answers, setting: Setting) -> str:
     rows = "\n".join(
         f"| {cell(q)} | {cell(a)} |" for q, a in answer_rows(answers, setting)
     )
     return Template(template).substitute(
         title=setting.title,
-        holding=answers.horizon.holding,
-        binding=setting.binding,
-        sending=sending(answers),
-        at=at,
-        held_out=setting.held_out,
-        dated=setting.dated,
-        answers=rows,
-    )
-
-
-def agents(template: str, answers: Answers, setting: Setting) -> str:
-    return Template(template).substitute(
-        title=setting.title,
         binding=setting.binding,
         holding=answers.horizon.holding,
         cadence=answers.horizon.cadence.value,
-        brief=answers.horizon.brief,
+        brief=when(answers),
         cap=setting.cap,
         ruin_bound=answers.risk.ruin_bound,
         kelly=answers.risk.kelly_backtest,
         collaborators=collaborators(answers),
+        dated=setting.dated,
+        answers=rows,
     )
 
 
@@ -312,6 +318,10 @@ def preference_values(answers: Answers) -> dict[str, Any]:
         "focus_sectors": list(answers.universe.focus_sectors),
         "exclusions": answers.universe.exclusions.model_dump(mode="json"),
         "cadence": answers.horizon.cadence.value,
+        "schedule": {
+            "hour": answers.horizon.brief_hour,
+            "days": answers.horizon.schedule.value,
+        },
     }
 
 
