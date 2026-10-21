@@ -192,7 +192,7 @@ each one absent as concern.
 
 ## Critique items for macro
 
-Critic applies these beside eleven items and `event-fields` in `critique`,
+Critic applies these beside twelve items and `event-fields` in `critique`,
 same verdict rule, and adds each item name to `verdicts`. "None" under
 Blocker means concern at most; never block on critic's regime forecast.
 

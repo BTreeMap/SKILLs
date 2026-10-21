@@ -142,6 +142,23 @@ first, crowded large-cap families last.
   and Titman 1993, Journal of Finance; Frazzini and Pedersen 2014, Journal
   of Financial Economics.
 
+## Combinations
+
+Every combination tried is trial, written down or not. Combination of
+signals from families above follows four rules:
+
+* Combination is hypothesis: name two or three components, mechanism for why
+  they add, and expected orthogonality (correlation of component signals
+  under stated bound on training folds).
+* Search over combinations only inside training folds of registered strategy
+  whose `config.params` declares search space; `measure` counts it as one
+  trial, purged test folds and PBO judge it.
+* Prefer few, slow, economically distinct components (flow signal plus
+  fundamental signal plus liquidity screen) over many correlated ones.
+  Report `effective_streams` on every combination.
+* Record every combination considered and rejected in `research/backlog/`
+  with reason, so critique item `multiplicity` sees it.
+
 ## Registering a hypothesis
 
 1. Pick `capacity_class` first: prefer families above `large-cap-factor`.

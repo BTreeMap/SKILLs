@@ -12,7 +12,7 @@ operator's private git repository; skill holds methods, book holds state.
   AGENTS.md                   agents: verbs, invariants, daily loop, replies, governed files, conduct, code, hindsight, dated answers
   CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
   limits.json                 governed: asset cap, bounds, thresholds, families
-  preferences.json            focus sectors, exclusions, cadence, schedule; through record
+  preferences.json            focus sectors, exclusions, cadence, schedule, heartbeat_minutes, quiet_hours; through record
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
@@ -29,6 +29,9 @@ operator's private git repository; skill holds methods, book holds state.
   lib/                        agent's shared modules; signal.py imports lib.<module>
   tools/                      agent's scripts; read book through btm_finance.api
   research/<topic>/           notes, tables, sources per line of inquiry
+  research/backlog/<id>.md    candidate hypothesis, ranked weekly; shape below
+  research/calendar/          event calendars and trigger lists per event family
+  research/weekly/            weekly research note, <YYYY-Www>.md
   tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
   tests/reference/            this book's pinned scorecard
   INDEX.md                    one line per lib module, tool, research topic
@@ -55,6 +58,15 @@ Agent-written layout:
 - `INDEX.md`: one line per lib module, tool, research topic (path, purpose,
   last touched), updated in same commit as file; history section keeps one
   line per deleted script.
+- `research/backlog/<id>.md`: one candidate hypothesis, not yet registered.
+  State mechanism, counterparty, falsifier, odds, expected information gain,
+  and which existing run (run id) it would differ from, and how. Combination
+  entry names its two or three components and expected correlation bound
+  (`families` Combinations). Rejected candidate stays, status line naming
+  reason: critique item `multiplicity` reads it. Rank weekly; only top gets
+  registered. No gate reads this shape.
+- `research/calendar/`, `research/weekly/`: `README.md` status line, then
+  one file per event family, one note per week.
 
 Run book tests with `pytest <book>/tests` through skill's `uv run` binding.
 `tools/` script reads book through `btm_finance.api`, never ledger or
@@ -165,9 +177,10 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    static multi-factor `signal.py`, `config.json`, `README.md`; baseline
    hypothesis (`capacity_class: crowded`) through gate into
    `hypotheses.jsonl`. Empty `lib/__init__.py`; `tests/conftest.py`;
-   `INDEX.md` holding header and column line
-   `path | purpose | last touched`, nothing else. Bare `check` warns when
-   `INDEX.md` is absent.
+   `research/backlog/`, `research/calendar/`, `research/weekly/`, each with
+   `README.md` of one status line; `INDEX.md` holding header, column line
+   `path | purpose | last touched`, one row per those three folders. Bare
+   `check` warns when `INDEX.md` is absent.
 2. `preferences.json`, `limits.json` defaults, then `book.json` with
    `held_out` path.
 3. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
@@ -178,14 +191,14 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 4. With `--answers:file`: `limits.json` takes `asset_cap` (`--cap`, else
    `capital.now`), `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`,
    `model_cutoff`; `preferences.json` takes `focus_sectors`, `exclusions`,
-   `cadence`; `README.md` and `AGENTS.md` render from skill templates,
-   answers table dated `book.json` `created`; `CLAUDE.md` symlinks
-   `AGENTS.md`, or holds `Read AGENTS.md.` where symlink fails. Receipt
-   `onboarded` true, `claude_md` `symlink` or `file`. Without answers: none
-   of three files, `onboarded` false; `start --answers:file` on existing
-   book writes them later, answers dated that day, and leaves `limits.json`,
-   `preferences.json`, ledger untouched. Bare `check` warns on each file
-   absent or drifted.
+   `cadence`, `schedule`, with `heartbeat_minutes` 45; `README.md` and
+   `AGENTS.md` render from skill templates, answers table dated `book.json`
+   `created`; `CLAUDE.md` symlinks `AGENTS.md`, or holds `Read AGENTS.md.`
+   where symlink fails. Receipt `onboarded` true, `claude_md` `symlink` or
+   `file`. Without answers: none of three files, `onboarded` false;
+   `start --answers:file` on existing book writes them later, answers dated
+   that day, and leaves `limits.json`, `preferences.json`, ledger untouched.
+   Bare `check` warns on each file absent or drifted.
 5. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
    path is inside git work tree. Receipt `git`: `init`, `inside`, `failed`,
    or `absent` (no `git` on PATH, with `signal:` line).
