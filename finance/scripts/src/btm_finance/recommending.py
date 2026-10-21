@@ -1,10 +1,11 @@
 """Proposal arithmetic, pure: positions replayed from fills, sleeves sized by
-volatility target under a fractional Kelly cap, divided by correlation and
-capped by risk share, per-name caps, whole-share orders diffed against held
-positions, ADV cuts, carried orders, summary.
+volatility target under a Kelly cap set by evidence tier and deflated Sharpe,
+divided by correlation, scaled to the ruin bound, per-name caps, whole-share
+orders diffed against held positions, ADV cuts, carried orders, summary.
 
 Sizing and the diff are O(S N + S^2 T log T) for S sleeves, N names, T
-periods; replay is O(F) for F fills. Paper and live books never net.
+periods, plus one bootstrap of O(T S + P H); replay is O(F) for F fills.
+Paper and live books never net.
 """
 
 from __future__ import annotations
@@ -13,12 +14,18 @@ import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
 from enum import StrEnum
+from functools import reduce
 from typing import Annotated, Literal
 
+import numpy as np
 from pydantic import Field
 
 from btm_corekit import Model
+from btm_finance.engine import ruin_loss
+from btm_finance.engine.metrics import PERIODS_PER_YEAR
+from btm_finance.engine.ruin import BLOCK, PATHS
 from btm_finance.ledger import Row
 from btm_finance.models import Price, Side, Sizing, Status
 from btm_finance.regimes import RegimeRef
@@ -27,11 +34,11 @@ from btm_finance.streams import (
     divisors,
     effective_streams,
     pairs_of,
-    risk_capped,
 )
 
 TOP = 10  # names in the concentration figure
 BPS = 1e-4
+EDGE_FLOOR, EDGE_SPAN = 0.5, 0.45  # DSR 0.5 scales Kelly to 0, 0.95 to 1
 
 
 class Account(StrEnum):
@@ -48,6 +55,16 @@ class Account(StrEnum):
                 return True
             case Account.LIVE:
                 return False
+
+
+class Tier(StrEnum):
+    """Evidence behind a sleeve's size: `measure` alone, dry-run fills
+    tracking the model path, real fills tracking it; `probe` sizes fixed."""
+
+    BACKTEST = "backtest"
+    PAPER = "paper"
+    LIVE = "live"
+    PROBE = "probe"
 
 
 def account_of(status: Status | None) -> Account | None:
@@ -86,10 +103,14 @@ class Proposed(Order):
 
 class Sleeve(Model):
     """One sleeve's sizing: `weight` is min(`vol_weight`, `kelly_cap`) over
-    `divisor`, risk-share capped, the sum over sleeves scaled to at most 1."""
+    `divisor`, or `probe_weight` for a probe; the sum over sleeves scaled to
+    at most 1, then to the ruin bound. `kelly_cap` is the tier's Kelly
+    fraction times `edge_scale` times Sharpe over vol."""
 
     strategy: str
     account: Account
+    tier: Tier
+    edge_scale: float
     run_id: str
     sharpe_net: float | None
     vol_net: float | None
@@ -115,7 +136,7 @@ class Target(Model):
 
 class CutKind(StrEnum):
     ADV = "adv"
-    RISK_SHARE = "risk_share"
+    RUIN = "ruin"
 
 
 class AdvCut(Model):
@@ -130,19 +151,40 @@ class AdvCut(Model):
     bound: float
 
 
-class RiskCut(Model):
-    """A sleeve cut to the risk-share cap: `wanted` and `kept` are sleeve
-    weights, `share` its risk share before the cap."""
+class RuinCut(Model):
+    """Every sleeve scaled by `scale` = `bound / loss`: the book's
+    1st-percentile 252-day loss passed `sizing.ruin_bound`."""
 
-    kind: Literal[CutKind.RISK_SHARE] = CutKind.RISK_SHARE
-    strategy: str
-    wanted: float
-    kept: float
-    share: float
+    kind: Literal[CutKind.RUIN] = CutKind.RUIN
+    loss: float
     bound: float
+    scale: float
 
 
-Cut = Annotated[AdvCut | RiskCut, Field(discriminator="kind")]
+Cut = Annotated[AdvCut | RuinCut, Field(discriminator="kind")]
+
+
+class Ruin(Model):
+    """The bootstrap behind the ruin bound: `loss` before any scaling, over
+    `periods` common dates, `seed` the proposal date's ordinal."""
+
+    loss: float
+    bound: float
+    scale: float
+    paths: int
+    horizon: int
+    block: int
+    periods: int
+    seed: int
+
+
+class Advisory(Model):
+    """Risk share per sleeve (`weight * vol_net` over the book's sum) against
+    `max_strategy_risk_share`; `over` names sleeves past it. Never a cut."""
+
+    risk_share: dict[str, float | None]
+    bound: float
+    over: tuple[str, ...]
 
 
 class Holding(Model):
@@ -200,6 +242,9 @@ class Proposal(Model):
     cuts: tuple[Cut, ...]
     regime: RegimeRef | None
     effective_streams: float | None
+    ruin: Ruin | None
+    advisory: Advisory
+    reasons: dict[str, str]
 
 
 class Approval(Model):
@@ -240,6 +285,8 @@ class Candidate:
     signal: Mapping[str, float]
     weights: Mapping[str, float]
     series: Series | None = None
+    dsr: float | None = None
+    tier: Tier = Tier.BACKTEST
 
 
 @dataclass(frozen=True, slots=True)
@@ -278,53 +325,128 @@ class Inputs:
     regime: RegimeRef | None = None
 
 
-def sleeve_size(
-    sharpe: float | None, vol: float | None, sizing: Sizing
-) -> tuple[float, float]:
-    """(vol_target / vol, kelly_fraction * sharpe / vol), annual units; zero
-    when either input is missing or vol is not positive."""
+def edge_scale(dsr: float | None) -> float:
+    """(dsr - 0.5) / 0.45 clipped to [0, 1]; 0 when DSR is null."""
+    if dsr is None:
+        return 0.0
+    return min(1.0, max(0.0, (dsr - EDGE_FLOOR) / EDGE_SPAN))
+
+
+def kelly_fraction(tier: Tier, sizing: Sizing) -> float:
+    """The tier's fraction of full Kelly; a probe takes no Kelly sizing."""
+    match tier:
+        case Tier.BACKTEST:
+            return sizing.kelly_fraction.backtest
+        case Tier.PAPER:
+            return sizing.kelly_fraction.paper
+        case Tier.LIVE:
+            return sizing.kelly_fraction.live
+        case Tier.PROBE:
+            return 0.0
+
+
+def sleeve_size(candidate: Candidate, sizing: Sizing) -> tuple[float, float]:
+    """(vol_target / vol, fraction * edge_scale * sharpe / vol), annual units;
+    zero when either input is missing or vol is not positive."""
+    sharpe, vol = candidate.sharpe_net, candidate.vol_net
     if sharpe is None or vol is None or not vol > 0.0:
         return 0.0, 0.0
-    fraction = sizing.kelly_fraction.backtest
+    fraction = kelly_fraction(candidate.tier, sizing) * edge_scale(candidate.dsr)
     return sizing.vol_target / vol, max(fraction * sharpe / vol, 0.0)
-
-
-@dataclass(frozen=True, slots=True)
-class SleeveSizes:
-    weights: dict[str, float]
-    cuts: tuple[RiskCut, ...]
 
 
 def sleeve_weights(
     candidates: Sequence[Candidate],
     sizing: Sizing,
     divisor: Mapping[str, float] | None = None,
-    share: float = 1.0,
-) -> SleeveSizes:
-    """min(vol weight, Kelly cap) over `divisor`, risk-share capped, then
-    scaled so the sum is at most 1. O(S log S)."""
+) -> dict[str, float]:
+    """min(vol weight, Kelly cap) over `divisor`, a probe at `probe_weight`,
+    then scaled so the sum is at most 1. O(S)."""
     raw = {
-        c.strategy: min(sleeve_size(c.sharpe_net, c.vol_net, sizing))
-        / (divisor or {}).get(c.strategy, 1.0)
+        c.strategy: sizing.probe_weight
+        if c.tier is Tier.PROBE
+        else min(sleeve_size(c, sizing)) / (divisor or {}).get(c.strategy, 1.0)
         for c in candidates
     }
-    vols = {c.strategy: c.vol_net or 0.0 for c in candidates}
-    capped = risk_capped(raw, vols, share)
-    total_risk = sum(w * vols[name] for name, w in raw.items())
-    total = sum(capped.values())
+    total = sum(raw.values())
     scale = 1.0 / total if total > 1.0 else 1.0
-    cuts = tuple(
-        RiskCut(
-            strategy=name,
-            wanted=raw[name] * scale,
-            kept=capped[name] * scale,
-            share=raw[name] * vols[name] / total_risk,
-            bound=share,
-        )
-        for name in raw
-        if capped[name] < raw[name]
+    return {name: w * scale for name, w in raw.items()}
+
+
+@dataclass(frozen=True, slots=True)
+class Ruined:
+    """The bootstrap, or why none ran; `scale` 1 when within the bound."""
+
+    ruin: Ruin | None
+    reason: str | None
+
+    @property
+    def scale(self) -> float:
+        return 1.0 if self.ruin is None else self.ruin.scale
+
+
+def ruin_of(
+    candidates: Sequence[Candidate],
+    weights: Mapping[str, float],
+    sizing: Sizing,
+    seed: int,
+) -> Ruined:
+    """Joint bootstrap of the weighted sleeves' stored net series on common
+    dates; null under 252 common periods or with a weighted sleeve lacking a
+    series. O(S T log T + P H)."""
+    held = [c for c in candidates if weights[c.strategy] > 0.0]
+    if not held:
+        return Ruined(None, "no sleeve carries weight")
+    bare = [c.strategy for c in held if c.series is None]
+    if bare:
+        return Ruined(None, f"no stored net series for {', '.join(bare)}")
+    series = [c.series for c in held if c.series is not None]
+    shared = reduce(np.intersect1d, [dates for dates, _ in series])
+    matrix = np.column_stack(
+        [values[np.searchsorted(dates, shared)] for dates, values in series]
     )
-    return SleeveSizes({name: w * scale for name, w in capped.items()}, cuts)
+    matrix = matrix[np.isfinite(matrix).all(axis=1)]
+    if len(matrix) < PERIODS_PER_YEAR:
+        return Ruined(None, f"{len(matrix)} common periods, under {PERIODS_PER_YEAR}")
+    loss = ruin_loss(matrix, np.array([weights[c.strategy] for c in held]), seed=seed)
+    bound = sizing.ruin_bound
+    return Ruined(
+        Ruin(
+            loss=loss,
+            bound=bound,
+            scale=bound / loss if loss > bound else 1.0,
+            paths=PATHS,
+            horizon=PERIODS_PER_YEAR,
+            block=BLOCK,
+            periods=len(matrix),
+            seed=seed,
+        ),
+        None,
+    )
+
+
+def advisory_of(
+    candidates: Sequence[Candidate], weights: Mapping[str, float], bound: float
+) -> Advisory:
+    """Each sleeve's share of `weight * vol_net` summed over the book; null
+    without vol or when no sleeve carries risk. O(S)."""
+    risk = {
+        c.strategy: weights[c.strategy] * c.vol_net
+        for c in candidates
+        if c.vol_net is not None
+    }
+    total = sum(risk.values())
+    share = {
+        c.strategy: risk[c.strategy] / total
+        if c.strategy in risk and total > 0.0
+        else None
+        for c in candidates
+    }
+    return Advisory(
+        risk_share=share,
+        bound=bound,
+        over=tuple(n for n, v in share.items() if v is not None and v > bound),
+    )
 
 
 def combined(
@@ -621,15 +743,21 @@ def propose(inputs: Inputs) -> Proposal:
     names = [c.strategy for c in candidates]
     pairs = pairs_of({c.strategy: c.series for c in candidates})
     divisor = divisors(names, pairs)
-    sized = sleeve_weights(candidates, sizing, divisor, inputs.risk_share)
-    weights = sized.weights
+    summed = sleeve_weights(candidates, sizing, divisor)
+    seed = date.fromisoformat(inputs.date).toordinal()
+    ruined = ruin_of(candidates, summed, sizing, seed)
+    weights = {name: w * ruined.scale for name, w in summed.items()}
     shares = combined(candidates, weights, sizing.max_weight)
     targets = targets_of(shares, inputs.quotes, cap)
     wanted = by_sleeve(targets)
     books = replay(inputs.fills)
     held = held_of(candidates, books, wanted)
     orders: list[Proposed] = []
-    cuts: list[AdvCut | RiskCut] = list(sized.cuts)
+    cuts: list[AdvCut | RuinCut] = (
+        [RuinCut(loss=r.loss, bound=r.bound, scale=r.scale)]
+        if (r := ruined.ruin) is not None and r.scale < 1.0
+        else []
+    )
     unmanaged: list[Holding] = []
     for candidate in candidates:
         done = diff(
@@ -647,13 +775,13 @@ def propose(inputs: Inputs) -> Proposal:
         unmanaged += unmanaged_real(books, inputs.quotes)
     marked, carried = carry(inputs.previous, orders, inputs.fills)
     spreads = {c.strategy: c.half_spread for c in candidates}
-    sizes = {
-        c.strategy: sleeve_size(c.sharpe_net, c.vol_net, sizing) for c in candidates
-    }
+    sizes = {c.strategy: sleeve_size(c, sizing) for c in candidates}
     sleeves = {
         c.strategy: Sleeve(
             strategy=c.strategy,
             account=c.account,
+            tier=c.tier,
+            edge_scale=edge_scale(c.dsr),
             run_id=c.run_id,
             sharpe_net=c.sharpe_net,
             vol_net=c.vol_net,
@@ -685,4 +813,7 @@ def propose(inputs: Inputs) -> Proposal:
         effective_streams=effective_streams(
             [c.strategy for c in candidates if c.series is not None], pairs
         ),
+        ruin=ruined.ruin,
+        advisory=advisory_of(candidates, weights, inputs.risk_share),
+        reasons={} if ruined.reason is None else {"ruin": ruined.reason},
     )

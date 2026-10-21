@@ -26,6 +26,7 @@ from btm_finance.engine.metrics import (
     turnover_annual,
     vol_terciles,
 )
+from btm_finance.engine.ruin import ruin_loss
 from btm_finance.engine.validation import (
     Cscv,
     FactorFit,
@@ -66,6 +67,7 @@ __all__ = [
     "purged_folds",
     "regime_split",
     "rolling_mean",
+    "ruin_loss",
     "sharpe",
     "sqrt_impact",
     "sr_moments",

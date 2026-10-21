@@ -24,6 +24,7 @@ from btm_finance.engine import max_drawdown
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.measuring import Setting, Strategy, run_variant
 from btm_finance.models import Side, Status
+from btm_finance.recommending import Tier
 
 STALE_DAYS = 5  # trading days without a new bar before data counts as stale
 WEEK = 7  # calendar days one recorded breach covers
@@ -178,6 +179,51 @@ def tracking_error(sleeve: Sleeve, model: Series) -> float | None:
     if len(mine) < 2:  # noqa: PLR2004 - a std needs two days
         return None
     return float(np.std(mine - theirs, ddof=1) * math.sqrt(PERIODS_PER_YEAR))
+
+
+@dataclass(frozen=True, slots=True)
+class Seasoning:
+    """One fill set's evidence through a day: calendar days since its first
+    fill, and tracking error of its realized path against the model path."""
+
+    days: int
+    tracking: float | None
+
+
+def seasoning(
+    fills: Sequence[Fill], panel: Panel, rf: Floats, model: Series | None, through: int
+) -> Seasoning | None:
+    """Fills dated after `through` left out; None with no fill left. O(D S + F)."""
+    kept = [f for f in fills if f.day <= through]
+    sleeve = realized(kept, panel, rf)
+    if sleeve is None:
+        return None
+    cut = int(np.searchsorted(sleeve.dates, through, side="right"))
+    sleeve = Sleeve(sleeve.dates[:cut], sleeve.returns[:cut], 0, ())
+    first = min(f.day for f in kept)
+    tracking = None if model is None else tracking_error(sleeve, since(model, first))
+    return Seasoning(days=through - first, tracking=tracking)
+
+
+def tier_of(
+    paper: Seasoning | None, live: Seasoning | None, *, days: int, bound: float
+) -> Tier:
+    """`live` when real fills span `days` within `bound` of the model path,
+    else `paper` on dry-run fills alike, else `backtest`."""
+
+    def seasoned(found: Seasoning | None) -> bool:
+        return (
+            found is not None
+            and found.days >= days
+            and found.tracking is not None
+            and found.tracking <= bound
+        )
+
+    if seasoned(live):
+        return Tier.LIVE
+    if seasoned(paper):
+        return Tier.PAPER
+    return Tier.BACKTEST
 
 
 def slippage(fills: Sequence[Fill]) -> float | None:

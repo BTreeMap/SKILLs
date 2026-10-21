@@ -16,6 +16,7 @@ from btm_finance.engine import (
     expected_max_sharpe,
     max_drawdown,
     regime_split,
+    ruin_loss,
     sharpe,
     sr_moments,
     turnover_annual,
@@ -175,3 +176,24 @@ def test_regime_split_keys_and_values():
     assert split.by_year["2020"] == pytest.approx(sharpe(returns[10:20]))
     assert list(split.by_vol) == ["low", "mid", "high"]
     assert split.by_vol["high"] == pytest.approx(sharpe(returns[20:]))
+
+
+def test_ruin_loss_of_a_constant_path_is_its_compounded_fall():
+    # Every row equal: any resample compounds the same 252 days.
+    rows = np.full((300, 2), -0.001)
+    found = ruin_loss(rows, np.array([0.5, 0.5]), seed=1)
+    assert found == pytest.approx(1.0 - 0.999**252)
+    assert ruin_loss(rows, np.zeros(2), seed=1) == pytest.approx(0.0)
+
+
+def test_ruin_loss_is_seeded_and_joint():
+    rng = np.random.default_rng(0)
+    one = rng.normal(0.0, 0.02, 400)
+    # A sleeve and its mirror at equal weight cancel row by row.
+    hedged = np.column_stack((one, -one))
+    assert ruin_loss(hedged, np.array([0.5, 0.5]), seed=9) == pytest.approx(0.0)
+    alone = one[:, None]
+    first = ruin_loss(alone, np.array([1.0]), seed=9)
+    assert first == ruin_loss(alone, np.array([1.0]), seed=9)
+    assert first != ruin_loss(alone, np.array([1.0]), seed=10)
+    assert first > ruin_loss(alone, np.array([0.5]), seed=9)

@@ -1,4 +1,5 @@
-"""The sizing law and the live book's pool, on hand-computed numbers."""
+"""The sizing law, the ruin bound, and the live book's pool, on hand-computed
+numbers."""
 
 from __future__ import annotations
 
@@ -12,9 +13,11 @@ from btm_finance.recommending import (
     Candidate,
     Inputs,
     Quote,
-    RiskCut,
+    RuinCut,
+    Tier,
     combined,
     diff,
+    edge_scale,
     live_held,
     propose,
     replay,
@@ -28,11 +31,14 @@ SIZING = Sizing(
 )
 
 
-def sleeve(
+def sleeve(  # noqa: PLR0913 - a candidate, every field named
     name: str,
     sharpe: float | None,
     vol: float | None,
     series: tuple[np.ndarray, np.ndarray] | None = None,
+    *,
+    dsr: float | None = 0.95,
+    tier: Tier = Tier.BACKTEST,
     **weights: float,
 ):
     return Candidate(
@@ -48,6 +54,8 @@ def sleeve(
         signal={},
         weights=weights,
         series=series,
+        dsr=dsr,
+        tier=tier,
     )
 
 
@@ -57,9 +65,39 @@ def test_weight_is_the_smaller_of_vol_target_and_kelly_then_scaled():
     found = sleeve_weights(
         [sleeve("a", 0.4, 0.20), sleeve("b", 0.2, 0.05), sleeve("c", None, 0.1)],
         SIZING,
-    ).weights
+    )
     assert found == pytest.approx({"a": 0.5 / 1.5, "b": 1.0 / 1.5, "c": 0.0})
-    assert sleeve_weights([sleeve("d", -1.0, 0.1)], SIZING).weights == {"d": 0.0}
+    assert sleeve_weights([sleeve("d", -1.0, 0.1)], SIZING) == {"d": 0.0}
+
+
+@pytest.mark.parametrize(
+    ("dsr", "scale"), [(0.5, 0.0), (0.8, 2 / 3), (0.95, 1.0), (0.3, 0.0), (None, 0.0)]
+)
+def test_edge_scale_rises_from_dsr_half_to_full_at_095(dsr, scale):
+    assert edge_scale(dsr) == pytest.approx(scale)
+
+
+def test_the_tier_and_edge_scale_set_the_kelly_cap():
+    # Kelly 0.25 / 0.50 / 0.75 of Sharpe 0.2 over vol 0.2, times edge 2/3;
+    # vol weight 0.5 never binds.
+    found = sleeve_weights(
+        [
+            sleeve(t.value, 0.2, 0.2, dsr=0.8, tier=t)
+            for t in (Tier.BACKTEST, Tier.PAPER, Tier.LIVE)
+        ],
+        SIZING,
+    )
+    assert found == pytest.approx(
+        {"backtest": 0.25 * 2 / 3, "paper": 0.5 * 2 / 3, "live": 0.75 * 2 / 3}
+    )
+
+
+@pytest.mark.parametrize("sharpe", [None, -1.0, 0.0, 0.4, 5.0])
+def test_a_probe_takes_exactly_the_probe_weight(sharpe):
+    found = sleeve_weights(
+        [sleeve("p", sharpe, 0.2, dsr=None, tier=Tier.PROBE)], SIZING
+    )
+    assert found == {"p": SIZING.probe_weight}
 
 
 def test_a_name_over_max_weight_shrinks_in_every_sleeve_alike():
@@ -122,14 +160,14 @@ def test_unknown_adv_cuts_the_whole_order():
     assert [(c.wanted, c.kept) for c in done.cuts] == [(10, 0)]
 
 
-def planted(*candidates: Candidate, share: float = 0.5):
+def planted(*candidates: Candidate, share: float = 0.5, sizing: Sizing = SIZING):
     quotes = {name: Quote(price=10.0, adv=1e9, sector="tech") for name in "XY"}
     return propose(
         Inputs(
             date="2020-01-31",
             as_of="2020-01-31",
             cap=1_000_000,
-            sizing=SIZING,
+            sizing=sizing,
             bound=0.02,
             commission_bps=1.0,
             candidates=candidates,
@@ -144,7 +182,7 @@ def planted(*candidates: Candidate, share: float = 0.5):
 
 def test_a_copied_sleeve_halves_both_weights():
     # Both raw at min(0.1 / 0.2, 0.25 * 0.4 / 0.2) = 0.5; correlation 1, so
-    # each divisor is 2 and each weight 0.25; equal risk, so no cap.
+    # each divisor is 2 and each weight 0.25.
     rng = np.random.default_rng(3)
     days, net = np.arange(300, dtype=np.int64), rng.normal(0.0, 0.01, 300)
     found = planted(
@@ -158,24 +196,58 @@ def test_a_copied_sleeve_halves_both_weights():
         {"a": 0.25, "b": 0.25}
     )
     assert found.effective_streams == pytest.approx(1.0)
-    assert not [c for c in found.cuts if isinstance(c, RiskCut)]
 
 
-def test_the_risk_share_cap_cuts_the_riskier_sleeve():
-    # a: 0.5 at vol 0.20 is risk 0.10; b: 1.0 at vol 0.05 is risk 0.05.
-    # a holds 2/3 of risk over 0.5: capped at b's 0.05, weight 0.25; sum
-    # 1.25 scales by 0.8 to a 0.2, b 0.8, risk 0.04 each.
+def test_risk_share_is_reported_and_nothing_is_cut():
+    # a: 0.5 at vol 0.20 is risk 0.10; b: 1.0 at vol 0.05 is risk 0.05; sum
+    # 1.5 scales both by 2/3, shares stay 2/3 and 1/3; a is over 0.5.
     found = planted(sleeve("a", 0.4, 0.20, X=1.0), sleeve("b", 0.2, 0.05, Y=1.0))
     assert {n: s.weight for n, s in found.sleeves.items()} == pytest.approx(
-        {"a": 0.2, "b": 0.8}
+        {"a": 0.5 / 1.5, "b": 1.0 / 1.5}
     )
-    (cut,) = [c for c in found.cuts if isinstance(c, RiskCut)]
-    assert (cut.kind, cut.strategy, cut.bound) == ("risk_share", "a", 0.5)
-    assert (cut.wanted, cut.kept, cut.share) == pytest.approx((0.4, 0.2, 2 / 3))
-    assert found.effective_streams is None  # no stored series
-
-
-def test_one_sleeve_is_never_capped():
-    found = planted(sleeve("a", 0.4, 0.20, X=1.0))
-    assert found.sleeves["a"].weight == pytest.approx(0.5)
+    assert found.advisory.risk_share == pytest.approx({"a": 2 / 3, "b": 1 / 3})
+    assert (found.advisory.bound, found.advisory.over) == (0.5, ("a",))
     assert found.cuts == ()
+    assert found.ruin is None  # no stored series
+    assert found.reasons == {"ruin": "no stored net series for a, b"}
+
+
+BOLD = Sizing(
+    vol_target=1.0,
+    kelly_fraction=KellyFractions(backtest=1.0, paper=1.0, live=1.0),
+    max_weight=1.0,
+)
+
+
+def book_of(daily: float, days: int = 600) -> Candidate:
+    rng = np.random.default_rng(5)
+    net = rng.normal(0.0005, daily, days)
+    vol = float(np.std(net, ddof=1)) * math.sqrt(252)
+    return sleeve("a", 2.0, vol, (np.arange(days, dtype=np.int64), net), X=1.0)
+
+
+def test_a_high_vol_book_is_scaled_to_the_ruin_bound_reproducibly():
+    # Daily 4% at weight 1 is about 63% annual: far past a 35% bound.
+    found = planted(book_of(0.04), sizing=BOLD)
+    (cut,) = found.cuts
+    assert isinstance(cut, RuinCut)
+    assert found.ruin is not None and found.ruin.loss > BOLD.ruin_bound
+    assert cut.scale == pytest.approx(BOLD.ruin_bound / found.ruin.loss)
+    assert found.sleeves["a"].weight == pytest.approx(cut.scale)
+    assert (found.ruin.paths, found.ruin.horizon, found.ruin.block) == (1000, 252, 21)
+    again = planted(book_of(0.04), sizing=BOLD)
+    assert again.model_dump() == found.model_dump()
+
+
+def test_a_quiet_book_takes_no_ruin_cut():
+    found = planted(book_of(0.002), sizing=BOLD)
+    assert found.ruin is not None and found.ruin.loss < BOLD.ruin_bound
+    assert found.ruin.scale == 1.0
+    assert found.cuts == ()
+    assert found.sleeves["a"].weight == pytest.approx(1.0)
+
+
+def test_under_252_common_periods_the_ruin_bound_is_null_with_reason():
+    found = planted(book_of(0.04, days=200), sizing=BOLD)
+    assert found.ruin is None
+    assert found.reasons == {"ruin": "200 common periods, under 252"}

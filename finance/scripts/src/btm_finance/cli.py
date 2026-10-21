@@ -101,6 +101,8 @@ from btm_finance.live import (
     reference_prices,
     report_of,
     row_of,
+    seasoning,
+    tier_of,
     trading_days_after,
 )
 from btm_finance.loader import load_strategy, strategy_reach
@@ -108,6 +110,7 @@ from btm_finance.measuring import (
     Peers,
     Prepared,
     Setting,
+    Strategy,
     bounds,
     evaluate,
     rules_of,
@@ -124,15 +127,15 @@ from btm_finance.models import (
     baseline_hypothesis,
 )
 from btm_finance.recommending import (
-    Account,
     AdvCut,
     Candidate,
     Inputs,
     Previous,
     Proposal,
     Quote,
-    RiskCut,
+    RuinCut,
     Skipped,
+    Tier,
     account_of,
     approval_of,
     propose,
@@ -937,6 +940,32 @@ class Day:
     row: int
 
 
+def sleeve_tier(  # noqa: PLR0913 - one sleeve's ledger evidence
+    setting: Setting,
+    strategy: Strategy,
+    params: Mapping[str, float],
+    *,
+    name: str,
+    fills: Sequence[Row],
+    limits: Limits,
+    through: int,
+) -> Tier:
+    """Tier from the sleeve's dry-run and real fills through `through`
+    against one model simulation, run only when the sleeve has fills."""
+    paper = sleeve_fills(fills, name, Status.PAPER, {}, {})
+    real = sleeve_fills(fills, name, Status.LIVE, {}, {})
+    if not paper and not real:
+        return Tier.BACKTEST
+    model = model_path(setting, strategy, params)
+    rf = setting.prep.rf
+    return tier_of(
+        seasoning(paper, setting.panel, rf, model, through),
+        seasoning(real, setting.panel, rf, model, through),
+        days=limits.thresholds.paper_min_days,
+        bound=limits.thresholds.tracking_error,
+    )
+
+
 def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     book: Book,
     limits: Limits,
@@ -944,10 +973,15 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     day: Day,
     *,
     run: Row,
-    account: Account,
+    status: Status,
+    fills: Sequence[Row],
 ) -> Candidate:
     """The sleeve's weights on the as-of row through `Market.at` and
-    `target_weights`, as `measure` sets them; vol from the run's net series."""
+    `target_weights`, as `measure` sets them; vol from the run's net series;
+    tier `probe` by status, else from its fills."""
+    account = account_of(status)
+    if account is None:
+        raise CommandError(f"status {status} names no sleeve")
     name = str(run.get("strategy"))
     folder = book.root / "strategies" / name
     config = parse_model(
@@ -965,6 +999,19 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         raise CommandError(f"{name} signal raised: {err!r}") from err
     index = {symbol: column for column, symbol in enumerate(day.panel.names)}
     weights, unknown = target_weights(raw, market, setting, index, day.row)
+    tier = (
+        Tier.PROBE
+        if status is Status.PROBE
+        else sleeve_tier(
+            setting,
+            strategy,
+            dict(config.params),
+            name=name,
+            fills=fills,
+            limits=limits,
+            through=int(day.panel.dates[day.row]),
+        )
+    )
     series = read_returns(book, read_manifest(book), str(run.get("run_id")))
     vol = None
     if series is not None and len(series[1]) > 1:
@@ -993,6 +1040,8 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
             if w
         },
         series=series,
+        dsr=card_number(run, "dsr"),
+        tier=tier,
     )
 
 
@@ -1028,14 +1077,13 @@ def previous_of(book: Book, day: str) -> Previous | None:
     return Previous(stem=stem, proposal=proposal, rejected=rejected)
 
 
-def sleeves_of(book: Book) -> tuple[list[tuple[Row, Account]], list[Skipped]]:
-    """Paper and live strategies with their newest research run line."""
+def sleeves_of(book: Book) -> tuple[list[tuple[Row, Status]], list[Skipped]]:
+    """Probe, paper, and live strategies with their newest research run line."""
     runs = all_runs(book)
-    chosen: list[tuple[Row, Account]] = []
+    chosen: list[tuple[Row, Status]] = []
     skipped: list[Skipped] = []
     for found in strategies(book):
-        account = account_of(found.status)
-        if account is None:
+        if found.status is None or account_of(found.status) is None:
             continue
         run = newest_run(runs, found.name)
         if run is None:
@@ -1043,7 +1091,7 @@ def sleeves_of(book: Book) -> tuple[list[tuple[Row, Account]], list[Skipped]]:
             signal(f"sleeve {found.name} skipped: {reason}")
             skipped.append(Skipped(strategy=found.name, reason=reason))
             continue
-        chosen.append((run, account))
+        chosen.append((run, found.status))
     return chosen, skipped
 
 
@@ -1055,7 +1103,8 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     if not chosen:
         named = ", ".join(s.strategy for s in skipped)
         raise CommandError(
-            "no sleeve: no strategies/*/status reads paper or live with a run line"
+            "no sleeve: no strategies/*/status reads probe, paper, or live with a "
+            "run line"
             + (f" (skipped {named})" if named else "")
             + "; the operator sets status, the agent measures"
         )
@@ -1068,9 +1117,10 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     if row < 0:
         raise CommandError(f"no bar on or before {when}; load prices first")
     day = Day(panel, events, Prepared.of(panel, events, limits.delisting), row)
+    fills = current(kind_rows(book, Kind.FILL))
     candidates = tuple(
-        candidate(book, limits, preferences, day, run=run, account=account)
-        for run, account in chosen
+        candidate(book, limits, preferences, day, run=run, status=status, fills=fills)
+        for run, status in chosen
     )
     proposal = propose(
         Inputs(
@@ -1083,7 +1133,7 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             candidates=candidates,
             skipped=tuple(skipped),
             quotes=quotes_of(day),
-            fills=current(kind_rows(book, Kind.FILL)),
+            fills=fills,
             previous=previous_of(book, when.isoformat()),
             risk_share=limits.max_strategy_risk_share,
             regime=regime_record(regime_rows(book), when, limits.regime_stale_days),
@@ -1099,17 +1149,25 @@ def cmd_recommend(args: argparse.Namespace) -> int:
                     f"{cut.kept}: ADV participation {cut.adv_participation:.4g} "
                     f"over {cut.bound}"
                 )
-            case RiskCut():
+            case RuinCut():
                 signal(
-                    f"sleeve {cut.strategy} cut from {cut.wanted:.4g} to "
-                    f"{cut.kept:.4g}: risk share {cut.share:.3g} over {cut.bound}"
+                    f"every sleeve scaled by {cut.scale:.4g}: 1st-percentile "
+                    f"252-day loss {cut.loss:.4g} over ruin_bound {cut.bound}"
                 )
+    for name in proposal.advisory.over:
+        signal(
+            f"advisory: sleeve {name} risk share "
+            f"{proposal.advisory.risk_share[name]:.3g} over {proposal.advisory.bound}"
+        )
     emit(
         {
             "book": book.meta.id,
             "proposal": book.relative(target),
             "as_of": proposal.as_of,
-            "sleeves": {s: v.weight for s, v in proposal.sleeves.items()},
+            "sleeves": {
+                s: {"weight": v.weight, "tier": v.tier.value}
+                for s, v in proposal.sleeves.items()
+            },
             "skipped": [s.model_dump(mode="json") for s in proposal.skipped],
             "orders": len(proposal.orders),
             "cuts": len(proposal.cuts),
@@ -1120,6 +1178,8 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             if proposal.regime is None
             else proposal.regime.model_dump(mode="json"),
             "effective_streams": proposal.effective_streams,
+            "ruin": None if proposal.ruin is None else proposal.ruin.loss,
+            "reasons": proposal.reasons,
             "next": f"check {target.stem}; read it to the operator, blockers first",
         }
     )
@@ -1155,6 +1215,7 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
             {
                 "strategy": name,
                 "run_id": sleeve.run_id,
+                "tier": sleeve.tier.value,
                 "sharpe_net": sleeve.sharpe_net,
                 "max_drawdown": sleeve.max_drawdown,
                 "weight": sleeve.weight,
@@ -1166,12 +1227,14 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
             {
                 "strategy": BASELINE,
                 "run_id": None if run is None else run.get("run_id"),
+                "tier": None,
                 "sharpe_net": None if run is None else card_number(run, "sharpe_net"),
                 "max_drawdown": None
                 if run is None
                 else card_number(run, "max_drawdown"),
                 "weight": 0.0,
-                "note": "baseline is no sleeve here: its status is not paper or live",
+                "note": "baseline is no sleeve here: its status is not probe, "
+                "paper, or live",
             }
         )
     return sorted(rows, key=lambda row: row["strategy"] != BASELINE)
@@ -1203,6 +1266,11 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         if proposal.regime is None
         else proposal.regime.model_dump(mode="json"),
         "effective_streams": proposal.effective_streams,
+        "advisory": proposal.advisory.model_dump(mode="json"),
+        "ruin": None
+        if proposal.ruin is None
+        else proposal.ruin.model_dump(mode="json"),
+        "reasons": proposal.reasons,
         "diff": [
             {
                 "symbol": o.symbol,

@@ -103,9 +103,9 @@ $R read "$B" [--type T] [--match <regex>] [--since j9] [--limit N] [--known]
 | `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
-| `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard, `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
+| `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard with `walk_forward.post_cutoff` (net Sharpe of folds starting after `limits.model_cutoff`), `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
 | `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines whose `supersedes` moves `falsifier_by` later) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline`, `stale`, `regime`, `effective_streams`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
-| `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve weights, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
+| `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with sleeve `weight` and `tier`, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`, `ruin` loss, `reasons` for null `ruin`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
 
@@ -327,12 +327,23 @@ In every mode:
 
 ## Propose and approve
 
-Sleeve is strategy whose `status` reads `paper` or `live`. `recommend` diffs
-live sleeves against real account (live fills plus opening holdings) and
-paper sleeves against own dry-run fills; `check --live` monitors each sleeve
-from its own fills only. `unmanaged` lists held names outside research set,
-never sold; never reason from it about held-out membership. Load `book`
-before explaining sizing, cuts, carried orders, or proposal fields.
+Sleeve is strategy whose `status` reads `probe`, `paper`, or `live`.
+`recommend` diffs probe and live sleeves against real account (live fills
+plus opening holdings) and paper sleeves against own dry-run fills;
+`check --live` monitors each sleeve from its own fills only. `unmanaged`
+lists held names outside research set, never sold; never reason from it
+about held-out membership. Load `book` before explaining sizing, cuts,
+carried orders, or proposal fields.
+
+Size follows evidence. Each sleeve's `tier` comes from ledger: `backtest`
+until fills track model path; `paper` once dry-run fills span
+`thresholds.paper_min_days` (63) calendar days within
+`thresholds.tracking_error`; `live` same on real fills. Tier sets fraction
+of full Kelly (`sizing.kelly_fraction`), scaled by `edge_scale` from run's
+DSR: 0 at 0.5, 1 at 0.95. Probe sleeve takes fixed `sizing.probe_weight`.
+Whole book then scales down when its 1st-percentile 252-day loss passes
+`sizing.ruin_bound` (`cuts` entry `kind: ruin`). Risk share per sleeve is
+advisory, never a cut.
 
 1. On rebalance day, after close, run `recommend "$B" <date>`. Sleeve with
    no run line lands in `skipped` with reason; with no sleeve left, exit 1
@@ -341,8 +352,9 @@ before explaining sizing, cuts, carried orders, or proposal fields.
    `--force` only adds `<date>.<n>.json` beside existing proposal.
 2. Run `check "$B" <date>`. Read result to operator in its order: every
    `blockers` entry verbatim, `baseline` row beside every other sleeve,
-   `stale` flags, `regime` (say when stale) and `effective_streams`, then
-   `diff`, `cuts`, `unmanaged`, `summary`. Never argue for proposal.
+   `stale` flags, `regime` (say when stale), `effective_streams` and
+   `advisory` risk shares, `ruin` (or its `reasons` entry), then `diff`,
+   `cuts`, `unmanaged`, `summary`. Never argue for proposal.
 3. Hand operator `approval_template`, `approval_path`, exact commands:
    `<book>/bin/send approvals/<date>.json --dry-run` for paper orders; for
    live ones `<book>/bin/send approvals/<date>.json` to check and print
@@ -362,6 +374,8 @@ commission, drawdown, months below baseline sleeve, data age; each breach
 appends one incident line, once per strategy and kind per 7 days. Show
 operator `report` whole, every breach included. Never pause anything: pause
 is operator's decision line plus edit of `strategies/<name>/status`.
+Tracking within bound over `paper_min_days` lifts sleeve's tier at next
+`recommend`; breach holds it at lower tier.
 
 On live deviation from model path, first move is diagnosis: with operator,
 `record` decision `action: diagnose`, `reason` naming broken link

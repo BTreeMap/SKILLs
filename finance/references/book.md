@@ -172,43 +172,60 @@ research names only, through `Market` on `as_of`, last bar on or before
 | Field | Holds |
 | --- | --- |
 | `date`, `as_of`, `cap` | Proposal date, last bar used, `limits.asset_cap` |
-| `sleeves` | Per strategy: `account` (`paper` or `live`), `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `vol_weight`, `kelly_cap`, `divisor`, `weight`, `code_changed`, `unknown`, raw `signal` per name |
-| `skipped` | Paper or live strategy with no run line, with reason |
+| `sleeves` | Per strategy: `account` (`paper` or `live`), `tier` (`backtest`, `paper`, `live`, `probe`), `edge_scale`, `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `vol_weight`, `kelly_cap`, `divisor`, `weight`, `code_changed`, `unknown`, raw `signal` per name |
+| `skipped` | Probe, paper, or live strategy with no run line, with reason |
 | `targets` | Per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, reference `price`, `sector` |
 | `orders` | `symbol`, `side`, `quantity`, `price`, `adv_participation`, `strategy`, `limit` (null: market-on-open), `account`, `held`, `target`, `carried_from` |
 | `summary` | `gross`, `net`, `cash` (1 minus net), `sectors` net weights, `top10` share of gross, `cost` in currency, one-way `turnover`, order count |
 | `unmanaged` | Held positions in names sleeves do not see (outside research set; can include held-out names); never sold |
 | `carried` | Unfilled orders of previous proposal; `merged` when an order here carries it |
-| `cuts` | `kind: adv`: order cut to ADV bound, `symbol`, `strategy`, `wanted`, `kept` shares, `adv_participation`, `bound`. `kind: risk_share`: sleeve cut to risk-share cap, `strategy`, `wanted`, `kept` weights, `share` before cap, `bound` |
+| `cuts` | `kind: adv`: order cut to ADV bound, `symbol`, `strategy`, `wanted`, `kept` shares, `adv_participation`, `bound`. `kind: ruin`: every sleeve scaled to ruin bound, `loss` before scaling, `bound`, `scale` |
 | `regime` | Regime record at proposal date: `id`, `as_of`, `stale`; null when none |
 | `effective_streams` | Of sleeves with stored series; see `scorecard`; null when none |
+| `ruin` | `loss` (1st-percentile 252-day loss before scaling), `bound`, `scale`, `paths`, `horizon`, `block`, `periods` (common dates), `seed`; null with `reasons.ruin` |
+| `advisory` | `risk_share` per sleeve (`weight * vol_net` over book's sum, null without vol), `bound` (`max_strategy_risk_share`), `over` names past it; never a cut |
+| `reasons` | Why a null field is null: `ruin` |
 
-Sizing, annual units, vol is std of run's stored net series times sqrt(252):
+Sizing, annual units, vol is std of run's stored net series times sqrt(252).
+Fractional Kelly trades growth for security (Kelly 1956; Thorp 2006); ruin
+bound caps the security side (MacLean, Thorp, Ziemba 2010).
 
-1. Sleeve weight is min(`vol_target / vol_net`,
-   `kelly_fraction * sharpe_net / vol_net`); zero when Sharpe is null or
-   negative.
-2. Correlation divisor: weight over `divisor = 1 + sum_j |rho_ij|`, rho
+1. Tier from ledger, through proposal's `as_of`: `backtest` with no fills;
+   `paper` when sleeve's dry-run fills span at least
+   `thresholds.paper_min_days` (63) calendar days from first fill to `as_of`
+   and realized path's tracking error against `measure`'s model path (as
+   `check --live` computes it) is at or under `thresholds.tracking_error`;
+   `live` same on real fills. Fewer days or tracking breach keeps lower
+   tier. Status `probe` gives tier `probe`.
+2. `edge_scale = min(1, max(0, (dsr - 0.5) / 0.45))`, 0 when `dsr` null: 0
+   at DSR 0.5, 2/3 at 0.8, 1 at 0.95 (Bailey and Lopez de Prado 2014).
+3. Sleeve weight is min(`vol_target / vol_net`, `kelly_cap`),
+   `kelly_cap = kelly_fraction.<tier> * edge_scale * sharpe_net / vol_net`;
+   zero when Sharpe is null or negative. Probe sleeve takes exactly
+   `sizing.probe_weight`, no vol or Kelly sizing, no divisor.
+4. Correlation divisor: weight over `divisor = 1 + sum_j |rho_ij|`, rho
    Pearson correlation of stored net series with each other sleeve on common
    dates; pair with under 20 common periods or no series adds 0.
-3. Risk-share cap: risk is `weight * vol_net`; each sleeve's risk at most
-   `max_strategy_risk_share` times sum of capped risks. Water-fill: riskiest
-   sleeves share one level `s * U / (1 - k s)`, U uncapped risk, k capped
-   count. Cap holds only with at least 1 / `max_strategy_risk_share` sleeves
-   carrying risk; fewer, it is skipped. Each capped sleeve listed under
-   `cuts` with `kind: risk_share`.
-4. Sum of sleeve weights above 1 scales every sleeve down to sum 1, which
-   keeps risk shares; rest is cash.
-5. Name's net weight across sleeves above `sizing.max_weight` scales that
+5. Sum of sleeve weights above 1 scales every sleeve down to sum 1; rest is
+   cash. Then ruin: joint stationary block bootstrap (mean block 21 days) of
+   weighted sleeves' stored net series on common dates, 1000 paths of 252
+   days, generator seeded from proposal date's ordinal, so proposal
+   reproduces. Loss is 1 minus compounded wealth; statistic is loss at 1st
+   percentile of wealth. Over `sizing.ruin_bound` (0.35): every sleeve
+   scales by `ruin_bound / loss` once, one `cuts` entry `kind: ruin`. Under
+   252 common periods, or weighted sleeve with no stored series: `ruin`
+   null, reason under `reasons.ruin`, no scaling. Cost O(T S + P H). Risk
+   share (`weight * vol_net` over sum) lands under `advisory`; no cut.
+6. Name's net weight across sleeves above `sizing.max_weight` scales that
    name down in every sleeve alike.
-6. Target is whole shares at last close on or before `date`, toward zero.
+7. Target is whole shares at last close on or before `date`, toward zero.
    Order is target minus held. Order whose quantity times price over 21-day
    dollar ADV passes `max_adv_participation` is cut to bound and listed
    under `cuts`; unknown ADV cuts it to zero.
-7. Live sleeves share one real account: real shares no live sleeve filled
-   (opening holdings, retired sleeves) first cover sleeves' buys in name
-   order; rest lands on last sleeve, whose diff sells it. Paper sleeve holds
-   only own dry-run fills.
+8. Probe and live sleeves share one real account: real shares no live sleeve
+   filled (opening holdings, retired sleeves) first cover sleeves' buys in
+   name order; rest lands on last sleeve, whose diff sells it. Paper sleeve
+   holds only own dry-run fills.
 
 Order of previous proposal carries when no fill of same symbol, sleeve,
 side, and account (paper or real) is dated on or after that proposal, and no

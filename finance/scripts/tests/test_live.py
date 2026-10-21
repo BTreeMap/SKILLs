@@ -14,10 +14,19 @@ from btm_finance.api import Market
 from btm_finance.cli import scoped
 from btm_finance.data.assemble import assemble
 from btm_finance.data.tables import date_of
-from btm_finance.live import Fill, Sleeve, Watch, months_below, slippage
+from btm_finance.live import (
+    Fill,
+    Seasoning,
+    Sleeve,
+    Watch,
+    months_below,
+    slippage,
+    tier_of,
+)
 from btm_finance.loader import load_strategy
 from btm_finance.measuring import Setting, rebalance_rows, rules_of, target_weights
 from btm_finance.models import Rebalance, StrategyConfig
+from btm_finance.recommending import Tier
 from btm_finance.store import load_limits, load_preferences, open_book
 from btm_finance.synthetic import trading_days
 
@@ -185,3 +194,65 @@ def test_slippage_reads_the_proposal_the_approval_names(paper, run):
     record(run, paper, [fill])
     (row,) = live(run, paper, day)["strategies"]
     assert row["slippage"]["value"] == pytest.approx(0.01)
+
+
+def tier(run, book: Path, day: date) -> str:
+    """`recommend` on `day`, then the baseline sleeve's tier in the file."""
+    code, _, err = run(["recommend", str(book), day.isoformat()])
+    assert code == 0, err
+    path = book / "proposals" / f"{day.isoformat()}.json"
+    return json.loads(path.read_text())["sleeves"]["baseline"]["tier"]
+
+
+def first_fill_day(fills: list[dict[str, object]]) -> date:
+    return date.fromisoformat(str(fills[0]["date"]))
+
+
+def test_no_fills_size_on_the_backtest(paper, run):
+    assert tier(run, paper, last_bar(paper)) == "backtest"
+
+
+def test_a_short_dry_run_span_stays_backtest(paper, run):
+    fills = model_fills(paper)
+    record(run, paper, fills)
+    early = first_fill_day(fills) + timedelta(days=30)
+    assert tier(run, paper, early) == "backtest"  # under 63 calendar days
+
+
+def test_a_long_dry_run_span_tracking_the_model_is_paper(paper, run):
+    fills = model_fills(paper)
+    record(run, paper, fills)
+    assert (last_bar(paper) - first_fill_day(fills)).days >= 63
+    assert tier(run, paper, last_bar(paper)) == "paper"
+
+
+def test_a_long_dry_run_span_off_the_model_path_stays_backtest(paper, run):
+    # The whole capital in one name: realized path far off the model's.
+    first = model_fills(paper)[0]
+    record(run, paper, [first | {"quantity": CAPITAL / float(str(first["price"]))}])
+    report = live(run, paper, last_bar(paper).isoformat())
+    assert report["strategies"][0]["tracking"]["breach"]
+    assert tier(run, paper, last_bar(paper)) == "backtest"
+
+
+def test_real_fills_tracking_the_model_are_live(paper, run):
+    (paper / "strategies" / "baseline" / "status").write_text("live\n")
+    record(run, paper, [f | {"dry_run": False} for f in model_fills(paper)])
+    assert tier(run, paper, last_bar(paper)) == "live"
+
+
+def test_tier_of_needs_both_span_and_tracking():
+    good, short = Seasoning(90, 0.01), Seasoning(10, 0.01)
+    off, blind = Seasoning(90, 0.20), Seasoning(90, None)
+
+    def pick(paper: Seasoning | None, real: Seasoning | None) -> Tier:
+        return tier_of(paper, real, days=63, bound=0.05)
+
+    assert pick(None, None) is Tier.BACKTEST
+    assert pick(short, None) is Tier.BACKTEST
+    assert pick(off, None) is Tier.BACKTEST
+    assert pick(blind, None) is Tier.BACKTEST
+    assert pick(good, None) is Tier.PAPER
+    assert pick(good, good) is Tier.LIVE
+    assert pick(None, good) is Tier.LIVE
+    assert pick(good, off) is Tier.PAPER
