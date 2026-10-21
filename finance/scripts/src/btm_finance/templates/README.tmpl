@@ -1,0 +1,69 @@
+# $title
+
+Private research book: bets on stocks held $holding, each with stated
+odds, kill date, size from evidence. Agents research, write code here, and
+record; operator decides and sends every trade by hand. Agents read
+`AGENTS.md` first.
+
+## Layout
+
+| Path | Holds |
+| --- | --- |
+| `book.json` | marker: book id, created, engine version, held-out path |
+| `limits.json` | operator's bounds: asset cap, thresholds, sizing, families |
+| `preferences.json` | focus sectors, exclusions, cadence; changed only through `record` |
+| `bin/send` | operator's checker: approval check, order table, fill recorder |
+| `universe.csv` | research universe given at start |
+| `data/` | loaded prices, filings, factors, run series; git ignores it |
+| `ledger/` | append-only record: hypotheses, critiques, decisions, runs, fills, scores |
+| `proposals/` | rebalance proposals, written once each |
+| `approvals/` | operator's approval files, one per send day |
+| `sent/`, `rejected/` | approval files after sending or refusal |
+| `strategies/<name>/` | one strategy: `signal.py`, `config.json`, `README.md`, `status` |
+| `lib/`, `tools/` | agents' shared modules and scripts |
+| `research/<topic>/` | notes and sources per line of inquiry |
+| `tests/` | tests for `lib/` and `tools/` |
+| `INDEX.md` | one line per lib module, tool, research topic |
+
+## Resume
+
+From book root:
+
+```bash
+$binding check .
+$binding check . --brief
+```
+
+First prints continue view with `next`; second, daily brief.
+
+## Approval and sending
+
+$sending
+
+1. On rebalance day lead runs `recommend` and reads `check <date>`
+   result to you: blockers first.
+2. Copy its `approval_template` to `approvals/<send day>.json`; edit
+   quantities; set `date` to send day (UTC).
+3. Run `bin/send approvals/<send day>.json` to check and print orders;
+   `--dry-run` records paper fills only.
+4. Place each order by hand$at.
+5. Run `bin/send approvals/<send day>.json --fills <table>` with pasted
+   fills: CSV header `symbol,side,quantity,price,date`.
+
+## Held-out list
+
+Held-out names live outside book, in this file:
+
+```text
+$held_out
+```
+
+Agents never read it; only operator runs `measure --held-out`.
+
+## Answers
+
+Onboarding answers as of $dated. `(default)` marks answer left to default.
+
+| Question | Answer |
+| --- | --- |
+$answers

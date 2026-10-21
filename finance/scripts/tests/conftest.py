@@ -47,7 +47,7 @@ def run(capsys: pytest.CaptureFixture[str]) -> Run:
 @pytest.fixture
 def book(tmp_path: Path, run: Run) -> Path:
     root = tmp_path / "book"
-    code, _, err = run(["start", str(root)])
+    code, _, err = run(["start", str(root), "--answers:stdin"], stdin="{}")
     assert code == 0, err
     return root
 

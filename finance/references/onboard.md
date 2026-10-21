@@ -1,0 +1,66 @@
+# Onboard
+
+Load only for book without `AGENTS.md`, or empty directory (Continue).
+Onboarding writes book-root instructions: `README.md` for humans,
+`AGENTS.md` for agents, `CLAUDE.md` pointing at `AGENTS.md`.
+
+## Questions
+
+Send these in one message, after directory question. Accept partial answers;
+bracketed default applies to any answer operator leaves out or says default
+to.
+
+```text
+1. Jurisdiction and base currency. [your locale]
+2. Broker and accounts: names, types (taxable, sheltered), which account
+   sleeves trade in, whether broker has an API. [no API: bin/send prints
+   orders for hand entry]
+3. Capital: asset cap now, and expected in six months. [10000000]
+4. Risk in two numbers: largest one-year loss of book you accept
+   (ruin_bound), and Kelly fraction for backtest-only edges. [0.35; 0.25]
+5. Horizon and cadence: holding period, rebalance cadence (monthly or
+   quarterly), hour of daily brief. [weeks to years; monthly; before
+   market open]
+6. Universe: index or list, exchanges, market-cap ceiling, exclusions by
+   sector, symbol, country; focus sectors. [universe CSV given at start]
+7. Data sources: tiingo, EDGAR (contact name and email), French factors.
+   Keys stay in your environment, never in book. [free sources only:
+   csv, edgar, french]
+8. Training cutoff of agent's model, for hindsight check. [agent's stated
+   cutoff]
+9. Held-out list path, outside book. [under XDG_STATE_HOME]
+10. Other agents or people working in this book, and whether each may
+    propose. [you only]
+```
+
+For question 8 default, state own training cutoff; write it only after
+operator confirms.
+
+## Answers file
+
+1. Write `answers.json` outside book in shape `schema` prints under
+   `answers`; omit every key operator left to default. `sources` records
+   which sources book uses and EDGAR contact string only; no key, token, or
+   password: unknown keys refuse.
+2. Empty directory: `$R start "$B" --answers:file answers.json` plus
+   `--universe:file` when operator gave one. `start` fills `limits.json` and
+   `preferences.json` from answers.
+3. Existing book: `$R onboard "$B" --answers:file answers.json`. It writes
+   three files only. Hand operator every `limits` entry (dotted path to
+   value) to set in `limits.json`; never edit it. Read `preferences` batch
+   to operator; on confirmation, `record` it.
+4. Run bare `check "$B"`; no `README.md`, `AGENTS.md`, or `CLAUDE.md`
+   warning remains.
+
+`onboard` refuses when any of three files exists; `--force` rewrites all
+three, only on operator's word.
+
+## Editing the files
+
+- Lead may edit operator-facing prose in `README.md` and `AGENTS.md`.
+- Keep `AGENTS.md` `## Invariants` section verbatim: bare `check` warns when
+  it differs from template.
+- Keep `CLAUDE.md` relative symlink to `AGENTS.md`, or where symlinks fail,
+  one line `Read AGENTS.md.`.
+- New answers later: rerun `onboard --force` with full `answers.json`;
+  hand-written prose in three files is lost.

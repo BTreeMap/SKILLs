@@ -17,6 +17,7 @@ from pydantic import (
 )
 
 from btm_corekit import Model, Named, NonEmpty, Slug, Trimmed
+from btm_finance.data.tables import Source
 
 
 class CapacityClass(StrEnum):
@@ -433,4 +434,138 @@ PREFERENCES_TEMPLATE: dict[str, object] = {
     "focus_sectors": [],
     "exclusions": {"symbols": [], "sectors": [], "countries": []},
     "cadence": "monthly",
+}
+
+
+class AccountKind(StrEnum):
+    TAXABLE = "taxable"
+    SHELTERED = "sheltered"
+
+
+class Account(Model):
+    name: NonEmpty
+    kind: AccountKind
+
+
+class Broker(Model):
+    """Question 2. `sleeve_account` names the account sleeves trade in; `api`
+    records only whether one exists: the book never calls it."""
+
+    name: NonEmpty | None = None
+    accounts: tuple[Account, ...] = ()
+    sleeve_account: NonEmpty | None = None
+    api: bool = False
+
+    def model_post_init(self, _context: object) -> None:
+        names = {account.name for account in self.accounts}
+        if (
+            self.sleeve_account is not None
+            and names
+            and self.sleeve_account not in names
+        ):
+            raise ValueError(
+                f"sleeve_account {self.sleeve_account!r} names none of accounts: "
+                f"{', '.join(sorted(names))}"
+            )
+
+
+class Capital(Model):
+    """Question 3: asset cap now (absent: `--cap`) and in six months."""
+
+    now: Annotated[int, Field(gt=0)] | None = None
+    six_months: Annotated[int, Field(gt=0)] | None = None
+
+
+class Risk(Model):
+    """Question 4: `sizing.ruin_bound` and `sizing.kelly_fraction.backtest`."""
+
+    ruin_bound: Annotated[float, Field(gt=0, lt=1)] = 0.35
+    kelly_backtest: Annotated[float, Field(ge=0, le=1)] = 0.25
+
+
+class Horizon(Model):
+    """Question 5: holding period, rebalance cadence, hour of daily brief."""
+
+    holding: NonEmpty = "weeks to years"
+    cadence: Cadence = Cadence.MONTHLY
+    brief: NonEmpty = "before market open"
+
+
+class Universe(Model):
+    """Question 6. `index` names index or list; absent reads `universe.csv`."""
+
+    index: NonEmpty | None = None
+    exchanges: Texts = ()
+    cap_ceiling: Annotated[float, Field(gt=0)] | None = None
+    exclusions: Exclusions = Field(default_factory=Exclusions)
+    focus_sectors: Texts = ()
+
+
+FREE_SOURCES: tuple[Source, ...] = (Source.CSV, Source.EDGAR, Source.FRENCH)
+"""Sources needing no key: the default of question 7."""
+
+
+class Sources(Model):
+    """Question 7: which `load` sources the book uses and EDGAR contact
+    string. Never a key: keys live in the environment only."""
+
+    used: tuple[Source, ...] = FREE_SOURCES
+    edgar_contact: NonEmpty | None = None
+
+
+class CollaboratorKind(StrEnum):
+    AGENT = "agent"
+    PERSON = "person"
+
+
+class Collaborator(Model):
+    name: NonEmpty
+    kind: CollaboratorKind
+    may_propose: bool = False
+
+
+class Answers(Model):
+    """`answers.json`: operator's onboarding answers; every key optional, a
+    missing one takes its default. Agent writes it, so unknown keys refuse."""
+
+    jurisdiction: NonEmpty | None = None
+    currency: NonEmpty | None = None
+    broker: Broker = Field(default_factory=Broker)
+    capital: Capital = Field(default_factory=Capital)
+    risk: Risk = Field(default_factory=Risk)
+    horizon: Horizon = Field(default_factory=Horizon)
+    universe: Universe = Field(default_factory=Universe)
+    sources: Sources = Field(default_factory=Sources)
+    model_cutoff: date | None = None
+    held_out: NonEmpty | None = None
+    collaborators: tuple[Collaborator, ...] = ()
+
+
+ANSWERS_SHAPE: dict[str, object] = {
+    "jurisdiction": "CA",
+    "currency": "CAD",
+    "broker": {
+        "name": "<broker>",
+        "accounts": [{"name": "main", "kind": "taxable"}],
+        "sleeve_account": "main",
+        "api": False,
+    },
+    "capital": {"now": 100000, "six_months": 150000},
+    "risk": {"ruin_bound": 0.35, "kelly_backtest": 0.25},
+    "horizon": {
+        "holding": "weeks to years",
+        "cadence": "monthly",
+        "brief": "before market open",
+    },
+    "universe": {
+        "index": "<index or list>",
+        "exchanges": ["tsx", "nyse"],
+        "cap_ceiling": 2000000000,
+        "exclusions": {"symbols": [], "sectors": [], "countries": []},
+        "focus_sectors": [],
+    },
+    "sources": {"used": ["csv", "edgar", "french"], "edgar_contact": "<name email>"},
+    "model_cutoff": "2026-01-31",
+    "held_out": "<absolute path outside the book>",
+    "collaborators": [{"name": "<name>", "kind": "agent", "may_propose": False}],
 }

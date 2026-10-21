@@ -27,6 +27,7 @@ from btm_corekit import (
     CommandError,
     Optional,
     Parser,
+    Required,
     add_slot,
     ascii_words,
     count_lines,
@@ -43,6 +44,7 @@ from btm_corekit import (
     wire_pad,
     write_atomic,
 )
+from btm_finance import onboarding
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import Bet, Open, brief, justifying
@@ -117,7 +119,9 @@ from btm_finance.measuring import (
     target_weights,
 )
 from btm_finance.models import (
+    ANSWERS_SHAPE,
     Action,
+    Answers,
     Cadence,
     Exclusions,
     Limits,
@@ -159,7 +163,7 @@ from btm_finance.repeat import (
     peer_drift,
 )
 from btm_finance.repeat import advisories as engine_advisories
-from btm_finance.scaffold import INDEX, scaffold
+from btm_finance.scaffold import INDEX, onboard_files, scaffold, template
 from btm_finance.scorecard import RunLine, Span
 from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
@@ -194,6 +198,9 @@ from btm_finance.views import (
 
 UNIVERSE = Optional("universe", inline=False)
 CONFIG = Optional("config", inline=False)
+ANSWERS = Optional("answers", inline=False)
+ANSWERS_REQUIRED = Required("answers", inline=False)
+ANSWERS_HELP = "JSON object of onboarding answers; schema prints its shape"
 LATER: dict[str, str] = {}
 MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
 STALE_BARS = 5  # trading days an as-of bar may trail the proposal date
@@ -214,10 +221,14 @@ def positive(raw: str) -> int:
 
 
 def start(
-    root: Path, cap: int, universe: str | None, held_out: Path | None = None
+    root: Path,
+    cap: int | None,
+    universe: str | None,
+    held_out: Path | None = None,
+    answers: Answers | None = None,
 ) -> dict[str, Any]:
     """Make the book, then register the baseline hypothesis through the gate."""
-    receipt = scaffold(root, cap, universe, held_out)
+    receipt = scaffold(root, cap, universe, held_out, answers)
     book = open_book(str(root))
     limits = load_limits(book)
     context = Context(
@@ -238,10 +249,39 @@ def start(
 
 
 def cmd_start(args: argparse.Namespace) -> int:
+    raw = text(ANSWERS, args)
+    answers = None if raw is None else onboarding.answers_of(raw)
+    universe = text(UNIVERSE, args)
     emit(
-        start(
-            Path(args.book).expanduser(), args.cap, text(UNIVERSE, args), args.held_out
-        )
+        start(Path(args.book).expanduser(), args.cap, universe, args.held_out, answers)
+    )
+    return 0
+
+
+def cmd_onboard(args: argparse.Namespace) -> int:
+    """Instruction files for an existing book; `limits.json`, `preferences.json`,
+    and the ledger stay as they are: the receipt says what to change."""
+    book = open_book(args.book)
+    answers = onboarding.answers_of(text(ANSWERS_REQUIRED, args))
+    onboarding.refuse_existing(book.root, force=args.force)
+    limits = load_limits(book)
+    claude = onboard_files(
+        book.root,
+        book.meta,
+        answers,
+        answers.capital.now or limits.asset_cap,
+        datetime.now(UTC).date().isoformat(),
+    )
+    emit(
+        {
+            "book": book.meta.id,
+            "wrote": list(onboarding.FILES),
+            "claude_md": claude,
+            "limits": onboarding.limit_changes(answers, limits),
+            "preferences": onboarding.preference_batch(answers, load_preferences(book)),
+            "next": "hand the operator limits to set in limits.json; confirm "
+            "preferences with the operator, then record them as a batch",
+        }
     )
     return 0
 
@@ -522,7 +562,13 @@ def continue_view(book: Book) -> dict[str, Any]:
         "proposals": proposals,
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
-        "warnings": [*warnings, *fired, *late, *index_warning(book)],
+        "warnings": [
+            *warnings,
+            *fired,
+            *late,
+            *index_warning(book),
+            *onboarding.warnings(book.root, template("AGENTS.tmpl")),
+        ],
         "next": next_step(hypotheses, pending, proposals, late, budgets),
     }
 
@@ -675,6 +721,14 @@ def cmd_schema(args: argparse.Namespace) -> int:
             "fill_table": "CSV with header symbol,side,quantity,price,date "
             "(optional strategy), or a JSON list of objects with those keys; "
             "the operator pastes broker fills there for bin/send --fills",
+            "answers": ANSWERS_SHAPE,
+            "answers_rules": "start --answers:file or onboard --answers:file; "
+            "every key optional, a missing one takes its default (risk 0.35 "
+            "and 0.25, cadence monthly, sources csv edgar french, collaborators "
+            "none); accounts kind taxable|sheltered; sleeve_account names one "
+            "account; cadence monthly|quarterly; sources csv|edgar|french|tiingo; "
+            "collaborators kind agent|person; unknown keys refused, so no key "
+            "or secret fits: keys live in the environment only",
             "refs": REFS_SCHEMA + "; receipts echo every new id under new",
             "pad": PAD_SCHEMA,
         }
@@ -1631,13 +1685,27 @@ def build_parser() -> argparse.ArgumentParser:
     start.set_defaults(func=cmd_start)
     start.add_argument("book", help="directory to make the book in")
     start.add_argument(
-        "--cap", type=positive, default=10_000_000, help="asset cap, default 10000000"
+        "--cap",
+        type=positive,
+        help="asset cap; default answers capital.now, else 10000000",
     )
     add_slot(start, UNIVERSE, "CSV with a symbol column and an optional sector column")
     start.add_argument(
         "--held-out",
         type=Path,
-        help="held-out list path outside the book; default under XDG_STATE_HOME",
+        help="held-out list path outside the book; default answers held_out, "
+        "else under XDG_STATE_HOME",
+    )
+    add_slot(start, ANSWERS, ANSWERS_HELP)
+
+    onboard = commands.add_parser(
+        "onboard", help="write README.md, AGENTS.md, CLAUDE.md for a book"
+    )
+    onboard.set_defaults(func=cmd_onboard)
+    onboard.add_argument("book", help="book directory")
+    add_slot(onboard, ANSWERS_REQUIRED, ANSWERS_HELP)
+    onboard.add_argument(
+        "--force", action="store_true", help="rewrite the three files when present"
     )
 
     schema = commands.add_parser("schema", help="print every record shape")

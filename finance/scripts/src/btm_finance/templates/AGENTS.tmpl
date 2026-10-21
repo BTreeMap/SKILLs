@@ -1,0 +1,88 @@
+# $title: agents
+
+This file is standing instruction for every agent in this book;
+conversation is a view. Book and ledger hold all state. Each session: read
+this file, run bare `check`, then `check --brief`, resume from `next`.
+
+Run commands from book root through skill binding:
+
+```bash
+$binding check .
+```
+
+## Invariants
+
+No agent, script, or cron changes these four.
+
+1. Book places no order and holds no broker credential. `bin/send`, stdlib
+   only, checks approval file, prints order table, records fills; no code
+   path reaches broker.
+2. Held-out names stay hidden from agents. `measure` serves strategy code
+   research names only. Held-out list lives outside book, at path in
+   `book.json` `held_out`; agent never reads that file.
+3. Ledger is append-only. `record` is only writer; correction is new line
+   with `supersedes`; bare `check` lists cut or non-JSON lines under
+   `warnings`.
+4. Orders leave only by operator's hand, from approval file in
+   `approvals/` dated that UTC day; book records fills, never places them.
+
+Agent never edits this section; `check` warns when it differs from
+template.
+
+## Book
+
+- Holding period $holding; rebalance $cadence; daily brief $brief.
+- Asset cap $cap; ruin bound $ruin_bound; Kelly fraction for backtest-only
+  edge $kelly.
+- $collaborators
+
+## Conduct
+
+- State bet once, labeled as yours: odds, size, kill observation and date.
+- Blockers first, verbatim. Never summarize standing or proposal without
+  its open blockers. Operator decides.
+- Passing sleeve left unproposed is cost: record `decision` with
+  `action: forgo` and reason.
+- Variance inside `sizing.ruin_bound` is expected. Drawdown is evidence
+  only when `check --live` reports model-path breach; otherwise say so,
+  propose no change.
+- Fold on kill date: past `falsifier_by`, score bet (`scored`), or reject
+  or retire it. More time is new hypothesis citing old in `supersedes`.
+
+## Code
+
+- Every line of agent code lives in book: `strategies/<name>/` for one
+  strategy, `lib/` if imported, `tools/<verb>-<object>.py` if it runs.
+- Docstring of each script states what it reads and writes.
+- Read ledger and data only through `btm_finance.api`; append to ledger
+  only through `record`.
+- Update `INDEX.md` (one line per lib module, tool, research topic) in
+  same commit as file it describes; deleted script leaves one history line.
+- Test `lib/` and `tools/` under `tests/`.
+- Commit on branch `agent/<date>-<topic>`, one commit per unit of work;
+  operator merges.
+
+## Never edit
+
+- Skill directory, installed copy or checkout.
+- `limits.json`; `preferences.json` except through `record`.
+- `approvals/`.
+- `strategies/*/status`.
+- `ledger/` except through `record`.
+
+Run `bin/send` only plain or with `--dry-run`; `--fills` is operator's.
+
+## Brief
+
+Daily, $brief: run `check . --brief`; read its `lines` to operator
+verbatim, at most 12: regime, open proposals with tier, weight, odds, net
+Sharpe, incidents of last 7 days, overdue and unscored counts, next action.
+Add nothing between lines.
+
+## Hindsight
+
+`limits.json` `model_cutoff` is training cutoff of agent's model. Only test
+folds starting after it are free of hindsight (`walk_forward.post_cutoff`).
+Name no symbol, dated event, or parameter chosen on outcome known only
+after cutoff. Positive `sharpe_net` with negative `post_cutoff` is
+hindsight concern: report it. Null cutoff: ask operator for it.

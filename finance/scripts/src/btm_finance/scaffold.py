@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import shlex
 import shutil
 import subprocess
 from collections import defaultdict
@@ -23,9 +24,11 @@ from btm_corekit import (
     signal,
     write_atomic,
 )
+from btm_finance import onboarding
 from btm_finance.models import (
     BASELINE_CONFIG,
     PREFERENCES_TEMPLATE,
+    Answers,
     BookMeta,
     Status,
     limits_template,
@@ -66,6 +69,10 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 """
 SENTINEL = "RECORD: tuple[str, ...] = ()"
+UNONBOARDED = (
+    "ask the operator the onboarding questions, write answers.json, run "
+    "onboard; then load data, measure baseline, import holdings with record"
+)
 HELD_OUT_SHARE = 4  # one name in four per sector, rounded half up
 
 BASELINE_README = """# baseline
@@ -189,16 +196,53 @@ def outside(root: Path, path: Path) -> Path:
     return resolved
 
 
+def onboard_files(
+    root: Path, meta: BookMeta, answers: Answers, cap: int, dated: str
+) -> str:
+    """`README.md`, `AGENTS.md`, `CLAUDE.md` from the answers; returns how
+    `CLAUDE.md` landed."""
+    setting = onboarding.Setting(
+        title=root.resolve().name,
+        dated=dated[:10],
+        cap=cap,
+        held_out=meta.held_out or str(held_out_path(meta.id)),
+        universe=(root / "universe.csv").is_file(),
+        binding=shlex.join(record_binding()),
+    )
+    return onboarding.write_files(root, template, answers, setting)
+
+
 def scaffold(
-    root: Path, cap: int, universe: str | None, held_out_at: Path | None = None
+    root: Path,
+    cap: int | None,
+    universe: str | None,
+    held_out_at: Path | None = None,
+    answers: Answers | None = None,
 ) -> dict[str, Any]:
-    """Make the book; refuse a directory that already holds `limits.json`."""
+    """Make the book; refuse a directory that already holds `limits.json`.
+    Flags win over answers; answers fill limits, preferences, and the three
+    instruction files."""
     if (root / "limits.json").exists():
         raise CommandError(
             f"{root} already holds limits.json; start makes new books only"
         )
     book_id = make_id(ascii_words(root.resolve().name) or ["book"])
-    hidden = outside(root, held_out_at or held_out_path(book_id))
+    answered = None if answers is None else answers.held_out
+    default = held_out_path(book_id) if answered is None else Path(answered)
+    hidden = outside(root, held_out_at or default)
+    cap = cap or (answers.capital.now if answers else None) or onboarding.DEFAULT_CAP
+    preferences = (
+        PREFERENCES_TEMPLATE
+        if answers is None
+        else onboarding.preference_values(answers)
+    )
+    limits = (
+        limits_template(cap)
+        if answers is None
+        else onboarding.patched(
+            limits_template(cap), onboarding.limit_values(answers, cap)
+        )
+    )
     listing = held_out(universe)  # before any write: a bad CSV leaves nothing
     for directory in DIRECTORIES:
         (root / directory).mkdir(parents=True, exist_ok=True)
@@ -219,10 +263,8 @@ def scaffold(
     send = root / "bin" / "send"
     write_new(send, sender(record_binding()))
     send.chmod(0o755)
-    write_new(
-        root / "preferences.json", json.dumps(PREFERENCES_TEMPLATE, indent=2) + "\n"
-    )
-    write_new(root / "limits.json", json.dumps(limits_template(cap), indent=2) + "\n")
+    write_new(root / "preferences.json", json.dumps(preferences, indent=2) + "\n")
+    write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
     meta = BookMeta(
         id=book_id,
         created=now_iso(),
@@ -230,6 +272,11 @@ def scaffold(
         held_out=str(hidden),
     )
     write_new(root / MARKER, json.dumps(meta.model_dump(mode="json"), indent=2) + "\n")
+    claude = (
+        None
+        if answers is None
+        else onboard_files(root, meta, answers, cap, meta.created)
+    )
     ignore(root / ".gitignore")
     git = repository(root)
     return {
@@ -250,8 +297,12 @@ def scaffold(
             "tests/conftest.py",
             "strategies/baseline/",
             *(["universe.csv"] if universe is not None else []),
+            *(onboarding.FILES if claude is not None else ()),
         ],
+        "onboarded": claude is not None,
+        **({} if claude is None else {"claude_md": claude}),
         "git": git,
-        "next": "load data, then measure baseline; import holdings and "
-        "preferences with record",
+        "next": UNONBOARDED
+        if claude is None
+        else "load data, then measure baseline; import holdings with record",
     }

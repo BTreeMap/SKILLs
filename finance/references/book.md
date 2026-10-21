@@ -8,6 +8,9 @@ operator's private git repository; skill holds methods, book holds state.
 ```text
 <book>/
   book.json                   marker: book id, created, engine version, held-out path
+  README.md                   humans: layout, resume, sending, held-out path, dated answers
+  AGENTS.md                   agents: invariants, conduct, code duty, never-edit list, brief, hindsight
+  CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
   limits.json                 human: asset cap, bounds, thresholds, families
   preferences.json            human: focus sectors, exclusions, cadence
   bin/send                    operator's checker: approval check, order table, fill recorder
@@ -151,6 +154,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` | `record`; run lines `measure`; incident lines `load`, `check --live`; `bin/send` fills through `record` | append through `record` only; bare `check` warns on any other write it can see |
 | `strategies/` except `status`, `lib/`, `tools/`, `research/`, `tests/` except `reference/`, `INDEX.md`, `features/`, `ext/`, `proposals/` | agent | edit on branch |
+| `README.md`, `AGENTS.md`, `CLAUDE.md` | `start --answers:file`, `onboard` | edit operator-facing prose on branch; keep `AGENTS.md` `## Invariants` verbatim from template; keep `CLAUDE.md` link or fallback line |
 | `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
 | `bin/send` | operator | read; run plain or `--dry-run`; `--fills` is operator's |
 | held-out list, path in `book.json` `held_out` | `start` | never read |
@@ -172,7 +176,17 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    `--universe:file` names by symbol sort, half rounded up; deterministic,
    no randomness. Plain JSON, sector to symbols; receipt reports path and
    count only. Without universe, empty list and `signal:` saying so.
-5. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
+5. With `--answers:file`: `limits.json` takes `asset_cap` (`--cap`, else
+   `capital.now`), `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`,
+   `model_cutoff`; `preferences.json` takes `focus_sectors`, `exclusions`,
+   `cadence`; `README.md` and `AGENTS.md` render from skill templates,
+   answers table dated `book.json` `created`; `CLAUDE.md` symlinks
+   `AGENTS.md`, or holds `Read AGENTS.md.` where symlink fails. Receipt
+   `onboarded` true, `claude_md` `symlink` or `file`. Without answers: none
+   of three files, `onboarded` false; `onboard` writes them later, answers
+   dated that day, and leaves `limits.json`, `preferences.json`, ledger
+   untouched. Bare `check` warns on each file absent or drifted.
+6. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
    path is inside git work tree. Receipt `git`: `init`, `inside`, `failed`,
    or `absent` (no `git` on PATH, with `signal:` line).
 

@@ -14,7 +14,7 @@ compatibility: >-
   that every skill's scripts share, about 430 MB with this skill's numeric
   libraries.
 metadata:
-  argument-hint: "[start|schema|load|record|measure|check|recommend|write|read] <book path>"
+  argument-hint: "[start|onboard|schema|load|record|measure|check|recommend|write|read] <book path>"
 ---
 
 # Finance
@@ -35,17 +35,19 @@ hypothesis quality, critique verdicts, narrative, book's `lib/` and
 | `critique` | [references/critique.md](references/critique.md) |
 | `families` | [references/families.md](references/families.md) |
 | `macro` | [references/macro.md](references/macro.md) |
+| `onboard` | [references/onboard.md](references/onboard.md) |
 | `scorecard` | [references/scorecard.md](references/scorecard.md) |
 | `sources` | [references/sources.md](references/sources.md) |
 
 Load `book` before making a book, or before reading or explaining one file
-by hand. Load `families` before registering hypothesis or proposing family
-to operator. Load `scorecard` before reading, explaining, or arguing from a
-scorecard or standing. Load `sources` before first `load` of any source, or
-when load fails upstream. Load `macro` before drafting regime record or
-registering hypothesis in family flagged `event: true`; hand its path to
-critique delegate with `critique`. Never load `critique` as lead: hand its
-path to critique delegate (Research loop).
+by hand. Load `onboard` only for book without `AGENTS.md` (Continue). Load
+`families` before registering hypothesis or proposing family to operator.
+Load `scorecard` before reading, explaining, or arguing from a scorecard or
+standing. Load `sources` before first `load` of any source, or when load
+fails upstream. Load `macro` before drafting regime record or registering
+hypothesis in family flagged `event: true`; hand its path to critique
+delegate with `critique`. Never load `critique` as lead: hand its path to
+critique delegate (Research loop).
 
 ## Redirects
 
@@ -90,7 +92,8 @@ Bind `R`, `U` (same environment, any program), `B` per shell:
 R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <skill-root>/scripts) btm-finance"
 U="${R% btm-finance}"
 B="<book path>"
-$R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>]
+$R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>] [--answers:file answers.json]
+$R onboard "$B" --answers:file answers.json [--force]
 $R schema
 $R load "$B" <csv|french|edgar|tiingo> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> && $R check "$B"
@@ -105,12 +108,13 @@ $U pytest "$B/tests"
 
 | Command | Takes after the book | Returns |
 | --- | --- | --- |
-| `start` | New path; `--cap` asset cap, default 10000000; `--universe:file` CSV with `symbol`, optional `sector`; `--held-out` list path outside book, default under `XDG_STATE_HOME` | Book id, held-out path and count; refuses path holding `limits.json`, held-out path inside book |
-| `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types |
+| `start` | New path; `--cap` asset cap, default answers `capital.now`, else 10000000; `--universe:file` CSV with `symbol`, optional `sector`; `--held-out` list path outside book, default answers `held_out`, else under `XDG_STATE_HOME`; `--answers:file` onboarding answers: fill `limits.json` (`asset_cap`, `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`, `model_cutoff`) and `preferences.json`, write `README.md`, `AGENTS.md`, `CLAUDE.md` | Book id, held-out path and count, `onboarded`, `claude_md` (`symlink` or `file`); refuses path holding `limits.json`, held-out path inside book, answers key outside shape |
+| `onboard` | `--answers:file`; `--force` rewrites present files | Writes `README.md`, `AGENTS.md`, `CLAUDE.md` only; `limits`: dotted path to value for each answer differing from `limits.json`, operator's edit; `preferences`: `record` batch; exit 1 when any of three files exists without `--force` |
+| `schema` | No book | Every record shape, ledger line, run line, strategy config, approval shape, pad types, `answers` shape |
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` is operator's one run, never agent's; `--repeat` reruns named run, writes nothing | `run_id`, scorecard with `walk_forward.post_cutoff` (net Sharpe of folds starting after `limits.model_cutoff`), `reasons` for null fields, `refused`, `imports`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories`; exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines whose `supersedes` moves `falsifier_by` later) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `regime`, `effective_streams`, `advisory` risk shares, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
+| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--today` tests only | Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` (run lines plus hypothesis lines whose `supersedes` moves `falsifier_by` later) against `trials` and open hypotheses, open proposals with age, last incident lines, pad count, `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `README.md` or `AGENTS.md` absent, `CLAUDE.md` neither symlink to `AGENTS.md` nor fallback line, `AGENTS.md` invariants section differing from template, each hypothesis citing a falsified chain, `problem: overdue` per live hypothesis past `falsifier_by` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` per live hypothesis with `odds` whose strategy's newest `promote` is over `odds.horizon_days` calendar days old (`hypothesis`, `strategy`, `due`), and `INDEX.md` when absent). Strategy or run: `standing`, `blockers`, compact scorecard, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `regime`, `effective_streams`, `advisory` risk shares, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; next action. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
 | `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with per sleeve `weight`, `tier`, `edge_scale`, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`, `ruin` loss, `reasons` for null `ruin`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 | `write` | Any JSON object; `--prose` stores it as prose; `--known` writes skill's cross-session pad | Pad id; never rejects content |
 | `read` | Filters | Matching pad entries |
@@ -442,13 +446,15 @@ never pain alone.
 
 With no `$B`, first ask operator which directory is research monorepo,
 before any other step; treat answer as `$B`. Book there: continue. Empty:
-`start` it. Neither: say what is there, ask again.
+onboard it (below) through `start`. Neither: say what is there, ask again.
 
-After context compaction, or at session start, run bare `check "$B"` and
-resume from its `next`. For daily brief run `check "$B" --brief`; read its
-`lines` to operator verbatim. Book and ledger hold all state; conversation
-is a view. Answer operator questions from ledger first; route claim ledger
-cannot settle to `/fact-check` or state it open.
+At session start, or after context compaction, read `$B/AGENTS.md`, run bare
+`check "$B"`, then `check "$B" --brief`; read its `lines` to operator
+verbatim; resume from `next`. Book without `AGENTS.md`, or empty directory,
+is unonboarded: load `onboard`, follow it. API keys live in environment only
+(`TIINGO_API_KEY`), never in `answers.json` or book. Book and ledger hold
+all state; conversation is a view. Answer operator questions from ledger
+first; route claim ledger cannot settle to `/fact-check` or state it open.
 
 ## Gotchas
 
@@ -498,3 +504,5 @@ cannot settle to `/fact-check` or state it open.
 - Operator saw every blocker of every standing and proposal read to them.
 - No file under `approvals/` and no operator-owned file was edited;
   `preferences.json` changed only through `record`.
+- `AGENTS.md` invariants section unchanged from template; operator got every
+  `limits` value `onboard` returned.
