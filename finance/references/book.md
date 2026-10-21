@@ -261,7 +261,7 @@ quantities, sets `date` and file name to send day:
 `approvals/`; `date` is today (UTC); `proposal` names file under
 `proposals/`; every order's `symbol`, `side`, `strategy` match order of that
 proposal, `adv_participation` at most `limits.max_adv_participation`,
-strategy `status` `live` (`paper` too with `--dry-run`). Then it prints
+strategy `status` `live` or `probe`; with `--dry-run`, `paper` alone. Then it prints
 order table. Plain run stops there. `--dry-run` records fill per order at
 `price` with `dry_run: true`, moves nothing. Operator places each order by
 hand at broker, pastes fills into table, runs `--fills <table>`: CSV with

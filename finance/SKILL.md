@@ -390,7 +390,8 @@ advisory, never a cut.
    that strategy, reason.
 3. Hand operator `approval_template`, `approval_path`, exact commands:
    `<book>/bin/send approvals/<date>.json --dry-run` for paper orders; for
-   live ones `<book>/bin/send approvals/<date>.json` to check and print
+   probe and live ones `<book>/bin/send approvals/<date>.json` to check and
+   print
    orders, then, after operator places each order by hand at broker,
    `<book>/bin/send approvals/<date>.json --fills <table>` with pasted
    fills. Operator copies template, edits it, sets `date` and file name to

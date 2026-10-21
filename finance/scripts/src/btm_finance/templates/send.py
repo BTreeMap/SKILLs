@@ -151,7 +151,8 @@ def checked(orders: list[Order], known: frozenset[Key], dry_run: bool) -> None:
     cap = number(limits.get("max_adv_participation"))
     if cap is None:
         halt("limits.json has no numeric max_adv_participation")
-    allowed = ("live", "paper") if dry_run else ("live",)
+    # Probe and live sleeves trade the real account; paper ones only dry-run.
+    allowed = ("paper",) if dry_run else ("live", "probe")
     problems = [
         f"orders[{index}]: {problem}"
         for index, order in enumerate(orders)

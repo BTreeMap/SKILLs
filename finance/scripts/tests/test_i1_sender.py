@@ -125,7 +125,7 @@ def test_status_participation_and_proposal_guards_name_every_problem(
     done = send(str(file), "--dry-run")  # baseline is still research
     assert done.returncode == 1
     assert "adv_participation 0.5 exceeds limit 0.02" in done.stderr
-    assert "strategy baseline is research, not live|paper" in done.stderr
+    assert "strategy baseline is research, not paper" in done.stderr
     assert "orders[1]: NEW buy baseline is no order of the proposal" in done.stderr
     assert fill_lines(book) == []
 
@@ -135,4 +135,21 @@ def test_a_paper_sleeve_needs_dry_run(book, approve, send):
     set_status(book, "paper")
     done = send(str(file))
     assert done.returncode == 1
-    assert "strategy baseline is paper, not live" in done.stderr
+    assert "strategy baseline is paper, not live|probe" in done.stderr
+
+
+def test_a_probe_sleeve_sends_and_records_fills_but_never_dry_runs(
+    book, approve, send, tmp_path
+):
+    file = approve(book / "approvals" / f"{TODAY}.json", TODAY)
+    set_status(book, "probe")
+    dry = send(str(file), "--dry-run")
+    assert dry.returncode == 1
+    assert "strategy baseline is probe, not paper" in dry.stderr
+    assert send(str(file)).returncode == 0
+    table = tmp_path / "fills.csv"
+    table.write_text(f"symbol,side,quantity,price,date\nABC,buy,10,12.4,{TODAY}\n")
+    done = send(str(file), "--fills", str(table))
+    assert done.returncode == 0, done.stderr
+    (fill,) = fill_lines(book)
+    assert (fill["strategy"], fill["dry_run"]) == ("baseline", False)
