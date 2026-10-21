@@ -12,6 +12,7 @@ from btm_finance.recommending import (
     Account,
     Candidate,
     Inputs,
+    Proposal,
     Quote,
     RuinCut,
     Tier,
@@ -251,3 +252,55 @@ def test_under_252_common_periods_the_ruin_bound_is_null_with_reason():
     found = planted(book_of(0.04, days=200), sizing=BOLD)
     assert found.ruin is None
     assert found.reasons == {"ruin": "200 common periods, under 252"}
+
+
+def test_a_proposal_written_before_tiers_and_ruin_reads_back():
+    sleeve_row = {
+        "strategy": "a",
+        "account": "paper",
+        "run_id": "a-run",
+        "sharpe_net": 0.4,
+        "vol_net": 0.2,
+        "max_drawdown": 0.1,
+        "vol_weight": 0.5,
+        "kelly_cap": 0.5,
+        "divisor": 1.0,
+        "weight": 0.5,
+        "code_changed": False,
+        "unknown": 0,
+        "signal": {},
+    }
+    summary = {
+        "gross": 0.0,
+        "net": 0.0,
+        "cash": 1.0,
+        "sectors": {},
+        "top10": 0.0,
+        "cost": 0.0,
+        "turnover": 0.0,
+        "orders": 0,
+    }
+    old = Proposal.model_validate(
+        {
+            "date": "2020-01-31",
+            "as_of": "2020-01-31",
+            "cap": 1_000_000,
+            "sleeves": {"a": sleeve_row},
+            "skipped": [],
+            "targets": {},
+            "orders": [],
+            "summary": summary,
+            "unmanaged": [],
+            "carried": [],
+            "cuts": [],
+            "regime": None,
+            "effective_streams": None,
+        }
+    )
+    assert (old.sleeves["a"].tier, old.sleeves["a"].edge_scale) == (Tier.BACKTEST, 1.0)
+    assert (old.ruin, old.reasons) == (None, {})
+    assert (old.advisory.risk_share, old.advisory.bound, old.advisory.over) == (
+        {},
+        None,
+        (),
+    )

@@ -109,8 +109,10 @@ class Sleeve(Model):
 
     strategy: str
     account: Account
-    tier: Tier
-    edge_scale: float
+    tier: Tier = Tier.BACKTEST
+    """Older proposals sized every sleeve on the backtest fraction."""
+    edge_scale: float = 1.0
+    """Older proposals scaled no Kelly fraction by DSR."""
     run_id: str
     sharpe_net: float | None
     vol_net: float | None
@@ -180,11 +182,12 @@ class Ruin(Model):
 
 class Advisory(Model):
     """Risk share per sleeve (`weight * vol_net` over the book's sum) against
-    `max_strategy_risk_share`; `over` names sleeves past it. Never a cut."""
+    `max_strategy_risk_share`; `over` names sleeves past it. Never a cut.
+    Empty, `bound` null, in a proposal written before the field existed."""
 
-    risk_share: dict[str, float | None]
-    bound: float
-    over: tuple[str, ...]
+    risk_share: dict[str, float | None] = Field(default_factory=dict)
+    bound: float | None = None
+    over: tuple[str, ...] = ()
 
 
 class Holding(Model):
@@ -242,9 +245,10 @@ class Proposal(Model):
     cuts: tuple[Cut, ...]
     regime: RegimeRef | None
     effective_streams: float | None
-    ruin: Ruin | None
-    advisory: Advisory
-    reasons: dict[str, str]
+    ruin: Ruin | None = None
+    advisory: Advisory = Field(default_factory=Advisory)
+    reasons: dict[str, str] = Field(default_factory=dict)
+    """Defaults let a proposal written before tiers and ruin read back."""
 
 
 class Approval(Model):
