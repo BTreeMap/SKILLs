@@ -1473,7 +1473,7 @@ def sleeve_fills(
     prices: Mapping[tuple[str, str, str], float],
     proposals: Mapping[str, str],
 ) -> tuple[Fill, ...]:
-    """Paper sleeves count dry-run fills, live sleeves real ones; a fill's
+    """Paper sleeves count dry-run fills, probe and live ones real fills; a fill's
     reference is its proposal order's `price`, by approval, symbol, side."""
     paper = status is Status.PAPER
     chosen = [
@@ -1507,13 +1507,13 @@ def modeled(
 
 
 def live_view(book: Book, today: date) -> LiveReport:
-    """Every paper or live sleeve: one model simulation each, O(S (T N + R N
+    """Every paper, probe, or live sleeve: one model simulation each, O(S (T N + R N
     L)), plus O(D S + F) per realized path; appends incidents only."""
     limits, preferences = load_limits(book), load_preferences(book)
     tracked = [
         (s.name, s.status)
         for s in strategies(book)
-        if s.status in {Status.PAPER, Status.LIVE}
+        if s.status in {Status.PAPER, Status.PROBE, Status.LIVE}
     ]
     rows: list[LiveRow] = []
     last_bar: str | None = None

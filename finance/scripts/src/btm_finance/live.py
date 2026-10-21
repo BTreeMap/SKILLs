@@ -1,4 +1,4 @@
-"""`check --live`, pure: each paper or live sleeve's realized path from its
+"""`check --live`, pure: each paper, probe, or live sleeve's realized path from its
 fills against `measure`'s model path, the review bounds, and the report.
 
 A sleeve's capital is its first fill day's gross traded value; later fills
@@ -456,7 +456,7 @@ def report_of(rows: Sequence[LiveRow], as_of: date, last_bar: str | None) -> str
     """At most 20 lines: a header, one line per sleeve, one per breach."""
     lines = [f"check --live {as_of.isoformat()}; last bar {last_bar or 'none'}"]
     if not rows:
-        lines.append("no paper or live strategy; nothing tracked")
+        lines.append("no paper, probe, or live strategy; nothing tracked")
     for row in rows:
         lines.append(
             f"{row.strategy} ({row.status.value}): {row.days} days, realized "

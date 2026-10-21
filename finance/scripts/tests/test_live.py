@@ -241,6 +241,19 @@ def test_real_fills_tracking_the_model_are_live(paper, run):
     assert tier(run, paper, last_bar(paper)) == "live"
 
 
+def test_a_probe_is_tracked_on_its_real_fills(paper, run):
+    (paper / "strategies" / "baseline" / "status").write_text("probe\n")
+    fills = model_fills(paper)
+    record(run, paper, [f | {"dry_run": True, "quantity": 1.0} for f in fills[:1]])
+    record(run, paper, [f | {"dry_run": False} for f in fills])
+    (row,) = live(run, paper, last_bar(paper).isoformat())["strategies"]
+    assert (row["strategy"], row["status"]) == ("baseline", "probe")
+    assert row["fills"] == len(fills)  # the dry-run fill is not the probe's
+    assert row["days"] > 100
+    assert not row["tracking"]["breach"]
+    assert tier(run, paper, last_bar(paper)) == "probe"
+
+
 def test_tier_of_needs_both_span_and_tracking():
     good, short = Seasoning(90, 0.01), Seasoning(10, 0.01)
     off, blind = Seasoning(90, 0.20), Seasoning(90, None)
