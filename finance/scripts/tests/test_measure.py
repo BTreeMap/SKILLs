@@ -9,9 +9,12 @@ import threading
 import time
 
 import numpy as np
+import pytest
 from btm_finance.cli import scoped
 from btm_finance.data import raw
 from btm_finance.data.raw import data_snapshot, read_manifest
+from btm_finance.engine import purged_folds, sharpe
+from btm_finance.measuring import post_cutoff
 from btm_finance.store import open_book
 
 SPEC_KEYS = {
@@ -142,3 +145,42 @@ def test_interleaved_manifest_writers_keep_every_entry(synthetic, monkeypatch):
         thread.join()
     paths = {e.path for e in read_manifest(book).files}
     assert {raw.returns_path(f"{t}-{k}") for t in "ab" for k in range(5)} <= paths
+
+
+def test_post_cutoff_joins_the_folds_starting_after_the_cutoff():
+    # Five folds of 20 days on days 0..99: first 60 days gain, last 40 lose.
+    rng = np.random.default_rng(2)
+    excess = np.concatenate((rng.normal(0.002, 0.01, 60), rng.normal(-0.002, 0.01, 40)))
+    dates = np.arange(100, dtype=np.int64)
+    tests = [test for _, test in purged_folds(100, folds=5, embargo=0)]
+    found, why = post_cutoff(dates, excess, tests, 59)
+    assert (found, why) == (pytest.approx(sharpe(excess[60:])), None)
+    assert found is not None and found < 0.0
+    later, _ = post_cutoff(dates, excess, tests, 60)  # strictly after
+    assert later == pytest.approx(sharpe(excess[80:]))
+    assert post_cutoff(dates, excess, tests, None) == (
+        None,
+        "limits.model_cutoff is null",
+    )
+    assert post_cutoff(dates, excess, tests, 80) == (
+        None,
+        "no test fold starts after 1970-03-22",
+    )
+
+
+def test_measure_reports_post_cutoff_from_limits(synthetic, run):
+    book = synthetic(seed=7)
+    code, document, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    assert document["scorecard"]["walk_forward"]["post_cutoff"] is None
+    assert document["reasons"]["post_cutoff"] == "limits.model_cutoff is null"
+    span = run_lines(book)[0]["span"]
+    path = book / "limits.json"
+    limits = json.loads(path.read_text())
+    limits["model_cutoff"] = span["start"]
+    path.write_text(json.dumps(limits))
+    code, document, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    folds = document["scorecard"]["walk_forward"]
+    assert isinstance(folds["post_cutoff"], float)
+    assert "post_cutoff" not in document["reasons"]

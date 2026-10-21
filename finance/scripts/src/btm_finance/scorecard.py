@@ -23,13 +23,15 @@ def finite(value: float | None) -> Maybe:
 
 class WalkForward(Model):
     """Net Sharpe per purged test fold; strategies fit nothing, so each fold
-    is out of sample by construction."""
+    is out of sample by construction. `post_cutoff`: net Sharpe of the test
+    folds starting after `limits.model_cutoff`, concatenated."""
 
     folds: int
     embargo: int
     sharpe: tuple[Maybe, ...]
     mean: Maybe
     positive: Maybe
+    post_cutoff: Maybe = None
 
 
 class FactorCard(Model):

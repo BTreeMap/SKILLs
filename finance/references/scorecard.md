@@ -24,7 +24,7 @@ that list.
 | `dsr` | deflated Sharpe, probability true Sharpe beats best of `trials` noise trials | promote at or above 0.95 (`thresholds.dsr`) | Bailey and Lopez de Prado 2014 |
 | `trials` | run lines in family including this one, refused and held-out ones too | within `families.<id>.trials` budget | Bailey and Lopez de Prado 2014 |
 | `pbo` | probability of backtest overfitting by CSCV, 16 blocks | promote below 0.10 (`pbo_promote`); discard at or above 0.50 (`pbo_discard`) | Bailey, Borwein, Lopez de Prado, Zhu 2017 |
-| `walk_forward` | `folds` (`thresholds.folds`, default 5), `embargo` (= `holding_days`), `sharpe` list of net Sharpe per purged test fold, `mean`, `positive` share | none; critique reads it | Lopez de Prado 2018 ch. 7 |
+| `walk_forward` | `folds` (`thresholds.folds`, default 5), `embargo` (= `holding_days`), `sharpe` list of net Sharpe per purged test fold, `mean`, `positive` share, `post_cutoff` annualized net Sharpe of test folds starting after `limits.model_cutoff`, concatenated | none; critique reads it, `hindsight` reads `post_cutoff` | Lopez de Prado 2018 ch. 7 |
 | `regimes` | annualized net Sharpe under `year` by calendar year and under `vol` by tercile `low`, `mid`, `high` | none; critique reads concentration | |
 | `perturbation` | net Sharpe per param under `-20%` and `+20%` | none; critique reads cliff edges | |
 | `factor` | `alpha_annual` (decimal), `t_alpha` (Newey-West), `loadings` per factor, `model` label, factor names joined by `+` (`ff5+mom`), `r2`, `n` periods | t at or above 3.0 (`t_empirical`); 2.0 with stated `mechanism` (`t_mechanism`) | Harvey, Liu, Zhu 2016; Fama and French 2015; Carhart 1997 |
@@ -64,6 +64,18 @@ that list.
   hypothesis registered `in_band` showing it needs `override` with reason.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
+* Post-cutoff: `limits.model_cutoff` is training cutoff of agent's model
+  (date or null). Fold whose first test date is strictly after it was
+  unknown to model, so free of hindsight. `post_cutoff` is net Sharpe of
+  those folds joined in order. Null, with `reasons.post_cutoff`, when cutoff
+  is null or no fold starts after it. Positive overall Sharpe beside
+  negative `post_cutoff` is `hindsight` concern in `critique`.
+* Probe: DSR at or above 0.80 (`thresholds.dsr_probe`), PBO below 0.25
+  (`pbo_probe`), every other gate passed: operator may set status `probe`,
+  sized live at fixed `sizing.probe_weight` so out-of-sample fills accrue.
+  `paper` or `live` still needs DSR 0.95.
+* DSR also sizes: `recommend` scales tier's Kelly fraction by
+  `min(1, max(0, (dsr - 0.5) / 0.45))`; see `book` Proposal file.
 * Regimes: vol tercile from 21-day volatility of equal-weight universe
   return, lagged one day.
 * Spread: half-spread at decision day from 21-day estimates; Abdi-Ranaldo

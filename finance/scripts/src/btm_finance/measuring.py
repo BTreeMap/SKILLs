@@ -20,7 +20,7 @@ import numpy as np
 from btm_corekit import CommandError
 from btm_finance.api import FACTORS, Market, carried_forward, on_dates
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
-from btm_finance.data.tables import Days, Floats, date_of
+from btm_finance.data.tables import Days, Floats, date_of, day_of
 from btm_finance.engine import (
     Spread,
     abdi_ranaldo_window,
@@ -78,6 +78,8 @@ class Rules:
     excluded_sectors: frozenset[str]
     folds: int
     touches: tuple[str, ...]
+    cutoff: int | None = None
+    """`limits.model_cutoff` as days since the epoch."""
 
 
 def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -> Rules:
@@ -97,6 +99,7 @@ def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -
         excluded_sectors=frozenset(preferences.exclusions.sectors),
         folds=limits.thresholds.folds,
         touches=family.touches if family is not None else (),
+        cutoff=None if limits.model_cutoff is None else day_of(limits.model_cutoff),
     )
 
 
@@ -502,23 +505,42 @@ def pbo_of(columns: Sequence[tuple[Days, Floats]]) -> tuple[float | None, str | 
     return finite(cscv(matrix, blocks=BLOCKS).pbo), None
 
 
+def post_cutoff(
+    dates: Days, excess: Floats, tests: Sequence[Ints], cutoff: int | None
+) -> tuple[float | None, str | None]:
+    """Net Sharpe over the test folds whose first date is after `cutoff`,
+    concatenated; null with its reason. O(T)."""
+    if cutoff is None:
+        return None, "limits.model_cutoff is null"
+    after = [test for test in tests if int(dates[test[0]]) > cutoff]
+    if not after:
+        return None, f"no test fold starts after {date_of(cutoff).isoformat()}"
+    value = finite(sharpe(excess[np.concatenate(after)]))
+    return value, None if value is not None else "post-cutoff folds hold no Sharpe"
+
+
 def walk_forward(
-    excess: Floats, folds: int, embargo: int
-) -> tuple[WalkForward | None, str | None]:
+    dates: Days, excess: Floats, rules: Rules
+) -> tuple[WalkForward | None, dict[str, str]]:
+    folds, embargo = rules.folds, rules.holding_days
     if len(excess) < 2 * folds:
-        return None, f"{len(excess)} periods, under 2 per fold for {folds} folds"
-    sharpes = [
-        finite(sharpe(excess[test]))
-        for _, test in purged_folds(len(excess), folds=folds, embargo=embargo)
+        return None, {
+            "walk_forward": f"{len(excess)} periods, under 2 per fold for {folds} folds"
+        }
+    tests = [
+        test for _, test in purged_folds(len(excess), folds=folds, embargo=embargo)
     ]
+    sharpes = [finite(sharpe(excess[test])) for test in tests]
     known = [value for value in sharpes if value is not None]
+    late, why = post_cutoff(dates, excess, tests, rules.cutoff)
     return WalkForward(
         folds=folds,
         embargo=embargo,
         sharpe=tuple(sharpes),
         mean=finite(float(np.mean(known))) if known else None,
         positive=sum(value > 0 for value in known) / len(sharpes),
-    ), None
+        post_cutoff=late,
+    ), {} if why is None else {"post_cutoff": why}
 
 
 def factor_fit(
@@ -614,9 +636,8 @@ def evaluate(
     pbo, why = pbo_of([*columns, *peers.series])
     if why:
         reasons["pbo"] = why
-    folds, why = walk_forward(excess, rules.folds, rules.holding_days)
-    if why:
-        reasons["walk_forward"] = why
+    folds, why_folds = walk_forward(base.dates, excess, rules)
+    reasons |= why_folds
     factor, why = factor_fit(events, base.dates, excess, rules.touches)
     if why:
         reasons["factor"] = why
