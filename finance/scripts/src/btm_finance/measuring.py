@@ -386,11 +386,15 @@ class Costed:
 
 def costed(track: Track, prep: Prepared, rules: Rules) -> Costed:
     """Half-spread by the estimator primary for the name's ADV against the
-    universe median, commission, square-root impact. O(P N)."""
+    universe median, commission, square-root impact. Zero ADV (a name quoted
+    with no volume) reads as unknown, like NaN: the day's median fills it, so
+    selling it costs a number, not 0 vol times infinite participation.
+    O(P N)."""
     decision = track.first - 1 + np.arange(len(track.gross))
     traded = track.trades != 0.0
     adv_raw = prep.adv[decision]
-    adv = filled(adv_raw, math.inf)
+    with np.errstate(invalid="ignore"):
+        adv = filled(np.where(adv_raw > 0.0, adv_raw, np.nan), math.inf)
     vol = filled(prep.vol[decision], 0.0)
     ar, cs = prep.half_ar[decision], prep.half_cs[decision]
     _, counts = per_row(adv_raw)

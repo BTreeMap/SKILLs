@@ -7,7 +7,8 @@ from __future__ import annotations
 import numpy as np
 from btm_finance.api import Market
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
-from btm_finance.measuring import Prepared
+from btm_finance.measuring import Prepared, Rules, Track, costed
+from btm_finance.models import Rebalance
 from btm_finance.scaffold import template
 from btm_finance.whitelist import load_signal
 
@@ -106,3 +107,49 @@ def test_a_delisted_name_returns_its_terminal_return_then_nothing():
     assert prep.overnight[4, 0] == -0.3
     assert (prep.close_cc[5:, 0] == 0.0).all()
     assert (prep.overnight[5:, 0] == 0.0).all()
+
+
+def test_selling_a_name_with_zero_adv_costs_a_finite_amount():
+    days = 30
+    rng = np.random.default_rng(5)
+    close = np.column_stack(
+        (
+            50.0 * np.exp(np.cumsum(rng.normal(0.0, 0.01, days))),
+            np.full(days, 10.15),  # quoted flat, never traded
+        )
+    )
+    panel = panel_of(close, (Exchange.NYSE, Exchange.NASDAQ))
+    panel = Panel(
+        dates=panel.dates,
+        names=panel.names,
+        exchange=panel.exchange,
+        sector=panel.sector,
+        open=panel.open,
+        high=panel.close.copy(),
+        low=panel.close.copy(),
+        close=panel.close,
+        volume=np.column_stack((np.full(days, 1e6), np.zeros(days))),
+        adj=panel.adj,
+        delisted=panel.delisted,
+    )
+    prep = Prepared.of(panel, no_events(), {})
+    trades = np.zeros((5, 2))
+    trades[0] = (0.5, 0.5)
+    track = Track(first=25, gross=np.zeros(5), trades=trades, exposure=1.0, unknown=0)
+    rules = Rules(
+        rebalance=Rebalance.MONTHLY,
+        holding_days=21,
+        long_only=True,
+        asset_cap=1e6,
+        max_weight=0.5,
+        price_floor=1.0,
+        adv_multiple=1.0,
+        commission_bps=1.0,
+        impact_coefficient=0.1,
+        delisting={},
+        excluded_symbols=frozenset(),
+        excluded_sectors=frozenset(),
+        folds=5,
+        touches=(),
+    )
+    assert np.isfinite(costed(track, prep, rules).net).all()
