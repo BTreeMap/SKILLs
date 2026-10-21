@@ -510,19 +510,20 @@ def continue_view(book: Book) -> dict[str, Any]:
     ]
     if late:
         signal(f"{len(late)} overdue or unscored hypothesis(es) under warnings")
+    budgets = families(
+        limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
+    )
     return {
         "book": book.meta.id,
         "as_of": now_iso(),
         "regime": None if regime is None else regime.model_dump(mode="json"),
         "strategies": {**by_status(known), "unknown": unknown},
-        "families": families(
-            limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
-        ),
+        "families": budgets,
         "proposals": proposals,
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
         "warnings": [*warnings, *fired, *late, *index_warning(book)],
-        "next": next_step(hypotheses, pending, proposals, late),
+        "next": next_step(hypotheses, pending, proposals, late, budgets),
     }
 
 

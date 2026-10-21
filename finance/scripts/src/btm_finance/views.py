@@ -172,14 +172,21 @@ def unscored(
     return found
 
 
+def has_trials(family: Mapping[str, Any]) -> bool:
+    """A budgeted family with a trial left."""
+    budget = family.get("trials")
+    return budget is not None and family["trials_used"] < budget
+
+
 def next_step(
     hypotheses: Sequence[Row],
     pending: int,
     proposals: Sequence[Mapping[str, Any]],
     late: Sequence[Mapping[str, Any]] = (),
+    budgets: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> str:
     """The cheapest useful next action; advisory only. `late` holds overdue
-    and unscored warnings."""
+    and unscored warnings; `budgets` the `families` view, None when unknown."""
     if proposals:
         return f"walk the operator through proposal {proposals[0]['date']}"
     if late:
@@ -195,4 +202,18 @@ def next_step(
         return "register a hypothesis for each strategy with record, baseline first"
     if pending:
         return f"{pending} open hypotheses await strategy code and measure"
-    return "register the next hypothesis within its family budget"
+    return budget_step(budgets)
+
+
+def budget_step(budgets: Mapping[str, Mapping[str, Any]] | None) -> str:
+    """Register within budget, or, every family spent, ask for more."""
+    if budgets is None or any(map(has_trials, budgets.values())):
+        return "register the next hypothesis within its family budget"
+    spent = ", ".join(
+        f"{name} trials_used {family['trials_used']} of {family['trials']}"
+        for name, family in budgets.items()
+    )
+    return (
+        "every family is at budget: write a question pad entry asking the "
+        f"operator for more trials, naming {spent}"
+    )

@@ -97,6 +97,37 @@ def test_only_a_later_kill_date_spends_a_trial(book, run, make_hypothesis):
     assert trials_used(run, book) == 1
 
 
+def reject_open(run, book):
+    """Close every open hypothesis, the scaffolded baseline's included."""
+    family = run(["check", str(book)])[1]["families"]["baseline"]
+    words = ("alpha", "beta", "gamma")
+    drops = [
+        {"kw": ["drop", word], "subject": h["id"], "action": "reject"}
+        | {"reason": "operator dropped it"}
+        for word, h in zip(words, family["open"], strict=False)
+    ]
+    assert len(drops) == len(family["open"])
+    record(run, book, {"decisions": drops})
+
+
+def test_next_asks_the_operator_for_budget_once_every_family_is_spent(
+    book, run, make_hypothesis
+):
+    first = make_hypothesis(["one", "bet"], falsifier_by="2098-12-31")
+    made = record(run, book, {"hypotheses": [first]})["new"]["hypotheses"]["one-bet"]
+    reject_open(run, book)
+    assert "within its family budget" in run(["check", str(book)])[1]["next"]
+    longer = make_hypothesis(
+        ["one", "longer"], falsifier_by="2099-12-31", supersedes=made
+    )
+    record(run, book, {"hypotheses": [longer]})
+    reject_open(run, book)
+    view = run(["check", str(book)])[1]
+    assert view["families"]["baseline"]["trials_used"] == 1
+    assert "question pad entry" in view["next"]
+    assert "baseline trials_used 1 of 1" in view["next"]
+
+
 def proposals(book, days):
     folder = book / "proposals"
     folder.mkdir(exist_ok=True)
