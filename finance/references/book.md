@@ -181,7 +181,8 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 `recommend <date>` writes `proposals/<date>.json` once; `--force` writes
 `<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
 research names only, through `Market` on `as_of`, last bar on or before
-`date`, weights set exactly as `measure` sets them.
+`date`, weights set exactly as `measure` sets them, ADV clip included
+(`scorecard`), so order cut in step 7 bites mostly on sales of held shares.
 
 | Field | Holds |
 | --- | --- |
@@ -261,12 +262,12 @@ quantities, sets `date` and file name to send day:
 `approvals/`; `date` is today (UTC); `proposal` names file under
 `proposals/`; every order's `symbol`, `side`, `strategy` match order of that
 proposal, `adv_participation` at most `limits.max_adv_participation`,
-strategy `status` `live` or `probe`; with `--dry-run`, `paper` alone. Then it prints
-order table. Plain run stops there. `--dry-run` records fill per order at
-`price` with `dry_run: true`, moves nothing. Operator places each order by
-hand at broker, pastes fills into table, runs `--fills <table>`: CSV with
-header `symbol,side,quantity,price,date` (optional `strategy` column), or
-JSON list of objects with same keys. Each fill must name order's `symbol`
-and `side` (`strategy` too when two sleeves share both), positive `quantity`
-and `price`, `date` not after today; any miss refuses table whole. Fills go
-through `record` with `approval` set; file moves to `sent/`.
+strategy `status` `live` or `probe`; with `--dry-run`, `paper` alone. Then
+it prints order table. Plain run stops there. `--dry-run` records fill per
+order at `price` with `dry_run: true`, moves nothing. Operator places each
+order by hand at broker, pastes fills into table, runs `--fills <table>`:
+CSV with header `symbol,side,quantity,price,date` (optional `strategy`
+column), or JSON list of objects with same keys. Each fill must name order's
+`symbol` and `side` (`strategy` too when two sleeves share both), positive
+`quantity` and `price`, `date` not after today; any miss refuses table
+whole. Fills go through `record` with `approval` set; file moves to `sent/`.

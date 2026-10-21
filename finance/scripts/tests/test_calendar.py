@@ -138,7 +138,15 @@ def test_selling_a_name_with_zero_adv_costs_a_finite_amount():
     prep = Prepared.of(panel, no_events(), {})
     trades = np.zeros((5, 2))
     trades[0] = (0.5, 0.5)
-    track = Track(first=25, gross=np.zeros(5), trades=trades, exposure=1.0, unknown=0)
+    track = Track(
+        first=25,
+        gross=np.zeros(5),
+        trades=trades,
+        exposure=1.0,
+        unknown=0,
+        clipped=0,
+        clipped_share=0.0,
+    )
     rules = Rules(
         rebalance=Rebalance.MONTHLY,
         holding_days=21,
@@ -147,6 +155,7 @@ def test_selling_a_name_with_zero_adv_costs_a_finite_amount():
         max_weight=0.5,
         price_floor=1.0,
         adv_multiple=1.0,
+        max_adv_participation=1.0,
         commission_bps=1.0,
         impact_coefficient=0.1,
         delisting={},

@@ -226,33 +226,35 @@ names. Then write `strategies/<name>/`:
 
 `measure` trades next open after each period's last day, normalizes to gross
 1, drops excluded, under-floor, and thin names, caps weight at
-`sizing.max_weight`. Size each weight so quantity at asset cap stays under
-`max_adv_participation` of 21-day dollar ADV (`market.adv_dollar(21)`):
-`measure` refuses breach after run, and refused run still spends trial. Run
-breaking cost, participation, or holding bound still writes its line: every
-run counts as trial, refused or not. Never measure again to shop for better
-number; change hypothesis, register again. Cite a run only after
+`sizing.max_weight`, then clips each weight so quantity at asset cap stays
+within `max_adv_participation` of 21-day dollar ADV
+(`market.adv_dollar(21)`); clipped weight stays cash. Scorecard counts clip
+in `adv_clipped` and `adv_clipped_share`; critique reads them. Run breaking
+cost or holding bound still writes its line: every run counts as trial,
+refused or not. Never measure again to shop for better number; change
+hypothesis, register again. Code fix keeping hypothesis's claim (sizing,
+grouping, data handling bug) is new run under same hypothesis and spends
+trial; changed claim is new hypothesis. Cite a run only after
 `measure --repeat` reproduces it.
 
 `check <strategy>` derives standing of newest research run on every call:
 `promotable`, `probe`, `blocked`, or `discard` (PBO at or above
 `pbo_discard`). Each blocker names value and limit: `no run`, `dsr`, `pbo`,
 `t_alpha`, `factor`, `capacity`, `crowded`, `cost_share`,
-`adv_participation_max`, `min_holding_days_realized`, `trials`,
-`no critique`, `critique: <text>`, `status`, `paper_months`, `odds`.
-`probe`: every blocker clear but `dsr` and `pbo`, DSR at or above
-`thresholds.dsr_probe` (0.80), PBO under `pbo_probe` (0.25); `next` says
-propose probe to operator at `sizing.probe_weight`; operator writes `status`
-`probe` and records `promote` naming strategy in same step. Promotion to
-`paper` or `live` still needs DSR 0.95, PBO under 0.10.
-`odds: none registered on <hypothesis id>` blocks only when nothing else
-does, so neither `promotable` nor `probe` reads without odds; state them in
-superseding hypothesis at same `falsifier_by`, which spends no trial.
-`crowded` clears only by operator's `override` decision: net Sharpe at 20x
-cap still within tolerance of 0.1x means edge survives at twenty times cap,
-so institutions can hold it and it is likely crowded; `in_band` hypothesis
-showing this needs `override` with reason. With `trials` 1, DSR is
-probabilistic Sharpe against zero, still held to threshold. Show operator
+`min_holding_days_realized`, `trials`, `no critique`, `critique: <text>`,
+`status`, `paper_months`, `odds`. `probe`: every blocker clear but `dsr` and
+`pbo`, DSR at or above `thresholds.dsr_probe` (0.80), PBO under `pbo_probe`
+(0.25); `next` says propose probe to operator at `sizing.probe_weight`;
+operator writes `status` `probe` and records `promote` naming strategy in
+same step. Promotion to `paper` or `live` still needs DSR 0.95, PBO under
+0.10. `odds: none registered on <hypothesis id>` blocks only when nothing
+else does, so neither `promotable` nor `probe` reads without odds; state
+them in superseding hypothesis at same `falsifier_by`, which spends no
+trial. `crowded` clears only by operator's `override` decision: net Sharpe
+at 20x cap still within tolerance of 0.1x means edge survives at twenty
+times cap, so institutions can hold it and it is likely crowded; `in_band`
+hypothesis showing this needs `override` with reason. With `trials` 1, DSR
+is probabilistic Sharpe against zero, still held to threshold. Show operator
 every blocker, never summary omitting one.
 
 ## Research loop
@@ -391,8 +393,7 @@ advisory, never a cut.
 3. Hand operator `approval_template`, `approval_path`, exact commands:
    `<book>/bin/send approvals/<date>.json --dry-run` for paper orders; for
    probe and live ones `<book>/bin/send approvals/<date>.json` to check and
-   print
-   orders, then, after operator places each order by hand at broker,
+   print orders, then, after operator places each order by hand at broker,
    `<book>/bin/send approvals/<date>.json --fills <table>` with pasted
    fills. Operator copies template, edits it, sets `date` and file name to
    send day. Never write under `approvals/`.

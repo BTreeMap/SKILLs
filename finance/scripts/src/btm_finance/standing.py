@@ -23,6 +23,7 @@ COMPACT = (
     "pbo",
     "cost_share",
     "adv_participation_max",
+    "adv_clipped_share",
     "min_holding_days_realized",
     "max_drawdown",
     "capacity",
@@ -174,7 +175,6 @@ def bounds(card: Mapping[str, Any], limits: Limits) -> list[str]:
     blockers: list[str] = []
     for key, limit, above in (
         ("cost_share", limits.max_cost_share, True),
-        ("adv_participation_max", limits.max_adv_participation, True),
         ("min_holding_days_realized", float(limits.min_holding_days), False),
     ):
         value = number(card, key)

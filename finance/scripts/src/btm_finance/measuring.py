@@ -71,6 +71,7 @@ class Rules:
     max_weight: float
     price_floor: float
     adv_multiple: float
+    max_adv_participation: float
     commission_bps: float
     impact_coefficient: float
     delisting: Mapping[str, float]
@@ -92,6 +93,7 @@ def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -
         max_weight=limits.sizing.max_weight,
         price_floor=limits.price_floor,
         adv_multiple=limits.adv_multiple,
+        max_adv_participation=limits.max_adv_participation,
         commission_bps=limits.commission_bps,
         impact_coefficient=limits.impact_coefficient,
         delisting=dict(limits.delisting),
@@ -239,11 +241,26 @@ class Setting:
         return cls(panel, events, Prepared.of(panel, events, rules.delisting), rules)
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class Target:
+    """One rebalance's weights; `unknown` names the signal returned but the
+    day did not serve; `clipped` names cut to the ADV bound, `intended` gross
+    before that cut, `clipped_weight` the gross it removed, left as cash."""
+
+    weights: Floats
+    unknown: int
+    clipped: int = 0
+    intended: float = 0.0
+    clipped_weight: float = 0.0
+
+
 def target_weights(
     raw: object, market: Market, setting: Setting, index: Mapping[str, int], row: int
-) -> tuple[Floats, int]:
+) -> Target:
     """Signal output to weights: unknown names dropped and counted, negatives
-    clipped when long-only, exclusions, price floor, ADV floor, gross 1, cap."""
+    clipped when long-only, exclusions, price floor, ADV floor, gross 1, cap,
+    then each name clipped so its quantity at asset cap stays within
+    `max_adv_participation` of 21-day dollar ADV; no renormalizing."""
     panel, prep, rules = setting.panel, setting.prep, setting.rules
     when = date_of(int(panel.dates[row])).isoformat()
     if not isinstance(raw, Mapping):
@@ -276,28 +293,42 @@ def target_weights(
         weights[~(panel.close[row] >= rules.price_floor)] = 0.0
     gross = float(np.abs(weights).sum())
     if gross == 0.0:
-        return weights, unknown
+        return Target(weights, unknown)
     largest = min(rules.max_weight, float(np.abs(weights).max()) / gross)
     floor = rules.adv_multiple * largest * rules.asset_cap
     with np.errstate(invalid="ignore"):
         weights[~(prep.adv[row] >= floor)] = 0.0
     gross = float(np.abs(weights).sum())
     if gross == 0.0:
-        return weights, unknown
+        return Target(weights, unknown)
     weights = np.clip(weights / gross, -rules.max_weight, rules.max_weight)
-    return weights, unknown
+    bound = np.nan_to_num(
+        rules.max_adv_participation * prep.adv[row] / rules.asset_cap, nan=0.0
+    )
+    kept = np.clip(weights, -bound, bound)
+    intended = float(np.abs(weights).sum())
+    return Target(
+        kept,
+        unknown,
+        clipped=int((np.abs(kept) < np.abs(weights)).sum()),
+        intended=intended,
+        clipped_weight=intended - float(np.abs(kept).sum()),
+    )
 
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Track:
     """One simulated run from its first trade: per-period gross return, the
-    one-way weight traded per name, and the mean gross exposure targeted."""
+    one-way weight traded per name, the mean gross exposure targeted, and
+    the (period, name) cells and gross the ADV bound clipped."""
 
     first: int
     gross: Floats
     trades: Floats
     exposure: float
     unknown: int
+    clipped: int
+    clipped_share: float
 
 
 def simulate(
@@ -314,7 +345,8 @@ def simulate(
     held = np.zeros(width)
     first: int | None = None
     exposures: list[float] = []
-    unknown = 0
+    unknown = clipped = 0
+    intended = removed = 0.0
     for k, row in enumerate(rows.tolist()):
         market = Market.at(panel, events, int(panel.dates[row]))
         try:
@@ -322,14 +354,18 @@ def simulate(
         except Exception as err:  # the strategy's failure, named for its author
             when = date_of(int(panel.dates[row])).isoformat()
             raise CommandError(f"signal raised on {when}: {err!r}") from err
-        target, missing = target_weights(raw, market, setting, index, row)
-        unknown += missing
+        chosen = target_weights(raw, market, setting, index, row)
+        unknown += chosen.unknown
         start = row + 1
+        target = chosen.weights
         target[prep.dead <= start] = 0.0
         if first is None:
             if not target.any():
                 continue
             first = start
+        clipped += chosen.clipped
+        intended += chosen.intended
+        removed += chosen.clipped_weight
         trades[start] = np.abs(target - held)
         exposures.append(float(np.abs(target).sum()))
         end = int(rows[k + 1]) + 1 if k + 1 < len(rows) else days
@@ -356,6 +392,8 @@ def simulate(
         trades=trades[first:],
         exposure=float(np.mean(exposures)),
         unknown=unknown,
+        clipped=clipped,
+        clipped_share=removed / intended if intended else 0.0,
     )
 
 
@@ -669,6 +707,8 @@ def evaluate(
         turnover_annual=one_way / (periods / PERIODS_PER_YEAR),
         cost_share=cost_share(gross_excess, excess),
         adv_participation_max=cost.participation_max,
+        adv_clipped=track.clipped,
+        adv_clipped_share=track.clipped_share,
         min_holding_days_realized=periods * track.exposure / one_way
         if one_way
         else float(periods),
@@ -690,16 +730,12 @@ def evaluate(
 
 
 def bounds(scorecard: Scorecard, limits: Limits) -> list[str]:
-    """G3 bounds a finished run breaks, each `<field>: <value> vs <limit>`."""
+    """G3 bounds a finished run breaks, each `<field>: <value> vs <limit>`.
+    ADV participation is no bound here: `target_weights` clips to it."""
     broken: list[str] = []
     if scorecard.cost_share > limits.max_cost_share:
         broken.append(
             f"cost_share: {scorecard.cost_share:.4g} vs {limits.max_cost_share}"
-        )
-    if scorecard.adv_participation_max > limits.max_adv_participation:
-        broken.append(
-            f"adv_participation_max: {scorecard.adv_participation_max:.4g} vs "
-            f"{limits.max_adv_participation}"
         )
     if scorecard.min_holding_days_realized < limits.min_holding_days:
         broken.append(

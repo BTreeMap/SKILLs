@@ -88,11 +88,14 @@ returns one `critiques` batch entry.
 
 ### crowding
 
-* Inspect: scorecard `capacity` at 0.1x, 1x, 20x; hypothesis
-  `capacity_class`.
-* Settles: capacity curve agrees with registered class.
+* Inspect: scorecard `capacity` at 0.1x, 1x, 20x, `adv_clipped_share`;
+  hypothesis `capacity_class`.
+* Settles: capacity curve agrees with registered class; ADV clip removed
+  little of intended gross.
 * Blocker: class `in_band` or `under_cap` while `capacity` shows crowded and
   hypothesis states no reason. Concern: class `crowded`, reason stated.
+  Concern: large `adv_clipped_share`: hypothesis lives in names cap cannot
+  hold, so run measured weights other than ones signal chose.
 
 ### factor
 

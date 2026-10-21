@@ -73,6 +73,11 @@ class Scorecard(Model):
     capacity: dict[str, Maybe]
     spread_model: SpreadCard
     max_drawdown: float
+    adv_clipped: int = 0
+    """(period, name) cells `measure` clipped to the ADV bound."""
+    adv_clipped_share: Maybe = None
+    """Gross the ADV clip removed over gross intended, whole run; null on run
+    lines written before the clip."""
 
 
 class Span(Model):

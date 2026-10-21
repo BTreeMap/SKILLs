@@ -66,7 +66,7 @@ def model_fills(book: Path) -> list[dict[str, object]]:
     market = Market.at(panel, events, int(panel.dates[row]))
     index = {name: column for column, name in enumerate(panel.names)}
     raw = strategy(market, dict(config.params))
-    weights, _ = target_weights(raw, market, setting, index, row)
+    weights = target_weights(raw, market, setting, index, row).weights
     assert abs(weights.sum() - 1.0) < 1e-9
     day = date_of(int(panel.dates[row + 1])).isoformat()
     return [

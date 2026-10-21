@@ -998,7 +998,8 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     except Exception as err:  # the strategy's failure, named for its author
         raise CommandError(f"{name} signal raised: {err!r}") from err
     index = {symbol: column for column, symbol in enumerate(day.panel.names)}
-    weights, unknown = target_weights(raw, market, setting, index, day.row)
+    chosen = target_weights(raw, market, setting, index, day.row)
+    weights, unknown = chosen.weights, chosen.unknown
     tier = (
         Tier.PROBE
         if status is Status.PROBE

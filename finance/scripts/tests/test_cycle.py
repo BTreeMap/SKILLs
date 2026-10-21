@@ -172,19 +172,23 @@ def test_a_real_fill_never_lands_in_a_paper_position(synthetic, run):
 
 
 def test_an_order_over_the_adv_bound_is_cut_and_reported(synthetic, run):
+    """Targets already sit inside the ADV bound; a sale of shares held from
+    a looser bound is what passes it."""
     book = paper_book(synthetic, run)
+    recommend(run, book, FIRST)
+    assert approve_and_send(run, book, FIRST).returncode == 0
     path = book / "limits.json"
     limits = json.loads(path.read_text())
     limits["max_adv_participation"] = 0.001  # the human's edit
     path.write_text(json.dumps(limits))
-    recommend(run, book, FIRST)
-    document = proposal(book, FIRST)
+    recommend(run, book, SECOND)
+    document = proposal(book, SECOND)
     assert document["cuts"]
     for cut in document["cuts"]:
         assert cut["kept"] < cut["wanted"]
         assert cut["adv_participation"] > cut["bound"] == 0.001
     assert all(o["adv_participation"] <= 0.001 for o in document["orders"])
-    view = run(["check", str(book), FIRST])[1]
+    view = run(["check", str(book), SECOND])[1]
     assert view["cuts"] == document["cuts"]
 
 
