@@ -150,19 +150,9 @@ message preempts loop: answer, then resume from bare `check`.
 
 Heartbeat: end every turn by scheduling next wake at most 45 minutes out,
 then stop. Each wake: bare `check`, one loop step, `heartbeat` pad line
-(`item`, `outcome`, `next_wake`), schedule, stop. Pick scheduler by first
-rung harness offers, once per session, and name it in first `heartbeat`
-line:
-
-1. Harness wake-up inside this session (Claude Code: `/loop` with no
-   interval, self-paced; delay in seconds).
-2. Harness scheduled task that starts a fresh session at an hour (Claude
-   Code: `/schedule`; cloud routines), with `AGENTS.md` as its prompt.
-3. System `cron` running harness headless with `AGENTS.md` as prompt.
-4. None: loop in session, one step per wake as written, until budgets or
-   session's time box end; then stop, saying next wake is operator's next
-   message.
-
+(`item`, `outcome`, `next_wake`), schedule, stop. Prefer harness's own
+wake-up or scheduled-task tool; lacking one, any mechanism that wakes lead
+on time (cron, loop in session). Name mechanism in first `heartbeat` line.
 Lead's context holds conversation, last `check`, receipts; never filing
 text, logs, or data.
 
