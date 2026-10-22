@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from btm_finance import api
-from btm_finance.models import DelegateKind, Receipt
+from btm_finance.models import Receipt
 
 from btm_corekit import CommandError
 
@@ -34,13 +34,13 @@ EXAMPLE: dict[str, object] = {
 
 def test_receipt_accepts_the_contract_example():
     found = api.receipt(json.dumps(EXAMPLE))
-    assert found.unit is DelegateKind.AUTHOR
+    assert found.unit == "author"
     assert found.ids["run_id"] == "value-tilt-abc"
 
 
 def test_receipt_names_every_problem_at_once():
     bad = EXAMPLE | {
-        "unit": "oracle",
+        "unit": "Bad Unit",
         "summary": " ".join(["word"] * 41),
         "wrote": ["../outside.md", "/etc/passwd"],
     }
@@ -68,16 +68,18 @@ def test_schema_prints_the_receipt_shape(run):
     assert list(schema["receipt"]["receipt"]) == list(Receipt.model_fields)
 
 
-def test_agents_md_holds_one_short_brief_per_kind(book):
+def test_receipt_takes_any_slug_unit():
+    assert (
+        api.receipt(json.dumps(EXAMPLE | {"unit": "pre-mortem"})).unit == "pre-mortem"
+    )
+    for bad in ("", "-lead", "trail-", "two--hyphens", "under_score", "a/b"):
+        with pytest.raises(CommandError):
+            api.receipt(json.dumps(EXAMPLE | {"unit": bad}))
+
+
+def test_agents_md_delegates_carries_the_receipt_check(book):
     text = (book / "AGENTS.md").read_text()
     section = text.split("## Delegates", 1)[1].split("\n## ", 1)[0]
-    briefs = section.split("\n- ")[1:]
-    assert [brief.split(".", 1)[0] for brief in briefs] == list(DelegateKind)
-    for brief in briefs:
-        assert len(brief.split()) < 150
-        assert " ".join(brief.split()).endswith(
-            "Your final message is the receipt and nothing else."
-        )
     assert "uv run --project" in section and "python -c" in section
 
 
@@ -143,7 +145,7 @@ def test_lead_dispatches_two_disjoint_delegates_and_records_receipts(book, run):
     with ThreadPoolExecutor(max_workers=2) as pool:
         texts = list(pool.map(lambda unit: delegate(book, *unit), units))
     accepted = [examined(book, text) for text in texts]
-    assert {r.unit for r in accepted} == {DelegateKind.READER, DelegateKind.LIBRARIAN}
+    assert {r.unit for r in accepted} == {"reader", "librarian"}
     now = datetime.now(UTC)
     with book.joinpath(*PAD).open("a", encoding="utf-8") as pad:
         for offset, found in enumerate(accepted):

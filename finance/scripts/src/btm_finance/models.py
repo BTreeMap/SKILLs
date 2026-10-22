@@ -625,21 +625,10 @@ ANSWERS_SHAPE: dict[str, object] = {
 }
 
 
-class DelegateKind(StrEnum):
-    """The twelve delegate kinds; each has one brief in `AGENTS.md`."""
-
-    LOADER = "loader"
-    UNIVERSE = "universe"
-    CALENDAR = "calendar"
-    READER = "reader"
-    MINER = "miner"
-    AUTHOR = "author"
-    CRITIQUE = "critique"
-    ANALYST = "analyst"
-    SCORER = "scorer"
-    REGIME = "regime"
-    LIBRARIAN = "librarian"
-    JANITOR = "janitor"
+UnitName = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+"""A delegated unit's slug: lowercase letters, digits, single inner hyphens.
+Open on purpose: the spine's write-scope table names common units, and the
+lead names the scope of any other unit in its brief."""
 
 
 class ReceiptStatus(StrEnum):
@@ -673,9 +662,9 @@ Line = Annotated[str, Trimmed, StringConstraints(pattern=r"^[^\n\r]*$")]
 
 class Receipt(Model):
     """A delegate's whole final message. Extra keys refuse: a receipt longer
-    than the shape is a defect of that kind's brief."""
+    than the shape is a defect of that unit's brief."""
 
-    unit: DelegateKind
+    unit: UnitName
     status: ReceiptStatus
     wrote: tuple[BookPath, ...]
     pad: tuple[NonEmpty, ...]
@@ -686,7 +675,7 @@ class Receipt(Model):
 
 
 RECEIPT_SHAPE: dict[str, object] = {
-    "unit": "|".join(DelegateKind),
+    "unit": "<slug>",
     "status": "|".join(ReceiptStatus),
     "wrote": ["<book-relative path>"],
     "pad": ["<pad id>"],

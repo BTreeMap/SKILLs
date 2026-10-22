@@ -33,7 +33,7 @@ operator's private git repository; skill holds methods, book holds state.
   research/calendar/          event calendars and trigger lists per event family
   research/weekly/            weekly research note, <YYYY-Www>.md
   research/critiques/  research/scored/  research/regime/  research/runs/  research/literature/  research/universe/
-                              delegate outputs per kind; see delegates
+                              delegate outputs, one folder per unit
   tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
   tests/reference/            this book's pinned scorecard
   INDEX.md                    one line per lib module, tool, research topic
@@ -91,6 +91,22 @@ absent or empty reads `research`. On operator's yes, agent writes `probe`,
 file, in same step; `paper_months` counts from it. `probe` trades live at
 fixed `sizing.probe_weight` so out-of-sample fills accrue. `runs.jsonl` is
 lead's; each delegate writes own `runs/<agent>.jsonl`; views read union.
+
+## Agent-written code
+
+Book is research monorepo: every line of code agent writes lives in book.
+
+- Write script when step would otherwise repeat by hand or needs more than
+  few lines. Put it in `tools/` if it runs (`<verb>-<object>.py`), `lib/` if
+  it is imported.
+- Every script's docstring states what it reads and writes.
+- Read ledger and data only through `btm_finance.api`. Append to ledger only
+  through `record`: script writes batch file, lead runs `record`.
+- Accessor `Market` lacks: add it in `lib/market_ext.py`, wrapping `api`.
+- Delete dead script; add one-line note to `INDEX.md` history.
+- Update `INDEX.md` and `research/<topic>/README.md` in same commit as file
+  they describe.
+- Test `lib/` and `tools/` under `tests/`, run with `$U pytest "$B/tests"`.
 
 ## Ledger lines
 

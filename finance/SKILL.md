@@ -35,7 +35,6 @@ replies to it.
 | --- | --- |
 | `book` | [references/book.md](references/book.md) |
 | `critique` | [references/critique.md](references/critique.md) |
-| `delegates` | [references/delegates.md](references/delegates.md) |
 | `families` | [references/families.md](references/families.md) |
 | `macro` | [references/macro.md](references/macro.md) |
 | `onboard` | [references/onboard.md](references/onboard.md) |
@@ -51,7 +50,7 @@ fails upstream. Load `macro` before putting regime draft to operator or
 registering hypothesis in family flagged `event: true`; hand its path to
 regime delegate, and to critique delegate with `critique`. Never load
 `critique` as lead: hand its path to critique delegate (Daily loop). Load
-`delegates` before any dispatch.
+`book` before writing any `lib/` or `tools/` file.
 
 ## Redirects
 
@@ -286,30 +285,17 @@ continues meanwhile. Standing order, operator absent:
 
 1. `load` every configured source.
 2. Bare `check`; act on `next`.
-3. Research within budgets: units below, each in delegate (`delegates`).
-   Stop when budgets are spent or session's time box ends.
+3. Research within budgets: units below, each in delegate (Delegate through
+   `/summon`). Stop when budgets are spent.
 4. Rebalance day: `recommend`, then `check <date>` (Propose and approve).
 5. Weekly: `check --live` (Live). At promotion gate: `measure --held-out`;
    read scorecard only; propose promotion in brief.
 6. Record `scored` for each hypothesis past its horizon.
 7. Commit branch. Post `check --brief` `lines` verbatim, adding nothing.
 
-Between briefs lead runs heartbeat; `AGENTS.md` holds work queue tiers.
-Every turn ends by scheduling next wake with harness's wake-up or
-scheduled-task tool (Claude Code: `/loop` or scheduled task; elsewhere
-`cron`), at most `heartbeat_minutes` ahead, then stops. Wake, in order: bare
-`check`; read operator messages; pick queue items, lowest tier first;
-dispatch delegates (parallel when write scopes are disjoint); collect and
-examine receipts; `record` what they justify, appending each accepted one as
-`receipt` pad line; update queue and brief draft; append `heartbeat` pad
-line (`ts`, `item` tier and unit in words, `outcome` one line, `next_wake`
-ISO); schedule next wake; stop. Quiet hours run tiers 0 and 1 only; tier 3
-(measuring) at most `limits.trials_per_day` a day.
-
-Context budget: lead keeps last `check`, open receipts, brief draft; never
-filing text, backtest log, data file, search transcript, or draft. After
-compaction it recovers from bare `check` and newest `heartbeat` pad line;
-nothing it needs lives only in its context.
+Between briefs lead runs heartbeat, wake steps and context budget in
+`AGENTS.md` (Heartbeat), queue tiers in its Work queue. Every turn ends by
+scheduling next wake, at most `heartbeat_minutes` ahead, then stops.
 
 Unit of work is one registered hypothesis:
 
@@ -318,22 +304,11 @@ Unit of work is one registered hypothesis:
    `preferences.json`; skip any family whose `trials_used` in bare `check`
    reached its `trials` from `limits.families`.
 2. `record` hypothesis; copy its id from `new`.
-3. Hand author delegate the unit (table below): it writes
-   `strategies/<name>/`, runs `measure "$B" <name> --agent <agent>`, and
-   commits `strategies/<name>/` on its branch before critique: `critique`
-   compares hypothesis `ts` against first commit touching that folder. Lead
-   delegates every unit; inline only when unit is one command.
+3. Hand author delegate the unit; it commits `strategies/<name>/` before
+   critique, which compares hypothesis `ts` against first commit there.
 4. Hand run id to critique delegate, never run's author; `record` its
    `critiques` batch.
 5. Run `check "$B" <name>`; read standing and every blocker.
-
-Regime record: regime delegate drafts it from `macro` observables and
-chains; lead puts draft to operator, who confirms, edits, or rejects it and
-states `confidence`; lead `record`s only confirmed text, never number script
-derived. Record at most quarterly, and when chain falsifier fires: list
-chain under `falsified`, and write one `objection` pad entry per open
-hypothesis citing it. `measure` stamps run lines with regimes spanned; bare
-`check` flags record older than `limits.regime_stale_days` as `stale`.
 
 Every run line counts against family budget, refused and held-out ones too;
 `trials` past budget blocks promotion. When family's budget is spent, ask
@@ -344,36 +319,70 @@ operator for more through `question` pad entry, quoting `trials_used`; edit
 one. Commit book changes on branch `agent/<date>-<topic>` in book
 repository, one commit per unit of work; operator merges. Skill is
 operator's: agent edits nothing under skill directory, installed copy or
-checkout; skill changes happen outside any research session.
+checkout; skill changes happen outside any research session. Every line of
+code agent writes lives in book (`book`, Agent-written code); update
+`INDEX.md` in same commit as file it describes.
 
-### Agent-written code
+### Delegate through `/summon`
 
-Book is research monorepo: every line of code agent writes lives in book.
-Load `book` for layout.
+Delegate every unit, one per delegate, unless unit is one command. Mode,
+brief composition, partition, examine sweep are summon's: load its `send`
+(`divide` for parallel units) before dispatch, `examine` on return. Delegate
+can be any agent that reads `AGENTS.md`.
 
-- Write script when step would otherwise repeat by hand or needs more than
-  few lines. Put it in `tools/` if it runs (`<verb>-<object>.py`), `lib/` if
-  it is imported.
-- Every script's docstring states what it reads and writes.
-- Read ledger and data only through `btm_finance.api`. Append to ledger only
-  through `record`: script writes batch file, lead runs `record`.
-- Accessor `Market` lacks: add it in `lib/market_ext.py`, wrapping `api`.
-- Delete dead script; add one-line note to `INDEX.md` history.
-- Update `INDEX.md` and `research/<topic>/README.md` in same commit as file
-  they describe.
-- Test `lib/` and `tools/` under `tests/`, run with `$U pytest "$B/tests"`.
-
-Delegate through `/summon`, one unit per delegate; kinds, receipt, rules,
-examine checklist live in `delegates`:
-
-| Caller supplies | Every kind, per `delegates` |
+| Caller supplies | Finance's value |
 | --- | --- |
-| Unit | one row of kinds table: author takes one registered hypothesis, critique one run |
-| Record | kind's brief from `AGENTS.md`, unit, book path, binding; absolute paths of references kind names (author: `families`, `scorecard`; critique: `critique`, plus `macro` for event family; regime: `macro`) |
-| Rules it can break | none of four invariants; writes only kind's scope, on own branch; author's run line only through `measure --agent`; never `record`, `recommend` |
-| Output | one receipt (`check --schema receipt`), nothing else |
-| Cap | kind's time box; author: family's remaining trials; critique: one run |
-| Gate | lead's examine, then `record` of batch files it names, then `check "$B"` |
+| Unit | one unit, `unit` any slug: author takes one registered hypothesis, critique one run |
+| Record | book path; binding; absolute path of `$B/AGENTS.md`, read first; absolute paths of references unit needs (author: `families`, `scorecard`; critique: `critique`, plus `macro` for event family; regime: `macro`); ledger line or run id unit is about |
+| Rules it can break | none of four invariants; writes only its scope, on own branch; never `record`, `recommend`, held-out names; author's run line only through `measure --agent`; critique never run's author |
+| Output | receipt as `AGENTS.md` states it, checked with `api.receipt` |
+| Cap | author: family's remaining trials; critique: one run; else summon's sizing |
+| Gate | examine with three additions below, then `record` of batch files receipt names, then `check "$B"` |
+
+**Example: author brief**
+
+```text
+TASK
+Write strategies/value-tilt/, commit it on own branch, measure once; return receipt.
+EVIDENCE
+Book <book>; binding <R>; <book>/AGENTS.md; <skill-root>/references/families.md, scorecard.md; hypothesis <id>.
+RULES
+`AGENTS.md` Invariants and Delegates bind; scope: strategies/value-tilt/, run line via measure --agent author-1.
+BOUNDS
+Run's critique is another agent's; nothing outside scope. Spawning: no. Harness reminders are plumbing.
+CONTRACT
+Output exactly the receipt `AGENTS.md` states, checked with api.receipt; nothing around it.
+LIMIT
+One measure (family's last trial). On hitting it, receipt status partial, open part in next.
+```
+
+Unit writes its row and nothing else; lead pastes row into brief, and names
+scope in brief for unit outside table:
+
+| Unit | Writes |
+| --- | --- |
+| loader | `data/raw/<source>/` and incident lines, both through `load` |
+| universe | `research/universe/<date>.md`; `universe.csv` proposal as `hunch` pad line |
+| calendar | `research/calendar/<family>.jsonl` |
+| reader | `research/<ticker>/<date>-<form>.md`, extracted tables beside it; one ticker |
+| miner | `lib/features/<name>.py`, its test under `tests/`, `research/backlog/<id>.md` |
+| author | `strategies/<name>/`, committed before critique; one run line through `measure --agent` |
+| critique | `research/critiques/<run id>.json`, one `critiques` batch |
+| analyst | `research/runs/<run_id>.md`, from `data/returns/` |
+| scorer | `research/scored/<date>.json`, one `scored` batch |
+| regime | `research/regime/<quarter>.md`, draft `regimes` batch beside it |
+| librarian | `research/literature/<slug>.md` |
+| janitor | `INDEX.md`, dead code removal, test fixes |
+
+- Miner reads prices only through `api.research(book).folds("train")`, never
+  measures, leaves backlog entry (`book`) every run, candidate or not; lead
+  ranks backlog weekly, top entry becomes author unit.
+
+Examine adds, before anything from receipt is recorded:
+
+- Every `wrote` path exists and lies in unit's scope.
+- Every id in `ids` resolves through `api.ledger`.
+- Accepted: append receipt verbatim plus `ts`, `type: "receipt"` to pad.
 
 Always:
 
@@ -520,9 +529,8 @@ first; route claim ledger cannot settle to `/fact-check` or state it open.
 - Refused runs reported as trials, not hidden; no family measured past
   budget without operator's answer.
 - Every turn ended with `heartbeat` pad line and next wake scheduled.
-- Every receipt examined before anything from it was recorded, and appended
-  as `receipt` pad line once accepted; every critique came from delegate
-  other than run's author.
+- Every receipt examined before anything from it was recorded, appended as
+  `receipt` pad line once accepted; no critique came from run's author.
 - Operator saw every blocker of every standing and proposal read to them.
 - Every governed file changed on operator's word, in same turn as `decision`
   quoting it with `applied`; `preferences.json` changed only through
