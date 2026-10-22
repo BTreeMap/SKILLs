@@ -92,14 +92,6 @@ class Rules:
     """The capacity curve's top point: label, multiple of `asset_cap`."""
 
 
-def top_of(limits: Limits) -> tuple[str, float]:
-    """`cap:<crowded_cap>` at that capital when set, else `<crowded_multiple>x`."""
-    th = limits.thresholds
-    if th.crowded_cap is not None:
-        return f"cap:{th.crowded_cap}", th.crowded_cap / limits.asset_cap
-    return f"{th.crowded_multiple:g}x", th.crowded_multiple
-
-
 def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -> Rules:
     family = limits.families.get(config.family_id)
     return Rules(
@@ -119,7 +111,6 @@ def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -
         folds=limits.thresholds.folds,
         touches=family.touches if family is not None else (),
         cutoff=None if limits.model_cutoff is None else day_of(limits.model_cutoff),
-        top=top_of(limits),
     )
 
 

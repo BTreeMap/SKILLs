@@ -1,4 +1,4 @@
-"""`check --live`, pure: each paper, probe, or live sleeve's realized path from its
+"""`check --live`, pure: each live sleeve's realized path from its real
 fills against `measure`'s model path, the review bounds, and the report.
 
 A sleeve's capital is its first fill day's gross traded value; later fills
@@ -30,9 +30,9 @@ STALE_DAYS = 5  # trading days without a new bar before data counts as stale
 WEEK = 7  # calendar days one recorded breach covers
 REPORT_LINES = 20
 NEXT = (
-    "read each breach with the operator; a pause, on their word only, is "
-    "strategies/<name>/status written, committed, and a pause decision "
-    "naming it in applied, never this command"
+    "read each breach with the operator; a retire, on their word only, is "
+    "strategies/<name>/status written and a retire decision, never this "
+    "command"
 )
 Series = tuple[Days, Floats]
 
@@ -41,7 +41,6 @@ class Watch(StrEnum):
     """Incident kinds `check --live` writes."""
 
     DRAWDOWN = "drawdown"
-    UNDERPERFORM = "underperform"
     SLIPPAGE = "slippage"
     TRACKING = "tracking"
     STALE = "stale"
@@ -206,25 +205,16 @@ def seasoning(
     return Seasoning(days=through - first, tracking=tracking)
 
 
-def tier_of(
-    paper: Seasoning | None, live: Seasoning | None, *, days: int, bound: float
-) -> Tier:
-    """`live` when real fills span `days` within `bound` of the model path,
-    else `paper` on dry-run fills alike, else `backtest`."""
-
-    def seasoned(found: Seasoning | None) -> bool:
-        return (
-            found is not None
-            and found.days >= days
-            and found.tracking is not None
-            and found.tracking <= bound
-        )
-
-    if seasoned(live):
-        return Tier.LIVE
-    if seasoned(paper):
-        return Tier.PAPER
-    return Tier.BACKTEST
+def tier_of(found: Seasoning | None, *, days: int, bound: float) -> Tier:
+    """`tracked` when real fills span `days` within `bound` of the model
+    path, else `backtest`."""
+    seasoned = (
+        found is not None
+        and found.days >= days
+        and found.tracking is not None
+        and found.tracking <= bound
+    )
+    return Tier.TRACKED if seasoned else Tier.BACKTEST
 
 
 def slippage(fills: Sequence[Fill]) -> float | None:
@@ -236,27 +226,6 @@ def slippage(fills: Sequence[Fill]) -> float | None:
         if f.reference
     ]
     return float(np.mean(shares)) if shares else None
-
-
-def monthly(dates: Days, returns: Floats) -> Floats:
-    """Compounded return per calendar month, oldest first. O(D)."""
-    months = dates.astype("datetime64[D]").astype("datetime64[M]").astype(np.int64)
-    starts = np.flatnonzero(np.concatenate(([True], months[1:] != months[:-1])))
-    compounded: Floats = np.multiply.reduceat(1.0 + returns, starts) - 1.0
-    return compounded
-
-
-def months_below(sleeve: Sleeve, baseline: Sleeve) -> int:
-    """Consecutive months, ending at the latest, the sleeve trails the
-    baseline sleeve on shared days."""
-    dates, mine, theirs = aligned(
-        (sleeve.dates, sleeve.returns), (baseline.dates, baseline.returns)
-    )
-    if not len(dates):
-        return 0
-    below = monthly(dates, mine) < monthly(dates, theirs)
-    above = np.flatnonzero(~below)
-    return int(len(below) - (above[-1] + 1)) if len(above) else len(below)
 
 
 def trading_days_after(last: int, today: date) -> int:
@@ -272,15 +241,9 @@ class Measure(Model):
     breach: bool
 
 
-def measure(
-    value: float | None, limit: float | None, *, reach: bool = False
-) -> Measure:
-    """Breach above `limit`, or at it with `reach`; a null never breaches."""
-    over = (
-        value is not None
-        and limit is not None
-        and (value >= limit if reach else value > limit)
-    )
+def measure(value: float | None, limit: float | None) -> Measure:
+    """Breach above `limit`; a null never breaches."""
+    over = value is not None and limit is not None and value > limit
     return Measure(value=value, limit=limit, breach=over)
 
 
@@ -296,22 +259,19 @@ class RunFacts:
 @dataclass(frozen=True, slots=True)
 class Bounds:
     drawdown_multiple: float
-    underperform_months: int
     tracking: float
     commission: float  # decimal, one way
 
 
 @dataclass(frozen=True, slots=True, eq=False)
 class Case:
-    """One sleeve's evidence; `baseline` is None for the baseline itself or
-    when the baseline holds no paper or live sleeve."""
+    """One sleeve's evidence."""
 
     strategy: str
     status: Status
     fills: tuple[Fill, ...]
     sleeve: Sleeve | None
     model: Series | None
-    baseline: Sleeve | None
     run: RunFacts | None
     stale_days: int
     notes: tuple[str, ...]
@@ -329,14 +289,12 @@ class LiveRow(Model):
     tracking: Measure
     slippage: Measure
     drawdown: Measure
-    underperform: Measure
     stale: Measure
     notes: tuple[str, ...]
 
     def measures(self) -> dict[Watch, Measure]:
         return {
             Watch.DRAWDOWN: self.drawdown,
-            Watch.UNDERPERFORM: self.underperform,
             Watch.SLIPPAGE: self.slippage,
             Watch.TRACKING: self.tracking,
             Watch.STALE: self.stale,
@@ -361,11 +319,6 @@ def row_of(case: Case, bounds: Bounds) -> LiveRow:
         notes.append(f"{sleeve.late} fill(s) after the last bar left out")
     if sleeve is not None and sleeve.unpriced:
         notes.append(f"no bars for {', '.join(sleeve.unpriced)}: held at fill price")
-    under = (
-        months_below(sleeve, case.baseline)
-        if sleeve is not None and case.baseline is not None
-        else None
-    )
     return LiveRow(
         strategy=case.strategy,
         status=case.status,
@@ -388,11 +341,6 @@ def row_of(case: Case, bounds: Bounds) -> LiveRow:
         drawdown=measure(
             max_drawdown(sleeve.returns) if sleeve else None,
             bounds.drawdown_multiple * run.max_drawdown if run else None,
-        ),
-        underperform=measure(
-            None if under is None else float(under),
-            float(bounds.underperform_months) if under is not None else None,
-            reach=True,
         ),
         stale=measure(float(case.stale_days), float(STALE_DAYS)),
         notes=tuple(notes),
@@ -457,7 +405,7 @@ def report_of(rows: Sequence[LiveRow], as_of: date, last_bar: str | None) -> str
     """At most 20 lines: a header, one line per sleeve, one per breach."""
     lines = [f"check --live {as_of.isoformat()}; last bar {last_bar or 'none'}"]
     if not rows:
-        lines.append("no paper, probe, or live strategy; nothing tracked")
+        lines.append("no live strategy; nothing tracked")
     for row in rows:
         lines.append(
             f"{row.strategy} ({row.status.value}): {row.days} days, realized "

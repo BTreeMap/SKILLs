@@ -1,8 +1,8 @@
 """G9: capacity gates promotion. A strategy whose net Sharpe is flat from 0.1x
-to 1x but negative at 1x is blocked by name; a hypothesis registered crowded
-is blocked until a decision line overrides it, then blocked on odds until a
-superseding hypothesis states them at the same kill date, spending no trial,
-then promotable.
+to 1x but negative at 1x is blocked by name; an edge whose curve holds is
+blocked on odds until a superseding hypothesis states them at the same kill
+date, spending no trial, then promotable; every scorecard tests 0.1x, 1x,
+and 20x the cap.
 
 The synthetic panel plants a persistent per-name drift (`alpha`) that no
 factor spans, so trailing return ranks carry a real edge.
@@ -13,9 +13,6 @@ from __future__ import annotations
 import json
 from textwrap import dedent
 
-import pytest
-from btm_finance.models import Limits, limits_template
-from btm_finance.standing import capacity
 from btm_finance.views import extensions
 
 DRIFT = dedent(
@@ -95,13 +92,13 @@ def test_flat_but_negative_capacity_is_blocked_by_name(synthetic, run, plant, fa
     assert any("is not positive" in b for b in view["blockers"])
 
 
-def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, families):
+def test_an_edge_is_blocked_on_odds_until_stated(synthetic, run, plant, families):
     book = edge_book(synthetic, run, plant, families)
     hypothesis_id = plant(
         book,
         "drift",
         "SIGN = 1.0\n" + DRIFT,
-        hypothesis={"capacity_class": "crowded", "mechanism": "planted drift"},
+        hypothesis={"mechanism": "planted drift"},
         params={"lookback": 252},
         long_only=True,  # no flips from short to long: trades stay under 2% of ADV
         **EDGE,
@@ -109,16 +106,7 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
     code, document, err = run(["measure", str(book), "drift"])
     assert code == 0, err
     batch(run, book, {"critiques": [critique(document["run_id"])]})
-    view = run(["check", str(book), "drift"])[1]
-    assert view["standing"] == "blocked"
-    assert [b.split(":")[0] for b in view["blockers"]] == ["crowded"]
-    override = {
-        "kw": ["crowd", "ok"],
-        "subject": "drift",
-        "action": "override",
-        "reason": "capacity ceiling checked by hand",
-    }
-    batch(run, book, {"decisions": [override]})
+    assert set(document["scorecard"]["capacity"]) == {"0.1x", "1x", "20x"}
     view = run(["check", str(book), "drift"])[1]
     assert (view["standing"], view["blockers"]) == (
         "blocked",
@@ -128,7 +116,6 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
         "kw": ["drift", "odds"],
         "strategy": "drift",
         "family_id": "g9",
-        "capacity_class": "crowded",
         "mechanism": "planted drift",
         "falsifier": "net Sharpe at or below zero out of sample",
         "falsifier_by": "2099-12-31",
@@ -148,37 +135,6 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
     assert (view["standing"], view["blockers"]) == ("promotable", [])
     # same kill date: stating odds spends no trial
     assert run(["check", str(book)])[1]["families"]["g9"]["trials_used"] == spent
-
-
-def test_the_top_point_reads_crowded_multiple_or_crowded_cap(synthetic, run):
-    book = synthetic(seed=7)
-    path = book / "limits.json"
-
-    def measured(**thresholds):
-        limits = json.loads(path.read_text())
-        limits["thresholds"] |= thresholds
-        path.write_text(json.dumps(limits))
-        code, document, err = run(["measure", str(book), "baseline"])
-        assert code == 0, err
-        return document["scorecard"]["capacity"]
-
-    default = measured()
-    assert set(default) == {"0.1x", "1x", "20x"}
-    capped = measured(crowded_cap=200_000_000)  # 20 times the 10,000,000 cap
-    assert set(capped) == {"0.1x", "1x", "cap:200000000"}
-    assert capped["cap:200000000"] == pytest.approx(default["20x"])
-    five = measured(crowded_cap=None, crowded_multiple=5)
-    assert set(five) == {"0.1x", "1x", "5x"}
-    assert five["5x"] != pytest.approx(default["20x"])
-
-
-def test_standing_reads_the_top_point_by_its_label():
-    limits = Limits.model_validate(limits_template(36_000))
-    card = {"capacity": {"0.1x": 1.0, "1x": 0.95, "cap:50000000": 0.99}}
-    assert capacity(card, limits, crowded_class=False, overridden=False) == [
-        "crowded: net Sharpe at cap:50000000 within tolerance of 0.1x needs "
-        "an override decision"
-    ]
 
 
 def test_superseding_a_line_without_a_kill_date_spends_nothing():

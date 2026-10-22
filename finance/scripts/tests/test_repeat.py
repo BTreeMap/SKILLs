@@ -1,14 +1,14 @@
 """`measure --repeat`: a run reproduces from its own inputs and writes nothing;
-code read from its recorded blob ids and compared by AST against the
-working tree, raw data, or a peer series that moved is refused by name."""
+code whose AST digest moved from the recorded `code_files`, raw data, or a
+peer series that moved is refused by name."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+import btm_finance
 import pytest
-from btm_finance import git
 from btm_finance.repeat import Rule, compare
 
 SOURCE = Path(__file__).resolve().parents[1] / "src" / "btm_finance"
@@ -50,33 +50,28 @@ def test_a_run_reproduces_and_writes_nothing(measured, run):
     assert snapshot(book) == before
 
 
-def test_a_moved_engine_commit_is_advisory(measured, run, monkeypatch):
+def test_a_moved_engine_version_is_advisory(measured, run, monkeypatch):
     book, (first, _) = measured
-    monkeypatch.setattr(git, "skill_commit", lambda: "f" * 40)
+    monkeypatch.setattr(btm_finance, "__version__", "9.9.9")
     code, document, err = run(["measure", str(book), "baseline", "--repeat", first])
     assert code == 0, err
     assert document["reproduced"] is True
     [note] = document["advisories"]
-    assert note.startswith("btm_finance ") and note.endswith(" -> " + "f" * 40)
+    assert note.startswith("btm_finance ") and note.endswith(" -> 9.9.9")
 
 
-def test_a_run_measured_on_a_branch_repeats_after_rebase(
-    synthetic, run, commit, rebase, git_in
-):
-    book = synthetic(seed=7)
-    git_in(book, "switch", "-q", "-c", "agent/tilt")
-    signal = book / "strategies" / "baseline" / "signal.py"
-    signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
-    before = commit(book, "strategies/baseline", subject="feat: tilt baseline")
-    code, document, err = run(["measure", str(book), "baseline"])
-    assert code == 0, err
-    rebase(book, "agent/tilt")
-    assert git.head(book) != before
-    code, again, err = run(
-        ["measure", str(book), "baseline", "--repeat", document["run_id"]]
-    )
-    assert code == 0, err
-    assert again["reproduced"] is True
+def test_a_line_without_a_code_hash_is_refused(measured, run):
+    book, (first, _) = measured
+    path = book / "ledger" / "runs.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    for row in rows:  # an older line: blob ids, a library map
+        del row["code_hash"], row["code_files"]
+        row["code_objects"] = {"strategies/baseline/signal.py": "0" * 40}
+        row["engine"] = {"btm_finance": row["engine"], "numpy": "2.0"}
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
+    assert code == 1
+    assert "run line predates code hashes" in err
 
 
 def test_an_edited_config_is_refused_by_name(measured, run):
@@ -91,18 +86,14 @@ def test_an_edited_config_is_refused_by_name(measured, run):
     assert "signal.py" not in err
 
 
-def test_a_reformat_commit_reproduces_and_a_semantic_commit_refuses(
-    measured, run, commit
-):
+def test_a_reformat_reproduces_and_a_semantic_edit_refuses(measured, run):
     book, (first, _) = measured
     signal = book / "strategies" / "baseline" / "signal.py"
     signal.write_text("# reformatted\n\n" + signal.read_text() + "\n\n# end\n")
-    commit(book, "strategies/baseline", subject="style: reformat baseline")
     code, document, err = run(["measure", str(book), "baseline", "--repeat", first])
     assert code == 0, err
     assert document["reproduced"] is True
     signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
-    commit(book, "strategies/baseline", subject="feat: change baseline")
     code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
     assert code == 1
     assert "code moved: strategies/baseline/signal.py" in err
@@ -167,18 +158,17 @@ def test_the_comparison_is_absolute_to_one_then_relative():
     ]
 
 
-def test_a_lib_module_is_compared_beside_signal(synthetic, run, commit):
+def test_a_lib_module_is_compared_beside_signal(synthetic, run):
     book = synthetic(seed=7)
     module = book / "lib" / "tilt.py"
     module.write_text("def scale(weight):\n    return weight\n")
     signal = book / "strategies" / "baseline" / "signal.py"
     signal.write_text("import lib.tilt\n" + signal.read_text())
-    commit(book, "lib", "strategies/baseline")
     code, document, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     run_id = document["run_id"]
     line = json.loads((book / "ledger" / "runs.jsonl").read_text().splitlines()[-1])
-    assert set(line["code_paths"]) >= {"lib/__init__.py", "lib/tilt.py"}
+    assert set(line["code_files"]) >= {"lib/__init__.py", "lib/tilt.py"}
 
     module.write_text("# spaced\n\n\ndef scale(weight):\n\n    return weight\n")
     code, document, err = run(["measure", str(book), "baseline", "--repeat", run_id])
@@ -192,16 +182,22 @@ def test_a_lib_module_is_compared_beside_signal(synthetic, run, commit):
     assert "signal.py" not in err.split("code moved:")[1]
 
 
-def test_no_tracked_file_is_digested_outside_the_data_manifest():
-    """Git points at tracked content; sha256 guards only untracked `data/`,
-    through `data/manifest.json` entries."""
+def test_sha256_lives_in_the_manifest_snapshot_and_code_hash_only():
+    """`data/raw.py` digests the store; `repeat.py` digests code; `cli.py`
+    only reads those digests; no module but `scaffold.py` calls git."""
     hits = [
         (path.relative_to(SOURCE).as_posix(), line)
         for path in SOURCE.rglob("*.py")
         for line in path.read_text(encoding="utf-8").splitlines()
         if "sha256" in line
     ]
-    assert {name for name, _ in hits} == {"data/raw.py", "cli.py"}
+    assert {name for name, _ in hits} == {"data/raw.py", "cli.py", "repeat.py"}
     for name, line in hits:
         if name == "cli.py":
             assert "sha256_of" in line or "e.sha256" in line, line
+    callers = {
+        path.relative_to(SOURCE).as_posix()
+        for path in SOURCE.rglob("*.py")
+        if '"git"' in path.read_text(encoding="utf-8")
+    }
+    assert callers == {"scaffold.py"}

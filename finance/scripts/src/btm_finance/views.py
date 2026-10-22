@@ -70,7 +70,6 @@ def families(
                     "id": h.get("id"),
                     "strategy": h.get("strategy"),
                     "sector": h.get("sector"),
-                    "capacity_class": h.get("capacity_class"),
                 }
                 for h in pending
                 if h.get("family_id") == name
@@ -105,17 +104,21 @@ def day_of(row: Mapping[str, Any], key: str = "ts") -> date | None:
         return None
 
 
+def bets_closed(decisions: Sequence[Row]) -> set[Any]:
+    """Subjects of `close` decisions: hypothesis ids whose bet ended."""
+    return {d.get("subject") for d in decisions if d.get("action") == Action.CLOSE}
+
+
 def overdue(
     hypotheses: Sequence[Row],
     decisions: Sequence[Row],
-    scored: Sequence[Row],
     retired: frozenset[str],
     today: date,
 ) -> list[dict[str, Any]]:
     """Live hypotheses past `falsifier_by`, strategy not retired, no reject or
-    retire naming strategy or id, no scored line naming the id."""
+    retire naming strategy or id, no close decision naming the id."""
     closed = {d.get("subject") for d in decisions if d.get("action") in CLOSING}
-    done = {s.get("subject") for s in scored}
+    done = bets_closed(decisions)
     found: list[dict[str, Any]] = []
     for h in hypotheses:
         due = day_of(h, "falsifier_by")
@@ -141,14 +144,12 @@ def overdue(
 
 
 def unscored(
-    hypotheses: Sequence[Row],
-    decisions: Sequence[Row],
-    scored: Sequence[Row],
-    today: date,
+    hypotheses: Sequence[Row], decisions: Sequence[Row], today: date
 ) -> list[dict[str, Any]]:
     """Live hypotheses with `odds` whose strategy's newest promote decision is
-    over `odds.horizon_days` calendar days old, no scored line naming the id."""
-    done = {s.get("subject") for s in scored}
+    over `odds.horizon_days` calendar days old, no close decision naming the
+    id."""
+    done = bets_closed(decisions)
     promoted: dict[Any, date] = {}
     for d in decisions:
         day = day_of(d)
@@ -195,10 +196,10 @@ def next_step(
         if first["problem"] == "overdue":
             return (
                 f"hypothesis {first['hypothesis']} passed falsifier_by "
-                f"{first['falsifier_by']}: record scored, reject, or a "
+                f"{first['falsifier_by']}: record close, reject, or a "
                 "superseding hypothesis"
             )
-        return f"score hypothesis {first['hypothesis']}: record a scored line"
+        return f"close hypothesis {first['hypothesis']}: record a close decision"
     if not hypotheses:
         return "register a hypothesis for each strategy with record, baseline first"
     if pending:
@@ -218,3 +219,8 @@ def budget_step(budgets: Mapping[str, Mapping[str, Any]] | None) -> str:
         "every family is at budget: write a question pad entry asking the "
         f"operator for more trials, naming {spent}"
     )
+
+
+def trials_today(runs: Sequence[Mapping[str, Any]], today: date) -> int:
+    """Run lines of every runs file stamped `today` (UTC)."""
+    return sum(1 for run in runs if day_of(run) == today)

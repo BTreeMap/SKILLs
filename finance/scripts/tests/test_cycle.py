@@ -1,7 +1,7 @@
-"""G7 and G1 end to end: the baseline as a paper sleeve runs recommend, approve,
-and `record --approval --dry-run` for two annual rebalances; the second proposal diffs
-against the first's dry-run fills. Also the refusals and the two books kept
-apart: a real fill never lands in a paper sleeve's position."""
+"""G7 and G1 end to end: the baseline as a live sleeve runs recommend, an
+approve decision, and `record --fills:file --proposal` for two annual
+rebalances; the second proposal diffs against the first's fills. Also the
+refusals, and an older book's dry-run fills kept out of every position."""
 
 from __future__ import annotations
 
@@ -11,9 +11,10 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from btm_finance import cli, git
+from btm_finance import cli
 
 FIRST, SECOND = "2016-12-30", "2017-12-29"  # the baseline's annual rebalances
+BOUND = 1e-5  # an ADV bound the first fills already pass
 
 
 def batch(run, book: Path, payload: dict) -> None:
@@ -21,10 +22,9 @@ def batch(run, book: Path, payload: dict) -> None:
     assert code == 0, err
 
 
-def paper_book(synthetic, run) -> Path:
+def live_book(synthetic, run) -> Path:
     book = synthetic(seed=7)
-    (book / "strategies" / "baseline" / "status").write_text("paper\n")
-    git.commit(book, ["strategies/baseline/status"], "promote: baseline paper")
+    (book / "strategies" / "baseline" / "status").write_text("live\n")
     code, _, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     return book
@@ -45,7 +45,7 @@ def fills(book: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
-SEND_DAY = [FIRST]  # the UTC day `check` and `record` read approvals on
+SEND_DAY = [FIRST]  # the UTC day `record` reads fills on
 
 
 @pytest.fixture(autouse=True)
@@ -53,28 +53,26 @@ def on_send_day(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli, "utc_today", lambda: date.fromisoformat(SEND_DAY[0]))
 
 
-def approve_and_send(run, book: Path, day: str) -> tuple[int, str]:
-    """The operator's reply on `day`: the agent writes the template with the
-    reply quoted, commits it, records the approve decision naming it, checks
-    it, then records the paper orders as dry-run fills."""
-    code, view, err = run(["check", str(book), day])
+def approve_and_fill(run, book: Path, day: str) -> tuple[int, str]:
+    """The operator's reply on `day` recorded as an approve decision; then
+    every order filled at its price, pasted as a table."""
+    code, _, err = run(["check", str(book), day])
     assert code == 0, err
-    target = book / view["approval_path"]
-    target.write_text(json.dumps(view["approval_template"] | {"reply": "approve"}))
-    git.commit(book, [view["approval_path"]], f"approve: {day}")
     decision = {
         "kw": ["approve", "rebalance"],
         "subject": day,
         "action": "approve",
         "reason": "approve",
-        "applied": [view["approval_path"]],
     }
     batch(run, book, {"decisions": [decision]})
     SEND_DAY[0] = day
-    code, checked, err = run(["check", str(book), view["approval_path"]])
-    assert (code, checked["problems"]) == (0, []), err
+    table = [
+        {key: order[key] for key in ("symbol", "side", "quantity", "price")}
+        | {"date": day}
+        for order in proposal(book, day)["orders"]
+    ]
     code, _, err = run(
-        ["record", str(book), "--approval", view["approval_path"], "--dry-run"]
+        ["record", str(book), "--fills:stdin", "--proposal", day], json.dumps(table)
     )
     return code, err
 
@@ -94,8 +92,8 @@ def targets(document: dict) -> dict[str, int]:
     }
 
 
-def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
-    book = paper_book(synthetic, run)
+def test_two_rebalances_advise_approve_and_fill(synthetic, run):
+    book = live_book(synthetic, run)
     recommend(run, book, FIRST)
     first = proposal(book, FIRST)
     assert first["orders"], "the baseline sleeve proposes trades"
@@ -103,24 +101,14 @@ def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
     assert list(view)[:4] == ["book", "proposal", "blockers", "baseline"]
     assert view["baseline"][0]["strategy"] == "baseline"
     assert view["blockers"]["baseline"]  # no critique yet: shown, not hidden
-    template = view["approval_template"]
-    assert (template["date"], template["proposal"]) == (FIRST, FIRST)
-    assert set(template["orders"][0]) == {
-        "symbol",
-        "side",
-        "quantity",
-        "price",
-        "adv_participation",
-        "strategy",
-        "limit",
-    }
+    assert first["sleeves"]["baseline"]["weight"] == pytest.approx(0.02)
 
-    code, err = approve_and_send(run, book, FIRST)
+    code, err = approve_and_fill(run, book, FIRST)
     assert code == 0, err
     landed = fills(book)
     assert len(landed) == len(first["orders"])
-    assert {(f["dry_run"], f["strategy"], f["date"]) for f in landed} == {
-        (True, "baseline", FIRST)
+    assert {(f["proposal"], f["strategy"], f["date"]) for f in landed} == {
+        (FIRST, "baseline", FIRST)
     }
     assert positions(landed) == targets(first)
 
@@ -135,7 +123,7 @@ def test_two_rebalances_advise_approve_and_dry_run(synthetic, run):
         assert order["held"] + sign * order["quantity"] == order["target"]
     assert not second["carried"]  # every first order filled
 
-    code, err = approve_and_send(run, book, SECOND)
+    code, err = approve_and_fill(run, book, SECOND)
     assert code == 0, err
     assert positions(fills(book)) == targets(second)
 
@@ -145,7 +133,7 @@ def test_no_sleeve_exits_1_naming_the_reason(synthetic, run):
     code, _, err = run(["recommend", str(book), FIRST])
     assert code == 1
     assert "no sleeve" in err
-    (book / "strategies" / "baseline" / "status").write_text("paper\n")
+    (book / "strategies" / "baseline" / "status").write_text("live\n")
     code, _, err = run(["recommend", str(book), FIRST])
     assert code == 1
     assert "skipped baseline" in err
@@ -153,7 +141,7 @@ def test_no_sleeve_exits_1_naming_the_reason(synthetic, run):
 
 
 def test_a_proposal_is_written_once_and_check_needs_one(synthetic, run):
-    book = paper_book(synthetic, run)
+    book = live_book(synthetic, run)
     code, _, err = run(["check", str(book), FIRST])
     assert code == 1
     assert "no proposal" in err
@@ -168,54 +156,55 @@ def test_a_proposal_is_written_once_and_check_needs_one(synthetic, run):
     assert run(["check", str(book), FIRST])[1]["proposal"].endswith(".2.json")
 
 
-def test_a_real_fill_never_lands_in_a_paper_position(synthetic, run):
-    book = paper_book(synthetic, run)
+def test_an_older_dry_run_fill_never_lands_in_a_position(synthetic, run):
+    book = live_book(synthetic, run)
     recommend(run, book, FIRST)
     symbol = proposal(book, FIRST)["orders"][0]["symbol"]
-    real = {
+    dry = {
         "symbol": symbol,
         "side": "buy",
         "quantity": 100,
         "price": 10.0,
         "date": FIRST,
         "strategy": "baseline",
-        "dry_run": False,
+        "dry_run": True,
     }
-    opening = {"date": FIRST, "positions": [{"symbol": "ZZZ", "quantity": 5}]}
-    batch(run, book, {"fills": [real], "holdings": [opening]})
+    opening = dry | {"symbol": "ZZZ", "quantity": 5, "strategy": "opening"}
+    del opening["dry_run"]
+    batch(run, book, {"fills": [dry, opening]})
     recommend(run, book, FIRST, "--force")
     again = proposal(book, f"{FIRST}.2")
     order = next(o for o in again["orders"] if o["symbol"] == symbol)
-    assert (order["held"], order["account"]) == (0.0, "paper")
-    assert [(h["symbol"], h["account"]) for h in again["unmanaged"]] == [
-        ("ZZZ", "live")
+    assert order["held"] == 0.0
+    assert [(h["symbol"], h["strategy"]) for h in again["unmanaged"]] == [
+        ("ZZZ", "baseline")
     ]
 
 
 def test_an_order_over_the_adv_bound_is_cut_and_reported(synthetic, run):
     """Targets already sit inside the ADV bound; a sale of shares held from
     a looser bound is what passes it."""
-    book = paper_book(synthetic, run)
+    book = live_book(synthetic, run)
     recommend(run, book, FIRST)
-    assert approve_and_send(run, book, FIRST)[0] == 0
+    assert approve_and_fill(run, book, FIRST)[0] == 0
     path = book / "limits.json"
     limits = json.loads(path.read_text())
-    limits["max_adv_participation"] = 0.001  # the operator's word, applied
+    limits["max_adv_participation"] = BOUND  # the operator's word, applied
     path.write_text(json.dumps(limits))
     recommend(run, book, SECOND)
     document = proposal(book, SECOND)
     assert document["cuts"]
     for cut in document["cuts"]:
         assert cut["kept"] < cut["wanted"]
-        assert cut["adv_participation"] > cut["bound"] == 0.001
-    assert all(o["adv_participation"] <= 0.001 for o in document["orders"])
+        assert cut["adv_participation"] > cut["bound"] == BOUND
+    assert all(o["adv_participation"] <= BOUND for o in document["orders"])
     view = run(["check", str(book), SECOND])[1]
     assert view["cuts"] == document["cuts"]
 
 
 @pytest.mark.parametrize("rejected", [False, True])
 def test_an_unfilled_order_carries_once(synthetic, run, rejected):
-    book = paper_book(synthetic, run)
+    book = live_book(synthetic, run)
     recommend(run, book, FIRST)
     if rejected:
         reject = {

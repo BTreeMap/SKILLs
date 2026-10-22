@@ -1,5 +1,5 @@
 """The record gate: every problem in one verdict with the book unchanged,
-references resolved against live state, holdings and preferences expanded."""
+references resolved against live state, removed kinds refused by name."""
 
 from __future__ import annotations
 
@@ -50,7 +50,6 @@ def test_every_problem_comes_back_in_one_verdict_and_nothing_moves(
                 "price": 2,
                 "date": "2026-01-02",
                 "strategy": "baseline",
-                "dry_run": False,
                 "id": "forged",
             }
         ],
@@ -86,38 +85,27 @@ def test_a_critique_lands_once_its_run_exists(book, run):
     assert set(receipt["new"]["critiques"]) == {"first-pass"}
 
 
-def test_holdings_expand_into_opening_buy_fills(book, run):
-    holdings = {
+def test_holdings_are_opening_fills_naming_no_proposal(book, run):
+    opening = {
+        "symbol": "ABC",
+        "side": "buy",
+        "quantity": 100,
+        "price": 9.5,
         "date": "2026-01-02",
-        "positions": [
-            {"symbol": "ABC", "quantity": 100, "cost_basis": 9.5},
-            {"symbol": "XYZ", "quantity": 5},
-        ],
+        "strategy": "opening",
     }
-    code, receipt, err = batch(run, book, {"holdings": [holdings]})
-    assert code == 0
-    assert "XYZ has no cost_basis" in err
-    assert len(receipt["new"]["holdings"]) == 2
-    lines = (book / "ledger" / "fills.jsonl").read_text().splitlines()
-    fills = [json.loads(line) for line in lines]
-    assert [(f["symbol"], f["side"], f["strategy"], f["price"]) for f in fills] == [
-        ("ABC", "buy", "opening", 9.5),
-        ("XYZ", "buy", "opening", None),
-    ]
+    code, receipt, err = batch(run, book, {"fills": [opening]})
+    assert code == 0, err
+    assert receipt["accepted"] == {"fill": 1}
+    (line,) = (book / "ledger" / "fills.jsonl").read_text().splitlines()
+    assert json.loads(line).get("proposal") is None
 
 
-def test_preferences_rewrite_the_file_whole_and_keep_extras(book, run):
-    prefs = {
-        "focus_sectors": ["energy"],
-        "cadence": "quarterly",
-        "note": "kept",
-        "exclusions": {"symbols": ["XYZ"], "sectors": [], "countries": ["RU"]},
-    }
-    code, receipt, _ = batch(run, book, {"preferences": [prefs]})
-    assert code == 0
-    assert receipt["preferences"] == "rewritten"
-    held = json.loads((book / "preferences.json").read_text())
-    assert held == prefs | {"heartbeat_minutes": 45}
+@pytest.mark.parametrize("kind", ["scored", "regimes", "holdings", "preferences"])
+def test_a_removed_kind_is_refused_by_name(book, run, kind):
+    code, verdict, _ = batch(run, book, {kind: [{}]})
+    assert code == 1
+    assert verdict["rejected"][0]["where"] == kind
 
 
 def test_a_decision_supersedes_only_an_existing_id(book, run, make_hypothesis):
@@ -230,62 +218,48 @@ def test_record_refuses_to_append_after_an_undecodable_line(book, run, make_hypo
     assert path.read_bytes() == before
 
 
-EVENT_FIELDS = {
-    "chain": "expectation-vs-outcome",
-    "expectation_source": "consensus estimate the day before filing",
-    "discounted": "price holds consensus; hypothesis disagrees on speed",
-    "confidence": 0.4,
-}
-
-
-def test_an_event_family_hypothesis_lands_with_or_without_macro_fields(
-    book, run, families, make_hypothesis
+def test_a_hypothesis_keeps_fields_the_gate_does_not_branch_on(
+    book, run, make_hypothesis
 ):
-    families(book, **{"event-drift": {"trials": 8, "event": True}}, quiet={"trials": 2})
-    bare = make_hypothesis(["bare", "event"], family_id="event-drift")
-    code, receipt, err = batch(run, book, {"hypotheses": [bare]})
+    idea = make_hypothesis(["priced", "idea"], confidence=0.4, priced=12.0)
+    code, _, err = batch(run, book, {"hypotheses": [idea]})
     assert code == 0, err
-    assert receipt["accepted"] == {"hypothesis": 1}
-    full = make_hypothesis(["full", "event"], family_id="event-drift", **EVENT_FIELDS)
-    plain = make_hypothesis(["plain", "idea"], family_id="quiet")
-    code, receipt, err = batch(run, book, {"hypotheses": [full, plain]})
-    assert code == 0, err
-    assert receipt["accepted"] == {"hypothesis": 2}
     line = json.loads(
-        (book / "ledger" / "hypotheses.jsonl").read_text().splitlines()[-2]
+        (book / "ledger" / "hypotheses.jsonl").read_text().splitlines()[-1]
     )
-    assert line["chain"] == "expectation-vs-outcome"
-    assert line["confidence"] == 0.4
+    assert (line["confidence"], line["priced"]) == (0.4, 12.0)
 
 
-def test_an_unknown_chain_is_refused_and_none_accepted(
-    book, run, families, make_hypothesis
-):
-    families(book, **{"event-drift": {"trials": 8, "event": True}})
-    odd = make_hypothesis(
-        ["odd", "chain"], family_id="event-drift", **(EVENT_FIELDS | {"chain": "x"})
-    )
-    code, verdict, _ = batch(run, book, {"hypotheses": [odd]})
-    assert code == 1
-    assert [p["where"] for p in verdict["rejected"]] == ["hypotheses[0].chain"]
-    none = make_hypothesis(
-        ["no", "chain"], family_id="event-drift", **(EVENT_FIELDS | {"chain": "none"})
-    )
-    code, _, err = batch(run, book, {"hypotheses": [none]})
-    assert code == 0, err
-
-
-def test_diagnose_is_a_decision_action(book, run):
-    diagnosis = {
-        "kw": ["drift", "diagnosis"],
+@pytest.mark.parametrize("action", ["close", "approve", "retire"])
+def test_close_approve_and_retire_are_decision_actions(book, run, action):
+    entry = {
+        "kw": ["one", action],
         "subject": "baseline",
-        "action": "diagnose",
-        "reason": "mechanism link broke: forced flow ended early",
-        "confidence": 0.5,
+        "action": action,
+        "reason": "operator's word",
     }
-    code, receipt, err = batch(run, book, {"decisions": [diagnosis]})
-    assert code == 0, err
-    assert receipt["accepted"] == {"decision": 1}
+    code, receipt, err = batch(run, book, {"decisions": [entry]})
+    assert (code, receipt["accepted"]) == (0, {"decision": 1}), err
+
+
+@pytest.mark.parametrize("action", ["diagnose", "forgo", "onboard", "pause"])
+def test_a_removed_action_is_refused(book, run, action):
+    entry = {"kw": ["old", "act"], "subject": "baseline", "action": action}
+    code, verdict, _ = batch(run, book, {"decisions": [entry | {"reason": "r"}]})
+    assert code == 1
+    assert verdict["rejected"][0]["where"] == "decisions[0].action"
+
+
+def test_a_cap_change_is_an_override_naming_the_book(book, run):
+    book_id = json.loads((book / "book.json").read_text())["id"]
+    entry = {
+        "kw": ["cap", "raise"],
+        "subject": book_id,
+        "action": "override",
+        "reason": "operator: cap 2000000",
+    }
+    code, receipt, err = batch(run, book, {"decisions": [entry]})
+    assert (code, receipt["accepted"]) == (0, {"decision": 1}), err
 
 
 def odds(kelly: float) -> dict:
@@ -318,62 +292,3 @@ def test_start_registers_the_baseline_with_a_kill_date_a_year_out(book):
     made = date.fromisoformat(line["ts"][:10])
     assert date.fromisoformat(line["falsifier_by"]) == year_after(made)
     assert year_after(date(2028, 2, 29)) == date(2029, 2, 28)
-
-
-SCORE = {
-    "kw": ["bet", "scored"],
-    "resolved": "2026-09-30",
-    "outcome": "drift held through the horizon",
-    "realized_return": 0.04,
-    "brier": 0.16,
-    "log_score": -0.51,
-    "attribution": {
-        "market": 0.01,
-        "factor": 0.02,
-        "currency": 0.0,
-        "idiosyncratic": 0.015,
-        "costs": -0.005,
-    },
-}
-
-
-def test_scored_names_a_live_hypothesis_and_a_dangling_subject_is_refused(
-    book, run, make_hypothesis
-):
-    code, receipt, err = batch(
-        run, book, {"hypotheses": [make_hypothesis(["first", "bet"])]}
-    )
-    assert code == 0, err
-    first = receipt["new"]["hypotheses"]["first-bet"]
-    code, verdict, _ = batch(run, book, {"scored": [SCORE | {"subject": "ghost"}]})
-    assert code == 1
-    assert [p["where"] for p in verdict["rejected"]] == ["scored[0].subject"]
-    code, receipt, err = batch(run, book, {"scored": [SCORE | {"subject": first}]})
-    assert code == 0, err
-    assert receipt["accepted"] == {"scored": 1}
-    line = json.loads((book / "ledger" / "scored.jsonl").read_text())
-    assert (line["subject"], line["attribution"]["costs"]) == (first, -0.005)
-    later = make_hypothesis(["first", "again"], supersedes=first)
-    code, verdict, _ = batch(
-        run, book, {"hypotheses": [later], "scored": [SCORE | {"subject": first}]}
-    )
-    assert code == 1  # superseded in the same batch: no longer live
-    assert [p["where"] for p in verdict["rejected"]] == ["scored[0].subject"]
-
-
-def test_forgo_names_a_strategy(book, run):
-    forgo = {
-        "kw": ["skip", "baseline"],
-        "action": "forgo",
-        "reason": "sleeve passes; operator holds cash this month",
-    }
-    hypothesis = json.loads((book / "ledger" / "hypotheses.jsonl").read_text())
-    code, verdict, _ = batch(
-        run, book, {"decisions": [forgo | {"subject": hypothesis["id"]}]}
-    )
-    assert code == 1
-    assert [p["where"] for p in verdict["rejected"]] == ["decisions[0].subject"]
-    code, receipt, err = batch(
-        run, book, {"decisions": [forgo | {"subject": "baseline"}]}
-    )
-    assert (code, receipt["accepted"]) == (0, {"decision": 1}), err

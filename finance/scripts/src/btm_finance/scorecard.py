@@ -7,7 +7,7 @@ import math
 from enum import StrEnum
 from typing import Any
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from btm_corekit import Model
 from btm_finance.models import Exclusions
@@ -98,24 +98,27 @@ class RunLine(Model):
     """One `measure` run: every key `measure --repeat` needs to rerun it. `refused`
     lists bounds broken after running; the line counts as a trial anyway.
     `peers` are the run ids whose series fed `sr_var` and PBO, in order;
-    `code_objects` each book-relative code file in `code_paths` to its
-    committed blob id;
-    `engine` the skill commit and library versions; `imports` what
-    `signal.py` reaches from outside the book; `override_reason` the
-    `--reason` that ran past a policy refusal."""
+    `code_hash` one digest over `signal.py`, `config.json`, and each reached
+    book-local module, canonical; `code_files` each of those paths to its
+    own digest; `engine` the package version; `imports` what `signal.py`
+    reaches from outside the book; `override_reason` the `--reason` that ran
+    past a policy refusal. Keys of older lines no field names are ignored."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
 
     run_id: str
     hypothesis_id: str
     family_id: str
     strategy: str
     data_snapshot: str
-    code_paths: tuple[str, ...]
-    code_objects: dict[str, str]
+    code_hash: str | None = None
+    """None on a line written before code hashes: `--repeat` refuses it."""
+    code_files: dict[str, str] = Field(default_factory=dict)
     config: dict[str, Any]
     params: dict[str, float]
     scorecard: Scorecard
     reasons: dict[str, str]
-    engine: dict[str, str]
+    engine: str
     tolerance: float
     held_out: bool
     exclusions: Exclusions
@@ -124,8 +127,6 @@ class RunLine(Model):
     span: Span
     returns: str
     agent: str | None
-    regimes: tuple[str, ...] = ()
-    regime_days: dict[str, int] = Field(default_factory=dict)
     imports: tuple[str, ...] = ()
     universe: UniverseKind = UniverseKind.STATIC
     override_reason: str | None = None

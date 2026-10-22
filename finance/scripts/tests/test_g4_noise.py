@@ -1,18 +1,16 @@
 """G4: evidence survives multiple testing. A family of 100 random signals on a
-pure-noise synthetic panel yields fewer than 5 promotable or probe standings.
+pure-noise synthetic panel yields fewer than 5 promotable standings.
 
 Every non-statistical gate is opened first, so only DSR, PBO, the residual
 t-stat, and the capacity rule decide: each run gets a critique with no
-blockers and each strategy an override decision. Sizing keeps the test under
-60 seconds: 60 names, 1200 trading days, monthly rebalances.
+blockers. Sizing keeps the test under 60 seconds: 60 names, 1200 trading
+days, monthly rebalances.
 """
 
 from __future__ import annotations
 
 import json
 from textwrap import dedent
-
-from btm_finance import git
 
 FAMILY = 100
 RANDOM = dedent(
@@ -71,7 +69,6 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
                 "kw": ["noise", str(seed)],
                 "strategy": name,
                 "family_id": "noise",
-                "capacity_class": "in_band",
                 "falsifier": "chance",
                 "counterparty": "none: planted noise",
                 "min_holding_days": 21,
@@ -84,7 +81,6 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
                 },
             }
         )
-    git.commit(book, ["strategies"], "feat: plant noise family")
     record(run, book, {"hypotheses": hypotheses})
     run_ids = [
         run(["measure", str(book), f"noise-{seed}"])[1]["run_id"]
@@ -104,24 +100,13 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
                 }
                 for k, run_id in enumerate(run_ids)
             ],
-            "decisions": [
-                {
-                    "kw": ["open", str(seed)],
-                    "subject": f"noise-{seed}",
-                    "action": "override",
-                    "reason": "test opens the crowding gate",
-                }
-                for seed in range(FAMILY)
-            ],
         },
     )
     standings = [
         run(["check", str(book), f"noise-{seed}"])[1] for seed in range(FAMILY)
     ]
     promotable = [
-        view["strategy"]
-        for view in standings
-        if view["standing"] in {"promotable", "probe"}
+        view["strategy"] for view in standings if view["standing"] == "promotable"
     ]
     assert len(promotable) < 5, promotable
     assert all(view["scorecard"]["trials"] == k + 1 for k, view in enumerate(standings))

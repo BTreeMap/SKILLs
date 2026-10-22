@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 import numpy as np
-import pyarrow as pa
 from pydantic import BaseModel
 
 import btm_finance
@@ -32,7 +31,6 @@ from btm_corekit import (
     ascii_words,
     count_lines,
     dispatch,
-    dump,
     emit,
     gated,
     make_id,
@@ -45,15 +43,8 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
-from btm_finance import (
-    approvals,
-    delegates,
-    git,
-    governed,
-    heartbeat,
-    loader,
-    onboarding,
-)
+from btm_finance import fills as pasted_fills
+from btm_finance import loader
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import (
@@ -93,12 +84,14 @@ from btm_finance.data.tables import (
     day_of,
 )
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
-from btm_finance.evolution import evolution
 from btm_finance.ledger import (
     ENVELOPE,
+    IGNORED,
+    SCORED,
     Kind,
     Numbered,
     Row,
+    closed_of,
     current,
     cut_line,
     dangling,
@@ -113,7 +106,6 @@ from btm_finance.live import (
     LiveReport,
     LiveRow,
     RunFacts,
-    Sleeve,
     breaches_of,
     fill_of,
     fresh,
@@ -139,11 +131,7 @@ from btm_finance.measuring import (
     target_weights,
 )
 from btm_finance.models import (
-    ANSWERS_SHAPE,
-    RECEIPT_SHAPE,
-    SUMMARY_WORDS,
     Action,
-    Answers,
     Cadence,
     Exclusions,
     Limits,
@@ -151,7 +139,6 @@ from btm_finance.models import (
     Status,
     StrategyConfig,
     baseline_hypothesis,
-    book_relative,
     commission_ceiling,
 )
 from btm_finance.recommending import (
@@ -164,36 +151,27 @@ from btm_finance.recommending import (
     RuinCut,
     Skipped,
     Tier,
-    account_of,
-    approval_of,
     propose,
-)
-from btm_finance.regimes import (
-    Dated,
-    concentration,
-    dated,
-    falsified_warnings,
-    regime_record,
-    regime_stamp,
+    real,
 )
 from btm_finance.repeat import (
     Presence,
     RepeatReport,
     code_drift,
+    code_files,
+    code_hash,
     compare,
     data_drift,
     peer_drift,
 )
 from btm_finance.repeat import advisories as engine_advisories
-from btm_finance.scaffold import INDEX, onboard_files, scaffold, template
+from btm_finance.scaffold import DEFAULT_CAP, scaffold
 from btm_finance.scorecard import RunLine, Span, UniverseKind
 from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
-    MARKER,
     PAD_DIR,
     Book,
     append_ledger,
-    governed_paths,
     held_out_list,
     load_limits,
     load_preferences,
@@ -207,26 +185,22 @@ from btm_finance.store import (
     run_files,
     strategies,
 )
-from btm_finance.streams import Series, effective_streams, pairs_of
 from btm_finance.views import (
-    CLOSING,
     by_status,
     families,
     next_step,
     open_hypotheses,
     open_proposals,
     overdue,
+    trials_today,
     unscored,
 )
 
 UNIVERSE = Optional("universe", inline=False)
 CONFIG = Optional("config", inline=False)
-ANSWERS = Optional("answers", inline=False)
 FILLS = Optional("fills", inline=False)
 FILLS_SLOT = Required("fills", inline=False)  # names the flag in a rejection
-ANSWERS_HELP = "JSON object of onboarding answers; check --schema answers prints it"
-SCHEMA_KINDS = ("record", "run", "answers", "pad", "receipt", "approval", "strategy")
-RECEIPT = "receipt"
+SCHEMA_KINDS = ("record", "run", "pad", "strategy")
 LATER: dict[str, str] = {}
 MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
 STALE_BARS = 5  # trading days an as-of bar may trail the proposal date
@@ -247,101 +221,29 @@ def positive(raw: str) -> int:
 
 
 def start(
-    root: Path,
-    cap: int | None,
-    universe: str | None,
-    held_out: Path | None = None,
-    answers: Answers | None = None,
+    root: Path, cap: int | None, universe: str | None, held_out: Path | None = None
 ) -> dict[str, Any]:
-    """Make the book, register the baseline hypothesis, commit it all as
-    `start: <id>`, then record the `onboard` decision naming the blob of
-    every governed file the scaffold wrote, and commit its ledger line."""
-    receipt = scaffold(root, cap, universe, held_out, answers)
+    """Make the book, then register the baseline hypothesis."""
+    receipt = scaffold(root, cap, universe, held_out)
     book = open_book(str(root))
     hypotheses = {"hypotheses": [baseline_hypothesis(datetime.now(UTC).date())]}
     result = recorded(book, hypotheses)
-    receipt["commit"] = git.commit(book.root, ["."], f"start: {book.meta.id}")
-    recorded(book, {"decisions": [onboarded(book, governed_paths(book.root))]})
-    git.commit(book.root, [DECISIONS], f"start: {book.meta.id} onboard decision")
-    receipt["wrote"] += ["ledger/hypotheses.jsonl", DECISIONS]
+    receipt["wrote"] += ["ledger/hypotheses.jsonl"]
     receipt["new"] = result.new["hypotheses"]
     return receipt
 
 
-DECISIONS = "ledger/decisions.jsonl"
-
-
-def onboarded(book: Book, applied: list[str]) -> dict[str, Any]:
-    """The decision `start` records for the governed files it wrote."""
-    return {
-        "kw": ["book", "start"],
-        "subject": book.meta.id,
-        "action": Action.ONBOARD.value,
-        "reason": "start",
-        "applied": applied,
-    }
-
-
 def cmd_start(args: argparse.Namespace) -> int:
-    """A new book; on an existing one, with answers, its instruction files."""
-    raw = text(ANSWERS, args)
-    answers = None if raw is None else onboarding.answers_of(raw)
-    root = Path(args.book).expanduser()
-    universe = text(UNIVERSE, args)
-    if answers is not None and (root / MARKER).is_file():
-        if args.cap is not None or universe is not None or args.held_out is not None:
-            raise CommandError(
-                f"{root} is a book: start takes only --answers:file and --force there"
-            )
-        emit(onboard(open_book(str(root)), answers, force=args.force))
-        return 0
-    emit(start(root, args.cap, universe, args.held_out, answers))
+    emit(
+        start(
+            Path(args.book).expanduser(), args.cap, text(UNIVERSE, args), args.held_out
+        )
+    )
     return 0
 
 
-def onboard(book: Book, answers: Answers, *, force: bool) -> dict[str, Any]:
-    """Instruction files for an existing book, and each answered limit that
-    differs written into `limits.json`, committed as `onboard: <id>`, under
-    an `onboard` decision naming that commit; `preferences.json` changes
-    only through the returned batch."""
-    git.repository_at(book.root)
-    onboarding.refuse_existing(book.root, force=force)
-    limits = load_limits(book)
-    claude = onboard_files(
-        book.root,
-        book.meta,
-        answers,
-        answers.capital.now or limits.asset_cap,
-        utc_today().isoformat(),
-    )
-    changes = onboarding.limit_changes(answers, limits)
-    wrote = list(onboarding.FILES)
-    if changes:
-        path = book.root / governed.LIMITS
-        write_atomic(
-            path,
-            json.dumps(onboarding.patched(read_json(path), changes), indent=2) + "\n",
-        )
-        wrote.append(governed.LIMITS)
-    commit = git.commit(book.root, wrote, f"onboard: {book.meta.id}")
-    if changes:
-        recorded(book, {"decisions": [onboarded(book, [governed.LIMITS])]})
-        git.commit(book.root, [DECISIONS], f"onboard: {book.meta.id} decision")
-        wrote.append(DECISIONS)
-    return {
-        "book": book.meta.id,
-        "wrote": wrote,
-        "commit": commit,
-        "claude_md": claude,
-        "limits": changes,
-        "preferences": onboarding.preference_batch(answers, load_preferences(book)),
-        "next": "tell the operator each limits value written; confirm "
-        "preferences with the operator, then record them as a batch",
-    }
-
-
 def utc_today() -> date:
-    """Today, UTC: the one day an approval holds."""
+    """Today, UTC."""
     return datetime.now(UTC).date()
 
 
@@ -357,40 +259,10 @@ def run_ids(book: Book) -> list[str]:
     return [run_id for path in run_files(book) for run_id in ids_of(path, "run_id")]
 
 
-def pointers(book: Book) -> tuple[dict[str, str], frozenset[str]]:
-    """Each clean, committed governed file to its blob id at HEAD, and the
-    governed files that differ from HEAD or are untracked. Three git calls."""
-    dirty = frozenset(
-        path
-        for path in git.dirty(book.root, governed.PATHSPECS)
-        if governed.governed(path)
-    )
-    blobs = git.tree_blobs(book.root, [governed.LIMITS, "strategies", "approvals"])
-    present = governed_paths(book.root)
-    return {p: blobs[p] for p in present if p in blobs and p not in dirty}, dirty
-
-
-def needs_pointers(batch: Mapping[str, Any]) -> bool:
-    """A decision in the batch names a governed file."""
-    rows = batch.get("decisions")
-    return isinstance(rows, list) and any(
-        isinstance(row, dict) and row.get("applied") for row in rows
-    )
-
-
-def context_of(book: Book, *, resolve: bool = False) -> Context:
-    """Live book state the gate resolves a batch against; with `resolve`,
-    governed files' blob ids too, which needs git."""
+def context_of(book: Book) -> Context:
+    """Live book state the gate resolves a batch against."""
     limits = load_limits(book)
-    resolved, dirty = pointers(book) if resolve else ({}, frozenset[str]())
-    kinds = (
-        Kind.HYPOTHESIS,
-        Kind.CRITIQUE,
-        Kind.DECISION,
-        Kind.SCORED,
-        Kind.REGIME,
-        Kind.FILL,
-    )
+    kinds = (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.FILL)
     ids = {kind: ids_of(book.path_of(kind)) for kind in kinds}
     return Context(
         families=frozenset(limits.families),
@@ -398,38 +270,23 @@ def context_of(book: Book, *, resolve: bool = False) -> Context:
         ids={**ids, Kind.RUN: run_ids(book)},
         strategies=[strategy.name for strategy in strategies(book)],
         proposals=proposal_dates(book),
-        live_regimes=frozenset(
-            str(row.get("id")) for row in current(kind_rows(book, Kind.REGIME))
-        ),
-        live_hypotheses=frozenset(
-            str(row.get("id")) for row in current(kind_rows(book, Kind.HYPOTHESIS))
-        ),
         book=book.meta.id,
-        governed=resolved,
-        dirty=dirty,
     )
 
 
 def committed(book: Book, result: RecordResult) -> dict[str, int]:
-    """Staged rows appended per kind, `preferences.json` rewritten when given;
-    accepted counts per kind."""
+    """Staged rows appended per kind; accepted counts per kind."""
     accepted: dict[str, int] = {}
     for kind, rows in sorted(result.staged.items()):
         append_ledger(book.path_of(kind), rows)
         accepted[kind.value] = len(rows)
-    if result.preferences is not None:
-        write_atomic(
-            book.root / "preferences.json",
-            json.dumps(dump(result.preferences), indent=2) + "\n",
-        )
     return accepted
 
 
 def recorded(book: Book, batch: dict[str, Any]) -> RecordResult:
     """A batch the program builds itself, through the same gate; any problem
     is a defect, so it raises."""
-    context = context_of(book, resolve=needs_pointers(batch))
-    result = expand_batch(context, batch, make_id, now_iso())
+    result = expand_batch(context_of(book), batch, make_id, now_iso())
     if result.problems:
         raise CommandError(f"record refused {batch}: {result.problems}")
     committed(book, result)
@@ -440,19 +297,15 @@ def cmd_record(args: argparse.Namespace) -> int:
     book = open_book(args.book)
 
     def expand(batch: dict[str, Any]) -> RecordResult:
-        context = context_of(book, resolve=needs_pointers(batch))
-        return expand_batch(context, batch, make_id, now_iso())
+        return expand_batch(context_of(book), batch, make_id, now_iso())
 
     def commit(result: RecordResult) -> dict[str, Any]:
-        document: dict[str, Any] = {
+        return {
             "book": book.meta.id,
             "accepted": committed(book, result),
+            "new": result.new,
+            "next": "run check for the continue view",
         }
-        if result.preferences is not None:
-            document["preferences"] = "rewritten"
-        document["new"] = result.new
-        document["next"] = "run check for the continue view"
-        return document
 
     sugar = fills_batch(book, args)
     if sugar is None:
@@ -474,102 +327,32 @@ def cmd_record(args: argparse.Namespace) -> int:
 def fills_batch(
     book: Book, args: argparse.Namespace
 ) -> tuple[dict[str, Any], list[Diagnostic]] | None:
-    """`--fills:file` or `--dry-run` against `--approval` as a `fills` batch
-    and the problems refusing it; None when the batch slot carries the batch."""
+    """`--fills:file` against `--proposal` as a `fills` batch and the problems
+    refusing it; None when the batch slot carries the batch."""
     raw = text(FILLS, args)
-    if args.approval is None:
-        if raw is not None or args.dry_run:
-            raise CommandError("--fills:file and --dry-run need --approval <file>")
+    if args.proposal is None:
+        if raw is not None:
+            raise CommandError("--fills:file needs --proposal <stem>")
         return None
     if args.batch_file is not None or getattr(args, "stdin", None) == "batch":
-        raise CommandError("--approval builds the batch; drop --batch")
-    if (raw is None) is not args.dry_run:
-        raise CommandError("--approval takes one of --fills:file or --dry-run")
-    today = utc_today().isoformat()
-    path = approval_file(book, args.approval)
-    approval = approval_checked(book, path, today)
+        raise CommandError("--proposal builds the batch; drop --batch")
     if raw is None:
-        fills, problems = approvals.dry_run(approval, today)
-    else:
-        rows = approvals.table_rows(raw, "the fills")
-        fills, problems = approvals.pasted(
-            rows, approval.orders, statuses_of(book), today
-        )
-    return {"fills": [fill | {"approval": path.stem} for fill in fills]}, problems
+        raise CommandError("--proposal needs --fills:file <table>")
+    orders = proposal_orders(book, args.proposal)
+    rows = pasted_fills.table_rows(raw, "the fills")
+    made, problems = pasted_fills.pasted(rows, orders, utc_today().isoformat())
+    return {"fills": [fill | {"proposal": args.proposal} for fill in made]}, problems
 
 
-def statuses_of(book: Book) -> dict[str, str]:
-    """Each strategy directory's raw `status` word, empty when absent."""
-    return {found.name: found.raw for found in strategies(book)}
-
-
-def approval_file(book: Book, raw: str) -> Path:
-    """`raw`, absolute or book-relative, resolving to a file under `approvals/`."""
-    folder = (book.root / "approvals").resolve()
-    given = Path(raw).expanduser()
-    path = (given if given.is_absolute() else book.root / given).resolve()
-    if not path.is_relative_to(folder) or not path.is_file():
-        raise CommandError(f"{raw} is no file under the book's approvals/")
-    return path
-
-
-def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
-    """The approval against its proposal, `limits.json`, each status, and the
-    `approve` decisions naming its committed blob."""
-    try:
-        document = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as err:
-        raise CommandError(f"unreadable approvals/{path.name}: {err}") from err
-    shown = book.relative(path)
-    clean = not git.dirty(book.root, [shown])
-    witness = (shown, git.blob(book.root, "HEAD", shown) if clean else "")
-    approvals_seen = governed.witnesses(
-        (row for _, row in kind_rows(book, Kind.DECISION)), Action.APPROVE
-    )
+def proposal_orders(book: Book, stem: str) -> list[Any]:
+    """The `orders` of `proposals/<stem>.json`; refuses a stem naming no file."""
     folder = (book.root / "proposals").resolve()
-
-    def orders_of(stem: str) -> list[Any] | None:
-        target = (folder / f"{stem}.json").resolve()
-        if target.parent != folder or not target.is_file():
-            return None
-        try:
-            found = json.loads(target.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
-        orders = found.get("orders") if isinstance(found, dict) else None
-        return orders if isinstance(orders, list) else None
-
-    return approvals.checked(
-        document,
-        path.stem,
-        today=today,
-        cap=load_limits(book).max_adv_participation,
-        statuses=statuses_of(book),
-        proposal_orders=orders_of,
-        witnessed=clean and witness in approvals_seen,
-    )
-
-
-def approval_view(book: Book, target: str, today: date) -> tuple[dict[str, Any], int]:
-    """`check <book> approvals/<date>.json`: the order table and every problem."""
-    path = approval_file(book, target)
-    found = approval_checked(book, path, today.isoformat())
-    for problem in found.problems:
-        signal(f"approval: {problem}")
-    shown = f"approvals/{path.name}"
-    return {
-        "book": book.meta.id,
-        "approval": shown,
-        "orders": list(found.orders),
-        "problems": list(found.problems),
-        "next": "fix each problem: rewrite the file from the operator's reply "
-        "and record its approve decision again, then check it"
-        if found.problems
-        else "operator places each probe and live order by hand at the broker "
-        "and pastes fills in chat; show the parsed table back, on yes run "
-        f"record --fills:file <table> --approval {shown}; paper orders now: "
-        f"record --approval {shown} --dry-run",
-    }, 1 if found.problems else 0
+    target = (folder / f"{stem}.json").resolve()
+    if target.parent != folder or not target.is_file():
+        raise CommandError(f"--proposal {stem} names no file under proposals/")
+    found = read_json(target)
+    orders = found.get("orders") if isinstance(found, dict) else None
+    return orders if isinstance(orders, list) else []
 
 
 def cmd_check(args: argparse.Namespace) -> int:
@@ -578,12 +361,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         return 0
     if args.book is None:
         raise CommandError("check needs a book path; only --schema runs without one")
-    book = open_book(args.book)
-    if args.target is not None and args.target.endswith(".json"):
-        view, code = approval_view(book, args.target, args.today or utc_today())
-        emit(view)
-        return code
-    return book_check(book, args)
+    return book_check(open_book(args.book), args)
 
 
 def today_of(args: argparse.Namespace) -> date:
@@ -608,7 +386,7 @@ def book_check(book: Book, args: argparse.Namespace) -> int:
     try:
         when = date.fromisoformat(args.target)
     except ValueError:
-        standing = standing_view(book, args.target, advisory=True)
+        standing = standing_view(book, args.target)
         emit(standing.model_dump(mode="json"))
         return 0
     emit(proposal_view(book, when))
@@ -639,57 +417,31 @@ def hypothesis_for(book: Book, run: Row | None, strategy: str) -> Row | None:
     return next((row for _, row in rows if row.get("id") == wanted), None)
 
 
-def regime_rows(book: Book) -> list[Dated]:
-    return dated(current(kind_rows(book, Kind.REGIME)))
+def decisions_of(book: Book) -> list[Row]:
+    """Live decisions, an older book's `scored` lines read as `close`
+    decisions among them, oldest first by `ts`."""
+    scored = rows_of(read_bytes(book.ledger / SCORED))
+    rows = kind_rows(book, Kind.DECISION) + [
+        (number, closed_of(row)) for number, row in scored
+    ]
+    return sorted(current(rows), key=lambda row: str(row.get("ts", "")))
 
 
-def sleeve_series(book: Book, manifest: Manifest, skip: str) -> dict[str, Series]:
-    """Each paper or live sleeve's newest research run series, but `skip`'s;
-    a sleeve with no stored series is left out."""
-    runs = all_runs(book)
-    found: dict[str, Series] = {}
-    for listed in strategies(book):
-        if listed.name == skip or account_of(listed.status) is None:
-            continue
-        run = newest_run(runs, listed.name)
-        series = (
-            None if run is None else read_returns(book, manifest, str(run["run_id"]))
-        )
-        if series is not None:
-            found[listed.name] = series
-    return found
+def fill_proposal(row: Row) -> str | None:
+    """The proposal stem a fill names; an older fill's `approval` stem reads
+    as one."""
+    named = row.get("proposal")
+    if isinstance(named, str):
+        return named
+    approval = row.get("approval")
+    if not isinstance(approval, str):
+        return None
+    return approval.rpartition("/")[2].removesuffix(".json")
 
 
-def advisory_of(
-    book: Book, view: StandingView, run: Row, limits: Limits
-) -> StandingView:
-    """Regime concentration, correlation with each sleeve, effective streams;
-    never a blocker. O(S^2 T log T)."""
-    manifest = read_manifest(book)
-    own = read_returns(book, manifest, str(run.get("run_id")))
-    sleeves = sleeve_series(book, manifest, view.strategy)
-    series = {**sleeves, **({view.strategy: own} if own is not None else {})}
-    pairs = pairs_of(series)
-    streams = effective_streams(sorted(series), pairs)
-    if streams is not None and streams < limits.min_effective_streams:
-        signal(
-            f"effective_streams {streams:.3g} under limits.min_effective_streams "
-            f"{limits.min_effective_streams}: {view.strategy} adds a trial, "
-            "not a stream"
-        )
-    return view.with_(
-        regime_concentration=concentration(run.get("regime_days")),
-        correlation={
-            name: None if own is None else pairs[frozenset((name, view.strategy))]
-            for name in sorted(sleeves)
-        },
-        effective_streams=streams,
-    )
-
-
-def standing_view(book: Book, target: str, *, advisory: bool = False) -> StandingView:
+def standing_view(book: Book, target: str) -> StandingView:
     """`check <strategy>` or `check <run id>`: standing of the newest measured
-    research run, or of the named run; `advisory` adds the stream fields."""
+    research run, or of the named run."""
     runs = all_runs(book)
     named = {str(row.get("run_id")): row for row in runs}
     listed = {s.name: s for s in strategies(book)}
@@ -713,14 +465,10 @@ def standing_view(book: Book, target: str, *, advisory: bool = False) -> Standin
         run=run,
         hypothesis=hypothesis_for(book, run, strategy),
         critique=critiques[-1] if critiques else None,
-        decisions=current(kind_rows(book, Kind.DECISION)),
         status=found.status if found else Status.RESEARCH,
         raw_status=found.raw if found else "",
-        today=datetime.now(UTC).date(),
     )
-    limits = load_limits(book)
-    view = standing_of(evidence, limits)
-    return advisory_of(book, view, run, limits) if advisory and run else view
+    return standing_of(evidence, load_limits(book))
 
 
 def ledger_warnings(book: Book) -> list[dict[str, Any]]:
@@ -741,37 +489,11 @@ def ledger_warnings(book: Book) -> list[dict[str, Any]]:
     return found
 
 
-def index_warning(book: Book) -> list[dict[str, Any]]:
-    """`INDEX.md` absent."""
-    if (book.root / INDEX).is_file():
-        return []
-    signal(
-        f"no {INDEX} in the book; write it with one line per lib, tool, topic, brief"
-    )
-    return [{"file": INDEX, "problem": "absent"}]
-
-
-def absent_writes(root: Path, pad: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """One tagged warning per `wrote` path of a `receipt` pad line that is
-    outside the book or absent from it. O(pad lines + paths)."""
-    found: list[dict[str, Any]] = []
-    for row in pad:
-        wrote = row.get("wrote") if row.get("type") == RECEIPT else None
-        for path in wrote if isinstance(wrote, list) else []:
-            try:
-                present = (root / book_relative(str(path))).exists()
-            except ValueError:
-                present = False
-            if not present:
-                found.append(
-                    {
-                        "problem": "receipt path absent",
-                        "unit": row.get("unit"),
-                        "ts": row.get("ts"),
-                        "path": path,
-                    }
-                )
-    return found
+def ignored_files(book: Book) -> None:
+    """One signal per older ledger file no view reads."""
+    for name in IGNORED:
+        if (book.ledger / name).is_file():
+            signal(f"ledger/{name} holds an older kind no view reads; ignored")
 
 
 def continue_view(book: Book, today: date) -> dict[str, Any]:
@@ -780,14 +502,10 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
     warnings = ledger_warnings(book)
     if warnings:
         signal(f"{len(warnings)} ledger warning(s) under warnings; tell the operator")
-
-    def live(kind: Kind) -> list[dict[str, Any]]:
-        return current(kind_rows(book, kind))
-
+    ignored_files(book)
     runs = all_runs(book)
     hypothesis_lines = kind_rows(book, Kind.HYPOTHESIS)
-    hypotheses, decisions = current(hypothesis_lines), live(Kind.DECISION)
-    scored = live(Kind.SCORED)
+    hypotheses, decisions = current(hypothesis_lines), decisions_of(book)
     listed = strategies(book)
     known = {s.name: s.status for s in listed if s.status is not None}
     unknown = [
@@ -799,173 +517,56 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
             f"not one of {'|'.join(Status)}"
         )
     proposals = open_proposals(proposal_dates(book), decisions, today)
-    every_decision = [row for _, row in kind_rows(book, Kind.DECISION)]
-    log = git.log_commits(book.root, governed.PATHSPECS)
-    resolved, dirty = pointers(book)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
-    preferences = load_preferences(book)
-    pad = [row for _, row in rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))]
-    pulse = heartbeat.pulse(
-        pad, preferences, datetime.now(UTC), datetime.now().astimezone().time()
-    )
-    stale_pulse = heartbeat.stale_warning(pulse, preferences.heartbeat_minutes)
-    if stale_pulse:
-        signal(
-            f"newest heartbeat is {pulse['minutes_since']} minutes old; "
-            "run the queue and schedule the next wake"
-        )
-    used_today = heartbeat.trials_today(runs, today)
-    absent = absent_writes(book.root, pad)
-    if absent:
-        signal(
-            f"{len(absent)} receipt path(s) absent under warnings; examine "
-            "those receipts again"
-        )
-    briefless = delegates.absent_briefs(book.root, pad)
-    if briefless:
-        signal(
-            f"{len(briefless)} delegate brief(s) absent under warnings; write "
-            "delegates/<unit>.md before next dispatch"
-        )
-    records = regime_rows(book)
-    regime = regime_record(records, today, limits.regime_stale_days)
-    if regime is not None and regime.stale:
-        signal(f"regime record {regime.id} as of {regime.as_of} is stale; draft one")
-    closed = {d.get("subject") for d in decisions if d.get("action") in CLOSING}
-    fired = falsified_warnings(records, hypotheses, closed)
-    for entry in fired:
-        signal(
-            f"hypothesis {entry['hypothesis']} cites chain {entry['chain']}, "
-            f"falsified in regime {entry['regime']}; write an objection pad entry"
-        )
     retired = frozenset(name for name, s in known.items() if s is Status.RETIRED)
     late = [
-        *overdue(hypotheses, decisions, scored, retired, today),
-        *unscored(hypotheses, decisions, scored, today),
+        *overdue(hypotheses, decisions, retired, today),
+        *unscored(hypotheses, decisions, today),
     ]
     if late:
         signal(f"{len(late)} overdue or unscored hypothesis(es) under warnings")
     budgets = families(
         limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
     )
-    unwitnessed = [
-        *governed.unnamed(log, every_decision),
-        *governed.uncommitted(dirty),
-    ]
-    if unwitnessed:
-        signal(
-            f"{len(unwitnessed)} governed change(s) no decision names, under "
-            "warnings: tell the operator; record their word as a decision with "
-            "applied after committing"
-        )
     return {
         "book": book.meta.id,
         "as_of": now_iso(),
-        "regime": None if regime is None else regime.model_dump(mode="json"),
         "strategies": {**by_status(known), "unknown": unknown},
         "families": budgets,
         "proposals": proposals,
-        "approvals": approval_rows(book, resolved, every_decision, live(Kind.FILL)),
-        "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
+        "incidents": current(kind_rows(book, Kind.INCIDENT))[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
-        "heartbeat": pulse,
-        "trials_today": {"used": used_today, "cap": limits.trials_per_day},
-        "warnings": [
-            *warnings,
-            *stale_pulse,
-            *absent,
-            *briefless,
-            *fired,
-            *late,
-            *unwitnessed,
-            *index_warning(book),
-            *onboarding.warnings(book.root, template("AGENTS.tmpl")),
-        ],
-        "evolution": evolution_of(book, pad, runs, today, limits.idle_days),
-        "next": started(
-            pulse, next_step(hypotheses, pending, proposals, late, budgets)
-        ),
+        "trials_today": {
+            "used": trials_today(runs, today),
+            "cap": limits.trials_per_day,
+        },
+        "warnings": [*warnings, *late],
+        "next": next_step(hypotheses, pending, proposals, late, budgets),
     }
 
 
-def started(pulse: Mapping[str, Any], step: str) -> str:
-    """`next` prefixed with starting the heartbeat while no line exists."""
-    return step if pulse["last"] is not None else f"{heartbeat.START}; then {step}"
-
-
-def evolution_of(
-    book: Book, pad: Sequence[Row], runs: Sequence[Row], today: date, idle_days: int
-) -> dict[str, Any]:
-    """Bare `check` `evolution`: one directory walk and one `git log` over
-    `lib/` and `tools/`."""
-    root = book.root
-
-    def code(folder: str) -> list[str]:
-        return [
-            path.relative_to(root).as_posix()
-            for path in (root / folder).rglob("*.py")
-            if path.name != "__init__.py" and "__pycache__" not in path.parts
-        ]
-
-    dates: dict[str, str] = {}
-    for found in git.log_commits(root, ["lib", "tools"]):
-        for path in found.files:
-            dates.setdefault(path, found.date)
-    return evolution(
-        briefs=[path.stem for path in (root / delegates.DELEGATES).glob("*.md")],
-        pad=pad,
-        runs=runs,
-        lib=code("lib"),
-        tools=code("tools"),
-        commits=dates,
-        today=today,
-        idle_days=idle_days,
-    )
-
-
-def approval_rows(
-    book: Book,
-    resolved: Mapping[str, str],
-    decisions: Sequence[Row],
-    fills: Sequence[Row],
-) -> list[dict[str, Any]]:
-    """Each approval file: `proposal` and `date` it names, `approved` while
-    clean and an `approve` decision names its blob, `filled` once a
-    fill carries its stem. O(A + D + F)."""
-    approves = governed.witnesses(decisions, Action.APPROVE)
-    filled = {str(row.get("approval", "")).removesuffix(".json") for row in fills}
-    rows: list[dict[str, Any]] = []
-    for path in governed_paths(book.root):
-        if not path.startswith("approvals/"):
-            continue
-        try:
-            document = json.loads((book.root / path).read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            document = None
-        named = document if isinstance(document, dict) else {}
-        rows.append(
-            {
-                "file": path,
-                "proposal": named.get("proposal"),
-                "date": named.get("date"),
-                "approved": (path, resolved.get(path)) in approves,
-                "filled": Path(path).stem in filled,
-            }
-        )
-    return rows
-
-
-def unfilled_approval(rows: Sequence[Mapping[str, Any]], today: date) -> str | None:
-    """The newest send date of an approved, unfilled approval of the last 7
-    days."""
+def unfilled(book: Book, decisions: Sequence[Row], today: date) -> str | None:
+    """The newest proposal stem an `approve` decision of the last 7 days
+    names and no real fill names. O(D + F)."""
+    named = {
+        stem
+        for row in current(kind_rows(book, Kind.FILL))
+        if real(row) and (stem := fill_proposal(row)) is not None
+    }
     found: list[str] = []
-    for row in rows:
+    for row in decisions:
+        stamp = str(row.get("ts", ""))[:10]
         try:
-            age = (today - date.fromisoformat(str(row["date"]))).days
+            age = (today - date.fromisoformat(stamp)).days
         except ValueError:
             continue
-        if row["approved"] and not row["filled"] and 0 <= age < WEEK:
-            found.append(str(row["date"]))
+        subject = str(row.get("subject"))
+        if (
+            row.get("action") == Action.APPROVE.value
+            and subject not in named
+            and 0 <= age < WEEK
+        ):
+            found.append(subject)
     return max(found, default=None)
 
 
@@ -978,7 +579,7 @@ def owed_of(book: Book, view: Mapping[str, Any], today: date) -> Owed:
     late = [w for w in view["warnings"] if w.get("problem") in {"overdue", "unscored"}]
     first = late[0] if late else None
     return Owed(
-        unfilled=unfilled_approval(view["approvals"], today),
+        unfilled=unfilled(book, decisions_of(book), today),
         unanswered=view["proposals"][0]["date"] if view["proposals"] else None,
         pending=asked,
         late=None
@@ -1002,26 +603,19 @@ def brief_view(book: Book, today: date) -> dict[str, Any]:
         bets: list[Bet] = []
         for name, sleeve in (sleeves if isinstance(sleeves, dict) else {}).items():
             run = runs.get(str(sleeve.get("run_id")))
-            card = run.get("scorecard") if run else None
             odds = (hypothesis_for(book, run, name) or {}).get("odds")
-            tier = str(sleeve.get("tier") or "-")
             bets.append(
                 Bet(
                     strategy=name,
-                    tier=tier,
+                    tier=str(sleeve.get("tier") or "-"),
                     weight=sleeve.get("weight"),
                     odds=odds if isinstance(odds, dict) else None,
-                    number=justifying(
-                        tier,
-                        sleeve.get("sharpe_net"),
-                        card.get("dsr") if isinstance(card, dict) else None,
-                    ),
+                    number=justifying(sleeve.get("sharpe_net")),
                 )
             )
         opened.append(Open(entry["date"], entry["age_days"], tuple(bets)))
     late = Counter(w.get("problem") for w in view["warnings"])
     return brief(
-        regime=view["regime"],
         proposals=opened,
         incidents=current(kind_rows(book, Kind.INCIDENT)),
         overdue=late["overdue"],
@@ -1146,34 +740,20 @@ def strategy_schema() -> dict[str, Any]:
 SCHEMA_VIEW: dict[str, dict[str, Any]] = {
     "record": {
         "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
-        "sequence": "hypotheses, critiques, decisions, scored, regimes, "
-        "fills, holdings, preferences; a decision or scored line may name a "
-        "hypothesis made earlier in the batch",
+        "sequence": "hypotheses, critiques, decisions, fills; a decision may "
+        "name a hypothesis made earlier in the batch",
         "ledger_line": f"{', '.join(ENVELOPE)} (stamped by record), then the record",
         "corrections": '"supersedes": "<id>" on a new line; newest wins',
         "refs": REFS_SCHEMA + "; receipts echo every new id under new",
         "fill_table": "CSV with header symbol,side,quantity,price,date "
         "(optional strategy), or a JSON list of objects with those keys; "
-        "record --fills:file <table> --approval <file> turns it into fills, "
-        "strategy taken from the approval's one order of that symbol and side "
-        "when absent; record --approval <file> --dry-run fills its paper "
-        "orders at price",
+        "record --fills:file <table> --proposal <stem> turns it into fills, "
+        "strategy taken from the proposal's one order of that symbol and side "
+        "when absent",
     },
     "run": {
         "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
         "strategy_config": "check --schema strategy",
-    },
-    "answers": {
-        "answers": ANSWERS_SHAPE,
-        "answers_rules": "start --answers:file, new book or existing; every "
-        "key optional, a missing one takes its default (risk 0.35 and 0.25, "
-        "cadence monthly, brief_hour 7, schedule weekdays, sources csv edgar "
-        "french, collaborators none); brief_hour 0 to 23; schedule "
-        "daily|weekdays; "
-        "accounts kind taxable|sheltered; sleeve_account names one account; "
-        "cadence monthly|quarterly; sources csv|edgar|french|tiingo; "
-        "collaborators kind agent|person; unknown keys refused, so no key or "
-        "secret fits: keys live in the environment only",
     },
     "pad": {
         "path": f"{PAD_DIR.as_posix()}/scratch.jsonl; agent appends and greps "
@@ -1181,35 +761,11 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         "line": '{"ts": "<ISO 8601>", "type": "<type>", ...any fields}',
         "types": {
             **{name: meaning for name, meaning in PAD_TYPES.items() if name != "known"},
-            heartbeat.HEARTBEAT: "one wake of the always-on loop: item (tier "
-            "and unit in words), outcome (one line), next_wake (ISO)",
+            "heartbeat": "one wake of the always-on loop: item, outcome (one "
+            "line), next_wake (ISO)",
             ANSWER: "operator's reply to a question: question (the answered "
             "question line's ts), text (operator's words); closes its yes line",
-            RECEIPT: "a delegate receipt the lead accepted, verbatim, plus ts "
-            "and type; bare check warns on each wrote path absent",
         },
-    },
-    "receipt": {
-        "receipt": RECEIPT_SHAPE,
-        "rules": "a delegate's final message is this one JSON object and "
-        "nothing else; every key required, no other key; wrote paths "
-        f"book-relative; summary at most {SUMMARY_WORDS} words; next and "
-        "friction one line each, empty allowed; commit the 40-hex head of "
-        "the delegate's branch after its last commit, null when it wrote "
-        "nothing; check it with btm_finance.api.receipt(text)",
-    },
-    "approval": {
-        "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '
-        '"reply": "<operator\'s reply, verbatim>", '
-        '"orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, '
-        '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
-        '"limit": null}]}',
-        "rules": "check <book> approvals/<date>.json: date is today (UTC); "
-        "reply is non-empty; the file is committed, clean, and an approve "
-        "decision names its committed blob; proposal names a file under "
-        "proposals/; every order is one of that proposal by symbol, side, "
-        "strategy; adv_participation at most "
-        "limits.max_adv_participation; strategy status paper, probe, or live",
     },
     "strategy": strategy_schema(),
 }
@@ -1236,49 +792,13 @@ def name_of(raw: str, what: str) -> str:
     return raw
 
 
-def code_paths(book: Book, name: str) -> tuple[str, ...]:
+def code_of(book: Book, name: str) -> dict[str, bytes]:
     """`signal.py`, `config.json`, and each book-local module `signal.py`
-    reaches, book-relative, sorted."""
+    reaches, by book-relative path, to its bytes."""
     folder = f"strategies/{name}"
     reach = strategy_reach(book.root, name)
-    return tuple(
-        sorted({f"{folder}/signal.py", f"{folder}/config.json", *reach.modules})
-    )
-
-
-def committed_code(book: Book, name: str) -> dict[str, str]:
-    """`code_objects`: each code path to its blob id at HEAD; refuses when the
-    strategy folder or a module it reaches differs from HEAD or is
-    untracked."""
-    paths = code_paths(book, name)
-    dirty = git.dirty(book.root, [f"strategies/{name}/", *paths])
-    if dirty:
-        raise CommandError(
-            f"commit before measure: {', '.join(sorted(dirty))} differs from HEAD "
-            "or is untracked"
-        )
-    return {path: git.blob(book.root, "HEAD", path) for path in paths}
-
-
-def moved_code(book: Book, name: str, objects: Mapping[str, str]) -> list[str]:
-    """Each code path whose AST (or parsed `config.json`) differs between its
-    recorded blob and the working tree, then each path reached today but not
-    then."""
-    then = {path: git.show_blob(book.root, blob) for path, blob in objects.items()}
-    now = {
-        path: (book.root / path).read_bytes() if (book.root / path).is_file() else None
-        for path in objects
-    }
-    return code_drift(then, now, code_paths(book, name))
-
-
-def engine_now() -> dict[str, str]:
-    """What `engine` on a run line holds: the skill commit, then libraries."""
-    return {
-        "btm_finance": git.skill_commit(),
-        "numpy": np.__version__,
-        "pyarrow": pa.__version__,
-    }
+    paths = {f"{folder}/signal.py", f"{folder}/config.json", *reach.modules}
+    return {path: file_bytes(book.root / path) for path in sorted(paths)}
 
 
 def scoped(book: Book, names: Sequence[str], *, held_out: bool) -> frozenset[str]:
@@ -1352,7 +872,7 @@ def policy_gates(
         )
     if held_out:
         return gates
-    spent = heartbeat.trials_today(all_runs(book), utc_today())
+    spent = trials_today(all_runs(book), utc_today())
     if spent >= limits.trials_per_day:
         gates.append(
             f"{spent} run line(s) dated today reach limits.trials_per_day "
@@ -1390,7 +910,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"config family_id {config.family_id} differs from hypothesis "
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
-    objects = committed_code(book, name)
+    code = code_of(book, name)
     gates = policy_gates(book, limits, config, held_out=args.held_out)
     if gates and args.reason is None:
         raise CommandError(
@@ -1411,7 +931,6 @@ def cmd_measure(args: argparse.Namespace) -> int:
     outcome = evaluate(setting, strategy, params, peers)
     refused = bounds(outcome.scorecard, limits)
     snapshot = data_snapshot(manifest)
-    spanned, regime_days = regime_stamp(outcome.dates, regime_rows(book))
     run_id = make_id([*ascii_words(name), "run"])
     write_returns(
         book,
@@ -1426,13 +945,13 @@ def cmd_measure(args: argparse.Namespace) -> int:
         family_id=config.family_id,
         strategy=name,
         data_snapshot=snapshot,
-        code_paths=tuple(objects),
-        code_objects=objects,
+        code_hash=code_hash(code),
+        code_files=code_files(code),
         config=config.model_dump(mode="json"),
         params={key: float(value) for key, value in params.items()},
         scorecard=outcome.scorecard,
         reasons=outcome.reasons,
-        engine=engine_now(),
+        engine=btm_finance.__version__,
         tolerance=limits.repeat_tolerance,
         held_out=args.held_out,
         exclusions=Exclusions.model_validate(preferences.exclusions.model_dump()),
@@ -1445,8 +964,6 @@ def cmd_measure(args: argparse.Namespace) -> int:
         ),
         returns=returns_path(run_id),
         agent=agent,
-        regimes=spanned,
-        regime_days=regime_days,
         imports=loaded.imports,
         universe=UniverseKind.MEMBERSHIP if any(panel.members) else UniverseKind.STATIC,
         override_reason=args.reason if gates else None,
@@ -1475,7 +992,6 @@ def cmd_measure(args: argparse.Namespace) -> int:
             "scorecard": outcome.scorecard.model_dump(mode="json"),
             "reasons": outcome.reasons,
             "refused": refused,
-            "regime_days": regime_days,
             "imports": list(loaded.imports),
             "next": f"fix {', '.join(r.split(':')[0] for r in refused)}; the run "
             "still counts as a trial"
@@ -1521,23 +1037,16 @@ def sleeve_tier(  # noqa: PLR0913 - one sleeve's ledger evidence
     strategy: Strategy,
     params: Mapping[str, float],
     *,
-    name: str,
-    fills: Sequence[Row],
+    real_fills: Sequence[Fill],
     limits: Limits,
     through: int,
 ) -> Tier:
-    """Tier from the sleeve's dry-run and real fills through `through`
-    against one model simulation, run only when the sleeve has fills."""
-    paper = sleeve_fills(fills, name, Status.PAPER, {}, {})
-    real = sleeve_fills(fills, name, Status.LIVE, {}, {})
-    if not paper and not real:
-        return Tier.BACKTEST
+    """Tier from the sleeve's real fills through `through` against one model
+    simulation."""
     model = model_path(setting, strategy, params)
-    rf = setting.prep.rf
     return tier_of(
-        seasoning(paper, setting.panel, rf, model, through),
-        seasoning(real, setting.panel, rf, model, through),
-        days=limits.thresholds.paper_min_days,
+        seasoning(real_fills, setting.panel, setting.prep.rf, model, through),
+        days=limits.thresholds.tracked_days,
         bound=limits.thresholds.tracking_error,
     )
 
@@ -1549,15 +1058,11 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     day: Day,
     *,
     run: Row,
-    status: Status,
     fills: Sequence[Row],
 ) -> Candidate:
     """The sleeve's weights on the as-of row through `Market.at` and
     `target_weights`, as `measure` sets them; vol from the run's net series;
-    tier `probe` by status, else from its fills."""
-    account = account_of(status)
-    if account is None:
-        raise CommandError(f"status {status} names no sleeve")
+    tier from its real fills, `entry` before any."""
     name = str(run.get("strategy"))
     folder = book.root / "strategies" / name
     config = parse_model(
@@ -1582,18 +1087,18 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     index = {symbol: column for column, symbol in enumerate(day.panel.names)}
     chosen = target_weights(raw, market, setting, index, day.row)
     weights, unknown = chosen.weights, chosen.unknown
+    own = sleeve_fills(fills, name, {})
     tier = (
-        Tier.PROBE
-        if status is Status.PROBE
-        else sleeve_tier(
+        sleeve_tier(
             setting,
             strategy,
             dict(config.params),
-            name=name,
-            fills=fills,
+            real_fills=own,
             limits=limits,
             through=int(day.panel.dates[day.row]),
         )
+        if own
+        else Tier.BACKTEST
     )
     series = read_returns(book, read_manifest(book), str(run.get("run_id")))
     vol = None
@@ -1604,7 +1109,6 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         signal(f"{name}: strategy code changed since run {run['run_id']}")
     return Candidate(
         strategy=name,
-        account=account,
         run_id=str(run.get("run_id")),
         sharpe_net=card_number(run, "sharpe_net"),
         vol_net=vol,
@@ -1625,16 +1129,14 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         series=series,
         dsr=card_number(run, "dsr"),
         tier=tier,
+        entry=not own,
     )
 
 
 def code_changed(book: Book, name: str, run: Row) -> bool:
-    """The strategy's code moved since the run, by `moved_code`; a line
-    without `code_objects` reads moved."""
-    objects = run.get("code_objects")
-    if not isinstance(objects, dict) or not objects:
-        return True
-    return bool(moved_code(book, name, {str(p): str(b) for p, b in objects.items()}))
+    """The strategy's code moved since the run: `code_hash` differs; a line
+    without one reads moved."""
+    return code_hash(code_of(book, name)) != run.get("code_hash")
 
 
 def quotes_of(day: Day) -> dict[str, Quote]:
@@ -1670,13 +1172,13 @@ def previous_of(book: Book, day: str) -> Previous | None:
     return Previous(stem=stem, proposal=proposal, rejected=rejected)
 
 
-def sleeves_of(book: Book) -> tuple[list[tuple[Row, Status]], list[Skipped]]:
-    """Probe, paper, and live strategies with their newest research run line."""
+def sleeves_of(book: Book) -> tuple[list[Row], list[Skipped]]:
+    """Live strategies with their newest research run line."""
     runs = all_runs(book)
-    chosen: list[tuple[Row, Status]] = []
+    chosen: list[Row] = []
     skipped: list[Skipped] = []
     for found in strategies(book):
-        if found.status is None or account_of(found.status) is None:
+        if found.status is not Status.LIVE:
             continue
         run = newest_run(runs, found.name)
         if run is None:
@@ -1684,7 +1186,7 @@ def sleeves_of(book: Book) -> tuple[list[tuple[Row, Status]], list[Skipped]]:
             signal(f"sleeve {found.name} skipped: {reason}")
             skipped.append(Skipped(strategy=found.name, reason=reason))
             continue
-        chosen.append((run, found.status))
+        chosen.append(run)
     return chosen, skipped
 
 
@@ -1696,8 +1198,7 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     if not chosen:
         named = ", ".join(s.strategy for s in skipped)
         raise CommandError(
-            "no sleeve: no strategies/*/status reads probe, paper, or live with a "
-            "run line"
+            "no sleeve: no strategies/*/status reads live with a run line"
             + (f" (skipped {named})" if named else "")
             + "; status changes on the operator's word, the agent measures"
         )
@@ -1712,8 +1213,8 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     day = Day(panel, events, Prepared.of(panel, events, limits.delisting), row)
     fills = current(kind_rows(book, Kind.FILL))
     candidates = tuple(
-        candidate(book, limits, preferences, day, run=run, status=status, fills=fills)
-        for run, status in chosen
+        candidate(book, limits, preferences, day, run=run, fills=fills)
+        for run in chosen
     )
     proposal = propose(
         Inputs(
@@ -1728,8 +1229,6 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             quotes=quotes_of(day),
             fills=fills,
             previous=previous_of(book, when.isoformat()),
-            risk_share=limits.max_strategy_risk_share,
-            regime=regime_record(regime_rows(book), when, limits.regime_stale_days),
         )
     )
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1747,11 +1246,6 @@ def cmd_recommend(args: argparse.Namespace) -> int:
                     f"every sleeve scaled by {cut.scale:.4g}: 1st-percentile "
                     f"252-day loss {cut.loss:.4g} over ruin_bound {cut.bound}"
                 )
-    for name in proposal.advisory.over:
-        signal(
-            f"advisory: sleeve {name} risk share "
-            f"{proposal.advisory.risk_share[name]:.3g} over {proposal.advisory.bound}"
-        )
     emit(
         {
             "book": book.meta.id,
@@ -1771,10 +1265,6 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             "carried": len(proposal.carried),
             "unmanaged": len(proposal.unmanaged),
             "summary": proposal.summary.model_dump(mode="json"),
-            "regime": None
-            if proposal.regime is None
-            else proposal.regime.model_dump(mode="json"),
-            "effective_streams": proposal.effective_streams,
             "ruin": None if proposal.ruin is None else proposal.ruin.loss,
             "reasons": proposal.reasons,
             "next": f"check {target.stem}; read it to the operator, blockers first",
@@ -1832,8 +1322,7 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
                 if run is None
                 else card_number(run, "max_drawdown"),
                 "weight": 0.0,
-                "note": "baseline is no sleeve here: its status is not probe, "
-                "paper, or live",
+                "note": "baseline is no sleeve here: its status is not live",
             }
         )
     return sorted(rows, key=lambda row: row["strategy"] != BASELINE)
@@ -1854,18 +1343,12 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         for name, s in proposal.sleeves.items()
     }
     today = datetime.now(UTC).date()
-    template = approval_of(proposal, path.stem)
     return {
         "book": book.meta.id,
         "proposal": book.relative(path),
         "blockers": blockers,
         "baseline": comparison(book, proposal),
         "stale": stale_flags(proposal, load_preferences(book).cadence, today),
-        "regime": None
-        if proposal.regime is None
-        else proposal.regime.model_dump(mode="json"),
-        "effective_streams": proposal.effective_streams,
-        "advisory": proposal.advisory.model_dump(mode="json"),
         "ruin": None
         if proposal.ruin is None
         else proposal.ruin.model_dump(mode="json"),
@@ -1879,7 +1362,6 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
                 "held": o.held,
                 "target": o.target,
                 "strategy": o.strategy,
-                "account": o.account.value,
                 "carried_from": o.carried_from,
             }
             for o in proposal.orders
@@ -1888,14 +1370,9 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
         "unmanaged": [h.model_dump(mode="json") for h in proposal.unmanaged],
         "skipped": [s.model_dump(mode="json") for s in proposal.skipped],
         "summary": proposal.summary.model_dump(mode="json"),
-        "approval_template": template.model_dump(mode="json"),
-        "approval_path": f"approvals/{proposal.date}.json",
         "next": "read blockers to the operator first, baseline beside each "
-        "sleeve, then wait for a reply. On approve: write approval_template to "
-        "approvals/<send day>.json with date the send day and reply the "
-        f"operator's words, record an approve decision on {path.stem} quoting "
-        "them with applied naming the file, then check it. On reject or "
-        f"override: record that decision on {path.stem} quoting the reply",
+        "sleeve, then wait for a reply; record the approve, reject, or "
+        f"override decision on {path.stem} with the reply verbatim as reason",
     }
 
 
@@ -1906,6 +1383,9 @@ def run_line_of(book: Book, run_id: str) -> tuple[Row, RunLine]:
         raise CommandError(f"no run line {run_id} in any runs file")
     row = found[-1]
     body = {key: value for key, value in row.items() if key not in ENVELOPE}
+    engine = body.get("engine")
+    if isinstance(engine, dict):  # an older line: skill commit and libraries
+        body["engine"] = str(engine.get("btm_finance", ""))
     return row, parse_model(RunLine, body, f"run line {run_id}")
 
 
@@ -1925,13 +1405,16 @@ def drift_of(
     *,
     manifest: Manifest,
 ) -> list[str]:
-    """Every reason the rerun would not be the recorded run. Reads each code
-    path's recorded blob; re-hashes every listed source file and peer series
-    once: O(store bytes)."""
+    """Every reason the rerun would not be the recorded run. Re-hashes the
+    code, every listed source file, and every peer series once: O(store
+    bytes)."""
     problems: list[str] = []
-    moved = moved_code(book, line.strategy, line.code_objects)
-    if moved:
-        problems.append(f"code moved: {', '.join(moved)}")
+    code = code_of(book, line.strategy)
+    if line.code_hash is None:
+        problems.append("run line predates code hashes")
+    elif code_hash(code) != line.code_hash:
+        moved = code_drift(line.code_files, code_files(code))
+        problems.append(f"code moved: {', '.join(moved) or 'code_hash differs'}")
     sources = [e for e in manifest.files if e.table != Table.RETURNS]
     stamp = str(row.get("ts", ""))
     problems += data_drift(
@@ -2007,7 +1490,7 @@ def cmd_repeat(args: argparse.Namespace) -> int:
         tolerance=line.tolerance,
         compared=compared,
         diffs=tuple(diffs),
-        advisories=tuple(engine_advisories(line.engine, engine_now())),
+        advisories=tuple(engine_advisories(line.engine, btm_finance.__version__)),
     )
     for note in report.advisories:
         signal(f"engine moved: {note}")
@@ -2041,40 +1524,15 @@ def run_facts(book: Book, strategy: str) -> RunFacts | None:
     )
 
 
-def approved_proposals(book: Book) -> dict[str, str]:
-    """Approval file stem to the proposal stem it names, from `approvals/`; a
-    file naming none maps to its own stem."""
-    found: dict[str, str] = {}
-    for path in sorted((book.root / "approvals").glob("*.json")):
-        try:
-            document = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        stem = document.get("proposal") if isinstance(document, dict) else None
-        found[path.stem] = stem if isinstance(stem, str) else path.stem
-    return found
-
-
 def sleeve_fills(
-    rows: Sequence[Row],
-    name: str,
-    status: Status,
-    prices: Mapping[tuple[str, str, str], float],
-    proposals: Mapping[str, str],
+    rows: Sequence[Row], name: str, prices: Mapping[tuple[str, str, str], float]
 ) -> tuple[Fill, ...]:
-    """Paper sleeves count dry-run fills, probe and live ones real fills; a fill's
-    reference is its proposal order's `price`, by approval, symbol, side. A
-    fill names its approval by stem, or by file name as older fills do."""
-    paper = status is Status.PAPER
-    chosen = [
-        row
-        for row in rows
-        if row.get("strategy") == name and bool(row.get("dry_run")) is paper
-    ]
+    """The sleeve's real fills; a fill's reference is its proposal order's
+    `price`, by proposal, symbol, side."""
+    chosen = [row for row in rows if row.get("strategy") == name and real(row)]
 
     def reference(row: Row) -> float | None:
-        approval = str(row.get("approval", "")).removesuffix(".json")
-        stem = proposals.get(approval, approval)
+        stem = fill_proposal(row) or ""
         return prices.get((stem, str(row.get("symbol")), str(row.get("side"))))
 
     return tuple(fill_of(row, reference(row)) for row in chosen)
@@ -2097,14 +1555,10 @@ def modeled(
 
 
 def live_view(book: Book, today: date) -> LiveReport:
-    """Every paper, probe, or live sleeve: one model simulation each, O(S (T N + R N
-    L)), plus O(D S + F) per realized path; appends incidents only."""
+    """Every live sleeve: one model simulation each, O(S (T N + R N L)), plus
+    O(D S + F) per realized path; appends incidents only."""
     limits, preferences = load_limits(book), load_preferences(book)
-    tracked = [
-        (s.name, s.status)
-        for s in strategies(book)
-        if s.status in {Status.PAPER, Status.PROBE, Status.LIVE}
-    ]
+    tracked = [s.name for s in strategies(book) if s.status is Status.LIVE]
     rows: list[LiveRow] = []
     last_bar: str | None = None
     if tracked:
@@ -2130,38 +1584,27 @@ def live_view(book: Book, today: date) -> LiveReport:
             for row in current(kind_rows(book, Kind.FILL))
             if row.get("strategy") != "opening"
         ]
-        approved = approved_proposals(book)
-        own = {
-            name: sleeve_fills(fills, name, status, prices, approved)
-            for name, status in tracked
-        }
-        sleeves: dict[str, Sleeve | None] = {
-            name: realized(own[name], panel, rf) for name, _ in tracked
-        }
+        own = {name: sleeve_fills(fills, name, prices) for name in tracked}
         stale = trading_days_after(last, today)
         bounds = Bounds(
             drawdown_multiple=limits.thresholds.drawdown_review_multiple,
-            underperform_months=limits.thresholds.underperform_months,
             tracking=limits.thresholds.tracking_error,
             commission=commission_ceiling(limits.commission_bps) / 1e4,
         )
-        for name, status in tracked:
+        for name in tracked:
             path, why = modeled(book, name, setting_of)
             run = run_facts(book, name)
             notes = [note for note in (why,) if note]
             if run is None:
                 notes.append("no research run line: drawdown and slippage unbounded")
             if not own[name]:
-                notes.append(
-                    f"no {'dry-run' if status is Status.PAPER else 'real'} fills"
-                )
+                notes.append("no real fills")
             case = Case(
                 strategy=name,
-                status=status,
+                status=Status.LIVE,
                 fills=own[name],
-                sleeve=sleeves[name],
+                sleeve=realized(own[name], panel, rf),
                 model=path,
-                baseline=None if name == "baseline" else sleeves.get("baseline"),
                 run=run,
                 stale_days=stale,
                 notes=tuple(notes),
@@ -2212,23 +1655,12 @@ def build_parser() -> argparse.ArgumentParser:
     start = commands.add_parser("start", help="make a book at a new path")
     start.set_defaults(func=cmd_start)
     start.add_argument("book", help="directory to make the book in")
-    start.add_argument(
-        "--cap",
-        type=positive,
-        help="asset cap; default answers capital.now, else 10000000",
-    )
+    start.add_argument("--cap", type=positive, help=f"asset cap; default {DEFAULT_CAP}")
     add_slot(start, UNIVERSE, "CSV with a symbol column and an optional sector column")
     start.add_argument(
         "--held-out",
         type=Path,
-        help="held-out list path outside the book; default answers held_out, "
-        "else under XDG_STATE_HOME",
-    )
-    add_slot(start, ANSWERS, ANSWERS_HELP)
-    start.add_argument(
-        "--force",
-        action="store_true",
-        help="existing book: rewrite README.md, AGENTS.md, CLAUDE.md when present",
+        help="held-out list path outside the book; default under XDG_STATE_HOME",
     )
 
     record = commands.add_parser("record", help="accept one batch through the gate")
@@ -2239,27 +1671,20 @@ def build_parser() -> argparse.ArgumentParser:
         record,
         FILLS,
         "pasted broker fills, CSV header symbol,side,quantity,price,date "
-        "(optional strategy) or a JSON list; needs --approval",
+        "(optional strategy) or a JSON list; needs --proposal",
     )
-    record.add_argument(
-        "--approval", help="approvals/<date>.json the fills or dry run belong to"
-    )
-    record.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="record the approval's paper orders as dry-run fills at price",
-    )
+    record.add_argument("--proposal", help="proposal stem the fills trade")
 
     check = commands.add_parser(
         "check",
-        help="continue view, a standing, a proposal, an approval, or --schema",
+        help="continue view, a standing, a proposal, or --schema",
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("book", nargs="?", help="book directory; --schema needs none")
     check.add_argument(
         "target",
         nargs="?",
-        help="strategy, run id, proposal date, or approvals/<date>.json",
+        help="strategy, run id, or proposal date",
     )
     check.add_argument(
         "--schema",
@@ -2270,7 +1695,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="print record shapes, one kind or all; needs no book",
     )
     check.add_argument(
-        "--live", action="store_true", help="weekly tracking of paper and live sleeves"
+        "--live", action="store_true", help="weekly tracking of live sleeves"
     )
     check.add_argument(
         "--brief", action="store_true", help="daily brief: at most twelve lines"

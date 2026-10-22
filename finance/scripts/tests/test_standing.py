@@ -1,9 +1,8 @@
-"""Standing, pure: the probe tier between blocked and promotable, and the
-odds blocker that keeps both from reading without stated odds."""
+"""Standing, pure: DSR and PBO blockers named with value and limit, the
+capacity rule, and the odds blocker that keeps a clean run from reading
+promotable without stated odds."""
 
 from __future__ import annotations
-
-from datetime import date
 
 import pytest
 from btm_finance.models import Limits, Status, limits_template
@@ -11,6 +10,7 @@ from btm_finance.standing import Evidence, Standing, standing_of
 
 LIMITS = Limits.model_validate(limits_template(10_000_000))
 ODDS = {"p_win": 0.55, "payoff": 1.2, "horizon_days": 63, "kelly_implied": 0.175}
+CURVE = {"0.1x": 1.0, "1x": 0.95, "20x": 0.2}
 
 
 def evidence(
@@ -19,6 +19,7 @@ def evidence(
     *,
     odds: dict | None = ODDS,
     status: Status = Status.RESEARCH,
+    curve: dict | None = None,
 ) -> Evidence:
     """Every gate but DSR and PBO clear: t_alpha, capacity, bounds, trials,
     critique."""
@@ -27,12 +28,12 @@ def evidence(
         "pbo": pbo,
         "trials": 1,
         "factor": {"t_alpha": 4.0},
-        "capacity": {"0.1x": 1.0, "1x": 0.95, "20x": 0.2},
+        "capacity": curve or CURVE,
         "cost_share": 0.1,
         "adv_participation_max": 0.01,
         "min_holding_days_realized": 21,
     }
-    hypothesis = {"id": "h1", "capacity_class": "in_band"}
+    hypothesis = {"id": "h1"}
     return Evidence(
         strategy="drift",
         run={
@@ -45,29 +46,15 @@ def evidence(
         },
         hypothesis=hypothesis if odds is None else hypothesis | {"odds": odds},
         critique={"id": "c1", "blockers": []},
-        decisions=(),
         status=status,
         raw_status=status.value,
-        today=date(2026, 10, 21),
     )
 
 
-def test_dsr_085_and_pbo_02_read_probe_with_both_blockers_named():
+def test_dsr_085_and_pbo_02_read_blocked_with_both_blockers_named():
     view = standing_of(evidence(0.85, 0.2), LIMITS)
-    assert view.standing is Standing.PROBE
+    assert view.standing is Standing.BLOCKED
     assert view.blockers == ("dsr: 0.85 vs 0.95", "pbo: 0.2 vs 0.1")
-    assert "probe" in view.next and "0.02" in view.next
-
-
-@pytest.mark.parametrize(("dsr", "pbo"), [(0.79, 0.2), (0.85, 0.25)])
-def test_below_the_probe_thresholds_reads_blocked(dsr, pbo):
-    assert standing_of(evidence(dsr, pbo), LIMITS).standing is Standing.BLOCKED
-
-
-def test_a_running_probe_is_told_what_paper_or_live_needs():
-    view = standing_of(evidence(0.85, 0.2, status=Status.PROBE), LIMITS)
-    assert view.standing is Standing.PROBE
-    assert "paper or live needs dsr 0.95" in view.next
 
 
 def test_clearing_every_gate_still_reads_promotable():
@@ -75,8 +62,20 @@ def test_clearing_every_gate_still_reads_promotable():
     assert (view.standing, view.blockers) == (Standing.PROMOTABLE, ())
 
 
-@pytest.mark.parametrize(("dsr", "pbo"), [(0.97, 0.05), (0.85, 0.2)])
-def test_no_odds_blocks_what_would_be_promotable_or_probe(dsr, pbo):
+def test_a_scalable_curve_needs_no_override():
+    flat = {"0.1x": 1.0, "1x": 0.99, "20x": 0.98}
+    view = standing_of(evidence(0.97, 0.05, curve=flat), LIMITS)
+    assert (view.standing, view.blockers) == (Standing.PROMOTABLE, ())
+
+
+def test_a_live_sleeve_reads_its_standing_and_a_retired_one_blocks():
+    assert standing_of(evidence(0.97, 0.05, status=Status.LIVE), LIMITS).blockers == ()
+    retired = standing_of(evidence(0.97, 0.05, status=Status.RETIRED), LIMITS)
+    assert retired.blockers == ("status: retired",)
+
+
+@pytest.mark.parametrize(("dsr", "pbo"), [(0.97, 0.05)])
+def test_no_odds_blocks_what_would_be_promotable(dsr, pbo):
     view = standing_of(evidence(dsr, pbo, odds=None), LIMITS)
     assert view.standing is Standing.BLOCKED
     assert view.blockers[-1] == "odds: none registered on h1"

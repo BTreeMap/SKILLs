@@ -17,7 +17,7 @@ QUESTION = "question"
 ANSWER = "answer"
 LINES = 12
 WEEK = 7
-FIXED = 4  # regime, breaches, counts, reply
+FIXED = 3  # breaches, counts, reply
 PROPOSAL_LINES = LINES - FIXED
 
 
@@ -33,8 +33,8 @@ class Reply(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Owed:
-    """What the operator owes, from live state: `unfilled` the date of an
-    approval checked but unfilled; `unanswered` an open proposal's stem;
+    """What the operator owes, from live state: `unfilled` the stem of an
+    approved proposal no fill names; `unanswered` an open proposal's stem;
     `pending` a change the agent asked about today, unanswered; `late` a bet's strategy
     and date past due."""
 
@@ -103,18 +103,9 @@ def odds_text(odds: Mapping[str, Any] | None) -> str:
     )
 
 
-def justifying(tier: str, sharpe_net: object, dsr: object) -> str:
-    """A probe stands on DSR; every other tier on net Sharpe, the sizing input."""
-    if tier == "probe":
-        return f"dsr {figure(dsr)}"
+def justifying(sharpe_net: object) -> str:
+    """Net Sharpe, the sizing input."""
     return f"sharpe_net {figure(sharpe_net)}"
-
-
-def regime_line(regime: Mapping[str, Any] | None) -> str:
-    if regime is None:
-        return "regime: no regime"
-    state = "stale" if regime.get("stale") else "fresh"
-    return f"regime: {regime.get('id')} as of {regime.get('as_of')}, {state}"
 
 
 def proposal_line(proposal: Open) -> str:
@@ -154,7 +145,6 @@ def breaches_line(incidents: Sequence[Mapping[str, Any]], today: date) -> str:
 
 def brief(  # noqa: PLR0913 - one line per input, each read once
     *,
-    regime: Mapping[str, Any] | None,
     proposals: Sequence[Open],
     incidents: Sequence[Mapping[str, Any]],
     overdue: int,
@@ -165,7 +155,6 @@ def brief(  # noqa: PLR0913 - one line per input, each read once
 ) -> dict[str, Any]:
     """`next` is the agent's advisory; the operator's line is `reply`."""
     lines = [
-        regime_line(regime),
         *proposal_lines(proposals),
         breaches_line(incidents, today),
         f"overdue {overdue}, unscored {unscored}",

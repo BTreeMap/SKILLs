@@ -15,7 +15,7 @@ with the same paths. It reads prices and fundamentals only through
 `btm_finance.api` with `Market`, book-local modules. Any other api name
 reached is listed as `btm_finance.api.<name>`; another `btm_finance` module
 as `btm_finance.<module>`. `modules`: the book-local files reached, paths
-relative to the book root, which `measure` stores under `code_paths`.
+relative to the book root, which `measure` hashes into `code_files`.
 """
 
 from __future__ import annotations

@@ -48,7 +48,7 @@ def test_a_two_day_holding_is_refused_before_running(book, run, plant):
     assert code == 1
     assert document is None
     assert "holding_days 2 is under limits.min_holding_days 5" in err
-    assert not (book / "ledger" / "runs.jsonl").exists()
+    assert (book / "ledger" / "runs.jsonl").read_text() == ""
 
 
 def test_a_churning_book_is_refused_after_running_and_still_counts(

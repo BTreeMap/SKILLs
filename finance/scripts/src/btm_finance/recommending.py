@@ -1,11 +1,10 @@
-"""Proposal arithmetic, pure: positions replayed from fills, sleeves sized by
-volatility target under a Kelly cap set by evidence tier and deflated Sharpe,
-divided by correlation, scaled to the ruin bound, per-name caps, whole-share
-orders diffed against held positions, ADV cuts, carried orders, summary.
+"""Proposal arithmetic, pure: positions replayed from real fills, sleeves
+sized by a Kelly fraction set by evidence tier and deflated Sharpe, capped at
+`max_weight`, scaled to the ruin bound, per-name caps, whole-share orders
+diffed against held positions, ADV cuts, carried orders, summary.
 
-Sizing and the diff are O(S N + S^2 T log T) for S sleeves, N names, T
+Sizing and the diff are O(S N + S T log T) for S sleeves, N names, T
 periods, plus one bootstrap of O(T S + P H); replay is O(F) for F fills.
-Paper and live books never net.
 """
 
 from __future__ import annotations
@@ -20,68 +19,38 @@ from functools import reduce
 from typing import Annotated, Literal
 
 import numpy as np
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from btm_corekit import Model
+from btm_finance.data.tables import Days, Floats
 from btm_finance.engine import ruin_loss
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.engine.ruin import BLOCK, PATHS
 from btm_finance.ledger import Row
-from btm_finance.models import Commission, Price, Side, Sizing, Status, commission_at
-from btm_finance.regimes import RegimeRef
-from btm_finance.streams import (
-    Series,
-    divisors,
-    effective_streams,
-    pairs_of,
-)
+from btm_finance.models import Commission, Price, Side, Sizing, commission_at
 
 TOP = 10  # names in the concentration figure
 BPS = 1e-4
 EDGE_FLOOR, EDGE_SPAN = 0.5, 0.45  # DSR 0.5 scales Kelly to 0, 0.95 to 1
 
 
-class Account(StrEnum):
-    """The position book a sleeve diffs against: its own dry-run fills, or
-    the real fills (opening holdings included) every live sleeve shares."""
-
-    PAPER = "paper"
-    LIVE = "live"
-
-    @property
-    def dry_run(self) -> bool:
-        match self:
-            case Account.PAPER:
-                return True
-            case Account.LIVE:
-                return False
+Series = tuple[Days, Floats]
+LOOSE = ConfigDict(frozen=True, extra="ignore")
+"""Proposal shapes read older files: keys no field names are dropped."""
 
 
 class Tier(StrEnum):
-    """Evidence behind a sleeve's size: `measure` alone, dry-run fills
-    tracking the model path, real fills tracking it; `probe` sizes fixed."""
+    """Evidence behind a sleeve's size: `measure` alone, or real fills
+    tracking the model path for `thresholds.tracked_days`."""
 
     BACKTEST = "backtest"
-    PAPER = "paper"
-    LIVE = "live"
-    PROBE = "probe"
-
-
-def account_of(status: Status | None) -> Account | None:
-    """Paper, probe, and live strategies are sleeves; research and retired are
-    not. A probe trades the real account at `sizing.probe_weight`."""
-    match status:
-        case Status.PAPER:
-            return Account.PAPER
-        case Status.LIVE | Status.PROBE:
-            return Account.LIVE
-        case Status.RESEARCH | Status.RETIRED | None:
-            return None
+    TRACKED = "tracked"
 
 
 class Order(Model):
-    """One order as `approvals/<date>.json` lists it and `check` reads it;
-    `limit` null is market-on-open."""
+    """One proposed order; `limit` null is market-on-open."""
+
+    model_config = LOOSE
 
     symbol: str
     side: Side
@@ -95,20 +64,20 @@ class Order(Model):
 class Proposed(Order):
     """An order with the positions it moves between."""
 
-    account: Account
     held: float
     target: int
     carried_from: str | None = None
 
 
 class Sleeve(Model):
-    """One sleeve's sizing: `weight` is min(`vol_weight`, `kelly_cap`) over
-    `divisor`, or `probe_weight` for a probe; the sum over sleeves scaled to
-    at most 1, then to the ruin bound. `kelly_cap` is the tier's Kelly
-    fraction times `edge_scale` times Sharpe over vol."""
+    """One sleeve's sizing: `weight` is min(`kelly_cap`, `max_weight`), or
+    `entry_weight` before any real fill; the sum over sleeves scaled to at
+    most 1, then to the ruin bound. `kelly_cap` is the tier's Kelly fraction
+    times `edge_scale` times Sharpe over vol."""
+
+    model_config = LOOSE
 
     strategy: str
-    account: Account
     tier: Tier = Tier.BACKTEST
     """Older proposals sized every sleeve on the backtest fraction."""
     edge_scale: float = 1.0
@@ -117,9 +86,7 @@ class Sleeve(Model):
     sharpe_net: float | None
     vol_net: float | None
     max_drawdown: float | None
-    vol_weight: float
     kelly_cap: float
-    divisor: float
     weight: float
     code_changed: bool
     unknown: int
@@ -180,22 +147,13 @@ class Ruin(Model):
     seed: int
 
 
-class Advisory(Model):
-    """Risk share per sleeve (`weight * vol_net` over the book's sum) against
-    `max_strategy_risk_share`; `over` names sleeves past it. Never a cut.
-    Empty, `bound` null, in a proposal written before the field existed."""
-
-    risk_share: dict[str, float | None] = Field(default_factory=dict)
-    bound: float | None = None
-    over: tuple[str, ...] = ()
-
-
 class Holding(Model):
     """A position outside the names the sleeves see: shown, never sold."""
 
+    model_config = LOOSE
+
     symbol: str
     quantity: float
-    account: Account
     strategy: str
 
 
@@ -232,6 +190,8 @@ class Summary(Model):
 class Proposal(Model):
     """`proposals/<date>.json`, written once by `recommend`."""
 
+    model_config = LOOSE
+
     date: str
     as_of: str
     cap: int
@@ -243,35 +203,9 @@ class Proposal(Model):
     unmanaged: tuple[Holding, ...]
     carried: tuple[Carried, ...]
     cuts: tuple[Cut, ...]
-    regime: RegimeRef | None
-    effective_streams: float | None
     ruin: Ruin | None = None
-    advisory: Advisory = Field(default_factory=Advisory)
     reasons: dict[str, str] = Field(default_factory=dict)
     """Defaults let a proposal written before tiers and ruin read back."""
-
-
-class Approval(Model):
-    """`approvals/<date>.json`, written by the agent from the operator's
-    reply; `proposal` names the file, `reply` quotes the operator."""
-
-    date: str
-    proposal: str
-    reply: str = ""
-    orders: tuple[Order, ...]
-
-
-def approval_of(proposal: Proposal, stem: str) -> Approval:
-    """Every proposed order in approval shape, dated as the proposal."""
-    fields = set(Order.model_fields)
-    return Approval(
-        date=proposal.date,
-        proposal=stem,
-        orders=tuple(
-            Order.model_validate(order.model_dump(include=fields))
-            for order in proposal.orders
-        ),
-    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -280,7 +214,6 @@ class Candidate:
     `measure` would set them."""
 
     strategy: str
-    account: Account
     run_id: str
     sharpe_net: float | None
     vol_net: float | None
@@ -293,6 +226,8 @@ class Candidate:
     series: Series | None = None
     dsr: float | None = None
     tier: Tier = Tier.BACKTEST
+    entry: bool = False
+    """No real fill yet: the sleeve takes `sizing.entry_weight`."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -328,8 +263,6 @@ class Inputs:
     quotes: Mapping[str, Quote]
     fills: Sequence[Row]
     previous: Previous | None
-    risk_share: float = 1.0
-    regime: RegimeRef | None = None
 
 
 def edge_scale(dsr: float | None) -> float:
@@ -340,39 +273,31 @@ def edge_scale(dsr: float | None) -> float:
 
 
 def kelly_fraction(tier: Tier, sizing: Sizing) -> float:
-    """The tier's fraction of full Kelly; a probe takes no Kelly sizing."""
+    """The tier's fraction of full Kelly."""
     match tier:
         case Tier.BACKTEST:
             return sizing.kelly_fraction.backtest
-        case Tier.PAPER:
-            return sizing.kelly_fraction.paper
-        case Tier.LIVE:
-            return sizing.kelly_fraction.live
-        case Tier.PROBE:
-            return 0.0
+        case Tier.TRACKED:
+            return sizing.kelly_fraction.tracked
 
 
-def sleeve_size(candidate: Candidate, sizing: Sizing) -> tuple[float, float]:
-    """(vol_target / vol, fraction * edge_scale * sharpe / vol), annual units;
-    zero when either input is missing or vol is not positive."""
+def kelly_cap(candidate: Candidate, sizing: Sizing) -> float:
+    """fraction * edge_scale * sharpe / vol, annual units; zero when either
+    input is missing or vol is not positive."""
     sharpe, vol = candidate.sharpe_net, candidate.vol_net
     if sharpe is None or vol is None or not vol > 0.0:
-        return 0.0, 0.0
+        return 0.0
     fraction = kelly_fraction(candidate.tier, sizing) * edge_scale(candidate.dsr)
-    return sizing.vol_target / vol, max(fraction * sharpe / vol, 0.0)
+    return max(fraction * sharpe / vol, 0.0)
 
 
-def sleeve_weights(
-    candidates: Sequence[Candidate],
-    sizing: Sizing,
-    divisor: Mapping[str, float] | None = None,
-) -> dict[str, float]:
-    """min(vol weight, Kelly cap) over `divisor`, a probe at `probe_weight`,
+def sleeve_weights(candidates: Sequence[Candidate], sizing: Sizing) -> dict[str, float]:
+    """min(Kelly cap, `max_weight`), `entry_weight` before any real fill,
     then scaled so the sum is at most 1. O(S)."""
     raw = {
-        c.strategy: sizing.probe_weight
-        if c.tier is Tier.PROBE
-        else min(sleeve_size(c, sizing)) / (divisor or {}).get(c.strategy, 1.0)
+        c.strategy: sizing.entry_weight
+        if c.entry
+        else min(kelly_cap(c, sizing), sizing.max_weight)
         for c in candidates
     }
     total = sum(raw.values())
@@ -432,30 +357,6 @@ def ruin_of(
     )
 
 
-def advisory_of(
-    candidates: Sequence[Candidate], weights: Mapping[str, float], bound: float
-) -> Advisory:
-    """Each sleeve's share of `weight * vol_net` summed over the book; null
-    without vol or when no sleeve carries risk. O(S)."""
-    risk = {
-        c.strategy: weights[c.strategy] * c.vol_net
-        for c in candidates
-        if c.vol_net is not None
-    }
-    total = sum(risk.values())
-    share = {
-        c.strategy: risk[c.strategy] / total
-        if c.strategy in risk and total > 0.0
-        else None
-        for c in candidates
-    }
-    return Advisory(
-        risk_share=share,
-        bound=bound,
-        over=tuple(n for n, v in share.items() if v is not None and v > bound),
-    )
-
-
 def combined(
     candidates: Sequence[Candidate], weights: Mapping[str, float], max_weight: float
 ) -> dict[str, dict[str, float]]:
@@ -483,35 +384,40 @@ def whole(fraction: float, cap: int, price: float) -> int:
 Shares = dict[str, float]
 
 
-def replay(fills: Iterable[Row]) -> dict[tuple[Account, str], Shares]:
-    """Signed positions per (account, strategy) from the live fill rows: a
-    dry-run fill lands in the paper book, every other in the live one. O(F)."""
-    books: dict[tuple[Account, str], Shares] = defaultdict(lambda: defaultdict(float))
+def real(row: Row) -> bool:
+    """A fill of a trade made: an older book's dry-run fills are not."""
+    return row.get("dry_run") is not True
+
+
+def replay(fills: Iterable[Row]) -> dict[str, Shares]:
+    """Signed positions per strategy from the live real fill rows. O(F)."""
+    books: dict[str, Shares] = defaultdict(lambda: defaultdict(float))
     for row in fills:
         quantity = row.get("quantity")
-        if isinstance(quantity, bool) or not isinstance(quantity, int | float):
+        if (
+            isinstance(quantity, bool)
+            or not isinstance(quantity, int | float)
+            or not real(row)
+        ):
             continue
         sign = 1.0 if row.get("side") == Side.BUY.value else -1.0
-        account = Account.PAPER if row.get("dry_run") is True else Account.LIVE
-        books[account, str(row.get("strategy"))][str(row.get("symbol"))] += (
-            sign * quantity
-        )
+        books[str(row.get("strategy"))][str(row.get("symbol"))] += sign * quantity
     return {key: dict(book) for key, book in books.items()}
 
 
 def live_held(
     sleeves: Sequence[str],
-    books: Mapping[tuple[Account, str], Shares],
+    books: Mapping[str, Shares],
     targets: Mapping[str, Mapping[str, int]],
 ) -> dict[str, Shares]:
-    """Each live sleeve's share of the one real book. Real shares no live
-    sleeve filled (opening holdings, retired sleeves) form a pool that fills
+    """Each sleeve's share of the one real book. Real shares no sleeve
+    filled (opening holdings, retired sleeves) form a pool that fills
     sleeves' buys in name order; what is left lands on the last sleeve, so
     its diff sells it. O(S N)."""
-    held = {s: dict(books.get((Account.LIVE, s), {})) for s in sleeves}
+    held = {s: dict(books.get(s, {})) for s in sleeves}
     pool: Shares = defaultdict(float)
-    for (account, strategy), book in books.items():
-        if account is Account.LIVE and strategy not in held:
+    for strategy, book in books.items():
+        if strategy not in held:
             for symbol, quantity in book.items():
                 pool[symbol] += quantity
     for symbol, quantity in pool.items():
@@ -546,9 +452,8 @@ class Diffed:
     unmanaged: tuple[Holding, ...]
 
 
-def diff(  # noqa: PLR0913 - one sleeve's whole diff
+def diff(
     strategy: str,
-    account: Account,
     held: Shares,
     target: Mapping[str, int],
     *,
@@ -566,9 +471,7 @@ def diff(  # noqa: PLR0913 - one sleeve's whole diff
         if quote is None:
             if now:
                 unmanaged.append(
-                    Holding(
-                        symbol=symbol, quantity=now, account=account, strategy=strategy
-                    )
+                    Holding(symbol=symbol, quantity=now, strategy=strategy)
                 )
             continue
         goal = target.get(symbol, 0)
@@ -597,7 +500,6 @@ def diff(  # noqa: PLR0913 - one sleeve's whole diff
                 price=quote.price,
                 adv_participation=participation(kept, quote),
                 strategy=strategy,
-                account=account,
                 held=now,
                 target=goal,
             )
@@ -605,14 +507,14 @@ def diff(  # noqa: PLR0913 - one sleeve's whole diff
     return Diffed(tuple(orders), tuple(cuts), tuple(unmanaged))
 
 
-def filled(order: Order, account: Account, since: str, fills: Iterable[Row]) -> bool:
-    """A fill of the same symbol, sleeve, side, and book dated on or after
+def filled(order: Order, since: str, fills: Iterable[Row]) -> bool:
+    """A real fill of the same symbol, sleeve, and side dated on or after
     `since`."""
     return any(
         row.get("symbol") == order.symbol
         and row.get("strategy") == order.strategy
         and row.get("side") == order.side.value
-        and (row.get("dry_run") is True) == account.dry_run
+        and real(row)
         and str(row.get("date", "")) >= since
         for row in fills
     )
@@ -630,7 +532,7 @@ def carry(
     carried: list[Carried] = []
     since = previous.proposal.date
     for old in previous.proposal.orders:
-        if filled(old, old.account, since, fills):
+        if filled(old, since, fills):
             continue
         index = keyed.get((old.symbol, old.strategy, old.side))
         if index is not None:
@@ -727,45 +629,12 @@ def by_sleeve(targets: Mapping[str, Target]) -> dict[str, dict[str, int]]:
     return dict(out)
 
 
-def held_of(
-    candidates: Sequence[Candidate],
-    books: Mapping[tuple[Account, str], Shares],
-    wanted: Mapping[str, Mapping[str, int]],
-) -> dict[str, Shares]:
-    """Paper sleeves hold their own dry-run fills; live sleeves share the
-    real book through `live_held`."""
-    live = sorted(c.strategy for c in candidates if c.account is Account.LIVE)
-    shares = live_held(live, books, wanted) if live else {}
-    return {
-        c.strategy: shares[c.strategy]
-        if c.account is Account.LIVE
-        else dict(books.get((Account.PAPER, c.strategy), {}))
-        for c in candidates
-    }
-
-
-def unmanaged_real(
-    books: Mapping[tuple[Account, str], Shares], quotes: Mapping[str, Quote]
-) -> list[Holding]:
-    """Real positions outside the sleeves' names, when no live sleeve diffs
-    the real book."""
-    return [
-        Holding(symbol=symbol, quantity=quantity, account=account, strategy=strategy)
-        for (account, strategy), book in sorted(books.items())
-        if account is Account.LIVE
-        for symbol, quantity in sorted(book.items())
-        if quantity and symbol not in quotes
-    ]
-
-
 def propose(inputs: Inputs) -> Proposal:
     """The whole proposal from its inputs; deterministic given them."""
     sizing, cap = inputs.sizing, inputs.cap
     candidates = inputs.candidates
-    names = [c.strategy for c in candidates]
-    pairs = pairs_of({c.strategy: c.series for c in candidates})
-    divisor = divisors(names, pairs)
-    summed = sleeve_weights(candidates, sizing, divisor)
+    names = sorted(c.strategy for c in candidates)
+    summed = sleeve_weights(candidates, sizing)
     seed = date.fromisoformat(inputs.date).toordinal()
     ruined = ruin_of(candidates, summed, sizing, seed)
     weights = {name: w * ruined.scale for name, w in summed.items()}
@@ -773,7 +642,7 @@ def propose(inputs: Inputs) -> Proposal:
     targets = targets_of(shares, inputs.quotes, cap)
     wanted = by_sleeve(targets)
     books = replay(inputs.fills)
-    held = held_of(candidates, books, wanted)
+    held = live_held(names, books, wanted) if names else {}
     orders: list[Proposed] = []
     cuts: list[AdvCut | RuinCut] = (
         [RuinCut(loss=r.loss, bound=r.bound, scale=r.scale)]
@@ -784,7 +653,6 @@ def propose(inputs: Inputs) -> Proposal:
     for candidate in candidates:
         done = diff(
             candidate.strategy,
-            candidate.account,
             held[candidate.strategy],
             wanted.get(candidate.strategy, {}),
             quotes=inputs.quotes,
@@ -793,24 +661,18 @@ def propose(inputs: Inputs) -> Proposal:
         orders += done.orders
         cuts += done.cuts
         unmanaged += done.unmanaged
-    if not any(c.account is Account.LIVE for c in candidates):
-        unmanaged += unmanaged_real(books, inputs.quotes)
     marked, carried = carry(inputs.previous, orders, inputs.fills)
     spreads = {c.strategy: c.half_spread for c in candidates}
-    sizes = {c.strategy: sleeve_size(c, sizing) for c in candidates}
     sleeves = {
         c.strategy: Sleeve(
             strategy=c.strategy,
-            account=c.account,
             tier=c.tier,
             edge_scale=edge_scale(c.dsr),
             run_id=c.run_id,
             sharpe_net=c.sharpe_net,
             vol_net=c.vol_net,
             max_drawdown=c.max_drawdown,
-            vol_weight=sizes[c.strategy][0],
-            kelly_cap=sizes[c.strategy][1],
-            divisor=divisor[c.strategy],
+            kelly_cap=kelly_cap(c, sizing),
             weight=weights[c.strategy],
             code_changed=c.code_changed,
             unknown=c.unknown,
@@ -836,11 +698,6 @@ def propose(inputs: Inputs) -> Proposal:
         unmanaged=tuple(unmanaged),
         carried=carried,
         cuts=tuple(cuts),
-        regime=inputs.regime,
-        effective_streams=effective_streams(
-            [c.strategy for c in candidates if c.series is not None], pairs
-        ),
         ruin=ruined.ruin,
-        advisory=advisory_of(candidates, weights, inputs.risk_share),
         reasons={} if ruined.reason is None else {"ruin": ruined.reason},
     )

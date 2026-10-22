@@ -1,18 +1,20 @@
 """`measure --repeat`, pure: what stops a rerun, and the scorecard diff.
 
 A rerun is refused, never approximated, when its inputs moved: code, raw
-data, or a peer's stored series. The shell reads git and the store; this
-module judges.
+data, or a peer's stored series. The shell reads files and the store; this
+module hashes and judges.
 """
 
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
 
 from btm_corekit import CommandError, Model
+from btm_finance.data.raw import sha256_of
 from btm_finance.measuring import number
 
 CONFIG = "config.json"
@@ -78,21 +80,26 @@ def canonical(path: str, data: bytes) -> bytes:
     return canonical_source(data, path)
 
 
-def code_drift(
-    then: Mapping[str, bytes],
-    now: Mapping[str, bytes | None],
-    reached: Sequence[str],
-) -> list[str]:
-    """Code paths whose canonical form moved from the recorded blob (`then`,
-    from `git cat-file`) against the working tree (`now`, None when gone), then
-    each path the strategy reaches today that the run did not."""
-    moved = [
-        path
-        for path in sorted(then)
-        if now.get(path) is None
-        or canonical(path, then[path]) != canonical(path, now[path] or b"")
-    ]
-    return moved + sorted(set(reached) - set(then))
+def code_files(files: Mapping[str, bytes]) -> dict[str, str]:
+    """Each book-relative code path to sha256 of its canonical form, sorted."""
+    return {path: sha256_of(canonical(path, files[path])) for path in sorted(files)}
+
+
+def code_hash(files: Mapping[str, bytes]) -> str:
+    """sha256 over each path and its canonical form, sorted by path, each
+    part length-prefixed: a reformat or comment moves nothing."""
+    folded = hashlib.sha256()
+    for path in sorted(files):
+        for part in (path.encode(), canonical(path, files[path])):
+            folded.update(len(part).to_bytes(8, "big") + part)
+    return folded.hexdigest()
+
+
+def code_drift(recorded: Mapping[str, str], now: Mapping[str, str]) -> list[str]:
+    """Code paths whose digest moved or vanished since the run, then each
+    path reached today that the run did not. O(paths)."""
+    moved = [path for path in sorted(recorded) if recorded[path] != now.get(path)]
+    return moved + sorted(set(now) - set(recorded))
 
 
 def data_drift(
@@ -186,10 +193,6 @@ def compare(
     return 1, [] if found_leaf is None else [found_leaf]
 
 
-def advisories(recorded: Mapping[str, str], current: Mapping[str, str]) -> list[str]:
-    """Engine entries that moved: the skill commit and library versions."""
-    return [
-        f"{name} {recorded.get(name)} -> {current.get(name)}"
-        for name in sorted(set(recorded) | set(current))
-        if recorded.get(name) != current.get(name)
-    ]
+def advisories(recorded: str, current: str) -> list[str]:
+    """The package version, when it moved since the run."""
+    return [] if recorded == current else [f"btm_finance {recorded} -> {current}"]

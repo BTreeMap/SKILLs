@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 from btm_finance.models import KellyFractions, Sizing
 from btm_finance.recommending import (
-    Account,
     Candidate,
     Inputs,
     Proposal,
@@ -26,9 +25,7 @@ from btm_finance.recommending import (
 )
 
 SIZING = Sizing(
-    vol_target=0.10,
-    kelly_fraction=KellyFractions(backtest=0.25, paper=0.50, live=0.75),
-    max_weight=0.05,
+    kelly_fraction=KellyFractions(backtest=0.25, tracked=0.50), max_weight=0.6
 )
 
 
@@ -40,11 +37,11 @@ def sleeve(  # noqa: PLR0913 - a candidate, every field named
     *,
     dsr: float | None = 0.95,
     tier: Tier = Tier.BACKTEST,
+    entry: bool = False,
     **weights: float,
 ):
     return Candidate(
         strategy=name,
-        account=Account.PAPER,
         run_id=f"{name}-run",
         sharpe_net=sharpe,
         vol_net=vol,
@@ -57,17 +54,18 @@ def sleeve(  # noqa: PLR0913 - a candidate, every field named
         series=series,
         dsr=dsr,
         tier=tier,
+        entry=entry,
     )
 
 
-def test_weight_is_the_smaller_of_vol_target_and_kelly_then_scaled():
-    # a: vol 0.20 gives 0.5, Kelly 0.25 * 0.4 / 0.2 = 0.5; b: vol 0.05 gives
-    # 2.0, Kelly 0.25 * 0.2 / 0.05 = 1.0; c: no Sharpe, no weight. Sum 1.5.
+def test_weight_is_kelly_capped_at_max_weight_then_scaled():
+    # a: Kelly 0.25 * 0.4 / 0.2 = 0.5; b: Kelly 0.25 * 0.2 / 0.05 = 1.0, capped
+    # at max_weight 0.6; c: no Sharpe, no weight. Sum 1.1.
     found = sleeve_weights(
         [sleeve("a", 0.4, 0.20), sleeve("b", 0.2, 0.05), sleeve("c", None, 0.1)],
         SIZING,
     )
-    assert found == pytest.approx({"a": 0.5 / 1.5, "b": 1.0 / 1.5, "c": 0.0})
+    assert found == pytest.approx({"a": 0.5 / 1.1, "b": 0.6 / 1.1, "c": 0.0})
     assert sleeve_weights([sleeve("d", -1.0, 0.1)], SIZING) == {"d": 0.0}
 
 
@@ -79,26 +77,22 @@ def test_edge_scale_rises_from_dsr_half_to_full_at_095(dsr, scale):
 
 
 def test_the_tier_and_edge_scale_set_the_kelly_cap():
-    # Kelly 0.25 / 0.50 / 0.75 of Sharpe 0.2 over vol 0.2, times edge 2/3;
-    # vol weight 0.5 never binds.
+    # Kelly 0.25 / 0.50 of Sharpe 0.2 over vol 0.2, times edge 2/3; max_weight
+    # 0.6 never binds.
     found = sleeve_weights(
         [
             sleeve(t.value, 0.2, 0.2, dsr=0.8, tier=t)
-            for t in (Tier.BACKTEST, Tier.PAPER, Tier.LIVE)
+            for t in (Tier.BACKTEST, Tier.TRACKED)
         ],
         SIZING,
     )
-    assert found == pytest.approx(
-        {"backtest": 0.25 * 2 / 3, "paper": 0.5 * 2 / 3, "live": 0.75 * 2 / 3}
-    )
+    assert found == pytest.approx({"backtest": 0.25 * 2 / 3, "tracked": 0.5 * 2 / 3})
 
 
 @pytest.mark.parametrize("sharpe", [None, -1.0, 0.0, 0.4, 5.0])
-def test_a_probe_takes_exactly_the_probe_weight(sharpe):
-    found = sleeve_weights(
-        [sleeve("p", sharpe, 0.2, dsr=None, tier=Tier.PROBE)], SIZING
-    )
-    assert found == {"p": SIZING.probe_weight}
+def test_a_sleeve_with_no_fill_takes_exactly_the_entry_weight(sharpe):
+    found = sleeve_weights([sleeve("p", sharpe, 0.2, dsr=None, entry=True)], SIZING)
+    assert found == {"p": SIZING.entry_weight}
 
 
 def test_a_name_over_max_weight_shrinks_in_every_sleeve_alike():
@@ -111,7 +105,7 @@ def test_a_name_over_max_weight_shrinks_in_every_sleeve_alike():
     assert shares["Y"] == {"a": 0.01}
 
 
-def test_paper_and_real_fills_replay_into_separate_books():
+def test_an_older_dry_run_fill_replays_into_no_position():
     rows = [
         {
             "symbol": "X",
@@ -135,33 +129,27 @@ def test_paper_and_real_fills_replay_into_separate_books():
             "dry_run": True,
         },
     ]
-    assert replay(rows) == {
-        (Account.PAPER, "a"): {"X": 7},
-        (Account.LIVE, "a"): {"X": 4},
-    }
+    assert replay(rows) == {"a": {"X": 4}}
 
 
 def test_opening_shares_fill_buys_first_and_the_rest_is_sold():
-    books = {
-        (Account.LIVE, "opening"): {"X": 50.0, "Y": 8.0},
-        (Account.LIVE, "b"): {"X": 5.0},
-    }
+    books = {"opening": {"X": 50.0, "Y": 8.0}, "b": {"X": 5.0}}
     held = live_held(["a", "b"], books, {"a": {"X": 30}, "b": {"X": 10}})
     assert held == {"a": {"X": 30.0, "Y": 0.0}, "b": {"X": 25.0, "Y": 8.0}}
     quotes = {"X": Quote(price=10.0, adv=1e6, sector="tech")}
-    done = diff("b", Account.LIVE, held["b"], {"X": 10}, quotes=quotes, bound=0.02)
+    done = diff("b", held["b"], {"X": 10}, quotes=quotes, bound=0.02)
     assert [(o.side, o.quantity) for o in done.orders] == [("sell", 15)]
     assert [(h.symbol, h.quantity) for h in done.unmanaged] == [("Y", 8.0)]
 
 
 def test_unknown_adv_cuts_the_whole_order():
     quotes = {"X": Quote(price=10.0, adv=math.nan, sector="tech")}
-    done = diff("a", Account.PAPER, {}, {"X": 10}, quotes=quotes, bound=0.02)
+    done = diff("a", {}, {"X": 10}, quotes=quotes, bound=0.02)
     assert done.orders == ()
     assert [(c.wanted, c.kept) for c in done.cuts] == [(10, 0)]
 
 
-def planted(*candidates: Candidate, share: float = 0.5, sizing: Sizing = SIZING):
+def planted(*candidates: Candidate, sizing: Sizing = SIZING):
     quotes = {name: Quote(price=10.0, adv=1e9, sector="tech") for name in "XY"}
     return propose(
         Inputs(
@@ -176,48 +164,21 @@ def planted(*candidates: Candidate, share: float = 0.5, sizing: Sizing = SIZING)
             quotes=quotes,
             fills=(),
             previous=None,
-            risk_share=share,
         )
     )
 
 
-def test_a_copied_sleeve_halves_both_weights():
-    # Both raw at min(0.1 / 0.2, 0.25 * 0.4 / 0.2) = 0.5; correlation 1, so
-    # each divisor is 2 and each weight 0.25.
-    rng = np.random.default_rng(3)
-    days, net = np.arange(300, dtype=np.int64), rng.normal(0.0, 0.01, 300)
-    found = planted(
-        sleeve("a", 0.4, 0.2, (days, net), X=1.0),
-        sleeve("b", 0.4, 0.2, (days, net.copy()), Y=1.0),
-    )
-    assert {n: s.divisor for n, s in found.sleeves.items()} == pytest.approx(
-        {"a": 2.0, "b": 2.0}
-    )
-    assert {n: s.weight for n, s in found.sleeves.items()} == pytest.approx(
-        {"a": 0.25, "b": 0.25}
-    )
-    assert found.effective_streams == pytest.approx(1.0)
-
-
-def test_risk_share_is_reported_and_nothing_is_cut():
-    # a: 0.5 at vol 0.20 is risk 0.10; b: 1.0 at vol 0.05 is risk 0.05; sum
-    # 1.5 scales both by 2/3, shares stay 2/3 and 1/3; a is over 0.5.
+def test_without_stored_series_nothing_is_cut_and_ruin_says_why():
     found = planted(sleeve("a", 0.4, 0.20, X=1.0), sleeve("b", 0.2, 0.05, Y=1.0))
     assert {n: s.weight for n, s in found.sleeves.items()} == pytest.approx(
-        {"a": 0.5 / 1.5, "b": 1.0 / 1.5}
+        {"a": 0.5 / 1.1, "b": 0.6 / 1.1}
     )
-    assert found.advisory.risk_share == pytest.approx({"a": 2 / 3, "b": 1 / 3})
-    assert (found.advisory.bound, found.advisory.over) == (0.5, ("a",))
     assert found.cuts == ()
     assert found.ruin is None  # no stored series
     assert found.reasons == {"ruin": "no stored net series for a, b"}
 
 
-BOLD = Sizing(
-    vol_target=1.0,
-    kelly_fraction=KellyFractions(backtest=1.0, paper=1.0, live=1.0),
-    max_weight=1.0,
-)
+BOLD = Sizing(kelly_fraction=KellyFractions(backtest=1.0, tracked=1.0), max_weight=1.0)
 
 
 def book_of(daily: float, days: int = 600) -> Candidate:
@@ -254,7 +215,7 @@ def test_under_252_common_periods_the_ruin_bound_is_null_with_reason():
     assert found.reasons == {"ruin": "200 common periods, under 252"}
 
 
-def test_a_proposal_written_before_tiers_and_ruin_reads_back():
+def test_an_older_proposal_reads_back_its_dropped_keys_ignored():
     sleeve_row = {
         "strategy": "a",
         "account": "paper",
@@ -299,8 +260,4 @@ def test_a_proposal_written_before_tiers_and_ruin_reads_back():
     )
     assert (old.sleeves["a"].tier, old.sleeves["a"].edge_scale) == (Tier.BACKTEST, 1.0)
     assert (old.ruin, old.reasons) == (None, {})
-    assert (old.advisory.risk_share, old.advisory.bound, old.advisory.over) == (
-        {},
-        None,
-        (),
-    )
+    assert "divisor" not in old.sleeves["a"].model_dump()

@@ -1,4 +1,4 @@
-"""`check --live` on planted dry-run fills: a sleeve following the model
+"""`check --live` on planted real fills: a sleeve following the model
 tracks it, a 30% loss trips `drawdown` once a week, an old panel trips
 `stale`, and the command writes incident lines and nothing else."""
 
@@ -14,21 +14,12 @@ from btm_finance.api import Market
 from btm_finance.cli import scoped
 from btm_finance.data.assemble import assemble
 from btm_finance.data.tables import date_of
-from btm_finance.live import (
-    Fill,
-    Seasoning,
-    Sleeve,
-    Watch,
-    months_below,
-    slippage,
-    tier_of,
-)
+from btm_finance.live import Fill, Seasoning, Watch, slippage, tier_of
 from btm_finance.loader import load_strategy
 from btm_finance.measuring import Setting, rebalance_rows, rules_of, target_weights
 from btm_finance.models import Rebalance, StrategyConfig
 from btm_finance.recommending import Tier
 from btm_finance.store import load_limits, load_preferences, open_book
-from btm_finance.synthetic import trading_days
 
 CAPITAL = 1e6
 
@@ -37,7 +28,7 @@ CAPITAL = 1e6
 def paper(synthetic, run):
     """Seed 7 with `max_weight` 1 and the participation bound eased (the
     operator's edits), so the baseline's weights sum to 1 like a fully funded
-    sleeve; one run; status paper."""
+    sleeve; one run; status live."""
     book = synthetic(seed=7)
     path = book / "limits.json"
     limits = json.loads(path.read_text())
@@ -46,7 +37,7 @@ def paper(synthetic, run):
     path.write_text(json.dumps(limits))
     code, _, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
-    (book / "strategies" / "baseline" / "status").write_text("paper\n")
+    (book / "strategies" / "baseline" / "status").write_text("live\n")
     return book
 
 
@@ -77,7 +68,6 @@ def model_fills(book: Path) -> list[dict[str, object]]:
             "price": float(panel.open[row + 1, column]),
             "date": day,
             "strategy": "baseline",
-            "dry_run": True,
         }
         for column in np.flatnonzero(weights > 0).tolist()
     ]
@@ -130,7 +120,6 @@ def test_a_planted_loss_trips_drawdown_once_a_week(paper, run):
         "price": close / 0.7,  # marked at the close: a 30% loss on day one
         "date": date_of(int(panel.dates[row])).isoformat(),
         "strategy": "baseline",
-        "dry_run": True,
     }
     record(run, paper, [loss])
     before = {p: p.read_bytes() for p in paper.rglob("*") if p.is_file()}
@@ -163,34 +152,19 @@ def test_slippage_is_cost_for_either_side():
     assert slippage([buy, sell, unknown]) == pytest.approx(0.01)
 
 
-def test_months_below_counts_the_trailing_streak():
-    dates = trading_days(400)
-    baseline = Sleeve(dates, np.full(len(dates), 0.001), 0, ())
-    returns = np.full(len(dates), 0.002)
-    returns[-260:] = 0.0  # the last 260 trading days trail the baseline
-    behind = months_below(Sleeve(dates, returns, 0, ()), baseline)
-    assert 12 <= behind <= 13  # a partly trailing month breaks the streak
-
-
-def test_slippage_reads_the_proposal_the_approval_names(paper, run):
-    """Fill, approval file by name, its `proposal` stem, that order's price."""
+@pytest.mark.parametrize(
+    "named", [{"proposal": "2019-07-31"}, {"approval": "2019-07-31.json"}]
+)
+def test_slippage_reads_the_proposal_the_fill_names(paper, run, named):
+    """Fill, its `proposal` stem (an older fill's `approval` stem), that
+    order's price."""
     day = last_bar(paper).isoformat()
     order = {"symbol": "S020", "side": "buy", "quantity": 10, "price": 50.0}
     (paper / "proposals").mkdir(exist_ok=True)
     (paper / "proposals" / "2019-07-31.json").write_text(
         json.dumps({"orders": [order]})
     )
-    (paper / "approvals").mkdir(exist_ok=True)
-    (paper / "approvals" / f"{day}.json").write_text(
-        json.dumps({"date": day, "proposal": "2019-07-31", "orders": [order]})
-    )
-    fill = order | {
-        "price": 50.5,
-        "date": day,
-        "strategy": "baseline",
-        "dry_run": True,
-        "approval": f"{day}.json",
-    }
+    fill = order | {"price": 50.5, "date": day, "strategy": "baseline"} | named
     record(run, paper, [fill])
     (row,) = live(run, paper, day)["strategies"]
     assert row["slippage"]["value"] == pytest.approx(0.01)
@@ -212,21 +186,21 @@ def test_no_fills_size_on_the_backtest(paper, run):
     assert tier(run, paper, last_bar(paper)) == "backtest"
 
 
-def test_a_short_dry_run_span_stays_backtest(paper, run):
+def test_a_short_span_stays_backtest(paper, run):
     fills = model_fills(paper)
     record(run, paper, fills)
     early = first_fill_day(fills) + timedelta(days=30)
     assert tier(run, paper, early) == "backtest"  # under 63 calendar days
 
 
-def test_a_long_dry_run_span_tracking_the_model_is_paper(paper, run):
+def test_a_long_span_tracking_the_model_is_tracked(paper, run):
     fills = model_fills(paper)
     record(run, paper, fills)
     assert (last_bar(paper) - first_fill_day(fills)).days >= 63
-    assert tier(run, paper, last_bar(paper)) == "paper"
+    assert tier(run, paper, last_bar(paper)) == "tracked"
 
 
-def test_a_long_dry_run_span_off_the_model_path_stays_backtest(paper, run):
+def test_a_long_span_off_the_model_path_stays_backtest(paper, run):
     # The whole capital in one name: realized path far off the model's.
     first = model_fills(paper)[0]
     record(run, paper, [first | {"quantity": CAPITAL / float(str(first["price"]))}])
@@ -235,37 +209,28 @@ def test_a_long_dry_run_span_off_the_model_path_stays_backtest(paper, run):
     assert tier(run, paper, last_bar(paper)) == "backtest"
 
 
-def test_real_fills_tracking_the_model_are_live(paper, run):
-    (paper / "strategies" / "baseline" / "status").write_text("live\n")
-    record(run, paper, [f | {"dry_run": False} for f in model_fills(paper)])
-    assert tier(run, paper, last_bar(paper)) == "live"
-
-
-def test_a_probe_is_tracked_on_its_real_fills(paper, run):
+def test_an_older_probe_with_dry_run_fills_tracks_real_fills_only(paper, run):
     (paper / "strategies" / "baseline" / "status").write_text("probe\n")
     fills = model_fills(paper)
     record(run, paper, [f | {"dry_run": True, "quantity": 1.0} for f in fills[:1]])
-    record(run, paper, [f | {"dry_run": False} for f in fills])
+    record(run, paper, fills)
     (row,) = live(run, paper, last_bar(paper).isoformat())["strategies"]
-    assert (row["strategy"], row["status"]) == ("baseline", "probe")
-    assert row["fills"] == len(fills)  # the dry-run fill is not the probe's
+    assert (row["strategy"], row["status"]) == ("baseline", "live")
+    assert row["fills"] == len(fills)  # the dry-run fill is no trade
     assert row["days"] > 100
     assert not row["tracking"]["breach"]
-    assert tier(run, paper, last_bar(paper)) == "probe"
+    assert tier(run, paper, last_bar(paper)) == "tracked"
 
 
 def test_tier_of_needs_both_span_and_tracking():
     good, short = Seasoning(90, 0.01), Seasoning(10, 0.01)
     off, blind = Seasoning(90, 0.20), Seasoning(90, None)
 
-    def pick(paper: Seasoning | None, real: Seasoning | None) -> Tier:
-        return tier_of(paper, real, days=63, bound=0.05)
+    def pick(found: Seasoning | None) -> Tier:
+        return tier_of(found, days=63, bound=0.05)
 
-    assert pick(None, None) is Tier.BACKTEST
-    assert pick(short, None) is Tier.BACKTEST
-    assert pick(off, None) is Tier.BACKTEST
-    assert pick(blind, None) is Tier.BACKTEST
-    assert pick(good, None) is Tier.PAPER
-    assert pick(good, good) is Tier.LIVE
-    assert pick(None, good) is Tier.LIVE
-    assert pick(good, off) is Tier.PAPER
+    assert pick(None) is Tier.BACKTEST
+    assert pick(short) is Tier.BACKTEST
+    assert pick(off) is Tier.BACKTEST
+    assert pick(blind) is Tier.BACKTEST
+    assert pick(good) is Tier.TRACKED

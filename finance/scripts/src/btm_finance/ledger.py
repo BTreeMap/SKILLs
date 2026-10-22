@@ -22,26 +22,38 @@ class Kind(StrEnum):
     FILL = "fill"
     RUN = "run"
     INCIDENT = "incident"
-    REGIME = "regime"
-    SCORED = "scored"
 
     @property
     def file(self) -> str:
         match self:
             case Kind.HYPOTHESIS:
                 stem = "hypotheses"
-            case Kind.SCORED:
-                stem = "scored"
-            case (
-                Kind.CRITIQUE
-                | Kind.DECISION
-                | Kind.FILL
-                | Kind.RUN
-                | Kind.INCIDENT
-                | Kind.REGIME
-            ):
+            case Kind.CRITIQUE | Kind.DECISION | Kind.FILL | Kind.RUN | Kind.INCIDENT:
                 stem = f"{self.value}s"
         return f"{stem}.jsonl"
+
+
+SCORED = "scored.jsonl"
+"""An older book's scored bets: each line reads as a `close` decision."""
+IGNORED = ("regimes.jsonl", "holdings.jsonl")
+"""Older kinds no view reads; bare `check` names each file present."""
+
+
+def closed_of(row: Row) -> Row:
+    """A `scored` line as the `close` decision it stands for: `realized` its
+    `realized_return`, `against_odds` `win` above zero, else `loss`."""
+    realized = row.get("realized_return")
+    won = isinstance(realized, int | float) and realized > 0
+    return {
+        "id": row.get("id"),
+        "ts": row.get("ts"),
+        "subject": row.get("subject"),
+        "action": "close",
+        "realized": realized,
+        "against_odds": "win" if won else "loss",
+        "reason": row.get("outcome", "scored"),
+        **({"supersedes": row["supersedes"]} if "supersedes" in row else {}),
+    }
 
 
 def lines_of(records: Iterable[Mapping[str, Any]]) -> list[bytes]:

@@ -7,7 +7,6 @@ import inspect
 import json
 from pathlib import Path
 
-from btm_finance import git
 from btm_finance.api import Market
 from btm_finance.scaffold import stratified
 
@@ -31,6 +30,11 @@ def test_start_writes_the_book_and_the_held_out_list_outside_it(tmp_path, run):
     assert hidden == {"energy": ["E0"], "tech": ["S0", "S1"]}
     assert not str(receipt["held_out"]["path"]).startswith(str(book))
     assert not (book / ".claude").exists()
+    assert "No order without a `decision`" in (book / "AGENTS.md").read_text()
+    claude = book / "CLAUDE.md"
+    assert claude.is_symlink() or claude.read_text() == "Read AGENTS.md.\n"
+    for name in ("critiques", "decisions", "fills", "runs"):
+        assert (book / "ledger" / f"{name}.jsonl").is_file(), name
 
 
 def test_start_writes_the_held_out_list_where_the_operator_names(tmp_path, run):
@@ -110,24 +114,12 @@ def test_the_pruned_verbs_are_gone(book, run):
 def test_check_schema_without_a_book_prints_every_kind(run):
     code, schema, _ = run(["check", "--schema"])
     assert code == 0
-    assert list(schema) == [
-        "record",
-        "run",
-        "answers",
-        "pad",
-        "receipt",
-        "approval",
-        "strategy",
-    ]
+    assert list(schema) == ["record", "run", "pad", "strategy"]
     assert list(schema["record"]["record_batch"]) == [
         "hypotheses",
         "critiques",
         "decisions",
-        "scored",
-        "regimes",
         "fills",
-        "holdings",
-        "preferences",
     ]
     assert "hunch" in schema["pad"]["types"]
     assert "known" not in schema["pad"]["types"]
@@ -157,46 +149,40 @@ def test_check_schema_strategy_names_every_public_market_accessor(run):
 
 
 def test_check_schema_with_a_kind_prints_that_kind_only(book, run):
-    code, schema, _ = run(["check", "--schema", "approval"])
-    assert (code, list(schema)) == (0, ["approval"])
-    assert "adv_participation" in schema["approval"]["rules"]
+    code, schema, _ = run(["check", "--schema", "run"])
+    assert (code, list(schema)) == (0, ["run"])
+    assert "code_hash" in schema["run"]["run_line"]
     assert run(["check", str(book), "--schema", "pad"])[1].keys() == {"pad"}
     code, _, err = run(["check", "--schema", "fills"])
-    assert code == 1 and "record|run|answers|pad|receipt|approval" in err
+    assert code == 1 and "record|run|pad|strategy" in err
     code, _, err = run(["check"])
     assert code == 1 and "only --schema runs without one" in err
 
 
-def test_start_inits_main_commits_and_leaves_a_clean_tree(
-    tmp_path_factory, monkeypatch, run
-):
-    """Outside any repository `start` runs `git init`; the identity comes
-    from this process's environment, never a config file."""
-    for key in ("AUTHOR", "COMMITTER"):
-        monkeypatch.setenv(f"GIT_{key}_NAME", "Test Agent")
-        monkeypatch.setenv(f"GIT_{key}_EMAIL", "agent@example.invalid")
-    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
-    monkeypatch.setenv("GIT_CONFIG_KEY_0", "commit.gpgsign")
-    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "false")
+def test_start_inits_a_repository_and_commits_nothing(tmp_path_factory, run):
+    """Outside any repository `start` runs `git init`; inside one it does
+    not; it never commits."""
     root = tmp_path_factory.mktemp("alone") / "b"
     code, receipt, err = run(["start", str(root)])
     assert code == 0, err
     assert receipt["git"] == "init"
     assert (root / ".git").is_dir()
-    ignored = "/data\n__pycache__/\n.worktrees/\n"
-    assert (root / ".gitignore").read_text() == ignored
-    assert git.head(root) is not None and git.dirty(root, ["."]) == frozenset()
-    assert git.log_commits(root, ["limits.json"])[0].hash == receipt["commit"]
+    assert (root / ".gitignore").read_text() == "/data\n__pycache__/\n"
+    assert not (root / ".git" / "refs" / "heads" / "main").exists()
     code, receipt, _ = run(["start", str(root / "inner")])
     assert code == 0
     assert receipt["git"] == "inside"
     assert not (root / "inner" / ".git").exists()
 
 
-def test_a_verb_needing_a_commit_refuses_outside_a_repository(book, run):
-    (book.parent / ".git").rename(book.parent / "moved.git")
-    code, _, err = run(["check", str(book)])
-    assert code == 1 and "book must be a git repository" in err
+def test_paper_or_probe_reads_live_with_a_signal(book, run):
+    for name, word in (("old", "paper"), ("tiny", "probe")):
+        (book / "strategies" / name).mkdir()
+        (book / "strategies" / name / "status").write_text(f"{word}\n")
+    code, view, err = run(["check", str(book)])
+    assert code == 0
+    assert {"old", "tiny"} <= set(view["strategies"]["live"])
+    assert "strategies/old/status reads paper: read as live" in err
 
 
 def test_absent_status_reads_research_and_a_foreign_word_stays_unknown(book, run):

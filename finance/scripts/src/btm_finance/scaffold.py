@@ -1,16 +1,20 @@
 """What `start` writes: the book's layout, templates, and the held-out list
-outside the book."""
+outside the book. The one git call in the package lives here: `git init`
+when the book lies in no repository; nothing is ever committed."""
 
 from __future__ import annotations
 
 import csv
 import io
 import json
-import shlex
+import os
+import shutil
+import subprocess
 from collections import defaultdict
 from collections.abc import Sequence
 from importlib import resources
 from pathlib import Path
+from string import Template
 from typing import Any
 
 import btm_finance
@@ -22,56 +26,37 @@ from btm_corekit import (
     signal,
     write_atomic,
 )
-from btm_finance import delegates, git, onboarding
+from btm_finance.ledger import Kind
 from btm_finance.models import (
     BASELINE_CONFIG,
     PREFERENCES_TEMPLATE,
-    Answers,
     BookMeta,
     Status,
     limits_template,
 )
-from btm_finance.store import MARKER, held_out_path
+from btm_finance.store import MARKER, PAD_DIR, held_out_path
 
+DEFAULT_CAP = 10_000_000
 DIRECTORIES = (
     "data/raw",
     "data/features",
-    "ledger/pad",
+    PAD_DIR.as_posix(),
     "ledger/runs",
     "proposals",
-    "approvals",
-    "rejected",
     "strategies/baseline",
-    "features",
-    "ext",
-    "tests/reference",
     "lib",
     "tools",
     "research",
-    delegates.DELEGATES,
+    "tests",
 )
-RESEARCH = {
-    "backlog": "candidate hypotheses, one <id>.md each, ranked weekly",
-    "calendar": "event calendars and trigger lists, one file per event family",
-    "weekly": "weekly research note, one <YYYY-Www>.md each",
-}
-"""Queue folders under `research/`: name to purpose, one `INDEX.md` row
-each."""
+LEDGER = (Kind.CRITIQUE, Kind.DECISION, Kind.FILL, Kind.RUN)
+"""Ledger files `start` makes empty; `record` writes the hypotheses file."""
 INDEX = "INDEX.md"
 INDEX_HEAD = "# Index\n\npath | purpose\n"
-IGNORED = ("/data", "__pycache__/", ".worktrees/")
-
-
-def index_text() -> str:
-    """Header, column line, one row per queue folder and per seeded brief."""
-    rows = "".join(
-        f"research/{name}/ | {purpose}\n" for name, purpose in RESEARCH.items()
-    )
-    return INDEX_HEAD + rows + delegates.index_rows()
-
-
-def research_readme(name: str, purpose: str) -> str:
-    return f"# {name}\n\nStatus: empty; {purpose}.\n"
+AGENTS = "AGENTS.md"
+CLAUDE = "CLAUDE.md"
+FALLBACK = "Read AGENTS.md.\n"
+IGNORED = ("/data", "__pycache__/")
 
 
 BOOK_CONFTEST = """\"\"\"Book tests: book root first on sys.path, so
@@ -87,11 +72,6 @@ ROOT = str(Path(__file__).resolve().parents[1])
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 """
-UNONBOARDED = (
-    "ask the operator the onboarding questions, write answers.json, run "
-    "start with --answers:file; then load data, measure baseline, import "
-    "holdings with record"
-)
 HELD_OUT_SHARE = 4  # one name in four per sector, rounded half up
 
 BASELINE_README = """# baseline
@@ -99,34 +79,13 @@ BASELINE_README = """# baseline
 Static comparator every candidate strategy is shown beside: equal weight on
 the top third of names by average rank of 12-1 momentum, low volatility, and
 book-to-market where filings are loaded; rebalanced annually. `start`
-registers its hypothesis. `status` changes only on operator's word in chat,
-recorded as decision naming its commit.
+registers its hypothesis. `status` changes only on operator's word.
 """
 
 
 def template(name: str) -> str:
     return (resources.files(btm_finance) / "templates" / name).read_text(
         encoding="utf-8"
-    )
-
-
-def record_binding() -> tuple[str, ...]:
-    """The skill's own binding, through the member's realpath, for the
-    commands `README.md` and `AGENTS.md` show."""
-    scripts = Path(btm_finance.__file__).resolve().parents[2]
-    if not (scripts / "pyproject.toml").is_file():
-        signal(f"no member manifest at {scripts}; fix the binding in AGENTS.md")
-    return (
-        "env",
-        "-u",
-        "VIRTUAL_ENV",
-        "-u",
-        "UV_PROJECT_ENVIRONMENT",
-        "uv",
-        "run",
-        "--project",
-        str(scripts),
-        "btm-finance",
     )
 
 
@@ -171,8 +130,7 @@ def write_new(path: Path, text: str) -> None:
 
 
 def ignore(path: Path) -> None:
-    """`/data` (directory, or a worktree's symlink to it), `__pycache__/`,
-    `.worktrees/` joined to `.gitignore`; other lines kept."""
+    """`/data` and `__pycache__/` joined to `.gitignore`; other lines kept."""
     held = path.read_text(encoding="utf-8") if path.is_file() else ""
     lines = held.splitlines()
     missing = [line for line in IGNORED if line not in lines]
@@ -190,101 +148,84 @@ def outside(root: Path, path: Path) -> Path:
     return resolved
 
 
-def onboard_files(
-    root: Path, meta: BookMeta, answers: Answers, cap: int, dated: str
-) -> str:
-    """`README.md`, `AGENTS.md`, `CLAUDE.md` from the answers; returns how
-    `CLAUDE.md` landed."""
-    setting = onboarding.Setting(
-        title=root.resolve().name,
-        dated=dated[:10],
-        cap=cap,
-        held_out=meta.held_out or str(held_out_path(meta.id)),
-        universe=(root / "universe.csv").is_file(),
-        binding=shlex.join(record_binding()),
+def link_claude(root: Path) -> str:
+    """`CLAUDE.md` as relative symlink to `AGENTS.md`; where symlinks fail,
+    the one-line fallback. Returns which."""
+    path = root / CLAUDE
+    if path.is_symlink() or path.exists():
+        path.unlink()
+    try:
+        os.symlink(AGENTS, path)
+    except (OSError, NotImplementedError):
+        write_atomic(path, FALLBACK)
+        return "file"
+    return "symlink"
+
+
+def repository(root: Path) -> str:
+    """`inside` when `root` lies in a work tree, else `init` after `git init
+    -q -b main`; `absent` with a signal when git is not on PATH."""
+    found = shutil.which("git")
+    if found is None:
+        signal("no git on PATH; the book is no repository until git init runs")
+        return "absent"
+    probe = [found, "-C", str(root), "rev-parse", "--is-inside-work-tree"]
+    if subprocess.run(probe, capture_output=True, check=False).returncode == 0:
+        return "inside"
+    done = subprocess.run(
+        [found, "-C", str(root), "init", "-q", "-b", "main"],
+        capture_output=True,
+        check=False,
     )
-    return onboarding.write_files(root, template, answers, setting)
+    if done.returncode != 0:
+        raise CommandError(f"git init in {root} failed: {done.stderr.decode().strip()}")
+    return "init"
 
 
 def scaffold(
-    root: Path,
-    cap: int | None,
-    universe: str | None,
-    held_out_at: Path | None = None,
-    answers: Answers | None = None,
+    root: Path, cap: int | None, universe: str | None, held_out_at: Path | None = None
 ) -> dict[str, Any]:
-    """Make the book, a git repository (`git init` on `main` unless already
-    inside one); refuse a directory that already holds `limits.json`. Flags
-    win over answers; answers fill limits, preferences, and the three
-    instruction files. The caller commits."""
-    git.binary()
+    """Make the book; refuse a directory that already holds `limits.json`."""
     if (root / "limits.json").exists():
         raise CommandError(
             f"{root} already holds limits.json; start makes new books only"
         )
     book_id = make_id(ascii_words(root.resolve().name) or ["book"])
-    answered = None if answers is None else answers.held_out
-    default = held_out_path(book_id) if answered is None else Path(answered)
-    hidden = outside(root, held_out_at or default)
-    cap = cap or (answers.capital.now if answers else None) or onboarding.DEFAULT_CAP
-    preferences = (
-        PREFERENCES_TEMPLATE
-        if answers is None
-        else {**PREFERENCES_TEMPLATE, **onboarding.preference_values(answers)}
-    )
-    limits = (
-        limits_template(cap)
-        if answers is None
-        else onboarding.patched(
-            limits_template(cap), onboarding.limit_values(answers, cap)
-        )
-    )
+    hidden = outside(root, held_out_at or held_out_path(book_id))
     listing = held_out(universe)  # before any write: a bad CSV leaves nothing
     for directory in DIRECTORIES:
         (root / directory).mkdir(parents=True, exist_ok=True)
+    for kind in LEDGER:
+        (root / "ledger" / kind.file).touch()
     write_new(hidden, json.dumps(listing, indent=2) + "\n")
     baseline = root / "strategies" / "baseline"
     write_new(baseline / "status", f"{Status.RESEARCH.value}\n")
-    write_new(
-        baseline / "config.json",
-        json.dumps(BASELINE_CONFIG, indent=2) + "\n",
-    )
+    write_new(baseline / "config.json", json.dumps(BASELINE_CONFIG, indent=2) + "\n")
     write_new(baseline / "README.md", BASELINE_README)
     write_new(baseline / "signal.py", template("signal.tmpl"))
     if universe is not None:
         write_new(root / "universe.csv", universe)
     write_new(root / "lib" / "__init__.py", "")
     write_new(root / "tests" / "conftest.py", BOOK_CONFTEST)
-    for name, purpose in RESEARCH.items():
-        write_new(
-            root / "research" / name / "README.md", research_readme(name, purpose)
-        )
-    starter = template("delegate.tmpl")
-    references = Path(btm_finance.__file__).resolve().parents[3] / "references"
-    for slug in delegates.STARTERS:
-        write_new(
-            root / delegates.DELEGATES / f"{slug}.md",
-            delegates.brief(starter, slug, references),
-        )
-    write_new(root / INDEX, index_text())
-    write_new(root / "preferences.json", json.dumps(preferences, indent=2) + "\n")
+    write_new(root / INDEX, INDEX_HEAD)
+    write_new(
+        root / "preferences.json", json.dumps(PREFERENCES_TEMPLATE, indent=2) + "\n"
+    )
+    limits = limits_template(cap or DEFAULT_CAP)
     write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
+    title = root.resolve().name
+    write_new(
+        root / AGENTS, Template(template("AGENTS.tmpl")).safe_substitute(title=title)
+    )
+    claude = link_claude(root)
     meta = BookMeta(
         id=book_id,
         created=now_iso(),
-        engine=git.skill_commit(),
+        engine=btm_finance.__version__,
         held_out=str(hidden),
     )
     write_new(root / MARKER, json.dumps(meta.model_dump(mode="json"), indent=2) + "\n")
-    claude = (
-        None
-        if answers is None
-        else onboard_files(root, meta, answers, cap, meta.created)
-    )
     ignore(root / ".gitignore")
-    nested = git.inside(root)
-    if not nested:
-        git.init(root)
     return {
         "book": book_id,
         "path": str(root.resolve()),
@@ -298,18 +239,15 @@ def scaffold(
             ".gitignore",
             MARKER,
             INDEX,
+            AGENTS,
+            CLAUDE,
             "lib/__init__.py",
             "tests/conftest.py",
-            *(f"research/{name}/README.md" for name in RESEARCH),
             "strategies/baseline/",
-            f"{delegates.DELEGATES}/",
+            *(f"ledger/{kind.file}" for kind in LEDGER),
             *(["universe.csv"] if universe is not None else []),
-            *(onboarding.FILES if claude is not None else ()),
         ],
-        "onboarded": claude is not None,
-        **({} if claude is None else {"claude_md": claude}),
-        "git": "inside" if nested else "init",
-        "next": UNONBOARDED
-        if claude is None
-        else "load data, then measure baseline; import holdings with record",
+        "claude_md": claude,
+        "git": repository(root),
+        "next": "load data, then measure baseline; import holdings as opening fills",
     }

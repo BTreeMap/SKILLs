@@ -1,6 +1,5 @@
-"""The book as research monorepo: what `start` lays out for agent code, the
-`INDEX.md` warning, book tests importing `lib`, and the `api` readers a
-`tools/` script uses."""
+"""The book as research monorepo: what `start` lays out for agent code, book
+tests importing `lib`, and the `api` readers a `tools/` script uses."""
 
 from __future__ import annotations
 
@@ -12,7 +11,6 @@ from pathlib import Path
 
 from btm_finance import api
 from btm_finance.data.tables import day_of
-from btm_finance.delegates import STARTERS
 
 
 def test_start_lays_out_lib_tools_research_tests_and_index(book):
@@ -20,30 +18,7 @@ def test_start_lays_out_lib_tools_research_tests_and_index(book):
         assert (book / folder).is_dir(), folder
     assert (book / "lib" / "__init__.py").read_text() == ""
     index = (book / "INDEX.md").read_text().splitlines()
-    assert index[:3] == ["# Index", "", "path | purpose"]
-    queue = ("backlog", "calendar", "weekly")
-    assert [row.split(" | ")[0] for row in index[3:]] == [
-        *(f"research/{name}/" for name in queue),
-        *(f"delegates/{slug}.md" for slug in STARTERS),
-    ]
-    for name in queue:
-        [status] = [
-            line
-            for line in (book / "research" / name / "README.md")
-            .read_text()
-            .splitlines()
-            if line.startswith("Status:")
-        ]
-        assert status
-
-
-def test_a_missing_index_is_a_warning(book, run):
-    assert run(["check", str(book)])[1]["warnings"] == []
-    (book / "INDEX.md").unlink()
-    code, view, err = run(["check", str(book)])
-    assert code == 0
-    assert view["warnings"] == [{"file": "INDEX.md", "problem": "absent"}]
-    assert "no INDEX.md" in err
+    assert index == ["# Index", "", "path | purpose"]
 
 
 def test_book_tests_import_lib(book):
@@ -66,19 +41,24 @@ def test_book_tests_import_lib(book):
 
 def test_api_reads_the_newest_wins_ledger_and_research_names(synthetic, run):
     book = synthetic(seed=7)
-    first = {"kw": ["first", "read"], "as_of": "2017-06-30", "confidence": 0.5}
+    first = {
+        "kw": ["first", "read"],
+        "subject": "baseline",
+        "action": "override",
+        "reason": "first",
+    }
     code, receipt, err = run(
-        ["record", str(book), "--batch:stdin"], json.dumps({"regimes": [first]})
+        ["record", str(book), "--batch:stdin"], json.dumps({"decisions": [first]})
     )
     assert code == 0, err
-    old = receipt["new"]["regimes"]["first-read"]
+    old = receipt["new"]["decisions"]["first-read"]
     fix = first | {"kw": ["second", "read"], "supersedes": old}
-    run(["record", str(book), "--batch:stdin"], json.dumps({"regimes": [fix]}))
+    run(["record", str(book), "--batch:stdin"], json.dumps({"decisions": [fix]}))
     code, measured, err = run(["measure", str(book), "baseline", "--agent", "probe"])
     assert code == 0, err
 
     handle = api.open_book(str(book))
-    assert [row["kw"] for row in api.ledger(handle, "regime")] == [["second", "read"]]
+    assert [row["kw"] for row in api.ledger(handle, "decision")] == [["second", "read"]]
     assert [row["run_id"] for row in api.ledger(handle, "run")] == [measured["run_id"]]
     found = api.research(handle)
     market = found.at(date(2100, 1, 1))

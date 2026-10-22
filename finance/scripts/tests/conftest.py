@@ -4,88 +4,24 @@ from __future__ import annotations
 
 import io
 import json
-import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import pytest
-from btm_finance import git
 from btm_finance.cli import main
 from btm_finance.synthetic import make_book
 
 Run = Callable[..., tuple[int, Any, str]]
 
 
-IDENTITY = {"user.name": "Test Agent", "user.email": "agent@example.invalid"}
-
-
-def repository(root: Path) -> None:
-    """A git repository at `root` on `main`, committer identity and no
-    signing in its own config, never the global one."""
-    root.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
-    for key, value in [*IDENTITY.items(), ("commit.gpgsign", "false")]:
-        subprocess.run(["git", "-C", str(root), "config", key, value], check=True)
-
-
 @pytest.fixture(autouse=True)
 def isolated_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Every test owns its own state root, so no held-out list leaks across,
-    and its own repository, so every book under `tmp_path` nests in it."""
+    """Every test owns its own state root, so no held-out list leaks across."""
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
-    repository(tmp_path)
     return tmp_path
-
-
-def committed(book: Path, *paths: str, subject: str = "test: commit") -> str:
-    """Commit `paths`, book-relative; the new HEAD."""
-    return git.commit(book, list(paths), subject)
-
-
-def git_run(book: Path, *args: str) -> str:
-    """`git -C book <args>`, stdout stripped."""
-    done = subprocess.run(
-        ["git", "-C", str(book), *args], capture_output=True, check=True, text=True
-    )
-    return done.stdout.strip()
-
-
-def rebased(book: Path, branch: str) -> None:
-    """The lead's merge after main moved: an unrelated commit on `main`,
-    `branch` rebased onto it, merged fast-forward, old commits pruned."""
-    git_run(book, "switch", "-q", "main")
-    note = book / "research" / "moved.md"
-    note.parent.mkdir(parents=True, exist_ok=True)
-    note.write_text("main moved\n")
-    committed(book, "research/moved.md", subject="docs: main moves on")
-    git_run(book, "switch", "-q", branch)
-    git_run(book, "rebase", "-q", "main")
-    git_run(book, "switch", "-q", "main")
-    git_run(book, "merge", "-q", "--ff-only", branch)
-    git_run(book, "branch", "-q", "-D", branch)
-    git_run(book, "reflog", "expire", "--expire=now", "--all")
-    git_run(book, "gc", "-q", "--prune=now")
-
-
-@pytest.fixture
-def git_in() -> Callable[..., str]:
-    """`git_run`: `git_in(book, *args)`."""
-    return git_run
-
-
-@pytest.fixture
-def rebase() -> Callable[[Path, str], None]:
-    """`rebased`: `rebase(book, branch)`."""
-    return rebased
-
-
-@pytest.fixture
-def commit() -> Callable[..., str]:
-    """`committed`: `commit(book, *paths)` returns the new HEAD."""
-    return committed
 
 
 @pytest.fixture
@@ -110,7 +46,7 @@ def run(capsys: pytest.CaptureFixture[str]) -> Run:
 @pytest.fixture
 def book(tmp_path: Path, run: Run) -> Path:
     root = tmp_path / "book"
-    code, _, err = run(["start", str(root), "--answers:stdin"], stdin="{}")
+    code, _, err = run(["start", str(root)])
     assert code == 0, err
     return root
 
@@ -124,7 +60,6 @@ def hypothesis(kw: list[str], **overrides: Any) -> dict[str, Any]:
         "kw": kw,
         "strategy": "baseline",
         "family_id": "baseline",
-        "capacity_class": "in_band",
         "falsifier": "net Sharpe under the baseline's over 12 months",
         "counterparty": "index funds rebalancing on schedule",
         "min_holding_days": 21,
@@ -136,69 +71,6 @@ def hypothesis(kw: list[str], **overrides: Any) -> dict[str, Any]:
 @pytest.fixture
 def make_hypothesis() -> Callable[..., dict[str, Any]]:
     return hypothesis
-
-
-ORDER: dict[str, Any] = {
-    "symbol": "ABC",
-    "side": "buy",
-    "quantity": 10,
-    "price": 12.5,
-    "strategy": "baseline",
-    "adv_participation": 0.001,
-}
-
-
-REPLY = "approve, the quantities look right"
-
-
-def approval(where: Path, day: str, **order: Any) -> Path:
-    """One approval file holding one order, `order` overriding the default,
-    quoting the operator's reply, and the proposal `proposals/<day>.json` it
-    names, holding that order."""
-    entry = ORDER | order
-    proposals = where.parents[1] / "proposals"
-    proposals.mkdir(parents=True, exist_ok=True)
-    (proposals / f"{day}.json").write_text(json.dumps({"orders": [entry]}))
-    where.parent.mkdir(parents=True, exist_ok=True)
-    document = {"date": day, "proposal": day, "reply": REPLY, "orders": [entry]}
-    where.write_text(json.dumps(document))
-    return where
-
-
-def approved(run: Run, where: Path, stem: str) -> None:
-    """The approval file committed, then the `approve` decision naming it."""
-    shown = where.relative_to(where.parents[1]).as_posix()
-    committed(where.parents[1], shown, subject=f"test: approve {stem}")
-    decision = {
-        "kw": ["approve", "reply"],
-        "subject": stem,
-        "action": "approve",
-        "reason": REPLY,
-        "applied": [shown],
-    }
-    code, _, err = run(
-        ["record", str(where.parents[1]), "--batch:stdin"],
-        json.dumps({"decisions": [decision]}),
-    )
-    assert code == 0, err
-
-
-@pytest.fixture
-def witness(run: Run) -> Callable[[Path, str], None]:
-    """Commit an approval file, then record the `approve` decision naming it."""
-    return lambda where, stem: approved(run, where, stem)
-
-
-@pytest.fixture
-def approve(run: Run) -> Callable[..., Path]:
-    """`approval`, then its `approve` decision: the chat path."""
-
-    def make(where: Path, day: str, **order: Any) -> Path:
-        approval(where, day, **order)
-        approved(run, where, day)
-        return where
-
-    return make
 
 
 @pytest.fixture
@@ -224,13 +96,12 @@ STRATEGY: dict[str, Any] = {
 
 def write_strategy(book: Path, name: str, source: str, **config: Any) -> Path:
     """`strategies/<name>/` with `source` as signal.py and `config` over the
-    default monthly long-short config, committed."""
+    default monthly long-short config."""
     folder = book / "strategies" / name
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "signal.py").write_text(source)
     (folder / "config.json").write_text(json.dumps(STRATEGY | config))
     (folder / "status").write_text("research\n")
-    committed(book, f"strategies/{name}", subject=f"test: strategy {name}")
     return folder
 
 
@@ -251,7 +122,6 @@ def plant(run: Run) -> Callable[..., str]:
             "kw": [*name.split("-"), "idea"],
             "strategy": name,
             "family_id": settings["family_id"],
-            "capacity_class": "in_band",
             "falsifier": "net Sharpe at or below zero out of sample",
             "counterparty": "planted by the test",
             "min_holding_days": settings["holding_days"],
@@ -267,8 +137,7 @@ def plant(run: Run) -> Callable[..., str]:
 
 
 def set_families(book: Path, **families: dict[str, Any]) -> None:
-    """An uncommitted edit to `limits.json` adding or replacing families;
-    bare `check` warns on it until committed and named by a decision."""
+    """A hand edit to `limits.json` adding or replacing families."""
     path = book / "limits.json"
     limits = json.loads(path.read_text())
     limits["families"] |= families

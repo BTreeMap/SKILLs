@@ -1,5 +1,5 @@
-"""Book filesystem: the marker, governed files, atomic ledger appends
-under a lock, and the strategy and proposal listings."""
+"""Book filesystem: the marker, atomic ledger appends under a lock, and the
+strategy and proposal listings."""
 
 from __future__ import annotations
 
@@ -12,8 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
 
-from btm_corekit import CommandError, parse_model, state_root
-from btm_finance.governed import LIMITS, governed
+from btm_corekit import CommandError, parse_model, signal, state_root
 from btm_finance.ledger import Kind, lines_of, undecodable
 from btm_finance.models import BookMeta, Limits, Preferences, Status
 
@@ -150,8 +149,15 @@ def append_ledger(path: Path, records: Sequence[Mapping[str, Any]]) -> list[str]
     return [str(record["id"]) for record in records]
 
 
+LEGACY_LIVE = frozenset({"paper", "probe"})
+"""Older status words; each reads `live`."""
+
+
 def status_of(raw: str) -> Status | None:
-    """Absent or empty `status` is `research`; an unknown word is None."""
+    """Absent or empty `status` is `research`; `paper` or `probe` is `live`;
+    an unknown word is None."""
+    if raw in LEGACY_LIVE:
+        return Status.LIVE
     try:
         return Status(raw or Status.RESEARCH.value)
     except ValueError:
@@ -179,6 +185,8 @@ def strategies(book: Book) -> list[Strategy]:
             if status_file.is_file()
             else ""
         )
+        if raw in LEGACY_LIVE:
+            signal(f"strategies/{directory.name}/status reads {raw}: read as live")
         found.append(Strategy(directory.name, status_of(raw), raw))
     return found
 
@@ -222,18 +230,3 @@ def previous_proposal(book: Book, day: str) -> Path | None:
     earlier = [d for d in days if d < day]
     versions = proposal_versions(book, earlier[-1]) if earlier else []
     return versions[-1] if versions else None
-
-
-def governed_paths(root: Path) -> list[str]:
-    """Each governed file present, book-relative, sorted: `limits.json`, every
-    `strategies/*/status`, every `approvals/*.json`."""
-    found = [
-        root / LIMITS,
-        *(root / "strategies").glob("*/status"),
-        *(root / "approvals").glob("*.json"),
-    ]
-    return sorted(
-        path.relative_to(root).as_posix()
-        for path in found
-        if path.is_file() and governed(path.relative_to(root).as_posix())
-    )

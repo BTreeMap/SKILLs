@@ -4,14 +4,14 @@ standing derived from the ledger."""
 
 from __future__ import annotations
 
+import hashlib
 import json
-import re
 import threading
 import time
 
+import btm_finance
 import numpy as np
 import pytest
-from btm_finance import git
 from btm_finance.cli import scoped
 from btm_finance.data import raw
 from btm_finance.data.raw import data_snapshot, read_manifest
@@ -25,8 +25,8 @@ SPEC_KEYS = {
     "family_id",
     "strategy",
     "data_snapshot",
-    "code_objects",
-    "code_paths",
+    "code_hash",
+    "code_files",
     "config",
     "scorecard",
     "engine",
@@ -47,7 +47,7 @@ def run_lines(book, name="runs.jsonl"):
 def test_start_registers_the_baseline_hypothesis(book, run):
     (line,) = [json.loads(x) for x in (book / "ledger" / "hypotheses.jsonl").open()]
     assert (line["strategy"], line["family_id"]) == ("baseline", "baseline")
-    assert line["capacity_class"] == "crowded"
+    assert "capacity_class" not in line
     config = json.loads((book / "strategies" / "baseline" / "config.json").read_text())
     assert (config["rebalance"], config["holding_days"]) == ("annual", 252)
 
@@ -61,14 +61,13 @@ def test_measure_appends_the_run_line_and_lists_its_returns(synthetic, run):
     assert set(line) >= SPEC_KEYS
     assert line["run_id"] == line["id"] == document["run_id"]
     assert line["data_snapshot"] == before
-    assert re.fullmatch(r"[0-9a-f]{40}", line["engine"]["btm_finance"])
-    assert line["code_paths"] == [
+    assert line["engine"] == btm_finance.__version__
+    assert list(line["code_files"]) == [
         "strategies/baseline/config.json",
         "strategies/baseline/signal.py",
     ]
-    assert line["code_objects"] == {
-        path: git.blob(book, "HEAD", path) for path in line["code_paths"]
-    }
+    assert all(len(digest) == 64 for digest in line["code_files"].values())
+    assert len(line["code_hash"]) == 64
     listed = {e.path: e for e in read_manifest(open_book(str(book))).files}
     assert listed[line["returns"]].rows == line["span"]["periods"]
     assert line["scorecard"]["trials"] == 1
@@ -76,26 +75,28 @@ def test_measure_appends_the_run_line_and_lists_its_returns(synthetic, run):
     assert again["scorecard"]["trials"] == 2
     second = run_lines(book)[1]
     assert second["data_snapshot"] == before  # returns files never move it
-    assert second["code_objects"] == line["code_objects"]
+    assert second["code_hash"] == line["code_hash"]
     assert (line["peers"], second["peers"]) == ([], [line["run_id"]])
 
 
-def test_measure_refuses_uncommitted_code_and_writes_nothing(synthetic, run, commit):
+def test_code_hash_moves_with_meaning_not_with_comments(synthetic, run):
     book = synthetic(seed=7)
+    assert run(["measure", str(book), "baseline"])[0] == 0
     signal = book / "strategies" / "baseline" / "signal.py"
+    signal.write_text(signal.read_text() + "\n# a comment moves nothing\n")
+    assert run(["measure", str(book), "baseline"])[0] == 0
     signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
-    helper = book / "lib" / "tilt.py"
-    helper.write_text("X = 1\n")
-    code, _, err = run(["measure", str(book), "baseline"])
-    assert code == 1
-    assert "commit before measure: strategies/baseline/signal.py" in err
-    assert not (book / "ledger" / "runs.jsonl").exists()
-    commit(book, "strategies/baseline")
-    code, _, err = run(["measure", str(book), "baseline"])
-    assert code == 0, err
-    objects = run_lines(book)[0]["code_objects"]
+    assert run(["measure", str(book), "baseline", "--reason", "third"])[0] == 0
+    first, second, third = run_lines(book)
+    assert first["code_hash"] == second["code_hash"] != third["code_hash"]
     path = "strategies/baseline/signal.py"
-    assert objects[path] == git.blob(book, "HEAD", path)
+    assert first["code_files"][path] != third["code_files"][path]
+    config = "strategies/baseline/config.json"
+    assert first["code_files"][config] == third["code_files"][config]
+    canonical = json.dumps(
+        json.loads((book / config).read_text()), sort_keys=True, separators=(",", ":")
+    )
+    assert third["code_files"][config] == hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def test_held_out_measures_only_the_complement(synthetic, run):
@@ -118,7 +119,7 @@ def test_an_agent_writes_its_own_run_file(synthetic, run):
     code, document, _ = run(["measure", str(book), "baseline", "--agent", "a1"])
     assert code == 0
     assert run_lines(book, "runs/a1.jsonl")[0]["agent"] == "a1"
-    assert not (book / "ledger" / "runs.jsonl").exists()
+    assert (book / "ledger" / "runs.jsonl").read_text() == ""
     view = run(["check", str(book), document["run_id"]])[1]
     assert view["run_id"] == document["run_id"]
 
@@ -129,9 +130,7 @@ def test_standing_names_each_blocker_with_value_and_limit(synthetic, run):
     view = run(["check", str(book), "baseline"])[1]
     assert view["standing"] in {"blocked", "discard"}
     assert "no critique" in view["blockers"]
-    assert (
-        "crowded: capacity_class crowded needs an override decision" in view["blockers"]
-    )
+    assert not [b for b in view["blockers"] if b.startswith("crowded")]
     critique = {
         "kw": ["base", "read"],
         "run_id": document["run_id"],
@@ -234,7 +233,7 @@ def test_reason_runs_past_each_policy_gate_and_is_stamped(synthetic, run, gate):
     code, document, err = run(["measure", str(book), "baseline"])
     assert (code, document) == (1, None)
     assert "refused before running" in err and "--reason" in err
-    assert not (book / "ledger" / "runs.jsonl").exists()
+    assert (book / "ledger" / "runs.jsonl").read_text() == ""
     code, _, err = run(["measure", str(book), "baseline", "--reason", "gate test"])
     assert "override_reason" in err
     (line,) = run_lines(book)

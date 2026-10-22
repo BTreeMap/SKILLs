@@ -15,8 +15,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
-from btm_finance import git
-from btm_finance.cli import recorded, start
+from btm_finance.cli import start
 from btm_finance.data.panel import DelistKind
 from btm_finance.data.raw import store
 from btm_finance.data.tables import (
@@ -197,26 +196,15 @@ def make_book(  # noqa: PLR0913 - one synthetic book's whole recipe
 ) -> Synthetic:
     """`start` at `root` with the synthetic universe, whose held-out list is
     deterministic, and the panel stored as a csv load; the tree is left
-    clean."""
+    as `start` left it but `max_weight`."""
     data = make_panel(seed, names, days, structure=structure, alpha=alpha)
     start(root, 10_000_000, data.universe)
-    # The synthetic ADV carries 5% positions at the cap, not the template's
-    # 10%: committed, then a decision names it, so bare `check` stays quiet.
+    # The synthetic ADV carries 5% positions at the cap, not the template's 10%.
     limits_path = root / "limits.json"
     limits = json.loads(limits_path.read_text(encoding="utf-8"))
     limits["sizing"]["max_weight"] = 0.05
     limits_path.write_text(json.dumps(limits, indent=2) + "\n", encoding="utf-8")
     book = open_book(str(root))
-    git.commit(root, ["limits.json"], "synthetic: max_weight 0.05")
-    edit = {
-        "kw": ["synthetic", "weight"],
-        "subject": book.meta.id,
-        "action": "override",
-        "reason": "max_weight 0.05: the synthetic ADV carries 5% positions",
-        "applied": ["limits.json"],
-    }
-    recorded(book, {"decisions": [edit]})
-    git.commit(root, ["ledger/decisions.jsonl"], "synthetic: record override")
     first = date_of(int(data.dates[0]))
     store(
         book,

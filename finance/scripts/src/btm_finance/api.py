@@ -10,58 +10,39 @@ Book readers, all read-only; append to the ledger only through `record`:
 
 - `open_book(path)`: the `Book` at a path; refuses one without `book.json`.
 - `ledger(book, kind)`: newest-wins rows of one kind (`hypothesis`,
-  `critique`, `decision`, `fill`, `incident`, `regime`, `run`), superseded
-  lines dropped; `run` joins every runs file, oldest first by `ts`.
+  `critique`, `decision`, `fill`, `incident`, `run`), superseded lines
+  dropped; `run` joins every runs file, oldest first by `ts`.
 - `research(book)`: research names' bars and events, built once;
   `.at(day)` is the `Market` on the last bar on or before `day`, `.dates`
-  the bar dates. Held-out names never enter it. `.folds("train")` serves
-  only the training blocks, for the miner delegate; `"test"` refuses.
-- `receipt(text)`: a delegate's final message checked against `Receipt`.
-- `outside_scope(book, commit, scope)`: paths `git diff main...<commit>`
-  names outside the unit's write scope.
+  the bar dates. Held-out names never enter it.
 """
 
 from __future__ import annotations
 
-import json
 import operator
-from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
 import numpy as np
 from numpy.typing import NDArray
 
-from btm_corekit import CommandError, parse_model
-from btm_finance import git
+from btm_corekit import CommandError
 from btm_finance import ledger as lines
 from btm_finance.data.assemble import assemble
 from btm_finance.data.panel import Events, History, Panel
 from btm_finance.data.tables import Days, Floats, date_of, day_of
 from btm_finance.ledger import Kind, Row
-from btm_finance.models import Receipt
-from btm_finance.store import (
-    Book,
-    held_out_list,
-    load_limits,
-    open_book,
-    read_bytes,
-    run_files,
-)
+from btm_finance.store import Book, held_out_list, open_book, read_bytes, run_files
 
 __all__ = [
     "FACTORS",
     "Book",
     "History",
     "Market",
-    "Receipt",
     "Research",
-    "Training",
     "ledger",
     "on_dates",
     "open_book",
-    "outside_scope",
-    "receipt",
     "research",
 ]
 
@@ -270,43 +251,11 @@ def market_on(panel: Panel, events: Events, day: date) -> Market:
 
 
 @dataclass(frozen=True, slots=True)
-class Training:
-    """Bars and events cut at the last training date: the test block is
-    absent, not hidden. Build with `research(book).folds("train")`."""
-
-    _panel: Panel
-    _events: Events
-
-    @property
-    def dates(self) -> tuple[date, ...]:
-        """Training bar dates, oldest first."""
-        return tuple(date_of(int(day)) for day in self._panel.dates)
-
-    def at(self, day: date) -> Market:
-        """`Market` on the last training bar on or before `day`; a day past
-        the last training date or before the first refuses."""
-        first, last = self._panel.dates[0], self._panel.dates[-1]
-        if not first <= day_of(day) <= last:
-            raise CommandError(
-                f"{day} is outside training dates {date_of(int(first))} to "
-                f"{date_of(int(last))}; the test block stays closed to research"
-            )
-        return market_on(self._panel, self._events, day)
-
-
-TEST_CLOSED = (
-    'folds("test") is refused: the miner rule reads training folds only; '
-    "measure alone scores the test block"
-)
-
-
-@dataclass(frozen=True, slots=True)
 class Research:
     """Research names' bars and events; build with `research(book)`."""
 
     _panel: Panel
     _events: Events
-    _folds: int
 
     @property
     def dates(self) -> tuple[date, ...]:
@@ -317,23 +266,6 @@ class Research:
         """`Market` on the last bar on or before `day`. O(log T + N)."""
         return market_on(self._panel, self._events, day)
 
-    def folds(self, part: str) -> Training:
-        """`"train"`: the first `folds - 1` of `thresholds.folds` equal
-        contiguous blocks of bar dates; the last block is the test block."""
-        if part == "test":
-            raise CommandError(TEST_CLOSED)
-        if part != "train":
-            raise CommandError(f'no fold part {part!r}; use "train"')
-        blocks = np.array_split(np.arange(len(self._panel.dates)), self._folds)
-        start = int(blocks[-1][0]) if len(blocks[-1]) else 0
-        if start == 0:
-            raise CommandError(
-                f"{len(self._panel.dates)} bar dates leave no training block "
-                f"across {self._folds} folds; load more prices"
-            )
-        last = int(self._panel.dates[start - 1])
-        return Training(self._panel.asof(last), self._events.asof(last))
-
 
 def research(book: Book) -> Research:
     """Every stored file assembled, re-hashed on read, cut to research names.
@@ -341,35 +273,4 @@ def research(book: Book) -> Research:
     panel, events = assemble(book)
     hidden = held_out_list(book)
     names = frozenset(name for name in panel.names if name not in hidden)
-    folds = load_limits(book).thresholds.folds
-    return Research(panel.only(names), events.only(names), folds)
-
-
-def receipt(text: str) -> Receipt:
-    """A delegate's final message decoded as one `Receipt`, or a
-    `CommandError` naming every problem with its field path."""
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError as err:
-        raise CommandError(f"receipt is not one JSON object: {err}") from None
-    if not isinstance(data, dict):
-        raise CommandError(f"receipt is {type(data).__name__}, not a JSON object")
-    return parse_model(Receipt, data, "receipt")
-
-
-def outside_scope(
-    book: Book, commit: str, scope: Sequence[str], base: str = "main"
-) -> tuple[str, ...]:
-    """Each book-relative path `git diff base...commit` names outside `scope`:
-    an entry ending in `/` holds every path under it, any other entry only
-    itself. Empty: the delegate wrote within bounds."""
-
-    def inside(path: str) -> bool:
-        return any(
-            path.startswith(entry) if entry.endswith("/") else path == entry
-            for entry in scope
-        )
-
-    return tuple(
-        path for path in git.changed(book.root, base, commit) if not inside(path)
-    )
+    return Research(panel.only(names), events.only(names))
