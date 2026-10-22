@@ -80,6 +80,11 @@ def canonical(path: str, data: bytes) -> bytes:
     return canonical_source(data, path)
 
 
+def source_digest(data: bytes, name: str) -> str:
+    """sha256 of one Python file's AST dump."""
+    return sha256_of(canonical_source(data, name))
+
+
 def code_files(files: Mapping[str, bytes]) -> dict[str, str]:
     """Each book-relative code path to sha256 of its canonical form, sorted."""
     return {path: sha256_of(canonical(path, files[path])) for path in sorted(files)}

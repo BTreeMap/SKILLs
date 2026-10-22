@@ -79,6 +79,8 @@ class Scorecard(Model):
     adv_clipped_share: Maybe = None
     """Gross the ADV clip removed over gross intended, whole run; null on run
     lines written before the clip."""
+    extra: dict[str, Maybe] = Field(default_factory=dict)
+    """One number per `lib/metrics/<name>.py`, by name; never a gate."""
 
 
 class UniverseKind(StrEnum):
@@ -102,7 +104,11 @@ class RunLine(Model):
     book-local module, canonical; `code_files` each of those paths to its
     own digest; `engine` the package version; `imports` what `signal.py`
     reaches from outside the book; `override_reason` the `--reason` that ran
-    past a policy refusal. Keys of older lines no field names are ignored."""
+    past a policy refusal; `asset_cap` the cap it was measured at; `trial`
+    false when it re-measures its strategy's newest run, same `code_hash`,
+    at a new cap, and so spends no trial; `extensions` each book hook it
+    used (`<hook>/<name>`) to the digest of its AST dump; `costs` the cost
+    model. Keys of older lines no field names are ignored."""
 
     model_config = ConfigDict(frozen=True, extra="ignore")
 
@@ -130,3 +136,8 @@ class RunLine(Model):
     imports: tuple[str, ...] = ()
     universe: UniverseKind = UniverseKind.STATIC
     override_reason: str | None = None
+    asset_cap: int | None = None
+    """None on a line written before the stamp: read as the current cap."""
+    trial: bool = True
+    extensions: dict[str, str] = Field(default_factory=dict)
+    costs: str = "default"

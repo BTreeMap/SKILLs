@@ -67,6 +67,42 @@ Strategy = Callable[[Market, Mapping[str, float]], Any]
 
 
 @dataclass(frozen=True, slots=True)
+class Trade:
+    """One name traded at one rebalance, as `lib/costs.py` `cost` sees it:
+    `day` the decision day (days since 1970-01-01), `weight` the one-way
+    fraction of capital traded, `notional` that in currency at the capital
+    being priced, `adv` 21-day dollar ADV, `daily_vol` 21-day volatility,
+    `half_spread` the default estimator's, `commission_bps` the limit's."""
+
+    symbol: str
+    day: int
+    weight: float
+    notional: float
+    adv: float
+    daily_vol: float
+    half_spread: float
+    commission_bps: float
+
+
+CostModel = Callable[[Trade, Market], Any]
+"""`lib/costs.py` `cost(trade, market)`: proportional cost of one trade."""
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class Positions:
+    """Target weights held each period of a run: rows `dates`, columns
+    `names`, as `lib/metrics/<name>.py` `metric` sees them."""
+
+    names: tuple[str, ...]
+    dates: Days
+    weights: Floats
+
+
+Metric = Callable[[Floats, Positions, Market], Any]
+"""`lib/metrics/<name>.py` `metric(returns, positions, market)`."""
+
+
+@dataclass(frozen=True, slots=True)
 class Rules:
     """Everything besides data one run obeys: the strategy's config, the
     bounds in `limits.json`, the exclusions in `preferences.json`."""
@@ -248,19 +284,28 @@ def commission_of(commission: Commission, panel: Panel) -> Floats:
 @dataclass(frozen=True, slots=True, eq=False)
 class Setting:
     """One measure's fixed inputs: the scoped data, its arrays, the rules,
-    commission per name in basis points."""
+    commission per name in basis points, and `lib/costs.py` when the book
+    has one, priced in place of the default cost model."""
 
     panel: Panel
     events: Events
     prep: Prepared
     rules: Rules
     commission: Floats
+    cost: CostModel | None = None
 
     @classmethod
-    def of(cls, panel: Panel, events: Events, rules: Rules) -> Setting:
+    def of(
+        cls, panel: Panel, events: Events, rules: Rules, cost: CostModel | None = None
+    ) -> Setting:
         prep = Prepared.of(panel, events, rules.delisting)
         return cls(
-            panel, events, prep, rules, commission_of(rules.commission_bps, panel)
+            panel,
+            events,
+            prep,
+            rules,
+            commission_of(rules.commission_bps, panel),
+            cost,
         )
 
 
@@ -342,12 +387,14 @@ def target_weights(
 @dataclass(frozen=True, slots=True, eq=False)
 class Track:
     """One simulated run from its first trade: per-period gross return, the
-    one-way weight traded per name, the mean gross exposure targeted, and
-    the (period, name) cells and gross the ADV bound clipped."""
+    one-way weight traded per name, the target weights held, the mean gross
+    exposure targeted, and the (period, name) cells and gross the ADV bound
+    clipped."""
 
     first: int
     gross: Floats
     trades: Floats
+    positions: Floats
     exposure: float
     unknown: int
     clipped: int
@@ -365,6 +412,7 @@ def simulate(
     index = {name: column for column, name in enumerate(panel.names)}
     factor = np.ones(days)
     trades = np.zeros((days, width))
+    positions = np.zeros((days, width))
     held = np.zeros(width)
     first: int | None = None
     exposures: list[float] = []
@@ -389,10 +437,10 @@ def simulate(
         clipped += chosen.clipped
         intended += chosen.intended
         removed += chosen.clipped_weight
-        trades[start] = np.abs(target - held)
         exposures.append(float(np.abs(target).sum()))
         end = int(rows[k + 1]) + 1 if k + 1 < len(rows) else days
         stop = min(end, days - 1)
+        trades[start], positions[start : stop + 1] = np.abs(target - held), target
         steps = 1.0 + prep.close_cc[start : stop + 1]
         steps[0] = 1.0 + prep.intraday[start]
         if end < days:
@@ -413,6 +461,7 @@ def simulate(
         first=first,
         gross=factor[first:] - 1.0,
         trades=trades[first:],
+        positions=positions[first:],
         exposure=float(np.mean(exposures)),
         unknown=unknown,
         clipped=clipped,
@@ -448,12 +497,56 @@ class Costed:
     spread: SpreadCard
 
 
-def costed(track: Track, prep: Prepared, rules: Rules, commission: Floats) -> Costed:
+def priced(  # noqa: PLR0913 - one track's cost inputs, read once each
+    setting: Setting,
+    model: CostModel,
+    track: Track,
+    capital: float,
+    *,
+    half: Floats,
+    adv: Floats,
+    vol: Floats,
+) -> Floats:
+    """Per-period cost of the track under the book's cost model, one call per
+    traded cell, at `capital`. O(P N) plus one `Market` per rebalance."""
+    panel = setting.panel
+    cost = np.zeros(len(track.gross))
+    markets: dict[int, Market] = {}
+    rows, columns = np.nonzero(track.trades)
+    for row, column in zip(rows.tolist(), columns.tolist(), strict=True):
+        decision = track.first - 1 + row
+        day = int(panel.dates[decision])
+        market = markets.get(decision) or Market.at(panel, setting.events, day)
+        markets[decision] = market
+        weight = float(track.trades[row, column])
+        trade = Trade(
+            symbol=panel.names[column],
+            day=day,
+            weight=weight,
+            notional=weight * capital,
+            adv=float(adv[row, column]),
+            daily_vol=float(vol[row, column]),
+            half_spread=float(half[row, column]),
+            commission_bps=float(setting.commission[column]),
+        )
+        try:
+            rate = number(model(trade, market))
+        except Exception as err:  # the book's cost model failed, named for it
+            raise CommandError(f"lib/costs.py cost raised: {err!r}") from err
+        if rate is None:
+            raise CommandError("lib/costs.py cost returned no finite number")
+        cost[row] += weight * rate
+    return cost
+
+
+def costed(track: Track, setting: Setting) -> Costed:
     """Half-spread by the estimator primary for the name's ADV against the
-    universe median, commission per name, square-root impact. Zero ADV (a name quoted
-    with no volume) reads as unknown, like NaN: the day's median fills it, so
-    selling it costs a number, not 0 vol times infinite participation.
-    O(P N)."""
+    universe median, commission per name, square-root impact; or, with
+    `lib/costs.py`, its cost per trade in place of all three. Zero ADV (a
+    name quoted with no volume) reads as unknown, like NaN: the day's median
+    fills it, so selling it costs a number, not 0 vol times infinite
+    participation. O(P N)."""
+    prep, rules, commission = setting.prep, setting.rules, setting.commission
     decision = track.first - 1 + np.arange(len(track.gross))
     traded = track.trades != 0.0
     adv_raw = prep.adv[decision]
@@ -477,12 +570,19 @@ def costed(track: Track, prep: Prepared, rules: Rules, commission: Floats) -> Co
     with np.errstate(invalid="ignore", divide="ignore"):
         participation = np.where(traded, rules.asset_cap * track.trades / adv, 0.0)
     impact = rules.impact_coefficient * vol * np.sqrt(participation)
-    net = net_returns(
-        track.gross,
-        track.trades,
-        half_spread=half,
-        commission_bps=commission,
-        impact=impact,
+    net = (
+        net_returns(
+            track.gross,
+            track.trades,
+            half_spread=half,
+            commission_bps=commission,
+            impact=impact,
+        )
+        if setting.cost is None
+        else track.gross
+        - priced(
+            setting, setting.cost, track, rules.asset_cap, half=half, adv=adv, vol=vol
+        )
     )
     weight = float(track.trades.sum())
     both = traded & np.isfinite(ar) & np.isfinite(cs)
@@ -545,9 +645,7 @@ def run_variant(
     if track is None:
         return None
     dates = setting.panel.dates[track.first :]
-    return Variant(
-        dates, track, costed(track, setting.prep, setting.rules, setting.commission)
-    )
+    return Variant(dates, track, costed(track, setting))
 
 
 def common_matrix(columns: Sequence[tuple[Days, Floats]]) -> Floats:
@@ -664,11 +762,72 @@ def dsr_of(excess: Floats, peers: Peers) -> float | None:
     )
 
 
+def capacity_of(
+    setting: Setting, base: Variant, gross_excess: Floats, levels: Sequence[float]
+) -> tuple[float, ...]:
+    """Net Sharpe at each capital level: the default cost model's curve, or
+    the book's cost model priced at each level."""
+    track, cost = base.track, base.cost
+    if setting.cost is None:
+        return capacity_curve(
+            gross_excess,
+            track.trades,
+            cost.adv,
+            capital_levels=tuple(levels),
+            daily_vol=cost.vol,
+            half_spread=cost.half_spread,
+            commission_bps=setting.commission,
+            impact_coefficient=setting.rules.impact_coefficient,
+        )
+    return tuple(
+        sharpe(
+            gross_excess
+            - priced(
+                setting,
+                setting.cost,
+                track,
+                capital,
+                half=cost.half_spread,
+                adv=cost.adv,
+                vol=cost.vol,
+            )
+        )
+        for capital in levels
+    )
+
+
+def extra_of(
+    metrics: Mapping[str, Metric], setting: Setting, base: Variant
+) -> dict[str, float | None]:
+    """Each book metric on the run's net series and positions, with the
+    `Market` of the last bar; a metric that fails or returns a non-number
+    is the book's error, named by file."""
+    if not metrics:
+        return {}
+    panel = setting.panel
+    market = Market.at(panel, setting.events, int(panel.dates[-1]))
+    positions = Positions(panel.names, base.dates, base.track.positions)
+    found: dict[str, float | None] = {}
+    for name, metric in sorted(metrics.items()):
+        try:
+            value = metric(base.cost.net, positions, market)
+        except Exception as err:  # the book's metric failed, named for it
+            raise CommandError(f"lib/metrics/{name}.py metric raised: {err!r}") from err
+        numeric = isinstance(value, Real) and not isinstance(value, bool)
+        if value is not None and not numeric:
+            raise CommandError(
+                f"lib/metrics/{name}.py metric returned {value!r}, not a number"
+            )
+        found[name] = number(value)
+    return found
+
+
 def evaluate(
     setting: Setting,
     strategy: Strategy,
     params: Mapping[str, float],
     peers: Peers,
+    metrics: Mapping[str, Metric] | None = None,
 ) -> Outcome:
     """The base run, its 2k + 1 perturbation variants, and the scorecard.
     O((2k + 1)(T N + R N L)) plus one CSCV."""
@@ -708,15 +867,8 @@ def evaluate(
     track, cost = base.track, base.cost
     periods = len(track.gross)
     one_way = 0.5 * float(track.trades.sum())
-    capacity = capacity_curve(
-        gross_excess,
-        track.trades,
-        cost.adv,
-        capital_levels=tuple(scale * rules.asset_cap for _, scale in levels),
-        daily_vol=cost.vol,
-        half_spread=cost.half_spread,
-        commission_bps=setting.commission,
-        impact_coefficient=rules.impact_coefficient,
+    capacity = capacity_of(
+        setting, base, gross_excess, [scale * rules.asset_cap for _, scale in levels]
     )
     scorecard = Scorecard(
         sharpe_gross=finite(sharpe(gross_excess)),
@@ -744,6 +896,7 @@ def evaluate(
         },
         spread_model=cost.spread,
         max_drawdown=max_drawdown(cost.net),
+        extra=extra_of(metrics or {}, setting, base),
     )
     return Outcome(
         scorecard=scorecard,

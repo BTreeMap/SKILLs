@@ -8,7 +8,14 @@ import numpy as np
 from btm_finance.api import Market
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
 from btm_finance.loader import load_strategy
-from btm_finance.measuring import Prepared, Rules, Track, commission_of, costed
+from btm_finance.measuring import (
+    Prepared,
+    Rules,
+    Setting,
+    Track,
+    commission_of,
+    costed,
+)
 from btm_finance.models import Rebalance
 from btm_finance.scaffold import template
 
@@ -142,6 +149,7 @@ def test_selling_a_name_with_zero_adv_costs_a_finite_amount():
         first=25,
         gross=np.zeros(5),
         trades=trades,
+        positions=trades,
         exposure=1.0,
         unknown=0,
         clipped=0,
@@ -164,7 +172,8 @@ def test_selling_a_name_with_zero_adv_costs_a_finite_amount():
         folds=5,
         touches=(),
     )
-    assert np.isfinite(costed(track, prep, rules, np.ones(2)).net).all()
+    setting = Setting(panel, no_events(), prep, rules, np.ones(2))
+    assert np.isfinite(costed(track, setting).net).all()
 
 
 def test_commission_reads_the_exchange_then_other_then_zero(capsys):

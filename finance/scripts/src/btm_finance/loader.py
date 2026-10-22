@@ -28,6 +28,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 from btm_corekit import CommandError
@@ -279,6 +280,24 @@ def load_strategy(book: Path, name: str) -> Loaded:
         raise CommandError(f"{shown} defines no {ENTRY}(market, params)")
     entry: Signal = found
     return Loaded(guarded(entry, roots), reach.imports, reach.modules)
+
+
+def load_file(book: Path, path: Path) -> ModuleType:
+    """One book file run as a fresh module, the book root importable, so it
+    may `import lib.<module>`; any failure on import is the file's."""
+    root = book.resolve()
+    shown = path.resolve().relative_to(root).as_posix()
+    module_name = f"btm_book_{secrets.token_hex(4)}"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:  # pragma: no cover - a .py file
+        raise CommandError(f"cannot make a module for {shown}")
+    module = importlib.util.module_from_spec(spec)
+    with importable(Roots(root, root)):
+        try:
+            spec.loader.exec_module(module)
+        except Exception as err:  # any failure is the file's
+            raise CommandError(f"{shown} failed on import: {err!r}") from err
+    return module
 
 
 def guarded(entry: Signal, roots: Roots) -> Signal:

@@ -37,7 +37,6 @@ from btm_finance.data.tables import (
     EventRows,
     Floats,
     Loaded,
-    Source,
     Table,
     date_of,
     days_of,
@@ -55,13 +54,14 @@ Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 
 
 class Entry(Model):
-    """One stored file; `through` is the last date its rows cover. A run's
-    returns file has no source."""
+    """One stored file; `through` is the last date its rows cover; `source` a
+    built-in source or a book's `lib/sources/<name>.py`. A run's returns file
+    has no source."""
 
     path: str
     sha256: Sha256
     rows: Annotated[int, Field(ge=1)]
-    source: Source | None = None
+    source: str | None = None
     table: Table
     loaded_at: str
     since: date
@@ -86,7 +86,7 @@ def data_snapshot(manifest: Manifest) -> str:
     return sha256_of(lines.encode("ascii"))
 
 
-def default_since(manifest: Manifest, source: Source, today: date) -> date:
+def default_since(manifest: Manifest, source: str, today: date) -> date:
     """The day after the source's last covered date, else 25 years back."""
     covered = [entry.through for entry in manifest.files if entry.source == source]
     if covered:
@@ -243,7 +243,7 @@ def listed(book: Book, add: Callable[[Manifest], Sequence[Entry]]) -> Manifest:
 
 
 def store(
-    book: Book, source: Source, loaded: Loaded, *, since: date, today: date
+    book: Book, source: str, loaded: Loaded, *, since: date, today: date
 ) -> tuple[Manifest, Sequence[Entry]]:
     """Write each non-empty table as a new file, then the manifest listing it.
     A same-day reload takes the next numbered stem."""
@@ -261,13 +261,13 @@ def store(
 def stored_entries(  # noqa: PLR0913 - one load's facts
     book: Book,
     manifest: Manifest,
-    source: Source,
+    source: str,
     loaded: Loaded,
     *,
     since: date,
     today: date,
 ) -> list[Entry]:
-    directory = book.root / RAW / source.value
+    directory = book.root / RAW / str(source)
     taken = [stem_of(entry.path) for entry in manifest.files if entry.source == source]
     if directory.is_dir():
         taken += [stem_of(path.name) for path in directory.iterdir()]
@@ -283,7 +283,7 @@ def stored_entries(  # noqa: PLR0913 - one load's facts
                 path=book.relative(path),
                 sha256=sha256_of(payload),
                 rows=data.num_rows,
-                source=source,
+                source=str(source),
                 table=table,
                 loaded_at=stamp,
                 since=since,
