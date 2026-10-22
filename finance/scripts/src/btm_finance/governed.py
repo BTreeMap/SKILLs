@@ -1,6 +1,6 @@
 """Governed files, pure: `limits.json`, `strategies/*/status`, `approvals/*.json`
 change only on the operator's word in chat; a decision's `applied` names each
-one it changed and `commits` the commit holding it. Verdicts derive from git
+one it changed and `objects` its committed blob id. Verdicts derive from git
 and the ledger on every call."""
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
 PATHSPECS = (LIMITS, "strategies/*/status", "approvals/*.json")
 UNNAMED = "commit no decision names"
 UNCOMMITTED = "governed file not committed"
-Witness = tuple[str, str]  # book-relative path, commit hash
+Witness = tuple[str, str]  # book-relative path, blob id
 
 
 def governed(path: str) -> bool:
@@ -37,34 +37,41 @@ def governed(path: str) -> bool:
 
 
 def witnesses(decisions: Iterable[Row], action: Action | None = None) -> set[Witness]:
-    """Every (path, commit) pair a decision line's `applied` and `commits`
-    hold; with `action`, only that action's lines. O(lines)."""
+    """Every (path, blob id) pair a decision line's `objects` holds; with
+    `action`, only that action's lines. O(lines)."""
     found: set[Witness] = set()
     for row in decisions:
         if action is not None and row.get("action") != action.value:
             continue
-        applied, commits = row.get("applied"), row.get("commits")
-        if isinstance(applied, list) and isinstance(commits, list):
-            found |= {(str(p), str(c)) for p, c in zip(applied, commits, strict=False)}
+        objects = row.get("objects")
+        if isinstance(objects, dict):
+            found |= {(str(path), str(blob)) for path, blob in objects.items()}
     return found
 
 
 def unnamed(
     commits: Iterable[Commit], decisions: Iterable[Row]
 ) -> list[dict[str, Any]]:
-    """One warning per commit touching a governed file that no decision's
-    `commits` holds, newest first."""
-    named = {commit for _, commit in witnesses(decisions)}
-    return [
-        {
-            "problem": UNNAMED,
-            "commit": found.hash,
-            "subject": found.subject,
-            "files": [path for path in found.files if governed(path)],
-        }
-        for found in commits
-        if found.hash not in named and any(governed(p) for p in found.files)
-    ]
+    """One warning per commit leaving a governed file at a blob no decision's
+    `objects` names, newest first; blob ids survive rebase."""
+    named = witnesses(decisions)
+    found: list[dict[str, Any]] = []
+    for commit in commits:
+        files = [
+            path
+            for path, blob in commit.blobs
+            if governed(path) and blob is not None and (path, blob) not in named
+        ]
+        if files:
+            found.append(
+                {
+                    "problem": UNNAMED,
+                    "commit": commit.hash,
+                    "subject": commit.subject,
+                    "files": files,
+                }
+            )
+    return found
 
 
 def uncommitted(dirty: Iterable[str]) -> list[dict[str, Any]]:

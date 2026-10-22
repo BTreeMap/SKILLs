@@ -39,7 +39,7 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
     {
         "author": Starter(
             task="Write `strategies/<name>/` for hypothesis spawn message names; "
-            "commit it on own branch, rebased onto `main`; then run "
+            "commit it on own branch before critique; run "
             "`measure . <name> --agent <agent>` once.",
             evidence="`$ref/families.md`, `$ref/scorecard.md`; hypothesis line "
             "through `api.ledger`.",

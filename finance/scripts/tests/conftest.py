@@ -45,6 +45,43 @@ def committed(book: Path, *paths: str, subject: str = "test: commit") -> str:
     return git.commit(book, list(paths), subject)
 
 
+def git_run(book: Path, *args: str) -> str:
+    """`git -C book <args>`, stdout stripped."""
+    done = subprocess.run(
+        ["git", "-C", str(book), *args], capture_output=True, check=True, text=True
+    )
+    return done.stdout.strip()
+
+
+def rebased(book: Path, branch: str) -> None:
+    """The lead's merge after main moved: an unrelated commit on `main`,
+    `branch` rebased onto it, merged fast-forward, old commits pruned."""
+    git_run(book, "switch", "-q", "main")
+    note = book / "research" / "moved.md"
+    note.parent.mkdir(parents=True, exist_ok=True)
+    note.write_text("main moved\n")
+    committed(book, "research/moved.md", subject="docs: main moves on")
+    git_run(book, "switch", "-q", branch)
+    git_run(book, "rebase", "-q", "main")
+    git_run(book, "switch", "-q", "main")
+    git_run(book, "merge", "-q", "--ff-only", branch)
+    git_run(book, "branch", "-q", "-D", branch)
+    git_run(book, "reflog", "expire", "--expire=now", "--all")
+    git_run(book, "gc", "-q", "--prune=now")
+
+
+@pytest.fixture
+def git_in() -> Callable[..., str]:
+    """`git_run`: `git_in(book, *args)`."""
+    return git_run
+
+
+@pytest.fixture
+def rebase() -> Callable[[Path, str], None]:
+    """`rebased`: `rebase(book, branch)`."""
+    return rebased
+
+
 @pytest.fixture
 def commit() -> Callable[..., str]:
     """`committed`: `commit(book, *paths)` returns the new HEAD."""

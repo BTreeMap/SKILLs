@@ -83,8 +83,8 @@ def code_drift(
     now: Mapping[str, bytes | None],
     reached: Sequence[str],
 ) -> list[str]:
-    """Code paths whose canonical form moved since `code_commit` (`then`,
-    from `git show`) against the working tree (`now`, None when gone), then
+    """Code paths whose canonical form moved from the recorded blob (`then`,
+    from `git cat-file`) against the working tree (`now`, None when gone), then
     each path the strategy reaches today that the run did not."""
     moved = [
         path

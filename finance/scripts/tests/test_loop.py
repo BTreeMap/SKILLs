@@ -121,7 +121,7 @@ def test_a_chat_approval_passes_only_once_a_decision_names_its_commit(book, run)
     )
     assert code == 1
     assert "commit 'approvals/" in verdict["rejected"][0]["fix"]
-    head = git.commit(book, [target], f"approve: {TODAY}")
+    git.commit(book, [target], f"approve: {TODAY}")
     assert unwitnessed(run, book) == [target]
     record(run, book, {"decisions": [entry]})
     code, view, err = run(["check", str(book), target])
@@ -131,7 +131,8 @@ def test_a_chat_approval_passes_only_once_a_decision_names_its_commit(book, run)
         (book / "ledger" / "decisions.jsonl").read_text().splitlines()[-1]
     )
     assert line["reason"] == json.loads(file.read_text())["reply"]
-    assert (line["applied"], line["commits"]) == ([target], [head])
+    assert line["applied"] == [target]
+    assert line["objects"] == {target: git.blob(book, "HEAD", target)}
     lines = run(["check", str(book), "--brief"])[1]["lines"]
     assert lines[-1] == f"Paste your fills for {TODAY}."
     edited = json.loads(file.read_text())
@@ -169,14 +170,15 @@ def test_a_hand_edit_of_limits_warns_until_a_decision_names_its_commit(book, run
     ]
     assert (onboarded["action"], onboarded["reason"]) == ("onboard", "start")
     assert onboarded["applied"] == ["limits.json", "strategies/baseline/status"]
-    started = git.last_commit(book, "limits.json")
-    assert onboarded["commits"] == [started, started]
+    assert onboarded["objects"] == {
+        path: git.blob(book, "HEAD", path) for path in onboarded["applied"]
+    }
     path = book / "limits.json"
     limits = json.loads(path.read_text())
     limits["sizing"]["ruin_bound"] = 0.2
     path.write_text(json.dumps(limits))
     assert unwitnessed(run, book) == ["limits.json"]
-    head = git.commit(book, ["limits.json"], "chore: hand edit")
+    git.commit(book, ["limits.json"], "chore: hand edit")
     assert unwitnessed(run, book) == ["limits.json"]
     book_id = json.loads((book / "book.json").read_text())["id"]
     said = "operator: lower the ruin bound to 0.2"
@@ -188,17 +190,36 @@ def test_a_hand_edit_of_limits_warns_until_a_decision_names_its_commit(book, run
         (book / "ledger" / "decisions.jsonl").read_text().splitlines()[-1]
     )
     assert line["id"] in receipt["new"]["decisions"].values()
-    assert line["commits"] == [head]
+    assert line["objects"] == {"limits.json": git.blob(book, "HEAD", "limits.json")}
 
 
-def test_a_decision_cannot_carry_its_own_commits(book, run):
+def test_a_governed_edit_on_a_rebased_branch_matches_its_decision(
+    book, run, rebase, git_in
+):
+    git_in(book, "switch", "-q", "-c", "agent/limits")
+    path = book / "limits.json"
+    limits = json.loads(path.read_text())
+    limits["sizing"]["ruin_bound"] = 0.2
+    path.write_text(json.dumps(limits))
+    git.commit(book, ["limits.json"], "chore: lower ruin bound")
     book_id = json.loads((book / "book.json").read_text())["id"]
-    entry = decision(book_id, "override", "operator said so") | {"commits": ["x"]}
+    said = "operator: lower the ruin bound to 0.2"
+    record(
+        run, book, {"decisions": [decision(book_id, "override", said, "limits.json")]}
+    )
+    git.commit(book, ["ledger/decisions.jsonl"], "chore: record override")
+    rebase(book, "agent/limits")
+    assert unwitnessed(run, book) == []
+
+
+def test_a_decision_cannot_carry_its_own_objects(book, run):
+    book_id = json.loads((book / "book.json").read_text())["id"]
+    entry = decision(book_id, "override", "operator said so") | {"objects": {}}
     code, verdict, _ = run(
         ["record", str(book), "--batch:stdin"], json.dumps({"decisions": [entry]})
     )
     assert code == 1
-    assert verdict["rejected"][0]["where"] == "decisions[0].commits"
+    assert verdict["rejected"][0]["where"] == "decisions[0].objects"
 
 
 @pytest.mark.parametrize(

@@ -135,9 +135,9 @@ Run line, beside scorecard and outside it (reference pin never covers it):
 `measure <strategy> --repeat <run id>` reruns one line from its own inputs
 and writes nothing: no run line, no returns file, no incident.
 
-* Refuses before running, naming each moved input: path of `code_paths`
-  whose `ast.dump` (parsed JSON for `config.json`) at `code_commit`, read
-  through `git show`, differs from working tree, or module `signal.py`
+* Refuses before running, naming each moved input: path of `code_objects`
+  whose `ast.dump` (parsed JSON for `config.json`) of recorded blob, read
+  through `git cat-file`, differs from working tree, or module `signal.py`
   reaches now but did not then; source file under `data/raw/` changed or
   vanished since listed in manifest, or loaded after run; listed peer whose
   returns file is unlisted, changed, or gone.

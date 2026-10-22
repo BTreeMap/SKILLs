@@ -104,7 +104,7 @@ def checked(  # noqa: PLR0913 - one approval against the book's live facts
     witnessed: bool,
 ) -> Checked:
     """Every rule at once: `date` is today, `reply` quotes the operator, an
-    `approve` decision names the file's last commit and the file is clean,
+    `approve` decision names the file's committed blob and the file is clean,
     `proposal` names a
     proposal, each order is one of it within the ADV bound on a sleeve.
     O(orders + proposal orders)."""
@@ -121,7 +121,7 @@ def checked(  # noqa: PLR0913 - one approval against the book's live facts
         problems.append('approval needs "reply": the operator\'s words verbatim')
     if not witnessed:
         problems.append(
-            f"no approve decision names the last commit of approvals/{stem}.json, "
+            f"no approve decision names the committed blob of approvals/{stem}.json, "
             "or it differs from HEAD: commit it, then record an approve decision "
             "quoting the reply, with applied naming this file"
         )

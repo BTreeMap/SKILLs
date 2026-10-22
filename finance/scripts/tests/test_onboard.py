@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from btm_finance import onboarding
+from btm_finance import git, onboarding
 from btm_finance.models import ANSWERS_SHAPE, Answers
 from btm_finance.scaffold import template
 
@@ -216,7 +216,9 @@ def test_start_on_a_book_writes_files_and_limits_on_an_existing_book(tmp_path, r
     onboarded = [json.loads(line) for line in decisions][-1]
     assert (onboarded["action"], onboarded["reason"]) == ("onboard", "start")
     assert onboarded["applied"] == ["limits.json"]
-    assert onboarded["commits"] == [receipt["commit"]]
+    assert onboarded["objects"] == {
+        "limits.json": git.blob(root, receipt["commit"], "limits.json")
+    }
     assert (root / "preferences.json").read_bytes() == preferences_before
     assert (root / "ledger" / "hypotheses.jsonl").read_bytes() == ledger_before
     today = datetime.now(UTC).date().isoformat()

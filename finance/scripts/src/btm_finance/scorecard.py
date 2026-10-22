@@ -90,7 +90,8 @@ class RunLine(Model):
     """One `measure` run: every key `measure --repeat` needs to rerun it. `refused`
     lists bounds broken after running; the line counts as a trial anyway.
     `peers` are the run ids whose series fed `sr_var` and PBO, in order;
-    `code_paths` the book-relative code files, all clean at `code_commit`;
+    `code_objects` each book-relative code file in `code_paths` to its
+    committed blob id, which survives rebase;
     `engine` the skill commit and library versions; `imports` what
     `signal.py` reaches from outside the book."""
 
@@ -99,8 +100,8 @@ class RunLine(Model):
     family_id: str
     strategy: str
     data_snapshot: str
-    code_commit: str
     code_paths: tuple[str, ...]
+    code_objects: dict[str, str]
     config: dict[str, Any]
     params: dict[str, float]
     scorecard: Scorecard

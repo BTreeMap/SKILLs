@@ -192,7 +192,7 @@ class DecisionEntry(OpenNamed):
     reason: NonEmpty
     applied: tuple[NonEmpty, ...] | None = None
     """Governed files the decision changed, book-relative, each committed;
-    `record` stores each one's last commit under `commits`, same order."""
+    `record` stores each one's committed blob id under `objects`."""
     odds: Odds | None = None
     confidence: Confidence | None = None
     supersedes: NonEmpty | None = None

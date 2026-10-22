@@ -25,7 +25,7 @@ SPEC_KEYS = {
     "family_id",
     "strategy",
     "data_snapshot",
-    "code_commit",
+    "code_objects",
     "code_paths",
     "config",
     "scorecard",
@@ -66,7 +66,9 @@ def test_measure_appends_the_run_line_and_lists_its_returns(synthetic, run):
         "strategies/baseline/config.json",
         "strategies/baseline/signal.py",
     ]
-    assert line["code_commit"] == git.last_commit(book, *line["code_paths"])
+    assert line["code_objects"] == {
+        path: git.blob(book, "HEAD", path) for path in line["code_paths"]
+    }
     listed = {e.path: e for e in read_manifest(open_book(str(book))).files}
     assert listed[line["returns"]].rows == line["span"]["periods"]
     assert line["scorecard"]["trials"] == 1
@@ -74,7 +76,7 @@ def test_measure_appends_the_run_line_and_lists_its_returns(synthetic, run):
     assert again["scorecard"]["trials"] == 2
     second = run_lines(book)[1]
     assert second["data_snapshot"] == before  # returns files never move it
-    assert second["code_commit"] == line["code_commit"]
+    assert second["code_objects"] == line["code_objects"]
     assert (line["peers"], second["peers"]) == ([], [line["run_id"]])
 
 
@@ -88,10 +90,12 @@ def test_measure_refuses_uncommitted_code_and_writes_nothing(synthetic, run, com
     assert code == 1
     assert "commit before measure: strategies/baseline/signal.py" in err
     assert not (book / "ledger" / "runs.jsonl").exists()
-    head = commit(book, "strategies/baseline")
+    commit(book, "strategies/baseline")
     code, _, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
-    assert run_lines(book)[0]["code_commit"] == head
+    objects = run_lines(book)[0]["code_objects"]
+    path = "strategies/baseline/signal.py"
+    assert objects[path] == git.blob(book, "HEAD", path)
 
 
 def test_held_out_measures_only_the_complement(synthetic, run):

@@ -234,8 +234,8 @@ def start(
     answers: Answers | None = None,
 ) -> dict[str, Any]:
     """Make the book, register the baseline hypothesis, commit it all as
-    `start: <id>`, then record the `onboard` decision naming every governed
-    file the scaffold wrote at that commit, and commit its ledger line."""
+    `start: <id>`, then record the `onboard` decision naming the blob of
+    every governed file the scaffold wrote, and commit its ledger line."""
     receipt = scaffold(root, cap, universe, held_out, answers)
     book = open_book(str(root))
     hypotheses = {"hypotheses": [baseline_hypothesis(datetime.now(UTC).date())]}
@@ -337,23 +337,17 @@ def run_ids(book: Book) -> list[str]:
     return [run_id for path in run_files(book) for run_id in ids_of(path, "run_id")]
 
 
-def pointers(
-    book: Book, log: Sequence[git.Commit] | None = None
-) -> tuple[dict[str, str], frozenset[str]]:
-    """Each clean, committed governed file to its last commit, and the
-    governed files that differ from HEAD or are untracked; `log` is
-    `git.log_commits` over the governed pathspecs when the caller has it."""
+def pointers(book: Book) -> tuple[dict[str, str], frozenset[str]]:
+    """Each clean, committed governed file to its blob id at HEAD, and the
+    governed files that differ from HEAD or are untracked. Three git calls."""
     dirty = frozenset(
         path
         for path in git.dirty(book.root, governed.PATHSPECS)
         if governed.governed(path)
     )
-    last: dict[str, str] = {}
-    for found in git.log_commits(book.root, governed.PATHSPECS) if log is None else log:
-        for path in found.files:
-            last.setdefault(path, found.hash)
+    blobs = git.tree_blobs(book.root, [governed.LIMITS, "strategies", "approvals"])
     present = governed_paths(book.root)
-    return {p: last[p] for p in present if p in last and p not in dirty}, dirty
+    return {p: blobs[p] for p in present if p in blobs and p not in dirty}, dirty
 
 
 def needs_pointers(batch: Mapping[str, Any]) -> bool:
@@ -366,7 +360,7 @@ def needs_pointers(batch: Mapping[str, Any]) -> bool:
 
 def context_of(book: Book, *, resolve: bool = False) -> Context:
     """Live book state the gate resolves a batch against; with `resolve`,
-    governed files' commits too, which needs git."""
+    governed files' blob ids too, which needs git."""
     limits = load_limits(book)
     resolved, dirty = pointers(book) if resolve else ({}, frozenset[str]())
     kinds = (
@@ -501,14 +495,14 @@ def approval_file(book: Book, raw: str) -> Path:
 
 def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
     """The approval against its proposal, `limits.json`, each status, and the
-    `approve` decisions naming its last commit."""
+    `approve` decisions naming its committed blob."""
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as err:
         raise CommandError(f"unreadable approvals/{path.name}: {err}") from err
     shown = book.relative(path)
     clean = not git.dirty(book.root, [shown])
-    witness = (shown, git.last_commit(book.root, shown))
+    witness = (shown, git.blob(book.root, "HEAD", shown) if clean else "")
     approvals_seen = governed.witnesses(
         (row for _, row in kind_rows(book, Kind.DECISION)), Action.APPROVE
     )
@@ -788,7 +782,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
     proposals = open_proposals(proposal_dates(book), decisions, today)
     every_decision = [row for _, row in kind_rows(book, Kind.DECISION)]
     log = git.log_commits(book.root, governed.PATHSPECS)
-    resolved, dirty = pointers(book, log)
+    resolved, dirty = pointers(book)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
     preferences = load_preferences(book)
     pad = [row for _, row in rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))]
@@ -917,7 +911,7 @@ def approval_rows(
     fills: Sequence[Row],
 ) -> list[dict[str, Any]]:
     """Each approval file: `proposal` and `date` it names, `approved` while
-    clean and an `approve` decision names its last commit, `filled` once a
+    clean and an `approve` decision names its blob, `filled` once a
     fill carries its stem. O(A + D + F)."""
     approves = governed.witnesses(decisions, Action.APPROVE)
     filled = {str(row.get("approval", "")).removesuffix(".json") for row in fills}
@@ -1169,7 +1163,7 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         '"limit": null}]}',
         "rules": "check <book> approvals/<date>.json: date is today (UTC); "
         "reply is non-empty; the file is committed, clean, and an approve "
-        "decision names its last commit; proposal names a file under "
+        "decision names its committed blob; proposal names a file under "
         "proposals/; every order is one of that proposal by symbol, side, "
         "strategy; adv_participation at most "
         "limits.max_adv_participation; strategy status paper, probe, or live",
@@ -1208,9 +1202,10 @@ def code_paths(book: Book, name: str) -> tuple[str, ...]:
     )
 
 
-def committed_code(book: Book, name: str) -> tuple[str, tuple[str, ...]]:
-    """`code_commit` and `code_paths`; refuses when the strategy folder or a
-    module it reaches differs from HEAD or is untracked."""
+def committed_code(book: Book, name: str) -> dict[str, str]:
+    """`code_objects`: each code path to its blob id at HEAD; refuses when the
+    strategy folder or a module it reaches differs from HEAD or is
+    untracked."""
     paths = code_paths(book, name)
     dirty = git.dirty(book.root, [f"strategies/{name}/", *paths])
     if dirty:
@@ -1218,20 +1213,17 @@ def committed_code(book: Book, name: str) -> tuple[str, tuple[str, ...]]:
             f"commit before measure: {', '.join(sorted(dirty))} differs from HEAD "
             "or is untracked"
         )
-    last = git.last_commit(book.root, *paths)
-    if last is None:  # pragma: no cover - a clean tracked file has a commit
-        raise CommandError(f"commit before measure: strategies/{name}/ has no commit")
-    return last, paths
+    return {path: git.blob(book.root, "HEAD", path) for path in paths}
 
 
-def moved_code(book: Book, name: str, commit: str, paths: Sequence[str]) -> list[str]:
-    """Each code path whose AST (or parsed `config.json`) differs between
-    `commit` and the working tree, then each path reached today but not
-    then."""
-    then = {path: git.show(book.root, commit, path) for path in paths}
+def moved_code(book: Book, name: str, objects: Mapping[str, str]) -> list[str]:
+    """Each code path whose AST (or parsed `config.json`) differs between its
+    recorded blob and the working tree, then each path reached today but not
+    then. Blob ids survive rebase."""
+    then = {path: git.show_blob(book.root, blob) for path, blob in objects.items()}
     now = {
         path: (book.root / path).read_bytes() if (book.root / path).is_file() else None
-        for path in paths
+        for path in objects
     }
     return code_drift(then, now, code_paths(book, name))
 
@@ -1331,7 +1323,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"config family_id {config.family_id} differs from hypothesis "
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
-    code_commit, paths = committed_code(book, name)
+    objects = committed_code(book, name)
     spent = heartbeat.trials_today(all_runs(book), utc_today())
     if not args.held_out and spent >= limits.trials_per_day:
         raise CommandError(
@@ -1366,8 +1358,8 @@ def cmd_measure(args: argparse.Namespace) -> int:
         family_id=config.family_id,
         strategy=name,
         data_snapshot=snapshot,
-        code_commit=code_commit,
-        code_paths=paths,
+        code_paths=tuple(objects),
+        code_objects=objects,
         config=config.model_dump(mode="json"),
         params={key: float(value) for key, value in params.items()},
         scorecard=outcome.scorecard,
@@ -1562,11 +1554,11 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
 
 def code_changed(book: Book, name: str, run: Row) -> bool:
     """The strategy's code moved since the run, by `moved_code`; a line
-    without `code_commit` reads moved."""
-    commit, paths = run.get("code_commit"), run.get("code_paths")
-    if not isinstance(commit, str) or not isinstance(paths, list):
+    without `code_objects` reads moved."""
+    objects = run.get("code_objects")
+    if not isinstance(objects, dict) or not objects:
         return True
-    return bool(moved_code(book, name, commit, [str(p) for p in paths]))
+    return bool(moved_code(book, name, {str(p): str(b) for p, b in objects.items()}))
 
 
 def quotes_of(day: Day) -> dict[str, Quote]:
@@ -1857,10 +1849,10 @@ def drift_of(
     manifest: Manifest,
 ) -> list[str]:
     """Every reason the rerun would not be the recorded run. Reads each code
-    path at `code_commit`; re-hashes every listed source file and peer
-    series once: O(store bytes)."""
+    path's recorded blob; re-hashes every listed source file and peer series
+    once: O(store bytes)."""
     problems: list[str] = []
-    moved = moved_code(book, line.strategy, line.code_commit, line.code_paths)
+    moved = moved_code(book, line.strategy, line.code_objects)
     if moved:
         problems.append(f"code moved: {', '.join(moved)}")
     sources = [e for e in manifest.files if e.table != Table.RETURNS]

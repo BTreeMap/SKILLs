@@ -128,11 +128,11 @@ repaired, no incident line.
 | --- | --- |
 | hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `falsifier_by`, `counterparty`, `min_holding_days`; optional `odds` (`p_win`, `payoff`, `horizon_days`, `kelly_implied`), `chain`, `expectation_source`, `discounted`, `confidence` (critique flags each one absent in family with `event: true`) |
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
-| decision | `kw`, `subject`, `action`, `reason`; optional `odds`, `applied` (governed paths) with `commits` (each path's last commit, same order, stamped by `record`); `forgo` names strategy |
+| decision | `kw`, `subject`, `action`, `reason`; optional `odds`, `applied` (governed paths) with `objects` (path to committed blob id, stamped by `record`); `forgo` names strategy |
 | scored | `kw`, `subject` (live hypothesis id), `resolved`, `outcome`, `realized_return`, `brier`, `log_score`, `attribution` (`market`, `factor`, `currency`, `idiosyncratic`, `costs`) |
 | regime | `kw`, `as_of`, `confidence`; optional `falsified`, `supersedes`; any other field free JSON |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_commit`, `code_paths`, `config`, `scorecard`; also `params`, `reasons`, `engine` (skill commit, `numpy`, `pyarrow`), `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `regimes`, `regime_days`, `imports` |
+| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_paths`, `code_objects` (path to committed blob id), `config`, `scorecard`; also `params`, `reasons`, `engine` (skill commit, `numpy`, `pyarrow`), `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `regimes`, `regime_days`, `imports` |
 | incident | `kind`; see Incidents |
 
 `confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`
@@ -187,7 +187,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 
 | Path | Writer | Agent may |
 | --- | --- | --- |
-| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, commit on `main`, then record `decision` quoting instruction, `applied` naming file; bare `check` warns on each commit touching it no decision names, and while uncommitted |
+| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, commit, then record `decision` quoting instruction, `applied` naming file; bare `check` warns on each commit leaving it at blob no decision names, and while uncommitted |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` except `pad/` | `record`; run lines `measure`; incident lines `load`, `check --live` | append through `record` only; bare `check` warns on any other write it can see |
 | `ledger/pad/scratch.jsonl` | agent | append lines, grep; never gated |
@@ -232,7 +232,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    refuses before any write. Receipt `git`: `init` or `inside`. Then
    baseline hypothesis, one commit `start: <id>` of book path on current
    branch (receipt `commit`), `onboard` decision naming every governed file
-   it wrote at that commit, and second commit of that decision line.
+   it wrote by blob id, and second commit of that decision line.
 
 ## Proposal file
 
@@ -322,9 +322,9 @@ then records `approve` decision on proposal stem, same words as `reason`,
 No program places an order. `check <book> approvals/<date>.json` (path
 absolute or book-relative, resolving under `approvals/`) checks: `date` is
 today (UTC); `reply` non-empty; file clean and some `approve` decision names
-its last commit, so edit after yes fails until committed and recorded again;
-`proposal` names file under `proposals/`; every order's `symbol`, `side`,
-`strategy` match order of that proposal; `adv_participation` at most
+its committed blob, so edit after yes fails until committed and recorded
+again; `proposal` names file under `proposals/`; every order's `symbol`,
+`side`, `strategy` match order of that proposal; `adv_participation` at most
 `limits.max_adv_participation`; strategy `status` `paper`, `probe`, or
 `live`. Returns `orders` (each with `account` its strategy trades),
 `problems` (empty when valid), `next`; exit 1 on any problem.

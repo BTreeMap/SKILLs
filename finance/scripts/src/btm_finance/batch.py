@@ -62,7 +62,7 @@ SCHEMA: dict[str, str] = {
     '"horizon_days": 63, "kelly_implied": 0.25} (optional), "confidence": 0.6 '
     '(optional), "applied": ["limits.json|strategies/<name>/status|'
     'approvals/<date>.json"] (optional; each governed file the decision '
-    "changed, committed first; record stores its last commit under commits), "
+    "changed, committed first; record stores its blob id under objects), "
     '"supersedes": "<id>" (optional); forgo '
     "names a strategy; onboard names the book id}",
     "scored": '{"kw": ["two", "words"], "subject": "<live hypothesis id>", '
@@ -128,7 +128,7 @@ class Context:
     book: str = ""
     """The book id: a decision subject for `onboard` and book-wide changes."""
     governed: Mapping[str, str] = field(default_factory=dict)
-    """Each committed, clean governed file, book-relative, to its last commit."""
+    """Each committed, clean governed file, book-relative, to its blob id."""
     dirty: frozenset[str] = frozenset()
     """Each governed file that differs from HEAD or is untracked."""
 
@@ -257,10 +257,10 @@ class _Expansion(Acceptance):
             where = f"decisions[{index}]"
             if not self.envelope_free(row, where):
                 continue
-            if "commits" in row:
+            if "objects" in row:
                 self.fail(
-                    f"{where}.commits",
-                    "remove 'commits': record resolves it from applied",
+                    f"{where}.objects",
+                    "remove 'objects': record resolves it from applied",
                 )
                 continue
             entry = self.decode(DecisionEntry, row, where, SCHEMA["decisions"])
@@ -296,10 +296,10 @@ class _Expansion(Acceptance):
                 self.stage(Kind.DECISION, full, body | applied)
 
     def applied(self, paths: Iterable[str], where: str) -> dict[str, Any] | None:
-        """`applied` as given and `commits`, each path's last commit beside
-        it; None on any miss."""
+        """`applied` as given and `objects`, each path to its committed blob
+        id; None on any miss."""
         given = list(paths)
-        commits: list[str] = []
+        objects: dict[str, str] = {}
         for index, path in enumerate(given):
             at = f"{where}.applied[{index}]"
             found = self.context.governed.get(path)
@@ -314,10 +314,10 @@ class _Expansion(Acceptance):
             elif found is None:
                 self.fail(at, f"write '{path}' first: no such file in the book")
             else:
-                commits.append(found)
-        if len(commits) < len(given):
+                objects[path] = found
+        if len(objects) < len(set(given)):
             return None
-        return {"applied": given, "commits": commits} if given else {}
+        return {"applied": given, "objects": objects} if given else {}
 
     def take_scored(self, rows: Rows) -> None:
         """`subject` names a live hypothesis: on file and not superseded, or

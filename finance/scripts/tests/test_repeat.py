@@ -1,5 +1,5 @@
 """`measure --repeat`: a run reproduces from its own inputs and writes nothing;
-code read at `code_commit` through git and compared by AST against the
+code read from its recorded blob ids and compared by AST against the
 working tree, raw data, or a peer series that moved is refused by name."""
 
 from __future__ import annotations
@@ -58,6 +58,25 @@ def test_a_moved_engine_commit_is_advisory(measured, run, monkeypatch):
     assert document["reproduced"] is True
     [note] = document["advisories"]
     assert note.startswith("btm_finance ") and note.endswith(" -> " + "f" * 40)
+
+
+def test_a_run_measured_on_a_branch_repeats_after_rebase(
+    synthetic, run, commit, rebase, git_in
+):
+    book = synthetic(seed=7)
+    git_in(book, "switch", "-q", "-c", "agent/tilt")
+    signal = book / "strategies" / "baseline" / "signal.py"
+    signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
+    before = commit(book, "strategies/baseline", subject="feat: tilt baseline")
+    code, document, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    rebase(book, "agent/tilt")
+    assert git.head(book) != before
+    code, again, err = run(
+        ["measure", str(book), "baseline", "--repeat", document["run_id"]]
+    )
+    assert code == 0, err
+    assert again["reproduced"] is True
 
 
 def test_an_edited_config_is_refused_by_name(measured, run):

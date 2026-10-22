@@ -46,7 +46,7 @@ operator confirms.
    `--universe:file` when operator gave one. `start` fills `limits.json` and
    `preferences.json` (`schedule` from `brief_hour` and `schedule`) from
    answers, commits scaffold as `start: <id>`, records `onboard` decision
-   naming every governed file it wrote at that commit.
+   naming blob id of every governed file it wrote.
 3. Existing book: `$R start "$B" --answers:file answers.json`. It writes
    three files, and `limits.json` when any answer differs, commits them as
    `onboard: <id>`, under `onboard` decision. Tell operator every `limits`
