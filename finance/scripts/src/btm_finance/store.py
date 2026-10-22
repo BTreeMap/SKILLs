@@ -49,7 +49,7 @@ def read_json(path: Path) -> Any:
 
 
 def open_book(ref: str) -> Book:
-    """The book at a path; its marker must exist, so a typo never makes one."""
+    """The book at a path; its marker must exist."""
     root = Path(ref).expanduser()
     if not (root / MARKER).is_file():
         raise CommandError(f"no book at {root}: {HINT}")
@@ -69,7 +69,7 @@ def load_preferences(book: Book) -> Preferences:
 
 
 def held_out_path(book_id: str) -> Path:
-    """The default place: outside the book, so no branch the agent edits holds it."""
+    """The default place, outside the book."""
     return state_root(SKILL) / book_id / "held-out.json"
 
 

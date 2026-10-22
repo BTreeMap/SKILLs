@@ -1,23 +1,20 @@
 # Book
 
-Load when making a book or reading one of its files by hand. Book is
-operator's private git repository; skill holds methods, book holds state.
-
 ## Layout
 
 ```text
 <book>/
   book.json                   marker: book id, created, skill commit at start, held-out path
-  README.md                   operator: what book is, when brief arrives, four replies, ledger/
-  AGENTS.md                   agents: verbs, invariants, daily loop, replies, governed files, conduct, code, hindsight, dated answers
+  README.md                   operator's plain guide
+  AGENTS.md                   agents' standing instructions
   CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
   limits.json                 governed: asset cap, bounds, thresholds, families
   preferences.json            focus sectors, exclusions, cadence, schedule, heartbeat_minutes, quiet_hours; through record
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
-  data/manifest.json          sha256, rows, dates per stored file; written under lock; git ignores data/, so digests guard it
-  data/features/              materialized features (later stage)
+  data/manifest.json          sha256, rows, dates per stored file; git ignores data/, so digests guard it
+  data/features/              materialized features
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
     runs.jsonl  runs/<agent>.jsonl  incidents.jsonl  regimes.jsonl
@@ -46,21 +43,8 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
                               {"<sector>": ["SYM", ...]}, sorted
 ```
 
-`book.json` `held_out` holds absolute held-out path; `measure --held-out`
-reads list there. Agent never reads that file.
-
-Agent-written layout:
-
-- `lib/`: one module per concern; docstring at top states purpose, inputs,
-  outputs.
-- `tools/`: `<verb>-<object>.py`, docstring header stating what it reads and
-  writes, `argparse` for arguments. Run with `PYTHONPATH` set to book root,
-  so `import lib.<module>` resolves.
 - `research/<topic>/README.md`: status and open questions of that line of
   inquiry.
-- `INDEX.md`: `path | purpose`, one line per lib module, tool, research
-  topic, delegate brief, updated in same commit as file; deleted file leaves
-  no line.
 - `research/backlog/<id>.md`: one candidate hypothesis, not yet registered.
   State mechanism, counterparty, falsifier, odds, expected information gain,
   and which existing run (run id) it would differ from, and how. Combination
@@ -70,52 +54,44 @@ Agent-written layout:
   registered. No gate reads this shape.
 - `research/calendar/`, `research/weekly/`: `README.md` status line, then
   one file per event family, one note per week.
-
-Run book tests with `pytest <book>/tests` through skill's `uv run` binding.
-`tools/` script reads book through `btm_finance.api`, never ledger or
-parquet files: `open_book(path)`; `ledger(book, kind)` for newest-wins rows
-of one kind, superseded lines dropped (`run` joins every runs file, oldest
-first); `research(book).at(day)` for `Market` on last bar on or before `day`
-over research names, `.dates` for bar dates; `research(book).folds("train")`
-for same over training blocks only (first `thresholds.folds - 1` of
-`thresholds.folds` equal contiguous blocks of bar dates; `scorecard`), miner
-delegate's only price reader; `receipt(text)` checks delegate's final
-message; `outside_scope(book, commit, scope)` lists each path
-`git diff main...<commit>` names outside scope entries (entry ending in `/`
-holds paths under it). None serves held-out names.
-
-`data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
-`data/returns/` files stay in manifest for integrity checks but never move
-snapshot, so later run cannot change earlier run's.
-
-`status` holds one word: `research`, `probe`, `paper`, `live`, or `retired`;
-absent or empty reads `research`. On operator's yes, agent writes `probe`,
-`paper`, or `live` and records `promote` naming strategy, `applied` naming
-file, in same step; `paper_months` counts from it. `probe` trades live at
-fixed `sizing.probe_weight` so out-of-sample fills accrue. `runs.jsonl` is
-lead's; each delegate writes own `runs/<agent>.jsonl`; views read union.
+- `data_snapshot` hashes sorted sha256 of source files under `data/raw/`
+  only; `data/returns/` files never move it.
+- `status` holds one word: `research`, `probe`, `paper`, `live`, or
+  `retired`; absent or empty reads `research`.
+- `runs.jsonl` is lead's; each delegate writes own `runs/<agent>.jsonl`;
+  views read union.
 
 ## Agent-written code
 
-Book is research monorepo: every line of code agent writes lives in book.
-
 - Write script when step would otherwise repeat by hand or needs more than
-  few lines. Put it in `tools/` if it runs (`<verb>-<object>.py`), `lib/` if
-  it is imported.
-- Every script's docstring states what it reads and writes.
+  few lines. Put it in `tools/` if it runs, `lib/` if it is imported.
+- `lib/`: one module per concern; docstring at top states purpose, inputs,
+  outputs.
+- `tools/`: `<verb>-<object>.py`, docstring header stating what it reads and
+  writes, `argparse` for arguments. Run with `PYTHONPATH` set to book root,
+  so `import lib.<module>` resolves.
 - Read ledger and data only through `btm_finance.api`. Append to ledger only
   through `record`: script writes batch file, lead runs `record`.
 - Accessor `Market` lacks: add it in `lib/market_ext.py`, wrapping `api`.
-- Delete dead script by commit lead merges; drop its `INDEX.md` line in same
-  commit.
-- Update `INDEX.md` and `research/<topic>/README.md` in same commit as file
-  they describe.
+- Update `INDEX.md` (`path | purpose`) and `research/<topic>/README.md` in
+  same commit as file they describe. Delete dead script by commit lead
+  merges, its `INDEX.md` line with it.
 - Test `lib/` and `tools/` under `tests/`, run with `$U pytest "$B/tests"`.
+
+`btm_finance.api`: `open_book(path)`; `ledger(book, kind)` for newest-wins
+rows of one kind, superseded lines dropped (`run` joins every runs file,
+oldest first); `research(book).at(day)` for `Market` on last bar on or
+before `day` over research names, `.dates` for bar dates;
+`research(book).folds("train")` for same over training blocks only (first
+`thresholds.folds - 1` of `thresholds.folds` equal contiguous blocks of bar
+dates; `scorecard`), miner delegate's only price reader; `receipt(text)`
+checks delegate's final message; `outside_scope(book, commit, scope)` lists
+each path `git diff main...<commit>` names outside scope entries (entry
+ending in `/` holds paths under it). None serves held-out names.
 
 ## Ledger lines
 
-Every line: `id`, `ts`, then record. Ledger is append-only; correction is
-new line carrying `supersedes`. `record` writes each batch in one write
+Every line: `id`, `ts`, then record. `record` writes each batch in one write
 under lock, whole or not at all. File ending in line without newline is cut
 by some other hand, as is line that is not JSON object: `record` refuses to
 append, names file and line; repaired only on operator's word. Bare `check`
@@ -135,19 +111,10 @@ repaired, no incident line.
 | run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_paths`, `code_objects` (path to committed blob id), `config`, `scorecard`; also `params`, `reasons`, `engine` (skill commit, `numpy`, `pyarrow`), `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `regimes`, `regime_days`, `imports` |
 | incident | `kind`; see Incidents |
 
-`confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`
-is chain id from `macro` table or `none`. `start` sets baseline's
-`falsifier_by` one year after start date. `record` refuses `kelly_implied`
-more than 0.01 from `p_win - (1 - p_win) / payoff`. Hypothesis line carrying
-`supersedes` spends one trial of its family in bare `check`'s `trials_used`
-only when its `falsifier_by` is later than superseded line's; same, earlier,
-or absent old kill date (odds added, text corrected) spends nothing;
-scorecard `trials` (DSR) counts backtests only. Bare `check` derives
-`overdue` and `unscored` warnings from hypothesis, decision, and scored
-lines; `scored` line naming hypothesis clears both. `scored` scores stated
-`p_win` against outcome: `brier` is squared error of probability,
-`log_score` log of probability given to what happened (Tetlock and Gardner
-2015).
+`chain` is chain id from `macro` table or `none`. `start` sets baseline's
+`falsifier_by` one year after start date. `scored` scores stated `p_win`
+against outcome: `brier` is squared error of probability, `log_score` log of
+probability given to what happened.
 
 Regime line in suggested shape; `record` reads only `kw`, `as_of`,
 `confidence`, `falsified`, `supersedes`:
@@ -158,9 +125,9 @@ Regime line in suggested shape; `record` reads only `kw`, `as_of`,
 
 Gate refuses `as_of` that is not ISO date, `confidence` outside 0 to 1,
 unknown chain id under `falsified`, `supersedes` naming no live regime id.
-Vocabularies above are `macro` guidance, never checked; `evidence` count
-other than `bubble_count.count` is signal only. Regime record is newest live
-line by `as_of`, later line winning tie; `stale` when `as_of` is more than
+Vocabularies above are never checked; `evidence` count other than
+`bubble_count.count` is signal only. Regime record is newest live line by
+`as_of`, later line winning tie; `stale` when `as_of` is more than
 `limits.regime_stale_days` (default 90) before today, or before proposal
 date in proposal file.
 
@@ -188,7 +155,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 
 | Path | Writer | Agent may |
 | --- | --- | --- |
-| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, commit, then record `decision` quoting instruction, `applied` naming file; bare `check` warns on each commit leaving it at blob no decision names, and while uncommitted |
+| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, commit, then record `decision` (spine Invariants) |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` except `pad/` | `record`; run lines `measure`; incident lines `load`, `check --live` | append through `record` only; bare `check` warns on any other write it can see |
 | `ledger/pad/scratch.jsonl` | agent | append lines, grep; never gated |
@@ -201,39 +168,24 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 
 1. Directories above, `strategies/baseline/` with `status` `research`,
    static multi-factor `signal.py`, `config.json`, `README.md`; baseline
-   hypothesis (`capacity_class: crowded`) through gate into
-   `hypotheses.jsonl`. Empty `lib/__init__.py`; `tests/conftest.py`;
-   `research/backlog/`, `research/calendar/`, `research/weekly/`, each with
-   `README.md` of one status line; `INDEX.md` holding header, column line
-   `path | purpose`, one row per those three folders and per seeded brief.
-   Bare `check` warns when `INDEX.md` is absent. `delegates/` seeded with
+   hypothesis (`capacity_class: crowded`) through gate. Empty
+   `lib/__init__.py`; `tests/conftest.py`; `research/backlog/`,
+   `research/calendar/`, `research/weekly/`, each with `README.md` of one
+   status line; `INDEX.md` with column line `path | purpose`, one row per
+   those three folders and per seeded brief. `delegates/` seeded with
    starter briefs for `author`, `critique`, `miner`, `reader`, `scorer`,
-   `regime`, `janitor`, at most 25 lines each, write scope same as spine's
-   table, references by absolute path.
+   `regime`, `janitor`, at most 25 lines each.
 2. `preferences.json`, `limits.json` defaults, then `book.json` with
    `held_out` path.
-3. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
-   inside book refused before any write. Per sector, first quarter of
-   `--universe:file` names by symbol sort, half rounded up; deterministic,
-   no randomness. Plain JSON, sector to symbols; receipt reports path and
+3. Held-out list: per sector, first quarter of `--universe:file` names by
+   symbol sort, half rounded up; deterministic. Receipt reports path and
    count only. Without universe, empty list and `signal:` saying so.
-4. With `--answers:file`: `limits.json` takes `asset_cap` (`--cap`, else
-   `capital.now`), `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`,
-   `model_cutoff`; `preferences.json` takes `focus_sectors`, `exclusions`,
-   `cadence`, `schedule`, with `heartbeat_minutes` 45; `README.md` and
-   `AGENTS.md` render from skill templates, answers table dated `book.json`
-   `created`; `CLAUDE.md` symlinks `AGENTS.md`, or holds `Read AGENTS.md.`
-   where symlink fails. Receipt `onboarded` true, `claude_md` `symlink` or
-   `file`. Without answers: none of three files, `onboarded` false;
-   `start --answers:file` on existing book writes them later, answers dated
-   that day, and leaves `limits.json`, `preferences.json`, ledger untouched.
-   Bare `check` warns on each file absent or drifted.
+4. With `--answers:file`: `README.md`, `AGENTS.md`, `CLAUDE.md` and answers
+   (`onboard`). Without: none of three files, `onboarded` false.
 5. `.gitignore` holding `data/` and `__pycache__/` (existing lines kept);
-   `git init -b main` unless path is inside git work tree; no `git` on PATH
-   refuses before any write. Receipt `git`: `init` or `inside`. Then
-   baseline hypothesis, one commit `start: <id>` of book path on current
-   branch (receipt `commit`), `onboard` decision naming every governed file
-   it wrote by blob id, and second commit of that decision line.
+   `git init -b main` unless path is inside git work tree. Then one commit
+   `start: <id>` on current branch, `onboard` decision naming every governed
+   file it wrote by blob id, and second commit of that decision line.
 
 ## Proposal file
 
@@ -241,7 +193,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 `<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
 research names only, through `Market` on `as_of`, last bar on or before
 `date`, weights set exactly as `measure` sets them, ADV clip included
-(`scorecard`), so order cut in step 7 bites mostly on sales of held shares.
+(`scorecard`).
 
 | Field | Holds |
 | --- | --- |
@@ -260,9 +212,7 @@ research names only, through `Market` on `as_of`, last bar on or before
 | `advisory` | `risk_share` per sleeve (`weight * vol_net` over book's sum, null without vol), `bound` (`max_strategy_risk_share`), `over` names past it; never a cut |
 | `reasons` | Why a null field is null: `ruin` |
 
-Sizing, annual units, vol is std of run's stored net series times sqrt(252).
-Fractional Kelly trades growth for security (Kelly 1956; Thorp 2006); ruin
-bound caps the security side (MacLean, Thorp, Ziemba 2010).
+Sizing, annual units, vol is std of run's stored net series times sqrt(252):
 
 1. Tier from ledger, through proposal's `as_of`: `backtest` with no fills;
    `paper` when sleeve's dry-run fills span at least
@@ -272,7 +222,7 @@ bound caps the security side (MacLean, Thorp, Ziemba 2010).
    `live` same on real fills. Fewer days or tracking breach keeps lower
    tier. Status `probe` gives tier `probe`.
 2. `edge_scale = min(1, max(0, (dsr - 0.5) / 0.45))`, 0 when `dsr` null: 0
-   at DSR 0.5, 2/3 at 0.8, 1 at 0.95 (Bailey and Lopez de Prado 2014).
+   at DSR 0.5, 2/3 at 0.8, 1 at 0.95.
 3. Sleeve weight is min(`vol_target / vol_net`, `kelly_cap`),
    `kelly_cap = kelly_fraction.<tier> * edge_scale * sharpe_net / vol_net`;
    zero when Sharpe is null or negative. Probe sleeve takes exactly
@@ -288,8 +238,8 @@ bound caps the security side (MacLean, Thorp, Ziemba 2010).
    percentile of wealth. Over `sizing.ruin_bound` (0.35): every sleeve
    scales by `ruin_bound / loss` once, one `cuts` entry `kind: ruin`. Under
    252 common periods, or weighted sleeve with no stored series: `ruin`
-   null, reason under `reasons.ruin`, no scaling. Cost O(T S + P H). Risk
-   share (`weight * vol_net` over sum) lands under `advisory`; no cut.
+   null, reason under `reasons.ruin`, no scaling. Risk share lands under
+   `advisory`; no cut.
 6. Name's net weight across sleeves above `sizing.max_weight` scales that
    name down in every sleeve alike.
 7. Target is whole shares at last close on or before `date`, toward zero.
@@ -305,44 +255,34 @@ Order of previous proposal carries when no fill of same symbol, sleeve,
 side, and account (paper or real) is dated on or after that proposal, and no
 `reject` decision names its stem. Estimated cost: notional times run's
 trade-weighted half-spread plus `commission_bps` of symbol's exchange.
-`ext/` plug-ins stay deferred.
 
 ## Approval file
 
 `check <date>` prints `approval_template` with every order, `date` set to
-proposal date, `reply` empty. On operator's approve, agent copies it to
-`approvals/<YYYY-MM-DD>.json`, sets quantities as operator said, `date` and
-file name to send day, `reply` to operator's words verbatim, commits it,
-then records `approve` decision on proposal stem, same words as `reason`,
-`applied` naming file:
+proposal date, `reply` empty. Approved copy (spine Propose and approve step
+3):
 
 ```json
 {"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "reply": "<operator's words>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
 ```
 
-No program places an order. `check <book> approvals/<date>.json` (path
-absolute or book-relative, resolving under `approvals/`) checks: `date` is
-today (UTC); `reply` non-empty; file clean and some `approve` decision names
-its committed blob, so edit after yes fails until committed and recorded
-again; `proposal` names file under `proposals/`; every order's `symbol`,
-`side`, `strategy` match order of that proposal; `adv_participation` at most
+`check <book> approvals/<date>.json` (path absolute or book-relative,
+resolving under `approvals/`) checks: `date` is today (UTC); `reply`
+non-empty; file clean and some `approve` decision names its committed blob,
+so edit after yes fails until committed and recorded again; `proposal` names
+file under `proposals/`; every order's `symbol`, `side`, `strategy` match
+order of that proposal; `adv_participation` at most
 `limits.max_adv_participation`; strategy `status` `paper`, `probe`, or
 `live`. Returns `orders` (each with `account` its strategy trades),
 `problems` (empty when valid), `next`; exit 1 on any problem.
 
-Paper orders: `record <book> --approval approvals/<date>.json --dry-run`
-records fill per order at `price` with `dry_run: true`; refuses file failing
-`check` or holding `probe` or `live` order. Probe and live orders: operator
-places each by hand at broker and pastes fills in chat (table, screenshot,
-or sentence); agent transcribes them into table, shows it back, on yes runs
-`record <book> --fills:file <table> --approval approvals/<date>.json`. Table
-is CSV with header `symbol,side,quantity,price,date` (optional `strategy`
-column), or JSON list of objects with same keys. Each fill must name order's
-`symbol` and `side` (`strategy` too when two sleeves share both), on
-non-`paper` strategy, positive `quantity` and `price`, `date` not after
-today; fills land `dry_run: false`. Either way `record` builds `fills` batch
-with `approval` set to file stem and sends it through gate: any miss refuses
-whole table. No file moves; bare `check` lists each approval under
-`approvals` with `proposal`, `date`, `approved`, and `filled` once fills
-carry its stem. `approve` decision answers proposal: it leaves open
-proposals.
+`record --dry-run` records fill per paper order at `price` with
+`dry_run: true`; refuses file failing `check` or holding `probe` or `live`
+order. `record --fills:file` table: CSV with header
+`symbol,side,quantity,price,date` (optional `strategy` column), or JSON list
+of objects with same keys. Each fill must name order's `symbol` and `side`
+(`strategy` too when two sleeves share both), on non-`paper` strategy,
+positive `quantity` and `price`, `date` not after today; fills land
+`dry_run: false`. Either way `record` builds `fills` batch with `approval`
+set to file stem and sends it through gate: any miss refuses whole table. No
+file moves. `approve` decision answers proposal: it leaves open proposals.

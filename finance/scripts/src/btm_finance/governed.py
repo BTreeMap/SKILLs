@@ -53,7 +53,7 @@ def unnamed(
     commits: Iterable[Commit], decisions: Iterable[Row]
 ) -> list[dict[str, Any]]:
     """One warning per commit leaving a governed file at a blob no decision's
-    `objects` names, newest first; blob ids survive rebase."""
+    `objects` names, newest first."""
     named = witnesses(decisions)
     found: list[dict[str, Any]] = []
     for commit in commits:

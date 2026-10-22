@@ -1,16 +1,14 @@
 # Critique
 
-Loaded only by critique delegate, never by run's author. Critic works
-through twelve items below on one run, plus `event-fields` and five `macro`
-items (`chain`, `regime-band`, `next-phase`, `third-order`, `discounted`)
-when hypothesis family carries `event: true` in `limits.families`, writes
-one `critiques` batch entry to `research/critiques/<run id>.json`, and
-returns receipt naming it.
+Work through twelve items below on one run, plus `event-fields` and five
+`macro` items (`chain`, `regime-band`, `next-phase`, `third-order`,
+`discounted`) when hypothesis family carries `event: true` in
+`limits.families`; write one `critiques` batch entry to
+`research/critiques/<run id>.json`.
 
 ## Inputs and limits
 
-* Critic receives run id, this file, and read access to book. Critic never
-  sees author's session, chat, pad, or receipt.
+* Read nothing of author's session, chat, pad, or receipt.
 * Read run line (`ledger/runs.jsonl` or `ledger/runs/<agent>.jsonl`),
   hypothesis line it names (`ledger/hypotheses.jsonl`), `strategies/<name>/`
   (`signal.py`, `config.json`, `README.md`), `research/backlog/`, and
@@ -88,8 +86,8 @@ returns receipt naming it.
   `perturbation`.
 * Settles: net Sharpe positive across most years and terciles; no cliff at
   plus or minus 20%.
-* Blocker: `perturbation` flips sign of net Sharpe (scorecard reports point,
-  not strategy). Concern: one year or one tercile carries most of Sharpe.
+* Blocker: `perturbation` flips sign of net Sharpe. Concern: one year or one
+  tercile carries most of Sharpe.
 
 ### crowding
 
@@ -99,8 +97,7 @@ returns receipt naming it.
   little of intended gross.
 * Blocker: class `in_band` or `under_cap` while `capacity` shows crowded and
   hypothesis states no reason. Concern: class `crowded`, reason stated.
-  Concern: large `adv_clipped_share`: hypothesis lives in names cap cannot
-  hold, so run measured weights other than ones signal chose.
+  Concern: large `adv_clipped_share`.
 
 ### factor
 
@@ -139,8 +136,7 @@ returns receipt naming it.
 * Inspect: hypothesis `chain`, `expectation_source`, `discounted`,
   `confidence`.
 * Settles: all four present.
-* Concern: any absent; name each missing field. No blocker grade: `record`
-  accepts hypothesis without them.
+* Concern: any absent; name each missing field. No blocker grade.
 
 ### drift
 
@@ -180,8 +176,7 @@ Event family, eighteen items, with optional `confidence`:
 ```
 
 Final message is receipt (`unit` `critique`, `wrote` naming batch file,
-`ids.run_id`), nothing else; lead runs `record` and copies critique id from
-`new`.
+`ids.run_id`), nothing else.
 
 ## Completion checks
 
@@ -189,6 +184,5 @@ Final message is receipt (`unit` `critique`, `wrote` naming batch file,
   items for event family, each `blocker`, `concern`, or `clear`.
 * Each `blocker` verdict has matching string in `blockers`; same for
   concerns.
-* Every blocker quotes field path or file and line.
 * `run_id` is full id from run line; `by` names critic, not run's author.
 * Critic wrote nothing besides batch file.

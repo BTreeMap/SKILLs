@@ -1,8 +1,5 @@
 # Sources
 
-Load before first `load` of any source, or when `load` exits 2. Every route
-here writes raw store; strategy code never reads it, only data model.
-
 ## Route ladder
 
 Take first rung that serves need; drop rung only on evidence (exit 2 twice,
@@ -30,9 +27,6 @@ data/manifest.json                        per file: path, sha256, rows, source, 
   file: one `integrity` line in `ledger/incidents.jsonl`, exit 1 naming
   file, nothing fetched. File stays in place: tell operator, never delete or
   rewrite it; operator restores from backup.
-- `data_snapshot` is sha256 over sorted digests of source files only; runs'
-  returns files stay listed for integrity but never move it. `measure`
-  stamps it on every run line.
 - Same `(symbol, date)` bar in two files: latest `loaded_at` wins. Same
   `(symbol, field, event_time, knowledge_time)` event: same rule. Correct
   vendor error by loading fixed rows with `--since` at their first date.
@@ -86,8 +80,6 @@ fields.
   dropped.
 - `event_time` = `knowledge_time` = return date. Approximation: library
   publishes with lag and revises history; true knowledge time is later.
-- Factors feed scorecard's factor regression and `factor(field, n)` in
-  strategy code; knowledge-time approximation above holds for both.
 - Trap: file layout (header line starting with comma, `YYYYMMDD` rows,
   copyright footer) is parsed strictly; changed layout exits 2 naming
   column. North America factors for Canadian names are approximation; load
@@ -137,11 +129,9 @@ default `universe.csv`.
 - `adj_factor` = `adjClose / close`; raw OHLCV kept.
 - `divCash` nonzero becomes event `dividend`, `splitFactor` not 1 becomes
   event `split`, both dated on ex-date bar.
-- Knowledge-time caveat: dividend is announced before ex-date; storing
-  ex-date as knowledge time is late, never early, so it hides nothing a
-  strategy could have known. `adjClose` is recomputed by vendor after each
-  later action: factor in older files can disagree with newer load; latest
-  load wins.
+- Dividend knowledge time is ex-date: late, never early. `adjClose` is
+  recomputed by vendor after each later action: factor in older files can
+  disagree with newer load; latest load wins.
 - Traps: free tier meters requests per hour and per day; large universe
   needs several nights or paid tier. Load is all or nothing: exit 2 writes
   nothing, rerun same command. Ticker unknown to Tiingo: `signal:` and

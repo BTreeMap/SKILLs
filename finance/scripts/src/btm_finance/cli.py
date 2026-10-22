@@ -724,8 +724,7 @@ def ledger_warnings(book: Book) -> list[dict[str, Any]]:
 
 
 def index_warning(book: Book) -> list[dict[str, Any]]:
-    """`INDEX.md` absent: the lead keeps one line per lib module, tool,
-    research topic, and delegate brief there."""
+    """`INDEX.md` absent."""
     if (book.root / INDEX).is_file():
         return []
     signal(
@@ -1221,7 +1220,7 @@ def committed_code(book: Book, name: str) -> dict[str, str]:
 def moved_code(book: Book, name: str, objects: Mapping[str, str]) -> list[str]:
     """Each code path whose AST (or parsed `config.json`) differs between its
     recorded blob and the working tree, then each path reached today but not
-    then. Blob ids survive rebase."""
+    then."""
     then = {path: git.show_blob(book.root, blob) for path, blob in objects.items()}
     now = {
         path: (book.root / path).read_bytes() if (book.root / path).is_file() else None

@@ -1,9 +1,6 @@
 # Macro
 
-Load when regime delegate drafts regime record, when lead puts draft to
-operator, when lead registers hypothesis in family flagged `event: true` in
-`limits.families`, and in critique delegate beside `critique`. Three rules
-keep macro out of signals:
+Three rules keep macro out of signals:
 
 * No strategy conditions on macro variable unless its hypothesis registers
   that variable as mechanism and scorecard regime split tests it.
@@ -15,9 +12,9 @@ keep macro out of signals:
 Every asset is lump sum today traded for cash flows later. Four determinants
 move price: expected growth (cash flows), expected inflation (their
 purchasing power), risk premium (excess over cash investors demand),
-discount rate (what cash earns). Total return is yield plus price change.
-10-year yield splits into real yield (discount leg) and breakeven inflation
-(inflation leg), both read from market.
+discount rate (what cash earns). 10-year yield splits into real yield
+(discount leg) and breakeven inflation (inflation leg), both read from
+market.
 
 * Name which determinant moved before accepting any story about a price.
 
@@ -25,15 +22,13 @@ discount rate (what cash earns). Total return is yield plus price change.
 
 Productivity trend: output per person rises over decades as people learn and
 invent; cycles oscillate around it. Over one to ten years cycles dominate;
-past ten years trend dominates. Multi-year holds carry more trend exposure,
-which is why baseline strategy exists.
+past ten years trend dominates.
 
 Short-term debt cycle (illustration: about six years, give or take three):
 ease, credit cheap, spending and asset prices rise, incomes then inflation
-follow with lags, tighten, reverse; example below chain grammar writes it
-out. Observables: policy rate against inflation, credit growth against
-income growth, yield curve, breakeven inflation. Read surprise as deviation
-from chain, not from headline.
+follow with lags, tighten, reverse. Observables: policy rate against
+inflation, credit growth against income growth, yield curve, breakeven
+inflation. Read surprise as deviation from chain, not from headline.
 
 Long-term debt cycle (illustration: about eighty years, give or take
 twenty-five): each short cycle ends with more debt to income than last,
@@ -43,12 +38,11 @@ income growth, burdens flat; (2) bubble, debt outgrows income for years
 outruns income; (4) depression, falling prices cut collateral, lenders pull
 back, forced selling feeds itself, rates at zero remove usual fix; (5)
 deleveraging; (6) normalization, usually years later. Deleveraging levers,
-reached for in this order (each less painful to someone than last):
-austerity; defaults and restructurings; transfers from haves to have-nots;
-money printing and asset purchases. Outcome is benign when mix pushes
-nominal growth above nominal rates with tolerable inflation. Where easing
-stops working (rates at zero, purchases no longer reach real economy),
-direct fiscal and monetary coordination follows.
+reached for in this order: austerity; defaults and restructurings; transfers
+from haves to have-nots; money printing and asset purchases. Outcome is
+benign when mix pushes nominal growth above nominal rates with tolerable
+inflation. Where easing stops working (rates at zero, purchases no longer
+reach real economy), direct fiscal and monetary coordination follows.
 
 Variant: debt in own currency gives deflationary deleveraging; much debt in
 foreign currency plus stopped capital inflows gives inflationary one, where
@@ -144,7 +138,6 @@ new line with `supersedes`.
 | `measure` | Stamps every run line with regime ids its evidence window spans | Conditioning returns on regime unless hypothesis declared it and scorecard regime split tests it |
 | Critique | Checks evidence concentration in one regime, mechanism survival in next phase, holding period crossing likely phase change | Rejecting strategy because critic forecasts regime change |
 | `check <proposal>` | Shows regime record id, `as_of`, `stale`, and effective streams beside diff | Changing any weight in proposal |
-| Human | Confirms, edits, rejects draft; states confidence | Nothing |
 
 * If newest regime record is older than `limits.regime_stale_days`, `check`
   shows it stale on every proposal; tell operator, dispatch regime delegate
@@ -152,9 +145,7 @@ new line with `supersedes`.
 
 ## Registering event-family hypothesis
 
-If family carries `event: true`, add to hypothesis fields `families` lists.
-`record` accepts hypothesis without them; critique item `event-fields` names
-each one absent as concern.
+If family carries `event: true`, add to hypothesis fields `families` lists:
 
 * `chain`: chain id from table, or `none`.
 * `expectation_source`: where priced expectation is read before event.
@@ -174,14 +165,10 @@ each one absent as concern.
   sleeves and effective streams from `check <strategy>`; both advisory.
 * Price is what is discounted: if hypothesis cannot state where it disagrees
   with price, treat it as factor exposure, not hypothesis.
-* Size for being wrong: `recommend` scales whole book to `sizing.ruin_bound`
-  and reports each sleeve's risk share against
-  `limits.max_strategy_risk_share` under `advisory`, never cut; sleeve past
-  it is concentration to name to operator.
-* Drawdown tolerance: human sets review threshold before strategy goes live;
-  use regime record to tell drawdown chain predicts from one it does not.
-  Drawdown inside `sizing.ruin_bound` with no `check --live` model-path
-  breach is variance, not evidence.
+* Size for being wrong: sleeve past `limits.max_strategy_risk_share` under
+  `advisory` is concentration to name to operator.
+* Drawdown tolerance: use regime record to tell drawdown chain predicts from
+  one it does not.
 * Believability: discount claim whose source cannot state mechanism. Show
   family track record (critique survival, held-out, paper) as counts; never
   weight budgets by it.
@@ -189,10 +176,6 @@ each one absent as concern.
   critique, and regime record; show it beside recommendation.
 * Third order: ask what happens to strategy when everyone seeing same
   first-order effect acts on it.
-* Diagnose before act: if live strategy deviates from measured path, record
-  decision with action `diagnose` and reason naming broken link (mechanism,
-  data, regime, or crowd). Pause or retire on diagnosis, never on pain
-  alone.
 
 ## Critique items for macro
 

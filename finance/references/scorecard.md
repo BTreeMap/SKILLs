@@ -1,6 +1,5 @@
 # Scorecard
 
-Load before reading, explaining, or arguing from scorecard or standing.
 `measure` writes one per run line under `scorecard`, with `reasons` beside
 it naming why any field is null; `check <strategy>` applies thresholds from
 `limits.json`. Run line key `peers` lists run ids whose stored series fed
@@ -68,8 +67,7 @@ that list.
 * Capacity: net Sharpe at 1x must be positive and within 20%
   (`capacity_tolerance`) of 0.1x. Net Sharpe at top point still within 20%
   of 0.1x, or hypothesis `capacity_class: crowded`: blocked as `crowded`
-  until decision line with `action: override` names strategy. Edge surviving
-  at top point is one institutions can hold, so likely crowded; hypothesis
+  until decision line with `action: override` names strategy; hypothesis
   registered `in_band` showing it needs `override` with reason.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
@@ -79,18 +77,13 @@ that list.
   (`folds("test")` and `.at` past training dates refuse). Feature chosen on
   training blocks meets last block first inside `measure`.
 * Post-cutoff: `limits.model_cutoff` is training cutoff of agent's model
-  (date or null). Fold whose first test date is strictly after it was
-  unknown to model, so free of hindsight. `post_cutoff` is net Sharpe of
-  those folds joined in order. Null, with `reasons.post_cutoff`, when cutoff
-  is null or no fold starts after it. Positive overall Sharpe beside
-  negative `post_cutoff` is `hindsight` concern in `critique`.
+  (date or null). `post_cutoff` is net Sharpe of folds whose first test date
+  is strictly after it, joined in order. Null, with `reasons.post_cutoff`,
+  when cutoff is null or no fold starts after it. Positive overall Sharpe
+  beside negative `post_cutoff` is `hindsight` concern in `critique`.
 * Probe: `check <strategy>` reads standing `probe` when every blocker but
   `dsr` and `pbo` is clear, DSR at or above 0.80 (`thresholds.dsr_probe`),
-  PBO below 0.25 (`pbo_probe`). On operator's yes, status `probe`; sleeve
-  trades live at fixed `sizing.probe_weight` so out-of-sample fills accrue.
-  `paper` or `live` still needs DSR 0.95.
-* DSR also sizes: `recommend` scales tier's Kelly fraction by
-  `min(1, max(0, (dsr - 0.5) / 0.45))`; see `book` Proposal file.
+  PBO below 0.25 (`pbo_probe`). `paper` or `live` still needs DSR 0.95.
 * Regimes: vol tercile from 21-day volatility of equal-weight universe
   return, lagged one day.
 * Spread: half-spread at decision day from 21-day estimates; Abdi-Ranaldo
@@ -110,12 +103,12 @@ that list.
 
 ## Regimes and streams
 
-Run line, beside scorecard and outside it (reference pin never covers it):
+Run line, beside scorecard:
 
 * `regimes`: ids of regime records whose span overlaps evidence window.
   Record holds from its `as_of` to next live record's `as_of`; last holds
   open-ended. `regime_days`: evidence periods per id, `none` for periods
-  before first record. Cost O(R log R + R log T).
+  before first record.
 
 `check <strategy>` adds three advisory fields, never blockers:
 

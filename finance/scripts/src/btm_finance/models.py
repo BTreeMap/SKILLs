@@ -36,7 +36,7 @@ class Action(StrEnum):
     APPROVE = "approve"
     DIAGNOSE = "diagnose"
     FORGO = "forgo"
-    """A passing sleeve left unproposed, with the reason: forgoing is a cost."""
+    """A passing sleeve left unproposed, with the reason."""
     ONBOARD = "onboard"
     """`start` applying the operator's answers; `subject` is the book id."""
 
@@ -52,8 +52,7 @@ class Status(StrEnum):
 
     RESEARCH = "research"
     PROBE = "probe"
-    """Live at the fixed `sizing.probe_weight`, so out-of-sample fills accrue
-    before the strategy clears the promotion thresholds."""
+    """Live at the fixed `sizing.probe_weight`."""
     PAPER = "paper"
     LIVE = "live"
     RETIRED = "retired"
@@ -369,8 +368,7 @@ def commission_ceiling(commission: Commission) -> float:
 
 
 class Limits(Model):
-    """`limits.json`: changes only on the operator's word, so unknown keys are
-    ignored, not refused."""
+    """`limits.json`: unknown keys are ignored, not refused."""
 
     model_config = ConfigDict(frozen=True, extra="ignore")
 
@@ -402,8 +400,8 @@ class Limits(Model):
 
 
 class StrategyConfig(Model):
-    """`strategies/<name>/config.json`, agent-written, so unknown keys are
-    refused; `params` are numbers only, each perturbed by 20% when measured."""
+    """`strategies/<name>/config.json`: unknown keys are refused; `params` are
+    numbers only, each perturbed by 20% when measured."""
 
     params: dict[str, StrictInt | StrictFloat] = Field(default_factory=dict)
     rebalance: Rebalance
@@ -607,7 +605,7 @@ class Collaborator(Model):
 
 class Answers(Model):
     """`answers.json`: operator's onboarding answers; every key optional, a
-    missing one takes its default. Agent writes it, so unknown keys refuse."""
+    missing one takes its default; unknown keys refuse."""
 
     jurisdiction: NonEmpty | None = None
     currency: NonEmpty | None = None
@@ -691,8 +689,7 @@ CommitHash = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
 
 
 class Receipt(Model):
-    """A delegate's whole final message. Extra keys refuse: a receipt longer
-    than the shape is a defect of that unit's brief."""
+    """A delegate's whole final message. Extra keys refuse."""
 
     unit: UnitName
     status: ReceiptStatus
@@ -704,8 +701,7 @@ class Receipt(Model):
     friction: Line
     commit: CommitHash | None
     """The delegate's branch head after its last commit; None when it wrote
-    nothing. The lead's `git diff main...<commit>` is the fact `wrote`
-    claims."""
+    nothing."""
 
 
 RECEIPT_SHAPE: dict[str, object] = {

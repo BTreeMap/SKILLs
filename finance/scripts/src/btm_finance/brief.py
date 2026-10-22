@@ -1,6 +1,6 @@
 """The daily brief, pure: at most twelve one-line strings the lead reads to
 the operator verbatim, derived from live state on every call. The last line
-is always one `Reply`: the operator learns these and no command."""
+is always one `Reply`."""
 
 from __future__ import annotations
 

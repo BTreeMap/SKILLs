@@ -33,7 +33,7 @@ DATE_DIGITS = 8
 
 
 class FrenchConfig(Model):
-    """No settings yet; an empty object is accepted."""
+    """No settings; an empty object is accepted."""
 
 
 def unzipped(data: bytes, where: str) -> str:

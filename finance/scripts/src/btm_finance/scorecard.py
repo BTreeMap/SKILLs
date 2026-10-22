@@ -99,7 +99,7 @@ class RunLine(Model):
     lists bounds broken after running; the line counts as a trial anyway.
     `peers` are the run ids whose series fed `sr_var` and PBO, in order;
     `code_objects` each book-relative code file in `code_paths` to its
-    committed blob id, which survives rebase;
+    committed blob id;
     `engine` the skill commit and library versions; `imports` what
     `signal.py` reaches from outside the book; `override_reason` the
     `--reason` that ran past a policy refusal."""

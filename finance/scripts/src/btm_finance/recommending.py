@@ -818,7 +818,6 @@ def propose(inputs: Inputs) -> Proposal:
         )
         for c in candidates
     }
-    # ext/ plug-ins (jurisdiction annotations) are deferred; they would run here.
     return Proposal(
         date=inputs.date,
         as_of=inputs.as_of,

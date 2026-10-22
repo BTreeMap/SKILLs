@@ -1,9 +1,5 @@
 # Onboard through start
 
-Load only for book without `AGENTS.md`, or empty directory (Continue).
-`start --answers:file` writes book-root instructions: `README.md` for
-humans, `AGENTS.md` for agents, `CLAUDE.md` pointing at `AGENTS.md`.
-
 ## Questions
 
 Send these in one message, after directory question. Accept partial answers;
@@ -43,10 +39,11 @@ operator confirms.
    sources book uses and EDGAR contact string only; no key, token, or
    password: unknown keys refuse.
 2. Empty directory: `$R start "$B" --answers:file answers.json` plus
-   `--universe:file` when operator gave one. `start` fills `limits.json` and
-   `preferences.json` (`schedule` from `brief_hour` and `schedule`) from
-   answers, commits scaffold as `start: <id>`, records `onboard` decision
-   naming blob id of every governed file it wrote.
+   `--universe:file` when operator gave one. `start` fills `limits.json`
+   (`asset_cap`, `sizing.ruin_bound`, `sizing.kelly_fraction.backtest`,
+   `model_cutoff`) and `preferences.json` (`schedule`: `hour` from
+   `brief_hour`, `days` from `schedule`) from answers and writes
+   `README.md`, `AGENTS.md`, `CLAUDE.md`.
 3. Existing book: `$R start "$B" --answers:file answers.json`. It writes
    three files, and `limits.json` when any answer differs, commits them as
    `onboard: <id>`, under `onboard` decision. Tell operator every `limits`
@@ -58,8 +55,8 @@ operator confirms.
 5. Run bare `check "$B"`; no `README.md`, `AGENTS.md`, `CLAUDE.md`, or
    governed-file warning remains.
 
-On existing book, `start` refuses when any of three files exists; `--force`
-rewrites all three, only on operator's word.
+On existing book, `--force` rewrites all three files, only on operator's
+word.
 
 ## Editing the files
 

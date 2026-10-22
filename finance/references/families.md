@@ -1,9 +1,8 @@
 # Families
 
-Load before registering a hypothesis or proposing a new family to operator.
-Families below are favoured for capital at or under the asset cap in
-`limits.json`, listed in capacity order: families institutions cannot use
-first, crowded large-cap families last.
+Families below suit capital at or under `limits.json` asset cap, in capacity
+order: families institutions cannot use first, crowded large-cap families
+last.
 
 ## Using this list
 
@@ -12,14 +11,12 @@ first, crowded large-cap families last.
   `decision` quoting reply, `applied` naming `limits.json`.
 * Entry with `event: true` marks event family: its hypotheses carry `chain`,
   `expectation_source`, `discounted`, `confidence` (load `macro`); `record`
-  accepts hypothesis without them, critique item `event-fields` flags each
-  one absent; critique adds five `macro` items.
+  accepts hypothesis without them, critique flags each one absent.
 * Treat `capacity_class` as prior. Scorecard `capacity` tests it: `in_band`
   means ceiling between asset cap and scorecard's top point, `under_cap`
   below asset cap, `crowded` above top point.
 * Read origin paper as search key only. Retrieve it with `/lit-review`
-  before relying on any figure, sign, or sample from it. This file holds no
-  return figure and no claim of what works now.
+  before relying on any figure, sign, or sample from it.
 * Load data through `load` routes named per family; `sources` owns route
   ladder.
 
