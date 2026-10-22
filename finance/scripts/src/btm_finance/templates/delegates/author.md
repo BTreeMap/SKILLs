@@ -28,7 +28,8 @@ Turn one registered hypothesis into strategy code and one measured run.
 - `config.json` `family_id` is the hypothesis's; `holding_days` at least
   `limits.min_holding_days`.
 - Every run spends a trial, refused ones too; never measure again to shop
-  for a better number. Never `--reason` unless lead's values name the gate.
+  for a better number. A gate stops you: report it in `friction`; never
+  `--reason`, which is the lead's.
 - Missing accessor, source, metric, or cost model: write the `lib/` hook,
   test it, go on.
 
