@@ -5,210 +5,227 @@
 ```text
 <book>/
   book.json                   marker: book id, created, package version at start, held-out path
-  AGENTS.md                   agents' standing instructions
-  CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
-  limits.json                 asset cap, bounds, thresholds, families
-  preferences.json            focus sectors, exclusions, cadence; edited on operator's word
+  AGENTS.md                   standing instruction; CLAUDE.md links to it (fallback line "Read AGENTS.md.")
+  limits.json                 asset cap, bounds, thresholds, sizing, families
+  preferences.json            focus_sectors, exclusions, cadence; edited on operator's word
   universe.csv                copy of start's --universe:file
-  data/raw/<source>/          immutable parquet per load; see sources
+  data/raw/<source>/          immutable parquet per load (sources)
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
-  data/manifest.json          sha256, rows, dates per stored file; .gitignore holds data/, so digests guard it
+  data/manifest.json          sha256, rows, dates per stored file; /data is gitignored, digests guard it
   data/features/              materialized features
   ledger/
-    hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
-    runs.jsonl  runs/<agent>.jsonl  incidents.jsonl
-    pad/scratch.jsonl         agent's free memory, not ledger; agent appends and greps it
-  proposals/
-  strategies/<name>/
-    signal.py  config.json  README.md  status  strategy-local helpers
-  lib/                        agent's shared modules; signal.py imports lib.<module>
-  tools/                      agent's scripts; read book through btm_finance.api
-  research/<topic>/           notes, tables, sources per line of inquiry
-  research/backlog/<id>.md    candidate hypothesis, ranked weekly; shape below
-  research/critiques/  research/runs/  research/literature/  research/universe/
-                              delegate outputs, one folder per unit
-  tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
-  INDEX.md                    path | purpose header
+    hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl  incidents.jsonl
+    runs.jsonl  runs/<agent>.jsonl
+    pad/scratch.jsonl         free memory; agents append and grep it
+  proposals/<date>.json       check --propose
+  delegates/<unit>.md         delegate briefs; start seeds bet, author, critique
+  strategies/<name>/          signal.py  config.json  README.md  status  local helpers
+  lib/                        imported modules and hooks
+  tools/                      scripts; read book through btm_finance.api
+  research/                   notes, tables; bets/, critiques/, critique/ (book critique items)
+  tests/                      conftest.py puts book root on sys.path
+  INDEX.md                    path | purpose, one row per file
   .gitignore                  /data, __pycache__/
 
-<path start --held-out named>, default
+<held-out path>, default
 ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
-                              {"<sector>": ["SYM", ...]}, sorted
+                              {"<sector>": ["SYM", ...]}; never read
 ```
 
-- `research/<topic>/README.md`: status and open questions of that line of
-  inquiry.
-- `research/backlog/<id>.md`: one candidate hypothesis, not yet registered.
-  State mechanism, counterparty, falsifier, odds, expected information gain,
-  and which existing run (run id) it would differ from, and how. Rejected
-  candidate stays, status line naming reason: critique item `multiplicity`
-  reads it. Rank weekly; only top gets registered. No gate reads this shape.
-- `data_snapshot` hashes sorted sha256 of source files under `data/raw/`
-  only; `data/returns/` files never move it.
-- `status` holds one word: `research`, `live`, or `retired`; absent or empty
-  reads `research`; older `paper` or `probe` reads `live`.
-- `runs.jsonl` is lead's; each delegate writes own `runs/<agent>.jsonl`;
+- `status`: one word, `research`, `live`, or `retired`; absent or empty
+  reads `research`.
+- `runs.jsonl` is lead's; each delegate's `measure --agent` writes own file;
   views read union.
+- `data_snapshot` hashes `data/raw/` files only; returns files never move
+  it.
+- `start` writes layout, baseline strategy (`status` `research`) and its
+  hypothesis (kill date one year out), held-out list (per sector, first
+  quarter of universe by symbol sort, half rounded up), `git init -b main`
+  unless inside a work tree; commits nothing.
 
-## Agent-written code
-
-- Write script when step would otherwise repeat by hand or needs more than
-  few lines. Put it in `tools/` if it runs, `lib/` if it is imported.
-- `lib/`: one module per concern; docstring at top states purpose, inputs,
-  outputs.
-- `tools/`: `<verb>-<object>.py`, docstring header stating what it reads and
-  writes, `argparse` for arguments. Run with `PYTHONPATH` set to book root,
-  so `import lib.<module>` resolves.
-- Read ledger and data only through `btm_finance.api`. Append to ledger only
-  through `record`: script writes batch file, lead runs `record`.
-- Accessor `Market` lacks: add it in `lib/market_ext.py`, wrapping `api`.
-- Test `lib/` and `tools/` under `tests/`, run with `$U pytest "$B/tests"`.
-
-`btm_finance.api`: `open_book(path)`; `ledger(book, kind)` for newest-wins
-rows of one kind, superseded lines dropped (`run` joins every runs file,
-oldest first); `research(book).at(day)` for `Market` on last bar on or
-before `day` over research names, `.dates` for bar dates. None serves
-held-out names.
+`btm_finance.api` for `tools/` and `lib/`: `open_book(path)`;
+`ledger(book, kind)` newest-wins rows of one kind, superseded lines dropped
+(`run` joins every runs file, oldest first); `research(book).at(day)`
+`Market` on last bar on or before `day` over research names, `.dates` bar
+dates. None serves held-out names.
 
 ## Ledger lines
 
-Every line: `id`, `ts`, then record. `record` writes each batch in one write
-under lock, whole or not at all. File ending in line without newline is cut
-by some other hand, as is line that is not JSON object: `record` refuses to
-append, names file and line; repaired only on operator's word. Bare `check`
-derives `warnings` on every call: each cut line (file, line,
-`problem: cut line`), each undecodable line (file, line, first 40 bytes),
-and each `supersedes` naming no id of its kind; never stored, never
-repaired, no incident line.
+Every line: `id`, `ts`, then record. `record` writes each batch under lock,
+whole or not at all, and refuses to append to file ending in cut line or
+holding non-JSON line, naming file and line; repair only on operator's word.
+Bare `check` lists cut lines, undecodable lines, and `supersedes` naming no
+id of its kind under `warnings`; never repaired.
 
-| Kind | Required keys |
+| Kind | Keys |
 | --- | --- |
-| hypothesis | `kw`, `strategy`, `family_id`, `falsifier`, `falsifier_by`, `counterparty`, `min_holding_days`; optional `odds` (`p_win`, `payoff`, `horizon_days`, `kelly_implied`), `confidence` |
-| critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
-| decision | `kw`, `subject`, `action`, `reason`; optional `odds` |
-| fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`; `proposal` stem, null for `opening` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `code_files` (path to own digest), `config`, `scorecard`; also `params`, `reasons`, `engine` (package version), `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `imports` |
-| incident | `kind`; see Incidents |
+| hypothesis | `kw`, `strategy`, `family_id`, `falsifier`, `falsifier_by`, `counterparty`, `min_holding_days`, `odds` (`p_win`, `payoff`, `horizon_days`, `kelly_implied`); optional `mechanism`, `sector`, `priced`, `implied`, `capacity`, `confidence`, `supersedes` |
+| critique | `kw`, `run_id`, `blockers`, `concerns`, `by`; optional `verdicts`, `confidence`, `supersedes` |
+| decision | `kw`, `subject`, `action`, `reason`; optional `odds`, `confidence`, `supersedes`; `close` adds `realized`, `against_odds` |
+| fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `proposal` (stem; null for `opening`) |
+| run | written by `measure` only: `check --schema run` |
+| incident | `kind`, then per kind below |
 
-`start` sets baseline's `falsifier_by` one year after start date. An older
-book's `scored.jsonl` lines read as `close` decisions; `regimes.jsonl` is
-ignored with one signal.
+Older book, read-time only, files never rewritten: `scored.jsonl` line reads
+as `close` decision (`against_odds` `win` when `realized_return` above 0);
+`paper` or `probe` status reads `live` with signal; fill's `approval` stem
+reads as `proposal`; `dry_run` fill counts toward no position; run without
+`asset_cap` reads current cap; `regimes.jsonl`, `holdings.jsonl` ignored
+with one signal.
 
-Fill from `record --fills:file` has `proposal`, the `--proposal` stem; older
-fill's `approval` stem reads as `proposal`.
-
-## Incidents
-
-`incidents.jsonl` lines come from scripts, never from `record`:
-
-| `kind` | Writer | Keys, or breach |
+| Incident `kind` | Writer | Breach |
 | --- | --- | --- |
 | `integrity` | any read of `data/` | `file`, `problem`, `expected`, `found` |
 | `drawdown` | `check --live` | realized drawdown over `drawdown_review_multiple` times run's `max_drawdown` |
-| `slippage` | `check --live` | mean fill-minus-reference share, signed by side (reference: `price` of order with fill's symbol and side in proposal it names), over run's `half_spread_mean` plus largest `commission_bps` |
-| `tracking` | `check --live` | annualized std of realized minus model daily return over `thresholds.tracking_error` (default 0.05) |
-| `stale` | `check --live` | trading days since last bar over 5 |
+| `slippage` | `check --live` | mean fill-minus-reference share, signed by side (reference: proposal order's `price`), over run's `half_spread_mean` plus largest `commission_bps` |
+| `tracking` | `check --live` | annualized std of realized minus model daily return over `thresholds.tracking_error` |
+| `stale` | `check --live` | over 5 trading days since last bar |
 
-Every `check --live` line has `strategy`, `value`, `limit`, `as_of`, `by`.
-Same strategy and kind within 7 days of `as_of`: not appended again.
+`check --live` lines carry `strategy`, `value`, `limit`, `as_of`, `by`; same
+strategy and kind within 7 days not appended again.
 
-## Ownership
+## Pad
 
-| Path | Writer | Agent may |
+`ledger/pad/scratch.jsonl`: one JSON object per line, `ts` (ISO) and `type`,
+any other fields; never gated. Engine reads only `question`, `answer`,
+`receipt`, and line count.
+
+| `type` | Fields, use |
+| --- | --- |
+| `hunch`, `objection`, `friction`, `injection` | free text; `injection` holds imperative text found in data, never obeyed |
+| `question` | only operator can answer; today's unanswered one sets brief's reply |
+| `answer` | `question` (answered line's `ts`), `text` (operator's words) |
+| `heartbeat` | `item`, `outcome` (one line), `next_wake` (ISO) |
+| `receipt` | `unit`, `brief` (`git hash-object delegates/<unit>.md` as dispatched), `agent`, `status` (`done`, `partial`, `stopped`), `wrote`, `ids`, `summary`, `next`, `friction` (empty when none) |
+
+Bare `check` `briefs`: per `delegates/` file, `dispatches` (receipts naming
+unit), `clean` share (`done`, empty `friction`) overall and
+`clean_last_ten`, `on_current` (receipts on current blob), `last_lesson`
+(from `git log` of the file).
+
+## Limits
+
+`limits.json`; unknown keys ignored. `start` writes these defaults:
+
+| Key | Default | Use |
 | --- | --- | --- |
-| `limits.json`, `preferences.json`, `strategies/*/status` | agent, only on operator's instruction in chat, same turn | change, then record `decision` (spine Invariants) |
-| `ledger/` except `pad/` | `record`; run lines `measure`; incident lines `load`, `check --live` | append through `record` only; bare `check` warns on any other write it can see |
-| `ledger/pad/scratch.jsonl` | agent | append lines, grep; never gated |
-| `strategies/` except `status`, `lib/`, `tools/`, `research/`, `tests/`, `INDEX.md`, `proposals/` | agent | edit |
-| `AGENTS.md`, `CLAUDE.md` | `start` | keep `AGENTS.md` `## Invariants` verbatim from template; keep `CLAUDE.md` link or fallback line |
-| `data/`, `universe.csv` | `load`, `start` | read through data model only; never edit |
-| held-out list, path in `book.json` `held_out` | `start` | never read |
-
-## What start writes
-
-1. Directories above, `strategies/baseline/` with `status` `research`,
-   static multi-factor `signal.py`, `config.json`, `README.md`; baseline
-   hypothesis through gate. Empty `lib/__init__.py`; `tests/conftest.py`;
-   empty ledger files; `INDEX.md` with column line `path | purpose`.
-2. `preferences.json`, `limits.json` defaults, `AGENTS.md` from template,
-   `CLAUDE.md`, then `book.json` with `held_out` path.
-3. Held-out list: per sector, first quarter of `--universe:file` names by
-   symbol sort, half rounded up; deterministic. Receipt reports path and
-   count only. Without universe, empty list and `signal:` saying so.
-4. `.gitignore` holding `/data`, `__pycache__/` (existing lines kept);
-   `git init -b main` unless path is inside git work tree. Commits nothing.
+| `asset_cap` | `--cap`, 10000000 | capital every run and proposal is priced at |
+| `min_holding_days` | 5 | `measure` refuses `holding_days` under it; realized floor |
+| `max_cost_share` | 0.25 | cost share bound |
+| `max_adv_participation` | 0.02 | weight clip and order cut against 21-day dollar ADV |
+| `price_floor` | 5 | names under it dropped per rebalance |
+| `adv_multiple` | 50 | names with ADV under it times largest intended position dropped |
+| `impact_coefficient` | 0.1 | square-root impact |
+| `commission_bps` | 1.0 | number, or map by exchange with `other` |
+| `delisting` | `nyse` -0.30, `amex` -0.30, `nasdaq` -0.55, `merger` 0.0 | terminal return |
+| `thresholds` | `dsr` 0.95, `pbo_promote` 0.10, `pbo_discard` 0.50, `t_empirical` 3.0, `t_mechanism` 2.0, `capacity_tolerance` 0.20, `drawdown_review_multiple` 1.5, `tracking_error` 0.05, `tracked_days` 63, `folds` 5 | `scorecard` |
+| `sizing` | `kelly_fraction` {`backtest` 0.25, `tracked` 0.50}, `max_weight` 0.10, `entry_weight` 0.02, `ruin_bound` 0.35 | Sizing |
+| `repeat_tolerance` | 1e-4 | `measure --repeat` |
+| `families` | `{"baseline": {"trials": 1}}` | `trials` budget per family; optional `touches` (`quality`, `low_risk`) |
+| `model_cutoff` | null | agent model's training cutoff |
+| `trials_per_day` | 3 | trial-spending run lines per UTC day |
+| `idle_days` | 90 | hook unused this long reads `idle` |
 
 ## Proposal file
 
 `check --propose <date>` writes `proposals/<date>.json` once; `--force`
 writes `<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
-research names only, through `Market` on `as_of`, last bar on or before
-`date`, weights set exactly as `measure` sets them, ADV clip included
-(`scorecard`).
+research names only, on `as_of` (last bar on or before `date`), weights set
+as `measure` sets them, ADV clip included.
 
 | Field | Holds |
 | --- | --- |
-| `date`, `as_of`, `cap` | Proposal date, last bar used, `limits.asset_cap` |
-| `sleeves` | Per strategy: `tier` (`backtest`, `tracked`), `edge_scale`, `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `kelly_cap`, `weight`, `code_changed`, `unknown`, raw `signal` per name, `adv_participation` (largest target over ADV at cap) |
+| `date`, `as_of`, `cap` | proposal date, last bar used, `limits.asset_cap` |
+| `sleeves` | per strategy: `tier`, `edge_scale`, `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `kelly_cap`, `weight`, `code_changed`, `unknown`, raw `signal`, `adv_participation` |
 | `sizing`, `extensions` | `default` or `lib/sizing.py`; proposal hooks present, `<hook>/<name>` to digest |
-| `skipped` | Live strategy with no run line, with reason |
-| `targets` | Per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, reference `price`, `sector` |
+| `skipped` | live strategy with no run line, with reason |
+| `targets` | per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, `price`, `sector` |
 | `orders` | `symbol`, `side`, `quantity`, `price`, `adv_participation`, `strategy`, `limit` (null: market-on-open), `held`, `target`, `carried_from` |
-| `summary` | `gross`, `net`, `cash` (1 minus net), `sectors` net weights, `top10` share of gross, `cost` in currency, one-way `turnover`, order count |
-| `unmanaged` | Held positions in names sleeves do not see (outside research set; can include held-out names); never sold |
-| `carried` | Unfilled orders of previous proposal; `merged` when an order here carries it |
-| `cuts` | `kind: adv`: order cut to ADV bound, `symbol`, `strategy`, `wanted`, `kept` shares, `adv_participation`, `bound`. `kind: ruin`: every sleeve scaled to ruin bound, `loss` before scaling, `bound`, `scale` |
-| `ruin` | `loss` (1st-percentile 252-day loss before scaling), `bound`, `scale`, `paths`, `horizon`, `block`, `periods` (common dates), `seed`; null with `reasons.ruin` |
-| `reasons` | Why a null field is null: `ruin` |
+| `summary` | `gross`, `net`, `cash`, `sectors`, `top10` share of gross, `cost` in currency, one-way `turnover`, `orders` |
+| `unmanaged` | held names sleeves do not see; never sold |
+| `carried` | unfilled orders of previous proposal |
+| `cuts` | `kind: adv` (`symbol`, `strategy`, `wanted`, `kept`, `adv_participation`, `bound`); `kind: ruin` (`loss`, `bound`, `scale`) |
+| `ruin` | `loss`, `bound`, `scale`, `paths`, `horizon`, `block`, `periods`, `seed`; null with `reasons.ruin` |
 
-Sizing, annual units, vol is std of run's stored net series times sqrt(252):
+## Sizing
 
-1. Tier from ledger, through proposal's `as_of`: `backtest` with no fills;
-   `tracked` when sleeve's real fills span at least
-   `thresholds.tracked_days` (63) calendar days from first fill to `as_of`
-   and realized path's tracking error against `measure`'s model path (as
-   `check --live` computes it) is at or under `thresholds.tracking_error`.
-   Fewer days or tracking breach keeps `backtest`.
-2. `edge_scale = min(1, max(0, (dsr - 0.5) / 0.45))`, 0 when `dsr` null: 0
-   at DSR 0.5, 2/3 at 0.8, 1 at 0.95.
-3. Sleeve weight is `kelly_cap`, or `lib/sizing.py`'s weight when book has
-   one,
-   `kelly_cap = kelly_fraction.<tier> * edge_scale * sharpe_net / vol_net`;
-   zero when Sharpe is null or negative. `max_weight` bounds names (step 5),
-   not sleeves. Sleeve with no real fill takes exactly
-   `sizing.entry_weight`.
-4. Sum of sleeve weights above 1 scales every sleeve down to sum 1; rest is
-   cash. Then ruin: joint stationary block bootstrap (mean block 21 days) of
-   weighted sleeves' stored net series on common dates, 1000 paths of 252
-   days, generator seeded from proposal date's ordinal, so proposal
-   reproduces. Loss is 1 minus compounded wealth; statistic is loss at 1st
-   percentile of wealth. Over `sizing.ruin_bound` (0.35): every sleeve
-   scales by `ruin_bound / loss` once, one `cuts` entry `kind: ruin`. Under
-   252 common periods, or weighted sleeve with no stored series: `ruin`
-   null, reason under `reasons.ruin`, no scaling.
-5. Name's net weight across sleeves above `sizing.max_weight` scales that
-   name down in every sleeve alike.
-6. Target is whole shares at last close on or before `date`, toward zero.
-   Order is target minus held. Order whose quantity times price over 21-day
-   dollar ADV passes `max_adv_participation` is cut to bound and listed
-   under `cuts`; unknown ADV cuts it to zero.
-7. Sleeves share one real account: real shares no sleeve filled (opening
-   holdings, retired sleeves) first cover sleeves' buys in name order; rest
-   lands on last sleeve, whose diff sells it. Older dry-run fills count
-   toward no position.
+Annual units; vol is std of run's stored net series times sqrt(252).
 
-Order of previous proposal carries when no real fill of same symbol, sleeve,
-and side is dated on or after that proposal, and no `reject` decision names
-its stem. Estimated cost: notional times run's trade-weighted half-spread
-plus `commission_bps` of symbol's exchange.
+1. Tier through `as_of`: `tracked` when sleeve's real fills span at least
+   `tracked_days` calendar days and tracking error against model path (as
+   `check --live` computes it) is at or under `tracking_error`; else
+   `backtest`.
+2. `edge_scale = min(1, max(0, (dsr - 0.5) / 0.45))`, 0 when `dsr` null.
+3. `kelly_cap = kelly_fraction.<tier> * edge_scale * sharpe_net / vol_net`,
+   0 when either input is null or negative. Sleeve weight is `kelly_cap`, or
+   `lib/sizing.py`'s weight; sleeve with no real fill takes `entry_weight`.
+4. Sum over 1 scales every sleeve to sum 1; rest is cash. Ruin: stationary
+   block bootstrap (mean block 21) of weighted sleeves' net series on common
+   dates, 1000 paths of 252 days, seeded from proposal date. 1st-percentile
+   loss over `ruin_bound` scales every sleeve by `ruin_bound / loss` once.
+   Under 252 common periods: `ruin` null, no scaling.
+5. Name's net weight across sleeves over `max_weight` scales that name down
+   in every sleeve alike.
+6. Target is whole shares at last close, toward zero; order is target minus
+   held. Order over `max_adv_participation` of 21-day dollar ADV is cut to
+   bound under `cuts`; unknown ADV cuts to zero.
+7. Real shares no sleeve filled (opening holdings, retired sleeves) first
+   cover sleeves' buys in name order; rest lands on last sleeve, whose diff
+   sells it.
+
+Previous proposal's order carries while no real fill of same symbol, sleeve,
+side is dated on or after it and no `reject` names its stem. Estimated cost:
+notional times run's half-spread plus `commission_bps`.
 
 ## Fill table
 
-`record --fills:file <table> --proposal <stem>` table: CSV with header
-`symbol,side,quantity,price,date` (optional `strategy` column), or JSON list
-of objects with same keys. Each fill must name an order's `symbol` and
-`side` in `proposals/<stem>.json` (`strategy` too when two sleeves share
-both), positive `quantity` and `price`, `date` not after today. `record`
-builds `fills` batch with `proposal` set to stem and sends it through gate:
-any miss refuses whole table. `approve` decision answers proposal: it leaves
-open proposals.
+`record --fills:file <table> --proposal <stem>`: CSV header
+`symbol,side,quantity,price,date` (optional `strategy`), or JSON list of
+same keys. Each fill must match an order's `symbol` and `side` in
+`proposals/<stem>.json` (`strategy` too when two sleeves share both),
+positive `quantity` and `price`, `date` not after today, and an `approve`
+decision on `<stem>` dated on or before it. Any miss refuses whole table.
+
+## Hooks
+
+Signatures; key is `<hook>/<name>`, digest of file's AST dump. Run line
+records `market`, `metrics`, `costs` hooks; proposal records `sizing`,
+`brief`. `measure --repeat` refuses moved or vanished digest; new hook not
+recorded is advisory. Hook imports at module top; book root is importable.
+`__init__.py` and names starting `_` are helpers, not hooks.
+
+- `lib/sources/<name>.py` `fetch(since, config) -> Loaded`: `since` a date,
+  `config` the `--config` JSON object or `{}`; returns core `Loaded` (bars
+  and events tables, `sources`). Built-in name wins.
+- `lib/market/<name>.py` `extend(market) -> dict[str, callable]`: receives
+  scoped core `Market`; each returned public name attaches to `Market`
+  `signal.py` sees; core accessor or duplicate name refused.
+- `lib/metrics/<name>.py`
+  `metric(returns, positions, market) -> float or None`: `returns` net
+  series, `positions` (`names`, `dates`, `weights` rows by names); stored
+  under `scorecard.extra.<name>`; never read by standing.
+- `lib/sizing.py` `weights(sleeves, limits) -> dict[str, float]`: `sleeves`
+  maps strategy to `run_id`, `tier`, `entry`, `sharpe_net`, `vol_net`,
+  `dsr`, `max_drawdown`, `kelly`; weights finite, at or above 0, named
+  sleeves only. `entry_weight`, `max_weight`, ruin scale still apply.
+- `lib/costs.py` `cost(trade, market) -> float`: proportional cost of one
+  `Trade` (`symbol`, `day`, `weight`, `notional`, `adv`, `daily_vol`,
+  `half_spread`, `commission_bps`), in place of half-spread, commission,
+  impact; run line `costs` names it.
+- `lib/brief.py` `lines(book) -> list[str]`: appended after core lines, cut
+  to keep twelve.
+
+Bare `check` `extensions`: per hook file `hook`, `name`, `path`, `runs`
+(uses by runs, proposals, loads), `last`, `idle`.
+
+## Ownership
+
+| Path | Writer |
+| --- | --- |
+| `limits.json`, `preferences.json`, `strategies/*/status` | lead, only on operator's word, same turn, recorded as `decision` |
+| `ledger/` except `pad/` | `record`; run lines `measure`; incidents `load`, `check --live` |
+| `ledger/pad/scratch.jsonl` | any agent |
+| `delegates/` | lead; never delegate |
+| `AGENTS.md` | `start`; lead keeps `## Invariants` verbatim |
+| `strategies/` except `status`, `lib/`, `tools/`, `research/`, `tests/`, `INDEX.md` | agents within brief's Writes |
+| `data/`, `universe.csv`, held-out list | `load`, `start`; never edited |

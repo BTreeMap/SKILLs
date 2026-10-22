@@ -1,17 +1,7 @@
 # Sources
 
-## Route ladder
-
-Take first rung that serves need; drop rung only on evidence (exit 2 twice,
-missing names, field absent).
-
-| Need | First | Then | Last |
-| --- | --- | --- | --- |
-| Daily bars | `tiingo` | `csv` from any vendor export | none: name gap to operator |
-| Fundamentals, point in time | `edgar` (US filers) | `csv` from vendor with release dates | disable fundamentals families for those names |
-| Factor returns | `french` | `csv` with symbol `_factors` | none |
-| Delistings, index membership | `csv` | none | record gap; survivorship then open in every critique |
-| Canadian names | `csv` | `tiingo` for prices only | no fundamentals |
+`load <source>` takes built-in `csv`, `french`, `edgar`, `tiingo`, or a book
+source under `lib/sources/`. Every source lands in same raw store.
 
 ## Raw store
 
@@ -136,3 +126,13 @@ default `universe.csv`.
   needs several nights or paid tier. Load is all or nothing: exit 2 writes
   nothing, rerun same command. Ticker unknown to Tiingo: `signal:` and
   skipped. Exchange column empty: set it in `universe.csv`.
+
+## Book source
+
+`lib/sources/<name>.py` defining `fetch(since, config) -> Loaded`: `since`
+first date kept, `config` the `--config:file` JSON object or `{}`. Return
+`Loaded(bars, events)` from `btm_finance.data.tables`, each a `Bars` or
+`EventRows` table (columns as under Raw store) or None; any other return or
+raised error exits 1 naming file. Built-in name wins on collision. Manifest,
+snapshot, integrity check, `--since` drop apply as for built-ins. Test it
+under `tests/`; bare `check` `extensions` counts its loads.
