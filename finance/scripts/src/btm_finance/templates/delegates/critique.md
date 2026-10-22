@@ -7,25 +7,27 @@ Judge one run: blockers that change decision, concerns that do not.
 ## Reads
 
 - `AGENTS.md`, then this file.
-- `check "$B" <run id>`, run line through `api.ledger`,
-  `strategies/<name>/`, `lib/` files its `code_files` and `extensions` name.
-- Core items: look-ahead; survivorship and universe-by-outcome; multiplicity
-  (trials, tuned parameters); costs and capacity at cap; concentration (one
-  year, one regime, one name); hindsight.
-- Book items: every `research/critique/<name>.md`.
+- Critique reference at path lead's values give: item shape, verdict rule,
+  batch example.
+- `$R check "$B" <run id>`, run line through `api.ledger`, hypothesis it
+  names, `strategies/<name>/`, files its `code_files` and `extensions` name.
+- Core items: `look-ahead`; `survivorship` (and universe by outcome);
+  `multiplicity` (trials, tuned parameters); `costs-capacity` (at cap);
+  `concentration` (one year, one regime, one name); `hindsight`.
+- Book items: every file under `research/critique/`.
 - Never held-out list, never author's receipt.
 
 ## Writes
 
 - `research/critiques/<run id>.json`: one `critiques` batch, `by` your agent
-  name.
+  name, `verdicts` for every core and book item.
 - Nothing else; never `record`.
 
 ## Rules
 
 - Invariants in `AGENTS.md`.
 - Never critique own run.
-- Blocker names file and line or scorecard field behind it.
+- Blocker quotes file and line or scorecard field behind it; else concern.
 
 ## Output
 

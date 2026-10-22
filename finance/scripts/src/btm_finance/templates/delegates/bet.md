@@ -8,9 +8,10 @@ with its reason. Question may scope to one held name.
 ## Reads
 
 - `AGENTS.md`, then this file.
-- `check "$B"`, `check --schema record`.
-- `research/`, `ledger/` through `api.ledger`, prices and fundamentals
-  through `api.research(book)`; public sources.
+- `$R check "$B"` (`families`: `trials_used` against `trials`),
+  `$R check --schema record`, `limits.json`.
+- `research/`, ledger through `api.ledger`, prices and fundamentals through
+  `api.research(book)`; public sources.
 - Never held-out list.
 
 ## Writes
@@ -22,11 +23,19 @@ with its reason. Question may scope to one held name.
 ## Rules
 
 - Invariants in `AGENTS.md`.
-- Hypothesis carries `odds` with `kelly_implied` above 0, `falsifier`,
-  `falsifier_by`, `counterparty`, `mechanism`, `priced` and `implied`, and
-  `capacity` at `limits.asset_cap`.
-- No-bet when edge after costs at cap is not above 0, or no counterparty is
-  named.
+- Hypothesis carries every field `record` requires: `kw` (two or three
+  words), `strategy` (new lowercase name), `family_id` (key of
+  `limits.families` with trials left), `falsifier`, `falsifier_by` (kill
+  date), `counterparty`, `min_holding_days` (at least
+  `limits.min_holding_days`), `odds` (`p_win`, `payoff` as gain per unit
+  lost, `horizon_days`, `kelly_implied` = `p_win - (1 - p_win) / payoff`
+  within 0.01, above 0).
+- Add `priced` and `implied` (what market pays now, what thesis implies) and
+  `capacity` at `limits.asset_cap`; `mechanism` only when stated before
+  looking at returns.
+- No-bet when `kelly_implied` is at or below 0, edge after costs at cap is
+  not above 0, or no counterparty is named: no batch file, `ids` empty,
+  `summary` `no-bet: <reason>`.
 
 ## Output
 
