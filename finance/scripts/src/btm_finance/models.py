@@ -625,7 +625,8 @@ ANSWERS_SHAPE: dict[str, object] = {
 }
 
 
-UnitName = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+UNIT_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+UnitName = Annotated[str, StringConstraints(pattern=UNIT_PATTERN)]
 """A delegated unit's slug: lowercase letters, digits, single inner hyphens.
 Open on purpose: the spine's write-scope table names common units, and the
 lead names the scope of any other unit in its brief."""

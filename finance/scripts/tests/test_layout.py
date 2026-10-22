@@ -12,6 +12,7 @@ from pathlib import Path
 
 from btm_finance import api
 from btm_finance.data.tables import day_of
+from btm_finance.delegates import STARTERS
 
 
 def test_start_lays_out_lib_tools_research_tests_and_index(book):
@@ -22,7 +23,8 @@ def test_start_lays_out_lib_tools_research_tests_and_index(book):
     assert index[:3] == ["# Index", "", "path | purpose | last touched"]
     queue = ("backlog", "calendar", "weekly")
     assert [row.split(" | ")[0] for row in index[3:]] == [
-        f"research/{name}/" for name in queue
+        *(f"research/{name}/" for name in queue),
+        *(f"delegates/{slug}.md" for slug in STARTERS),
     ]
     for name in queue:
         [status] = [

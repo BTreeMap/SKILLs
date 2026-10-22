@@ -13,11 +13,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 from btm_finance import api
+from btm_finance.delegates import BRIEF_ABSENT, STARTERS, brief
 from btm_finance.models import Receipt
+from btm_finance.scaffold import template
 
 from btm_corekit import CommandError
 
 PAD = ("ledger", "pad", "scratch.jsonl")
+SPINE = Path(__file__).resolve().parents[2] / "SKILL.md"
 ABSENT = "receipt path absent"
 
 EXAMPLE: dict[str, object] = {
@@ -81,6 +84,66 @@ def test_agents_md_delegates_carries_the_receipt_check(book):
     text = (book / "AGENTS.md").read_text()
     section = text.split("## Delegates", 1)[1].split("\n## ", 1)[0]
     assert "uv run --project" in section and "python -c" in section
+
+
+def test_start_seeds_one_short_brief_per_starter_and_index_rows(book):
+    for slug in STARTERS:
+        text = (book / "delegates" / f"{slug}.md").read_text()
+        assert text.startswith(f"# Brief: {slug}\n"), slug
+        assert len(text.splitlines()) <= 25, slug
+        assert "$" not in text, slug
+        for field in ("TASK", "EVIDENCE", "RULES", "BOUNDS", "CONTRACT", "LIMIT"):
+            assert f"\n{field}\n" in text, (slug, field)
+    index = (book / "INDEX.md").read_text()
+    for slug in STARTERS:
+        assert f"\ndelegates/{slug}.md | " in index, slug
+
+
+def test_critique_brief_carries_nothing_of_the_author():
+    rendered = brief(template("delegate.tmpl"), "critique", Path("/skill/references"))
+    assert "author" not in rendered.lower()
+    for field in ("summary", "wrote", "friction", "hypothesis"):
+        assert f'"{field}"' not in rendered, field
+
+
+def test_spine_write_scope_rows_match_the_starters():
+    rows: dict[str, str] = {}
+    for line in SPINE.read_text().splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split(" | ")]
+        if line.startswith("| ") and len(cells) == 2:
+            rows[cells[0]] = cells[1]
+    for slug, starter in STARTERS.items():
+        assert rows.get(slug) == starter.scope, slug
+
+
+def test_receipt_with_unit_lacking_brief_warns_until_file_exists(book, run):
+    line = EXAMPLE | {
+        "unit": "pre-mortem",
+        "wrote": [],
+        "ts": "2026-10-21T00:00:00+00:00",
+        "type": "receipt",
+    }
+    with book.joinpath(*PAD).open("a", encoding="utf-8") as pad:
+        pad.write(json.dumps(line) + "\n")
+    code, view, err = run(["check", str(book)])
+    assert code == 0
+    assert [w for w in view["warnings"] if w.get("problem") == BRIEF_ABSENT] == [
+        {"problem": BRIEF_ABSENT, "unit": "pre-mortem", "ts": line["ts"]}
+    ]
+    assert "delegate brief(s) absent" in err
+    (book / "delegates" / "pre-mortem.md").write_text("# Brief: pre-mortem\n")
+    code, view, _ = run(["check", str(book)])
+    assert code == 0
+    assert [w for w in view["warnings"] if w.get("problem") == BRIEF_ABSENT] == []
+
+
+def test_absent_delegates_folder_warns(book, run):
+    for path in (book / "delegates").iterdir():
+        path.unlink()
+    (book / "delegates").rmdir()
+    code, view, _ = run(["check", str(book)])
+    assert code == 0
+    assert {"file": "delegates/", "problem": "absent"} in view["warnings"]
 
 
 def held_names(book: Path) -> set[str]:

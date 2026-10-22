@@ -24,7 +24,7 @@ from btm_corekit import (
     signal,
     write_atomic,
 )
-from btm_finance import onboarding
+from btm_finance import delegates, onboarding
 from btm_finance.models import (
     BASELINE_CONFIG,
     PREFERENCES_TEMPLATE,
@@ -50,6 +50,7 @@ DIRECTORIES = (
     "lib",
     "tools",
     "research",
+    delegates.DELEGATES,
 )
 RESEARCH = {
     "backlog": "candidate hypotheses, one <id>.md each, ranked weekly",
@@ -63,11 +64,12 @@ INDEX_HEAD = "# Index\n\npath | purpose | last touched\n"
 
 
 def index_text(day: str) -> str:
-    """Header, column line, one row per queue folder touched `day`."""
+    """Header, column line, one row per queue folder and per seeded brief,
+    touched `day`."""
     rows = "".join(
         f"research/{name}/ | {purpose} | {day}\n" for name, purpose in RESEARCH.items()
     )
-    return INDEX_HEAD + rows
+    return INDEX_HEAD + rows + delegates.index_rows(day)
 
 
 def research_readme(name: str, purpose: str) -> str:
@@ -277,6 +279,13 @@ def scaffold(
         write_new(
             root / "research" / name / "README.md", research_readme(name, purpose)
         )
+    starter = template("delegate.tmpl")
+    references = Path(btm_finance.__file__).resolve().parents[3] / "references"
+    for slug in delegates.STARTERS:
+        write_new(
+            root / delegates.DELEGATES / f"{slug}.md",
+            delegates.brief(starter, slug, references),
+        )
     write_new(root / INDEX, index_text(now_iso()[:10]))
     write_new(root / "preferences.json", json.dumps(preferences, indent=2) + "\n")
     write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
@@ -311,6 +320,7 @@ def scaffold(
             "tests/conftest.py",
             *(f"research/{name}/README.md" for name in RESEARCH),
             "strategies/baseline/",
+            f"{delegates.DELEGATES}/",
             *(["universe.csv"] if universe is not None else []),
             *(onboarding.FILES if claude is not None else ()),
         ],

@@ -45,7 +45,7 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
-from btm_finance import approvals, governed, heartbeat, onboarding
+from btm_finance import approvals, delegates, governed, heartbeat, onboarding
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import WEEK, Bet, Open, Owed, brief, justifying
@@ -690,11 +690,13 @@ def ledger_warnings(book: Book) -> list[dict[str, Any]]:
 
 
 def index_warning(book: Book) -> list[dict[str, Any]]:
-    """`INDEX.md` absent: the lead keeps one line per lib module, tool, and
-    research topic there."""
+    """`INDEX.md` absent: the lead keeps one line per lib module, tool,
+    research topic, and delegate brief there."""
     if (book.root / INDEX).is_file():
         return []
-    signal(f"no {INDEX} in the book; write it with one line per lib, tool, topic")
+    signal(
+        f"no {INDEX} in the book; write it with one line per lib, tool, topic, brief"
+    )
     return [{"file": INDEX, "problem": "absent"}]
 
 
@@ -767,6 +769,12 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
             f"{len(absent)} receipt path(s) absent under warnings; examine "
             "those receipts again"
         )
+    briefless = delegates.absent_briefs(book.root, pad)
+    if briefless:
+        signal(
+            f"{len(briefless)} delegate brief(s) absent under warnings; write "
+            "delegates/<unit>.md before next dispatch"
+        )
     records = regime_rows(book)
     regime = regime_record(records, today, limits.regime_stale_days)
     if regime is not None and regime.stale:
@@ -810,6 +818,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
             *warnings,
             *stale_pulse,
             *absent,
+            *briefless,
             *fired,
             *late,
             *unwitnessed,

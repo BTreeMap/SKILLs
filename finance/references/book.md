@@ -34,9 +34,10 @@ operator's private git repository; skill holds methods, book holds state.
   research/weekly/            weekly research note, <YYYY-Www>.md
   research/critiques/  research/scored/  research/regime/  research/runs/  research/literature/  research/universe/
                               delegate outputs, one folder per unit
+  delegates/<slug>.md         fixed brief per delegated unit, summon's six fields; lead edits after friction
   tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
   tests/reference/            this book's pinned scorecard
-  INDEX.md                    one line per lib module, tool, research topic
+  INDEX.md                    one line per lib module, tool, research topic, delegate brief
   features/  ext/
   .gitignore                  data/
 
@@ -57,9 +58,9 @@ Agent-written layout:
   so `import lib.<module>` resolves.
 - `research/<topic>/README.md`: status and open questions of that line of
   inquiry.
-- `INDEX.md`: one line per lib module, tool, research topic (path, purpose,
-  last touched), updated in same commit as file; history section keeps one
-  line per deleted script.
+- `INDEX.md`: one line per lib module, tool, research topic, delegate brief
+  (path, purpose, last touched), updated in same commit as file; history
+  section keeps one line per deleted script.
 - `research/backlog/<id>.md`: one candidate hypothesis, not yet registered.
   State mechanism, counterparty, falsifier, odds, expected information gain,
   and which existing run (run id) it would differ from, and how. Combination
@@ -201,8 +202,11 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    `hypotheses.jsonl`. Empty `lib/__init__.py`; `tests/conftest.py`;
    `research/backlog/`, `research/calendar/`, `research/weekly/`, each with
    `README.md` of one status line; `INDEX.md` holding header, column line
-   `path | purpose | last touched`, one row per those three folders. Bare
-   `check` warns when `INDEX.md` is absent.
+   `path | purpose | last touched`, one row per those three folders and per
+   seeded brief. Bare `check` warns when `INDEX.md` is absent. `delegates/`
+   seeded with starter briefs for `author`, `critique`, `miner`, `reader`,
+   `scorer`, `regime`, `janitor`, at most 25 lines each, write scope same as
+   spine's table, references by absolute path.
 2. `preferences.json`, `limits.json` defaults, then `book.json` with
    `held_out` path.
 3. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
