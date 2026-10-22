@@ -18,7 +18,7 @@ submodule.
 | [caveman](caveman/SKILL.md) | Compresses replies into terse phrasing that keeps every technical fact, and can rewrite a prose file in place. |
 | [draft-paper](draft-paper/SKILL.md) | Drafts conference, workshop, journal, survey, or demo papers and answers reviews, tracing each empirical claim to an artifact and each citation to a retrieved record. |
 | [fact-check](fact-check/SKILL.md) | Checks a document claim by claim against retrieved sources, with quotes behind every verdict, and changes nothing until you approve each correction. |
-| [finance](finance/SKILL.md) | Keeps a private research monorepo of slow-money stock bets as a disciplined bettor: hypotheses with stated odds and kill dates, measured by deflated Sharpe, PBO, and purged walk-forward, sized by evidence tier under a ruin bound; the operator sends every trade by hand. |
+| [finance](finance/SKILL.md) | Keeps a private record of slow-money stock bets, each with stated odds and a kill date, measured by deflated Sharpe, PBO, and purged walk-forward at the book's asset cap, and sized by evidence under a ruin bound; the operator replies in chat and sends every trade by hand. |
 | [git-commit](git-commit/SKILL.md) | Drafts and reviews Conventional Commits messages, and can commit and push in one step. |
 | [humanize](humanize/SKILL.md) | Rewrites AI-sounding prose so it reads like its writer, keeping every claim's original strength. |
 | [lit-review](lit-review/SKILL.md) | Produces a literature review in which every citation traces to a paper retrieved from OpenAlex, arXiv, or Crossref, never memory. |

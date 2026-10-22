@@ -51,10 +51,10 @@ Current skills:
 * `fact-check/` - Checks a document claim by claim against retrieved
   sources, quotes behind every verdict; changes nothing until you approve
   each correction.
-* `finance/` - Keeps a private research monorepo of slow-money stock bets as
-  a disciplined bettor: stated odds and kill dates, deflated Sharpe, PBO,
-  purged walk-forward, evidence-tier sizing under a ruin bound; operator
-  sends every trade by hand.
+* `finance/` - Keeps a private record of slow-money stock bets with odds and
+  kill dates, measured by deflated Sharpe, PBO, purged walk-forward at
+  book's cap, sized by evidence under a ruin bound; operator replies in chat
+  and trades by hand.
 * `git-commit/` - Drafts and reviews Conventional Commits messages; can
   commit and push in one step.
 * `humanize/` - Rewrites AI-sounding prose so it reads like its writer,
