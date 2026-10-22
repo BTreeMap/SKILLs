@@ -9,10 +9,10 @@ description: >-
   hypotheses, critiques, decisions.
 license: MIT
 compatibility: >-
-  Requires uv, a POSIX file lock (Linux or macOS), and a full SKILLs
-  repository checkout. The first run builds the `.venv` at the checkout root
-  that every skill's scripts share, about 430 MB with this skill's numeric
-  libraries.
+  Requires uv, git, a POSIX file lock (Linux or macOS), and a full SKILLs
+  repository checkout; the book is a git repository. The first run builds
+  the `.venv` at the checkout root that every skill's scripts share, about
+  430 MB with this skill's numeric libraries.
 metadata:
   argument-hint: "[start|load|record|measure|check|recommend] <book path>"
 ---

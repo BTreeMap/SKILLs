@@ -52,7 +52,10 @@ Place each responsibility by first row it matches.
 Pad types are suggested, never checked; each means one thing across library.
 Kernel's `PAD_TYPES` holds them and every `schema` prints them under `pad`;
 skill text cites that list, naming only types its procedure relies on. Every
-pad takes `--known`: skill's cross-session pad beside its sessions.
+pad takes `--known`: skill's cross-session pad beside its sessions. Skill
+whose state is a git repository the agent edits may keep pad as plain JSONL
+file the agent appends, drop `write`, `read`, `--known`, and fold `schema`
+into its view verb (`finance`: `check --schema`).
 
 | Type | Meaning |
 | --- | --- |

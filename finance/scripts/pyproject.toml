@@ -1,7 +1,7 @@
 [project]
 name = "btm-finance"
 version = "0.1.0"
-description = "Book, ledger, and guards for a slow-money research-to-approval pipeline"
+description = "Kernel of a slow-money research book: ledger, scorecard, sizing, views"
 requires-python = ">=3.11"
 license = "MIT"
 # numpy below 2.5: its stubs use the 3.12 `type` statement, and the workspace
