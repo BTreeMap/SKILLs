@@ -67,7 +67,8 @@ Universal route: any vendor export, delistings, membership history.
   `performance` (stored 1) or `merger` (stored 2). Terminal return then
   follows `limits.json` `delisting` by exchange.
 - Membership: one field per index (`member_<index>`), value 1 on entry, 0 on
-  exit, `knowledge_time` announcement day.
+  exit, `knowledge_time` announcement day; any other value refuses every
+  read of data.
 - Exchange values `nyse`, `amex`, `nasdaq`, `tsx`; anything else reads as
   `other`. `universe.csv` column `exchange` overrides bars column.
 - Knowledge-time caveat: only as honest as export. Vendor file lacking

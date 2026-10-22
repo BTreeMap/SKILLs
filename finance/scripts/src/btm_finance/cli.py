@@ -115,6 +115,7 @@ from btm_finance.measuring import (
     Setting,
     Strategy,
     bounds,
+    commission_of,
     evaluate,
     rules_of,
     target_weights,
@@ -133,6 +134,7 @@ from btm_finance.models import (
     StrategyConfig,
     baseline_hypothesis,
     book_relative,
+    commission_ceiling,
 )
 from btm_finance.recommending import (
     AdvCut,
@@ -166,7 +168,7 @@ from btm_finance.repeat import (
 )
 from btm_finance.repeat import advisories as engine_advisories
 from btm_finance.scaffold import INDEX, onboard_files, scaffold, template
-from btm_finance.scorecard import RunLine, Span
+from btm_finance.scorecard import RunLine, Span, UniverseKind
 from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
     MARKER,
@@ -1295,6 +1297,34 @@ def file_bytes(path: Path) -> bytes:
         raise CommandError(f"cannot read {path}: {err}") from err
 
 
+def policy_gates(
+    book: Book, limits: Limits, config: StrategyConfig, *, held_out: bool
+) -> list[str]:
+    """Each policy refusal `--reason` runs past; `--held-out` passes the
+    daily cap."""
+    gates: list[str] = []
+    if config.holding_days < limits.min_holding_days:
+        gates.append(
+            f"holding_days {config.holding_days} is under "
+            f"limits.min_holding_days {limits.min_holding_days}"
+        )
+    if held_out:
+        return gates
+    spent = heartbeat.trials_today(all_runs(book), utc_today())
+    if spent >= limits.trials_per_day:
+        gates.append(
+            f"{spent} run line(s) dated today reach limits.trials_per_day "
+            f"{limits.trials_per_day}"
+        )
+    return gates
+
+
+def reason_text(raw: str) -> str:
+    if not raw.strip():
+        raise argparse.ArgumentTypeError("--reason needs text naming the gate")
+    return raw.strip()
+
+
 def cmd_measure(args: argparse.Namespace) -> int:
     """Refusals before running write nothing; bounds broken after running
     still append the run line, then exit 1."""
@@ -1313,24 +1343,20 @@ def cmd_measure(args: argparse.Namespace) -> int:
         read_json(folder / "config.json"),
         f"strategies/{name}/config.json",
     )
-    if config.holding_days < limits.min_holding_days:
-        raise CommandError(
-            f"refused before running: holding_days {config.holding_days} is under "
-            f"limits.min_holding_days {limits.min_holding_days}"
-        )
     if config.family_id != hypothesis.get("family_id"):
         raise CommandError(
             f"config family_id {config.family_id} differs from hypothesis "
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
     objects = committed_code(book, name)
-    spent = heartbeat.trials_today(all_runs(book), utc_today())
-    if not args.held_out and spent >= limits.trials_per_day:
+    gates = policy_gates(book, limits, config, held_out=args.held_out)
+    if gates and args.reason is None:
         raise CommandError(
-            f"refused before running: {spent} run line(s) dated today reach "
-            f"limits.trials_per_day {limits.trials_per_day}; sharpen the "
-            "backlog and measure tomorrow"
+            f"refused before running: {'; '.join(gates)}; next: fix it, or "
+            'measure again with --reason "<why this run answers the gate>"'
         )
+    for gate in gates:
+        signal(f"--reason runs past {gate}; stamped as override_reason")
     loaded = load_strategy(book.root, name)
     strategy = loaded.signal
     panel, events = assemble(book)
@@ -1380,6 +1406,8 @@ def cmd_measure(args: argparse.Namespace) -> int:
         regimes=spanned,
         regime_days=regime_days,
         imports=loaded.imports,
+        universe=UniverseKind.MEMBERSHIP if any(panel.members) else UniverseKind.STATIC,
+        override_reason=args.reason if gates else None,
     )
     target = (
         book.ledger / "runs" / f"{agent}.jsonl" if agent else book.path_of(Kind.RUN)
@@ -1497,7 +1525,13 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     )
     strategy = load_strategy(book.root, name).signal
     rules = rules_of(limits, preferences, config)
-    setting = Setting(day.panel, day.events, day.prep, rules)
+    setting = Setting(
+        day.panel,
+        day.events,
+        day.prep,
+        rules,
+        commission_of(rules.commission_bps, day.panel),
+    )
     market = Market.at(day.panel, day.events, int(day.panel.dates[day.row]))
     try:
         raw = strategy(market, dict(config.params))
@@ -1572,6 +1606,7 @@ def quotes_of(day: Day) -> dict[str, Quote]:
             price=float(panel.close[int(at), column]),
             adv=float(adv[column]),
             sector=panel.sector[column],
+            exchange=panel.exchange[column].value,
         )
         for column, (name, at) in enumerate(
             zip(panel.names, last.tolist(), strict=True)
@@ -2066,7 +2101,7 @@ def live_view(book: Book, today: date) -> LiveReport:
             drawdown_multiple=limits.thresholds.drawdown_review_multiple,
             underperform_months=limits.thresholds.underperform_months,
             tracking=limits.thresholds.tracking_error,
-            commission=limits.commission_bps / 1e4,
+            commission=commission_ceiling(limits.commission_bps) / 1e4,
         )
         for name, status in tracked:
             path, why = modeled(book, name, setting_of)
@@ -2216,6 +2251,11 @@ def build_parser() -> argparse.ArgumentParser:
     measure.add_argument("--agent", help="append to ledger/runs/<agent>.jsonl")
     measure.add_argument(
         "--repeat", metavar="RUN_ID", help="rerun a recorded run; writes nothing"
+    )
+    measure.add_argument(
+        "--reason",
+        type=reason_text,
+        help="run past trials_per_day or min_holding_days; stamped as override_reason",
     )
 
     recommend = commands.add_parser("recommend", help="write the rebalance proposal")

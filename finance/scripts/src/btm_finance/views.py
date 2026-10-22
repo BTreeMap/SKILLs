@@ -32,14 +32,15 @@ def open_hypotheses(
 
 def extensions(every_line: Sequence[Row]) -> list[Row]:
     """Hypothesis lines whose `falsifier_by` is later than that of the line
-    they supersede, or whose target carries none: more time spends a trial."""
+    they supersede; a target carrying none compares equal: more time spends
+    a trial."""
     kill = {h.get("id"): day_of(h, "falsifier_by") for h in every_line}
     found: list[Row] = []
     for h in every_line:
         if "supersedes" not in h:
             continue
         before, after = kill.get(h["supersedes"]), day_of(h, "falsifier_by")
-        if after is not None and (before is None or after > before):
+        if after is not None and before is not None and after > before:
             found.append(h)
     return found
 

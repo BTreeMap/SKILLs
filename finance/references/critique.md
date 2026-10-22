@@ -34,13 +34,15 @@ returns receipt naming it.
 ### rationale
 
 * Inspect: hypothesis `mechanism`, `counterparty`, `falsifier`; hypothesis
-  `ts` against first commit touching `strategies/<name>/`.
+  `ts` against first commit touching `strategies/<name>/`; run line
+  `override_reason`.
 * Settles: counterparty names party with reason to trade at a loss;
   falsifier is decidable from scorecard fields; hypothesis predates code.
 * Blocker: falsifier undecidable; hypothesis registered after code; or
   `mechanism` present (lowering t threshold to `t_mechanism`) yet
   counterparty names no one ("the market"). Concern: mechanism plausible but
-  thin.
+  thin; `override_reason` not answering gate it passed (`trials_per_day`,
+  `min_holding_days`).
 
 ### look-ahead
 
@@ -72,12 +74,13 @@ returns receipt naming it.
 
 ### universe
 
-* Inspect: run line `exclusions` and `config`; filters in `config.json`; git
-  history of `config.json`; hypothesis `sector`.
+* Inspect: run line `exclusions`, `config`, `universe`; filters in
+  `config.json`; git history of `config.json`; hypothesis `sector`.
 * Settles: every filter follows from hypothesis or `limits.json` bounds.
 * Blocker: filter selects names by outcome (survived, returned, rose).
   Concern: filter narrower than hypothesis states, with no reason in
-  `README.md`.
+  `README.md`; `universe` `static` where hypothesis trades index entry or
+  exit.
 
 ### regime
 
@@ -90,7 +93,7 @@ returns receipt naming it.
 
 ### crowding
 
-* Inspect: scorecard `capacity` at 0.1x, 1x, 20x, `adv_clipped_share`;
+* Inspect: scorecard `capacity` at 0.1x, 1x, top point, `adv_clipped_share`;
   hypothesis `capacity_class`.
 * Settles: capacity curve agrees with registered class; ADV clip removed
   little of intended gross.

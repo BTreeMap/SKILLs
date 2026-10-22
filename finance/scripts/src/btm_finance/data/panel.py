@@ -7,6 +7,7 @@ was known on or before its day; a bar's knowledge time is its own date.
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+from dataclasses import field as slot
 from enum import StrEnum
 
 import numpy as np
@@ -60,6 +61,22 @@ class Delisting:
     known: int
 
 
+@dataclass(frozen=True, slots=True)
+class Stretch:
+    """One stretch of index membership: from `entry` (entry knowledge time;
+    None when the first event is an exit) until `exit` (exit event time and
+    knowledge time; None while open)."""
+
+    entry: int | None
+    exit: tuple[int, int] | None
+
+    def serves(self, day: int) -> bool:
+        """Entered by `day`, and no exit both effective and known by then."""
+        entered = self.entry is None or self.entry <= day
+        left = self.exit is not None and max(self.exit) <= day
+        return entered and not left
+
+
 def frozen(array: NDArray[np.generic]) -> None:
     array.setflags(write=False)
 
@@ -72,7 +89,9 @@ def ascending(values: Days) -> bool:
 class Panel:
     """Bars on a (dates, names) grid, NaN where absent; `adj` is the cumulative
     adjustment factor, 1.0 on a bar that carries none. `delisted[i]` holds
-    name i's delisting records in knowledge order, newest last."""
+    name i's delisting records in knowledge order, newest last. `members[i]`
+    holds name i's membership stretches; empty `members` means no name has
+    any."""
 
     dates: Days
     names: tuple[str, ...]
@@ -85,6 +104,7 @@ class Panel:
     volume: Floats
     adj: Floats
     delisted: tuple[tuple[Delisting, ...], ...]
+    members: tuple[tuple[Stretch, ...], ...] = ()
 
     def __post_init__(self) -> None:
         """O(T + N log N): grids are checked by dtype and shape only."""
@@ -98,6 +118,8 @@ class Panel:
         for per_name in (self.exchange, self.sector, self.delisted):
             if len(per_name) != width:
                 raise ValueError("exchange, sector, delisted need one entry per name")
+        if self.members and len(self.members) != width:
+            raise ValueError("members needs one entry per name, or none")
         shape = (len(self.dates), width)
         for name in PANEL_ARRAYS:
             grid: Floats = getattr(self, name)
@@ -125,6 +147,7 @@ class Panel:
                 tuple(record for record in records if record.known <= day)
                 for records in self.delisted
             ),
+            members=self.members,
             **grids,
         )
 
@@ -138,6 +161,7 @@ class Panel:
             exchange=tuple(self.exchange[i] for i in keep),
             sector=tuple(self.sector[i] for i in keep),
             delisted=tuple(self.delisted[i] for i in keep),
+            members=tuple(self.members[i] for i in keep) if self.members else (),
             **grids,
         )
 
@@ -145,6 +169,18 @@ class Panel:
         """Name `index`'s newest delisting record, or None."""
         records = self.delisted[index]
         return records[-1] if records else None
+
+    def served(self, day: int) -> NDArray[np.bool_]:
+        """Per name: no membership stretch, or one serving `day`. O(N + S)."""
+        if not self.members:
+            return np.ones(len(self.names), dtype=bool)
+        return np.array(
+            [
+                not stretches or any(s.serves(day) for s in stretches)
+                for stretches in self.members
+            ],
+            dtype=bool,
+        )
 
 
 def events_sorted(name: Texts, field: Texts, known: Days, event: Days) -> bool:
@@ -165,17 +201,31 @@ def events_sorted(name: Texts, field: Texts, known: Days, event: Days) -> bool:
 
 
 @dataclass(frozen=True, slots=True)
+class History:
+    """The newest `n` events per name, each array `n` rows by names, newest
+    row last, NaN-padded on top; times are days since 1970-01-01."""
+
+    value: Floats
+    event_time: Floats
+    knowledge_time: Floats
+
+
+@dataclass(frozen=True, slots=True)
 class Events:
-    """Point-in-time table sorted by (name, field, knowledge_time, event_time)."""
+    """Point-in-time table sorted by (name, field, knowledge_time, event_time).
+    `_blocks` caches, per field, each name's row slice, built on first use."""
 
     name: Texts
     field: Texts
     event_time: Days
     knowledge_time: Days
     value: Floats
+    _blocks: dict[str, dict[str, slice]] = slot(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
-        arrays = [getattr(self, item.name) for item in fields(self)]
+        arrays = [getattr(self, item.name) for item in fields(self) if item.init]
         if len({len(array) for array in arrays}) > 1:
             raise ValueError("event columns must share one length")
         for array, kind in zip(arrays, ("U", "U", "i", "i", "f"), strict=True):
@@ -220,6 +270,40 @@ class Events:
         start = lo + int(np.searchsorted(self.field[lo:hi], field, side="left"))
         stop = lo + int(np.searchsorted(self.field[lo:hi], field, side="right"))
         return slice(start, stop)
+
+    def blocks(self, field: str) -> dict[str, slice]:
+        """Each name's rows of `field`, in knowledge order. O(n) on first call
+        per field, O(1) after."""
+        cached = self._blocks.get(field)
+        if cached is not None:
+            return cached
+        rows = np.flatnonzero(self.field == field)
+        names = self.name[rows]
+        starts = np.flatnonzero(np.append(True, names[1:] != names[:-1]))[: len(rows)]
+        stops = np.append(starts[1:], len(rows))[: len(starts)]
+        found = {
+            str(names[a]): slice(int(rows[a]), int(rows[b - 1]) + 1)
+            for a, b in zip(starts.tolist(), stops.tolist(), strict=True)
+        }
+        self._blocks[field] = found
+        return found
+
+    def history(self, names: tuple[str, ...], field: str, count: int) -> History:
+        """The newest `count` rows of `field` per name in knowledge order.
+        O(N count) after `blocks`."""
+        shape = (count, len(names))
+        value, event, known = (np.full(shape, np.nan) for _ in range(3))
+        index = self.blocks(field)
+        for column, name in enumerate(names):
+            rows = index.get(name)
+            if rows is None:
+                continue
+            start = max(rows.start, rows.stop - count)
+            taken = rows.stop - start
+            value[count - taken :, column] = self.value[start : rows.stop]
+            event[count - taken :, column] = self.event_time[start : rows.stop]
+            known[count - taken :, column] = self.knowledge_time[start : rows.stop]
+        return History(value, event, known)
 
     def latest(self, name: str, field: str, day: int) -> tuple[int, float] | None:
         """(event_time, value) of the newest row known on or before `day`;

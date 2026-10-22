@@ -13,7 +13,9 @@ that list.
   periods unless field says per period, on excess return: return minus
   `_factors` `rf` (0 where none loaded); cash earns `rf`.
 * Probabilities in [0, 1]. Costs proportional decimals; `commission_bps`
-  only is basis points.
+  only is basis points: one number, or map by exchange
+  (`{"nyse": 0, "other": 1.0}`), missing exchange reads `other`, else 0 with
+  `signal:`.
 
 ## Fields
 
@@ -34,7 +36,7 @@ that list.
 | `adv_clipped` | (period, name) cells `measure` clipped to ADV bound, whole run | none; critique reads it | |
 | `adv_clipped_share` | gross ADV clip removed over gross intended, whole run, [0, 1]; null on run lines written before clip | none; `crowding` in `critique` reads it | |
 | `min_holding_days_realized` | turnover-implied mean holding, trading days: periods times mean gross exposure over one-way weight traded | at least 5 (`min_holding_days`) | |
-| `capacity` | net Sharpe at `0.1x`, `1x`, `20x` `asset_cap`, square-root impact on; `1x` equals `sharpe_net` | see Rules | |
+| `capacity` | net Sharpe at `0.1x`, `1x` `asset_cap`, and top point: `<thresholds.crowded_multiple>x` (default `20x`), or `cap:<thresholds.crowded_cap>` when set; square-root impact on; `1x` equals `sharpe_net` | see Rules | |
 | `spread_model` | `half_spread_mean` (trade-weighted, charged), `abdi_ranaldo_mean` and `corwin_schultz_mean` on traded cells, `gap_mean`, `abdi_ranaldo_share` (cells where it was primary), `fallbacks` count, `primary` rule text | none; logged for quarterly refit | Corwin and Schultz 2012; Abdi and Ranaldo 2017 |
 | `max_drawdown` | largest peak-to-trough fall of net wealth, positive decimal | live review at 1.5x (`drawdown_review_multiple`) | |
 
@@ -64,11 +66,11 @@ that list.
   Adds `qmj` or `bab` when `families.<id>.touches` names `quality` or
   `low_risk` and field is loaded. No `_factors`: `factor` null, blocks.
 * Capacity: net Sharpe at 1x must be positive and within 20%
-  (`capacity_tolerance`) of 0.1x. Net Sharpe at 20x still within 20% of
-  0.1x, or hypothesis `capacity_class: crowded`: blocked as `crowded` until
-  decision line with `action: override` names strategy. Edge surviving at
-  twenty times cap is one institutions can hold, so likely crowded;
-  hypothesis registered `in_band` showing it needs `override` with reason.
+  (`capacity_tolerance`) of 0.1x. Net Sharpe at top point still within 20%
+  of 0.1x, or hypothesis `capacity_class: crowded`: blocked as `crowded`
+  until decision line with `action: override` names strategy. Edge surviving
+  at top point is one institutions can hold, so likely crowded; hypothesis
+  registered `in_band` showing it needs `override` with reason.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
 * Miner split: `api.research(book).folds("train")` serves first

@@ -21,6 +21,7 @@ from btm_finance.data.panel import (
     Events,
     Exchange,
     Panel,
+    Stretch,
     delist_kind,
     exchange_of,
 )
@@ -30,6 +31,7 @@ from btm_finance.store import Book
 
 UNIVERSE = "universe.csv"
 DELISTING = "delisting"
+MEMBER = "member_"
 Index = NDArray[np.intp]
 
 
@@ -122,6 +124,49 @@ def delistings(
     return tuple(tuple(per_name[name]) for name in names)
 
 
+def stretches(events: Events, rows: Index) -> list[Stretch]:
+    """One (name, `member_<index>`) block's stretches, walked in event time:
+    value 1 enters at its knowledge time, 0 exits at its event time; a repeat
+    of the current state changes nothing."""
+    order = rows[np.lexsort((events.knowledge_time[rows], events.event_time[rows]))]
+    found: list[Stretch] = []
+    entry: int | None = None
+    inside = False
+    for row in order.tolist():
+        code, symbol = float(events.value[row]), str(events.name[row])
+        if code not in {0.0, 1.0}:
+            raise CommandError(
+                f"{events.field[row]} for {symbol} holds {code}: entry is 1, exit 0"
+            )
+        if code == 1.0 and not inside:
+            entry, inside = int(events.knowledge_time[row]), True
+        elif code == 0.0 and (inside or not found):
+            exit_at = (int(events.event_time[row]), int(events.knowledge_time[row]))
+            found.append(Stretch(entry if inside else None, exit_at))
+            inside = False
+    if inside:
+        found.append(Stretch(entry, None))
+    return found
+
+
+def memberships(
+    events: Events, names: Sequence[str]
+) -> tuple[tuple[Stretch, ...], ...]:
+    """Each name's stretches over every `member_<index>` field; () when no
+    name has any. O(n + m log m) for m membership rows."""
+    rows = np.flatnonzero(np.char.startswith(events.field, MEMBER))
+    if not len(rows):
+        return ()
+    per_name: dict[str, list[Stretch]] = {name: [] for name in names}
+    name, field = events.name[rows], events.field[rows]
+    breaks = (name[1:] != name[:-1]) | (field[1:] != field[:-1])
+    for block in np.split(rows, np.flatnonzero(breaks) + 1):
+        symbol = str(events.name[block[0]])
+        if symbol in per_name:
+            per_name[symbol] += stretches(events, block)
+    return tuple(tuple(per_name[name]) for name in names)
+
+
 def exchanges(
     bars: Bars,
     rank: Index,
@@ -181,6 +226,7 @@ def build_panel(
         exchange=exchange,
         sector=tuple(universe[n].sector if n in universe else "" for n in names),
         delisted=delistings(events, names),
+        members=memberships(events, names),
         **grids,
     )
 

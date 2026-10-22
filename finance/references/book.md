@@ -140,13 +140,14 @@ is chain id from `macro` table or `none`. `start` sets baseline's
 `falsifier_by` one year after start date. `record` refuses `kelly_implied`
 more than 0.01 from `p_win - (1 - p_win) / payoff`. Hypothesis line carrying
 `supersedes` spends one trial of its family in bare `check`'s `trials_used`
-only when its `falsifier_by` is later than superseded line's; same or
-earlier kill date (odds added, text corrected) spends nothing; scorecard
-`trials` (DSR) counts backtests only. Bare `check` derives `overdue` and
-`unscored` warnings from hypothesis, decision, and scored lines; `scored`
-line naming hypothesis clears both. `scored` scores stated `p_win` against
-outcome: `brier` is squared error of probability, `log_score` log of
-probability given to what happened (Tetlock and Gardner 2015).
+only when its `falsifier_by` is later than superseded line's; same, earlier,
+or absent old kill date (odds added, text corrected) spends nothing;
+scorecard `trials` (DSR) counts backtests only. Bare `check` derives
+`overdue` and `unscored` warnings from hypothesis, decision, and scored
+lines; `scored` line naming hypothesis clears both. `scored` scores stated
+`p_win` against outcome: `brier` is squared error of probability,
+`log_score` log of probability given to what happened (Tetlock and Gardner
+2015).
 
 Regime line in suggested shape; `record` reads only `kw`, `as_of`,
 `confidence`, `falsified`, `supersedes`:
@@ -176,7 +177,7 @@ Fill from `holdings` has `holdings: true` and `price` equal to `cost_basis`,
 | `integrity` | any read of `data/` | `file`, `problem`, `expected`, `found` |
 | `drawdown` | `check --live` | realized drawdown over `drawdown_review_multiple` times run's `max_drawdown` |
 | `underperform` | `check --live` | consecutive months below baseline sleeve, at `underperform_months` or over |
-| `slippage` | `check --live` | mean fill-minus-reference share, signed by side (reference: `price` of order with fill's symbol and side in proposal its approval names), over run's `half_spread_mean` plus commission |
+| `slippage` | `check --live` | mean fill-minus-reference share, signed by side (reference: `price` of order with fill's symbol and side in proposal its approval names), over run's `half_spread_mean` plus largest `commission_bps` |
 | `tracking` | `check --live` | annualized std of realized minus model daily return over `thresholds.tracking_error` (default 0.05) |
 | `stale` | `check --live` | trading days since last bar over 5 |
 
@@ -303,8 +304,8 @@ bound caps the security side (MacLean, Thorp, Ziemba 2010).
 Order of previous proposal carries when no fill of same symbol, sleeve,
 side, and account (paper or real) is dated on or after that proposal, and no
 `reject` decision names its stem. Estimated cost: notional times run's
-trade-weighted half-spread plus `commission_bps`. `ext/` plug-ins stay
-deferred.
+trade-weighted half-spread plus `commission_bps` of symbol's exchange.
+`ext/` plug-ins stay deferred.
 
 ## Approval file
 

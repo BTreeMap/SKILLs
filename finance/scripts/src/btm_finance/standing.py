@@ -142,11 +142,13 @@ def capacity(
     card: Mapping[str, Any], limits: Limits, crowded_class: bool, overridden: bool
 ) -> list[str]:
     """Net Sharpe at 1x positive and within tolerance of 0.1x; a crowded
-    class, or 20x still within tolerance, needs an override decision."""
+    class, or the top point (the key besides `0.1x` and `1x`) still within
+    tolerance, needs an override decision."""
     curve = card.get("capacity")
     tolerance = limits.thresholds.capacity_tolerance
     levels = curve if isinstance(curve, Mapping) else {}
-    small, cap, large = (number(levels, key) for key in ("0.1x", "1x", "20x"))
+    top = next((key for key in levels if key not in {"0.1x", "1x"}), "20x")
+    small, cap, large = (number(levels, key) for key in ("0.1x", "1x", top))
     blockers: list[str] = []
     if small is None or cap is None:
         blockers.append("capacity: null")
@@ -165,7 +167,7 @@ def capacity(
         blockers.append("crowded: capacity_class crowded needs an override decision")
     elif not overridden and holds:
         blockers.append(
-            "crowded: net Sharpe at 20x within tolerance of 0.1x needs "
+            f"crowded: net Sharpe at {top} within tolerance of 0.1x needs "
             "an override decision"
         )
     return blockers
@@ -318,6 +320,7 @@ def standing_of(evidence: Evidence, limits: Limits) -> StandingView:
     compact = {key: card.get(key) for key in COMPACT}
     factor = card.get("factor")
     compact["t_alpha"] = factor.get("t_alpha") if isinstance(factor, Mapping) else None
+    compact["override_reason"] = run.get("override_reason")
     return StandingView(
         strategy=evidence.strategy,
         run_id=str(run.get("run_id")),

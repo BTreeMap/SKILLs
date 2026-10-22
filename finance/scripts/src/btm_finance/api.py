@@ -36,7 +36,7 @@ from btm_corekit import CommandError, parse_model
 from btm_finance import git
 from btm_finance import ledger as lines
 from btm_finance.data.assemble import assemble
-from btm_finance.data.panel import Events, Panel
+from btm_finance.data.panel import Events, History, Panel
 from btm_finance.data.tables import Days, Floats, date_of, day_of
 from btm_finance.ledger import Kind, Row
 from btm_finance.models import Receipt
@@ -52,6 +52,7 @@ from btm_finance.store import (
 __all__ = [
     "FACTORS",
     "Book",
+    "History",
     "Market",
     "Receipt",
     "Research",
@@ -90,7 +91,8 @@ def carried_forward(values: Floats) -> Floats:
 @dataclass(frozen=True, slots=True)
 class Market:
     """One as-of day of the names a strategy may see. `names` holds those with
-    a close on the day; every array is rows by `names`, oldest row first, the
+    a close on the day, inside a membership stretch when the name has any;
+    every array is rows by `names`, oldest row first, the
     last row the as-of day, NaN-padded on top when history is shorter.
 
     Build with `Market.at`; the panel and events must already hold only the
@@ -107,10 +109,10 @@ class Market:
 
     @classmethod
     def at(cls, panel: Panel, events: Events, day: int) -> Market:
-        """O(log T + n + N): the cut is views; events are filtered once."""
+        """O(log T + n + N + S): the cut is views; events are filtered once."""
         bars = panel.asof(day)
         last = bars.close[-1] if len(bars.dates) else np.full(len(bars.names), np.nan)
-        columns: Ints = np.flatnonzero(np.isfinite(last))
+        columns: Ints = np.flatnonzero(np.isfinite(last) & panel.served(day))
         return cls(
             _day=day,
             _bars=bars,
@@ -194,6 +196,13 @@ class Market:
         return np.asarray(
             [np.nan if hit is None else hit[1] for hit in found], dtype=np.float64
         )
+
+    def events(self, field: str, count: int) -> History:
+        """Newest `count` events of `field` known on the day, per name: `value`,
+        `event_time`, `knowledge_time`, each `count` rows by `names`, newest row
+        last, NaN-padded on top; times are days since 1970-01-01. O(N count)
+        after one O(n) pass per field."""
+        return self._events.history(self.names, field, rows_of(count))
 
     def factor(self, field: str, lookback: int) -> Floats:
         """`_factors` field for the last `lookback` trading days, aligned with

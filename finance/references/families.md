@@ -15,8 +15,8 @@ first, crowded large-cap families last.
   accepts hypothesis without them, critique item `event-fields` flags each
   one absent; critique adds five `macro` items.
 * Treat `capacity_class` as prior. Scorecard `capacity` tests it: `in_band`
-  means ceiling between asset cap and 20 times it, `under_cap` below asset
-  cap, `crowded` above 20 times it.
+  means ceiling between asset cap and scorecard's top point, `under_cap`
+  below asset cap, `crowded` above top point.
 * Read origin paper as search key only. Retrieve it with `/lit-review`
   before relying on any figure, sign, or sample from it. This file holds no
   return figure and no claim of what works now.

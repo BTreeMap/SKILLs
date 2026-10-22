@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from btm_corekit import CommandError
+from btm_corekit import CommandError, signal
 from btm_finance.api import FACTORS, Market, carried_forward, on_dates
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
 from btm_finance.data.tables import Days, Floats, date_of, day_of
@@ -39,7 +39,14 @@ from btm_finance.engine import (
     sr_moments,
 )
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
-from btm_finance.models import Limits, Preferences, Rebalance, StrategyConfig
+from btm_finance.models import (
+    Commission,
+    Limits,
+    Preferences,
+    Rebalance,
+    StrategyConfig,
+    commission_at,
+)
 from btm_finance.scorecard import (
     FactorCard,
     Scorecard,
@@ -49,7 +56,7 @@ from btm_finance.scorecard import (
 )
 
 WINDOW = 21  # trading days behind ADV, volatility, and spread estimates
-LEVELS = (("0.1x", 0.1), ("1x", 1.0), ("20x", 20.0))
+LEVELS = (("0.1x", 0.1), ("1x", 1.0))
 SHIFTS = (("-20%", 0.8), ("+20%", 1.2))
 BLOCKS = 16  # CSCV blocks; PBO needs 2 * BLOCKS common periods
 CORE = ("mkt_rf", "smb", "hml", "rmw", "cma", "mom")
@@ -72,7 +79,7 @@ class Rules:
     price_floor: float
     adv_multiple: float
     max_adv_participation: float
-    commission_bps: float
+    commission_bps: Commission
     impact_coefficient: float
     delisting: Mapping[str, float]
     excluded_symbols: frozenset[str]
@@ -81,6 +88,16 @@ class Rules:
     touches: tuple[str, ...]
     cutoff: int | None = None
     """`limits.model_cutoff` as days since the epoch."""
+    top: tuple[str, float] = ("20x", 20.0)
+    """The capacity curve's top point: label, multiple of `asset_cap`."""
+
+
+def top_of(limits: Limits) -> tuple[str, float]:
+    """`cap:<crowded_cap>` at that capital when set, else `<crowded_multiple>x`."""
+    th = limits.thresholds
+    if th.crowded_cap is not None:
+        return f"cap:{th.crowded_cap}", th.crowded_cap / limits.asset_cap
+    return f"{th.crowded_multiple:g}x", th.crowded_multiple
 
 
 def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -> Rules:
@@ -102,6 +119,7 @@ def rules_of(limits: Limits, preferences: Preferences, config: StrategyConfig) -
         folds=limits.thresholds.folds,
         touches=family.touches if family is not None else (),
         cutoff=None if limits.model_cutoff is None else day_of(limits.model_cutoff),
+        top=top_of(limits),
     )
 
 
@@ -227,18 +245,32 @@ def number(value: object) -> float | None:
     return result if math.isfinite(result) else None
 
 
+def commission_of(commission: Commission, panel: Panel) -> Floats:
+    """Basis points per name by its exchange; an exchange the map prices
+    neither directly nor through `other` pays 0, said once by `signal:`."""
+    found = {ex: commission_at(commission, ex.value) for ex in set(panel.exchange)}
+    for ex in sorted(ex for ex, bps in found.items() if bps is None):
+        signal(f"limits.commission_bps names neither {ex.value} nor other; 0 charged")
+    return np.array([found[ex] or 0.0 for ex in panel.exchange], dtype=np.float64)
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class Setting:
-    """One measure's fixed inputs: the scoped data, its arrays, the rules."""
+    """One measure's fixed inputs: the scoped data, its arrays, the rules,
+    commission per name in basis points."""
 
     panel: Panel
     events: Events
     prep: Prepared
     rules: Rules
+    commission: Floats
 
     @classmethod
     def of(cls, panel: Panel, events: Events, rules: Rules) -> Setting:
-        return cls(panel, events, Prepared.of(panel, events, rules.delisting), rules)
+        prep = Prepared.of(panel, events, rules.delisting)
+        return cls(
+            panel, events, prep, rules, commission_of(rules.commission_bps, panel)
+        )
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -425,9 +457,9 @@ class Costed:
     spread: SpreadCard
 
 
-def costed(track: Track, prep: Prepared, rules: Rules) -> Costed:
+def costed(track: Track, prep: Prepared, rules: Rules, commission: Floats) -> Costed:
     """Half-spread by the estimator primary for the name's ADV against the
-    universe median, commission, square-root impact. Zero ADV (a name quoted
+    universe median, commission per name, square-root impact. Zero ADV (a name quoted
     with no volume) reads as unknown, like NaN: the day's median fills it, so
     selling it costs a number, not 0 vol times infinite participation.
     O(P N)."""
@@ -458,7 +490,7 @@ def costed(track: Track, prep: Prepared, rules: Rules) -> Costed:
         track.gross,
         track.trades,
         half_spread=half,
-        commission_bps=rules.commission_bps,
+        commission_bps=commission,
         impact=impact,
     )
     weight = float(track.trades.sum())
@@ -522,7 +554,9 @@ def run_variant(
     if track is None:
         return None
     dates = setting.panel.dates[track.first :]
-    return Variant(dates, track, costed(track, setting.prep, setting.rules))
+    return Variant(
+        dates, track, costed(track, setting.prep, setting.rules, setting.commission)
+    )
 
 
 def common_matrix(columns: Sequence[tuple[Days, Floats]]) -> Floats:
@@ -648,6 +682,7 @@ def evaluate(
     """The base run, its 2k + 1 perturbation variants, and the scorecard.
     O((2k + 1)(T N + R N L)) plus one CSCV."""
     events, prep, rules = setting.events, setting.prep, setting.rules
+    levels = (*LEVELS, rules.top)
     base = run_variant(setting, strategy, params)
     if base is None:
         raise CommandError(
@@ -686,10 +721,10 @@ def evaluate(
         gross_excess,
         track.trades,
         cost.adv,
-        capital_levels=tuple(scale * rules.asset_cap for _, scale in LEVELS),
+        capital_levels=tuple(scale * rules.asset_cap for _, scale in levels),
         daily_vol=cost.vol,
         half_spread=cost.half_spread,
-        commission_bps=rules.commission_bps,
+        commission_bps=setting.commission,
         impact_coefficient=rules.impact_coefficient,
     )
     scorecard = Scorecard(
@@ -714,7 +749,7 @@ def evaluate(
         else float(periods),
         capacity={
             label: finite(value)
-            for (label, _), value in zip(LEVELS, capacity, strict=True)
+            for (label, _), value in zip(levels, capacity, strict=True)
         },
         spread_model=cost.spread,
         max_drawdown=max_drawdown(cost.net),

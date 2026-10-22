@@ -91,7 +91,8 @@ After compaction: bare `check` and newest `heartbeat` pad line.
 Measuring is scarce; reading, building, checking are free. Rank by
 information per trial spent, monitoring first. Run lower tiers before
 higher on every wake. Tier 3 runs at most `limits.trials_per_day` times a
-UTC day; `measure` refuses past it. Quiet hours (`quiet` true): tiers 0 and
+UTC day; `measure` refuses past it unless `--reason` passes it, reason
+stamped on run line. Quiet hours (`quiet` true): tiers 0 and
 1 only.
 
 - Tier 0, every wake: act on `next` (kill dates, unscored bets, stale data,

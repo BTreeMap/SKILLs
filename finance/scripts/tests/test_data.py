@@ -7,6 +7,7 @@ from datetime import date
 
 import numpy as np
 import pytest
+from btm_finance.api import Market, research
 from btm_finance.data.assemble import build_events, build_panel, parse_universe
 from btm_finance.data.panel import DelistKind, Events, Exchange
 from btm_finance.data.raw import (
@@ -24,6 +25,9 @@ from btm_finance.data.tables import (
     day_of,
     texts,
 )
+from btm_finance.store import open_book
+
+from btm_corekit import CommandError
 
 D = day_of(date(2024, 1, 2))
 
@@ -185,3 +189,78 @@ def test_default_since_follows_the_source_and_reaches_back_25_years():
 def test_stem_for_never_reuses_a_stored_name():
     assert stem_for([], date(2024, 1, 2)) == "2024-01-02"
     assert stem_for(["2024-01-02", "2024-01-02-2"], date(2024, 1, 2)) == "2024-01-02-3"
+
+
+def test_history_holds_dates_newest_last_padded_and_as_of():
+    rows = [
+        ("A", "f", D, D + 2, 1.0),
+        ("A", "f", D + 10, D + 12, 2.0),
+        ("A", "f", D + 20, D + 40, 3.0),  # known after the as-of day
+        ("B", "f", D + 5, D + 6, 9.0),
+        ("B", "g", D + 5, D + 6, 7.0),
+    ]
+    seen = build_events([(0, events(rows))]).asof(D + 25)
+    found = seen.history(("A", "B", "C"), "f", 3)
+    nan = float("nan")
+    assert np.array_equal(
+        found.value, [[nan, nan, nan], [1.0, nan, nan], [2.0, 9.0, nan]], equal_nan=True
+    )
+    assert np.array_equal(found.event_time[1:, 0], [D, D + 10])
+    assert np.array_equal(found.knowledge_time[1:, 0], [D + 2, D + 12])
+    assert np.isnan(found.event_time[:, 2]).all()
+    assert seen.history(("A",), "f", 1).value.tolist() == [[2.0]]
+    assert np.isnan(seen.history(("A",), "absent", 2).value).all()
+
+
+def test_market_events_reads_filings_by_knowledge_time(synthetic):
+    book = open_book(str(synthetic(seed=7)))
+    data = research(book)
+    market = data.at(data.dates[400])
+    found = market.events("StockholdersEquity", 4)
+    assert found.value.shape == (4, len(market.names))
+    known = found.knowledge_time[np.isfinite(found.knowledge_time)]
+    assert known.size and (known <= market.day).all()
+    lag = found.knowledge_time - found.event_time
+    assert set(lag[np.isfinite(lag)].tolist()) == {40.0}
+    newest = market.fundamental("StockholdersEquity")
+    assert np.array_equal(found.value[-1], newest, equal_nan=True)
+
+
+def served(panel, table, day):
+    return Market.at(panel, table, day).names
+
+
+def test_membership_serves_a_name_between_entry_knowledge_and_exit():
+    names = ["A", "B", "C", "E"]
+    stamps = [f"2024-01-{d:02d}" for d in range(2, 12)]
+    bars = bars_from(
+        [n for n in names for _ in stamps],
+        stamps * len(names),
+        {"close": [1.0] * len(names) * len(stamps)},
+        [""] * len(names) * len(stamps),
+        "bars",
+    )
+    rows = [
+        ("A", "member_x", D + 3, D + 1, 1.0),  # announced D + 1
+        ("A", "member_x", D + 5, D + 2, 0.0),  # leaves D + 5
+        ("C", "member_x", D + 2, D + 2, 0.0),  # member before history
+        ("E", "member_x", D + 3, D + 6, 0.0),  # exit known late
+    ]
+    table = build_events([(0, events(rows))])
+    panel = build_panel([(0, bars)], table, {})
+    assert served(panel, table, D) == ("B", "C", "E")
+    assert served(panel, table, D + 1) == ("A", "B", "C", "E")
+    assert served(panel, table, D + 2) == ("A", "B", "E")
+    assert served(panel, table, D + 4) == ("A", "B", "E")
+    assert served(panel, table, D + 5) == ("B", "E")
+    assert served(panel, table, D + 6) == ("B",)
+    bare = build_panel([(0, bars)], build_events([]), {})
+    assert bare.members == ()
+    assert served(bare, build_events([]), D + 6) == tuple(names)
+
+
+def test_a_membership_value_other_than_entry_or_exit_is_refused():
+    table = build_events([(0, events([("A", "member_x", D, D, 2.0)]))])
+    bars = bars_from(["A"], ["2024-01-02"], {"close": [1]}, [""], "b")
+    with pytest.raises(CommandError, match="entry is 1, exit 0"):
+        build_panel([(0, bars)], table, {})

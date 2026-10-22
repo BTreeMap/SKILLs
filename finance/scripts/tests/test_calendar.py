@@ -8,7 +8,7 @@ import numpy as np
 from btm_finance.api import Market
 from btm_finance.data.panel import Delisting, DelistKind, Events, Exchange, Panel
 from btm_finance.loader import load_strategy
-from btm_finance.measuring import Prepared, Rules, Track, costed
+from btm_finance.measuring import Prepared, Rules, Track, commission_of, costed
 from btm_finance.models import Rebalance
 from btm_finance.scaffold import template
 
@@ -164,4 +164,15 @@ def test_selling_a_name_with_zero_adv_costs_a_finite_amount():
         folds=5,
         touches=(),
     )
-    assert np.isfinite(costed(track, prep, rules).net).all()
+    assert np.isfinite(costed(track, prep, rules, np.ones(2)).net).all()
+
+
+def test_commission_reads_the_exchange_then_other_then_zero(capsys):
+    panel = panel_of(np.ones((3, 3)), (Exchange.NYSE, Exchange.TSX, Exchange.NASDAQ))
+    assert commission_of({"nyse": 0.0, "other": 1.0}, panel).tolist() == [0, 1, 1]
+    assert commission_of(2.0, panel).tolist() == [2.0, 2.0, 2.0]
+    assert capsys.readouterr().err == ""
+    assert commission_of({"nyse": 0.5}, panel).tolist() == [0.5, 0.0, 0.0]
+    err = capsys.readouterr().err
+    assert "names neither nasdaq nor other" in err
+    assert "names neither tsx nor other" in err

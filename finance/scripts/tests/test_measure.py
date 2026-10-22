@@ -212,3 +212,72 @@ def test_measure_reports_post_cutoff_from_limits(synthetic, run):
     folds = document["scorecard"]["walk_forward"]
     assert isinstance(folds["post_cutoff"], float)
     assert "post_cutoff" not in document["reasons"]
+
+
+def edit_limits(book, change):
+    path = book / "limits.json"
+    limits = json.loads(path.read_text())
+    change(limits)
+    path.write_text(json.dumps(limits))
+
+
+GATES = {
+    "trials_per_day": lambda limits: limits.update(trials_per_day=0),
+    "holding": lambda limits: limits.update(min_holding_days=253),
+}
+
+
+@pytest.mark.parametrize("gate", sorted(GATES))
+def test_reason_runs_past_each_policy_gate_and_is_stamped(synthetic, run, gate):
+    book = synthetic(seed=7)
+    edit_limits(book, GATES[gate])
+    code, document, err = run(["measure", str(book), "baseline"])
+    assert (code, document) == (1, None)
+    assert "refused before running" in err and "--reason" in err
+    assert not (book / "ledger" / "runs.jsonl").exists()
+    code, _, err = run(["measure", str(book), "baseline", "--reason", "gate test"])
+    assert "override_reason" in err
+    (line,) = run_lines(book)
+    assert line["override_reason"] == "gate test"
+    view = run(["check", str(book), "baseline"])[1]
+    assert view["scorecard"]["override_reason"] == "gate test"
+
+
+def test_reason_with_no_gate_to_pass_stamps_nothing(synthetic, run):
+    book = synthetic(seed=7)
+    code, _, err = run(["measure", str(book), "baseline", "--reason", "unneeded"])
+    assert code == 0, err
+    (line,) = run_lines(book)
+    assert (line["override_reason"], line["universe"]) == (None, "static")
+
+
+def test_commission_map_charges_by_exchange(synthetic, run):
+    book = synthetic(seed=7)
+    code, flat, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    edit_limits(book, lambda limits: limits.update(commission_bps={"other": 1.0}))
+    code, same, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    assert same["scorecard"]["sharpe_net"] == flat["scorecard"]["sharpe_net"]
+    dear = {"nyse": 1.0, "other": 200.0}
+    edit_limits(book, lambda limits: limits.update(commission_bps=dear))
+    code, mixed, err = run(["measure", str(book), "baseline"])
+    assert code in {0, 1}, err
+    assert mixed["scorecard"]["sharpe_net"] < flat["scorecard"]["sharpe_net"]
+    assert mixed["scorecard"]["sharpe_gross"] == flat["scorecard"]["sharpe_gross"]
+
+
+def test_membership_events_mark_the_run_line(synthetic, run, tmp_path):
+    book = synthetic(seed=7)
+    rows = "symbol,field,event_time,knowledge_time,value\n" + "".join(
+        f"S{i:03d},member_x,2016-01-04,2015-12-21,1\n" for i in range(60)
+    )
+    path = tmp_path / "members.csv"
+    path.write_text(rows)
+    config = json.dumps({"events": str(path)})
+    load = ["load", str(book), "csv", "--since", "2015-01-01", "--config:stdin"]
+    code, _, err = run(load, config)
+    assert code == 0, err
+    code, _, err = run(["measure", str(book), "baseline"])
+    assert code == 0, err
+    assert run_lines(book)[0]["universe"] == "membership"

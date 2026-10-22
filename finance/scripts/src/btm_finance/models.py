@@ -307,7 +307,10 @@ class Thresholds(Model):
     t_empirical: float
     t_mechanism: float
     capacity_tolerance: float
-    crowded_multiple: float
+    crowded_multiple: Annotated[float, Field(gt=0)] = 20.0
+    crowded_cap: Annotated[int, Field(gt=0)] | None = None
+    """Capital the capacity curve's top point tests; None tests
+    `crowded_multiple` times `asset_cap`."""
     drawdown_review_multiple: float
     underperform_months: int
     paper_months: int
@@ -346,6 +349,25 @@ class Sizing(Model):
     """Fixed weight of a `probe` sleeve."""
 
 
+Commission = float | dict[str, float]
+"""`limits.commission_bps`: basis points for every exchange, or by exchange."""
+
+
+def commission_at(commission: Commission, exchange: str) -> float | None:
+    """Basis points one trade on `exchange` pays; a map's missing exchange
+    reads `other`; None when the map holds neither."""
+    if isinstance(commission, dict):
+        return commission.get(exchange, commission.get("other"))
+    return commission
+
+
+def commission_ceiling(commission: Commission) -> float:
+    """The largest basis points any exchange pays; 0 for an empty map."""
+    if isinstance(commission, dict):
+        return max(commission.values(), default=0.0)
+    return commission
+
+
 class Limits(Model):
     """`limits.json`: changes only on the operator's word, so unknown keys are
     ignored, not refused."""
@@ -359,7 +381,7 @@ class Limits(Model):
     price_floor: float
     adv_multiple: float
     impact_coefficient: float
-    commission_bps: float
+    commission_bps: Commission
     delisting: dict[str, float]
     thresholds: Thresholds
     sizing: Sizing
@@ -456,6 +478,7 @@ def limits_template(cap: int) -> dict[str, object]:
             "t_mechanism": 2.0,
             "capacity_tolerance": 0.20,
             "crowded_multiple": 20,
+            "crowded_cap": None,
             "drawdown_review_multiple": 1.5,
             "underperform_months": 12,
             "paper_months": 6,

@@ -13,6 +13,11 @@ from __future__ import annotations
 import json
 from textwrap import dedent
 
+import pytest
+from btm_finance.models import Limits, limits_template
+from btm_finance.standing import capacity
+from btm_finance.views import extensions
+
 DRIFT = dedent(
     """
     import numpy as np
@@ -32,6 +37,7 @@ DRIFT = dedent(
         return long_short(market.names, SIGN * (closes[-1] / closes[0] - 1.0))
     """
 )
+KILL, LATER = "2099-12-31", "2100-06-30"
 EDGE = {"rebalance": "quarterly", "holding_days": 63, "family_id": "g9"}
 
 
@@ -142,3 +148,42 @@ def test_crowded_is_blocked_until_an_override_names_it(synthetic, run, plant, fa
     assert (view["standing"], view["blockers"]) == ("promotable", [])
     # same kill date: stating odds spends no trial
     assert run(["check", str(book)])[1]["families"]["g9"]["trials_used"] == spent
+
+
+def test_the_top_point_reads_crowded_multiple_or_crowded_cap(synthetic, run):
+    book = synthetic(seed=7)
+    path = book / "limits.json"
+
+    def measured(**thresholds):
+        limits = json.loads(path.read_text())
+        limits["thresholds"] |= thresholds
+        path.write_text(json.dumps(limits))
+        code, document, err = run(["measure", str(book), "baseline"])
+        assert code == 0, err
+        return document["scorecard"]["capacity"]
+
+    default = measured()
+    assert set(default) == {"0.1x", "1x", "20x"}
+    capped = measured(crowded_cap=200_000_000)  # 20 times the 10,000,000 cap
+    assert set(capped) == {"0.1x", "1x", "cap:200000000"}
+    assert capped["cap:200000000"] == pytest.approx(default["20x"])
+    five = measured(crowded_cap=None, crowded_multiple=5)
+    assert set(five) == {"0.1x", "1x", "5x"}
+    assert five["5x"] != pytest.approx(default["20x"])
+
+
+def test_standing_reads_the_top_point_by_its_label():
+    limits = Limits.model_validate(limits_template(36_000))
+    card = {"capacity": {"0.1x": 1.0, "1x": 0.95, "cap:50000000": 0.99}}
+    assert capacity(card, limits, crowded_class=False, overridden=False) == [
+        "crowded: net Sharpe at cap:50000000 within tolerance of 0.1x needs "
+        "an override decision"
+    ]
+
+
+def test_superseding_a_line_without_a_kill_date_spends_nothing():
+    old = {"id": "a", "family_id": "f"}
+    same = {"id": "b", "family_id": "f", "supersedes": "a", "falsifier_by": KILL}
+    later = {"id": "c", "family_id": "f", "supersedes": "b", "falsifier_by": LATER}
+    assert extensions([old, same]) == []
+    assert extensions([old, same, later]) == [later]

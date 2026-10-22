@@ -4,6 +4,7 @@ the `scorecard` reference; a number that cannot be computed is null."""
 from __future__ import annotations
 
 import math
+from enum import StrEnum
 from typing import Any
 
 from pydantic import Field
@@ -80,6 +81,13 @@ class Scorecard(Model):
     lines written before the clip."""
 
 
+class UniverseKind(StrEnum):
+    """`membership`: some measured name carried `member_<index>` stretches."""
+
+    MEMBERSHIP = "membership"
+    STATIC = "static"
+
+
 class Span(Model):
     start: str
     end: str
@@ -93,7 +101,8 @@ class RunLine(Model):
     `code_objects` each book-relative code file in `code_paths` to its
     committed blob id, which survives rebase;
     `engine` the skill commit and library versions; `imports` what
-    `signal.py` reaches from outside the book."""
+    `signal.py` reaches from outside the book; `override_reason` the
+    `--reason` that ran past a policy refusal."""
 
     run_id: str
     hypothesis_id: str
@@ -118,3 +127,5 @@ class RunLine(Model):
     regimes: tuple[str, ...] = ()
     regime_days: dict[str, int] = Field(default_factory=dict)
     imports: tuple[str, ...] = ()
+    universe: UniverseKind = UniverseKind.STATIC
+    override_reason: str | None = None

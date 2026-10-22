@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -27,7 +27,7 @@ from btm_finance.engine import ruin_loss
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.engine.ruin import BLOCK, PATHS
 from btm_finance.ledger import Row
-from btm_finance.models import Price, Side, Sizing, Status
+from btm_finance.models import Commission, Price, Side, Sizing, Status, commission_at
 from btm_finance.regimes import RegimeRef
 from btm_finance.streams import (
     Series,
@@ -302,6 +302,7 @@ class Quote:
     price: float
     adv: float
     sector: str
+    exchange: str = "other"
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,7 +322,7 @@ class Inputs:
     cap: int
     sizing: Sizing
     bound: float
-    commission_bps: float
+    commission_bps: Commission
     candidates: tuple[Candidate, ...]
     skipped: tuple[Skipped, ...]
     quotes: Mapping[str, Quote]
@@ -647,15 +648,30 @@ def carry(
     return tuple(marked), tuple(carried)
 
 
+def commission_rate(
+    commission: Commission, quotes: Mapping[str, Quote]
+) -> Callable[[str], float]:
+    """Basis points by the symbol's exchange, `other` for a symbol with no
+    quote; 0 where the map prices neither."""
+
+    def rate(symbol: str) -> float:
+        quote = quotes.get(symbol)
+        exchange = "other" if quote is None else quote.exchange
+        return commission_at(commission, exchange) or 0.0
+
+    return rate
+
+
 def summary_of(
     targets: Mapping[str, Target],
     orders: Sequence[Proposed],
     spreads: Mapping[str, float],
     cap: int,
-    commission_bps: float,
+    commission: Callable[[str], float],
 ) -> Summary:
     """Gross, net, cash, sector and top-10 weights of the whole-share
-    targets; cost at each sleeve's measured half-spread plus commission."""
+    targets; cost at each sleeve's measured half-spread plus `commission`
+    by symbol (`commission_rate`)."""
     weights = {
         name: sum(target.quantity.values()) * target.price / cap
         for name, target in targets.items()
@@ -668,7 +684,7 @@ def summary_of(
     top = sorted((abs(w) for w in weights.values()), reverse=True)[:TOP]
     notional = [order.quantity * order.price for order in orders]
     cost = sum(
-        value * (spreads.get(order.strategy, 0.0) + commission_bps * BPS)
+        value * (spreads.get(order.strategy, 0.0) + commission(order.symbol) * BPS)
         for value, order in zip(notional, orders, strict=True)
     )
     return Summary(
@@ -811,7 +827,13 @@ def propose(inputs: Inputs) -> Proposal:
         skipped=inputs.skipped,
         targets=targets,
         orders=marked,
-        summary=summary_of(targets, marked, spreads, cap, inputs.commission_bps),
+        summary=summary_of(
+            targets,
+            marked,
+            spreads,
+            cap,
+            commission_rate(inputs.commission_bps, inputs.quotes),
+        ),
         unmanaged=tuple(unmanaged),
         carried=carried,
         cuts=tuple(cuts),

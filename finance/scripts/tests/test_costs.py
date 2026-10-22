@@ -188,3 +188,13 @@ def test_capacity_curve_refuses_traded_names_without_adv():
             commission_bps=1.0,
             impact_coefficient=0.1,
         )
+
+
+def test_commission_is_charged_per_name():
+    gross = np.zeros(2)
+    trades = np.array([[0.5, 0.5], [0.0, 1.0]])
+    spread = np.zeros(2)
+    net = net_returns(
+        gross, trades, half_spread=spread, commission_bps=np.array([0.0, 10.0])
+    )
+    assert net == pytest.approx([-0.5 * 0.001, -1.0 * 0.001])

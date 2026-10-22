@@ -120,11 +120,12 @@ def net_returns(
     trades: Floats,
     *,
     half_spread: Floats,
-    commission_bps: float,
+    commission_bps: Floats | float,
     impact: Floats | float = 0.0,
 ) -> Floats:
     """Per-period net return: gross minus sum over names of trades * (half_spread
-    + commission + impact); trades T by N absolute weight change; O(T N).
+    + commission + impact); trades T by N absolute weight change, commission
+    one number or one per name; O(T N).
 
     Untraded names cost nothing; a traded name with NaN cost gives NaN.
     """
@@ -148,7 +149,7 @@ def capacity_curve(  # noqa: PLR0913 - every cost input is a separate panel
     capital_levels: tuple[float, ...],
     daily_vol: Floats,
     half_spread: Floats,
-    commission_bps: float,
+    commission_bps: Floats | float,
     impact_coefficient: float,
     periods_per_year: int = PERIODS_PER_YEAR,
 ) -> tuple[float, ...]:
