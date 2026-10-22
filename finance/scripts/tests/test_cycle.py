@@ -11,7 +11,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from btm_finance import cli
+from btm_finance import cli, git
 
 FIRST, SECOND = "2016-12-30", "2017-12-29"  # the baseline's annual rebalances
 
@@ -24,6 +24,7 @@ def batch(run, book: Path, payload: dict) -> None:
 def paper_book(synthetic, run) -> Path:
     book = synthetic(seed=7)
     (book / "strategies" / "baseline" / "status").write_text("paper\n")
+    git.commit(book, ["strategies/baseline/status"], "promote: baseline paper")
     code, _, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     return book
@@ -54,12 +55,13 @@ def on_send_day(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def approve_and_send(run, book: Path, day: str) -> tuple[int, str]:
     """The operator's reply on `day`: the agent writes the template with the
-    reply quoted, records the approve decision hashing it, checks it, then
-    records the paper orders as dry-run fills."""
+    reply quoted, commits it, records the approve decision naming it, checks
+    it, then records the paper orders as dry-run fills."""
     code, view, err = run(["check", str(book), day])
     assert code == 0, err
     target = book / view["approval_path"]
     target.write_text(json.dumps(view["approval_template"] | {"reply": "approve"}))
+    git.commit(book, [view["approval_path"]], f"approve: {day}")
     decision = {
         "kw": ["approve", "rebalance"],
         "subject": day,

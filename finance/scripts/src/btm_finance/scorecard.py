@@ -90,15 +90,17 @@ class RunLine(Model):
     """One `measure` run: every key `measure --repeat` needs to rerun it. `refused`
     lists bounds broken after running; the line counts as a trial anyway.
     `peers` are the run ids whose series fed `sr_var` and PBO, in order;
-    `code_files` the sha256 of the AST dump of `signal.py` and of canonical
-    `config.json`; `imports` what `signal.py` reaches from outside the book."""
+    `code_paths` the book-relative code files, all clean at `code_commit`;
+    `engine` the skill commit and library versions; `imports` what
+    `signal.py` reaches from outside the book."""
 
     run_id: str
     hypothesis_id: str
     family_id: str
     strategy: str
     data_snapshot: str
-    code_hash: str
+    code_commit: str
+    code_paths: tuple[str, ...]
     config: dict[str, Any]
     params: dict[str, float]
     scorecard: Scorecard
@@ -112,7 +114,6 @@ class RunLine(Model):
     span: Span
     returns: str
     agent: str | None
-    code_files: dict[str, str] = Field(default_factory=dict)
     regimes: tuple[str, ...] = ()
     regime_days: dict[str, int] = Field(default_factory=dict)
     imports: tuple[str, ...] = ()

@@ -4,24 +4,51 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import pytest
+from btm_finance import git
 from btm_finance.cli import main
 from btm_finance.synthetic import make_book
 
 Run = Callable[..., tuple[int, Any, str]]
 
 
+IDENTITY = {"user.name": "Test Agent", "user.email": "agent@example.invalid"}
+
+
+def repository(root: Path) -> None:
+    """A git repository at `root` on `main`, committer identity and no
+    signing in its own config, never the global one."""
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
+    for key, value in [*IDENTITY.items(), ("commit.gpgsign", "false")]:
+        subprocess.run(["git", "-C", str(root), "config", key, value], check=True)
+
+
 @pytest.fixture(autouse=True)
 def isolated_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Every test owns its own state root, so no held-out list leaks across."""
+    """Every test owns its own state root, so no held-out list leaks across,
+    and its own repository, so every book under `tmp_path` nests in it."""
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "state"))
+    repository(tmp_path)
     return tmp_path
+
+
+def committed(book: Path, *paths: str, subject: str = "test: commit") -> str:
+    """Commit `paths`, book-relative; the new HEAD."""
+    return git.commit(book, list(paths), subject)
+
+
+@pytest.fixture
+def commit() -> Callable[..., str]:
+    """`committed`: `commit(book, *paths)` returns the new HEAD."""
+    return committed
 
 
 @pytest.fixture
@@ -102,13 +129,15 @@ def approval(where: Path, day: str, **order: Any) -> Path:
 
 
 def approved(run: Run, where: Path, stem: str) -> None:
-    """The `approve` decision hashing the approval file as it stands."""
+    """The approval file committed, then the `approve` decision naming it."""
+    shown = where.relative_to(where.parents[1]).as_posix()
+    committed(where.parents[1], shown, subject=f"test: approve {stem}")
     decision = {
         "kw": ["approve", "reply"],
         "subject": stem,
         "action": "approve",
         "reason": REPLY,
-        "applied": [where.relative_to(where.parents[1]).as_posix()],
+        "applied": [shown],
     }
     code, _, err = run(
         ["record", str(where.parents[1]), "--batch:stdin"],
@@ -119,7 +148,7 @@ def approved(run: Run, where: Path, stem: str) -> None:
 
 @pytest.fixture
 def witness(run: Run) -> Callable[[Path, str], None]:
-    """Record the `approve` decision hashing an approval file as it stands."""
+    """Commit an approval file, then record the `approve` decision naming it."""
     return lambda where, stem: approved(run, where, stem)
 
 
@@ -158,12 +187,13 @@ STRATEGY: dict[str, Any] = {
 
 def write_strategy(book: Path, name: str, source: str, **config: Any) -> Path:
     """`strategies/<name>/` with `source` as signal.py and `config` over the
-    default monthly long-short config."""
+    default monthly long-short config, committed."""
     folder = book / "strategies" / name
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "signal.py").write_text(source)
     (folder / "config.json").write_text(json.dumps(STRATEGY | config))
     (folder / "status").write_text("research\n")
+    committed(book, f"strategies/{name}", subject=f"test: strategy {name}")
     return folder
 
 
@@ -200,8 +230,8 @@ def plant(run: Run) -> Callable[..., str]:
 
 
 def set_families(book: Path, **families: dict[str, Any]) -> None:
-    """An edit to `limits.json` adding or replacing families; bare `check`
-    warns on it until a decision hashes it."""
+    """An uncommitted edit to `limits.json` adding or replacing families;
+    bare `check` warns on it until committed and named by a decision."""
     path = book / "limits.json"
     limits = json.loads(path.read_text())
     limits["families"] |= families

@@ -1,20 +1,25 @@
 """Governed files, pure: `limits.json`, `strategies/*/status`, `approvals/*.json`
-change only on the operator's word in chat; a decision's `applied` hashes
-each one it changed. Verdicts derive from live hashes on every call."""
+change only on the operator's word in chat; a decision's `applied` names each
+one it changed and `commits` the commit holding it. Verdicts derive from git
+and the ledger on every call."""
 
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from typing import Any
 
+from btm_finance.git import Commit
 from btm_finance.ledger import Row
 from btm_finance.models import Action
 
 LIMITS = "limits.json"
 STATUS = "status"
 NAME = re.compile(r"[a-z0-9][a-z0-9_-]*")
-Witness = tuple[str, str]  # book-relative path, sha256
+PATHSPECS = (LIMITS, "strategies/*/status", "approvals/*.json")
+UNNAMED = "commit no decision names"
+UNCOMMITTED = "governed file not committed"
+Witness = tuple[str, str]  # book-relative path, commit hash
 
 
 def governed(path: str) -> bool:
@@ -32,26 +37,40 @@ def governed(path: str) -> bool:
 
 
 def witnesses(decisions: Iterable[Row], action: Action | None = None) -> set[Witness]:
-    """Every (path, sha256) a decision line's `applied` holds; with `action`,
-    only that action's lines. O(lines)."""
+    """Every (path, commit) pair a decision line's `applied` and `commits`
+    hold; with `action`, only that action's lines. O(lines)."""
     found: set[Witness] = set()
     for row in decisions:
         if action is not None and row.get("action") != action.value:
             continue
-        applied = row.get("applied")
-        for item in applied if isinstance(applied, list) else ():
-            if isinstance(item, dict):
-                found.add((str(item.get("path")), str(item.get("sha256"))))
+        applied, commits = row.get("applied"), row.get("commits")
+        if isinstance(applied, list) and isinstance(commits, list):
+            found |= {(str(p), str(c)) for p, c in zip(applied, commits, strict=False)}
     return found
 
 
-def unwitnessed(
-    present: Mapping[str, str], decisions: Iterable[Row]
+def unnamed(
+    commits: Iterable[Commit], decisions: Iterable[Row]
 ) -> list[dict[str, Any]]:
-    """One warning per governed file whose bytes no decision hashed."""
-    seen = witnesses(decisions)
+    """One warning per commit touching a governed file that no decision's
+    `commits` holds, newest first."""
+    named = {commit for _, commit in witnesses(decisions)}
     return [
-        {"file": path, "problem": "changed without a decision hashing it"}
-        for path, digest in sorted(present.items())
-        if (path, digest) not in seen
+        {
+            "problem": UNNAMED,
+            "commit": found.hash,
+            "subject": found.subject,
+            "files": [path for path in found.files if governed(path)],
+        }
+        for found in commits
+        if found.hash not in named and any(governed(p) for p in found.files)
+    ]
+
+
+def uncommitted(dirty: Iterable[str]) -> list[dict[str, Any]]:
+    """One warning per governed file that differs from HEAD or is untracked."""
+    return [
+        {"file": path, "problem": UNCOMMITTED}
+        for path in sorted(dirty)
+        if governed(path)
     ]

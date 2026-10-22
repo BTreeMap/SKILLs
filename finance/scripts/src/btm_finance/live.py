@@ -31,8 +31,8 @@ WEEK = 7  # calendar days one recorded breach covers
 REPORT_LINES = 20
 NEXT = (
     "read each breach with the operator; a pause, on their word only, is "
-    "strategies/<name>/status written and a pause decision hashing it in "
-    "applied, never this command"
+    "strategies/<name>/status written, committed, and a pause decision "
+    "naming it in applied, never this command"
 )
 Series = tuple[Days, Floats]
 

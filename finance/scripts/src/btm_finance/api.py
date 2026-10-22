@@ -17,12 +17,15 @@ Book readers, all read-only; append to the ledger only through `record`:
   the bar dates. Held-out names never enter it. `.folds("train")` serves
   only the training blocks, for the miner delegate; `"test"` refuses.
 - `receipt(text)`: a delegate's final message checked against `Receipt`.
+- `outside_scope(book, commit, scope)`: paths `git diff main...<commit>`
+  names outside the unit's write scope.
 """
 
 from __future__ import annotations
 
 import json
 import operator
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
@@ -30,6 +33,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from btm_corekit import CommandError, parse_model
+from btm_finance import git
 from btm_finance import ledger as lines
 from btm_finance.data.assemble import assemble
 from btm_finance.data.panel import Events, Panel
@@ -55,6 +59,7 @@ __all__ = [
     "ledger",
     "on_dates",
     "open_book",
+    "outside_scope",
     "receipt",
     "research",
 ]
@@ -331,3 +336,21 @@ def receipt(text: str) -> Receipt:
     if not isinstance(data, dict):
         raise CommandError(f"receipt is {type(data).__name__}, not a JSON object")
     return parse_model(Receipt, data, "receipt")
+
+
+def outside_scope(
+    book: Book, commit: str, scope: Sequence[str], base: str = "main"
+) -> tuple[str, ...]:
+    """Each book-relative path `git diff base...commit` names outside `scope`:
+    an entry ending in `/` holds every path under it, any other entry only
+    itself. Empty: the delegate wrote within bounds."""
+
+    def inside(path: str) -> bool:
+        return any(
+            path.startswith(entry) if entry.endswith("/") else path == entry
+            for entry in scope
+        )
+
+    return tuple(
+        path for path in git.changed(book.root, base, commit) if not inside(path)
+    )

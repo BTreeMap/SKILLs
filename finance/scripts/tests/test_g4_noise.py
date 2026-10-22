@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 from textwrap import dedent
 
+from btm_finance import git
+
 FAMILY = 100
 RANDOM = dedent(
     '''
@@ -82,6 +84,7 @@ def test_a_hundred_random_signals_promote_fewer_than_five(synthetic, run, famili
                 },
             }
         )
+    git.commit(book, ["strategies"], "feat: plant noise family")
     record(run, book, {"hypotheses": hypotheses})
     run_ids = [
         run(["measure", str(book), f"noise-{seed}"])[1]["run_id"]

@@ -39,7 +39,7 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
     {
         "author": Starter(
             task="Write `strategies/<name>/` for hypothesis spawn message names; "
-            "commit it on own branch before critique; run "
+            "commit it on own branch, rebased onto `main`; then run "
             "`measure . <name> --agent <agent>` once.",
             evidence="`$ref/families.md`, `$ref/scorecard.md`; hypothesis line "
             "through `api.ledger`.",
@@ -107,11 +107,14 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
             limit="One quarter.",
         ),
         "janitor": Starter(
-            task="Run one hygiene pass over `INDEX.md`, dead code, failing tests.",
-            evidence="`INDEX.md`, `lib/`, `tools/`, `tests/`.",
-            scope="`INDEX.md`, dead code removal, test fixes",
-            rules="Never ledger or strategies under measurement; each deleted "
-            "script leaves one `INDEX.md` history line.",
+            task="Run one hygiene pass: `INDEX.md` rows, failing tests; propose "
+            "each bare `check` `evolution.idle` path for deletion in receipt "
+            "`next`.",
+            evidence="Bare `check` `evolution`; `INDEX.md`, `lib/`, `tools/`, "
+            "`tests/`.",
+            scope="`INDEX.md`, test fixes, deletions spawn message names",
+            rules="Never ledger or strategies under measurement; delete only "
+            "paths spawn message names, dropping their `INDEX.md` lines.",
             ids="none",
             limit="One pass.",
         ),
@@ -133,11 +136,10 @@ def brief(template: str, slug: str, references: Path) -> str:
     )
 
 
-def index_rows(day: str) -> str:
-    """One `INDEX.md` row per seeded brief, touched `day`."""
+def index_rows() -> str:
+    """One `INDEX.md` row per seeded brief."""
     return "".join(
-        f"{DELEGATES}/{slug}.md | fixed brief of {slug} unit | {day}\n"
-        for slug in STARTERS
+        f"{DELEGATES}/{slug}.md | fixed brief of {slug} unit\n" for slug in STARTERS
     )
 
 

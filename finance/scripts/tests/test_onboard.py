@@ -33,6 +33,19 @@ ANSWERS = {
 }
 
 
+def test_a_fresh_book_names_every_governed_file_the_scaffold_wrote(book, run):
+    decisions = (book / "ledger" / "decisions.jsonl").read_text().splitlines()
+    [onboarded] = [json.loads(line) for line in decisions]
+    assert onboarded["applied"] == ["limits.json", "strategies/baseline/status"]
+    view = run(["check", str(book)])[1]
+    governed = [
+        w
+        for w in view["warnings"]
+        if "strategies/baseline/status" in (w.get("files") or [w.get("file")])
+    ]
+    assert governed == []
+
+
 def started(run, root: Path, answers: dict | None, *extra: str):
     argv = ["start", str(root), *extra]
     if answers is None:
@@ -202,7 +215,8 @@ def test_start_on_a_book_writes_files_and_limits_on_an_existing_book(tmp_path, r
     decisions = (root / "ledger" / "decisions.jsonl").read_text().splitlines()
     onboarded = [json.loads(line) for line in decisions][-1]
     assert (onboarded["action"], onboarded["reason"]) == ("onboard", "start")
-    assert [a["path"] for a in onboarded["applied"]] == ["limits.json"]
+    assert onboarded["applied"] == ["limits.json"]
+    assert onboarded["commits"] == [receipt["commit"]]
     assert (root / "preferences.json").read_bytes() == preferences_before
     assert (root / "ledger" / "hypotheses.jsonl").read_bytes() == ledger_before
     today = datetime.now(UTC).date().isoformat()

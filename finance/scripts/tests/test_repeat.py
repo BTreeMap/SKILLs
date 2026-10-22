@@ -1,5 +1,6 @@
 """`measure --repeat`: a run reproduces from its own inputs and writes nothing;
-moved code, raw data, or a peer series is refused by name."""
+code read at `code_commit` through git and compared by AST against the
+working tree, raw data, or a peer series that moved is refused by name."""
 
 from __future__ import annotations
 
@@ -7,7 +8,10 @@ import json
 from pathlib import Path
 
 import pytest
+from btm_finance import git
 from btm_finance.repeat import Rule, compare
+
+SOURCE = Path(__file__).resolve().parents[1] / "src" / "btm_finance"
 
 
 def snapshot(book: Path) -> dict[str, bytes]:
@@ -46,6 +50,16 @@ def test_a_run_reproduces_and_writes_nothing(measured, run):
     assert snapshot(book) == before
 
 
+def test_a_moved_engine_commit_is_advisory(measured, run, monkeypatch):
+    book, (first, _) = measured
+    monkeypatch.setattr(git, "skill_commit", lambda: "f" * 40)
+    code, document, err = run(["measure", str(book), "baseline", "--repeat", first])
+    assert code == 0, err
+    assert document["reproduced"] is True
+    [note] = document["advisories"]
+    assert note.startswith("btm_finance ") and note.endswith(" -> " + "f" * 40)
+
+
 def test_an_edited_config_is_refused_by_name(measured, run):
     book, (first, _) = measured
     path = book / "strategies" / "baseline" / "config.json"
@@ -54,8 +68,25 @@ def test_an_edited_config_is_refused_by_name(measured, run):
     path.write_text(json.dumps(config))
     code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
     assert code == 1
-    assert "code moved: config.json" in err
+    assert "code moved: strategies/baseline/config.json" in err
     assert "signal.py" not in err
+
+
+def test_a_reformat_commit_reproduces_and_a_semantic_commit_refuses(
+    measured, run, commit
+):
+    book, (first, _) = measured
+    signal = book / "strategies" / "baseline" / "signal.py"
+    signal.write_text("# reformatted\n\n" + signal.read_text() + "\n\n# end\n")
+    commit(book, "strategies/baseline", subject="style: reformat baseline")
+    code, document, err = run(["measure", str(book), "baseline", "--repeat", first])
+    assert code == 0, err
+    assert document["reproduced"] is True
+    signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
+    commit(book, "strategies/baseline", subject="feat: change baseline")
+    code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
+    assert code == 1
+    assert "code moved: strategies/baseline/signal.py" in err
 
 
 def test_a_reformat_of_either_file_reproduces(measured, run):
@@ -78,7 +109,7 @@ def test_a_code_edit_is_refused_by_name(measured, run):
     signal.write_text(signal.read_text() + "\nEXTRA = 1\n")
     code, _, err = run(["measure", str(book), "baseline", "--repeat", first])
     assert code == 1
-    assert "code moved: signal.py" in err
+    assert "code moved: strategies/baseline/signal.py" in err
 
 
 def test_a_corrupted_peer_series_is_refused(measured, run):
@@ -117,17 +148,18 @@ def test_the_comparison_is_absolute_to_one_then_relative():
     ]
 
 
-def test_a_lib_module_is_hashed_beside_signal(synthetic, run):
+def test_a_lib_module_is_compared_beside_signal(synthetic, run, commit):
     book = synthetic(seed=7)
     module = book / "lib" / "tilt.py"
     module.write_text("def scale(weight):\n    return weight\n")
     signal = book / "strategies" / "baseline" / "signal.py"
     signal.write_text("import lib.tilt\n" + signal.read_text())
+    commit(book, "lib", "strategies/baseline")
     code, document, err = run(["measure", str(book), "baseline"])
     assert code == 0, err
     run_id = document["run_id"]
     line = json.loads((book / "ledger" / "runs.jsonl").read_text().splitlines()[-1])
-    assert set(line["code_files"]) >= {"lib/__init__.py", "lib/tilt.py"}
+    assert set(line["code_paths"]) >= {"lib/__init__.py", "lib/tilt.py"}
 
     module.write_text("# spaced\n\n\ndef scale(weight):\n\n    return weight\n")
     code, document, err = run(["measure", str(book), "baseline", "--repeat", run_id])
@@ -139,3 +171,18 @@ def test_a_lib_module_is_hashed_beside_signal(synthetic, run):
     assert code == 1
     assert "code moved: lib/tilt.py" in err
     assert "signal.py" not in err.split("code moved:")[1]
+
+
+def test_no_tracked_file_is_digested_outside_the_data_manifest():
+    """Git points at tracked content; sha256 guards only untracked `data/`,
+    through `data/manifest.json` entries."""
+    hits = [
+        (path.relative_to(SOURCE).as_posix(), line)
+        for path in SOURCE.rglob("*.py")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if "sha256" in line
+    ]
+    assert {name for name, _ in hits} == {"data/raw.py", "cli.py"}
+    for name, line in hits:
+        if name == "cli.py":
+            assert "sha256_of" in line or "e.sha256" in line, line

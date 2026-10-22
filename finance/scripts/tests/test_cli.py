@@ -4,10 +4,9 @@ target, the pad count, check --schema, and the held-out list outside it."""
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
-import pytest
+from btm_finance import git
 from btm_finance.scaffold import stratified
 
 
@@ -135,17 +134,35 @@ def test_check_schema_with_a_kind_prints_that_kind_only(book, run):
     assert code == 1 and "only --schema runs without one" in err
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git is not on PATH")
-def test_start_makes_the_book_a_git_repository_ignoring_data(tmp_path, run):
-    code, receipt, _ = run(["start", str(tmp_path / "b")])
-    assert code == 0
+def test_start_inits_main_commits_and_leaves_a_clean_tree(
+    tmp_path_factory, monkeypatch, run
+):
+    """Outside any repository `start` runs `git init`; the identity comes
+    from this process's environment, never a config file."""
+    for key in ("AUTHOR", "COMMITTER"):
+        monkeypatch.setenv(f"GIT_{key}_NAME", "Test Agent")
+        monkeypatch.setenv(f"GIT_{key}_EMAIL", "agent@example.invalid")
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "commit.gpgsign")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", "false")
+    root = tmp_path_factory.mktemp("alone") / "b"
+    code, receipt, err = run(["start", str(root)])
+    assert code == 0, err
     assert receipt["git"] == "init"
-    assert (tmp_path / "b" / ".git").is_dir()
-    assert (tmp_path / "b" / ".gitignore").read_text() == "data/\n"
-    code, receipt, _ = run(["start", str(tmp_path / "b" / "inner")])
+    assert (root / ".git").is_dir()
+    assert (root / ".gitignore").read_text() == "data/\n__pycache__/\n"
+    assert git.head(root) is not None and git.dirty(root, ["."]) == frozenset()
+    assert git.log_commits(root, ["limits.json"])[0].hash == receipt["commit"]
+    code, receipt, _ = run(["start", str(root / "inner")])
     assert code == 0
     assert receipt["git"] == "inside"
-    assert not (tmp_path / "b" / "inner" / ".git").exists()
+    assert not (root / "inner" / ".git").exists()
+
+
+def test_a_verb_needing_a_commit_refuses_outside_a_repository(book, run):
+    (book.parent / ".git").rename(book.parent / "moved.git")
+    code, _, err = run(["check", str(book)])
+    assert code == 1 and "book must be a git repository" in err
 
 
 def test_absent_status_reads_research_and_a_foreign_word_stays_unknown(book, run):

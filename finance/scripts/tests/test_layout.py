@@ -20,7 +20,7 @@ def test_start_lays_out_lib_tools_research_tests_and_index(book):
         assert (book / folder).is_dir(), folder
     assert (book / "lib" / "__init__.py").read_text() == ""
     index = (book / "INDEX.md").read_text().splitlines()
-    assert index[:3] == ["# Index", "", "path | purpose | last touched"]
+    assert index[:3] == ["# Index", "", "path | purpose"]
     queue = ("backlog", "calendar", "weekly")
     assert [row.split(" | ")[0] for row in index[3:]] == [
         *(f"research/{name}/" for name in queue),

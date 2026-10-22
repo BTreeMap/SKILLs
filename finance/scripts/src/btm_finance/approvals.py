@@ -104,7 +104,8 @@ def checked(  # noqa: PLR0913 - one approval against the book's live facts
     witnessed: bool,
 ) -> Checked:
     """Every rule at once: `date` is today, `reply` quotes the operator, an
-    `approve` decision hashed the file as it stands, `proposal` names a
+    `approve` decision names the file's last commit and the file is clean,
+    `proposal` names a
     proposal, each order is one of it within the ADV bound on a sleeve.
     O(orders + proposal orders)."""
     if not isinstance(document, dict):
@@ -120,8 +121,9 @@ def checked(  # noqa: PLR0913 - one approval against the book's live facts
         problems.append('approval needs "reply": the operator\'s words verbatim')
     if not witnessed:
         problems.append(
-            f"no approve decision hashes approvals/{stem}.json as it stands: "
-            "record one quoting the reply, with applied naming this file"
+            f"no approve decision names the last commit of approvals/{stem}.json, "
+            "or it differs from HEAD: commit it, then record an approve decision "
+            "quoting the reply, with applied naming this file"
         )
     named = document.get("proposal")
     listed = proposal_orders(named) if isinstance(named, str) and named else None

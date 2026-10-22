@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import re
@@ -45,7 +44,7 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
-from btm_finance import approvals, delegates, governed, heartbeat, onboarding
+from btm_finance import approvals, delegates, git, governed, heartbeat, onboarding
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import WEEK, Bet, Open, Owed, brief, justifying
@@ -76,6 +75,7 @@ from btm_finance.data.tables import (
     day_of,
 )
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
+from btm_finance.evolution import evolution
 from btm_finance.ledger import (
     ENVELOPE,
     Kind,
@@ -159,8 +159,6 @@ from btm_finance.regimes import (
 from btm_finance.repeat import (
     Presence,
     RepeatReport,
-    canonical_config,
-    canonical_source,
     code_drift,
     compare,
     data_drift,
@@ -175,7 +173,7 @@ from btm_finance.store import (
     PAD_DIR,
     Book,
     append_ledger,
-    governed_files,
+    governed_paths,
     held_out_list,
     load_limits,
     load_preferences,
@@ -235,21 +233,22 @@ def start(
     held_out: Path | None = None,
     answers: Answers | None = None,
 ) -> dict[str, Any]:
-    """Make the book, then register the baseline hypothesis and the `onboard`
-    decision hashing the governed files `start` wrote, through the gate."""
+    """Make the book, register the baseline hypothesis, commit it all as
+    `start: <id>`, then record the `onboard` decision naming every governed
+    file the scaffold wrote at that commit, and commit its ledger line."""
     receipt = scaffold(root, cap, universe, held_out, answers)
     book = open_book(str(root))
-    batch = {
-        "hypotheses": [baseline_hypothesis(datetime.now(UTC).date())],
-        "decisions": [onboarded(book, [governed.LIMITS, BASELINE_STATUS])],
-    }
-    result = recorded(book, batch)
-    receipt["wrote"] += ["ledger/hypotheses.jsonl", "ledger/decisions.jsonl"]
+    hypotheses = {"hypotheses": [baseline_hypothesis(datetime.now(UTC).date())]}
+    result = recorded(book, hypotheses)
+    receipt["commit"] = git.commit(book.root, ["."], f"start: {book.meta.id}")
+    recorded(book, {"decisions": [onboarded(book, governed_paths(book.root))]})
+    git.commit(book.root, [DECISIONS], f"start: {book.meta.id} onboard decision")
+    receipt["wrote"] += ["ledger/hypotheses.jsonl", DECISIONS]
     receipt["new"] = result.new["hypotheses"]
     return receipt
 
 
-BASELINE_STATUS = "strategies/baseline/status"
+DECISIONS = "ledger/decisions.jsonl"
 
 
 def onboarded(book: Book, applied: list[str]) -> dict[str, Any]:
@@ -282,8 +281,10 @@ def cmd_start(args: argparse.Namespace) -> int:
 
 def onboard(book: Book, answers: Answers, *, force: bool) -> dict[str, Any]:
     """Instruction files for an existing book, and each answered limit that
-    differs written into `limits.json` under an `onboard` decision;
-    `preferences.json` changes only through the returned batch."""
+    differs written into `limits.json`, committed as `onboard: <id>`, under
+    an `onboard` decision naming that commit; `preferences.json` changes
+    only through the returned batch."""
+    git.repository_at(book.root)
     onboarding.refuse_existing(book.root, force=force)
     limits = load_limits(book)
     claude = onboard_files(
@@ -301,11 +302,16 @@ def onboard(book: Book, answers: Answers, *, force: bool) -> dict[str, Any]:
             path,
             json.dumps(onboarding.patched(read_json(path), changes), indent=2) + "\n",
         )
+        wrote.append(governed.LIMITS)
+    commit = git.commit(book.root, wrote, f"onboard: {book.meta.id}")
+    if changes:
         recorded(book, {"decisions": [onboarded(book, [governed.LIMITS])]})
-        wrote += [governed.LIMITS, "ledger/decisions.jsonl"]
+        git.commit(book.root, [DECISIONS], f"onboard: {book.meta.id} decision")
+        wrote.append(DECISIONS)
     return {
         "book": book.meta.id,
         "wrote": wrote,
+        "commit": commit,
         "claude_md": claude,
         "limits": changes,
         "preferences": onboarding.preference_batch(answers, load_preferences(book)),
@@ -331,9 +337,38 @@ def run_ids(book: Book) -> list[str]:
     return [run_id for path in run_files(book) for run_id in ids_of(path, "run_id")]
 
 
-def context_of(book: Book) -> Context:
-    """Live book state the gate resolves a batch against."""
+def pointers(
+    book: Book, log: Sequence[git.Commit] | None = None
+) -> tuple[dict[str, str], frozenset[str]]:
+    """Each clean, committed governed file to its last commit, and the
+    governed files that differ from HEAD or are untracked; `log` is
+    `git.log_commits` over the governed pathspecs when the caller has it."""
+    dirty = frozenset(
+        path
+        for path in git.dirty(book.root, governed.PATHSPECS)
+        if governed.governed(path)
+    )
+    last: dict[str, str] = {}
+    for found in git.log_commits(book.root, governed.PATHSPECS) if log is None else log:
+        for path in found.files:
+            last.setdefault(path, found.hash)
+    present = governed_paths(book.root)
+    return {p: last[p] for p in present if p in last and p not in dirty}, dirty
+
+
+def needs_pointers(batch: Mapping[str, Any]) -> bool:
+    """A decision in the batch names a governed file."""
+    rows = batch.get("decisions")
+    return isinstance(rows, list) and any(
+        isinstance(row, dict) and row.get("applied") for row in rows
+    )
+
+
+def context_of(book: Book, *, resolve: bool = False) -> Context:
+    """Live book state the gate resolves a batch against; with `resolve`,
+    governed files' commits too, which needs git."""
     limits = load_limits(book)
+    resolved, dirty = pointers(book) if resolve else ({}, frozenset[str]())
     kinds = (
         Kind.HYPOTHESIS,
         Kind.CRITIQUE,
@@ -356,7 +391,8 @@ def context_of(book: Book) -> Context:
             str(row.get("id")) for row in current(kind_rows(book, Kind.HYPOTHESIS))
         ),
         book=book.meta.id,
-        governed=governed_files(book.root),
+        governed=resolved,
+        dirty=dirty,
     )
 
 
@@ -378,7 +414,8 @@ def committed(book: Book, result: RecordResult) -> dict[str, int]:
 def recorded(book: Book, batch: dict[str, Any]) -> RecordResult:
     """A batch the program builds itself, through the same gate; any problem
     is a defect, so it raises."""
-    result = expand_batch(context_of(book), batch, make_id, now_iso())
+    context = context_of(book, resolve=needs_pointers(batch))
+    result = expand_batch(context, batch, make_id, now_iso())
     if result.problems:
         raise CommandError(f"record refused {batch}: {result.problems}")
     committed(book, result)
@@ -387,9 +424,9 @@ def recorded(book: Book, batch: dict[str, Any]) -> RecordResult:
 
 def cmd_record(args: argparse.Namespace) -> int:
     book = open_book(args.book)
-    context = context_of(book)
 
     def expand(batch: dict[str, Any]) -> RecordResult:
+        context = context_of(book, resolve=needs_pointers(batch))
         return expand_batch(context, batch, make_id, now_iso())
 
     def commit(result: RecordResult) -> dict[str, Any]:
@@ -464,13 +501,14 @@ def approval_file(book: Book, raw: str) -> Path:
 
 def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
     """The approval against its proposal, `limits.json`, each status, and the
-    `approve` decisions that hashed it."""
+    `approve` decisions naming its last commit."""
     try:
-        data = path.read_bytes()
-        document = json.loads(data.decode("utf-8"))
+        document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as err:
         raise CommandError(f"unreadable approvals/{path.name}: {err}") from err
-    witness = (f"approvals/{path.name}", sha256_of(data))
+    shown = book.relative(path)
+    clean = not git.dirty(book.root, [shown])
+    witness = (shown, git.last_commit(book.root, shown))
     approvals_seen = governed.witnesses(
         (row for _, row in kind_rows(book, Kind.DECISION)), Action.APPROVE
     )
@@ -494,7 +532,7 @@ def approval_checked(book: Book, path: Path, today: str) -> approvals.Checked:
         cap=load_limits(book).max_adv_participation,
         statuses=statuses_of(book),
         proposal_orders=orders_of,
-        witnessed=witness in approvals_seen,
+        witnessed=clean and witness in approvals_seen,
     )
 
 
@@ -749,7 +787,8 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
         )
     proposals = open_proposals(proposal_dates(book), decisions, today)
     every_decision = [row for _, row in kind_rows(book, Kind.DECISION)]
-    present = governed_files(book.root)
+    log = git.log_commits(book.root, governed.PATHSPECS)
+    resolved, dirty = pointers(book, log)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
     preferences = load_preferences(book)
     pad = [row for _, row in rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))]
@@ -796,11 +835,15 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
     budgets = families(
         limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
     )
-    unwitnessed = governed.unwitnessed(present, every_decision)
-    for entry in unwitnessed:
+    unwitnessed = [
+        *governed.unnamed(log, every_decision),
+        *governed.uncommitted(dirty),
+    ]
+    if unwitnessed:
         signal(
-            f"{entry['file']} changed with no decision hashing it: tell the "
-            "operator; record their word as a decision with applied"
+            f"{len(unwitnessed)} governed change(s) no decision names, under "
+            "warnings: tell the operator; record their word as a decision with "
+            "applied after committing"
         )
     return {
         "book": book.meta.id,
@@ -809,7 +852,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
         "strategies": {**by_status(known), "unknown": unknown},
         "families": budgets,
         "proposals": proposals,
-        "approvals": approval_rows(book, present, every_decision, live(Kind.FILL)),
+        "approvals": approval_rows(book, resolved, every_decision, live(Kind.FILL)),
         "incidents": live(Kind.INCIDENT)[-INCIDENT_TAIL:],
         "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
         "heartbeat": pulse,
@@ -825,6 +868,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
             *index_warning(book),
             *onboarding.warnings(book.root, template("AGENTS.tmpl")),
         ],
+        "evolution": evolution_of(book, pad, runs, today, limits.idle_days),
         "next": started(
             pulse, next_step(hypotheses, pending, proposals, late, budgets)
         ),
@@ -836,19 +880,49 @@ def started(pulse: Mapping[str, Any], step: str) -> str:
     return step if pulse["last"] is not None else f"{heartbeat.START}; then {step}"
 
 
+def evolution_of(
+    book: Book, pad: Sequence[Row], runs: Sequence[Row], today: date, idle_days: int
+) -> dict[str, Any]:
+    """Bare `check` `evolution`: one directory walk and one `git log` over
+    `lib/` and `tools/`."""
+    root = book.root
+
+    def code(folder: str) -> list[str]:
+        return [
+            path.relative_to(root).as_posix()
+            for path in (root / folder).rglob("*.py")
+            if path.name != "__init__.py" and "__pycache__" not in path.parts
+        ]
+
+    dates: dict[str, str] = {}
+    for found in git.log_commits(root, ["lib", "tools"]):
+        for path in found.files:
+            dates.setdefault(path, found.date)
+    return evolution(
+        briefs=[path.stem for path in (root / delegates.DELEGATES).glob("*.md")],
+        pad=pad,
+        runs=runs,
+        lib=code("lib"),
+        tools=code("tools"),
+        commits=dates,
+        today=today,
+        idle_days=idle_days,
+    )
+
+
 def approval_rows(
     book: Book,
-    present: Mapping[str, str],
+    resolved: Mapping[str, str],
     decisions: Sequence[Row],
     fills: Sequence[Row],
 ) -> list[dict[str, Any]]:
-    """Each approval file: `proposal` and `date` it names, `approved` while an
-    `approve` decision hashes it as it stands, `filled` once a fill carries
-    its stem. O(A + D + F)."""
-    hashed = governed.witnesses(decisions, Action.APPROVE)
+    """Each approval file: `proposal` and `date` it names, `approved` while
+    clean and an `approve` decision names its last commit, `filled` once a
+    fill carries its stem. O(A + D + F)."""
+    approves = governed.witnesses(decisions, Action.APPROVE)
     filled = {str(row.get("approval", "")).removesuffix(".json") for row in fills}
     rows: list[dict[str, Any]] = []
-    for path, digest in sorted(present.items()):
+    for path in governed_paths(book.root):
         if not path.startswith("approvals/"):
             continue
         try:
@@ -861,7 +935,7 @@ def approval_rows(
                 "file": path,
                 "proposal": named.get("proposal"),
                 "date": named.get("date"),
-                "approved": (path, digest) in hashed,
+                "approved": (path, resolved.get(path)) in approves,
                 "filled": Path(path).stem in filled,
             }
         )
@@ -1083,8 +1157,9 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         "rules": "a delegate's final message is this one JSON object and "
         "nothing else; every key required, no other key; wrote paths "
         f"book-relative; summary at most {SUMMARY_WORDS} words; next and "
-        "friction one line each, empty allowed; check it with "
-        "btm_finance.api.receipt(text)",
+        "friction one line each, empty allowed; commit the 40-hex head of "
+        "the delegate's branch after its last commit, null when it wrote "
+        "nothing; check it with btm_finance.api.receipt(text)",
     },
     "approval": {
         "approval": '{"date": "YYYY-MM-DD", "proposal": "<proposal stem>", '
@@ -1093,10 +1168,10 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         '"price": 12.5, "adv_participation": 0.004, "strategy": "<name>", '
         '"limit": null}]}',
         "rules": "check <book> approvals/<date>.json: date is today (UTC); "
-        "reply is non-empty; an approve decision's applied hashes the file as "
-        "it stands; proposal names a file under proposals/; every order is "
-        "one of that "
-        "proposal by symbol, side, strategy; adv_participation at most "
+        "reply is non-empty; the file is committed, clean, and an approve "
+        "decision names its last commit; proposal names a file under "
+        "proposals/; every order is one of that proposal by symbol, side, "
+        "strategy; adv_participation at most "
         "limits.max_adv_participation; strategy status paper, probe, or live",
     },
 }
@@ -1123,48 +1198,50 @@ def name_of(raw: str, what: str) -> str:
     return raw
 
 
-@dataclass(frozen=True, slots=True)
-class Code:
-    """A strategy's code inputs: `signal.py`, `config.json`, and each
-    book-local module it reaches, by path relative to the book root."""
-
-    source: bytes
-    config: bytes
-    modules: Mapping[str, bytes]
-
-
-def code_of(book: Book, name: str) -> Code:
-    folder = book.root / "strategies" / name
+def code_paths(book: Book, name: str) -> tuple[str, ...]:
+    """`signal.py`, `config.json`, and each book-local module `signal.py`
+    reaches, book-relative, sorted."""
+    folder = f"strategies/{name}"
     reach = strategy_reach(book.root, name)
-    return Code(
-        source=file_bytes(folder / "signal.py"),
-        config=file_bytes(folder / "config.json"),
-        modules={path: file_bytes(book.root / path) for path in reach.modules},
+    return tuple(
+        sorted({f"{folder}/signal.py", f"{folder}/config.json", *reach.modules})
     )
 
 
-def code_hash(code: Code) -> str:
-    """sha256 over the AST dump of `signal.py`, canonical `config.json`, then
-    each module's path and AST dump, each with its length, then the engine
-    version: a reformat moves nothing."""
-    digest = hashlib.sha256()
-    parts = [canonical_source(code.source), canonical_config(code.config)]
-    for path in sorted(code.modules):
-        parts += [path.encode(), canonical_source(code.modules[path], path)]
-    for part in (*parts, btm_finance.__version__.encode()):
-        digest.update(len(part).to_bytes(8, "big") + part)
-    return digest.hexdigest()
+def committed_code(book: Book, name: str) -> tuple[str, tuple[str, ...]]:
+    """`code_commit` and `code_paths`; refuses when the strategy folder or a
+    module it reaches differs from HEAD or is untracked."""
+    paths = code_paths(book, name)
+    dirty = git.dirty(book.root, [f"strategies/{name}/", *paths])
+    if dirty:
+        raise CommandError(
+            f"commit before measure: {', '.join(sorted(dirty))} differs from HEAD "
+            "or is untracked"
+        )
+    last = git.last_commit(book.root, *paths)
+    if last is None:  # pragma: no cover - a clean tracked file has a commit
+        raise CommandError(f"commit before measure: strategies/{name}/ has no commit")
+    return last, paths
 
 
-def code_files(code: Code) -> dict[str, str]:
-    """Per file, sha256 of the same canonical forms `code_hash` folds."""
+def moved_code(book: Book, name: str, commit: str, paths: Sequence[str]) -> list[str]:
+    """Each code path whose AST (or parsed `config.json`) differs between
+    `commit` and the working tree, then each path reached today but not
+    then."""
+    then = {path: git.show(book.root, commit, path) for path in paths}
+    now = {
+        path: (book.root / path).read_bytes() if (book.root / path).is_file() else None
+        for path in paths
+    }
+    return code_drift(then, now, code_paths(book, name))
+
+
+def engine_now() -> dict[str, str]:
+    """What `engine` on a run line holds: the skill commit, then libraries."""
     return {
-        "signal.py": sha256_of(canonical_source(code.source)),
-        "config.json": sha256_of(canonical_config(code.config)),
-        **{
-            path: sha256_of(canonical_source(data, path))
-            for path, data in sorted(code.modules.items())
-        },
+        "btm_finance": git.skill_commit(),
+        "numpy": np.__version__,
+        "pyarrow": pa.__version__,
     }
 
 
@@ -1254,6 +1331,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"config family_id {config.family_id} differs from hypothesis "
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
+    code_commit, paths = committed_code(book, name)
     spent = heartbeat.trials_today(all_runs(book), utc_today())
     if not args.held_out and spent >= limits.trials_per_day:
         raise CommandError(
@@ -1261,7 +1339,6 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"limits.trials_per_day {limits.trials_per_day}; sharpen the "
             "backlog and measure tomorrow"
         )
-    code = code_of(book, name)
     loaded = load_strategy(book.root, name)
     strategy = loaded.signal
     panel, events = assemble(book)
@@ -1289,17 +1366,13 @@ def cmd_measure(args: argparse.Namespace) -> int:
         family_id=config.family_id,
         strategy=name,
         data_snapshot=snapshot,
-        code_hash=code_hash(code),
-        code_files=code_files(code),
+        code_commit=code_commit,
+        code_paths=paths,
         config=config.model_dump(mode="json"),
         params={key: float(value) for key, value in params.items()},
         scorecard=outcome.scorecard,
         reasons=outcome.reasons,
-        engine={
-            "btm_finance": btm_finance.__version__,
-            "numpy": np.__version__,
-            "pyarrow": pa.__version__,
-        },
+        engine=engine_now(),
         tolerance=limits.repeat_tolerance,
         held_out=args.held_out,
         exclusions=Exclusions.model_validate(preferences.exclusions.model_dump()),
@@ -1458,7 +1531,7 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
     vol = None
     if series is not None and len(series[1]) > 1:
         vol = float(np.std(series[1], ddof=1)) * math.sqrt(PERIODS_PER_YEAR)
-    changed = code_hash(code_of(book, name)) != run.get("code_hash")
+    changed = code_changed(book, name, run)
     if changed:
         signal(f"{name}: strategy code changed since run {run['run_id']}")
     return Candidate(
@@ -1485,6 +1558,15 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         dsr=card_number(run, "dsr"),
         tier=tier,
     )
+
+
+def code_changed(book: Book, name: str, run: Row) -> bool:
+    """The strategy's code moved since the run, by `moved_code`; a line
+    without `code_commit` reads moved."""
+    commit, paths = run.get("code_commit"), run.get("code_paths")
+    if not isinstance(commit, str) or not isinstance(paths, list):
+        return True
+    return bool(moved_code(book, name, commit, [str(p) for p in paths]))
 
 
 def quotes_of(day: Day) -> dict[str, Quote]:
@@ -1772,19 +1854,15 @@ def drift_of(
     row: Row,
     line: RunLine,
     *,
-    code: Code,
     manifest: Manifest,
 ) -> list[str]:
-    """Every reason the rerun would not be the recorded run. Re-hashes every
-    listed source file and peer series once: O(store bytes)."""
+    """Every reason the rerun would not be the recorded run. Reads each code
+    path at `code_commit`; re-hashes every listed source file and peer
+    series once: O(store bytes)."""
     problems: list[str] = []
-    if code_hash(code) != line.code_hash:
-        moved = code_drift(
-            line.code_files,
-            code_files(code),
-            (line.engine.get("btm_finance", ""), btm_finance.__version__),
-        )
-        problems.append(f"code moved: {', '.join(moved) or 'code_hash differs'}")
+    moved = moved_code(book, line.strategy, line.code_commit, line.code_paths)
+    if moved:
+        problems.append(f"code moved: {', '.join(moved)}")
     sources = [e for e in manifest.files if e.table != Table.RETURNS]
     stamp = str(row.get("ts", ""))
     problems += data_drift(
@@ -1835,7 +1913,7 @@ def cmd_repeat(args: argparse.Namespace) -> int:
     if line.strategy != name:
         raise CommandError(f"run {line.run_id} measured {line.strategy}, not {name}")
     manifest = read_manifest(book)
-    problems = drift_of(book, row, line, code=code_of(book, name), manifest=manifest)
+    problems = drift_of(book, row, line, manifest=manifest)
     if problems:
         raise CommandError(f"refused to repeat {line.run_id}: " + "; ".join(problems))
     config = parse_model(StrategyConfig, line.config, f"run {line.run_id} config")
@@ -1853,11 +1931,6 @@ def cmd_repeat(args: argparse.Namespace) -> int:
         outcome.scorecard.model_dump(mode="json"),
         line.tolerance,
     )
-    current_engine = {
-        "btm_finance": btm_finance.__version__,
-        "numpy": np.__version__,
-        "pyarrow": pa.__version__,
-    }
     report = RepeatReport(
         run_id=line.run_id,
         strategy=name,
@@ -1865,7 +1938,7 @@ def cmd_repeat(args: argparse.Namespace) -> int:
         tolerance=line.tolerance,
         compared=compared,
         diffs=tuple(diffs),
-        advisories=tuple(engine_advisories(line.engine, current_engine)),
+        advisories=tuple(engine_advisories(line.engine, engine_now())),
     )
     for note in report.advisories:
         signal(f"engine moved: {note}")

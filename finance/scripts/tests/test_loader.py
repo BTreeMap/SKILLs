@@ -28,7 +28,7 @@ def write(path: Path, text: str) -> None:
     path.write_text(text)
 
 
-def test_measure_lists_imports_from_outside_the_book(synthetic, run, plant):
+def test_measure_lists_imports_from_outside_the_book(synthetic, run, plant, commit):
     book = synthetic(seed=7)
     write(
         book / "lib" / "sizing.py", "import pyarrow\n\n\ndef unit():\n    return 1.0\n"
@@ -38,6 +38,7 @@ def test_measure_lists_imports_from_outside_the_book(synthetic, run, plant):
         book / "strategies" / "probe" / "helpers.py",
         "import pydantic\nfrom lib import sizing\n\n\ndef tilt(x):\n    return x\n",
     )
+    commit(book, "lib", "strategies/probe")
     code, receipt, err = run(["measure", str(book), "probe"])
     assert receipt is not None, err
     assert receipt["imports"] == ["btm_finance.data", "pyarrow", "pydantic"]

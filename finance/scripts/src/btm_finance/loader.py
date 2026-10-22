@@ -9,7 +9,7 @@ same paths, and list what it imports from outside the book.
 `btm_finance.api` with `Market`, book-local modules. Any other api name
 reached is listed as `btm_finance.api.<name>`; another `btm_finance` module
 as `btm_finance.<module>`. `modules`: the book-local files reached, paths
-relative to the book root, which `measure` hashes beside `signal.py`.
+relative to the book root, which `measure` stores under `code_paths`.
 """
 
 from __future__ import annotations

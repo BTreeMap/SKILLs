@@ -1,11 +1,13 @@
 """The dispatcher: a receipt decodes or names every problem, the miner's
 training folds hold no test-block date and no held-out name, and a lead
 running two disjoint delegates in parallel records each receipt only after
-examining it, with bare `check` warning on a `wrote` path that vanished."""
+examining it, with bare `check` warning on a `wrote` path that vanished; the
+examine diff names a path a delegate committed outside its scope."""
 
 from __future__ import annotations
 
 import json
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -32,6 +34,7 @@ EXAMPLE: dict[str, object] = {
     "summary": "Measured value tilt once; scorecard written; DSR 0.71 blocks.",
     "next": "critique run value-tilt-abc",
     "friction": "",
+    "commit": "0123456789abcdef0123456789abcdef01234567",
 }
 
 
@@ -69,6 +72,37 @@ def test_schema_prints_the_receipt_shape(run):
     code, schema, _ = run(["check", "--schema", "receipt"])
     assert code == 0
     assert list(schema["receipt"]["receipt"]) == list(Receipt.model_fields)
+
+
+def test_receipt_commit_is_forty_hex_or_null():
+    assert api.receipt(json.dumps(EXAMPLE | {"commit": None})).commit is None
+    for bad in ("abc123", "0123456789ABCDEF0123456789ABCDEF01234567", ""):
+        with pytest.raises(CommandError, match="commit"):
+            api.receipt(json.dumps(EXAMPLE | {"commit": bad}))
+    without = {key: value for key, value in EXAMPLE.items() if key != "commit"}
+    with pytest.raises(CommandError, match="commit"):
+        api.receipt(json.dumps(without))
+
+
+def git_in(book: Path, *args: str) -> str:
+    done = subprocess.run(
+        ["git", "-C", str(book), *args], capture_output=True, check=True, text=True
+    )
+    return done.stdout.strip()
+
+
+def test_examine_diff_names_a_path_outside_the_write_scope(book, commit):
+    git_in(book, "switch", "-q", "-c", "agent/reader")
+    note = book / "research" / "abc" / "2026-10-01-10-q.md"
+    note.parent.mkdir(parents=True)
+    note.write_text("# filing note\n")
+    (book / "lib" / "stray.py").write_text("X = 1\n")
+    head = commit(book, "research/abc", "lib/stray.py", subject="feat: read abc")
+    git_in(book, "switch", "-q", "main")
+    found = api.open_book(str(book))
+    scope = ["research/abc/"]
+    assert api.outside_scope(found, head, scope) == ("lib/stray.py",)
+    assert api.outside_scope(found, head, [*scope, "lib/stray.py"]) == ()
 
 
 def test_receipt_takes_any_slug_unit():

@@ -62,7 +62,8 @@ SCHEMA: dict[str, str] = {
     '"horizon_days": 63, "kelly_implied": 0.25} (optional), "confidence": 0.6 '
     '(optional), "applied": ["limits.json|strategies/<name>/status|'
     'approvals/<date>.json"] (optional; each governed file the decision '
-    'changed, stored with its sha256), "supersedes": "<id>" (optional); forgo '
+    "changed, committed first; record stores its last commit under commits), "
+    '"supersedes": "<id>" (optional); forgo '
     "names a strategy; onboard names the book id}",
     "scored": '{"kw": ["two", "words"], "subject": "<live hypothesis id>", '
     '"resolved": "YYYY-MM-DD", "outcome": "...", "realized_return": 0.04, '
@@ -127,7 +128,9 @@ class Context:
     book: str = ""
     """The book id: a decision subject for `onboard` and book-wide changes."""
     governed: Mapping[str, str] = field(default_factory=dict)
-    """Each governed file present, book-relative, to its sha256."""
+    """Each committed, clean governed file, book-relative, to its last commit."""
+    dirty: frozenset[str] = frozenset()
+    """Each governed file that differs from HEAD or is untracked."""
 
 
 @dataclass(slots=True)
@@ -254,6 +257,12 @@ class _Expansion(Acceptance):
             where = f"decisions[{index}]"
             if not self.envelope_free(row, where):
                 continue
+            if "commits" in row:
+                self.fail(
+                    f"{where}.commits",
+                    "remove 'commits': record resolves it from applied",
+                )
+                continue
             entry = self.decode(DecisionEntry, row, where, SCHEMA["decisions"])
             if entry is None:
                 continue
@@ -287,27 +296,28 @@ class _Expansion(Acceptance):
                 self.stage(Kind.DECISION, full, body | applied)
 
     def applied(self, paths: Iterable[str], where: str) -> dict[str, Any] | None:
-        """Each governed path with its sha256 as it stands; None on any miss."""
-        found: list[dict[str, str]] = []
-        ok = True
-        for index, path in enumerate(paths):
+        """`applied` as given and `commits`, each path's last commit beside
+        it; None on any miss."""
+        given = list(paths)
+        commits: list[str] = []
+        for index, path in enumerate(given):
             at = f"{where}.applied[{index}]"
-            digest = self.context.governed.get(path)
+            found = self.context.governed.get(path)
             if not governed(path):
-                ok = False
                 self.fail(
                     at,
                     f"replace '{path}': only limits.json, strategies/<name>/status, "
                     "approvals/<file>.json are governed",
                 )
-            elif digest is None:
-                ok = False
+            elif path in self.context.dirty:
+                self.fail(at, f"commit '{path}' before record: it differs from HEAD")
+            elif found is None:
                 self.fail(at, f"write '{path}' first: no such file in the book")
             else:
-                found.append({"path": path, "sha256": digest})
-        if not ok:
+                commits.append(found)
+        if len(commits) < len(given):
             return None
-        return {"applied": found} if found else {}
+        return {"applied": given, "commits": commits} if given else {}
 
     def take_scored(self, rows: Rows) -> None:
         """`subject` names a live hypothesis: on file and not superseded, or

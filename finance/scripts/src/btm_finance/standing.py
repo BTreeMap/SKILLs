@@ -229,8 +229,8 @@ def probe_next(status: Status | None, limits: Limits) -> str:
         )
     return (
         f"propose a probe to the operator at sizing.probe_weight {weight}; on "
-        "their yes write status probe and record promote naming the strategy, "
-        "applied naming the status file, in the same step"
+        "their yes write status probe, commit it, and record promote naming "
+        "the strategy, applied naming the status file, in the same step"
     )
 
 

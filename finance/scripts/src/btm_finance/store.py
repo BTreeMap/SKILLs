@@ -3,7 +3,6 @@ under a lock, and the strategy and proposal listings."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import sys
@@ -225,16 +224,16 @@ def previous_proposal(book: Book, day: str) -> Path | None:
     return versions[-1] if versions else None
 
 
-def governed_files(root: Path) -> dict[str, str]:
-    """Each governed file present, book-relative, to its sha256: one read of
-    `limits.json`, every `strategies/*/status`, every `approvals/*.json`."""
+def governed_paths(root: Path) -> list[str]:
+    """Each governed file present, book-relative, sorted: `limits.json`, every
+    `strategies/*/status`, every `approvals/*.json`."""
     found = [
         root / LIMITS,
         *(root / "strategies").glob("*/status"),
         *(root / "approvals").glob("*.json"),
     ]
-    return {
-        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+    return sorted(
+        path.relative_to(root).as_posix()
         for path in found
         if path.is_file() and governed(path.relative_to(root).as_posix())
-    }
+    )

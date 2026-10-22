@@ -1,7 +1,8 @@
 """`measure --repeat`, pure: what stops a rerun, and the scorecard diff.
 
 A rerun is refused, never approximated, when its inputs moved: code, raw
-data, or a peer's stored series. The shell hashes; this module judges.
+data, or a peer's stored series. The shell reads git and the store; this
+module judges.
 """
 
 from __future__ import annotations
@@ -14,8 +15,7 @@ from enum import StrEnum
 from btm_corekit import CommandError, Model
 from btm_finance.measuring import number
 
-CODE_FILES = ("signal.py", "config.json")
-ENGINE_KEY = "btm_finance"
+CONFIG = "config.json"
 
 
 class Presence(StrEnum):
@@ -71,27 +71,28 @@ def canonical_config(config: bytes) -> bytes:
     ).encode()
 
 
+def canonical(path: str, data: bytes) -> bytes:
+    """`config.json` as parsed JSON, any other code file as its AST dump."""
+    if path.rpartition("/")[2] == CONFIG:
+        return canonical_config(data)
+    return canonical_source(data, path)
+
+
 def code_drift(
-    recorded: Mapping[str, str],
-    current: Mapping[str, str],
-    engine: tuple[str, str],
+    then: Mapping[str, bytes],
+    now: Mapping[str, bytes | None],
+    reached: Sequence[str],
 ) -> list[str]:
-    """Names of the moved code inputs: `signal.py`, `config.json`, then each
-    book-local module by path (added, edited, or gone), then the engine
-    version `code_hash` folds in. An empty `recorded` (a line without
-    per-file digests) names both files."""
-    if not recorded:
-        return ["signal.py or config.json (line predates per-file digests)"]
-    modules = sorted((set(recorded) | set(current)) - set(CODE_FILES))
+    """Code paths whose canonical form moved since `code_commit` (`then`,
+    from `git show`) against the working tree (`now`, None when gone), then
+    each path the strategy reaches today that the run did not."""
     moved = [
-        name
-        for name in (*CODE_FILES, *modules)
-        if recorded.get(name) != current.get(name)
+        path
+        for path in sorted(then)
+        if now.get(path) is None
+        or canonical(path, then[path]) != canonical(path, now[path] or b"")
     ]
-    then, now = engine
-    if then != now:
-        moved.append(f"{ENGINE_KEY} {then} -> {now}")
-    return moved
+    return moved + sorted(set(reached) - set(then))
 
 
 def data_drift(
@@ -186,9 +187,9 @@ def compare(
 
 
 def advisories(recorded: Mapping[str, str], current: Mapping[str, str]) -> list[str]:
-    """Engine packages whose version moved; `btm_finance` refuses instead."""
+    """Engine entries that moved: the skill commit and library versions."""
     return [
         f"{name} {recorded.get(name)} -> {current.get(name)}"
         for name in sorted(set(recorded) | set(current))
-        if name != ENGINE_KEY and recorded.get(name) != current.get(name)
+        if recorded.get(name) != current.get(name)
     ]

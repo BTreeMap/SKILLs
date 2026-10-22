@@ -7,8 +7,6 @@ import csv
 import io
 import json
 import shlex
-import shutil
-import subprocess
 from collections import defaultdict
 from collections.abc import Sequence
 from importlib import resources
@@ -24,7 +22,7 @@ from btm_corekit import (
     signal,
     write_atomic,
 )
-from btm_finance import delegates, onboarding
+from btm_finance import delegates, git, onboarding
 from btm_finance.models import (
     BASELINE_CONFIG,
     PREFERENCES_TEMPLATE,
@@ -60,16 +58,16 @@ RESEARCH = {
 """Queue folders under `research/`: name to purpose, one `INDEX.md` row
 each."""
 INDEX = "INDEX.md"
-INDEX_HEAD = "# Index\n\npath | purpose | last touched\n"
+INDEX_HEAD = "# Index\n\npath | purpose\n"
+IGNORED = ("data/", "__pycache__/")
 
 
-def index_text(day: str) -> str:
-    """Header, column line, one row per queue folder and per seeded brief,
-    touched `day`."""
+def index_text() -> str:
+    """Header, column line, one row per queue folder and per seeded brief."""
     rows = "".join(
-        f"research/{name}/ | {purpose} | {day}\n" for name, purpose in RESEARCH.items()
+        f"research/{name}/ | {purpose}\n" for name, purpose in RESEARCH.items()
     )
-    return INDEX_HEAD + rows + delegates.index_rows(day)
+    return INDEX_HEAD + rows + delegates.index_rows()
 
 
 def research_readme(name: str, purpose: str) -> str:
@@ -102,7 +100,7 @@ Static comparator every candidate strategy is shown beside: equal weight on
 the top third of names by average rank of 12-1 momentum, low volatility, and
 book-to-market where filings are loaded; rebalanced annually. `start`
 registers its hypothesis. `status` changes only on operator's word in chat,
-recorded as decision hashing it.
+recorded as decision naming its commit.
 """
 
 
@@ -173,33 +171,13 @@ def write_new(path: Path, text: str) -> None:
 
 
 def ignore(path: Path) -> None:
-    """`data/` joined to `.gitignore`; other lines kept."""
+    """`data/` and `__pycache__/` joined to `.gitignore`; other lines kept.
+    `data/` is untracked, so `data/manifest.json` digests guard it."""
     held = path.read_text(encoding="utf-8") if path.is_file() else ""
     lines = held.splitlines()
-    if "data/" not in lines:
-        write_atomic(path, "\n".join([*lines, "data/"]) + "\n")
-
-
-def repository(root: Path) -> str:
-    """`git init` unless `root` is inside a work tree; `absent` without git."""
-    git = shutil.which("git")
-    if git is None:
-        signal("no git on PATH; book is not a repository: run git init in it")
-        return "absent"
-    inside = subprocess.run(
-        [git, "-C", str(root), "rev-parse", "--is-inside-work-tree"],
-        capture_output=True,
-        check=False,
-    )
-    if inside.returncode == 0:
-        return "inside"
-    done = subprocess.run(
-        [git, "-C", str(root), "init", "-q"], capture_output=True, check=False
-    )
-    if done.returncode != 0:
-        signal(f"git init failed: {done.stderr.decode(errors='replace').strip()}")
-        return "failed"
-    return "init"
+    missing = [line for line in IGNORED if line not in lines]
+    if missing:
+        write_atomic(path, "\n".join([*lines, *missing]) + "\n")
 
 
 def outside(root: Path, path: Path) -> Path:
@@ -235,9 +213,11 @@ def scaffold(
     held_out_at: Path | None = None,
     answers: Answers | None = None,
 ) -> dict[str, Any]:
-    """Make the book; refuse a directory that already holds `limits.json`.
-    Flags win over answers; answers fill limits, preferences, and the three
-    instruction files."""
+    """Make the book, a git repository (`git init` on `main` unless already
+    inside one); refuse a directory that already holds `limits.json`. Flags
+    win over answers; answers fill limits, preferences, and the three
+    instruction files. The caller commits."""
+    git.binary()
     if (root / "limits.json").exists():
         raise CommandError(
             f"{root} already holds limits.json; start makes new books only"
@@ -286,13 +266,13 @@ def scaffold(
             root / delegates.DELEGATES / f"{slug}.md",
             delegates.brief(starter, slug, references),
         )
-    write_new(root / INDEX, index_text(now_iso()[:10]))
+    write_new(root / INDEX, index_text())
     write_new(root / "preferences.json", json.dumps(preferences, indent=2) + "\n")
     write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
     meta = BookMeta(
         id=book_id,
         created=now_iso(),
-        engine=btm_finance.__version__,
+        engine=git.skill_commit(),
         held_out=str(hidden),
     )
     write_new(root / MARKER, json.dumps(meta.model_dump(mode="json"), indent=2) + "\n")
@@ -302,7 +282,9 @@ def scaffold(
         else onboard_files(root, meta, answers, cap, meta.created)
     )
     ignore(root / ".gitignore")
-    git = repository(root)
+    nested = git.inside(root)
+    if not nested:
+        git.init(root)
     return {
         "book": book_id,
         "path": str(root.resolve()),
@@ -326,7 +308,7 @@ def scaffold(
         ],
         "onboarded": claude is not None,
         **({} if claude is None else {"claude_md": claude}),
-        "git": git,
+        "git": "inside" if nested else "init",
         "next": UNONBOARDED
         if claude is None
         else "load data, then measure baseline; import holdings with record",

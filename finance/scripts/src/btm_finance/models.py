@@ -48,7 +48,7 @@ class Side(StrEnum):
 
 class Status(StrEnum):
     """A strategy's stage; `strategies/<name>/status` changes only on the
-    operator's word, hashed by a decision's `applied`."""
+    operator's word, named by a decision's `applied`."""
 
     RESEARCH = "research"
     PROBE = "probe"
@@ -191,8 +191,8 @@ class DecisionEntry(OpenNamed):
     action: Action
     reason: NonEmpty
     applied: tuple[NonEmpty, ...] | None = None
-    """Governed files the decision changed, book-relative; `record` stores
-    each with its sha256 as it stands."""
+    """Governed files the decision changed, book-relative, each committed;
+    `record` stores each one's last commit under `commits`, same order."""
     odds: Odds | None = None
     confidence: Confidence | None = None
     supersedes: NonEmpty | None = None
@@ -374,6 +374,9 @@ class Limits(Model):
     trials_per_day: Annotated[int, Field(ge=0)] = 3
     """Run lines per UTC day `measure` writes before refusing; `--held-out`
     and `--repeat` pass."""
+    idle_days: Annotated[int, Field(ge=1)] = 90
+    """A `lib/` module or `tools/` script with no run or commit this many
+    days lands in bare `check` `evolution.idle`."""
 
 
 class StrategyConfig(Model):
@@ -428,6 +431,7 @@ class BookMeta(Model):
     id: Slug
     created: str
     engine: str
+    """Skill commit at `start`, informational."""
     held_out: str | None = None
     """Absolute path of the held-out list; None reads the XDG default."""
 
@@ -476,6 +480,7 @@ def limits_template(cap: int) -> dict[str, object]:
         "min_effective_streams": 2,
         "model_cutoff": None,
         "trials_per_day": 3,
+        "idle_days": 90,
     }
 
 
@@ -659,6 +664,7 @@ def _short(raw: str) -> str:
 BookPath = Annotated[NonEmpty, AfterValidator(book_relative)]
 Line = Annotated[str, Trimmed, StringConstraints(pattern=r"^[^\n\r]*$")]
 """One line of text; empty allowed."""
+CommitHash = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
 
 
 class Receipt(Model):
@@ -673,6 +679,10 @@ class Receipt(Model):
     summary: Annotated[NonEmpty, AfterValidator(_short)]
     next: Line
     friction: Line
+    commit: CommitHash | None
+    """The delegate's branch head after its last commit; None when it wrote
+    nothing. The lead's `git diff main...<commit>` is the fact `wrote`
+    claims."""
 
 
 RECEIPT_SHAPE: dict[str, object] = {
@@ -684,4 +694,5 @@ RECEIPT_SHAPE: dict[str, object] = {
     "summary": f"<claim, at most {SUMMARY_WORDS} words>",
     "next": "<one line or empty>",
     "friction": "<one line or empty>",
+    "commit": "<40-hex branch head, or null when nothing was written>",
 }
