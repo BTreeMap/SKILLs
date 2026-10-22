@@ -114,7 +114,7 @@ def test_the_pruned_verbs_are_gone(book, run):
 def test_check_schema_without_a_book_prints_every_kind(run):
     code, schema, _ = run(["check", "--schema"])
     assert code == 0
-    assert list(schema) == ["record", "run", "pad", "strategy"]
+    assert list(schema) == ["record", "run", "proposal", "pad", "strategy"]
     assert list(schema["record"]["record_batch"]) == [
         "hypotheses",
         "critiques",
@@ -123,6 +123,14 @@ def test_check_schema_without_a_book_prints_every_kind(run):
     ]
     assert "hunch" in schema["pad"]["types"]
     assert "known" not in schema["pad"]["types"]
+    assert "git hash-object" in schema["pad"]["types"]["receipt"]
+    assert "against_odds" in schema["record"]["record_batch"]["decisions"]
+    sleeve = schema["proposal"]["sleeve"]
+    for field in ("tier", "edge_scale", "weight", "adv_participation"):
+        assert field in sleeve
+    assert "asset_cap" in schema["run"]["run_line"]
+    code, one, _ = run(["check", "--schema", "proposal"])
+    assert (code, list(one)) == (0, ["proposal"])
 
 
 def test_check_schema_strategy_names_every_public_market_accessor(run):

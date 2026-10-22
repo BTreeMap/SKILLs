@@ -25,7 +25,15 @@ class Action(StrEnum):
     RETIRE = "retire"
     APPROVE = "approve"
     CLOSE = "close"
-    """A bet ended: `subject` the hypothesis id."""
+    """A bet ended: `subject` the hypothesis id, `realized` its decimal
+    return, `against_odds` its result."""
+
+
+class Outcome(StrEnum):
+    """How a closed bet ended against the odds it was registered at."""
+
+    WIN = "win"
+    LOSS = "loss"
 
 
 class Side(StrEnum):
@@ -124,13 +132,31 @@ class CritiqueEntry(OpenNamed):
     supersedes: NonEmpty | None = None
 
 
+CLOSING = ("realized", "against_odds")
+
+
 class DecisionEntry(OpenNamed):
+    """`realized` and `against_odds` belong to `close` alone, which needs
+    both."""
+
     subject: NonEmpty
     action: Action
     reason: NonEmpty
     odds: Odds | None = None
     confidence: Confidence | None = None
     supersedes: NonEmpty | None = None
+    realized: Annotated[float, Field(allow_inf_nan=False)] | None = None
+    against_odds: Outcome | None = None
+
+    def model_post_init(self, _context: object) -> None:
+        missing = [name for name in CLOSING if getattr(self, name) is None]
+        if self.action is Action.CLOSE and missing:
+            raise ValueError(
+                f"a close decision needs {' and '.join(missing)}: realized the "
+                f"bet's decimal return, against_odds {'|'.join(Outcome)}"
+            )
+        if self.action is not Action.CLOSE and len(missing) < len(CLOSING):
+            raise ValueError("realized and against_odds belong to close alone")
 
 
 class FillEntry(OpenRow):

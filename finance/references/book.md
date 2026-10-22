@@ -140,8 +140,8 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 
 ## Proposal file
 
-`recommend <date>` writes `proposals/<date>.json` once; `--force` writes
-`<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
+`check --propose <date>` writes `proposals/<date>.json` once; `--force`
+writes `<date>.2.json`, then `.3`; `check <date>` reads newest. Sleeves see
 research names only, through `Market` on `as_of`, last bar on or before
 `date`, weights set exactly as `measure` sets them, ADV clip included
 (`scorecard`).
@@ -149,7 +149,8 @@ research names only, through `Market` on `as_of`, last bar on or before
 | Field | Holds |
 | --- | --- |
 | `date`, `as_of`, `cap` | Proposal date, last bar used, `limits.asset_cap` |
-| `sleeves` | Per strategy: `tier` (`backtest`, `tracked`), `edge_scale`, `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `kelly_cap`, `weight`, `code_changed`, `unknown`, raw `signal` per name |
+| `sleeves` | Per strategy: `tier` (`backtest`, `tracked`), `edge_scale`, `run_id`, `sharpe_net`, `vol_net`, `max_drawdown`, `kelly_cap`, `weight`, `code_changed`, `unknown`, raw `signal` per name, `adv_participation` (largest target over ADV at cap) |
+| `sizing`, `extensions` | `default` or `lib/sizing.py`; proposal hooks present, `<hook>/<name>` to digest |
 | `skipped` | Live strategy with no run line, with reason |
 | `targets` | Per name: `weight` of cap, per-sleeve `sleeves` weights and whole-share `quantity`, reference `price`, `sector` |
 | `orders` | `symbol`, `side`, `quantity`, `price`, `adv_participation`, `strategy`, `limit` (null: market-on-open), `held`, `target`, `carried_from` |
@@ -170,10 +171,12 @@ Sizing, annual units, vol is std of run's stored net series times sqrt(252):
    Fewer days or tracking breach keeps `backtest`.
 2. `edge_scale = min(1, max(0, (dsr - 0.5) / 0.45))`, 0 when `dsr` null: 0
    at DSR 0.5, 2/3 at 0.8, 1 at 0.95.
-3. Sleeve weight is min(`kelly_cap`, `sizing.max_weight`),
+3. Sleeve weight is `kelly_cap`, or `lib/sizing.py`'s weight when book has
+   one,
    `kelly_cap = kelly_fraction.<tier> * edge_scale * sharpe_net / vol_net`;
-   zero when Sharpe is null or negative. Sleeve with no real fill takes
-   exactly `sizing.entry_weight`.
+   zero when Sharpe is null or negative. `max_weight` bounds names (step 5),
+   not sleeves. Sleeve with no real fill takes exactly
+   `sizing.entry_weight`.
 4. Sum of sleeve weights above 1 scales every sleeve down to sum 1; rest is
    cash. Then ruin: joint stationary block bootstrap (mean block 21 days) of
    weighted sleeves' stored net series on common dates, 1000 paths of 252

@@ -10,7 +10,7 @@ import re
 import sys
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
@@ -29,8 +29,6 @@ from btm_corekit import (
     Required,
     add_slot,
     ascii_words,
-    count_lines,
-    dispatch,
     emit,
     gated,
     make_id,
@@ -43,12 +41,14 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
+from btm_finance import delegation, loader
+from btm_finance import extensions as hooks
 from btm_finance import fills as pasted_fills
-from btm_finance import loader
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import (
     ANSWER,
+    LINES,
     WEEK,
     Bet,
     Open,
@@ -141,19 +141,23 @@ from btm_finance.models import (
     baseline_hypothesis,
     commission_ceiling,
 )
-from btm_finance.recommending import (
+from btm_finance.proposing import (
     AdvCut,
     Candidate,
     Inputs,
     Previous,
     Proposal,
+    Proposed,
     Quote,
     RuinCut,
     Skipped,
     Tier,
+    kelly_cap,
     propose,
     real,
+    replay,
 )
+from btm_finance.proposing import Sleeve as ProposedSleeve
 from btm_finance.repeat import (
     Presence,
     RepeatReport,
@@ -187,11 +191,14 @@ from btm_finance.store import (
 )
 from btm_finance.views import (
     by_status,
+    calibration,
     families,
     next_step,
     open_hypotheses,
     open_proposals,
     overdue,
+    spends,
+    stale_cap,
     trials_today,
     unscored,
 )
@@ -200,8 +207,7 @@ UNIVERSE = Optional("universe", inline=False)
 CONFIG = Optional("config", inline=False)
 FILLS = Optional("fills", inline=False)
 FILLS_SLOT = Required("fills", inline=False)  # names the flag in a rejection
-SCHEMA_KINDS = ("record", "run", "pad", "strategy")
-LATER: dict[str, str] = {}
+SCHEMA_KINDS = ("record", "run", "pad", "strategy", "proposal")
 MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
 STALE_BARS = 5  # trading days an as-of bar may trail the proposal date
 BASELINE = "baseline"
@@ -264,6 +270,11 @@ def context_of(book: Book) -> Context:
     limits = load_limits(book)
     kinds = (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION, Kind.FILL)
     ids = {kind: ids_of(book.path_of(kind)) for kind in kinds}
+    approved: dict[str, str] = {}
+    for row in decisions_of(book):
+        if row.get("action") == Action.APPROVE.value:
+            subject, day = str(row.get("subject")), str(row.get("ts", ""))[:10]
+            approved[subject] = min(day, approved.get(subject, day))
     return Context(
         families=frozenset(limits.families),
         min_holding_days=limits.min_holding_days,
@@ -271,6 +282,7 @@ def context_of(book: Book) -> Context:
         strategies=[strategy.name for strategy in strategies(book)],
         proposals=proposal_dates(book),
         book=book.meta.id,
+        approved=approved,
     )
 
 
@@ -371,7 +383,14 @@ def today_of(args: argparse.Namespace) -> date:
 
 
 def book_check(book: Book, args: argparse.Namespace) -> int:
-    """Continue view, `--live`, `--brief`, a standing, or a proposal."""
+    """Continue view, `--live`, `--brief`, `--propose`, a standing, or a
+    proposal."""
+    if args.propose is not None:
+        if args.target is not None:
+            raise CommandError("--propose takes the date; run check <book> --propose")
+        return propose_check(book, args.propose, force=args.force)
+    if args.force:
+        raise CommandError("--force goes with --propose <date>")
     if args.live:
         emit(live_view(book, today_of(args)).model_dump(mode="json"))
         return 0
@@ -517,6 +536,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
             f"not one of {'|'.join(Status)}"
         )
     proposals = open_proposals(proposal_dates(book), decisions, today)
+    shown = waiting(book, proposals, decisions, today)
     pending = len(open_hypotheses(hypotheses, runs, decisions))
     retired = frozenset(name for name, s in known.items() if s is Status.RETIRED)
     late = [
@@ -525,17 +545,25 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
     ]
     if late:
         signal(f"{len(late)} overdue or unscored hypothesis(es) under warnings")
-    budgets = families(
-        limits, hypotheses, runs, decisions, [row for _, row in hypothesis_lines]
-    )
+    every_line = [row for _, row in hypothesis_lines]
+    budgets = families(limits, hypotheses, runs, decisions, every_line)
+    live = [name for name, s in known.items() if s is Status.LIVE]
+    stale = stale_cap(live, runs, limits.asset_cap)
+    if stale:
+        signal(f"{len(stale)} live sleeve(s) measured at another cap under stale_cap")
+    pad = [row for _, row in rows_of(read_bytes(book.root / PAD_FILE))]
     return {
         "book": book.meta.id,
         "as_of": now_iso(),
         "strategies": {**by_status(known), "unknown": unknown},
         "families": budgets,
-        "proposals": proposals,
+        "proposals": shown,
         "incidents": current(kind_rows(book, Kind.INCIDENT))[-INCIDENT_TAIL:],
-        "pad": {"entries": count_lines(book.root / PAD_DIR / "scratch.jsonl")},
+        "stale_cap": stale,
+        "calibration": calibration(decisions, every_line),
+        "extensions": extension_table(book, runs, today, limits.idle_days),
+        "briefs": delegation.table(book.root, pad),
+        "pad": {"entries": len(pad)},
         "trials_today": {
             "used": trials_today(runs, today),
             "cap": limits.trials_per_day,
@@ -545,14 +573,74 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
     }
 
 
-def unfilled(book: Book, decisions: Sequence[Row], today: date) -> str | None:
-    """The newest proposal stem an `approve` decision of the last 7 days
-    names and no real fill names. O(D + F)."""
-    named = {
+PAD_FILE = PAD_DIR / "scratch.jsonl"
+
+
+def filled_stems(book: Book) -> frozenset[str]:
+    """Proposal stems some real fill names. O(F)."""
+    return frozenset(
         stem
         for row in current(kind_rows(book, Kind.FILL))
         if real(row) and (stem := fill_proposal(row)) is not None
+    )
+
+
+def waiting(
+    book: Book,
+    undecided: Sequence[Mapping[str, Any]],
+    decisions: Sequence[Row],
+    today: date,
+) -> list[dict[str, Any]]:
+    """Open proposals: those no decision names yet, and those an `approve`
+    decision names that no fill names yet, by stem, each with its age and
+    whether approved and filled. O(D + F + P)."""
+    filled = filled_stems(book)
+    approved = {
+        str(d.get("subject"))
+        for d in decisions
+        if d.get("action") == Action.APPROVE.value
     }
+    stems = (approved & set(proposal_dates(book))) - filled
+    unfilled = open_proposals(sorted(stems), [], today)
+    return sorted(
+        [
+            *({**p, "approved": False, "filled": False} for p in undecided),
+            *({**p, "approved": True, "filled": False} for p in unfilled),
+        ],
+        key=lambda p: str(p["date"]),
+    )
+
+
+def extension_table(
+    book: Book, runs: Sequence[Row], today: date, idle_days: int
+) -> list[dict[str, Any]]:
+    """Each book hook with its uses: run lines naming it, proposals naming
+    it, and for a source its loads. O(R + P + manifest)."""
+    present = hooks.found(book.root)
+    if not present:
+        return []
+    uses = [
+        hooks.Use(key, str(run.get("ts", "")))
+        for run in runs
+        if isinstance(run.get("extensions"), dict)
+        for key in run["extensions"]
+    ]
+    for stem in proposal_dates(book):
+        document = read_json(book.root / "proposals" / f"{stem}.json")
+        named = document.get("extensions") if isinstance(document, dict) else None
+        uses += [hooks.Use(key, stem) for key in (named or {})]
+    uses += [
+        hooks.Use(f"{hooks.Hook.SOURCES.value}/{entry.source}", entry.loaded_at)
+        for entry in read_manifest(book).files
+        if entry.source is not None
+    ]
+    return hooks.table(present, uses, today, idle_days)
+
+
+def unfilled(book: Book, decisions: Sequence[Row], today: date) -> str | None:
+    """The newest proposal stem an `approve` decision of the last 7 days
+    names and no real fill names. O(D + F)."""
+    named = filled_stems(book)
     found: list[str] = []
     for row in decisions:
         stamp = str(row.get("ts", ""))[:10]
@@ -573,22 +661,58 @@ def unfilled(book: Book, decisions: Sequence[Row], today: date) -> str | None:
 def owed_of(book: Book, view: Mapping[str, Any], today: date) -> Owed:
     """What the operator owes, in `Reply` order: fills, an answer to the
     oldest open proposal, a yes to a change asked today (`question` pad entry
-    of today no `answer` names), a word on the first overdue or unscored bet."""
-    pad = rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))
-    asked = asked_today((row for _, row in pad), today)
-    late = [w for w in view["warnings"] if w.get("problem") in {"overdue", "unscored"}]
-    first = late[0] if late else None
+    of today no `answer` names)."""
+    pad = rows_of(read_bytes(book.root / PAD_FILE))
     return Owed(
         unfilled=unfilled(book, decisions_of(book), today),
-        unanswered=view["proposals"][0]["date"] if view["proposals"] else None,
-        pending=asked,
-        late=None
-        if first is None
-        else (
-            str(first.get("strategy")),
-            str(first.get("falsifier_by") or first.get("due")),
+        unanswered=next(
+            (p["date"] for p in view["proposals"] if not p["approved"]), None
         ),
+        pending=asked_today((row for _, row in pad), today),
     )
+
+
+def book_value(book: Book) -> float:
+    """Held shares, every real fill replayed across strategies, at each
+    name's last close; 0 with no position. Assembles the store only when
+    something is held. O(F + store bytes)."""
+    held: dict[str, float] = {}
+    for shares in replay(current(kind_rows(book, Kind.FILL))).values():
+        for symbol, quantity in shares.items():
+            held[symbol] = held.get(symbol, 0.0) + quantity
+    held = {symbol: q for symbol, q in held.items() if q}
+    if not held:
+        return 0.0
+    panel, _ = assemble(book)
+    seen = np.isfinite(panel.close)
+    rows = np.where(seen, np.arange(len(panel.dates))[:, None], -1).max(
+        axis=0, initial=-1
+    )
+    last = {
+        name: float(panel.close[int(row), column])
+        for column, (name, row) in enumerate(
+            zip(panel.names, rows.tolist(), strict=True)
+        )
+        if row >= 0
+    }
+    unpriced = sorted(set(held) - set(last))
+    if unpriced:
+        signal(f"no close for held {', '.join(unpriced)}; left out of book value")
+    return sum(q * last[s] for s, q in held.items() if s in last)
+
+
+def brief_lines(book: Book) -> list[str]:
+    """`lib/brief.py` `lines(book)`, each a string; none without the file."""
+    lines = hooks.single(book.root, hooks.Hook.BRIEF)
+    if lines is None:
+        return []
+    try:
+        made = lines(book)
+    except Exception as err:  # the book's hook failed, named for it
+        raise CommandError(f"lib/brief.py lines raised: {err!r}") from err
+    if not isinstance(made, list) or not all(isinstance(x, str) for x in made):
+        raise CommandError("lib/brief.py lines returned no list of strings")
+    return made[:LINES]
 
 
 def brief_view(book: Book, today: date) -> dict[str, Any]:
@@ -615,7 +739,11 @@ def brief_view(book: Book, today: date) -> dict[str, Any]:
             )
         opened.append(Open(entry["date"], entry["age_days"], tuple(bets)))
     late = Counter(w.get("problem") for w in view["warnings"])
+    extra = brief_lines(book)
     return brief(
+        cap=load_limits(book).asset_cap,
+        value=book_value(book),
+        extra=extra,
         proposals=opened,
         incidents=current(kind_rows(book, Kind.INCIDENT)),
         overdue=late["overdue"],
@@ -656,8 +784,46 @@ def universe_symbols(book: Book, given: Sequence[str] | None) -> list[str]:
     return sorted(parse_universe(path.read_text(encoding="utf-8")))
 
 
-def fetched(book: Book, source: Source, raw: str | None, since: date) -> Loaded:
-    match source:
+def book_source(book: Book, name: str, raw: str | None, since: date) -> Loaded:
+    """`lib/sources/<name>.py` `fetch(since, config)`: config the `--config`
+    JSON object, `{}` when absent; it returns the core `Loaded`."""
+    present = hooks.found(book.root, (hooks.Hook.SOURCES,))
+    item = next((i for i in present if i.name == name), None)
+    if item is None:
+        builtin = "|".join(Source)
+        raise CommandError(
+            f"no source {name}: built-ins are {builtin}; a book source is "
+            f"lib/sources/{name}.py defining fetch(since, config)"
+        )
+    config: Any = {} if raw is None else config_json(raw)
+    fetch = hooks.entry_of(book.root, item)
+    try:
+        loaded = fetch(since, config)
+    except CommandError:
+        raise
+    except Exception as err:  # the book's source failed, named for it
+        raise CommandError(f"{item.shown} fetch raised: {err!r}") from err
+    if not isinstance(loaded, Loaded):
+        raise CommandError(
+            f"{item.shown} fetch returned {type(loaded).__name__}, not Loaded"
+        )
+    return loaded
+
+
+def config_json(raw: str) -> dict[str, Any]:
+    try:
+        data = json.loads(raw)
+    except ValueError as err:
+        raise CommandError(f"make the config valid JSON: {err}") from err
+    if not isinstance(data, dict):
+        raise CommandError("the config is one JSON object")
+    return data
+
+
+def fetched(book: Book, source: str, raw: str | None, since: date) -> Loaded:
+    if source not in set(Source):
+        return book_source(book, source, raw, since)
+    match Source(source):
         case Source.CSV:
             if raw is None:
                 raise CommandError("load csv needs --config:file naming bars or events")
@@ -676,7 +842,7 @@ def fetched(book: Book, source: Source, raw: str | None, since: date) -> Loaded:
 
 def cmd_load(args: argparse.Namespace) -> int:
     book = open_book(args.book)
-    source = Source(args.source)
+    source = name_of(args.source, "source")
     manifest = read_manifest(book)
     verified = verify_all(book, manifest)
     today = datetime.now(UTC).date()
@@ -689,11 +855,11 @@ def cmd_load(args: argparse.Namespace) -> int:
         signal(f"{dropped} row(s) before {since} dropped; pass an earlier --since")
     manifest, added = store(book, source, loaded, since=since, today=today)
     if not added:
-        signal(f"{source.value} yielded no rows from {since}; nothing written")
+        signal(f"{source} yielded no rows from {since}; nothing written")
     emit(
         {
             "book": book.meta.id,
-            "source": source.value,
+            "source": source,
             "since": since.isoformat(),
             "files": [
                 {"path": e.path, "rows": e.rows, "sha256": e.sha256} for e in added
@@ -753,7 +919,17 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
     },
     "run": {
         "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
+        "meaning": inspect.getdoc(RunLine),
         "strategy_config": "check --schema strategy",
+        "hooks": inspect.getdoc(hooks),
+    },
+    "proposal": {
+        "path": "proposals/<date>.json, written once by check --propose; "
+        "--force writes <date>.<n>.json beside it",
+        "proposal": f"{', '.join(Proposal.model_fields)}: {inspect.getdoc(Proposal)}",
+        "sleeve": f"{', '.join(ProposedSleeve.model_fields)}: "
+        f"{inspect.getdoc(ProposedSleeve)}",
+        "order": f"{', '.join(Proposed.model_fields)}",
     },
     "pad": {
         "path": f"{PAD_DIR.as_posix()}/scratch.jsonl; agent appends and greps "
@@ -765,6 +941,11 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
             "line), next_wake (ISO)",
             ANSWER: "operator's reply to a question: question (the answered "
             "question line's ts), text (operator's words); closes its yes line",
+            delegation.RECEIPT: "one delegate's final message, appended by the "
+            "lead after reading it: unit, brief (git hash-object of "
+            "delegates/<unit>.md as dispatched), agent, status (done|partial|"
+            "stopped), wrote (paths), ids, summary, next, friction (empty when "
+            "none); check's briefs table counts these",
         },
     },
     "strategy": strategy_schema(),
@@ -812,15 +993,24 @@ def scoped(book: Book, names: Sequence[str], *, held_out: bool) -> frozenset[str
     return chosen
 
 
-def peers_of(book: Book, manifest: Manifest, family: str) -> Peers:
-    """The family's run lines so far. A research run with a stored series is
-    a peer: its series feeds PBO and its net Sharpe `sr_var`, in file order."""
-    rows = [row for row in all_runs(book) if row.get("family_id") == family]
+def peers_of(
+    book: Book, manifest: Manifest, family: str, *, remeasure: str | None = None
+) -> Peers:
+    """The family's run lines so far that spent a trial. A research run with
+    a stored series is a peer: its series feeds PBO and its net Sharpe
+    `sr_var`, in file order. `remeasure`, the `code_hash` of a run that
+    re-measures the same code at a new cap, keeps that code's lines out of
+    the peers and the count at the trials already spent."""
+    rows = [
+        row for row in all_runs(book) if row.get("family_id") == family and spends(row)
+    ]
     ids: list[str] = []
     sharpes: list[float] = []
     series = []
     for row in rows:
-        if row.get("held_out"):
+        if row.get("held_out") or (
+            remeasure is not None and row.get("code_hash") == remeasure
+        ):
             continue
         run_id = str(row.get("run_id"))
         found = read_returns(book, manifest, run_id)
@@ -833,8 +1023,26 @@ def peers_of(book: Book, manifest: Manifest, family: str) -> Peers:
             sharpes.append(float(value) / math.sqrt(PERIODS_PER_YEAR))
         ids.append(run_id)
         series.append(found)
+    spent = len(rows) - (1 if remeasure is not None else 0)
     return Peers(
-        trials=len(rows), sharpes=tuple(sharpes), series=tuple(series), ids=tuple(ids)
+        trials=max(spent, 0),
+        sharpes=tuple(sharpes),
+        series=tuple(series),
+        ids=tuple(ids),
+    )
+
+
+def remeasure_of(
+    book: Book, name: str, digest: str, cap: int, *, held_out: bool
+) -> bool:
+    """The strategy's newest research run has this `code_hash` and another
+    `asset_cap`: this run re-measures it at the new cap and spends no
+    trial. A line without the stamp reads as measured at `cap`."""
+    newest = None if held_out else newest_run(all_runs(book), name)
+    return (
+        newest is not None
+        and newest.get("code_hash") == digest
+        and newest.get("asset_cap", cap) != cap
     )
 
 
@@ -860,17 +1068,17 @@ def file_bytes(path: Path) -> bytes:
 
 
 def policy_gates(
-    book: Book, limits: Limits, config: StrategyConfig, *, held_out: bool
+    book: Book, limits: Limits, config: StrategyConfig, *, spends: bool
 ) -> list[str]:
-    """Each policy refusal `--reason` runs past; `--held-out` passes the
-    daily cap."""
+    """Each policy refusal `--reason` runs past; a run spending no trial
+    (`--held-out`, or a re-measure at a new cap) passes the daily cap."""
     gates: list[str] = []
     if config.holding_days < limits.min_holding_days:
         gates.append(
             f"holding_days {config.holding_days} is under "
             f"limits.min_holding_days {limits.min_holding_days}"
         )
-    if held_out:
+    if not spends:
         return gates
     spent = trials_today(all_runs(book), utc_today())
     if spent >= limits.trials_per_day:
@@ -911,7 +1119,11 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"{hypothesis.get('id')} family {hypothesis.get('family_id')}"
         )
     code = code_of(book, name)
-    gates = policy_gates(book, limits, config, held_out=args.held_out)
+    digest = code_hash(code)
+    remeasure = remeasure_of(
+        book, name, digest, limits.asset_cap, held_out=args.held_out
+    )
+    gates = policy_gates(book, limits, config, spends=not (args.held_out or remeasure))
     if gates and args.reason is None:
         raise CommandError(
             f"refused before running: {'; '.join(gates)}; next: fix it, or "
@@ -920,15 +1132,19 @@ def cmd_measure(args: argparse.Namespace) -> int:
     for gate in gates:
         signal(f"--reason runs past {gate}; stamped as override_reason")
     loaded = load_strategy(book.root, name)
-    strategy = loaded.signal
+    measure_hooks = hooks.measured(book.root)
+    strategy = hooks.extended(loaded.signal, measure_hooks.market)
     panel, events = assemble(book)
     names = scoped(book, panel.names, held_out=args.held_out)
     panel, events = panel.only(names), events.only(names)
     manifest = read_manifest(book)
-    peers = peers_of(book, manifest, config.family_id)
+    peers = peers_of(
+        book, manifest, config.family_id, remeasure=digest if remeasure else None
+    )
     params = dict(config.params)
-    setting = Setting.of(panel, events, rules_of(limits, preferences, config))
-    outcome = evaluate(setting, strategy, params, peers)
+    rules = rules_of(limits, preferences, config)
+    setting = Setting.of(panel, events, rules, measure_hooks.cost)
+    outcome = evaluate(setting, strategy, params, peers, measure_hooks.metrics)
     refused = bounds(outcome.scorecard, limits)
     snapshot = data_snapshot(manifest)
     run_id = make_id([*ascii_words(name), "run"])
@@ -945,7 +1161,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         family_id=config.family_id,
         strategy=name,
         data_snapshot=snapshot,
-        code_hash=code_hash(code),
+        code_hash=digest,
         code_files=code_files(code),
         config=config.model_dump(mode="json"),
         params={key: float(value) for key, value in params.items()},
@@ -967,6 +1183,10 @@ def cmd_measure(args: argparse.Namespace) -> int:
         imports=loaded.imports,
         universe=UniverseKind.MEMBERSHIP if any(panel.members) else UniverseKind.STATIC,
         override_reason=args.reason if gates else None,
+        asset_cap=limits.asset_cap,
+        trial=not remeasure,
+        extensions=dict(measure_hooks.digests),
+        costs=measure_hooks.costs,
     )
     target = (
         book.ledger / "runs" / f"{agent}.jsonl" if agent else book.path_of(Kind.RUN)
@@ -983,12 +1203,19 @@ def cmd_measure(args: argparse.Namespace) -> int:
             f"signal.py reaches {', '.join(loaded.imports)} from outside the book; "
             "listed under imports on the run line for the critique"
         )
+    if remeasure:
+        signal(
+            f"same code as {name}'s newest run, new asset_cap "
+            f"{limits.asset_cap}: trial false, no trial spent"
+        )
     emit(
         {
             "book": book.meta.id,
             "run_id": run_id,
             "strategy": name,
             "held_out": args.held_out,
+            "asset_cap": limits.asset_cap,
+            "trial": not remeasure,
             "scorecard": outcome.scorecard.model_dump(mode="json"),
             "reasons": outcome.reasons,
             "refused": refused,
@@ -1024,12 +1251,14 @@ def half_spread(run: Row) -> float:
 
 @dataclass(frozen=True, slots=True)
 class Day:
-    """The scoped data and the as-of row `recommend` reads every sleeve on."""
+    """The scoped data and the as-of row `check --propose` reads every sleeve
+    on, with the book's `measure` hooks."""
 
     panel: Panel
     events: Events
     prep: Prepared
     row: int
+    hooks: hooks.Measured
 
 
 def sleeve_tier(  # noqa: PLR0913 - one sleeve's ledger evidence
@@ -1070,7 +1299,7 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         read_json(folder / "config.json"),
         f"strategies/{name}/config.json",
     )
-    strategy = load_strategy(book.root, name).signal
+    strategy = hooks.extended(load_strategy(book.root, name).signal, day.hooks.market)
     rules = rules_of(limits, preferences, config)
     setting = Setting(
         day.panel,
@@ -1078,6 +1307,7 @@ def candidate(  # noqa: PLR0913 - one sleeve's inputs, read once each
         day.prep,
         rules,
         commission_of(rules.commission_bps, day.panel),
+        day.hooks.cost,
     )
     market = Market.at(day.panel, day.events, int(day.panel.dates[day.row]))
     try:
@@ -1190,10 +1420,51 @@ def sleeves_of(book: Book) -> tuple[list[Row], list[Skipped]]:
     return chosen, skipped
 
 
-def cmd_recommend(args: argparse.Namespace) -> int:
-    """Writes `proposals/<date>.json` and nothing else."""
-    book = open_book(args.book)
-    when: date = args.date
+def shadow_of(
+    book: Book, candidates: Sequence[Candidate], limits: Limits
+) -> tuple[dict[str, float] | None, str, dict[str, str]]:
+    """`lib/sizing.py` `weights(sleeves, limits)` in place of the Kelly step,
+    each sleeve handed its measured inputs and default weight; the weights,
+    the sizing name, and the digests of the proposal hooks present."""
+    present = hooks.found(book.root, hooks.PROPOSED)
+    digests = hooks.digests(present)
+    item = next((i for i in present if i.hook is hooks.Hook.SIZING), None)
+    if item is None:
+        return None, "default", digests
+    weights = hooks.entry_of(book.root, item)
+    sleeves = {
+        c.strategy: {
+            "run_id": c.run_id,
+            "tier": c.tier.value,
+            "entry": c.entry,
+            "sharpe_net": c.sharpe_net,
+            "vol_net": c.vol_net,
+            "dsr": c.dsr,
+            "max_drawdown": c.max_drawdown,
+            "kelly": kelly_cap(c, limits.sizing),
+        }
+        for c in candidates
+    }
+    try:
+        made = weights(sleeves, limits)
+    except Exception as err:  # the book's sizing failed, named for it
+        raise CommandError(f"{item.shown} weights raised: {err!r}") from err
+    if not isinstance(made, Mapping):
+        raise CommandError(f"{item.shown} weights returned no mapping")
+    shadow: dict[str, float] = {}
+    for name, value in made.items():
+        number = card_number({"scorecard": {"w": value}}, "w")
+        if name not in sleeves or number is None or not 0.0 <= number < math.inf:
+            raise CommandError(
+                f"{item.shown} weights gave {name!r}: {value!r}; name a sleeve, "
+                "weight a finite number at or above 0"
+            )
+        shadow[str(name)] = number
+    return shadow, item.shown, digests
+
+
+def propose_check(book: Book, when: date, *, force: bool) -> int:
+    """`check --propose`: writes `proposals/<date>.json` and nothing else."""
     chosen, skipped = sleeves_of(book)
     if not chosen:
         named = ", ".join(s.strategy for s in skipped)
@@ -1202,7 +1473,7 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             + (f" (skipped {named})" if named else "")
             + "; status changes on the operator's word, the agent measures"
         )
-    target = proposal_target(book, when.isoformat(), force=args.force)
+    target = proposal_target(book, when.isoformat(), force=force)
     limits, preferences = load_limits(book), load_preferences(book)
     panel, events = assemble(book)
     names = scoped(book, panel.names, held_out=False)
@@ -1210,12 +1481,14 @@ def cmd_recommend(args: argparse.Namespace) -> int:
     row = panel.through(day_of(when)) - 1
     if row < 0:
         raise CommandError(f"no bar on or before {when}; load prices first")
-    day = Day(panel, events, Prepared.of(panel, events, limits.delisting), row)
+    prepared = Prepared.of(panel, events, limits.delisting)
+    day = Day(panel, events, prepared, row, hooks.measured(book.root))
     fills = current(kind_rows(book, Kind.FILL))
     candidates = tuple(
         candidate(book, limits, preferences, day, run=run, fills=fills)
         for run in chosen
     )
+    shadow, sizing, digests = shadow_of(book, candidates, limits)
     proposal = propose(
         Inputs(
             date=when.isoformat(),
@@ -1229,6 +1502,9 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             quotes=quotes_of(day),
             fills=fills,
             previous=previous_of(book, when.isoformat()),
+            shadow=shadow,
+            sized_by=sizing,
+            extensions=digests,
         )
     )
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1251,11 +1527,13 @@ def cmd_recommend(args: argparse.Namespace) -> int:
             "book": book.meta.id,
             "proposal": book.relative(target),
             "as_of": proposal.as_of,
+            "sizing": proposal.sizing,
             "sleeves": {
                 s: {
                     "weight": v.weight,
                     "tier": v.tier.value,
                     "edge_scale": v.edge_scale,
+                    "adv_participation": v.adv_participation,
                 }
                 for s, v in proposal.sleeves.items()
             },
@@ -1289,7 +1567,7 @@ def stale_flags(proposal: Proposal, cadence: Cadence, today: date) -> list[str]:
     if behind > STALE_BARS:
         flags.append(
             f"as-of bar {proposal.as_of} is {behind} trading days before "
-            f"{proposal.date}; load prices, then recommend again with --force"
+            f"{proposal.date}; load prices, then check --propose again with --force"
         )
     return flags
 
@@ -1307,6 +1585,7 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
                 "sharpe_net": sleeve.sharpe_net,
                 "max_drawdown": sleeve.max_drawdown,
                 "weight": sleeve.weight,
+                "adv_participation": sleeve.adv_participation,
             }
         )
     if BASELINE not in proposal.sleeves:
@@ -1322,6 +1601,7 @@ def comparison(book: Book, proposal: Proposal) -> list[dict[str, Any]]:
                 if run is None
                 else card_number(run, "max_drawdown"),
                 "weight": 0.0,
+                "adv_participation": None,
                 "note": "baseline is no sleeve here: its status is not live",
             }
         )
@@ -1332,7 +1612,9 @@ def proposal_view(book: Book, when: date) -> dict[str, Any]:
     """`check <date>`: blockers, baseline, stale flags, then the diff."""
     versions = proposal_versions(book, when.isoformat())
     if not versions:
-        raise CommandError(f"no proposal for {when}: run recommend {when} first")
+        raise CommandError(
+            f"no proposal for {when}: run check <book> --propose {when} first"
+        )
     path = versions[-1]
     proposal = parse_model(Proposal, read_json(path), book.relative(path))
     known = {str(row.get("run_id")) for row in all_runs(book)}
@@ -1415,6 +1697,12 @@ def drift_of(
     elif code_hash(code) != line.code_hash:
         moved = code_drift(line.code_files, code_files(code))
         problems.append(f"code moved: {', '.join(moved) or 'code_hash differs'}")
+    present = hooks.digests(hooks.found(book.root, hooks.MEASURED))
+    moved_hooks = hooks.drift(line.extensions, present)
+    if moved_hooks:
+        problems.append(f"extension {', '.join(moved_hooks)}")
+    for key in hooks.unrecorded(line.extensions, present):
+        signal(f"{key} is new since the run; the repeat leaves it out")
     sources = [e for e in manifest.files if e.table != Table.RETURNS]
     stamp = str(row.get("ts", ""))
     problems += data_drift(
@@ -1471,13 +1759,19 @@ def cmd_repeat(args: argparse.Namespace) -> int:
     config = parse_model(StrategyConfig, line.config, f"run {line.run_id} config")
     limits, preferences = load_limits(book), load_preferences(book)
     preferences = preferences.with_(exclusions=line.exclusions.model_dump())
-    strategy = load_strategy(book.root, name).signal
+    recorded_hooks = hooks.measured(book.root, only=line.extensions)
+    strategy = hooks.extended(
+        load_strategy(book.root, name).signal, recorded_hooks.market
+    )
     panel, events = assemble(book)
     names = scoped(book, panel.names, held_out=line.held_out)
     panel, events = panel.only(names), events.only(names)
-    setting = Setting.of(panel, events, rules_of(limits, preferences, config))
+    rules = rules_of(limits, preferences, config)
+    if line.asset_cap is not None:
+        rules = replace(rules, asset_cap=float(line.asset_cap))
+    setting = Setting.of(panel, events, rules, recorded_hooks.cost)
     peers = recorded_peers(book, manifest, line)
-    outcome = evaluate(setting, strategy, line.params, peers)
+    outcome = evaluate(setting, strategy, line.params, peers, recorded_hooks.metrics)
     compared, diffs = compare(
         line.scorecard.model_dump(mode="json"),
         outcome.scorecard.model_dump(mode="json"),
@@ -1539,15 +1833,19 @@ def sleeve_fills(
 
 
 def modeled(
-    book: Book, name: str, setting_of: Callable[[StrategyConfig], Setting]
+    book: Book,
+    name: str,
+    setting_of: Callable[[StrategyConfig], Setting],
+    market: Mapping[str, hooks.Extender],
 ) -> tuple[tuple[Days, Floats] | None, str | None]:
-    """`measure`'s base path with current code and params, or why not."""
+    """`measure`'s base path with current code, params, and hooks, or why
+    not."""
     folder = book.root / "strategies" / name
     try:
         config = parse_model(
             StrategyConfig, read_json(folder / "config.json"), f"strategies/{name}"
         )
-        strategy = load_strategy(book.root, name).signal
+        strategy = hooks.extended(load_strategy(book.root, name).signal, market)
         path = model_path(setting_of(config), strategy, dict(config.params))
     except CommandError as err:
         return None, f"no model path: {err}"
@@ -1568,10 +1866,11 @@ def live_view(book: Book, today: date) -> LiveReport:
         last_bar = date_of(last).isoformat()
         research = scoped(book, panel.names, held_out=False)
         model_panel, model_events = panel.only(research), events.only(research)
+        book_hooks = hooks.measured(book.root)
 
         def setting_of(config: StrategyConfig) -> Setting:
             rules = rules_of(limits, preferences, config)
-            return Setting.of(model_panel, model_events, rules)
+            return Setting.of(model_panel, model_events, rules, book_hooks.cost)
 
         prices = reference_prices(
             {
@@ -1592,7 +1891,7 @@ def live_view(book: Book, today: date) -> LiveReport:
             commission=commission_ceiling(limits.commission_bps) / 1e4,
         )
         for name in tracked:
-            path, why = modeled(book, name, setting_of)
+            path, why = modeled(book, name, setting_of, book_hooks.market)
             run = run_facts(book, name)
             notes = [note for note in (why,) if note]
             if run is None:
@@ -1641,13 +1940,6 @@ def live_view(book: Book, today: date) -> LiveReport:
     )
 
 
-def later(verb: str) -> int:
-    def refuse() -> int:
-        raise CommandError(f"{verb} arrives in {LATER[verb]}; not available yet")
-
-    return dispatch(refuse)
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = Parser(description=btm_finance.__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -1677,7 +1969,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     check = commands.add_parser(
         "check",
-        help="continue view, a standing, a proposal, or --schema",
+        help="continue view, a standing, a proposal, --propose, or --schema",
     )
     check.set_defaults(func=cmd_check)
     check.add_argument("book", nargs="?", help="book directory; --schema needs none")
@@ -1699,6 +1991,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument(
         "--brief", action="store_true", help="daily brief: at most twelve lines"
+    )
+    check.add_argument(
+        "--propose",
+        type=iso_day,
+        metavar="DATE",
+        help="write proposals/<date>.json for the live sleeves",
+    )
+    check.add_argument(
+        "--force",
+        action="store_true",
+        help="with --propose: write <date>.<n>.json beside the first",
     )
     check.add_argument(
         "--today",
@@ -1725,21 +2028,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="run past trials_per_day or min_holding_days; stamped as override_reason",
     )
 
-    recommend = commands.add_parser("recommend", help="write the rebalance proposal")
-    recommend.set_defaults(func=cmd_recommend)
-    recommend.add_argument("book", help="book directory")
-    recommend.add_argument("date", type=iso_day, help="rebalance date, YYYY-MM-DD")
-    recommend.add_argument(
-        "--force", action="store_true", help="write <date>.<n>.json beside the first"
-    )
-
-    for verb, stage in LATER.items():
-        stub = commands.add_parser(verb, help=f"arrives in {stage}; refused today")
-        stub.add_argument("rest", nargs=argparse.REMAINDER)
     load = commands.add_parser("load", help="pull one source into the raw store")
     load.set_defaults(func=cmd_load)
     load.add_argument("book", help="book directory")
-    load.add_argument("source", choices=[source.value for source in Source])
+    load.add_argument(
+        "source",
+        help=f"{'|'.join(Source)}, or a book source: lib/sources/<name>.py",
+    )
     load.add_argument(
         "--since",
         type=iso_day,
@@ -1752,6 +2047,4 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     given = list(sys.argv[1:] if argv is None else argv)
-    if given and given[0] in LATER:
-        return later(given[0])
     return run_cli(build_parser(), given)

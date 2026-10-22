@@ -7,6 +7,8 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
+import numpy as np
+from btm_finance.data.assemble import assemble
 from btm_finance.ledger import Kind
 from btm_finance.store import append_ledger, open_book
 
@@ -163,22 +165,64 @@ def test_the_brief_fits_three_proposals_and_five_incidents_in_twelve_lines(book,
     code, brief, _ = run(["check", str(book), "--brief"])
     assert code == 0
     lines = brief["lines"]
-    assert len(lines) == 6
+    assert len(lines) == 7
     assert all("\n" not in line for line in lines)
-    assert lines[0].startswith("proposal 2026-07-31")
-    assert "baseline - w 0.1 odds none sharpe_net 0.6" in lines[0]
-    assert "drift tracked w 0.02 odds none sharpe_net null" in lines[0]
-    assert lines[3].startswith("breaches, last 7 days: ")
-    assert lines[3].count(",") == 5  # five strategy-kind pairs after the colon
-    assert lines[4] == "overdue 0, unscored 0"
-    assert lines[5] == "Reply approve, reject, or override 2026-07-31 with a reason."
+    assert lines[0] == "cap 10000000, book 0"
+    assert lines[1].startswith("proposal 2026-07-31")
+    assert "baseline - w 0.1 odds none sharpe_net 0.6" in lines[1]
+    assert "drift tracked w 0.02 odds none sharpe_net null" in lines[1]
+    assert lines[4].startswith("breaches, last 7 days: ")
+    assert lines[4].count(",") == 5  # five strategy-kind pairs after the colon
+    assert lines[5] == "overdue 0, unscored 0"
+    assert lines[6] == "Reply approve, reject, or override 2026-07-31 with a reason."
 
 
 def test_more_proposals_than_fit_collapse_to_a_count_and_the_newest_two(book, run):
     days = [f"2026-{month:02d}-01" for month in range(1, 11)]
     proposals(book, days)
     lines = run(["check", str(book), "--brief"])[1]["lines"]
-    assert len(lines) == 6
-    assert lines[0].startswith("10 open proposals")
-    assert lines[1].startswith("proposal 2026-10-01")
-    assert lines[2].startswith("proposal 2026-09-01")
+    assert len(lines) == 7
+    assert lines[1].startswith("10 open proposals")
+    assert lines[2].startswith("proposal 2026-10-01")
+    assert lines[3].startswith("proposal 2026-09-01")
+
+
+BOOK_LINES = """def lines(book):
+    return [f"note {k} for {book.meta.id}" for k in range(20)]
+"""
+
+
+def test_book_brief_lines_sit_before_the_reply_within_twelve(book, run):
+    proposals(book, ["2026-07-31"])
+    (book / "lib" / "brief.py").write_text(BOOK_LINES)
+    lines = run(["check", str(book), "--brief"])[1]["lines"]
+    assert len(lines) == 12
+    assert lines[0] == "cap 10000000, book 0"
+    assert lines[4].startswith("note 0 for ")
+    assert lines[10].startswith("note 6 for ")
+    assert lines[-1] == "Reply approve, reject, or override 2026-07-31 with a reason."
+
+
+def test_the_first_line_values_held_shares_at_the_last_close(synthetic, run):
+    book = synthetic(seed=7)
+    limits = json.loads((book / "limits.json").read_text())
+    limits["asset_cap"] = 250000
+    (book / "limits.json").write_text(json.dumps(limits))
+    opening = {
+        "side": "buy",
+        "price": 1.0,
+        "date": "2020-01-02",
+        "strategy": "opening",
+    }
+    held = [opening | {"symbol": "S001", "quantity": 10}]
+    held += [opening | {"symbol": "S002", "quantity": 4}]
+    record(run, book, {"fills": held})
+    panel, _ = assemble(open_book(str(book)))
+    last = {
+        name: panel.close[np.flatnonzero(np.isfinite(panel.close[:, k]))[-1], k]
+        for k, name in enumerate(panel.names)
+    }
+    value = 10 * last["S001"] + 4 * last["S002"]
+    lines = run(["check", str(book), "--brief"])[1]["lines"]
+    assert lines[0] == f"cap 250000, book {value:.0f}"
+    assert lines[-1] == "Nothing to decide today; ask anything."

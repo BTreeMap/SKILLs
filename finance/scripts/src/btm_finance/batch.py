@@ -20,10 +20,13 @@ from btm_finance.models import (
     DecisionEntry,
     FillEntry,
     HypothesisEntry,
+    Outcome,
     Side,
 )
 
 Maker = Callable[[Iterable[str]], str]
+OPENING = "opening"
+"""The strategy of a holding imported at start; it names no proposal."""
 Rows = tuple[Mapping[str, Any], ...]
 
 
@@ -48,12 +51,17 @@ SCHEMA: dict[str, str] = {
     f'hypothesis id, or proposal date>", "action": "{_choices(Action)}", '
     '"reason": "...", "odds": {"p_win": 0.55, "payoff": 1.5, '
     '"horizon_days": 63, "kelly_implied": 0.25} (optional), "confidence": 0.6 '
-    '(optional), "supersedes": "<id>" (optional); a cap change is an '
-    "override naming the book id}",
+    '(optional), "supersedes": "<id>" (optional); close names a hypothesis '
+    'id and adds "realized": -0.04 (decimal return of the bet) and '
+    f'"against_odds": "{_choices(Outcome)}"; approve names a proposal stem, '
+    "reason the reply verbatim; a cap change is an override naming the "
+    "book id}",
     "fills": '{"symbol": "...", '
     f'"side": "{_choices(Side)}", "quantity": 10, "price": 12.5, '
     '"date": "YYYY-MM-DD", "strategy": "<name>|opening", '
-    '"proposal": "<proposal stem>|null (opening)"}',
+    '"proposal": "<proposal stem>|null (opening)"}; a fill names a proposal '
+    "an approve decision dated on or before the fill's date names; only "
+    "opening fills name none",
 }
 
 
@@ -83,6 +91,8 @@ class Context:
     proposals: list[str]
     book: str = ""
     """The book id: a decision subject for book-wide changes."""
+    approved: Mapping[str, str] = field(default_factory=dict)
+    """Proposal stem to the date of its earliest live `approve` decision."""
 
 
 @dataclass(slots=True)
@@ -102,6 +112,7 @@ class _Expansion(Acceptance):
         self.context = context
         self.stamp = stamp
         self.staged: dict[Kind, list[Row]] = {}
+        self.approved = dict(context.approved)
         self.pools = {
             kind: Pool(kind.value, list(context.ids.get(kind, [])))
             for kind in (Kind.HYPOTHESIS, Kind.CRITIQUE, Kind.DECISION)
@@ -206,9 +217,48 @@ class _Expansion(Acceptance):
             if entry is None:
                 continue
             subject = self.resolve_ref(entry.subject, subjects, f"{where}.subject")
+            wrong = {
+                Action.CLOSE: (
+                    self.pools[Kind.HYPOTHESIS].ids,
+                    "close names the hypothesis id of the bet",
+                ),
+                Action.APPROVE: (
+                    self.context.proposals,
+                    "approve names a proposal stem",
+                ),
+            }.get(entry.action)
+            if subject is not None and wrong is not None and subject not in wrong[0]:
+                self.fail(f"{where}.subject", f"replace '{subject}': {wrong[1]}")
+                subject = None
             full = self.named(Kind.DECISION, entry, where, entry.supersedes)
             if full is not None and subject is not None:
                 self.stage(Kind.DECISION, full, {**dump(entry), "subject": subject})
+                if entry.action is Action.APPROVE:
+                    day = self.stamp[:10]
+                    self.approved[subject] = min(day, self.approved.get(subject, day))
+
+    def sanctioned(self, entry: FillEntry, where: str) -> bool:
+        """An `opening` fill, or one whose proposal an `approve` decision
+        dated on or before the fill names."""
+        if entry.strategy == OPENING:
+            return True
+        if entry.proposal is None:
+            self.fail(
+                f"{where}.proposal",
+                "name the approved proposal this fill trades",
+                "only opening fills name no proposal",
+            )
+            return False
+        approved = self.approved.get(entry.proposal)
+        if approved is None or approved > entry.date.isoformat():
+            self.fail(
+                f"{where}.proposal",
+                f"record the operator's approve decision on {entry.proposal} "
+                f"first: none is dated on or before {entry.date}",
+                "no order without a decision naming its proposal",
+            )
+            return False
+        return True
 
     def take_fills(self, rows: Rows) -> list[str]:
         made: list[str] = []
@@ -218,6 +268,8 @@ class _Expansion(Acceptance):
                 continue
             entry = self.decode(FillEntry, row, where, SCHEMA["fills"])
             if entry is None or not self.supersedes(Kind.FILL, entry.supersedes, where):
+                continue
+            if not self.sanctioned(entry, where):
                 continue
             full = self.maker_of([entry.symbol, entry.side])
             self.stage(Kind.FILL, full, dump(entry))

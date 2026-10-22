@@ -1,7 +1,8 @@
 """Proposal arithmetic, pure: positions replayed from real fills, sleeves
-sized by a Kelly fraction set by evidence tier and deflated Sharpe, capped at
-`max_weight`, scaled to the ruin bound, per-name caps, whole-share orders
-diffed against held positions, ADV cuts, carried orders, summary.
+sized by a Kelly fraction set by evidence tier and deflated Sharpe (or by the
+book's `lib/sizing.py`), summed to at most 1, scaled to the ruin bound,
+`max_weight` per name across sleeves, whole-share orders diffed against held
+positions, ADV cuts, carried orders, summary.
 
 Sizing and the diff are O(S N + S T log T) for S sleeves, N names, T
 periods, plus one bootstrap of O(T S + P H); replay is O(F) for F fills.
@@ -12,7 +13,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from functools import reduce
@@ -70,10 +71,13 @@ class Proposed(Order):
 
 
 class Sleeve(Model):
-    """One sleeve's sizing: `weight` is min(`kelly_cap`, `max_weight`), or
-    `entry_weight` before any real fill; the sum over sleeves scaled to at
-    most 1, then to the ruin bound. `kelly_cap` is the tier's Kelly fraction
-    times `edge_scale` times Sharpe over vol."""
+    """One sleeve's sizing: `weight` is `kelly_cap` (or the book sizing
+    rule's weight), or `entry_weight` before any real fill; the sum over
+    sleeves scaled to at most 1, then to the ruin bound. `kelly_cap` is the
+    tier's Kelly fraction times `edge_scale` times Sharpe over vol.
+    `max_weight` bounds each name's net weight across sleeves, not a sleeve.
+    `adv_participation` is the sleeve's largest target position at the cap
+    over that name's 21-day dollar ADV; null with no position."""
 
     model_config = LOOSE
 
@@ -91,6 +95,7 @@ class Sleeve(Model):
     code_changed: bool
     unknown: int
     signal: dict[str, float]
+    adv_participation: float | None = None
 
 
 class Target(Model):
@@ -188,7 +193,9 @@ class Summary(Model):
 
 
 class Proposal(Model):
-    """`proposals/<date>.json`, written once by `recommend`."""
+    """`proposals/<date>.json`, written once by `check --propose`. `sizing`
+    names the Kelly step used, `default` or `lib/sizing.py`; `extensions`
+    each proposal hook present (`<hook>/<name>`) to its digest."""
 
     model_config = LOOSE
 
@@ -206,6 +213,8 @@ class Proposal(Model):
     ruin: Ruin | None = None
     reasons: dict[str, str] = Field(default_factory=dict)
     """Defaults let a proposal written before tiers and ruin read back."""
+    sizing: str = "default"
+    extensions: dict[str, str] = Field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,6 +272,10 @@ class Inputs:
     quotes: Mapping[str, Quote]
     fills: Sequence[Row]
     previous: Previous | None
+    shadow: Mapping[str, float] | None = None
+    """Weights the book's `lib/sizing.py` gave, in place of the Kelly step."""
+    sized_by: str = "default"
+    extensions: Mapping[str, str] = field(default_factory=dict)
 
 
 def edge_scale(dsr: float | None) -> float:
@@ -291,13 +304,19 @@ def kelly_cap(candidate: Candidate, sizing: Sizing) -> float:
     return max(fraction * sharpe / vol, 0.0)
 
 
-def sleeve_weights(candidates: Sequence[Candidate], sizing: Sizing) -> dict[str, float]:
-    """min(Kelly cap, `max_weight`), `entry_weight` before any real fill,
-    then scaled so the sum is at most 1. O(S)."""
+def sleeve_weights(
+    candidates: Sequence[Candidate],
+    sizing: Sizing,
+    shadow: Mapping[str, float] | None = None,
+) -> dict[str, float]:
+    """Kelly cap, or `shadow`'s weight when the book sizes, `entry_weight`
+    before any real fill, then scaled so the sum is at most 1. O(S)."""
     raw = {
         c.strategy: sizing.entry_weight
         if c.entry
-        else min(kelly_cap(c, sizing), sizing.max_weight)
+        else kelly_cap(c, sizing)
+        if shadow is None
+        else shadow.get(c.strategy, 0.0)
         for c in candidates
     }
     total = sum(raw.values())
@@ -629,12 +648,27 @@ def by_sleeve(targets: Mapping[str, Target]) -> dict[str, dict[str, int]]:
     return dict(out)
 
 
+def participations(
+    targets: Mapping[str, Target], quotes: Mapping[str, Quote]
+) -> dict[str, float]:
+    """Per sleeve its largest whole-share target over the name's ADV, at the
+    cap; a name with unknown ADV is left out. O(S N)."""
+    found: dict[str, float] = {}
+    for name, target in targets.items():
+        quote = quotes[name]
+        for strategy, quantity in target.quantity.items():
+            if quantity and quote.adv > 0.0:
+                load = participation(abs(quantity), quote)
+                found[strategy] = max(load, found.get(strategy, 0.0))
+    return found
+
+
 def propose(inputs: Inputs) -> Proposal:
     """The whole proposal from its inputs; deterministic given them."""
     sizing, cap = inputs.sizing, inputs.cap
     candidates = inputs.candidates
     names = sorted(c.strategy for c in candidates)
-    summed = sleeve_weights(candidates, sizing)
+    summed = sleeve_weights(candidates, sizing, inputs.shadow)
     seed = date.fromisoformat(inputs.date).toordinal()
     ruined = ruin_of(candidates, summed, sizing, seed)
     weights = {name: w * ruined.scale for name, w in summed.items()}
@@ -663,6 +697,7 @@ def propose(inputs: Inputs) -> Proposal:
         unmanaged += done.unmanaged
     marked, carried = carry(inputs.previous, orders, inputs.fills)
     spreads = {c.strategy: c.half_spread for c in candidates}
+    load = participations(targets, inputs.quotes)
     sleeves = {
         c.strategy: Sleeve(
             strategy=c.strategy,
@@ -677,6 +712,7 @@ def propose(inputs: Inputs) -> Proposal:
             code_changed=c.code_changed,
             unknown=c.unknown,
             signal=dict(sorted(c.signal.items())),
+            adv_participation=load.get(c.strategy),
         )
         for c in candidates
     }
@@ -700,4 +736,6 @@ def propose(inputs: Inputs) -> Proposal:
         cuts=tuple(cuts),
         ruin=ruined.ruin,
         reasons={} if ruined.reason is None else {"ruin": ruined.reason},
+        sizing=inputs.sized_by,
+        extensions=dict(inputs.extensions),
     )

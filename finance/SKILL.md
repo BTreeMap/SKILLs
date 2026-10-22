@@ -14,7 +14,7 @@ compatibility: >-
   first run builds the `.venv` at the checkout root that every skill's
   scripts share, about 430 MB with this skill's numeric libraries.
 metadata:
-  argument-hint: "[start|load|record|measure|check|recommend] <book path>"
+  argument-hint: "[start|load|record|measure|check] <book path>"
 ---
 
 # Finance
@@ -87,7 +87,7 @@ $R record "$B" --batch:file <batch.json> && $R check "$B"
 $R record "$B" --fills:file <table> --proposal <stem>
 $R measure "$B" <strategy> [--agent <name>] [--held-out] [--repeat <run id>] [--reason "<text>"]
 $R check "$B" [<strategy> | <run id> | <proposal date>] [--live | --brief | --schema [kind]]
-$R recommend "$B" <YYYY-MM-DD> [--force]
+$R check "$B" --propose <YYYY-MM-DD> [--force]
 PYTHONPATH="$B" $U python "$B/tools/<verb>-<object>.py" [args]
 $U pytest "$B/tests"
 ```
@@ -98,8 +98,8 @@ $U pytest "$B/tests"
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch; or `--fills:file <table>` (pasted fills: CSV `symbol,side,quantity,price,date`, optional `strategy`, or JSON list) with `--proposal <stem>`, built into `fills` batch, same gate | Accepted counts per kind, `new` ids |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` runs once per promotion gate, inside loop: read its scorecard only; `--repeat` reruns named run, writes nothing; refuses before running, writing nothing, on a policy gate: `holding_days` under `limits.min_holding_days`, or run lines dated today (UTC, every runs file) at `limits.trials_per_day` (default 3), unless `--held-out` or `--repeat`. `--reason` runs past policy gates, stamped as `override_reason` | `run_id`, scorecard with `walk_forward.post_cutoff` (net Sharpe of folds starting after `limits.model_cutoff`), `reasons` for null fields, `refused`, `imports`; run line stores `code_hash` (sha256 over AST dump of `signal.py` and each reached book-local module, canonical `config.json`), `code_files` (path to own digest), `engine` (package version), `universe` (`membership` or `static`), `override_reason`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories` (moved engine version); exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--schema [record\|run\|pad\|strategy]`, book optional; `--today` tests only | `--schema`: that kind's shapes, all when bare. Nothing: continue view (strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals (no decision names them) with age, last incident lines, pad count, `trials_today` (`used`, `cap`), `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `problem: overdue` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` (`hypothesis`, `strategy`, `due`)). Strategy or run: `standing`, `blockers`, compact scorecard with `override_reason`, `critique`, `status`. Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe; incidents of last 7 days by strategy and kind; overdue and unscored counts; last, one plain reply: `Paste your fills for <date>.` (proposal approved within 7 days, no fill names it), `Reply approve, reject, or override <date> with a reason.` (oldest open proposal), `Reply yes to apply, or say what to change.` (`question` pad entry of today no `answer` names), `Say what happened to <strategy> by <date>.` (overdue or unscored), else `Nothing to decide today; ask anything.`, first that applies. Over 9 open proposals: count line, then newest two. Every output has advisory `next` |
-| `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with per sleeve `weight`, `tier`, `edge_scale`, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `ruin` loss, `reasons` for null `ruin`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
+| `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`, no target; `--schema [record\|run\|strategy\|pad\|proposal]`, book optional; `--today` tests only | `--schema`: that kind's shapes, all when bare. Nothing: continue view (strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals (no decision names them) with age, last incident lines, pad count, `trials_today` (`used`, `cap`), `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `problem: overdue` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` (`hypothesis`, `strategy`, `due`)). Strategy or run: `standing`, `blockers`, compact scorecard with `override_reason`, `critique`, `status`. Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: first `cap <asset_cap>, book <value>` (held shares at last close); per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe; incidents of last 7 days by strategy and kind; overdue and unscored counts; last, one plain reply: `Paste your fills for <date>.` (proposal approved within 7 days, no fill names it), `Reply approve, reject, or override <date> with a reason.` (oldest open proposal), `Reply yes to apply, or say what to change.` (`question` pad entry of today no `answer` names), else `Nothing to decide today; ask anything.`, first that applies. Over 9 open proposals: count line, then newest two. Every output has advisory `next` |
+| `check --propose` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with per sleeve `weight`, `tier`, `edge_scale`, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `ruin` loss, `reasons` for null `ruin`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 
 Output: one JSON document on stdout; `signal:` lines on stderr advisory.
 Exit 0 done, 1 fix input, 2 upstream failed. Content travels in slots:
@@ -136,9 +136,10 @@ all, resend. Arrays optional; order below is acceptance order:
   `promotable`. `payoff` is gain per unit lost; `record` refuses
   `kelly_implied` more than 0.01 from `p_win - (1 - p_win) / payoff`.
   Decision takes same `odds`, optional.
-- `close` decision ends bet: `subject` hypothesis id. Hypothesis with `odds`
-  whose strategy's newest `promote` is over `horizon_days` calendar days old
-  shows as `unscored` until one lands.
+- `close` decision ends bet: `subject` hypothesis id, `realized` decimal
+  return, `against_odds` `win` or `loss`. Hypothesis with `odds` whose
+  strategy's newest `promote` is over `horizon_days` calendar days old shows
+  as `unscored` until one lands.
 - Operator's instruction goes in `reason` verbatim. Change to `limits.json`:
   `override`, `subject` book id; to `status`: `promote` or `retire` naming
   strategy.
@@ -207,7 +208,8 @@ continues meanwhile. Standing order, operator absent:
 2. Bare `check`; act on `next`.
 3. Research within budgets: units below, each in delegate (Delegate through
    `/summon`). Stop when budgets are spent.
-4. Rebalance day: `recommend`, then `check <date>` (Propose and approve).
+4. Rebalance day: `check --propose <date>`, then `check <date>` (Propose and
+   approve).
 5. Weekly: `check --live` (Live). At promotion gate: `measure --held-out`;
    read scorecard only; propose promotion in brief.
 6. Record `close` for each hypothesis past its horizon.
@@ -246,7 +248,7 @@ author's receipt beyond run id.
 | --- | --- |
 | Unit | one unit, `unit` any slug: author takes one registered hypothesis, critique one run |
 | Record | book path; absolute path of `AGENTS.md`, read first; agent name `<unit>-<n>` (`author-1`, `critique-1`), its `--agent` and critique `by`; unit's values (ledger line or run id, dates, names); sibling bounds when parallel |
-| Rules it can break | none of four invariants; writes only its scope; never `record`, `recommend`, held-out names; author's run line only through `measure --agent`; critique never run's author |
+| Rules it can break | none of four invariants; writes only its scope; never `record`, `check --propose`, held-out names; author's run line only through `measure --agent`; critique never run's author |
 | Cap | author: "runs you may measure: <trials minus trials_used>"; critique: one run; else summon's sizing |
 | Gate | examine, then `record` of batch files delegate names, then `check "$B"` |
 
@@ -271,27 +273,27 @@ Always:
 
 ## Propose and approve
 
-Sleeve is strategy whose `status` reads `live`. `recommend` diffs sleeves
-against real account (real fills plus opening holdings); `check --live`
-monitors each sleeve from its own fills only. `unmanaged` lists held names
-outside research set, never sold; never reason from it about held-out
-membership. Load `book` before explaining sizing, cuts, carried orders, or
-proposal fields.
+Sleeve is strategy whose `status` reads `live`. `check --propose` diffs
+sleeves against real account (real fills plus opening holdings);
+`check --live` monitors each sleeve from its own fills only. `unmanaged`
+lists held names outside research set, never sold; never reason from it
+about held-out membership. Load `book` before explaining sizing, cuts,
+carried orders, or proposal fields.
 
 Size follows evidence. Each sleeve's `tier` comes from ledger: `backtest`
 until real fills span `thresholds.tracked_days` (63) calendar days within
 `thresholds.tracking_error`, then `tracked`. Tier sets fraction of full
 Kelly (`sizing.kelly_fraction`), scaled by `edge_scale` from run's DSR: 0 at
-0.5, 1 at 0.95, capped at `sizing.max_weight`. Sleeve with no real fill yet
-takes `sizing.entry_weight`. Whole book then scales down when its
-1st-percentile 252-day loss passes `sizing.ruin_bound` (`cuts` entry
-`kind: ruin`).
+0.5, 1 at 0.95; `sizing.max_weight` caps each name across sleeves, not a
+sleeve. Sleeve with no real fill yet takes `sizing.entry_weight`. Whole book
+then scales down when its 1st-percentile 252-day loss passes
+`sizing.ruin_bound` (`cuts` entry `kind: ruin`).
 
-1. On rebalance day, after close, run `recommend "$B" <date>`. Sleeve with
-   no run line lands in `skipped` with reason; with no sleeve left, exit 1
-   names each skipped one and writes nothing. Measure it (baseline's measure
-   spends its one trial), then rerun `recommend "$B" <date>` plain.
-   `--force` only adds `<date>.<n>.json` beside existing proposal.
+1. On rebalance day, after close, run `check "$B" --propose <date>`. Sleeve
+   with no run line lands in `skipped` with reason; with no sleeve left,
+   exit 1 names each skipped one and writes nothing. Measure it (baseline's
+   measure spends its one trial), then rerun `check "$B" --propose <date>`
+   plain. `--force` only adds `<date>.<n>.json` beside existing proposal.
 2. Run `check "$B" <date>`. Put result to operator in its order: every
    `blockers` entry verbatim, `baseline` row beside every other sleeve, each
    sleeve's `tier`, `edge_scale`, `weight`, `stale` flags, `ruin` loss
@@ -313,7 +315,7 @@ commission, drawdown, data age; each breach appends one incident line, once
 per strategy and kind per 7 days. Show operator `report` whole, every breach
 included. Retire only on operator's word: write `strategies/<name>/status`,
 record `retire` naming it. Tracking within bound over `tracked_days` lifts
-sleeve's tier at next `recommend`; breach holds it at lower tier.
+sleeve's tier at next `check --propose`; breach holds it at lower tier.
 
 Drawdown is evidence only when `check --live` reports model-path breach for
 that sleeve (`tracking`, or `drawdown` past `drawdown_review_multiple` times

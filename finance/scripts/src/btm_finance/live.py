@@ -24,7 +24,7 @@ from btm_finance.engine import max_drawdown
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.measuring import Setting, Strategy, run_variant
 from btm_finance.models import Side, Status
-from btm_finance.recommending import Tier
+from btm_finance.proposing import Tier
 
 STALE_DAYS = 5  # trading days without a new bar before data counts as stale
 WEEK = 7  # calendar days one recorded breach covers
@@ -72,7 +72,7 @@ def fill_of(row: Mapping[str, Any], reference: float | None) -> Fill:
 
 def reference_prices(proposals: Mapping[str, Any]) -> dict[tuple[str, str, str], float]:
     """(proposal stem, symbol, side) to that order's `price`, the reference
-    close `recommend` sized it at. O(orders)."""
+    close `check --propose` sized it at. O(orders)."""
     found: dict[tuple[str, str, str], float] = {}
     for stem, document in proposals.items():
         orders = document.get("orders") if isinstance(document, Mapping) else None

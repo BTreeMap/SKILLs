@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from btm_finance.ledger import Row
-from btm_finance.models import Action, Limits, Status
+from btm_finance.models import Action, Limits, Outcome, Status
 
 CLOSING = frozenset({Action.REJECT, Action.RETIRE})
 
@@ -52,9 +52,10 @@ def families(
     decisions: Sequence[Row],
     every_line: Sequence[Row],
 ) -> dict[str, Any]:
-    """Per family: open hypotheses, trials used (every run line, and every
-    hypothesis line extending the kill date of the line it supersedes), budget."""
-    used = Counter(str(run.get("family_id")) for run in runs)
+    """Per family: open hypotheses, trials used (every run line spending a
+    trial, and every hypothesis line extending the kill date of the line it
+    supersedes), budget."""
+    used = Counter(str(run.get("family_id")) for run in runs if spends(run))
     used.update(str(h.get("family_id")) for h in extensions(every_line))
     pending = open_hypotheses(hypotheses, runs, decisions)
     names = sorted(
@@ -221,6 +222,80 @@ def budget_step(budgets: Mapping[str, Mapping[str, Any]] | None) -> str:
     )
 
 
+def spends(run: Mapping[str, Any]) -> bool:
+    """A run line spends a trial unless it carries `trial: false`: a
+    re-measure of the same code at a new cap."""
+    return run.get("trial") is not False
+
+
 def trials_today(runs: Sequence[Mapping[str, Any]], today: date) -> int:
-    """Run lines of every runs file stamped `today` (UTC)."""
-    return sum(1 for run in runs if day_of(run) == today)
+    """Run lines of every runs file stamped `today` (UTC) that spend a
+    trial."""
+    return sum(1 for run in runs if day_of(run) == today and spends(run))
+
+
+def stale_cap(
+    live: Sequence[str], runs: Sequence[Mapping[str, Any]], cap: int
+) -> list[dict[str, Any]]:
+    """Each live strategy whose newest research run was measured at a cap
+    other than `cap`; a line without the stamp reads as `cap`. O(R)."""
+    newest: dict[str, Mapping[str, Any]] = {}
+    for run in runs:
+        if not run.get("held_out"):
+            newest[str(run.get("strategy"))] = run
+    found: list[dict[str, Any]] = []
+    for name in live:
+        latest = newest.get(name)
+        measured = None if latest is None else latest.get("asset_cap", cap)
+        if latest is not None and measured != cap:
+            found.append(
+                {
+                    "strategy": name,
+                    "run_id": latest.get("run_id"),
+                    "asset_cap": measured,
+                    "now": cap,
+                }
+            )
+    return found
+
+
+def p_win(hypothesis: Mapping[str, Any] | None) -> float | None:
+    odds = None if hypothesis is None else hypothesis.get("odds")
+    value = odds.get("p_win") if isinstance(odds, Mapping) else None
+    return float(value) if isinstance(value, int | float) else None
+
+
+def scores(closes: Sequence[tuple[float | None, bool]]) -> dict[str, Any]:
+    """Closed bets; mean `p_win`, Brier over those with odds; win rate."""
+    rated = [(p, won) for p, won in closes if p is not None]
+    return {
+        "closed": len(closes),
+        "mean_p_win": sum(p for p, _ in rated) / len(rated) if rated else None,
+        "win_rate": sum(won for _, won in closes) / len(closes) if closes else None,
+        "brier": sum((p - won) ** 2 for p, won in rated) / len(rated)
+        if rated
+        else None,
+    }
+
+
+def calibration(decisions: Sequence[Row], every_line: Sequence[Row]) -> dict[str, Any]:
+    """Closed bets against their stated odds, per family and overall: the
+    newest live `close` per hypothesis, joined to the newest hypothesis line
+    that is or corrects it. O(D + H)."""
+    lines = {h.get("id"): h for h in every_line}
+    corrected = {
+        h["supersedes"]: h for h in every_line if isinstance(h.get("supersedes"), str)
+    }
+    closed = {d.get("subject"): d for d in decisions if d.get("action") == Action.CLOSE}
+    found: dict[str, list[tuple[float | None, bool]]] = {}
+    overall: list[tuple[float | None, bool]] = []
+    for subject, row in closed.items():
+        hypothesis = corrected.get(subject) or lines.get(subject)
+        family = str((hypothesis or {}).get("family_id"))
+        entry = (p_win(hypothesis), row.get("against_odds") == Outcome.WIN)
+        found.setdefault(family, []).append(entry)
+        overall.append(entry)
+    return {
+        "overall": scores(overall),
+        "families": {name: scores(rows) for name, rows in sorted(found.items())},
+    }

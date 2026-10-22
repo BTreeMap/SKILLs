@@ -230,15 +230,57 @@ def test_a_hypothesis_keeps_fields_the_gate_does_not_branch_on(
     assert (line["confidence"], line["priced"]) == (0.4, 12.0)
 
 
-@pytest.mark.parametrize("action", ["close", "approve", "retire"])
-def test_close_approve_and_retire_are_decision_actions(book, run, action):
+def test_retire_names_a_strategy(book, run):
     entry = {
-        "kw": ["one", action],
+        "kw": ["one", "retire"],
         "subject": "baseline",
-        "action": action,
+        "action": "retire",
         "reason": "operator's word",
     }
     code, receipt, err = batch(run, book, {"decisions": [entry]})
+    assert (code, receipt["accepted"]) == (0, {"decision": 1}), err
+
+
+def test_approve_names_a_proposal_stem(book, run):
+    entry = {
+        "kw": ["go", "ahead"],
+        "subject": "baseline",
+        "action": "approve",
+        "reason": "approve, go ahead",
+    }
+    code, verdict, _ = batch(run, book, {"decisions": [entry]})
+    assert code == 1
+    assert verdict["rejected"][0]["where"] == "decisions[0].subject"
+    (book / "proposals" / "2026-01-30.json").write_text("{}")
+    code, _, err = batch(run, book, {"decisions": [entry | {"subject": "2026-01-30"}]})
+    assert code == 0, err
+
+
+def test_close_names_a_hypothesis_with_realized_and_against_odds(
+    book, run, make_hypothesis
+):
+    made = batch(run, book, {"hypotheses": [make_hypothesis(["one", "bet"])]})
+    bet = made[1]["new"]["hypotheses"]["one-bet"]
+    close = {
+        "kw": ["bet", "ends"],
+        "subject": bet,
+        "action": "close",
+        "reason": "kill date reached",
+        "realized": 0.031,
+        "against_odds": "win",
+    }
+    bare = {k: v for k, v in close.items() if k not in {"realized", "against_odds"}}
+    wrong = [
+        (bare, "decisions[0]"),
+        (close | {"against_odds": "draw"}, "decisions[0].against_odds"),
+        (close | {"subject": "baseline"}, "decisions[0].subject"),
+        (close | {"action": "reject"}, "decisions[0]"),
+    ]
+    for entry, where in wrong:
+        code, verdict, _ = batch(run, book, {"decisions": [entry]})
+        assert code == 1, entry
+        assert verdict["rejected"][0]["where"] == where, verdict
+    code, receipt, err = batch(run, book, {"decisions": [close]})
     assert (code, receipt["accepted"]) == (0, {"decision": 1}), err
 
 

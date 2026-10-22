@@ -1,6 +1,7 @@
 """The daily brief, pure: at most twelve one-line strings the lead reads to
-the operator verbatim, derived from live state on every call. The last line
-is always one `Reply`."""
+the operator verbatim, derived from live state on every call. The first line
+is the cap and the book's value; the last is always one `Reply`; the book's
+`lib/brief.py` lines sit between, cut to fit."""
 
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ QUESTION = "question"
 ANSWER = "answer"
 LINES = 12
 WEEK = 7
-FIXED = 3  # breaches, counts, reply
+FIXED = 4  # cap and value, breaches, counts, reply
 PROPOSAL_LINES = LINES - FIXED
 
 
@@ -27,7 +28,6 @@ class Reply(StrEnum):
     FILLS = "Paste your fills for {date}."
     ANSWER = "Reply approve, reject, or override {date} with a reason."
     CONFIRM = "Reply yes to apply, or say what to change."
-    SCORE = "Say what happened to {strategy} by {date}."
     NOTHING = "Nothing to decide today; ask anything."
 
 
@@ -35,13 +35,11 @@ class Reply(StrEnum):
 class Owed:
     """What the operator owes, from live state: `unfilled` the stem of an
     approved proposal no fill names; `unanswered` an open proposal's stem;
-    `pending` a change the agent asked about today, unanswered; `late` a bet's strategy
-    and date past due."""
+    `pending` a change the agent asked about today, unanswered."""
 
     unfilled: str | None = None
     unanswered: str | None = None
     pending: bool = False
-    late: tuple[str, str] | None = None
 
 
 def asked_today(pad: Iterable[Mapping[str, Any]], today: date) -> bool:
@@ -65,10 +63,12 @@ def reply(owed: Owed) -> str:
         return Reply.ANSWER.format(date=owed.unanswered)
     if owed.pending:
         return Reply.CONFIRM.format()
-    if owed.late is not None:
-        strategy, day = owed.late
-        return Reply.SCORE.format(strategy=strategy, date=day)
     return Reply.NOTHING.format()
+
+
+def money(value: float) -> str:
+    """Whole currency units, no separator."""
+    return f"{value:.0f}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +145,8 @@ def breaches_line(incidents: Sequence[Mapping[str, Any]], today: date) -> str:
 
 def brief(  # noqa: PLR0913 - one line per input, each read once
     *,
+    cap: int,
+    value: float,
     proposals: Sequence[Open],
     incidents: Sequence[Mapping[str, Any]],
     overdue: int,
@@ -152,12 +154,16 @@ def brief(  # noqa: PLR0913 - one line per input, each read once
     owed: Owed,
     next_action: str,
     today: date,
+    extra: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """`next` is the agent's advisory; the operator's line is `reply`."""
-    lines = [
+    """`next` is the agent's advisory; the operator's line is `reply`;
+    `extra` the book's lines, as many as fit in twelve."""
+    core = [
+        f"cap {cap}, book {money(value)}",
         *proposal_lines(proposals),
         breaches_line(incidents, today),
         f"overdue {overdue}, unscored {unscored}",
-        reply(owed),
     ]
+    room = max(LINES - len(core) - 1, 0)
+    lines = [*core, *extra[:room], reply(owed)]
     return {"lines": [" ".join(line.split()) for line in lines], "next": next_action}

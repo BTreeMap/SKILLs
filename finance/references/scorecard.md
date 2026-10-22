@@ -49,7 +49,7 @@ that list.
 * ADV clip: after `max_weight` cap and thin-name drop, `measure` clips each
   name's weight to `max_adv_participation * adv_dollar(21) / asset_cap`;
   unknown ADV clips to 0. No renormalizing: clipped weight is cash.
-  `recommend` sizes sleeves same way. Clip counts in `adv_clipped` and
+  `check --propose` sizes sleeves same way. Clip counts in `adv_clipped` and
   `adv_clipped_share`, never refuses run.
 * DSR: promote at or above 0.95. `sr` per period; `sr_var` is variance of
   per-period net Sharpe across family's runs, this one included. One trial:

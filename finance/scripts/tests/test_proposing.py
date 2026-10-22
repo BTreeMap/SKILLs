@@ -8,7 +8,7 @@ import math
 import numpy as np
 import pytest
 from btm_finance.models import KellyFractions, Sizing
-from btm_finance.recommending import (
+from btm_finance.proposing import (
     Candidate,
     Inputs,
     Proposal,
@@ -58,15 +58,32 @@ def sleeve(  # noqa: PLR0913 - a candidate, every field named
     )
 
 
-def test_weight_is_kelly_capped_at_max_weight_then_scaled():
-    # a: Kelly 0.25 * 0.4 / 0.2 = 0.5; b: Kelly 0.25 * 0.2 / 0.05 = 1.0, capped
-    # at max_weight 0.6; c: no Sharpe, no weight. Sum 1.1.
+def test_weight_is_kelly_then_scaled_and_max_weight_bounds_no_sleeve():
+    # a: Kelly 0.25 * 0.4 / 0.2 = 0.5; b: Kelly 0.25 * 0.2 / 0.05 = 1.0, over
+    # max_weight 0.6 yet kept: max_weight caps a name; c: no Sharpe, no
+    # weight. Sum 1.5, scaled to 1.
     found = sleeve_weights(
         [sleeve("a", 0.4, 0.20), sleeve("b", 0.2, 0.05), sleeve("c", None, 0.1)],
         SIZING,
     )
-    assert found == pytest.approx({"a": 0.5 / 1.1, "b": 0.6 / 1.1, "c": 0.0})
+    assert found == pytest.approx({"a": 0.5 / 1.5, "b": 1.0 / 1.5, "c": 0.0})
     assert sleeve_weights([sleeve("d", -1.0, 0.1)], SIZING) == {"d": 0.0}
+
+
+def test_a_sizing_shadow_replaces_the_kelly_step_only():
+    """The book's weights stand in for Kelly; a sleeve with no fill still
+    takes `entry_weight`, and the sum still scales to 1."""
+    candidates = [
+        sleeve("a", 0.4, 0.20),
+        sleeve("b", 0.2, 0.05),
+        sleeve("e", 0.4, 0.2, entry=True),
+    ]
+    shadow = {"a": 0.9, "b": 0.3, "e": 0.7}
+    found = sleeve_weights(candidates, SIZING, shadow)
+    total = 0.9 + 0.3 + SIZING.entry_weight
+    assert found == pytest.approx(
+        {"a": 0.9 / total, "b": 0.3 / total, "e": SIZING.entry_weight / total}
+    )
 
 
 @pytest.mark.parametrize(
@@ -171,8 +188,15 @@ def planted(*candidates: Candidate, sizing: Sizing = SIZING):
 def test_without_stored_series_nothing_is_cut_and_ruin_says_why():
     found = planted(sleeve("a", 0.4, 0.20, X=1.0), sleeve("b", 0.2, 0.05, Y=1.0))
     assert {n: s.weight for n, s in found.sleeves.items()} == pytest.approx(
-        {"a": 0.5 / 1.1, "b": 0.6 / 1.1}
+        {"a": 0.5 / 1.5, "b": 1.0 / 1.5}
     )
+    assert found.targets["Y"].weight == pytest.approx(SIZING.max_weight)
+    for name, symbol in (("a", "X"), ("b", "Y")):
+        quantity = found.targets[symbol].quantity[name]
+        assert quantity > 0
+        assert found.sleeves[name].adv_participation == pytest.approx(
+            quantity * 10.0 / 1e9
+        )
     assert found.cuts == ()
     assert found.ruin is None  # no stored series
     assert found.reasons == {"ruin": "no stored net series for a, b"}

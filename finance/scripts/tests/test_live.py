@@ -5,6 +5,7 @@ tracks it, a 30% loss trips `drawdown` once a week, an old panel trips
 from __future__ import annotations
 
 import json
+import secrets
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -14,12 +15,13 @@ from btm_finance.api import Market
 from btm_finance.cli import scoped
 from btm_finance.data.assemble import assemble
 from btm_finance.data.tables import date_of
+from btm_finance.ledger import Kind
 from btm_finance.live import Fill, Seasoning, Watch, slippage, tier_of
 from btm_finance.loader import load_strategy
 from btm_finance.measuring import Setting, rebalance_rows, rules_of, target_weights
 from btm_finance.models import Rebalance, StrategyConfig
-from btm_finance.recommending import Tier
-from btm_finance.store import load_limits, load_preferences, open_book
+from btm_finance.proposing import Tier
+from btm_finance.store import append_ledger, load_limits, load_preferences, open_book
 
 CAPITAL = 1e6
 
@@ -74,10 +76,13 @@ def model_fills(book: Path) -> list[dict[str, object]]:
 
 
 def record(run, book: Path, fills: list[dict[str, object]]) -> None:
-    code, _, err = run(
-        ["record", str(book), "--batch:stdin"], json.dumps({"fills": fills})
-    )
-    assert code == 0, err
+    """Planted fill lines: trades the gate let in under earlier approvals."""
+    del run
+    rows = [
+        {"id": f"fill-{secrets.token_hex(4)}", "ts": "2000-01-03T00:00:00Z"} | fill
+        for fill in fills
+    ]
+    append_ledger(open_book(str(book)).path_of(Kind.FILL), rows)
 
 
 def live(run, book: Path, today: str) -> dict[str, object]:
@@ -171,8 +176,9 @@ def test_slippage_reads_the_proposal_the_fill_names(paper, run, named):
 
 
 def tier(run, book: Path, day: date) -> str:
-    """`recommend` on `day`, then the baseline sleeve's tier in the file."""
-    code, _, err = run(["recommend", str(book), day.isoformat()])
+    """`check --propose` on `day`, then the baseline sleeve's tier in the
+    file."""
+    code, _, err = run(["check", str(book), "--propose", day.isoformat()])
     assert code == 0, err
     path = book / "proposals" / f"{day.isoformat()}.json"
     return json.loads(path.read_text())["sleeves"]["baseline"]["tier"]

@@ -211,7 +211,7 @@ def proposal_versions(book: Book, day: str) -> list[Path]:
 
 
 def proposal_target(book: Book, day: str, *, force: bool) -> Path:
-    """Where `recommend` writes: `<day>.json` once; with `force`, the next
+    """Where `check --propose` writes: `<day>.json` once; with `force`, the next
     `<day>.<n>.json`, n from 2."""
     taken = proposal_versions(book, day)
     if not taken:

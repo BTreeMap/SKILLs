@@ -49,7 +49,7 @@ def test_the_loop_runs_unattended_and_the_proposal_waits(synthetic, run):
     assert view["warnings"] == []
     code, _, err = run(["measure", str(book), "baseline"])  # step 3
     assert code == 0, err
-    code, _, err = run(["recommend", str(book), FIRST])  # step 4
+    code, _, err = run(["check", str(book), "--propose", FIRST])  # step 4
     assert code == 0, err
     code, _, err = run(["check", str(book), FIRST])
     assert code == 0, err
@@ -60,6 +60,7 @@ def test_the_loop_runs_unattended_and_the_proposal_waits(synthetic, run):
         assert code == 0, err
         lines = brief["lines"]
         assert len(lines) <= 12
+        assert lines[0] == "cap 10000000, book 0"
         [line] = [line for line in lines if line.startswith(f"proposal {FIRST}")]
         ages.append(int(re.search(r"\((\d+)d old\)", line).group(1)))
         assert "baseline backtest w " in line
@@ -124,14 +125,13 @@ def test_fills_name_a_proposal_file(book, run):
 
 
 def test_the_last_line_follows_the_reply_order():
-    late = ("drift", "2026-01-31")
-    owed = Owed(unfilled="2026-10-20", unanswered="2026-10-01", pending=True, late=late)
+    owed = Owed(unfilled="2026-10-20", unanswered="2026-10-01", pending=True)
     assert reply(owed) == "Paste your fills for 2026-10-20."
-    owed = Owed(unanswered="2026-10-01", pending=True, late=late)
+    owed = Owed(unanswered="2026-10-01", pending=True)
     assert reply(owed) == "Reply approve, reject, or override 2026-10-01 with a reason."
-    assert reply(Owed(pending=True, late=late)) == Reply.CONFIRM.value
-    assert reply(Owed(late=late)) == "Say what happened to drift by 2026-01-31."
+    assert reply(Owed(pending=True)) == Reply.CONFIRM.value
     assert reply(Owed()) == Reply.NOTHING.value
+    assert len(Reply) == 4
 
 
 def test_a_question_asked_today_asks_for_a_yes(book, run):
