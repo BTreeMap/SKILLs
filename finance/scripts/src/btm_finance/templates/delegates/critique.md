@@ -6,7 +6,8 @@ Judge one run: blockers that change decision, concerns that do not.
 
 ## Reads
 
-- `AGENTS.md`, then this file.
+- `AGENTS.md`, then this file; `$R`, `$U`, `$B` as its `## Commands` defines
+  them.
 - Critique reference at path lead's values give: item shape, verdict rule,
   batch example.
 - `$R check "$B" <run id>`, run line through `api.ledger`, hypothesis it

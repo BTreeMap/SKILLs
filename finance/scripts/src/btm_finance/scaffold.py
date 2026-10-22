@@ -91,6 +91,12 @@ def template(name: str) -> str:
     )
 
 
+def scripts_root() -> Path:
+    """The skill's `scripts` project, realpath: `src/btm_finance/` two levels
+    under it; `AGENTS.md` binds `uv run --project` to it."""
+    return Path(btm_finance.__file__).resolve().parents[2]
+
+
 def universe_rows(raw: str) -> list[tuple[str, str]]:
     """`symbol` and `sector` columns of a CSV, deduplicated, order kept."""
     reader = csv.DictReader(io.StringIO(raw))
@@ -217,9 +223,11 @@ def scaffold(
     )
     limits = limits_template(cap or DEFAULT_CAP)
     write_new(root / "limits.json", json.dumps(limits, indent=2) + "\n")
-    title = root.resolve().name
     write_new(
-        root / AGENTS, Template(template("AGENTS.tmpl")).safe_substitute(title=title)
+        root / AGENTS,
+        Template(template("AGENTS.tmpl")).safe_substitute(
+            title=root.resolve().name, scripts=scripts_root(), book=root.resolve()
+        ),
     )
     claude = link_claude(root)
     meta = BookMeta(

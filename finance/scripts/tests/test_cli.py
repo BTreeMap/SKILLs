@@ -7,6 +7,7 @@ import inspect
 import json
 from pathlib import Path
 
+import btm_finance
 from btm_finance.api import Market
 from btm_finance.scaffold import stratified
 
@@ -30,7 +31,13 @@ def test_start_writes_the_book_and_the_held_out_list_outside_it(tmp_path, run):
     assert hidden == {"energy": ["E0"], "tech": ["S0", "S1"]}
     assert not str(receipt["held_out"]["path"]).startswith(str(book))
     assert not (book / ".claude").exists()
-    assert "No order without a `decision`" in (book / "AGENTS.md").read_text()
+    agents = (book / "AGENTS.md").read_text()
+    assert "No order without a `decision`" in agents
+    scripts = Path(btm_finance.__file__).resolve().parents[2]
+    assert (scripts / "pyproject.toml").is_file()
+    assert f"uv run --project {scripts} btm-finance" in agents
+    assert f'B="{book.resolve()}"' in agents
+    assert "<skill scripts>" not in agents
     claude = book / "CLAUDE.md"
     assert claude.is_symlink() or claude.read_text() == "Read AGENTS.md.\n"
     for name in ("critiques", "decisions", "fills", "runs"):

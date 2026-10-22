@@ -6,7 +6,8 @@ Turn one registered hypothesis into strategy code and one measured run.
 
 ## Reads
 
-- `AGENTS.md`, then this file.
+- `AGENTS.md`, then this file; `$R`, `$U`, `$B` as its `## Commands` defines
+  them.
 - `$R check --schema strategy` first: `signal.py` and `config.json`
   contract.
 - Hypothesis line through `api.ledger`; `strategies/`, `lib/`, `INDEX.md`.

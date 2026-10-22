@@ -265,8 +265,8 @@ extends it. Signatures: `book`.
 ## Continue
 
 With no `$B`, first ask operator which directory is the book; treat answer
-as `$B`. Book there: continue. Empty: `start`, then write `R` into
-`$B/AGENTS.md` `## Commands`. Neither: say what is there, ask again.
+as `$B`. Book there: continue. Empty: `start`. Neither: say what is there,
+ask again.
 
 At session start or after compaction: read `$B/AGENTS.md`, bare `check`,
 `check --brief`; read `lines` verbatim; resume from `next`. API keys live in

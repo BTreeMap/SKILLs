@@ -7,7 +7,8 @@ with its reason. Question may scope to one held name.
 
 ## Reads
 
-- `AGENTS.md`, then this file.
+- `AGENTS.md`, then this file; `$R`, `$U`, `$B` as its `## Commands` defines
+  them.
 - `$R check "$B"` (`families`: `trials_used` against `trials`),
   `$R check --schema record`, `limits.json`.
 - `research/`, ledger through `api.ledger`, prices and fundamentals through
