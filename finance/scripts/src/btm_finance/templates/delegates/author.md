@@ -39,7 +39,6 @@ Final message, one JSON object, nothing else:
 
 ## Limit
 
-Runs lead's values name. On hitting it: stop, status `partial`, name best
-run.
+Spawn line's `runs`. On hitting it: stop, status `partial`, name best run.
 
 ## Lessons

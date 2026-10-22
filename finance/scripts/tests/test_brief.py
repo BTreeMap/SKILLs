@@ -119,6 +119,10 @@ def reject_open(run, book):
     record(run, book, {"decisions": drops})
 
 
+def test_next_on_a_fresh_book_measures_the_baseline_first(book, run):
+    assert run(["check", str(book)])[1]["next"].startswith("measure baseline")
+
+
 def test_next_asks_the_operator_for_budget_once_every_family_is_spent(
     book, run, make_hypothesis
 ):

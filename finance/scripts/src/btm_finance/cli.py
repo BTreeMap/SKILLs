@@ -537,7 +537,7 @@ def continue_view(book: Book, today: date) -> dict[str, Any]:
         )
     proposals = open_proposals(proposal_dates(book), decisions, today)
     shown = waiting(book, proposals, decisions, today)
-    pending = len(open_hypotheses(hypotheses, runs, decisions))
+    pending = open_hypotheses(hypotheses, runs, decisions)
     retired = frozenset(name for name, s in known.items() if s is Status.RETIRED)
     late = [
         *overdue(hypotheses, decisions, retired, today),

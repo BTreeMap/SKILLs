@@ -34,6 +34,8 @@ with its reason. Question may scope to one held name.
 - Add `priced` and `implied` (what market pays now, what thesis implies) and
   `capacity` at `limits.asset_cap`; `mechanism` only when stated before
   looking at returns.
+- Question varying a rejected bet names prior no-bet file: read it first;
+  evidence says what differs.
 - No-bet when `kelly_implied` is at or below 0, edge after costs at cap is
   not above 0, or no counterparty is named: no batch file, `ids` empty,
   `summary` `no-bet: <reason>`.

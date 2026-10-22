@@ -8,15 +8,15 @@ Judge one run: blockers that change decision, concerns that do not.
 
 - `AGENTS.md`, then this file; `$R`, `$U`, `$B` as its `## Commands` defines
   them.
-- Critique reference at path lead's values give: item shape, verdict rule,
-  batch example.
+- Critique reference at spawn line's `critique` path: item shape, verdict
+  rule, batch example.
 - `$R check "$B" <run id>`, run line through `api.ledger`, hypothesis it
   names, `strategies/<name>/`, files its `code_files` and `extensions` name.
 - Core items: `look-ahead`; `survivorship` (and universe by outcome);
   `multiplicity` (trials, tuned parameters); `costs-capacity` (at cap);
   `concentration` (one year, one regime, one name); `hindsight`.
 - Book items: every file under `research/critique/`.
-- Never held-out list, never author's receipt.
+- Never held-out list, never `ledger/pad/` (author's receipt lives there).
 
 ## Writes
 
@@ -27,7 +27,7 @@ Judge one run: blockers that change decision, concerns that do not.
 ## Rules
 
 - Invariants in `AGENTS.md`.
-- Never critique own run.
+- Never critique own run; never the pad.
 - Blocker quotes file and line or scorecard field behind it; else concern.
 
 ## Output

@@ -37,7 +37,7 @@ Load `book` before reading or explaining one book file by hand, editing
 `limits.json`, or writing any `lib/` hook. Load `scorecard` before arguing
 from a scorecard or standing. Load `sources` before first `load` of a
 source, or when `load` fails upstream. Never load `critique` as lead: pass
-its absolute path as critique unit value.
+its absolute path as critique unit's `critique` value.
 
 ## Redirects
 
@@ -64,9 +64,10 @@ No agent, script, or cron changes these four.
 
 `limits.json`, `preferences.json`, `strategies/*/status` change only on
 operator's word in chat, applied by lead same turn, recorded as `decision`
-quoting it. Nothing under `ledger/` but `pad/` changes except through
-`record`. Never hand operator a command: brief's last line names their
-reply.
+quoting it. Any `limits.json` or `preferences.json` change: `override` on
+book id, operator's words as `reason`. Nothing under `ledger/` but `pad/`
+changes except through `record`. Never hand operator a command: brief's last
+line names their reply.
 
 ## Commands
 
@@ -116,8 +117,7 @@ Kinds, in acceptance order:
   0.01 from `p_win - (1 - p_win) / payoff`. `mechanism` only when ex-ante:
   it lowers t threshold. New `family_id` only on operator's word.
 - `close`: hypothesis id, `realized` decimal return, `against_odds`
-  `win|loss`. `approve`: proposal stem, reply verbatim. Cap change:
-  `override` on book id, new cap in `reason`.
+  `win|loss`. `approve`: proposal stem, reply verbatim.
 - Fill needs `approve` on its `proposal` dated on or before fill `date`;
   holdings import as `opening` fills, `proposal` null.
 
@@ -138,33 +138,41 @@ One lead session per book holds conversation, runs every `record`. Operator
 message preempts loop: answer, then resume from bare `check`.
 
 1. `load` every configured source.
-2. Bare `check`; act on `next`; re-measure each `stale_cap` entry.
+2. Bare `check`; act on `next` (fresh book: `measure baseline`); re-measure
+   each `stale_cap` entry.
 3. Research within family budgets through delegates (below).
 4. Rebalance day (`preferences.json` `cadence`): Propose.
 5. Weekly: `check --live` (Live). At promotion gate: `measure --held-out`,
    read its scorecard only.
 6. Record `close` for each bet resolved (`overdue`, `unscored` warnings).
-7. Post `check --brief` `lines` verbatim, adding nothing.
+7. Post `check --brief` `lines` verbatim, adding nothing; at most twelve,
+   fewer is normal.
 
 Heartbeat: end every turn by scheduling next wake at most 45 minutes out
 (harness's scheduled-task tool, else cron), then stop. Each wake: bare
 `check`, one loop step, `heartbeat` pad line (`item`, `outcome`,
-`next_wake`), schedule, stop. Lead's context holds conversation, last
-`check`, receipts; never filing text, logs, or data.
+`next_wake`), schedule, stop. No scheduler tool: loop in session, one step
+per wake as written, until budgets or session's time box end; then stop,
+saying next wake is operator's next message. Lead's context holds
+conversation, last `check`, receipts; never filing text, logs, or data.
 
 Delegate every unit with intermediate steps. Brief is book file
 `delegates/<unit>.md` (Task, Reads, Writes, Rules, Output, Limit, Lessons);
 write one before first dispatch of a new unit. Spawn message, whole:
 
 ```text
-Book <path>. Read AGENTS.md, then delegates/<unit>.md. Unit: <values>. Agent <name>. Siblings: <none | bounds>.
+Book <path>. Read AGENTS.md, then delegates/<unit>.md. Unit: <unit>; <key>: <value>; ... Agent <name>. Siblings: <none | bounds>.
 ```
 
-| Unit | Values | Output |
+```text
+Book /home/op/book. Read AGENTS.md, then delegates/bet.md. Unit: bet; question: do index deletions recover within 63 days at cap. Agent bet-1. Siblings: none.
+```
+
+| Unit | Keys | Output |
 | --- | --- | --- |
-| `bet` | question; optional held name | `research/bets/<agent>.json` `hypotheses` batch, or no-bet in receipt |
-| `author` | hypothesis id; runs it may measure: family `trials` minus `trials_used` | `strategies/<name>/`, run line via `measure --agent` |
-| `critique` | run id; absolute path of `critique` | `research/critiques/<run id>.json` |
+| `bet` | `question`; optional `name` (held name) | `research/bets/<agent>.json` `hypotheses` batch, or no-bet in receipt |
+| `author` | `hypothesis` (id); `runs`: family `trials` minus `trials_used` | `strategies/<name>/`, run line via `measure --agent` |
+| `critique` | `run` (run id); `critique`: absolute path of `critique` | `research/critiques/<run id>.json` |
 
 Agent name `<unit>-<n>` is its `--agent` and critique `by`; critique never
 goes to run's author. Examine every receipt under summon's `examine`
@@ -199,7 +207,9 @@ Under `/summon` "Called from a skill":
 and limit: `no run`, `dsr`, `pbo`, `t_alpha`, `factor`, `capacity`,
 `cost_share`, `min_holding_days_realized`, `trials`, `no critique`,
 `critique: <text>`, `status`, `odds` (only when nothing else blocks). Show
-operator every blocker, never summary omitting one.
+operator every blocker, never summary omitting one. `discard` ends
+hypothesis: record `reject` on hypothesis id, take next question; never
+re-measure same claim.
 
 - `measure` refuses before running when `holding_days` is under
   `min_holding_days`, or trial-spending run lines dated today reach
@@ -265,8 +275,8 @@ extends it. Signatures: `book`.
 ## Continue
 
 With no `$B`, first ask operator which directory is the book; treat answer
-as `$B`. Book there: continue. Empty: `start`. Neither: say what is there,
-ask again.
+as `$B`. Book there: continue. Empty or missing path: `start`. Neither: say
+what is there, ask again.
 
 At session start or after compaction: read `$B/AGENTS.md`, bare `check`,
 `check --brief`; read `lines` verbatim; resume from `next`. API keys live in

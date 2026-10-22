@@ -183,13 +183,14 @@ def has_trials(family: Mapping[str, Any]) -> bool:
 
 def next_step(
     hypotheses: Sequence[Row],
-    pending: int,
+    pending: Sequence[Row],
     proposals: Sequence[Mapping[str, Any]],
     late: Sequence[Mapping[str, Any]] = (),
     budgets: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> str:
     """The cheapest useful next action; advisory only. `late` holds overdue
-    and unscored warnings; `budgets` the `families` view, None when unknown."""
+    and unscored warnings; `pending` the open hypotheses; `budgets` the
+    `families` view, None when unknown."""
     if proposals:
         return f"walk the operator through proposal {proposals[0]['date']}"
     if late:
@@ -204,8 +205,15 @@ def next_step(
     if not hypotheses:
         return "register a hypothesis for each strategy with record, baseline first"
     if pending:
-        return f"{pending} open hypotheses await strategy code and measure"
+        return pending_step(pending)
     return budget_step(budgets)
+
+
+def pending_step(pending: Sequence[Row]) -> str:
+    """Baseline first: `start` ships its code, so it only needs `measure`."""
+    if any(h.get("strategy") == "baseline" for h in pending):
+        return "measure baseline first: its code ships with the book"
+    return f"{len(pending)} open hypotheses await strategy code and measure"
 
 
 def budget_step(budgets: Mapping[str, Mapping[str, Any]] | None) -> str:
