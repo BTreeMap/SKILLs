@@ -148,13 +148,23 @@ message preempts loop: answer, then resume from bare `check`.
 7. Post `check --brief` `lines` verbatim, adding nothing; at most twelve,
    fewer is normal.
 
-Heartbeat: end every turn by scheduling next wake at most 45 minutes out
-(harness's scheduled-task tool, else cron), then stop. Each wake: bare
-`check`, one loop step, `heartbeat` pad line (`item`, `outcome`,
-`next_wake`), schedule, stop. No scheduler tool: loop in session, one step
-per wake as written, until budgets or session's time box end; then stop,
-saying next wake is operator's next message. Lead's context holds
-conversation, last `check`, receipts; never filing text, logs, or data.
+Heartbeat: end every turn by scheduling next wake at most 45 minutes out,
+then stop. Each wake: bare `check`, one loop step, `heartbeat` pad line
+(`item`, `outcome`, `next_wake`), schedule, stop. Pick scheduler by first
+rung harness offers, once per session, and name it in first `heartbeat`
+line:
+
+1. Harness wake-up inside this session (Claude Code: `/loop` with no
+   interval, self-paced; delay in seconds).
+2. Harness scheduled task that starts a fresh session at an hour (Claude
+   Code: `/schedule`; cloud routines), with `AGENTS.md` as its prompt.
+3. System `cron` running harness headless with `AGENTS.md` as prompt.
+4. None: loop in session, one step per wake as written, until budgets or
+   session's time box end; then stop, saying next wake is operator's next
+   message.
+
+Lead's context holds conversation, last `check`, receipts; never filing
+text, logs, or data.
 
 Delegate every unit with intermediate steps. Brief is book file
 `delegates/<unit>.md` (Task, Reads, Writes, Rules, Output, Limit, Lessons);
