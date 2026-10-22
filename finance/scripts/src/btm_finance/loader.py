@@ -1,7 +1,13 @@
 """Load `strategies/<name>/signal.py` with the strategy folder and the book
-root importable, so it may `import lib.<module>` and strategy-local helpers,
-at module top or inside a function: every call of `signal` runs with the
-same paths, and list what it imports from outside the book.
+root importable, and list what it imports from outside the book.
+
+`signal.py` defines `signal(market, params)`: `market` a `Market`, `params`
+the `config.json` `params`; it returns target weights by name, and a name it
+omits weighs zero. It may import the book's `lib/` (`import lib.<module>`),
+helpers in its strategy folder, and any installed module, at module top or
+inside a function; no import is refused, and every call of `signal` runs
+with the same paths. It reads prices and fundamentals only through
+`market`.
 
 `imports`: sorted top-level names that import statements reach in
 `signal.py` and, recursively, in every book-local module it imports (under

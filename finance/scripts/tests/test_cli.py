@@ -3,10 +3,12 @@ target, the pad count, check --schema, and the held-out list outside it."""
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 
 from btm_finance import git
+from btm_finance.api import Market
 from btm_finance.scaffold import stratified
 
 
@@ -108,7 +110,15 @@ def test_the_pruned_verbs_are_gone(book, run):
 def test_check_schema_without_a_book_prints_every_kind(run):
     code, schema, _ = run(["check", "--schema"])
     assert code == 0
-    assert list(schema) == ["record", "run", "answers", "pad", "receipt", "approval"]
+    assert list(schema) == [
+        "record",
+        "run",
+        "answers",
+        "pad",
+        "receipt",
+        "approval",
+        "strategy",
+    ]
     assert list(schema["record"]["record_batch"]) == [
         "hypotheses",
         "critiques",
@@ -121,6 +131,29 @@ def test_check_schema_without_a_book_prints_every_kind(run):
     ]
     assert "hunch" in schema["pad"]["types"]
     assert "known" not in schema["pad"]["types"]
+
+
+def test_check_schema_strategy_names_every_public_market_accessor(run):
+    code, schema, _ = run(["check", "--schema", "strategy"])
+    assert (code, list(schema)) == (0, ["strategy"])
+    contract = schema["strategy"]
+    public = {
+        name
+        for name in dir(Market)
+        if not name.startswith("_")
+        and not isinstance(inspect.getattr_static(Market, name), classmethod)
+    }
+    assert public >= {"close", "names", "day", "events", "factor"}
+    assert set(contract["market"]) == public | {"Market"}
+    assert "signal(market, params)" in contract["signal"]
+    assert "import lib.<module>" in contract["signal"]
+    assert set(contract["config"]["properties"]) == {
+        "params",
+        "rebalance",
+        "holding_days",
+        "long_only",
+        "family_id",
+    }
 
 
 def test_check_schema_with_a_kind_prints_that_kind_only(book, run):

@@ -401,7 +401,9 @@ class Limits(Model):
 
 class StrategyConfig(Model):
     """`strategies/<name>/config.json`: unknown keys are refused; `params` are
-    numbers only, each perturbed by 20% when measured."""
+    numbers only, each perturbed 20% down and up when measured;
+    `holding_days` at least `limits.min_holding_days`; `family_id` the
+    hypothesis's, else `measure` refuses."""
 
     params: dict[str, StrictInt | StrictFloat] = Field(default_factory=dict)
     rebalance: Rebalance

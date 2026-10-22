@@ -90,10 +90,17 @@ def carried_forward(values: Floats) -> Floats:
 
 @dataclass(frozen=True, slots=True)
 class Market:
-    """One as-of day of the names a strategy may see. `names` holds those with
-    a close on the day, inside a membership stretch when the name has any;
-    every array is rows by `names`, oldest row first, the
-    last row the as-of day, NaN-padded on top when history is shorter.
+    """One as-of day of the names a strategy may see. `names`: tuple of
+    symbols in column order, those with a close on the day, inside a
+    membership stretch when the name has any (`member_<index>` events: from
+    entry `knowledge_time` to exit `event_time`; a name with none follows
+    `universe.csv`). `sector`, `exchange`: tuples aligned to `names`. Rows
+    are the union of every exchange's sessions. Every 2-D array is rows by
+    `names`, oldest row first, the last row the as-of day, NaN-padded on top
+    when history is shorter. Every accessor counts rows back; none takes a
+    date. `measure` returns 0 on a name's non-session day, carries the whole
+    move to its next bar, and fills a rebalance landing there at the carried
+    close; a held name past exit returns 0 once its bars end.
 
     Build with `Market.at`; the panel and events must already hold only the
     names the strategy may see (research names, or held-out under --held-out).
@@ -161,12 +168,15 @@ class Market:
         return np.asarray(taken / today, dtype=np.float64)
 
     def open(self, lookback: int) -> Floats:
+        """Opens, adjusted as `close`; NaN on a non-session day."""
         return self._window(self._bars.open, lookback) * self._scale(lookback)
 
     def high(self, lookback: int) -> Floats:
+        """Highs, adjusted as `close`; NaN on a non-session day."""
         return self._window(self._bars.high, lookback) * self._scale(lookback)
 
     def low(self, lookback: int) -> Floats:
+        """Lows, adjusted as `close`; NaN on a non-session day."""
         return self._window(self._bars.low, lookback) * self._scale(lookback)
 
     def volume(self, lookback: int) -> Floats:

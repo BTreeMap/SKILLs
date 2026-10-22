@@ -41,8 +41,9 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
             task="Write `strategies/<name>/` for hypothesis spawn message names; "
             "commit it on own branch before critique; run "
             "`measure . <name> --agent <agent>` once.",
-            evidence="`$ref/families.md`, `$ref/scorecard.md`; hypothesis line "
-            "through `api.ledger`.",
+            evidence="First run `check --schema strategy`: the `signal.py` and "
+            "`config.json` contract. Then `$ref/families.md`, `$ref/scorecard.md`; "
+            "hypothesis line through `api.ledger`.",
             scope="`strategies/<name>/`, committed before critique; one run line "
             "through `measure --agent`",
             rules="Never `record`, `recommend`, second `measure`. Cannot build: "

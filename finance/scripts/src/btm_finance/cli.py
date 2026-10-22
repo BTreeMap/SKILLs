@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import math
 import re
@@ -44,7 +45,15 @@ from btm_corekit import (
     write_atomic,
 )
 from btm_corekit.cli import PAD_TYPES
-from btm_finance import approvals, delegates, git, governed, heartbeat, onboarding
+from btm_finance import (
+    approvals,
+    delegates,
+    git,
+    governed,
+    heartbeat,
+    loader,
+    onboarding,
+)
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
 from btm_finance.brief import WEEK, Bet, Open, Owed, brief, justifying
@@ -207,7 +216,7 @@ ANSWERS = Optional("answers", inline=False)
 FILLS = Optional("fills", inline=False)
 FILLS_SLOT = Required("fills", inline=False)  # names the flag in a rejection
 ANSWERS_HELP = "JSON object of onboarding answers; check --schema answers prints it"
-SCHEMA_KINDS = ("record", "run", "answers", "pad", "receipt", "approval")
+SCHEMA_KINDS = ("record", "run", "answers", "pad", "receipt", "approval", "strategy")
 RECEIPT = "receipt"
 LATER: dict[str, str] = {}
 MONTH_DAYS, QUARTER_DAYS = 31, 92  # one cadence period, in calendar days
@@ -1101,6 +1110,34 @@ def cmd_load(args: argparse.Namespace) -> int:
     return 0
 
 
+def market_accessors() -> dict[str, str]:
+    """Each public `Market` member but its constructor, as signature or type
+    then docstring; a field's meaning lives in the class docstring."""
+    found: dict[str, str] = {}
+    for name in dir(Market):
+        member = inspect.getattr_static(Market, name)
+        if name.startswith("_") or isinstance(member, classmethod):
+            continue
+        if isinstance(member, property):
+            found[name] = f"{name}: {inspect.getdoc(member)}"
+        elif callable(member):
+            shown = str(inspect.signature(member)).replace("(self, ", "(")
+            found[name] = f"{name}{shown}: {inspect.getdoc(member)}"
+        else:
+            found[name] = f"{name}: {Market.__annotations__[name]}"
+    return found
+
+
+def strategy_schema() -> dict[str, Any]:
+    """`check --schema strategy`: the `signal.py` contract, derived from the
+    loader's module docstring, `Market`'s docstrings, and `StrategyConfig`."""
+    return {
+        "signal": inspect.getdoc(loader),
+        "market": {"Market": inspect.getdoc(Market), **market_accessors()},
+        "config": StrategyConfig.model_json_schema(),
+    }
+
+
 SCHEMA_VIEW: dict[str, dict[str, Any]] = {
     "record": {
         "record_batch": {key: SCHEMA[key] for key in BATCH_KEYS},
@@ -1119,9 +1156,7 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
     },
     "run": {
         "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
-        "strategy_config": '{"params": {"<name>": 1.0}, "rebalance": '
-        '"monthly|quarterly|annual", "holding_days": 21, "long_only": true, '
-        '"family_id": "<key of limits.families>"}',
+        "strategy_config": "check --schema strategy",
     },
     "answers": {
         "answers": ANSWERS_SHAPE,
@@ -1169,6 +1204,7 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
         "strategy; adv_participation at most "
         "limits.max_adv_participation; strategy status paper, probe, or live",
     },
+    "strategy": strategy_schema(),
 }
 
 
