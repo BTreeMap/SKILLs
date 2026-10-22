@@ -132,10 +132,9 @@ all, resend. Arrays optional; order below is acceptance order:
   or `retire` names it or its strategy, or strategy is `retired`. More time
   is new hypothesis citing old in `supersedes`. Never-promoted bet past kill
   date: record `decision` `action: reject`, `subject` hypothesis id.
-- `odds` optional at registration, required before standing reads
-  `promotable`. `payoff` is gain per unit lost; `record` refuses
-  `kelly_implied` more than 0.01 from `p_win - (1 - p_win) / payoff`.
-  Decision takes same `odds`, optional.
+- `odds` required on every hypothesis. `payoff` is gain per unit lost;
+  `record` refuses `kelly_implied` at or below 0, or more than 0.01 from
+  `p_win - (1 - p_win) / payoff`. Decision takes same `odds`, optional.
 - `close` decision ends bet: `subject` hypothesis id, `realized` decimal
   return, `against_odds` `win` or `loss`. Hypothesis with `odds` whose
   strategy's newest `promote` is over `horizon_days` calendar days old shows

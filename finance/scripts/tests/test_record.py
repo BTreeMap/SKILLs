@@ -321,6 +321,21 @@ def test_odds_off_by_two_points_are_refused_and_half_a_point_accepted(
     assert (code, receipt["accepted"]) == (0, {"hypothesis": 1}), err
 
 
+def test_odds_are_required_and_kelly_must_be_above_zero(book, run, make_hypothesis):
+    bare = make_hypothesis(["no", "odds"])
+    del bare["odds"]
+    flat = make_hypothesis(["flat", "odds"], odds=odds(0.0) | {"p_win": 0.5})
+    code, verdict, _ = batch(run, book, {"hypotheses": [bare, flat]})
+    assert code == 1
+    assert [p["where"] for p in verdict["rejected"]] == [
+        "hypotheses[0].odds",
+        "hypotheses[1]",
+    ]
+    assert "at or below 0" in verdict["rejected"][1]["fix"]
+    line = json.loads((book / "ledger" / "hypotheses.jsonl").read_text())
+    assert line["odds"]["kelly_implied"] == pytest.approx(0.1)
+
+
 def test_a_hypothesis_without_falsifier_by_is_refused(book, run, make_hypothesis):
     bare = make_hypothesis(["no", "kill"])
     del bare["falsifier_by"]

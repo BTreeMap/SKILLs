@@ -64,8 +64,8 @@ that list.
   empirical family, 2.0 only when hypothesis states ex-ante `mechanism`.
   Adds `qmj` or `bab` when `families.<id>.touches` names `quality` or
   `low_risk` and field is loaded. No `_factors`: `factor` null, blocks.
-* Capacity: net Sharpe at 1x must be positive and within 20%
-  (`capacity_tolerance`) of 0.1x.
+* Capacity: net Sharpe at 1x must be positive and no more than 20%
+  (`capacity_tolerance`) below 0.1x. 20x is reported, never gated.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
 * Post-cutoff: `limits.model_cutoff` is training cutoff of agent's model

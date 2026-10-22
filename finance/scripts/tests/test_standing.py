@@ -68,6 +68,21 @@ def test_a_scalable_curve_needs_no_override():
     assert (view.standing, view.blockers) == (Standing.PROMOTABLE, ())
 
 
+@pytest.mark.parametrize(
+    ("curve", "blocked"),
+    [
+        ({"0.1x": 1.0, "1x": 0.79, "20x": 0.1}, True),  # 21% below 0.1x
+        ({"0.1x": 1.0, "1x": 0.81, "20x": -0.5}, False),  # 20x reported only
+        ({"0.1x": 0.5, "1x": 0.9, "20x": 0.9}, False),  # above 0.1x: no gate
+        ({"0.1x": -0.1, "1x": -0.1, "20x": -0.1}, True),  # 1x not positive
+    ],
+)
+def test_capacity_blocks_1x_too_far_below_01x_or_not_positive(curve, blocked):
+    view = standing_of(evidence(0.97, 0.05, curve=curve), LIMITS)
+    found = [b for b in view.blockers if b.startswith("capacity")]
+    assert bool(found) is blocked, found
+
+
 def test_a_live_sleeve_reads_its_standing_and_a_retired_one_blocks():
     assert standing_of(evidence(0.97, 0.05, status=Status.LIVE), LIMITS).blockers == ()
     retired = standing_of(evidence(0.97, 0.05, status=Status.RETIRED), LIMITS)

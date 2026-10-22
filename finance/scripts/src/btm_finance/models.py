@@ -115,12 +115,19 @@ class HypothesisEntry(OpenNamed):
     min_holding_days: Annotated[int, Field(ge=1)]
     falsifier_by: date
     """Kill date: `check` lists the hypothesis as overdue past it."""
-    odds: Odds | None = None
-    """Required at promotion, not at registration."""
+    odds: Odds
+    """The bet stated at registration; its Kelly fraction must be above 0."""
     mechanism: NonEmpty | None = None
     sector: NonEmpty | None = None
     supersedes: NonEmpty | None = None
     confidence: Confidence | None = None
+
+    def model_post_init(self, _context: object) -> None:
+        if self.odds.kelly_implied <= 0.0:
+            raise ValueError(
+                f"odds.kelly_implied {self.odds.kelly_implied} is at or below 0: "
+                "the stated odds hold no edge; register a bet with one, or none"
+            )
 
 
 class CritiqueEntry(OpenNamed):
@@ -315,6 +322,7 @@ BASELINE_HYPOTHESIS: dict[str, object] = {
     "counterparty": "investors who shun recent losers, volatile names, and "
     "cheap names; the premia are known and crowded",
     "min_holding_days": 252,
+    "odds": {"p_win": 0.55, "payoff": 1.0, "horizon_days": 252, "kelly_implied": 0.1},
 }
 
 

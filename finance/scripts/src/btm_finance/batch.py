@@ -39,11 +39,11 @@ SCHEMA: dict[str, str] = {
     '"family_id": "<key of limits.families>", "falsifier": "...", '
     '"falsifier_by": "YYYY-MM-DD", "counterparty": "...", '
     '"min_holding_days": 21, "odds": {"p_win": 0.55, "payoff": 1.5, '
-    '"horizon_days": 63, "kelly_implied": 0.25} (optional at registration, '
-    "required before check reads promotable; kelly_implied is p_win "
-    '- (1 - p_win) / payoff within 0.01), "mechanism": "..." (optional), '
+    '"horizon_days": 63, "kelly_implied": 0.25} (required; kelly_implied is '
+    "p_win - (1 - p_win) / payoff within 0.01, and above 0), "
+    '"mechanism": "..." (optional), '
     '"sector": "..." (optional), "supersedes": "<id>" (optional; spends a '
-    'trial of its family), "confidence": 0.4 (optional)}',
+    'trial when falsifier_by moves later), "confidence": 0.4 (optional)}',
     "critiques": '{"kw": ["two", "words"], "run_id": "<run id>", '
     '"blockers": ["..."], "concerns": ["..."], "by": "<delegate>", '
     '"confidence": 0.6 (optional)}',

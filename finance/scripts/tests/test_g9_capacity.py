@@ -1,8 +1,7 @@
 """G9: capacity gates promotion. A strategy whose net Sharpe is flat from 0.1x
-to 1x but negative at 1x is blocked by name; an edge whose curve holds is
-blocked on odds until a superseding hypothesis states them at the same kill
-date, spending no trial, then promotable; every scorecard tests 0.1x, 1x,
-and 20x the cap.
+to 1x but negative at 1x is blocked by name; an edge whose curve holds, its
+odds stated at registration, reads promotable; every scorecard tests 0.1x,
+1x, and 20x the cap.
 
 The synthetic panel plants a persistent per-name drift (`alpha`) that no
 factor spans, so trailing return ranks carry a real edge.
@@ -92,9 +91,9 @@ def test_flat_but_negative_capacity_is_blocked_by_name(synthetic, run, plant, fa
     assert any("is not positive" in b for b in view["blockers"])
 
 
-def test_an_edge_is_blocked_on_odds_until_stated(synthetic, run, plant, families):
+def test_an_edge_with_stated_odds_reads_promotable(synthetic, run, plant, families):
     book = edge_book(synthetic, run, plant, families)
-    hypothesis_id = plant(
+    plant(
         book,
         "drift",
         "SIGN = 1.0\n" + DRIFT,
@@ -108,33 +107,9 @@ def test_an_edge_is_blocked_on_odds_until_stated(synthetic, run, plant, families
     batch(run, book, {"critiques": [critique(document["run_id"])]})
     assert set(document["scorecard"]["capacity"]) == {"0.1x", "1x", "20x"}
     view = run(["check", str(book), "drift"])[1]
-    assert (view["standing"], view["blockers"]) == (
-        "blocked",
-        [f"odds: none registered on {hypothesis_id}"],
-    )
-    stated = {
-        "kw": ["drift", "odds"],
-        "strategy": "drift",
-        "family_id": "g9",
-        "mechanism": "planted drift",
-        "falsifier": "net Sharpe at or below zero out of sample",
-        "falsifier_by": "2099-12-31",
-        "counterparty": "planted by the test",
-        "min_holding_days": 63,
-        "odds": {
-            "p_win": 0.55,
-            "payoff": 1.2,
-            "horizon_days": 63,
-            "kelly_implied": 0.175,
-        },
-        "supersedes": hypothesis_id,
-    }
-    spent = run(["check", str(book)])[1]["families"]["g9"]["trials_used"]
-    batch(run, book, {"hypotheses": [stated]})
-    view = run(["check", str(book), "drift"])[1]
     assert (view["standing"], view["blockers"]) == ("promotable", [])
-    # same kill date: stating odds spends no trial
-    assert run(["check", str(book)])[1]["families"]["g9"]["trials_used"] == spent
+    scale = document["scorecard"]["capacity"]
+    assert scale["0.1x"] - scale["1x"] <= 0.2 * abs(scale["0.1x"])
 
 
 def test_superseding_a_line_without_a_kill_date_spends_nothing():

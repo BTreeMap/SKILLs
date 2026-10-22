@@ -53,6 +53,13 @@ def book(tmp_path: Path, run: Run) -> Path:
 
 KILL_DATE = "2099-12-31"
 """Far enough out that no fixture hypothesis turns overdue."""
+ODDS: dict[str, Any] = {
+    "p_win": 0.55,
+    "payoff": 1.0,
+    "horizon_days": 63,
+    "kelly_implied": 0.1,
+}
+"""A modest stated bet every fixture hypothesis carries."""
 
 
 def hypothesis(kw: list[str], **overrides: Any) -> dict[str, Any]:
@@ -64,6 +71,7 @@ def hypothesis(kw: list[str], **overrides: Any) -> dict[str, Any]:
         "counterparty": "index funds rebalancing on schedule",
         "min_holding_days": 21,
         "falsifier_by": KILL_DATE,
+        "odds": ODDS,
     }
     return entry | overrides
 
@@ -126,6 +134,7 @@ def plant(run: Run) -> Callable[..., str]:
             "counterparty": "planted by the test",
             "min_holding_days": settings["holding_days"],
             "falsifier_by": KILL_DATE,
+            "odds": ODDS,
         } | (hypothesis or {})
         code, receipt, err = run(
             ["record", str(book), "--batch:stdin"], json.dumps({"hypotheses": [entry]})

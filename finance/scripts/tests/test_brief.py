@@ -76,10 +76,14 @@ def test_a_promoted_bet_past_its_horizon_warns_until_closed(book, run, make_hypo
         "reason": "operator promoted",
     }
     append_ledger(open_book(str(book)).path_of(Kind.DECISION), [promote])
-    [warned] = late(run(["check", str(book)])[1], "unscored")
-    assert (warned["hypothesis"], warned["due"]) == (made, "2026-02-01")
+
+    def mine(view):
+        return [w for w in late(view, "unscored") if w["hypothesis"] == made]
+
+    [warned] = mine(run(["check", str(book)])[1])
+    assert warned["due"] == "2026-02-01"
     record(run, book, {"decisions": [CLOSE | {"subject": made}]})
-    assert late(run(["check", str(book)])[1], "unscored") == []
+    assert mine(run(["check", str(book)])[1]) == []
 
 
 def trials_used(run, book):
@@ -169,7 +173,7 @@ def test_the_brief_fits_three_proposals_and_five_incidents_in_twelve_lines(book,
     assert all("\n" not in line for line in lines)
     assert lines[0] == "cap 10000000, book 0"
     assert lines[1].startswith("proposal 2026-07-31")
-    assert "baseline - w 0.1 odds none sharpe_net 0.6" in lines[1]
+    assert "baseline - w 0.1 odds p 0.55 b 1 252d sharpe_net 0.6" in lines[1]
     assert "drift tracked w 0.02 odds none sharpe_net null" in lines[1]
     assert lines[4].startswith("breaches, last 7 days: ")
     assert lines[4].count(",") == 5  # five strategy-kind pairs after the colon

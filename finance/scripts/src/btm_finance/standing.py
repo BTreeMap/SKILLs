@@ -102,7 +102,8 @@ def residual(
 
 
 def capacity(card: Mapping[str, Any], limits: Limits) -> list[str]:
-    """Net Sharpe at 1x positive and within tolerance of 0.1x."""
+    """Net Sharpe at 1x positive and no more than `capacity_tolerance`
+    (relative) below 0.1x; 20x is reported on the scorecard, never gated."""
     curve = card.get("capacity")
     tolerance = limits.thresholds.capacity_tolerance
     levels = curve if isinstance(curve, Mapping) else {}
@@ -112,9 +113,9 @@ def capacity(card: Mapping[str, Any], limits: Limits) -> list[str]:
         blockers.append("capacity: null")
     elif cap <= 0.0:
         blockers.append(f"capacity: net Sharpe at 1x {shown(cap)} is not positive")
-    elif abs(cap - small) > tolerance * abs(small):
+    elif small - cap > tolerance * abs(small):
         blockers.append(
-            f"capacity: 1x {shown(cap)} vs 0.1x {shown(small)} beyond {tolerance}"
+            f"capacity: 1x {shown(cap)} more than {tolerance} below 0.1x {shown(small)}"
         )
     return blockers
 
