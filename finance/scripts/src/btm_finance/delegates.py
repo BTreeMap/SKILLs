@@ -40,14 +40,13 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
         "author": Starter(
             task="Write `strategies/<name>/` for hypothesis spawn message names; "
             "commit it; run `measure . <name> --agent <agent>` once, `<agent>` "
-            "the name spawn message gives; `git commit --amend` adding "
-            "`ledger/runs/<agent>.jsonl`. Run line names blobs, so amend keeps "
-            "it reproducible.",
+            "the name spawn message gives; commit `ledger/runs/<agent>.jsonl` "
+            "as second commit.",
             evidence="First run `check --schema strategy`: the `signal.py` and "
             "`config.json` contract. Then `$ref/families.md`, `$ref/scorecard.md`; "
             "hypothesis line through `api.ledger`.",
-            scope="`strategies/<name>/` and `ledger/runs/<agent>.jsonl`, one "
-            "commit before critique; one run line through `measure --agent`",
+            scope="`strategies/<name>/`, then `ledger/runs/<agent>.jsonl`, both "
+            "committed before critique; one run line through `measure --agent`",
             rules="Never `record`, `recommend`, second `measure`. Cannot build: "
             "`status` `stopped`, reason in `friction`.",
             ids="`run_id`, `hypothesis`",

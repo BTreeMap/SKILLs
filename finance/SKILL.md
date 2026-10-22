@@ -267,8 +267,8 @@ Unit of work is one registered hypothesis:
    authority, `families` catalogue of candidates: bet fitting no family
    there goes to operator as `question` pad entry proposing one.
 2. `record` hypothesis; copy its id from `new`.
-3. Hand author delegate the unit; it commits `strategies/<name>/` with its
-   `ledger/runs/<agent>.jsonl` before critique, which compares hypothesis
+3. Hand author delegate the unit; it commits `strategies/<name>/`, then its
+   `ledger/runs/<agent>.jsonl`, before critique, which compares hypothesis
    `ts` against first commit there.
 4. Hand run id to critique delegate, never run's author; `record` its
    `critiques` batch.
@@ -280,7 +280,7 @@ operator for more through `question` pad entry, quoting `trials_used`; edit
 `limits.json` only on their yes.
 
 Book is git repository (`data/` ignored; `data/manifest.json` digests guard
-it). Commit on branch `agent/<date>-<topic>`, one commit per unit of work,
+it). Commit on branch `agent/<date>-<topic>`, one commit per step of a unit,
 message saying why; rebase onto `main`, merge fast-forward, never merge
 commit. Agent edits nothing under skill directory, installed copy or
 checkout. Every line of code agent writes lives in book (`book`,
@@ -338,7 +338,7 @@ lead sets scope when writing its file.
 | calendar | `research/calendar/<family>.jsonl` |
 | reader | `research/<ticker>/<date>-<form>.md`, extracted tables beside it; one ticker |
 | miner | `lib/features/<name>.py`, its test under `tests/`, `research/backlog/<id>.md` |
-| author | `strategies/<name>/` and `ledger/runs/<agent>.jsonl`, one commit before critique; one run line through `measure --agent` |
+| author | `strategies/<name>/`, then `ledger/runs/<agent>.jsonl`, both committed before critique; one run line through `measure --agent` |
 | critique | `research/critiques/<run id>.json`, one `critiques` batch |
 | analyst | `research/runs/<run_id>.md`, from `data/returns/` |
 | scorer | `research/scored/<date>.json`, one `scored` batch |
