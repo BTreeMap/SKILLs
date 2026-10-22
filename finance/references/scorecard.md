@@ -35,7 +35,7 @@ that list.
 | `adv_clipped` | (period, name) cells `measure` clipped to ADV bound, whole run | none; critique reads it | |
 | `adv_clipped_share` | gross ADV clip removed over gross intended, whole run, [0, 1]; null on run lines written before clip | none; `crowding` in `critique` reads it | |
 | `min_holding_days_realized` | turnover-implied mean holding, trading days: periods times mean gross exposure over one-way weight traded | at least 5 (`min_holding_days`) | |
-| `capacity` | net Sharpe at `0.1x`, `1x` `asset_cap`, and top point: `<thresholds.crowded_multiple>x` (default `20x`), or `cap:<thresholds.crowded_cap>` when set; square-root impact on; `1x` equals `sharpe_net` | see Rules | |
+| `capacity` | net Sharpe at `0.1x`, `1x`, `20x` `asset_cap`; square-root impact on; `1x` equals `sharpe_net` | see Rules | |
 | `spread_model` | `half_spread_mean` (trade-weighted, charged), `abdi_ranaldo_mean` and `corwin_schultz_mean` on traded cells, `gap_mean`, `abdi_ranaldo_share` (cells where it was primary), `fallbacks` count, `primary` rule text | none; logged for quarterly refit | Corwin and Schultz 2012; Abdi and Ranaldo 2017 |
 | `max_drawdown` | largest peak-to-trough fall of net wealth, positive decimal | live review at 1.5x (`drawdown_review_multiple`) | |
 
@@ -65,25 +65,14 @@ that list.
   Adds `qmj` or `bab` when `families.<id>.touches` names `quality` or
   `low_risk` and field is loaded. No `_factors`: `factor` null, blocks.
 * Capacity: net Sharpe at 1x must be positive and within 20%
-  (`capacity_tolerance`) of 0.1x. Net Sharpe at top point still within 20%
-  of 0.1x, or hypothesis `capacity_class: crowded`: blocked as `crowded`
-  until decision line with `action: override` names strategy; hypothesis
-  registered `in_band` showing it needs `override` with reason.
+  (`capacity_tolerance`) of 0.1x.
 * Walk-forward: test folds contiguous; training drops `embargo` periods each
   side of test fold; strategies fit nothing, so every fold is out of sample.
-* Miner split: `api.research(book).folds("train")` serves first
-  `thresholds.folds - 1` of `thresholds.folds` equal contiguous blocks of
-  book's bar dates; last block is reserved test block, closed to miner
-  (`folds("test")` and `.at` past training dates refuse). Feature chosen on
-  training blocks meets last block first inside `measure`.
 * Post-cutoff: `limits.model_cutoff` is training cutoff of agent's model
   (date or null). `post_cutoff` is net Sharpe of folds whose first test date
   is strictly after it, joined in order. Null, with `reasons.post_cutoff`,
   when cutoff is null or no fold starts after it. Positive overall Sharpe
   beside negative `post_cutoff` is `hindsight` concern in `critique`.
-* Probe: `check <strategy>` reads standing `probe` when every blocker but
-  `dsr` and `pbo` is clear, DSR at or above 0.80 (`thresholds.dsr_probe`),
-  PBO below 0.25 (`pbo_probe`). `paper` or `live` still needs DSR 0.95.
 * Regimes: vol tercile from 21-day volatility of equal-weight universe
   return, lagged one day.
 * Spread: half-spread at decision day from 21-day estimates; Abdi-Ranaldo
@@ -101,41 +90,17 @@ that list.
   last close; rebalance landing there fills at carried close. Universe
   spanning exchanges is supported.
 
-## Regimes and streams
-
-Run line, beside scorecard:
-
-* `regimes`: ids of regime records whose span overlaps evidence window.
-  Record holds from its `as_of` to next live record's `as_of`; last holds
-  open-ended. `regime_days`: evidence periods per id, `none` for periods
-  before first record.
-
-`check <strategy>` adds three advisory fields, never blockers:
-
-* `regime_concentration`: share of run's `regime_days` per id, `none`
-  included; empty when run predates stamp.
-* `correlation`: per paper or live sleeve (strategy itself left out),
-  Pearson correlation of run's stored net series with sleeve's newest
-  research run series on common dates; null under 20 common periods or zero
-  variance.
-* `effective_streams`: over paper and live sleeves plus this strategy, each
-  with stored series: `N_eff = 1 / mean(R)`, R correlation matrix with 1 on
-  diagonal, null pairs left out, mean floored at 1/n so `1 <= N_eff <= n`.
-  Copy of sleeve gives 1; n independent streams give n. Under
-  `limits.min_effective_streams` (default 2): `signal:` line, strategy adds
-  trial, not stream.
-
 ## Repeat
 
 `measure <strategy> --repeat <run id>` reruns one line from its own inputs
 and writes nothing: no run line, no returns file, no incident.
 
-* Refuses before running, naming each moved input: path of `code_objects`
-  whose `ast.dump` (parsed JSON for `config.json`) of recorded blob, read
-  through `git cat-file`, differs from working tree, or module `signal.py`
-  reaches now but did not then; source file under `data/raw/` changed or
-  vanished since listed in manifest, or loaded after run; listed peer whose
-  returns file is unlisted, changed, or gone.
+* Refuses before running, naming each moved input: path in `code_files`
+  whose digest of `ast.dump` (parsed JSON for `config.json`) differs from
+  working tree's, or module `signal.py` reaches now but did not then; line
+  without `code_hash`; source file under `data/raw/` changed or vanished
+  since listed in manifest, or loaded after run; listed peer whose returns
+  file is unlisted, changed, or gone.
 * Reruns with line's `config`, `params`, `held_out`, `exclusions`, and
   exactly its `peers` for `sr_var` and PBO, trial count `trials - 1`;
   `limits.json` is read as it stands now.
@@ -143,6 +108,5 @@ and writes nothing: no run line, no returns file, no incident.
   (`repeat_tolerance`), absolute when both are at or below 1, relative to
   larger above; null must meet null; text must match. Each diff names field
   path, recorded, recomputed, rule.
-* Skill commit (`engine.btm_finance`), `numpy`, or `pyarrow` moved: advisory
-  only. Exit 0 reproduced, 1 otherwise. Cost: one `measure` run plus one
-  re-hash of the store.
+* Package version (`engine`) moved: advisory only. Exit 0 reproduced, 1
+  otherwise. Cost: one `measure` run plus one re-hash of the store.

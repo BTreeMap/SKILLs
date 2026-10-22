@@ -1,14 +1,11 @@
 # Critique
 
-Work through twelve items below on one run, plus `event-fields` and five
-`macro` items (`chain`, `regime-band`, `next-phase`, `third-order`,
-`discounted`) when hypothesis family carries `event: true` in
-`limits.families`; write one `critiques` batch entry to
-`research/critiques/<run id>.json`.
+Work through eleven items below on one run; write one `critiques` batch
+entry to `research/critiques/<run id>.json`.
 
 ## Inputs and limits
 
-* Read nothing of author's session, chat, pad, or receipt.
+* Read nothing of author's session, chat, or pad.
 * Read run line (`ledger/runs.jsonl` or `ledger/runs/<agent>.jsonl`),
   hypothesis line it names (`ledger/hypotheses.jsonl`), `strategies/<name>/`
   (`signal.py`, `config.json`, `README.md`), `research/backlog/`, and
@@ -91,13 +88,9 @@ Work through twelve items below on one run, plus `event-fields` and five
 
 ### crowding
 
-* Inspect: scorecard `capacity` at 0.1x, 1x, top point, `adv_clipped_share`;
-  hypothesis `capacity_class`.
-* Settles: capacity curve agrees with registered class; ADV clip removed
-  little of intended gross.
-* Blocker: class `in_band` or `under_cap` while `capacity` shows crowded and
-  hypothesis states no reason. Concern: class `crowded`, reason stated.
-  Concern: large `adv_clipped_share`.
+* Inspect: scorecard `capacity` at 0.1x, 1x, 20x, `adv_clipped_share`.
+* Settles: ADV clip removed little of intended gross.
+* Concern: large `adv_clipped_share`.
 
 ### factor
 
@@ -130,14 +123,6 @@ Work through twelve items below on one run, plus `event-fields` and five
   `walk_forward.post_cutoff` negative. Null `post_cutoff`: name its
   `reasons` entry; no grade from it.
 
-### event-fields
-
-* Event family only (`event: true` in `limits.families`).
-* Inspect: hypothesis `chain`, `expectation_source`, `discounted`,
-  `confidence`.
-* Settles: all four present.
-* Concern: any absent; name each missing field. No blocker grade.
-
 ### drift
 
 * Inspect: `README.md` and any proposal text against run line `scorecard`.
@@ -163,25 +148,15 @@ Work through twelve items below on one run, plus `event-fields` and five
 Prefix each string with item name and colon. Record every item under
 `verdicts`; extra fields ride along.
 
-Plain family, twelve items:
+Eleven items:
 
 ```json
 {"critiques": [{"kw": ["deletion", "critique"], "run_id": "<full run id>", "blockers": ["look-ahead: strategies/index-deletion/signal.py line 14 reads event_time, not knowledge_time"], "concerns": ["regime: scorecard.regimes year row carries most of net Sharpe"], "by": "<delegate name>", "verdicts": {"rationale": "clear", "look-ahead": "blocker", "survivorship": "clear", "restatement": "clear", "universe": "clear", "regime": "concern", "crowding": "clear", "factor": "clear", "access-wall": "clear", "hindsight": "clear", "drift": "clear", "multiplicity": "clear"}}]}
 ```
 
-Event family, eighteen items, with optional `confidence`:
-
-```json
-{"critiques": [{"kw": ["filing", "critique"], "run_id": "<full run id>", "blockers": [], "concerns": ["regime-band: run line regime_days puts 0.9 of evidence in one regime id"], "by": "<delegate name>", "confidence": 0.5, "verdicts": {"rationale": "clear", "look-ahead": "clear", "survivorship": "clear", "restatement": "clear", "universe": "clear", "regime": "clear", "crowding": "clear", "factor": "clear", "access-wall": "clear", "hindsight": "clear", "drift": "clear", "multiplicity": "clear", "event-fields": "clear", "chain": "clear", "regime-band": "concern", "next-phase": "clear", "third-order": "clear", "discounted": "clear"}}]}
-```
-
-Final message is receipt (`unit` `critique`, `wrote` naming batch file,
-`ids.run_id`), nothing else.
-
 ## Completion checks
 
-* `verdicts` holds all twelve items, plus `event-fields` and five `macro`
-  items for event family, each `blocker`, `concern`, or `clear`.
+* `verdicts` holds all eleven items, each `blocker`, `concern`, or `clear`.
 * Each `blocker` verdict has matching string in `blockers`; same for
   concerns.
 * `run_id` is full id from run line; `by` names critic, not run's author.
