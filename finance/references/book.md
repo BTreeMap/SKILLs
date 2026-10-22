@@ -7,7 +7,7 @@ operator's private git repository; skill holds methods, book holds state.
 
 ```text
 <book>/
-  book.json                   marker: book id, created, engine version, held-out path
+  book.json                   marker: book id, created, skill commit at start, held-out path
   README.md                   operator: what book is, when brief arrives, four replies, ledger/
   AGENTS.md                   agents: verbs, invariants, daily loop, replies, governed files, conduct, code, hindsight, dated answers
   CLAUDE.md                   relative symlink to AGENTS.md; fallback line "Read AGENTS.md."
@@ -16,7 +16,7 @@ operator's private git repository; skill holds methods, book holds state.
   universe.csv                copy of start's --universe:file
   data/raw/<source>/          immutable parquet per load; see sources
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
-  data/manifest.json          sha256, rows, dates per stored file; written under lock
+  data/manifest.json          sha256, rows, dates per stored file; written under lock; git ignores data/, so digests guard it
   data/features/              materialized features (later stage)
   ledger/
     hypotheses.jsonl  critiques.jsonl  decisions.jsonl  fills.jsonl
@@ -37,9 +37,9 @@ operator's private git repository; skill holds methods, book holds state.
   delegates/<slug>.md         fixed brief per delegated unit, summon's six fields; lead edits after friction
   tests/                      tests for lib/ and tools/; conftest.py puts book root on sys.path
   tests/reference/            this book's pinned scorecard
-  INDEX.md                    one line per lib module, tool, research topic, delegate brief
+  INDEX.md                    path | purpose, one line per lib module, tool, research topic, delegate brief
   features/  ext/
-  .gitignore                  data/
+  .gitignore                  data/, __pycache__/
 
 <path start --held-out named>, default
 ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
@@ -58,9 +58,9 @@ Agent-written layout:
   so `import lib.<module>` resolves.
 - `research/<topic>/README.md`: status and open questions of that line of
   inquiry.
-- `INDEX.md`: one line per lib module, tool, research topic, delegate brief
-  (path, purpose, last touched), updated in same commit as file; history
-  section keeps one line per deleted script.
+- `INDEX.md`: `path | purpose`, one line per lib module, tool, research
+  topic, delegate brief, updated in same commit as file; deleted file leaves
+  no line.
 - `research/backlog/<id>.md`: one candidate hypothesis, not yet registered.
   State mechanism, counterparty, falsifier, odds, expected information gain,
   and which existing run (run id) it would differ from, and how. Combination
@@ -80,7 +80,9 @@ over research names, `.dates` for bar dates; `research(book).folds("train")`
 for same over training blocks only (first `thresholds.folds - 1` of
 `thresholds.folds` equal contiguous blocks of bar dates; `scorecard`), miner
 delegate's only price reader; `receipt(text)` checks delegate's final
-message. None serves held-out names.
+message; `outside_scope(book, commit, scope)` lists each path
+`git diff main...<commit>` names outside scope entries (entry ending in `/`
+holds paths under it). None serves held-out names.
 
 `data_snapshot` hashes sorted sha256 of source files under `data/raw/` only;
 `data/returns/` files stay in manifest for integrity checks but never move
@@ -104,7 +106,8 @@ Book is research monorepo: every line of code agent writes lives in book.
 - Read ledger and data only through `btm_finance.api`. Append to ledger only
   through `record`: script writes batch file, lead runs `record`.
 - Accessor `Market` lacks: add it in `lib/market_ext.py`, wrapping `api`.
-- Delete dead script; add one-line note to `INDEX.md` history.
+- Delete dead script by commit lead merges; drop its `INDEX.md` line in same
+  commit.
 - Update `INDEX.md` and `research/<topic>/README.md` in same commit as file
   they describe.
 - Test `lib/` and `tools/` under `tests/`, run with `$U pytest "$B/tests"`.
@@ -119,18 +122,17 @@ append, names file and line; repaired only on operator's word. Bare `check`
 derives `warnings` on every call: each cut line (file, line,
 `problem: cut line`), each undecodable line (file, line, first 40 bytes),
 and each `supersedes` naming no id of its kind; never stored, never
-repaired, no incident line. Filesystem modes enforce nothing: these warnings
-are the append-only check.
+repaired, no incident line.
 
 | Kind | Required keys |
 | --- | --- |
 | hypothesis | `kw`, `strategy`, `family_id`, `capacity_class`, `falsifier`, `falsifier_by`, `counterparty`, `min_holding_days`; optional `odds` (`p_win`, `payoff`, `horizon_days`, `kelly_implied`), `chain`, `expectation_source`, `discounted`, `confidence` (critique flags each one absent in family with `event: true`) |
 | critique | `kw`, `run_id`, `blockers`, `concerns`, `by` |
-| decision | `kw`, `subject`, `action`, `reason`; optional `odds`; `forgo` names strategy |
+| decision | `kw`, `subject`, `action`, `reason`; optional `odds`, `applied` (governed paths) with `commits` (each path's last commit, same order, stamped by `record`); `forgo` names strategy |
 | scored | `kw`, `subject` (live hypothesis id), `resolved`, `outcome`, `realized_return`, `brier`, `log_score`, `attribution` (`market`, `factor`, `currency`, `idiosyncratic`, `costs`) |
 | regime | `kw`, `as_of`, `confidence`; optional `falsified`, `supersedes`; any other field free JSON |
 | fill | `symbol`, `side`, `quantity`, `price`, `date`, `strategy`, `dry_run` |
-| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_hash`, `config`, `scorecard`; also `params`, `reasons`, `engine`, `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `code_files`, `regimes`, `regime_days`, `imports` |
+| run | `run_id`, `hypothesis_id`, `family_id`, `strategy`, `data_snapshot`, `code_commit`, `code_paths`, `config`, `scorecard`; also `params`, `reasons`, `engine` (skill commit, `numpy`, `pyarrow`), `tolerance`, `held_out`, `exclusions`, `refused`, `peers`, `span`, `returns`, `agent`, `regimes`, `regime_days`, `imports` |
 | incident | `kind`; see Incidents |
 
 `confidence` (0 to 1) is optional on hypothesis, critique, decision. `chain`
@@ -185,7 +187,7 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
 
 | Path | Writer | Agent may |
 | --- | --- | --- |
-| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, then record `decision` quoting instruction, `applied` naming file; bare `check` warns on each governed file no decision hashed as it stands |
+| `limits.json`, `approvals/*.json`, `strategies/*/status` (governed) | agent, only on operator's instruction in chat, same turn | change, commit on `main`, then record `decision` quoting instruction, `applied` naming file; bare `check` warns on each commit touching it no decision names, and while uncommitted |
 | `preferences.json` | `record`, after user confirms | read; change through `record` |
 | `ledger/` except `pad/` | `record`; run lines `measure`; incident lines `load`, `check --live` | append through `record` only; bare `check` warns on any other write it can see |
 | `ledger/pad/scratch.jsonl` | agent | append lines, grep; never gated |
@@ -202,11 +204,11 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    `hypotheses.jsonl`. Empty `lib/__init__.py`; `tests/conftest.py`;
    `research/backlog/`, `research/calendar/`, `research/weekly/`, each with
    `README.md` of one status line; `INDEX.md` holding header, column line
-   `path | purpose | last touched`, one row per those three folders and per
-   seeded brief. Bare `check` warns when `INDEX.md` is absent. `delegates/`
-   seeded with starter briefs for `author`, `critique`, `miner`, `reader`,
-   `scorer`, `regime`, `janitor`, at most 25 lines each, write scope same as
-   spine's table, references by absolute path.
+   `path | purpose`, one row per those three folders and per seeded brief.
+   Bare `check` warns when `INDEX.md` is absent. `delegates/` seeded with
+   starter briefs for `author`, `critique`, `miner`, `reader`, `scorer`,
+   `regime`, `janitor`, at most 25 lines each, write scope same as spine's
+   table, references by absolute path.
 2. `preferences.json`, `limits.json` defaults, then `book.json` with
    `held_out` path.
 3. Held-out list at `--held-out` path, default under `XDG_STATE_HOME`; path
@@ -225,9 +227,12 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    `start --answers:file` on existing book writes them later, answers dated
    that day, and leaves `limits.json`, `preferences.json`, ledger untouched.
    Bare `check` warns on each file absent or drifted.
-5. `.gitignore` holding `data/` (existing lines kept); `git init -q` unless
-   path is inside git work tree. Receipt `git`: `init`, `inside`, `failed`,
-   or `absent` (no `git` on PATH, with `signal:` line).
+5. `.gitignore` holding `data/` and `__pycache__/` (existing lines kept);
+   `git init -b main` unless path is inside git work tree; no `git` on PATH
+   refuses before any write. Receipt `git`: `init` or `inside`. Then
+   baseline hypothesis, one commit `start: <id>` of book path on current
+   branch (receipt `commit`), `onboard` decision naming every governed file
+   it wrote at that commit, and second commit of that decision line.
 
 ## Proposal file
 
@@ -306,9 +311,9 @@ deferred.
 `check <date>` prints `approval_template` with every order, `date` set to
 proposal date, `reply` empty. On operator's approve, agent copies it to
 `approvals/<YYYY-MM-DD>.json`, sets quantities as operator said, `date` and
-file name to send day, `reply` to operator's words verbatim, then records
-`approve` decision on proposal stem, same words as `reason`, `applied`
-naming file:
+file name to send day, `reply` to operator's words verbatim, commits it,
+then records `approve` decision on proposal stem, same words as `reason`,
+`applied` naming file:
 
 ```json
 {"date": "YYYY-MM-DD", "proposal": "<proposal stem>", "reply": "<operator's words>", "orders": [{"symbol": "...", "side": "buy|sell", "quantity": 10, "price": 12.5, "adv_participation": 0.004, "strategy": "<name>", "limit": null}]}
@@ -316,8 +321,8 @@ naming file:
 
 No program places an order. `check <book> approvals/<date>.json` (path
 absolute or book-relative, resolving under `approvals/`) checks: `date` is
-today (UTC); `reply` non-empty; some `approve` decision's `applied` holds
-file's sha256 as it stands, so edit after yes fails until recorded again;
+today (UTC); `reply` non-empty; file clean and some `approve` decision names
+its last commit, so edit after yes fails until committed and recorded again;
 `proposal` names file under `proposals/`; every order's `symbol`, `side`,
 `strategy` match order of that proposal; `adv_participation` at most
 `limits.max_adv_participation`; strategy `status` `paper`, `probe`, or

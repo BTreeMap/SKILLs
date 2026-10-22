@@ -135,10 +135,10 @@ Run line, beside scorecard and outside it (reference pin never covers it):
 `measure <strategy> --repeat <run id>` reruns one line from its own inputs
 and writes nothing: no run line, no returns file, no incident.
 
-* Refuses before running, naming each moved input: `signal.py` or book-local
-  module it imports whose `ast.dump` sha256, or `config.json` whose
-  canonical-JSON sha256, differs from line's `code_files`, or `btm_finance`
-  version folded into `code_hash`; source file under `data/raw/` changed or
+* Refuses before running, naming each moved input: path of `code_paths`
+  whose `ast.dump` (parsed JSON for `config.json`) at `code_commit`, read
+  through `git show`, differs from working tree, or module `signal.py`
+  reaches now but did not then; source file under `data/raw/` changed or
   vanished since listed in manifest, or loaded after run; listed peer whose
   returns file is unlisted, changed, or gone.
 * Reruns with line's `config`, `params`, `held_out`, `exclusions`, and
@@ -148,5 +148,6 @@ and writes nothing: no run line, no returns file, no incident.
   (`repeat_tolerance`), absolute when both are at or below 1, relative to
   larger above; null must meet null; text must match. Each diff names field
   path, recorded, recomputed, rule.
-* `numpy` or `pyarrow` version moved: advisory only. Exit 0 reproduced, 1
-  otherwise. Cost: one `measure` run plus one re-hash of the store.
+* Skill commit (`engine.btm_finance`), `numpy`, or `pyarrow` moved: advisory
+  only. Exit 0 reproduced, 1 otherwise. Cost: one `measure` run plus one
+  re-hash of the store.

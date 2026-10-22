@@ -45,12 +45,13 @@ operator confirms.
 2. Empty directory: `$R start "$B" --answers:file answers.json` plus
    `--universe:file` when operator gave one. `start` fills `limits.json` and
    `preferences.json` (`schedule` from `brief_hour` and `schedule`) from
-   answers, records `onboard` decision hashing governed files it wrote.
+   answers, commits scaffold as `start: <id>`, records `onboard` decision
+   naming every governed file it wrote at that commit.
 3. Existing book: `$R start "$B" --answers:file answers.json`. It writes
-   three files, and `limits.json` when any answer differs, under `onboard`
-   decision. Tell operator every `limits` entry (dotted path to value)
-   written. Read `preferences` batch to operator; on confirmation, `record`
-   it.
+   three files, and `limits.json` when any answer differs, commits them as
+   `onboard: <id>`, under `onboard` decision. Tell operator every `limits`
+   entry (dotted path to value) written. Read `preferences` batch to
+   operator; on confirmation, `record` it.
 4. Create scheduled task with harness's scheduler (`/schedule` in Claude
    Code; `cron` elsewhere) running Daily loop at `schedule.hour` on
    `schedule.days` from `preferences.json`.
