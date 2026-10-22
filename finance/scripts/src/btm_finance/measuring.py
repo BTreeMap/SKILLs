@@ -33,10 +33,10 @@ from btm_finance.engine import (
     max_drawdown,
     net_returns,
     purged_folds,
-    regime_split,
     rolling_mean,
     sharpe,
     sr_moments,
+    year_sharpe,
 )
 from btm_finance.engine.metrics import PERIODS_PER_YEAR
 from btm_finance.models import (
@@ -50,7 +50,6 @@ from btm_finance.models import (
 from btm_finance.scorecard import (
     FactorCard,
     Scorecard,
-    SpreadCard,
     WalkForward,
     finite,
 )
@@ -61,7 +60,6 @@ SHIFTS = (("-20%", 0.8), ("+20%", 1.2))
 BLOCKS = 16  # CSCV blocks; PBO needs 2 * BLOCKS common periods
 CORE = ("mkt_rf", "smb", "hml", "rmw", "cma", "mom")
 EXTRA = (("quality", "qmj"), ("low_risk", "bab"))
-PRIMARY = "abdi_ranaldo below the median ADV, corwin_schultz at or above"
 Ints = np.ndarray[Any, np.dtype[np.intp]]
 Strategy = Callable[[Market, Mapping[str, float]], Any]
 
@@ -193,7 +191,6 @@ class Prepared:
     vol: Floats
     half_ar: Floats
     half_cs: Floats
-    market_vol: Floats
     rf: Floats
 
     @classmethod
@@ -212,9 +209,6 @@ class Prepared:
         no_open = ~np.isfinite(overnight) | ~np.isfinite(intraday)
         overnight = np.where(no_open, close_cc, overnight)
         intraday = np.where(no_open, 0.0, intraday)
-        sums, counts = per_row(close_cc)
-        universe = np.divide(sums, counts, out=np.full(days, np.nan), where=counts > 0)
-        lagged = np.concatenate(([np.nan], rolling_std(universe, WINDOW)[:-1, 0]))
         vol = rolling_std(close_cc, WINDOW)
         close_cc, overnight, intraday = (
             np.nan_to_num(grid, nan=0.0) for grid in (close_cc, overnight, intraday)
@@ -245,7 +239,6 @@ class Prepared:
             vol=vol,
             half_ar=ar.half,
             half_cs=cs.half,
-            market_vol=lagged,
             rf=np.nan_to_num(on_dates(events, FACTORS, "rf", panel.dates), nan=0.0),
         )
 
@@ -479,11 +472,6 @@ def filled(values: Floats, fallback: float) -> Floats:
     return out
 
 
-def mean_of(values: Floats) -> float | None:
-    kept = values[np.isfinite(values)]
-    return float(kept.mean()) if kept.size else None
-
-
 @dataclass(frozen=True, slots=True, eq=False)
 class Costed:
     """A track's costs at the 1x capital level and the inputs the capacity
@@ -494,7 +482,8 @@ class Costed:
     adv: Floats
     vol: Floats
     participation_max: float
-    spread: SpreadCard
+    half_spread_mean: float | None
+    """Half-spread charged, trade-weighted; None when nothing traded."""
 
 
 def priced(  # noqa: PLR0913 - one track's cost inputs, read once each
@@ -585,27 +574,15 @@ def costed(track: Track, setting: Setting) -> Costed:
         )
     )
     weight = float(track.trades.sum())
-    both = traded & np.isfinite(ar) & np.isfinite(cs)
-    spread = SpreadCard(
-        primary=PRIMARY,
-        half_spread_mean=finite(float((half * track.trades).sum()) / weight)
-        if weight
-        else None,
-        abdi_ranaldo_mean=mean_of(ar[traded]),
-        corwin_schultz_mean=mean_of(cs[traded]),
-        gap_mean=mean_of(np.abs(ar - cs)[both]),
-        abdi_ranaldo_share=finite(float(below[traded].mean()))
-        if traded.any()
-        else None,
-        fallbacks=int((traded & ~np.isfinite(primary)).sum()),
-    )
     return Costed(
         net=net,
         half_spread=half,
         adv=adv,
         vol=vol,
         participation_max=float(participation.max(initial=0.0)),
-        spread=spread,
+        half_spread_mean=finite(float((half * track.trades).sum()) / weight)
+        if weight
+        else None,
     )
 
 
@@ -735,17 +712,11 @@ def factor_fit(
     ), None
 
 
-def regimes_of(
-    dates: Days, excess: Floats, vol: Floats
-) -> dict[str, dict[str, float | None]]:
+def by_year_of(dates: Days, excess: Floats) -> dict[str, float | None]:
     years = (
         dates.astype("datetime64[D]").astype("datetime64[Y]").astype(np.int64) + 1970
     )
-    split = regime_split(excess, dates_years=years, vol_proxy=vol)
-    return {
-        "year": {key: finite(value) for key, value in split.by_year.items()},
-        "vol": {key: finite(value) for key, value in split.by_vol.items()},
-    }
+    return {key: finite(value) for key, value in year_sharpe(excess, years).items()}
 
 
 def dsr_of(excess: Floats, peers: Peers) -> float | None:
@@ -877,9 +848,7 @@ def evaluate(
         trials=peers.trials + 1,
         pbo=pbo,
         walk_forward=folds,
-        regimes=regimes_of(
-            base.dates, excess, prep.market_vol[track.first : track.first + periods]
-        ),
+        by_year=by_year_of(base.dates, excess),
         perturbation=perturbation,
         factor=factor,
         turnover_annual=one_way / (periods / PERIODS_PER_YEAR),
@@ -894,7 +863,7 @@ def evaluate(
             label: finite(value)
             for (label, _), value in zip(levels, capacity, strict=True)
         },
-        spread_model=cost.spread,
+        half_spread_mean=cost.half_spread_mean,
         max_drawdown=max_drawdown(cost.net),
         extra=extra_of(metrics or {}, setting, base),
     )

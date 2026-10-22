@@ -59,7 +59,7 @@ to `research/critiques/<run id>.json`.
 
 - Inspect: run line `asset_cap`, `costs`; scorecard `cost_share`, `capacity`
   at 0.1x, 1x, 20x, `adv_participation_max`, `adv_clipped_share`,
-  `spread_model`.
+  `half_spread_mean`.
 - Settles: costs charged at book's cap; 1x within `capacity_tolerance` of
   0.1x; ADV clip removed little of intended gross.
 - Blocker: `lib/costs.py` charging less than half-spread plus commission on
@@ -68,13 +68,12 @@ to `research/critiques/<run id>.json`.
 
 ### concentration
 
-- Inspect: scorecard `regimes` by year and vol tercile, `walk_forward`
-  `sharpe` per fold and `positive` share; names `signal.py` can hold.
-- Settles: net Sharpe positive across most years, terciles, folds; no single
-  name decides result.
+- Inspect: scorecard `by_year`, `perturbation`, `walk_forward` `sharpe` per
+  fold and `positive` share; names `signal.py` can hold.
+- Settles: net Sharpe positive across most years and folds and under each
+  perturbation; no single name decides result.
 - Blocker: `walk_forward.positive` under 0.5 while `sharpe_net` positive.
-  Concern: one year, tercile, or fold carries most of Sharpe; signal holds
-  few names.
+  Concern: one year or fold carries most of Sharpe; signal holds few names.
 
 ### hindsight
 
@@ -95,7 +94,7 @@ Prefix each string with item name and colon. Record every core and book item
 under `verdicts`.
 
 ```json
-{"critiques": [{"kw": ["deletion", "critique"], "run_id": "<full run id>", "blockers": ["look-ahead: strategies/index-deletion/signal.py line 14 reads event_time, not knowledge_time"], "concerns": ["concentration: scorecard.regimes year 2020 carries most of net Sharpe"], "by": "<agent>", "verdicts": {"look-ahead": "blocker", "survivorship": "clear", "multiplicity": "clear", "costs-capacity": "clear", "concentration": "concern", "hindsight": "clear"}}]}
+{"critiques": [{"kw": ["deletion", "critique"], "run_id": "<full run id>", "blockers": ["look-ahead: strategies/index-deletion/signal.py line 14 reads event_time, not knowledge_time"], "concerns": ["concentration: scorecard.by_year 2020 carries most of net Sharpe"], "by": "<agent>", "verdicts": {"look-ahead": "blocker", "survivorship": "clear", "multiplicity": "clear", "costs-capacity": "clear", "concentration": "concern", "hindsight": "clear"}}]}
 ```
 
 ## Completion checks

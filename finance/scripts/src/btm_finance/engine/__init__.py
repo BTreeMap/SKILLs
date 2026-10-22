@@ -13,18 +13,16 @@ from btm_finance.engine.costs import (
     sqrt_impact,
 )
 from btm_finance.engine.metrics import (
-    Regimes,
     annualized_return,
     annualized_vol,
     cost_share,
     deflated_sharpe,
     expected_max_sharpe,
     max_drawdown,
-    regime_split,
     sharpe,
     sr_moments,
     turnover_annual,
-    vol_terciles,
+    year_sharpe,
 )
 from btm_finance.engine.ruin import ruin_loss
 from btm_finance.engine.validation import (
@@ -44,7 +42,6 @@ __all__ = [
     "Cscv",
     "FactorFit",
     "Ols",
-    "Regimes",
     "Spread",
     "abdi_ranaldo",
     "abdi_ranaldo_terms",
@@ -65,12 +62,11 @@ __all__ = [
     "ols_hac",
     "pbo",
     "purged_folds",
-    "regime_split",
     "rolling_mean",
     "ruin_loss",
     "sharpe",
     "sqrt_impact",
     "sr_moments",
     "turnover_annual",
-    "vol_terciles",
+    "year_sharpe",
 ]

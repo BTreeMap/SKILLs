@@ -24,7 +24,7 @@ lists run ids whose stored series fed `sr_var` and PBO, in order used.
 | `trials` | family's run lines spending a trial, this one included, refused and held-out ones too | within `families.<id>.trials` |
 | `pbo` | probability of backtest overfitting, CSCV, 16 blocks | promote below 0.10 (`pbo_promote`); discard at or above 0.50 (`pbo_discard`) |
 | `walk_forward` | `folds` (`thresholds.folds`), `embargo` (= `holding_days`), net `sharpe` per purged test fold, `mean`, `positive` share, `post_cutoff` | none; critique `hindsight` reads `post_cutoff` |
-| `regimes` | net Sharpe by calendar `year`, and by `vol` tercile `low`, `mid`, `high` | none; critique `concentration` reads it |
+| `by_year` | net Sharpe per calendar year, keyed `2019` | none; critique `concentration` reads it |
 | `perturbation` | net Sharpe per param at `-20%`, `+20%` | none; critique reads cliffs |
 | `factor` | `alpha_annual`, `t_alpha` (Newey-West), `loadings`, `model` (`ff5+mom`), `r2`, `n` | t at or above 3.0 (`t_empirical`); 2.0 when hypothesis has `mechanism` (`t_mechanism`) |
 | `turnover_annual` | one-way turnover per year | none |
@@ -34,7 +34,7 @@ lists run ids whose stored series fed `sr_var` and PBO, in order used.
 | `adv_clipped`, `adv_clipped_share` | cells clipped to ADV bound; gross clip removed over gross intended | none; critique `costs-capacity` reads it |
 | `min_holding_days_realized` | turnover-implied mean holding, trading days | at least 5 (`min_holding_days`) |
 | `max_drawdown` | largest peak-to-trough fall of net wealth, positive | live review at 1.5x (`drawdown_review_multiple`) |
-| `spread_model` | `half_spread_mean` charged, both estimators' means, `gap_mean`, `fallbacks` | none |
+| `half_spread_mean` | half-spread charged, trade-weighted, decimal | none; `check --live` slippage reads it |
 | `extra` | one number per `lib/metrics/<name>.py` | never |
 
 ## Rules
@@ -51,6 +51,10 @@ lists run ids whose stored series fed `sr_var` and PBO, in order used.
 - ADV clip: after `max_weight` and thin-name drop, each weight clipped to
   `max_adv_participation * adv_dollar(21) / asset_cap`; unknown ADV clips to
   0; clipped weight stays cash.
+- Spread: traded name pays Abdi-Ranaldo half-spread when its 21-day dollar
+  ADV is below that day's universe median, Corwin-Schultz at or above. A
+  missing estimate takes the other estimator, then that day's median over
+  traded names; `lib/costs.py`, when present, replaces all of this.
 - DSR: `sr_var` is variance of per-period net Sharpe across family's runs.
   One trial: DSR is probabilistic Sharpe against zero, still held to 0.95.
 - PBO: matrix is this strategy's 2k + 1 variants (each of k params at -20%,

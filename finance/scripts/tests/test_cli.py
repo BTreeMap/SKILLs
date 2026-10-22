@@ -167,6 +167,9 @@ def test_check_schema_with_a_kind_prints_that_kind_only(book, run):
     code, schema, _ = run(["check", "--schema", "run"])
     assert (code, list(schema)) == (0, ["run"])
     assert "code_hash" in schema["run"]["run_line"]
+    card = schema["run"]["scorecard"]
+    assert "by_year" in card and "half_spread_mean" in card
+    assert "regimes" not in card and "spread_model" not in card
     assert run(["check", str(book), "--schema", "pad"])[1].keys() == {"pad"}
     code, _, err = run(["check", "--schema", "fills"])
     assert code == 1 and "record|run|pad|strategy" in err

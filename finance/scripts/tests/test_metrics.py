@@ -15,12 +15,11 @@ from btm_finance.engine import (
     deflated_sharpe,
     expected_max_sharpe,
     max_drawdown,
-    regime_split,
     ruin_loss,
     sharpe,
     sr_moments,
     turnover_annual,
-    vol_terciles,
+    year_sharpe,
 )
 
 NORMAL = NormalDist()
@@ -154,28 +153,17 @@ def test_best_of_noise_is_deflated_below_threshold():
     assert value < 0.95
 
 
-def test_vol_terciles_partition_the_present_periods():
-    proxy = np.random.default_rng(9).normal(size=31)
-    proxy[[4, 17]] = math.nan
-    low, mid, high = vol_terciles(proxy)
-    sizes = [low.size, mid.size, high.size]
-    assert max(sizes) - min(sizes) <= 1
-    joined = np.concatenate((low, mid, high))
-    assert sorted(joined.tolist()) == [i for i in range(31) if i not in (4, 17)]
-    assert proxy[low].max() <= proxy[mid].min()
-    assert proxy[mid].max() <= proxy[high].min()
-
-
-def test_regime_split_keys_and_values():
-    rng = np.random.default_rng(4)
-    returns = rng.normal(0.0005, 0.01, 30)
+def test_year_sharpe_keys_each_year_in_order():
+    returns = np.random.default_rng(4).normal(0.0005, 0.01, 30)
     years = np.repeat(np.array([2019, 2020, 2021]), 10)
-    proxy = np.arange(30, dtype=np.float64)
-    split = regime_split(returns, dates_years=years, vol_proxy=proxy)
-    assert list(split.by_year) == ["2019", "2020", "2021"]
-    assert split.by_year["2020"] == pytest.approx(sharpe(returns[10:20]))
-    assert list(split.by_vol) == ["low", "mid", "high"]
-    assert split.by_vol["high"] == pytest.approx(sharpe(returns[20:]))
+    by_year = year_sharpe(returns, years)
+    assert list(by_year) == ["2019", "2020", "2021"]
+    assert by_year["2020"] == pytest.approx(sharpe(returns[10:20]))
+
+
+def test_year_sharpe_rejects_misaligned_years():
+    with pytest.raises(ValueError, match="align"):
+        year_sharpe(np.zeros(3), np.array([2019, 2020]))
 
 
 def test_ruin_loss_of_a_constant_path_is_its_compounded_fall():

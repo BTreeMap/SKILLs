@@ -170,7 +170,7 @@ from btm_finance.repeat import (
 )
 from btm_finance.repeat import advisories as engine_advisories
 from btm_finance.scaffold import DEFAULT_CAP, scaffold
-from btm_finance.scorecard import RunLine, Span, UniverseKind
+from btm_finance.scorecard import RunLine, Scorecard, Span, UniverseKind
 from btm_finance.standing import Evidence, StandingView, standing_of
 from btm_finance.store import (
     PAD_DIR,
@@ -920,6 +920,8 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
     "run": {
         "run_line": f"{', '.join(RunLine.model_fields)} (written by measure only)",
         "meaning": inspect.getdoc(RunLine),
+        "scorecard": f"{', '.join(Scorecard.model_fields)}; meanings in the "
+        "scorecard reference",
         "strategy_config": "check --schema strategy",
         "hooks": inspect.getdoc(hooks),
     },
@@ -1243,10 +1245,7 @@ def card_number(run: Row, key: str) -> float | None:
 
 
 def half_spread(run: Row) -> float:
-    card = run.get("scorecard")
-    model = card.get("spread_model") if isinstance(card, dict) else None
-    value = model.get("half_spread_mean") if isinstance(model, dict) else None
-    return float(value) if isinstance(value, int | float) else 0.0
+    return card_number(run, "half_spread_mean") or 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -1808,13 +1807,11 @@ def run_facts(book: Book, strategy: str) -> RunFacts | None:
     drawdown = None if run is None else card_number(run, "max_drawdown")
     if run is None or drawdown is None:
         return None
-    card = run.get("scorecard")
-    spread = card.get("spread_model") if isinstance(card, dict) else None
-    half = spread.get("half_spread_mean") if isinstance(spread, dict) else None
+    half = card_number(run, "half_spread_mean")
     return RunFacts(
         run_id=str(run.get("run_id")),
         max_drawdown=drawdown,
-        half_spread=float(half) if isinstance(half, int | float) else None,
+        half_spread=half,
     )
 
 

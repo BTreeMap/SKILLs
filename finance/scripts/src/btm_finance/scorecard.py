@@ -44,19 +44,6 @@ class FactorCard(Model):
     n: int
 
 
-class SpreadCard(Model):
-    """Half-spread actually charged, trade-weighted, and both estimators on
-    the traded cells with their mean absolute gap."""
-
-    primary: str
-    half_spread_mean: Maybe
-    abdi_ranaldo_mean: Maybe
-    corwin_schultz_mean: Maybe
-    gap_mean: Maybe
-    abdi_ranaldo_share: Maybe
-    fallbacks: int
-
-
 class Scorecard(Model):
     sharpe_gross: Maybe
     sharpe_net: Maybe
@@ -64,7 +51,8 @@ class Scorecard(Model):
     trials: int
     pbo: Maybe
     walk_forward: WalkForward | None
-    regimes: dict[str, dict[str, Maybe]]
+    by_year: dict[str, Maybe]
+    """Annualized net Sharpe per calendar year, keyed "2019"."""
     perturbation: dict[str, dict[str, Maybe]]
     factor: FactorCard | None
     turnover_annual: float
@@ -72,7 +60,8 @@ class Scorecard(Model):
     adv_participation_max: float
     min_holding_days_realized: float
     capacity: dict[str, Maybe]
-    spread_model: SpreadCard
+    half_spread_mean: Maybe
+    """Half-spread charged, trade-weighted, decimal; `check --live` reads it."""
     max_drawdown: float
     adv_clipped: int = 0
     """(period, name) cells `measure` clipped to the ADV bound."""

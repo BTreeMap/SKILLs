@@ -4,7 +4,6 @@ turnover, cost share, regime split. Pure numpy; returns are decimal, not %."""
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 from statistics import NormalDist
 
 import numpy as np
@@ -150,45 +149,16 @@ def deflated_sharpe(  # noqa: PLR0913 - the paper's five inputs, named
     return _NORMAL.cdf((sr - sr0) * math.sqrt(periods - 1) / math.sqrt(spread))
 
 
-@dataclass(frozen=True, slots=True)
-class Regimes:
-    """Annualized Sharpe by calendar year (key "2019") and by volatility
-    tercile (keys low, mid, high)."""
-
-    by_year: dict[str, float]
-    by_vol: dict[str, float]
-
-
-def vol_terciles(vol_proxy: Floats) -> tuple[Ints, Ints, Ints]:
-    """Period indices of the low, mid, high thirds of a volatility proxy by rank;
-    NaN periods excluded, sizes differ by at most one, ties stable; O(T log T)."""
-    proxy = np.asarray(vol_proxy, dtype=np.float64).reshape(-1)
-    present = np.flatnonzero(~np.isnan(proxy)).astype(np.int64)
-    ranked = present[np.argsort(proxy[present], kind="stable")]
-    low, mid, high = np.array_split(ranked, 3)
-    return np.sort(low), np.sort(mid), np.sort(high)
-
-
-def regime_split(
-    returns: Floats,
-    *,
-    dates_years: Ints,
-    vol_proxy: Floats,
-    periods_per_year: int = PERIODS_PER_YEAR,
-) -> Regimes:
-    """Sharpe of per-period returns per calendar year and per vol tercile; the
-    caller lags `vol_proxy` so it is known at each period; O(T log T)."""
+def year_sharpe(
+    returns: Floats, years: Ints, periods_per_year: int = PERIODS_PER_YEAR
+) -> dict[str, float]:
+    """Annualized Sharpe of per-period returns per calendar year, keyed "2019"
+    in year order; O(T Y) for Y distinct years."""
     series = _series(returns)
-    years = np.asarray(dates_years, dtype=np.int64).reshape(-1)
-    if years.size != series.size or np.size(vol_proxy) != series.size:
-        raise ValueError("returns, dates_years and vol_proxy must align")
-    by_year = {
-        str(year): sharpe(series[years == year], periods_per_year)
-        for year in np.unique(years).tolist()
+    stamp = np.asarray(years, dtype=np.int64).reshape(-1)
+    if stamp.size != series.size:
+        raise ValueError("returns and years must align")
+    return {
+        str(year): sharpe(series[stamp == year], periods_per_year)
+        for year in np.unique(stamp).tolist()
     }
-    thirds = vol_terciles(vol_proxy)
-    by_vol = {
-        label: sharpe(series[index], periods_per_year)
-        for label, index in zip(("low", "mid", "high"), thirds, strict=True)
-    }
-    return Regimes(by_year, by_vol)
