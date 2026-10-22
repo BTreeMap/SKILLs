@@ -184,7 +184,8 @@ def test_a_lib_module_is_compared_beside_signal(synthetic, run):
 
 def test_sha256_lives_in_the_manifest_snapshot_and_code_hash_only():
     """`data/raw.py` digests the store; `repeat.py` digests code; `cli.py`
-    only reads those digests; no module but `scaffold.py` calls git."""
+    only reads those digests; git runs only in `scaffold.py` (init) and
+    `delegation.py` (brief blob ids and history)."""
     hits = [
         (path.relative_to(SOURCE).as_posix(), line)
         for path in SOURCE.rglob("*.py")
@@ -200,4 +201,4 @@ def test_sha256_lives_in_the_manifest_snapshot_and_code_hash_only():
         for path in SOURCE.rglob("*.py")
         if '"git"' in path.read_text(encoding="utf-8")
     }
-    assert callers == {"scaffold.py"}
+    assert callers == {"scaffold.py", "delegation.py"}

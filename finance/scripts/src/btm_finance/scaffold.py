@@ -26,6 +26,7 @@ from btm_corekit import (
     signal,
     write_atomic,
 )
+from btm_finance.delegation import FOLDER, SEEDED, seed
 from btm_finance.ledger import Kind
 from btm_finance.models import (
     BASELINE_CONFIG,
@@ -48,6 +49,7 @@ DIRECTORIES = (
     "tools",
     "research",
     "tests",
+    FOLDER,
 )
 LEDGER = (Kind.CRITIQUE, Kind.DECISION, Kind.FILL, Kind.RUN)
 """Ledger files `start` makes empty; `record` writes the hypotheses file."""
@@ -206,6 +208,8 @@ def scaffold(
     if universe is not None:
         write_new(root / "universe.csv", universe)
     write_new(root / "lib" / "__init__.py", "")
+    for unit in SEEDED:
+        write_new(root / FOLDER / f"{unit}.md", seed(unit))
     write_new(root / "tests" / "conftest.py", BOOK_CONFTEST)
     write_new(root / INDEX, INDEX_HEAD)
     write_new(
@@ -244,6 +248,7 @@ def scaffold(
             "lib/__init__.py",
             "tests/conftest.py",
             "strategies/baseline/",
+            *(f"{FOLDER}/{unit}.md" for unit in SEEDED),
             *(f"ledger/{kind.file}" for kind in LEDGER),
             *(["universe.csv"] if universe is not None else []),
         ],
