@@ -36,7 +36,8 @@
   tests/reference/            this book's pinned scorecard
   INDEX.md                    path | purpose, one line per lib module, tool, research topic, delegate brief
   features/  ext/
-  .gitignore                  data/, __pycache__/
+  .gitignore                  /data, __pycache__/, .worktrees/
+  .worktrees/<agent>/         delegate worktree, data symlinked to book data/
 
 <path start --held-out named>, default
 ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
@@ -182,10 +183,11 @@ Same strategy and kind within 7 days of `as_of`: not appended again.
    count only. Without universe, empty list and `signal:` saying so.
 4. With `--answers:file`: `README.md`, `AGENTS.md`, `CLAUDE.md` and answers
    (`onboard`). Without: none of three files, `onboarded` false.
-5. `.gitignore` holding `data/` and `__pycache__/` (existing lines kept);
-   `git init -b main` unless path is inside git work tree. Then one commit
-   `start: <id>` on current branch, `onboard` decision naming every governed
-   file it wrote by blob id, and second commit of that decision line.
+5. `.gitignore` holding `/data`, `__pycache__/`, `.worktrees/` (existing
+   lines kept); `git init -b main` unless path is inside git work tree. Then
+   one commit `start: <id>` on current branch, `onboard` decision naming
+   every governed file it wrote by blob id, and second commit of that
+   decision line.
 
 ## Proposal file
 

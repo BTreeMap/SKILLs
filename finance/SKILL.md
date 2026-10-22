@@ -108,7 +108,7 @@ $U pytest "$B/tests"
 | `load` | Source; `--since` first date kept, default day after source's last covered date; `--config:file` JSON, required for `csv` | Files written with rows and sha256, `data_snapshot`; exit 1 and incident line when stored file changed or vanished |
 | `record` | One batch; or `--approval approvals/<date>.json` with `--fills:file <table>` (pasted fills: CSV `symbol,side,quantity,price,date`, optional `strategy`, or JSON list) or `--dry-run` (approval's paper orders at price), built into `fills` batch, same gate | Accepted counts per kind, `new` ids, `preferences` when rewritten |
 | `measure` | Strategy; `--agent` writes `ledger/runs/<agent>.jsonl`, name lowercase letters, digits, `-`, `_`; `--held-out` runs once per promotion gate, inside loop: read its scorecard only; `--repeat` reruns named run, writes nothing; refuses before running, writing nothing, when `strategies/<name>/` or book-local module `signal.py` reaches differs from HEAD or is untracked (`commit before measure`), or on a policy gate: `holding_days` under `limits.min_holding_days`, or run lines dated today (UTC, every runs file) at `limits.trials_per_day` (default 3), unless `--held-out` or `--repeat`. `--reason` runs past policy gates, stamped as `override_reason` | `run_id`, scorecard with `walk_forward.post_cutoff` (net Sharpe of folds starting after `limits.model_cutoff`), `reasons` for null fields, `refused`, `imports`; run line stores `code_paths`, `code_objects` (path to committed blob id), `engine` (skill commit, library versions), `universe` (`membership` or `static`), `override_reason`; exit 1 naming each broken bound. `--repeat`: `reproduced`, `diffs`, `advisories` (moved engine commit or library); exit 1 on any diff or moved input |
-| `check` | Nothing, strategy, run id, proposal date, or approval file; `--live`; `--brief`, no target; `--schema [record\|run\|answers\|pad\|receipt\|approval\|strategy]`, book optional; `--today` tests only | `--schema`: that kind's shapes, all when bare. Approval file: `orders` with `account`, `problems` (date not today, `reply` empty, file not committed or no `approve` decision naming its blob, proposal absent, order not in proposal, `adv_participation` over limit, strategy not `paper`, `probe`, `live`), `next`; exit 1 on any problem. Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals (no decision names them) with age, `approvals` (each file's `proposal`, `date`, `approved` while clean and `approve` decision names its blob, `filled` once fills carry its stem), last incident lines, pad count, `heartbeat` (`last` `heartbeat` pad line's `ts`, `minutes_since`, `stale` past twice `heartbeat_minutes`, `quiet` inside `quiet_hours`), `trials_today` (`used`, `cap`), `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `README.md` or `AGENTS.md` absent, `CLAUDE.md` neither symlink to `AGENTS.md` nor fallback line, `AGENTS.md` invariants section differing from template, `problem: commit no decision names` per commit leaving governed file at blob no decision names (`commit`, `subject`, `files`), `problem: governed file not committed` per governed file differing from HEAD, each hypothesis citing a falsified chain, `problem: overdue` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` (`hypothesis`, `strategy`, `due`), `INDEX.md` when absent, `problem: receipt path absent` per `wrote` path of `receipt` pad line missing from book, `delegates/` when absent, `problem: delegate brief absent` per `receipt` pad line whose `unit` names no `delegates/<unit>.md`, and `problem: heartbeat stale`; no line yet: `next` opens with `start heartbeat`), advisory `evolution`, never stored: per `delegates/` brief `dispatches` (receipt pad lines naming unit), `frictions`, `last`; per `lib/` module `runs` whose `code_paths` name it, `last_run`, `last_commit`; per `tools/` script `last_commit`; `idle`, committed `lib/` modules and `tools/` scripts with no run or commit in `limits.idle_days` (default 90). Strategy or run: `standing`, `blockers`, compact scorecard with `override_reason`, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `regime`, `effective_streams`, `advisory` risk shares, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; last, one plain reply: `Paste your fills for <date>.` (approval approved, unfilled, dated within 7 days), `Reply approve, reject, or override <date> with a reason.` (oldest open proposal), `Reply yes to apply, or say what to change.` (`question` pad entry of today), `Say what happened to <strategy> by <date>.` (overdue or unscored), else `Nothing to decide today; ask anything.`, first that applies. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
+| `check` | Nothing, strategy, run id, proposal date, or approval file; `--live`; `--brief`, no target; `--schema [record\|run\|answers\|pad\|receipt\|approval\|strategy]`, book optional; `--today` tests only | `--schema`: that kind's shapes, all when bare. Approval file: `orders` with `account`, `problems` (date not today, `reply` empty, file not committed or no `approve` decision naming its blob, proposal absent, order not in proposal, `adv_participation` over limit, strategy not `paper`, `probe`, `live`), `next`; exit 1 on any problem. Nothing: continue view (`regime`: id, `as_of`, `stale`, or null; strategies by status, per family `trials_used` against `trials` and open hypotheses, open proposals (no decision names them) with age, `approvals` (each file's `proposal`, `date`, `approved` while clean and `approve` decision names its blob, `filled` once fills carry its stem), last incident lines, pad count, `heartbeat` (`last` `heartbeat` pad line's `ts`, `minutes_since`, `stale` past twice `heartbeat_minutes`, `quiet` inside `quiet_hours`), `trials_today` (`used`, `cap`), `warnings`: cut and undecodable lines and dangling `supersedes` by file and line, `README.md` or `AGENTS.md` absent, `CLAUDE.md` neither symlink to `AGENTS.md` nor fallback line, `AGENTS.md` invariants section differing from template, `problem: commit no decision names` per commit leaving governed file at blob no decision names (`commit`, `subject`, `files`), `problem: governed file not committed` per governed file differing from HEAD, each hypothesis citing a falsified chain, `problem: overdue` (`hypothesis`, `strategy`, `falsifier_by`, `days_overdue`), `problem: unscored` (`hypothesis`, `strategy`, `due`), `INDEX.md` when absent, `problem: receipt path absent` per `wrote` path of `receipt` pad line missing from book, `delegates/` when absent, `problem: delegate brief absent` per `receipt` pad line whose `unit` names no `delegates/<unit>.md`, and `problem: heartbeat stale`; no line yet: `next` opens with `start heartbeat`), advisory `evolution`, never stored: per `delegates/` brief `dispatches` (receipt pad lines naming unit), `frictions`, `last`; per `lib/` module `runs` whose `code_paths` name it, `last_run`, `last_commit`; per `tools/` script `last_commit`; `idle`, committed `lib/` modules and `tools/` scripts with no run or commit in `limits.idle_days` (default 90). Strategy or run: `standing`, `blockers`, compact scorecard with `override_reason`, `critique`, `status`, `paper`, and advisory `regime_concentration`, `correlation`, `effective_streams` (never blockers). Date: newest proposal of that date as `blockers`, `baseline` (per sleeve `tier`, `edge_scale`, `weight`), `stale`, `regime`, `effective_streams`, `advisory` risk shares, `ruin`, `reasons` for null `ruin`, `diff`, `cuts`, `unmanaged`, `skipped`, `summary`, `approval_template`, `approval_path`; exit 1 when none. `--live`: per-sleeve `strategies`, `breaches`, `report`. `--brief`: `lines`, at most 12, one each: regime with `as_of` and `stale`, or `no regime`; per open proposal its sleeves with `tier` (`-` when proposal holds none), `weight`, hypothesis `odds`, and net Sharpe (DSR for `probe` tier); incidents of last 7 days by strategy and kind; overdue and unscored counts; last, one plain reply: `Paste your fills for <date>.` (approval approved, unfilled, dated within 7 days), `Reply approve, reject, or override <date> with a reason.` (oldest open proposal), `Reply yes to apply, or say what to change.` (`question` pad entry of today no `answer` names), `Say what happened to <strategy> by <date>.` (overdue or unscored), else `Nothing to decide today; ask anything.`, first that applies. Over 8 open proposals: count line, then newest two. Every output has advisory `next` |
 | `recommend` | Rebalance date; `--force` writes `<date>.<n>.json` beside existing one | Writes `proposals/<date>.json` once, nothing else; receipt with per sleeve `weight`, `tier`, `edge_scale`, `skipped`, counts of orders, cuts, carried, unmanaged, `summary`, `regime`, `effective_streams`, `ruin` loss, `reasons` for null `ruin`; exit 1 when no sleeve has run line, or when proposal exists and `--force` is not given |
 
 Output: one JSON document on stdout; `signal:` lines on stderr advisory.
@@ -151,7 +151,9 @@ all, resend. Arrays optional; order below is acceptance order:
 - `falsifier_by` required: kill date. Past it, bare `check` lists hypothesis
   under `warnings` as `overdue` until `scored` line names it, or `reject` or
   `retire` names it or its strategy, or strategy is `retired`. More time is
-  new hypothesis citing old in `supersedes`.
+  new hypothesis citing old in `supersedes`. Never-promoted bet past kill
+  date: record `decision` `action: reject`, `subject` hypothesis id, never
+  `scored`; `scored` is for promoted bets.
 - `odds` optional at registration, required before standing reads
   `promotable` or `probe`. `payoff` is gain per unit lost; `record` refuses
   `kelly_implied` more than 0.01 from `p_win - (1 - p_win) / payoff`.
@@ -188,8 +190,10 @@ all, resend. Arrays optional; order below is acceptance order:
 Pad is free memory, never gated: append one JSON object per line, with `ts`
 (ISO) and `type`, to `ledger/pad/scratch.jsonl` with own file tools; grep it
 to read. Types used here: `hunch`, `objection`, `question` (only operator
-can answer), `friction`, `injection`, `heartbeat`, `receipt` (Daily loop);
-`check --schema pad` lists all.
+can answer), `answer` (`question`: answered line's `ts`; `text`: operator's
+words), `friction`, `injection`, `heartbeat`, `receipt` (Daily loop);
+`check --schema pad` lists all. Append `answer` when operator replies to
+`question`.
 
 ## Strategy
 
@@ -259,10 +263,13 @@ Unit of work is one registered hypothesis:
 1. Load `families`. Rank families by capacity class first (`under_cap` and
    `in_band` before `crowded`), then by operator's `focus_sectors` in
    `preferences.json`; skip any family whose `trials_used` in bare `check`
-   reached its `trials` from `limits.families`.
+   reached its `trials` from `limits.families`. `limits.families` is
+   authority, `families` catalogue of candidates: bet fitting no family
+   there goes to operator as `question` pad entry proposing one.
 2. `record` hypothesis; copy its id from `new`.
-3. Hand author delegate the unit; it commits `strategies/<name>/` before
-   critique, which compares hypothesis `ts` against first commit there.
+3. Hand author delegate the unit; it commits `strategies/<name>/` with its
+   `ledger/runs/<agent>.jsonl` before critique, which compares hypothesis
+   `ts` against first commit there.
 4. Hand run id to critique delegate, never run's author; `record` its
    `critiques` batch.
 5. Run `check "$B" <name>`; read standing and every blocker.
@@ -291,25 +298,38 @@ commit as change it answers, message saying why; carry no brief text between
 sessions. Critique brief never names author nor carries author's receipt
 beyond run id.
 
+Each delegate works in own worktree, so its branch never moves lead's tree.
+Before dispatch, with ledger committed on `main`:
+
+```bash
+git -C "$B" worktree add .worktrees/<agent> -b agent/<date>-<slug>
+ln -s "$B/data" "$B/.worktrees/<agent>/data"
+```
+
+Pass `$W` (`$B/.worktrees/<agent>`) as delegate's book path; delegate
+commits there.
+
 | Caller supplies | Finance's value |
 | --- | --- |
 | Unit | one unit, `unit` any slug: author takes one registered hypothesis, critique one run |
-| Record | absolute paths of `$B/AGENTS.md` and `$B/delegates/<slug>.md`, both read first; unit's values (ledger line or run id, dates, names); sibling bounds when parallel |
-| Rules it can break | in brief file: none of four invariants; writes only its scope, committed on own branch; never `record`, `recommend`, held-out names; author's run line only through `measure --agent`; critique never run's author |
+| Record | worktree path `$W` as book path; absolute paths of `$W/AGENTS.md` and `$W/delegates/<slug>.md`, both read first; agent name `<unit>-<n>` (`author-1`, `critique-1`), its `--agent` and critique `by`; unit's values (ledger line or run id, dates, names); sibling bounds when parallel |
+| Rules it can break | in brief file: none of four invariants; writes only its scope plus `INDEX.md` row appends, committed in `$W`; never `record`, `recommend`, held-out names; author's run line only through `measure --agent`; critique never run's author |
 | Output | receipt as `AGENTS.md` states it, checked with `api.receipt`; `commit` branch head, null when nothing written |
-| Cap | author: family's remaining trials; critique: one run; else summon's sizing |
+| Cap | author: "runs you may measure: <trials minus trials_used>"; critique: one run; else summon's sizing |
 | Gate | examine with three additions below, then `record` of batch files receipt names, then `check "$B"` |
 
 **Example: author spawn message**
 
 ```text
-Read /home/op/book/AGENTS.md, then /home/op/book/delegates/author.md.
-Hypothesis value-tilt-3f2a; strategy value-tilt; agent author-1; family value has 2 trials left.
+Book path /home/op/book/.worktrees/author-1.
+Read /home/op/book/.worktrees/author-1/AGENTS.md, then /home/op/book/.worktrees/author-1/delegates/author.md.
+Hypothesis value-tilt-3f2a; strategy value-tilt; agent author-1; family value; runs you may measure: 2.
 No sibling agents.
 ```
 
-Unit writes its row and nothing else; its brief file's BOUNDS carries row.
-Unit outside table: lead sets scope when writing its file.
+Unit writes its row, plus one `INDEX.md` row appended per file it creates,
+and nothing else; its brief file's BOUNDS carries row. Unit outside table:
+lead sets scope when writing its file.
 
 | Unit | Writes |
 | --- | --- |
@@ -318,7 +338,7 @@ Unit outside table: lead sets scope when writing its file.
 | calendar | `research/calendar/<family>.jsonl` |
 | reader | `research/<ticker>/<date>-<form>.md`, extracted tables beside it; one ticker |
 | miner | `lib/features/<name>.py`, its test under `tests/`, `research/backlog/<id>.md` |
-| author | `strategies/<name>/`, committed before critique; one run line through `measure --agent` |
+| author | `strategies/<name>/` and `ledger/runs/<agent>.jsonl`, one commit before critique; one run line through `measure --agent` |
 | critique | `research/critiques/<run id>.json`, one `critiques` batch |
 | analyst | `research/runs/<run_id>.md`, from `data/returns/` |
 | scorer | `research/scored/<date>.json`, one `scored` batch |
@@ -339,7 +359,9 @@ Examine adds, before anything from receipt is recorded:
   failure. Every `wrote` path exists.
 - Every id in `ids` resolves through `api.ledger`.
 - Accepted: append receipt verbatim plus `ts`, `type: "receipt"` to pad;
-  rebase branch onto `main`, merge fast-forward.
+  rebase branch onto `main`, settling any `INDEX.md` conflict, merge
+  fast-forward; `git -C "$B" worktree remove .worktrees/<agent>`, delete
+  branch.
 
 Always:
 

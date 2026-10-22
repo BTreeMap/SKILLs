@@ -59,7 +59,7 @@ RESEARCH = {
 each."""
 INDEX = "INDEX.md"
 INDEX_HEAD = "# Index\n\npath | purpose\n"
-IGNORED = ("data/", "__pycache__/")
+IGNORED = ("/data", "__pycache__/", ".worktrees/")
 
 
 def index_text() -> str:
@@ -171,7 +171,8 @@ def write_new(path: Path, text: str) -> None:
 
 
 def ignore(path: Path) -> None:
-    """`data/` and `__pycache__/` joined to `.gitignore`; other lines kept."""
+    """`/data` (directory, or a worktree's symlink to it), `__pycache__/`,
+    `.worktrees/` joined to `.gitignore`; other lines kept."""
     held = path.read_text(encoding="utf-8") if path.is_file() else ""
     lines = held.splitlines()
     missing = [line for line in IGNORED if line not in lines]

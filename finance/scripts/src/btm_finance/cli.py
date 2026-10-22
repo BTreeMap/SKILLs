@@ -56,7 +56,16 @@ from btm_finance import (
 )
 from btm_finance.api import FACTORS, Market, ledger, on_dates
 from btm_finance.batch import BATCH_KEYS, SCHEMA, Context, RecordResult, expand_batch
-from btm_finance.brief import WEEK, Bet, Open, Owed, brief, justifying
+from btm_finance.brief import (
+    ANSWER,
+    WEEK,
+    Bet,
+    Open,
+    Owed,
+    asked_today,
+    brief,
+    justifying,
+)
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
 from btm_finance.data.panel import Events, Panel
@@ -963,13 +972,9 @@ def unfilled_approval(rows: Sequence[Mapping[str, Any]], today: date) -> str | N
 def owed_of(book: Book, view: Mapping[str, Any], today: date) -> Owed:
     """What the operator owes, in `Reply` order: fills, an answer to the
     oldest open proposal, a yes to a change asked today (`question` pad entry
-    of today), a word on the first overdue or unscored bet."""
+    of today no `answer` names), a word on the first overdue or unscored bet."""
     pad = rows_of(read_bytes(book.root / PAD_DIR / "scratch.jsonl"))
-    asked = any(
-        row.get("type") == "question"
-        and str(row.get("ts", ""))[:10] == today.isoformat()
-        for _, row in pad
-    )
+    asked = asked_today((row for _, row in pad), today)
     late = [w for w in view["warnings"] if w.get("problem") in {"overdue", "unscored"}]
     first = late[0] if late else None
     return Owed(
@@ -1178,6 +1183,8 @@ SCHEMA_VIEW: dict[str, dict[str, Any]] = {
             **{name: meaning for name, meaning in PAD_TYPES.items() if name != "known"},
             heartbeat.HEARTBEAT: "one wake of the always-on loop: item (tier "
             "and unit in words), outcome (one line), next_wake (ISO)",
+            ANSWER: "operator's reply to a question: question (the answered "
+            "question line's ts), text (operator's words); closes its yes line",
             RECEIPT: "a delegate receipt the lead accepted, verbatim, plus ts "
             "and type; bare check warns on each wrote path absent",
         },

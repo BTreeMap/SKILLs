@@ -39,18 +39,19 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
     {
         "author": Starter(
             task="Write `strategies/<name>/` for hypothesis spawn message names; "
-            "commit it on own branch before critique; run "
-            "`measure . <name> --agent <agent>` once.",
+            "commit it; run `measure . <name> --agent <agent>` once, `<agent>` "
+            "the name spawn message gives; `git commit --amend` adding "
+            "`ledger/runs/<agent>.jsonl`. Run line names blobs, so amend keeps "
+            "it reproducible.",
             evidence="First run `check --schema strategy`: the `signal.py` and "
             "`config.json` contract. Then `$ref/families.md`, `$ref/scorecard.md`; "
             "hypothesis line through `api.ledger`.",
-            scope="`strategies/<name>/`, committed before critique; one run line "
-            "through `measure --agent`",
+            scope="`strategies/<name>/` and `ledger/runs/<agent>.jsonl`, one "
+            "commit before critique; one run line through `measure --agent`",
             rules="Never `record`, `recommend`, second `measure`. Cannot build: "
             "`status` `stopped`, reason in `friction`.",
             ids="`run_id`, `hypothesis`",
-            limit="One `measure`, within family's remaining trials spawn message "
-            "states.",
+            limit="One `measure`, within runs you may measure spawn message states.",
         ),
         "critique": Starter(
             task="Critique run spawn message names through every item of "
@@ -60,7 +61,7 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
             "`research/backlog/`.",
             scope="`research/critiques/<run id>.json`, one `critiques` batch",
             rules="Read no pad line, receipt, or session beyond run id and files "
-            "named; `by` names you.",
+            "named; `by` is agent name spawn message gives.",
             ids="`run_id`",
             limit="One run.",
         ),
@@ -103,7 +104,9 @@ STARTERS: Mapping[str, Starter] = MappingProxyType(
             "observables and chains.",
             evidence="`$ref/macro.md` and sources it names.",
             scope="`research/regime/<quarter>.md`, draft `regimes` batch beside it",
-            rules="Never `record`; never set `confidence`: operator states it.",
+            rules="Never `record`; never set `confidence`: operator states it. "
+            "Quarter is `YYYYQn` (`research/regime/2026Q4.md`); draft's "
+            "`as_of` is draft date.",
             ids="none",
             limit="One quarter.",
         ),

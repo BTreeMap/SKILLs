@@ -1,5 +1,7 @@
 # Families
 
+`limits.families` is authority; this file is catalogue of candidates.
+
 Families below suit capital at or under `limits.json` asset cap, in capacity
 order: families institutions cannot use first, crowded large-cap families
 last.

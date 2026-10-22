@@ -272,6 +272,27 @@ def test_a_question_asked_today_asks_for_a_yes(book, run):
     assert lines[-1] == "Nothing to decide today; ask anything."
 
 
+def test_an_answer_naming_the_question_closes_the_yes_line(book, run):
+    pad = book / "ledger" / "pad" / "scratch.jsonl"
+    asked = {"ts": f"{TODAY}T08:00:00Z", "type": "question", "body": "lower cap?"}
+    stray = {"ts": f"{TODAY}T09:00:00Z", "type": "answer", "question": "other"}
+    pad.write_text(json.dumps(asked) + "\n" + json.dumps(stray) + "\n")
+    lines = run(["check", str(book), "--brief"])[1]["lines"]
+    assert lines[-1] == "Reply yes to apply, or say what to change."
+    answer = {
+        "ts": f"{TODAY}T09:30:00Z",
+        "type": "answer",
+        "question": asked["ts"],
+        "text": "yes, lower it",
+    }
+    with pad.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(answer) + "\n")
+    lines = run(["check", str(book), "--brief"])[1]["lines"]
+    assert lines[-1] == "Nothing to decide today; ask anything."
+    code, schema, _ = run(["check", "--schema", "pad"])
+    assert code == 0 and "answer" in json.dumps(schema)
+
+
 def test_answers_set_the_schedule_in_preferences(tmp_path, run):
     root = tmp_path / "book"
     answers = {"horizon": {"brief_hour": 6, "schedule": "daily"}}

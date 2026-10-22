@@ -183,7 +183,8 @@ def test_start_inits_main_commits_and_leaves_a_clean_tree(
     assert code == 0, err
     assert receipt["git"] == "init"
     assert (root / ".git").is_dir()
-    assert (root / ".gitignore").read_text() == "data/\n__pycache__/\n"
+    ignored = "/data\n__pycache__/\n.worktrees/\n"
+    assert (root / ".gitignore").read_text() == ignored
     assert git.head(root) is not None and git.dirty(root, ["."]) == frozenset()
     assert git.log_commits(root, ["limits.json"])[0].hash == receipt["commit"]
     code, receipt, _ = run(["start", str(root / "inner")])

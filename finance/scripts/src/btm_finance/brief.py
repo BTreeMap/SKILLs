@@ -5,7 +5,7 @@ is always one `Reply`."""
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -13,6 +13,8 @@ from typing import Any
 
 from btm_finance.views import day_of
 
+QUESTION = "question"
+ANSWER = "answer"
 LINES = 12
 WEEK = 7
 FIXED = 4  # regime, breaches, counts, reply
@@ -33,13 +35,27 @@ class Reply(StrEnum):
 class Owed:
     """What the operator owes, from live state: `unfilled` the date of an
     approval checked but unfilled; `unanswered` an open proposal's stem;
-    `pending` a change the agent asked about today; `late` a bet's strategy
+    `pending` a change the agent asked about today, unanswered; `late` a bet's strategy
     and date past due."""
 
     unfilled: str | None = None
     unanswered: str | None = None
     pending: bool = False
     late: tuple[str, str] | None = None
+
+
+def asked_today(pad: Iterable[Mapping[str, Any]], today: date) -> bool:
+    """Some `question` pad line of `today` whose `ts` no `answer` line names
+    in its `question` field. Pad is one-shot here: materialized once.
+    O(pad lines)."""
+    rows = tuple(pad)
+    answered = {str(row.get(QUESTION)) for row in rows if row.get("type") == ANSWER}
+    return any(
+        row.get("type") == QUESTION
+        and str(row.get("ts", ""))[:10] == today.isoformat()
+        and str(row.get("ts")) not in answered
+        for row in rows
+    )
 
 
 def reply(owed: Owed) -> str:
