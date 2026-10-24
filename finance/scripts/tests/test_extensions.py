@@ -7,7 +7,7 @@ bare `check` lists every hook with its uses."""
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import dedent
 
@@ -212,7 +212,7 @@ def test_check_lists_hooks_with_uses_and_idle(synthetic, run, plant):
     plant(book, "plain", PLAIN)
     measured(run, book, "plain")
     rows = {row["name"]: row for row in run(["check", str(book)])[1]["extensions"]}
-    today = date.today().isoformat()
+    today = datetime.now(UTC).date().isoformat()
     assert rows["hits"]["runs"] == rows["spare"]["runs"] == 1
     assert rows["hits"]["last"][:10] <= today
     assert rows["hits"]["idle"] is False
