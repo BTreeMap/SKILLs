@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import numpy as np
 import pytest
-from btm_finance.data.sources import Throttle, csv, edgar, french, tiingo
+from btm_finance.data.sources import csv, edgar, french, tiingo
 from btm_finance.data.tables import day_of
 
 from btm_corekit import UpstreamError
@@ -175,16 +175,6 @@ def test_csv_config_needs_a_file_and_maps_columns():
     )
     assert rows.close.tolist() == [3.0] and np.isnan(rows.open[0])
     assert rows.adj_factor.tolist() == [1.0]
-
-
-def test_throttle_waits_out_its_interval():
-    now = [0.0]
-    slept: list[float] = []
-    throttle = Throttle(0.1, clock=lambda: now[0], sleep=slept.append)
-    throttle.wait()
-    now[0] = 0.03
-    throttle.wait()
-    assert slept == [pytest.approx(0.07)]
 
 
 @pytest.mark.network

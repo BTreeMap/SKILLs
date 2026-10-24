@@ -15,12 +15,13 @@ from btm_corekit import (
     CommandError,
     Model,
     NonEmpty,
+    Pace,
     Upstream,
     UpstreamError,
     get_bytes,
     signal,
 )
-from btm_finance.data.sources import Throttle, client, not_found
+from btm_finance.data.sources import client, not_found
 from btm_finance.data.tables import EventRows, Loaded, concat_events, day_of, texts
 
 TICKERS = "https://www.sec.gov/files/company_tickers.json"
@@ -139,8 +140,8 @@ def parse_facts(data: bytes, symbol: str, tags: Sequence[str], where: str) -> Ev
 
 
 def fetch(config: EdgarConfig, symbols: Sequence[str]) -> Loaded:
-    throttle = Throttle(INTERVAL)
-    throttle.wait()
+    pace = Pace(INTERVAL)
+    pace.wait()
     tickers = parse_tickers(get_bytes(client(), TICKERS, CAP))
     parts: list[EventRows] = []
     for symbol in symbols:
@@ -149,7 +150,7 @@ def fetch(config: EdgarConfig, symbols: Sequence[str]) -> Loaded:
             signal(f"edgar: no CIK for {symbol}; skipped")
             continue
         url = FACTS.format(cik=cik)
-        throttle.wait()
+        pace.wait()
         try:
             payload = get_bytes(client(), url, CAP)
         except CommandError as err:

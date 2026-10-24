@@ -15,12 +15,13 @@ from btm_corekit import (
     CommandError,
     Model,
     NonEmpty,
+    Pace,
     Upstream,
     UpstreamError,
     get_bytes,
     signal,
 )
-from btm_finance.data.sources import Throttle, client, not_found
+from btm_finance.data.sources import client, not_found
 from btm_finance.data.tables import (
     Bars,
     EventRows,
@@ -126,12 +127,12 @@ def fetch(symbols: Sequence[str], since: date, today: date) -> Loaded:
         "endDate": today.isoformat(),
         "format": "json",
     }
-    throttle = Throttle(INTERVAL)
+    pace = Pace(INTERVAL)
     bars: list[Bars] = []
     events: list[EventRows] = []
     for symbol in symbols:
         url = PRICES.format(ticker=symbol.lower().replace(".", "-"))
-        throttle.wait()
+        pace.wait()
         try:
             payload = get_bytes(client(), url, CAP, params, headers)
         except CommandError as err:

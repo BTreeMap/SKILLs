@@ -67,6 +67,7 @@ from btm_corekit.net.http import (
     get_bytes,
     stream,
 )
+from btm_corekit.net.pace import Pace, patient
 from btm_corekit.net.wire import Upstream, json_body
 from btm_corekit.records.acceptance import Acceptance, Named, Pool, salvage, suggest
 from btm_corekit.records.digest import CLUSTER_CAP, Item, digest
@@ -160,6 +161,7 @@ __all__ = [
     "Named",
     "NonEmpty",
     "Optional",
+    "Pace",
     "Parser",
     "Passage",
     "Pool",
@@ -222,6 +224,7 @@ __all__ = [
     "parse_model",
     "parse_with",
     "passages",
+    "patient",
     "prefixed_number",
     "read_jsonl",
     "read_shelf",
