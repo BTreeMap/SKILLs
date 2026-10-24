@@ -60,20 +60,23 @@ from btm_finance.brief import (
 from btm_finance.data.assemble import UNIVERSE as UNIVERSE_FILE
 from btm_finance.data.assemble import assemble, parse_universe
 from btm_finance.data.panel import Events, Panel
+from btm_finance.data.posts import current as current_posts
 from btm_finance.data.raw import (
     Entry,
     Manifest,
     data_snapshot,
     default_since,
     read_manifest,
+    read_posts,
     read_returns,
     returns_path,
     sha256_of,
+    snapshotted,
     store,
     verify_all,
     write_returns,
 )
-from btm_finance.data.sources import csv, edgar, french, tiingo
+from btm_finance.data.sources import csv, edgar, french, telegram, tiingo
 from btm_finance.data.tables import (
     Days,
     Floats,
@@ -138,6 +141,7 @@ from btm_finance.models import (
     Preferences,
     Status,
     StrategyConfig,
+    TelegramConfig,
     baseline_hypothesis,
     commission_ceiling,
 )
@@ -820,24 +824,36 @@ def config_json(raw: str) -> dict[str, Any]:
     return data
 
 
-def fetched(book: Book, source: str, raw: str | None, since: date) -> Loaded:
+def fetched(
+    book: Book, manifest: Manifest, source: str, raw: str | None, since: date
+) -> tuple[Loaded, dict[str, Any]]:
+    """What one source yields, and the receipt fields of its own: `since`
+    for a dated source, `channels` and `requests` for telegram."""
+    dated = {"since": since.isoformat()}
     if source not in set(Source):
-        return book_source(book, source, raw, since)
+        return book_source(book, source, raw, since), dated
     match Source(source):
         case Source.CSV:
             if raw is None:
                 raise CommandError("load csv needs --config:file naming bars or events")
-            return csv.fetch(config_of(csv.CsvConfig, raw))
+            return csv.fetch(config_of(csv.CsvConfig, raw)), dated
         case Source.FRENCH:
-            return french.fetch(config_of(french.FrenchConfig, raw))
+            return french.fetch(config_of(french.FrenchConfig, raw)), dated
         case Source.EDGAR:
             edgar_config = config_of(edgar.EdgarConfig, raw)
             symbols = universe_symbols(book, edgar_config.symbols)
-            return edgar.fetch(edgar_config, symbols)
+            return edgar.fetch(edgar_config, symbols), dated
         case Source.TIINGO:
             tiingo_config = config_of(tiingo.TiingoConfig, raw)
             symbols = universe_symbols(book, tiingo_config.symbols)
-            return tiingo.fetch(symbols, since, datetime.now(UTC).date())
+            return tiingo.fetch(symbols, since, datetime.now(UTC).date()), dated
+        case Source.TELEGRAM:
+            given = None if raw is None else config_of(TelegramConfig, raw)
+            config = telegram.channels_of(given, load_preferences(book).telegram)
+            held = current_posts(read_posts(book, manifest))
+            gathered = telegram.fetch(config, held)
+            extra = {"channels": gathered.report, "requests": gathered.requests}
+            return Loaded(None, None, gathered.posts), extra
 
 
 def cmd_load(args: argparse.Namespace) -> int:
@@ -846,27 +862,37 @@ def cmd_load(args: argparse.Namespace) -> int:
     manifest = read_manifest(book)
     verified = verify_all(book, manifest)
     today = datetime.now(UTC).date()
-    since: date = args.since or default_since(manifest, source, today)
-    if since > today:
-        raise CommandError(f"--since {since} is after today; nothing to load")
     raw = text(CONFIG, args)
-    loaded, dropped = fetched(book, source, raw, since).since(day_of(since))
+    if source == Source.TELEGRAM:
+        if args.since is not None:
+            raise CommandError(
+                "load telegram takes no --since: bound each channel with since "
+                "or limit in its config"
+            )
+        since = today
+    else:
+        since = args.since or default_since(manifest, source, today)
+        if since > today:
+            raise CommandError(f"--since {since} is after today; nothing to load")
+    found, extra = fetched(book, manifest, source, raw, since)
+    loaded, dropped = found.since(day_of(since))
     if dropped:
         signal(f"{dropped} row(s) before {since} dropped; pass an earlier --since")
     manifest, added = store(book, source, loaded, since=since, today=today)
     if not added:
-        signal(f"{source} yielded no rows from {since}; nothing written")
+        window = f" from {since}" if "since" in extra else ""
+        signal(f"{source} yielded no rows{window}; nothing written")
     emit(
         {
             "book": book.meta.id,
             "source": source,
-            "since": since.isoformat(),
+            **extra,
             "files": [
                 {"path": e.path, "rows": e.rows, "sha256": e.sha256} for e in added
             ],
             "rows": {
                 table.value: sum(e.rows for e in added if e.table == table)
-                for table in (Table.BARS, Table.EVENTS)
+                for table in (Table.BARS, Table.EVENTS, Table.POSTS)
             },
             "verified": verified,
             "data_snapshot": data_snapshot(manifest),
@@ -1702,7 +1728,7 @@ def drift_of(
         problems.append(f"extension {', '.join(moved_hooks)}")
     for key in hooks.unrecorded(line.extensions, present):
         signal(f"{key} is new since the run; the repeat leaves it out")
-    sources = [e for e in manifest.files if e.table != Table.RETURNS]
+    sources = snapshotted(manifest)
     stamp = str(row.get("ts", ""))
     problems += data_drift(
         line.data_snapshot,
@@ -2035,9 +2061,15 @@ def build_parser() -> argparse.ArgumentParser:
     load.add_argument(
         "--since",
         type=iso_day,
-        help="first date to keep; default the day after the source's last",
+        help="first date to keep; default the day after the source's last; "
+        "refused for telegram",
     )
-    add_slot(load, CONFIG, "JSON object; required for csv: bars, events, columns")
+    add_slot(
+        load,
+        CONFIG,
+        "JSON object; required for csv: bars, events, columns; telegram: "
+        "channels, requests, replacing preferences.json telegram",
+    )
 
     return parser
 

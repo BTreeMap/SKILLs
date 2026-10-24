@@ -15,7 +15,7 @@ from pydantic import (
     StringConstraints,
 )
 
-from btm_corekit import Model, Named, NonEmpty, Slug, Trimmed
+from btm_corekit import Model, Named, NonEmpty, Positive, Slug, Trimmed
 
 
 class Action(StrEnum):
@@ -184,6 +184,29 @@ class Exclusions(Model):
     countries: Texts = ()
 
 
+Channel = Annotated[str, StringConstraints(pattern=r"^[A-Za-z][A-Za-z0-9_]{3,31}$")]
+"""A public Telegram username, Telegram's own rule; it enters a URL as is."""
+
+
+class Bound(Model):
+    """How far back one channel's history reaches: posts dated before `since`
+    are never stored; `limit` stops backfill once that many are held."""
+
+    since: date | None = None
+    limit: Positive | None = None
+
+    def model_post_init(self, _context: object) -> None:
+        if self.since is None and self.limit is None:
+            raise ValueError("give since (YYYY-MM-DD), limit (posts), or both")
+
+
+class TelegramConfig(Model):
+    """`requests` caps one load's pages across every channel."""
+
+    channels: dict[Channel, Bound] = Field(default_factory=dict)
+    requests: Positive = 300
+
+
 class Preferences(Model):
     """`preferences.json`, edited by hand on the operator's word; extras
     survive."""
@@ -193,6 +216,7 @@ class Preferences(Model):
     focus_sectors: Texts
     exclusions: Exclusions
     cadence: Cadence
+    telegram: TelegramConfig | None = None
 
 
 class Family(Model):

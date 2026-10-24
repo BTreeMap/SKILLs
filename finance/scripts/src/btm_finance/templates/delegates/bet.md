@@ -12,7 +12,8 @@ with its reason. Question may scope to one held name.
 - `$R check "$B"` (`families`: `trials_used` against `trials`),
   `$R check --schema record`, `limits.json`.
 - `research/`, ledger through `api.ledger`, prices and fundamentals through
-  `api.research(book)`; public sources.
+  `api.research(book)`, channel posts through `api.posts(book)`; public
+  sources.
 - Never held-out list.
 
 ## Writes

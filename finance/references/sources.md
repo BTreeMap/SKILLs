@@ -1,18 +1,22 @@
 # Sources
 
-`load <source>` takes built-in `csv`, `french`, `edgar`, `tiingo`, or a book
-source under `lib/sources/`. Every source lands in same raw store.
+`load <source>` takes built-in `csv`, `french`, `edgar`, `tiingo`,
+`telegram`, or a book source under `lib/sources/`. Every source lands in
+same raw store.
 
 ## Raw store
 
 ```text
 data/raw/<source>/<stem>.bars.parquet     symbol, date, open, high, low, close, volume, adj_factor, exchange
 data/raw/<source>/<stem>.events.parquet   symbol, field, event_time, knowledge_time, value
+data/raw/telegram/<stem>.posts.jsonl      one post per line, keys sorted
 data/manifest.json                        per file: path, sha256, rows, source, table, loaded_at, since, through
 ```
 
 - `stem` is load day (UTC); second load same day takes `<day>-2`, then `-3`.
   File never overwritten. Load yielding no rows writes nothing.
+- `data_snapshot` leaves posts files out, as it leaves runs' returns out: no
+  strategy reads posts through `Market`.
 - Every `load` re-hashes every listed file first. Changed bytes or missing
   file: one `integrity` line in `ledger/incidents.jsonl`, exit 1 naming
   file, nothing fetched. File stays in place: tell operator, never delete or
@@ -126,6 +130,43 @@ default `universe.csv`.
   needs several nights or paid tier. Load is all or nothing: exit 2 writes
   nothing, rerun same command. Ticker unknown to Tiingo: `signal:` and
   skipped. Exchange column empty: set it in `universe.csv`.
+
+## telegram
+
+Public Telegram channels through no-login web preview
+`https://t.me/s/<channel>`. Channels live in `preferences.json` key
+`telegram`, operator-owned: add channel on operator's word, record
+`override`. `--config:file` takes same object and replaces that value whole.
+`--since` refused: bounds are per channel.
+
+```json
+{"telegram": {"channels": {"Some_Channel": {"since": "2026-10-09"}, "other_channel": {"limit": 2000}}, "requests": 300}}
+```
+
+- Channel key: public username, `^[A-Za-z][A-Za-z0-9_]{3,31}$`.
+- Bound: `since` (date; older posts never stored), `limit` (posts held;
+  backfill stops at first page reaching it, whole page kept), or both,
+  whichever stops first. `limit` bounds backfill only; every new post is
+  always taken.
+- Each load per channel, in config order: takes every post newer than store
+  holds, then walks history back until bound or channel's first post.
+  `requests` (default 300, one page per second) caps pages per load across
+  channels. Budget spent with bound open: `signal:` naming channel, oldest
+  id and date reached; next `load telegram` continues. Store is checkpoint;
+  nothing else is written.
+- Receipt `channels`: per channel `new`, `held`, `first`, `last` dates,
+  `bound` `reached` or `open`; `requests` pages spent.
+- Post: `channel`, `id`, `date` (ISO with offset), `text` (may be empty),
+  `links`, `media` kinds (`photo`, `video`, `voice`, `document`, `poll`,
+  `sticker`, `location`, `unsupported`), `views`, `author`,
+  `forwarded_from`, `reply_to`, `preview` (`url`, `site`, `title`),
+  `edited`. Read through `api.posts(book)`; same `(channel, id)` in two
+  files: latest load wins.
+- Traps: preview withheld for some channels: exit 1 naming channel. Ids skip
+  deleted and service posts: no gap to report. Post stored once is never
+  refreshed: later edits and view counts unseen. Media files not kept.
+  Markup undocumented: `signal:` on dateless posts skipped, and posts all
+  without text, are early warnings; page without history exits 2.
 
 ## Book source
 

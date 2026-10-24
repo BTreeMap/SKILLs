@@ -15,6 +15,9 @@ Book readers, all read-only; append to the ledger only through `record`:
 - `research(book)`: research names' bars and events, built once;
   `.at(day)` is the `Market` on the last bar on or before `day`, `.dates`
   the bar dates. Held-out names never enter it.
+- `posts(book, channel=None, since=None)`: newest-wins channel posts from
+  `load telegram`, ascending by channel and id; `since` a date cut on the
+  post's UTC day.
 """
 
 from __future__ import annotations
@@ -30,6 +33,8 @@ from btm_corekit import CommandError
 from btm_finance import ledger as lines
 from btm_finance.data.assemble import assemble
 from btm_finance.data.panel import Events, History, Panel
+from btm_finance.data.posts import Post, current, of_channel
+from btm_finance.data.raw import read_manifest, read_posts
 from btm_finance.data.tables import Days, Floats, date_of, day_of
 from btm_finance.ledger import Kind, Row
 from btm_finance.store import Book, held_out_list, open_book, read_bytes, run_files
@@ -39,10 +44,12 @@ __all__ = [
     "Book",
     "History",
     "Market",
+    "Post",
     "Research",
     "ledger",
     "on_dates",
     "open_book",
+    "posts",
     "research",
 ]
 
@@ -274,3 +281,14 @@ def research(book: Book) -> Research:
     hidden = held_out_list(book)
     names = frozenset(name for name in panel.names if name not in hidden)
     return Research(panel.only(names), events.only(names))
+
+
+def posts(
+    book: Book, channel: str | None = None, since: date | None = None
+) -> list[Post]:
+    """Every stored post, re-hashed on read, newest load winning a repeated
+    `(channel, id)`; `channel` matches without case. O(posts bytes)."""
+    rows = current(read_posts(book, read_manifest(book)))
+    if channel is not None:
+        rows = of_channel(rows, channel)
+    return [post for post in rows if since is None or post.day >= since]

@@ -76,7 +76,7 @@ R="env -u VIRTUAL_ENV -u UV_PROJECT_ENVIRONMENT uv run --project $(realpath <ski
 U="${R% btm-finance}"
 B="<book path>"
 $R start "$B" [--cap N] [--universe:file names.csv] [--held-out <path>]
-$R load "$B" <csv|french|edgar|tiingo|book source> [--since YYYY-MM-DD] [--config:file <config.json>]
+$R load "$B" <csv|french|edgar|tiingo|telegram|book source> [--since YYYY-MM-DD] [--config:file <config.json>]
 $R record "$B" --batch:file <batch.json> | --fills:file <table> --proposal <stem>
 $R measure "$B" <strategy> [--agent <name>] [--held-out] [--repeat <run id>] [--reason "<text>"]
 $R check "$B" [<strategy> | <run id> | <date>] [--live | --brief | --propose <date> [--force]]
@@ -88,7 +88,7 @@ $U pytest "$B/tests"
 | Command | Takes | Returns, refuses |
 | --- | --- | --- |
 | `start` | New path; `--cap` default 10000000; `--universe:file` CSV `symbol`, optional `sector`; `--held-out` path outside book | Book id, held-out path and count, `claude_md`, `git` (`init`, `inside`, `absent`), baseline hypothesis id under `new`; seeds `delegates/{bet,author,critique}.md`; commits nothing. Refuses path holding `limits.json`, held-out path inside book |
-| `load` | Built-in source or `lib/sources/<name>.py`; `--since` default day after source's last; `--config:file` required for `csv` | Files with rows and sha256, `data_snapshot`; exit 1 and `integrity` incident when stored file changed or vanished |
+| `load` | Built-in source or `lib/sources/<name>.py`; `--since` default day after source's last, refused for `telegram`; `--config:file` required for `csv`; `telegram` reads channels from `preferences.json` `telegram` unless `--config:file` replaces it | Files with rows and sha256, `data_snapshot`; exit 1 and `integrity` incident when stored file changed or vanished |
 | `record` | One batch; or pasted fills table with `--proposal <stem>`, built into `fills` batch, same gate | `accepted` per kind, `new` ids; rejection names every problem by field path, writes nothing |
 | `measure` | Registered strategy; `--agent` writes `ledger/runs/<agent>.jsonl`; `--held-out` one run per promotion gate; `--repeat` reruns a line, writes nothing; `--reason` passes policy gates | `run_id`, `asset_cap`, `trial`, scorecard, `reasons` for null fields, `refused`, `imports`; exit 1 on broken cost or holding bound, line still written |
 | `check` | Nothing, strategy, run id, or proposal date; `--live`; `--brief`; `--propose <date>`; `--schema` needs no book | Continue view, standing, proposal, live report, brief, or new proposal file; every output has advisory `next` |

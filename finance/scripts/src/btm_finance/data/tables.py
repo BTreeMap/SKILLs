@@ -16,6 +16,7 @@ import pyarrow as pa
 from numpy.typing import NDArray
 
 from btm_corekit import CommandError
+from btm_finance.data.posts import Posts
 
 Floats = NDArray[np.float64]
 Days = NDArray[np.int64]
@@ -27,14 +28,17 @@ class Source(StrEnum):
     FRENCH = "french"
     EDGAR = "edgar"
     TIINGO = "tiingo"
+    TELEGRAM = "telegram"
 
 
 class Table(StrEnum):
-    """`returns` is a run's own series, written by `measure`, never loaded."""
+    """`returns` is a run's own series, written by `measure`, never loaded;
+    `posts` is JSONL, every other table parquet."""
 
     BARS = "bars"
     EVENTS = "events"
     RETURNS = "returns"
+    POSTS = "posts"
 
 
 BAR_PRICES = ("open", "high", "low", "close", "volume", "adj_factor")
@@ -228,10 +232,11 @@ class Loaded:
 
     bars: Bars | None
     events: EventRows | None
+    posts: Posts | None = None
 
     def since(self, first: int) -> tuple[Loaded, int]:
         """Rows on or after day `first` (bars by date, events by knowledge
-        time), and how many were dropped."""
+        time), and how many were dropped; posts pass whole."""
         dropped = 0
         bars, events = self.bars, self.events
         if bars is not None:
@@ -242,7 +247,7 @@ class Loaded:
             mask = events.knowledge_time >= first
             dropped += int((~mask).sum())
             events = events.keep(mask)
-        return Loaded(bars, events), dropped
+        return Loaded(bars, events, self.posts), dropped
 
 
 def concat_bars(parts: Sequence[Bars]) -> Bars | None:

@@ -272,6 +272,7 @@ version = "0.1.0"
 source = { editable = "finance/scripts" }
 dependencies = [
     { name = "btm-corekit" },
+    { name = "lxml" },
     { name = "numpy" },
     { name = "pyarrow" },
 ]
@@ -279,6 +280,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "btm-corekit", editable = ".corekit" },
+    { name = "lxml", specifier = ">=6,<7" },
     { name = "numpy", specifier = ">=2.1,<2.5" },
     { name = "pyarrow", specifier = ">=18" },
 ]

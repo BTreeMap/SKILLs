@@ -1,5 +1,5 @@
 """Kernel of a slow-money research book: layout, ledger, scorecard, sizing,
-and the views an agent runs its loop from, in six verbs.
+and the views an agent runs its loop from, in five verbs.
 
 The book is a directory the agent extends; this package holds what every
 book shares. `record` is the ledger's only writer and accepts a batch only

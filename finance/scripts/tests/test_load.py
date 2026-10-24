@@ -56,7 +56,7 @@ def test_csv_round_trips_through_the_store_and_assembly(tmp_path, book, run):
     cfg = config(tmp_path, "one", bars=BARS, events=EVENTS)
     code, receipt, err = load(run, book, cfg)
     assert code == 0, err
-    assert receipt["rows"] == {"bars": 3, "events": 2}
+    assert receipt["rows"] == {"bars": 3, "events": 2, "posts": 0}
     paths = [f["path"] for f in receipt["files"]]
     assert paths == [f"data/raw/csv/{Path(p).name}" for p in paths] and all(
         (book / p).is_file() for p in paths

@@ -148,7 +148,7 @@ def test_a_book_source_loads_through_load(book, run, tmp_path):
     argv = ["load", str(book), "mine", "--since", "2024-01-02"]
     code, receipt, err = run([*argv, "--config:file", str(config)])
     assert code == 0, err
-    assert receipt["rows"] == {"bars": 1, "events": 0}
+    assert receipt["rows"] == {"bars": 1, "events": 0, "posts": 0}
     (entry,) = read_manifest(open_book(str(book))).files
     assert (entry.source, entry.path.split("/")[:3]) == (
         "mine",

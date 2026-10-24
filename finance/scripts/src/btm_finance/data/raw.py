@@ -1,5 +1,5 @@
-"""The raw store: immutable parquet files under `data/raw/<source>/`, listed
-with their sha256 in `data/manifest.json`; every read re-hashes the bytes.
+"""The raw store: immutable parquet or JSONL files under `data/raw/<source>/`,
+listed with their sha256 in `data/manifest.json`; every read re-hashes them.
 
 A mismatch or a missing file appends one incident line and raises: exit 1
 naming the file, which stays in place for the operator to judge.
@@ -29,6 +29,7 @@ from btm_corekit import (
     parse_model,
     write_atomic,
 )
+from btm_finance.data.posts import Posts
 from btm_finance.data.tables import (
     RETURNS_SCHEMA,
     SCHEMAS,
@@ -76,13 +77,19 @@ def sha256_of(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+UNSNAPSHOT = frozenset({Table.RETURNS, Table.POSTS})
+"""Tables no strategy reads through `Market`."""
+
+
+def snapshotted(manifest: Manifest) -> list[Entry]:
+    return [entry for entry in manifest.files if entry.table not in UNSNAPSHOT]
+
+
 def data_snapshot(manifest: Manifest) -> str:
     """sha256 over the sorted digests of source files, one per line: names and
-    order of loads do not move it, nor do runs' returns files; any byte of any
-    source file does."""
-    lines = "\n".join(
-        sorted(e.sha256 for e in manifest.files if e.table != Table.RETURNS)
-    )
+    order of loads do not move it, nor do returns or posts files; any byte of
+    any other source file does."""
+    lines = "\n".join(sorted(e.sha256 for e in snapshotted(manifest)))
     return sha256_of(lines.encode("ascii"))
 
 
@@ -185,20 +192,27 @@ def load_order(manifest: Manifest) -> list[Entry]:
 
 
 def read_store(book: Book, manifest: Manifest) -> Stored:
+    """Bars and events; returns and posts files are left unread."""
     bars: list[tuple[int, Bars]] = []
     events: list[tuple[int, EventRows]] = []
     for rank, entry in enumerate(load_order(manifest)):
-        if entry.table == Table.RETURNS:
-            continue
-        table = read_entry(book, entry)
         match entry.table:
             case Table.BARS:
-                bars.append((rank, Bars.of(table)))
+                bars.append((rank, Bars.of(read_entry(book, entry))))
             case Table.EVENTS:
-                events.append((rank, EventRows.of(table)))
-            case Table.RETURNS:
+                events.append((rank, EventRows.of(read_entry(book, entry))))
+            case Table.RETURNS | Table.POSTS:
                 continue
     return Stored(bars, events)
+
+
+def read_posts(book: Book, manifest: Manifest) -> list[tuple[int, Posts]]:
+    """Every posts file, re-hashed, with its load rank. O(posts bytes)."""
+    return [
+        (rank, Posts.of(verified_bytes(book, entry), entry.path))
+        for rank, entry in enumerate(load_order(manifest))
+        if entry.table == Table.POSTS
+    ]
 
 
 def parquet_bytes(table: pa.Table) -> bytes:
@@ -216,15 +230,37 @@ def write_new_file(path: Path, data: bytes) -> None:
         os.fsync(handle.fileno())
 
 
-def tables_of(loaded: Loaded) -> list[tuple[Table, pa.Table, date]]:
-    """Each non-empty table with the last date it covers."""
-    found: list[tuple[Table, pa.Table, date]] = []
+@dataclass(frozen=True, slots=True)
+class Payload:
+    """One table's file bytes; `since` None takes the load's own."""
+
+    table: Table
+    data: bytes
+    rows: int
+    since: date | None
+    through: date
+
+    @property
+    def suffix(self) -> str:
+        return "jsonl" if self.table == Table.POSTS else "parquet"
+
+
+def tables_of(loaded: Loaded) -> list[Payload]:
+    """Each non-empty table as file bytes with the dates it covers."""
+    found: list[Payload] = []
     if loaded.bars is not None and len(loaded.bars):
         last = date_of(int(loaded.bars.date.max()))
-        found.append((Table.BARS, loaded.bars.arrow(), last))
+        data = parquet_bytes(loaded.bars.arrow())
+        found.append(Payload(Table.BARS, data, len(loaded.bars), None, last))
     if loaded.events is not None and len(loaded.events):
         last = date_of(int(loaded.events.knowledge_time.max()))
-        found.append((Table.EVENTS, loaded.events.arrow(), last))
+        data = parquet_bytes(loaded.events.arrow())
+        found.append(Payload(Table.EVENTS, data, len(loaded.events), None, last))
+    if loaded.posts is not None and len(loaded.posts):
+        posts = loaded.posts
+        found.append(
+            Payload(Table.POSTS, posts.jsonl(), len(posts), posts.first, posts.last)
+        )
     return found
 
 
@@ -274,20 +310,19 @@ def stored_entries(  # noqa: PLR0913 - one load's facts
     stem = stem_for(taken, today)
     stamp = now_iso()
     added: list[Entry] = []
-    for table, data, last in tables_of(loaded):
-        payload = parquet_bytes(data)
-        path = directory / f"{stem}.{table.value}.parquet"
-        write_new_file(path, payload)
+    for payload in tables_of(loaded):
+        path = directory / f"{stem}.{payload.table.value}.{payload.suffix}"
+        write_new_file(path, payload.data)
         added.append(
             Entry(
                 path=book.relative(path),
-                sha256=sha256_of(payload),
-                rows=data.num_rows,
+                sha256=sha256_of(payload.data),
+                rows=payload.rows,
                 source=str(source),
-                table=table,
+                table=payload.table,
                 loaded_at=stamp,
-                since=since,
-                through=last,
+                since=payload.since or since,
+                through=payload.through,
             )
         )
     return added

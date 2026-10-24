@@ -7,9 +7,9 @@
   book.json                   marker: book id, created, package version at start, held-out path
   AGENTS.md                   standing instruction; CLAUDE.md links to it (fallback line "Read AGENTS.md.")
   limits.json                 asset cap, bounds, thresholds, sizing, families
-  preferences.json            focus_sectors, exclusions, cadence; edited on operator's word
+  preferences.json            focus_sectors, exclusions, cadence, telegram channels; edited on operator's word
   universe.csv                copy of start's --universe:file
-  data/raw/<source>/          immutable parquet per load (sources)
+  data/raw/<source>/          immutable parquet, or jsonl for posts, per load (sources)
   data/returns/<run_id>.parquet  each run's gross and net series, immutable
   data/manifest.json          sha256, rows, dates per stored file; /data is gitignored, digests guard it
   data/features/              materialized features
@@ -36,8 +36,8 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
   reads `research`.
 - `runs.jsonl` is lead's; each delegate's `measure --agent` writes own file;
   views read union.
-- `data_snapshot` hashes `data/raw/` files only; returns files never move
-  it.
+- `data_snapshot` hashes bars and events files only; returns and posts files
+  never move it.
 - `start` writes layout, baseline strategy (`status` `research`) and its
   hypothesis (kill date one year out), held-out list (per sector, first
   quarter of universe by symbol sort, half rounded up), `git init -b main`
@@ -47,7 +47,9 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/btm-skills/finance/<book-id>/held-out.json
 `ledger(book, kind)` newest-wins rows of one kind, superseded lines dropped
 (`run` joins every runs file, oldest first); `research(book).at(day)`
 `Market` on last bar on or before `day` over research names, `.dates` bar
-dates. None serves held-out names.
+dates; `posts(book, channel=None, since=None)` newest-wins channel posts,
+ascending by channel and id, `since` cutting on post date. None serves
+held-out names.
 
 ## Ledger lines
 

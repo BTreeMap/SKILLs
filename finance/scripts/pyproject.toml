@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 license = "MIT"
 # numpy below 2.5: its stubs use the 3.12 `type` statement, and the workspace
 # typechecks at python_version 3.11; lift with that floor.
-dependencies = ["btm-corekit", "numpy>=2.1,<2.5", "pyarrow>=18"]
+dependencies = ["btm-corekit", "lxml>=6,<7", "numpy>=2.1,<2.5", "pyarrow>=18"]
 
 [project.scripts]
 btm-finance = "btm_finance.cli:main"
