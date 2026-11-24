@@ -55,6 +55,7 @@ env:
 
 jobs:
   fix:
+    name: Check repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -69,7 +70,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v9.0.0
 
-      - name: Apply every fixer
+      - name: Apply automatic fixes
         # Fixers never fail this job. `ruff check --fix` and the gate exit
         # nonzero on findings they cannot fix, but that verdict belongs to the
         # assertion step below, once the repairs are collected. Only safe fixes
@@ -80,7 +81,7 @@ jobs:
           uvx "ruff@${RUFF_VERSION}" format .
           uv run --project .github/gate btm-repo-gate fix || true
 
-      - name: Collect the repairs
+      - name: List files changed by automatic fixes
         id: collect
         # The repaired files cross to the writing job as one JSON value: the
         # tree entries the Git Data API accepts, so that job adds no policy of
@@ -99,7 +100,7 @@ jobs:
             case "${status}" in
               ' M' | 'M ' | 'MM' | 'AM' | 'A ' | '??') ;;
               *)
-                echo "::warning::unexpected git status '${status}' for ${path}; leaving it uncommitted"
+                echo "::warning::Skipped ${path} in the fix commit: unhandled Git status '${status}'. Review the change locally."
                 continue
                 ;;
             esac
@@ -122,17 +123,18 @@ jobs:
           # instead of letting the platform truncate a repair into corruption.
           size=$(wc -c < "${entries}")
           if [ "${size}" -gt 524288 ]; then
-            echo "::error::repairs total ${size} bytes, over the 512 KB this workflow carries in one run; apply them locally with .github/check.sh"
+            echo "::error::Automatic fixes total ${size} bytes, above the 512 KiB limit. Run .github/check.sh locally and commit the fixes."
             exit 1
           fi
 
           if [ "${count}" -eq 0 ]; then
             echo "changed=false" >> "${GITHUB_OUTPUT}"
-            echo "Nothing to repair." >> "${GITHUB_STEP_SUMMARY}"
+            echo "No automatic fixes needed." >> "${GITHUB_STEP_SUMMARY}"
           else
             echo "changed=true" >> "${GITHUB_OUTPUT}"
             {
-              echo "Repaired ${count} file(s):"
+              echo "### Files changed by automatic fixes (${count})"
+              echo
               jq -r '.[] | "- `\(.path)`"' "${entries}"
             } >> "${GITHUB_STEP_SUMMARY}"
           fi
@@ -142,7 +144,7 @@ jobs:
             echo 'ENTRIES_JSON'
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Assert what no fixer can settle
+      - name: Run tests, lint, and repository checks
         # The sole judge, run against the repaired tree, so it reports only
         # what a person must decide. It is the chain contributors run before
         # a commit, at this workflow's ruff pin. Its fixers find nothing left
@@ -160,7 +162,7 @@ jobs:
           RUFF_OUTPUT_FORMAT: github
         run: .github/check.sh --keep-going
 
-      - name: Ask the real services whether they still answer as parsed
+      - name: Test live APIs (non-blocking)
         # Advisory by construction. A mock proves our half of the contract:
         # given this body, the decoder yields this record. It cannot prove
         # the service still sends that body, and only a real call can. So
@@ -171,19 +173,22 @@ jobs:
         run: |
           set -uo pipefail
           if uv run --all-packages pytest -q -m network; then
-            echo "Upstream shapes still parse." >> "${GITHUB_STEP_SUMMARY}"
+            echo "Live API tests passed." >> "${GITHUB_STEP_SUMMARY}"
             exit 0
           fi
-          echo "::warning title=Upstream check failed::A live API test failed. Either a service is down or rate-limited, or it changed shape and a decoder needs updating. This does not block the gate."
+          echo "::warning title=Live API tests failed::This does not block CI. Check the test log for an outage, a rate limit, or a change in an API response."
           {
-            echo '### Upstream check failed'
-            echo 'A live API test did not pass. Rerun locally with:'
-            echo '```'
+            echo '### Live API tests failed (non-blocking)'
+            echo
+            echo 'Check the test log for an outage, a rate limit, or a change in an API response. To rerun locally:'
+            echo
+            echo '```bash'
             echo "uv run --all-packages pytest -m network"
             echo '```'
           } >> "${GITHUB_STEP_SUMMARY}"
 
   commit:
+    name: Publish automatic fixes
     needs: fix
     # Runs even when the assertion above failed: the computed repairs are
     # still correct, and withholding them only makes the remaining human-sized
@@ -194,7 +199,7 @@ jobs:
     permissions:
       contents: write # sole grant: create the repair commit and move the ref
     steps:
-      - name: Commit the repairs and fast-forward the branch
+      - name: Commit automatic fixes
         env:
           GH_TOKEN: ${{ github.token }}
           # Read through the environment, never interpolated into the script.
@@ -223,9 +228,9 @@ jobs:
           }
 
           if ! land; then
-            echo "::warning::${BRANCH} moved or GitHub rejected the update; the repairs are unchanged and the next push recomputes them"
+            echo "::warning::Could not publish automatic fixes to ${BRANCH}. Check the GitHub API error above. The next push will recalculate the fixes."
             exit 0
           fi
 
-          echo "Committed ${commit:0:12} to ${BRANCH}, signed by GitHub." \
+          echo "Published automatic fixes to ${BRANCH} in ${commit:0:12} (signed by GitHub)." \
             | tee -a "${GITHUB_STEP_SUMMARY}"

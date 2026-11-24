@@ -26,8 +26,8 @@ def rule_skill_layout(repo: Repo) -> Iterator[Finding]:
             yield Finding(
                 "skill-layout",
                 skill,
-                "top-level directories are the reserved skill namespace, so this "
-                "needs a SKILL.md or belongs in a dotted directory",
+                "Add a SKILL.md here, or move non-skill files into a directory "
+                "whose name starts with a dot.",
             )
 
 
@@ -41,8 +41,8 @@ def rule_skill_root(repo: Repo) -> Iterator[Finding]:
             yield Finding(
                 "skill-root",
                 str(Path(skill, name)),
-                "skill root holds only SKILL.md, references/, scripts/; move it "
-                "into one of them or into a dotted directory",
+                "Only SKILL.md, references/, and scripts/ belong at the skill root. "
+                "Move it into references/, scripts/, or a top-level dot directory.",
             )
 
 
@@ -88,8 +88,8 @@ def rule_description_budget(repo: Repo) -> Iterator[Finding]:
         yield Finding(
             "frontmatter",
             "SKILL.md descriptions",
-            f"descriptions total {total} characters, over the "
-            f"{DESCRIPTION_BUDGET} budget",
+            f"Skill descriptions total {total} characters. Shorten them to "
+            f"{DESCRIPTION_BUDGET} characters or fewer.",
         )
 
 
@@ -114,7 +114,7 @@ def _frontmatter_judgments(where: str, fields: dict[str, Any]) -> Iterator[Findi
         yield Finding(
             "frontmatter",
             where,
-            f"non-spec fields {unknown}; record such hints under metadata",
+            f"Unsupported fields: {unknown}. Put custom fields under metadata.",
         )
     description = fields.get("description") or ""
     if not description:
@@ -123,7 +123,8 @@ def _frontmatter_judgments(where: str, fields: dict[str, Any]) -> Iterator[Findi
         yield Finding(
             "frontmatter",
             where,
-            f"description is {len(description)} characters, over {DESCRIPTION_LIMIT}",
+            f"Description is {len(description)} characters. Shorten it to "
+            f"{DESCRIPTION_LIMIT} characters or fewer.",
         )
 
 

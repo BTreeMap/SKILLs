@@ -35,6 +35,7 @@ concurrency:
 
 jobs:
   sync:
+    name: Sync the skills submodule
     permissions:
       contents: write
     uses: BTreeMap/SKILLs/.github/workflows/sync-skills.yml@main

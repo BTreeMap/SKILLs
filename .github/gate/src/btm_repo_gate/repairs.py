@@ -76,8 +76,10 @@ class Finding:
     repair: Repair | None = None
 
     def render(self) -> str:
-        mark = "fixable " if self.repair is not None else "blocking"
-        return f"{mark} {self.rule:<14} {self.path}: {self.message}"
+        action = (
+            "Automatic fix available" if self.repair is not None else "Fix manually"
+        )
+        return f"{action} [{self.rule}] {self.path}: {self.message}"
 
 
 def _relative_target(link: Path, dest: Path) -> str:

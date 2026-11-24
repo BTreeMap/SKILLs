@@ -47,14 +47,14 @@ def rule_alias(repo: Repo) -> Iterator[Finding]:
                 yield Finding(
                     "alias",
                     str(link),
-                    "a directory of symlinks stands where the alias belongs",
+                    "This path is a directory of symlinks instead of a single symlink.",
                     RemoveLinkFarm(link),
                 )
             case Occupied():
                 yield Finding(
                     "alias",
                     str(link),
-                    "real content stands where the alias belongs; move it aside",
+                    "Move the existing files aside so this path can be a symlink.",
                 )
     # Per-skill kernel links belong to rule_kernel, not this rule.
     managed = {
@@ -76,6 +76,6 @@ def rule_alias(repo: Repo) -> Iterator[Finding]:
                 yield Finding(
                     "alias",
                     str(orphan),
-                    "names no skill yet holds real content; "
-                    "possibly a mislocated skill directory",
+                    "This path does not match a skill. Check whether these files "
+                    "belong in a top-level skill directory.",
                 )

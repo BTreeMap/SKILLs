@@ -30,28 +30,28 @@ on:
   workflow_call:
     inputs:
       submodule-path:
-        description: Path of the skills submodule in the calling repository.
+        description: Path to the skills submodule in your repository.
         type: string
         required: false
         default: .github/skills
       branches:
         description: >-
-          Whitespace- or comma-separated branch names to sync. Missing
-          branches are skipped, not errors.
+          Branches to update, separated by spaces or commas. Missing
+          branches are skipped.
         type: string
         required: false
         default: main master dev
       upstream-url:
         description: >-
-          Upstream https URL to sync from. Default: the URL the calling
-          repository records for the submodule.
+          HTTPS URL of the skills repository. Defaults to the URL recorded
+          for the submodule.
         type: string
         required: false
         default: ""
       upstream-ref:
         description: >-
-          Upstream branch to track. Default: HEAD, the upstream's own
-          default branch.
+          Branch to track in the skills repository. Defaults to its default
+          branch (HEAD).
         type: string
         required: false
         default: ""
@@ -65,6 +65,7 @@ defaults:
 
 jobs:
   plan:
+    name: Check for submodule updates
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -72,7 +73,7 @@ jobs:
     outputs:
       bumps: ${{ steps.resolve.outputs.bumps }}
     steps:
-      - name: Read branch state (credentialed, read-only)
+      - name: Read the submodule pin on each branch
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCHES: ${{ inputs.branches }}
@@ -80,14 +81,14 @@ jobs:
         run: |
           set -euo pipefail
           note() { printf '%s\n' "$1" | tee -a "${GITHUB_STEP_SUMMARY}"; }
-          skip() { note "- **${b}**: Skipped: $1."; }
+          skip() { note "- \`${b}\`: skipped. $1."; }
 
           repo="repos/${GITHUB_REPOSITORY}"
           : > "${RUNNER_TEMP}/state.tsv"
 
           for b in ${BRANCHES//,/ }; do
             head=$(gh api "${repo}/git/ref/heads/${b}" -q .object.sha 2>/dev/null) \
-              || { skip 'no branch by that name in this repository'; continue; }
+              || { skip 'Could not read this branch. Check that it exists'; continue; }
             # jq is the sole constructor of a branch record, so a partial
             # read is unrepresentable downstream. One read yields both the
             # pinned gitlink and its recorded URL; .gitmodules is never parsed.
@@ -95,11 +96,11 @@ jobs:
                      | jq -r --arg b "${b}" --arg head "${head}" \
                          'select(type == "object" and .type == "submodule")
                           | [$b, $head, .sha, .submodule_git_url] | @tsv') || record=''
-            [ -n "${record}" ] || { skip "no submodule registered at \`${SUBMODULE_PATH}\`"; continue; }
+            [ -n "${record}" ] || { skip "Could not read a submodule at \`${SUBMODULE_PATH}\`. Check the path on this branch"; continue; }
             printf '%s\n' "${record}" >> "${RUNNER_TEMP}/state.tsv"
           done
 
-      - name: Resolve upstream tips (credential-free)
+      - name: Check for newer upstream commits
         id: resolve
         env:
           UPSTREAM_URL: ${{ inputs.upstream-url }}
@@ -108,7 +109,7 @@ jobs:
           set -euo pipefail
           note() { printf '%s\n' "$1" | tee -a "${GITHUB_STEP_SUMMARY}"; }
           # Every branch ends in exactly one status line, warned or not.
-          reject() { m="Not synced: $1."; echo "::warning::${b}: ${m}"; note "- **${b}**: ${m}"; }
+          reject() { m="Not updated. $1."; echo "::warning::${b}: ${m}"; note "- \`${b}\`: ${m}"; }
 
           case "${UPSTREAM_REF}" in
             '' | HEAD) ref=HEAD ;;
@@ -120,21 +121,22 @@ jobs:
             url="${UPSTREAM_URL:-${url}}"
             case "${url}" in
               https://*) ;;
-              *) reject "the upstream URL '${url}' is not https; set the upstream-url input to an https URL"; continue ;;
+              *) reject 'The upstream URL must use HTTPS. Check upstream-url or the recorded submodule URL'; continue ;;
             esac
             # Untrusted: an upstream sha reaches an API call only through
             # this guard. Empty output and a failed fetch are the same case.
             tip=$(git ls-remote "${url}" "${ref}" | awk 'NR == 1 { print $1 }') || tip=''
             case "${tip}" in
-              *[!0-9a-f]* | '') reject "no ${ref} found at ${url}; check the upstream-ref input"; continue ;;
+              *[!0-9a-f]* | '') reject "Could not resolve ${ref} to a commit. Check upstream-ref and the upstream URL"; continue ;;
             esac
-            [ "${tip}" != "${current}" ] || { note "- **${b}**: Already current at ${current:0:12}."; continue; }
+            [ "${tip}" != "${current}" ] || { note "- \`${b}\`: already up to date at \`${current:0:12}\`."; continue; }
             printf '%s\t%s\t%s\t%s\n' "${b}" "${head}" "${current}" "${tip}" >> "${RUNNER_TEMP}/bumps.tsv"
           done < "${RUNNER_TEMP}/state.tsv"
 
           { echo 'bumps<<TSV'; cat "${RUNNER_TEMP}/bumps.tsv"; echo TSV; } >> "${GITHUB_OUTPUT}"
 
   apply:
+    name: Update the submodule
     needs: plan
     if: needs.plan.outputs.bumps != ''
     runs-on: ubuntu-latest
@@ -142,7 +144,7 @@ jobs:
     permissions:
       contents: write # sole grant: create the bump commits and move the refs
     steps:
-      - name: Commit gitlink bumps (GitHub-signed) and fast-forward refs
+      - name: Commit the new submodule pins
         env:
           GH_TOKEN: ${{ github.token }}
           SUBMODULE_PATH: ${{ inputs.submodule-path }}
@@ -151,7 +153,7 @@ jobs:
         run: |
           set -euo pipefail
           note() { printf '%s\n' "$1" | tee -a "${GITHUB_STEP_SUMMARY}"; }
-          reject() { m="Not synced: $1."; echo "::warning::${b}: ${m}"; note "- **${b}**: ${m}"; }
+          reject() { m="Not updated. $1."; echo "::warning::${b}: ${m}"; note "- \`${b}\`: ${m}"; }
 
           repo="repos/${GITHUB_REPOSITORY}"
           while IFS=$'\t' read -r b head current tip; do
@@ -168,6 +170,6 @@ jobs:
                             '{message: $m, tree: $t, parents: [$p]}' \
                           | gh api "${repo}/git/commits" --input - -q .sha) \
               && gh api --method PATCH "${repo}/git/refs/heads/${b}" -f sha="${commit}" -F force=false >/dev/null \
-              || { reject 'GitHub rejected the update (see the error above); retrying on the next scheduled run'; continue; }
-            note "- **${b}**: Updated from ${current:0:12} to ${tip:0:12} (commit ${commit:0:12}, signed by GitHub)."
+              || { reject 'Check the GitHub API error above. The next scheduled run will retry'; continue; }
+            note "- \`${b}\`: updated the submodule from \`${current:0:12}\` to \`${tip:0:12}\` (commit \`${commit:0:12}\`, signed by GitHub)."
           done <<<"${BUMPS}"

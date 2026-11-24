@@ -7,10 +7,9 @@
 #   .github/check.sh               stop at the first failing check
 #   .github/check.sh --keep-going  run every check, fail if any failed
 #
-# A passing check prints one line: its name and the last line of its output,
-# the tail a return pastes. A failing check prints its whole output, then
-# its name. Exit 0 when every check that ran passed, 1 on a failed check, 2
-# on a usage error.
+# A passing check prints its name and the last line of its output. A failing
+# check prints its name and full output. Exit 0 if all checks passed, 1 if
+# any failed, or 2 for incorrect usage.
 #
 # Runs from the repository root wherever it is invoked. RUFF_VERSION, when
 # set (the gate workflow sets it), runs that exact ruff build through uvx;
@@ -62,22 +61,31 @@ check_dashes() {
   hits=$(grep -v '^\./humanize/references/style\.md:' <<<"$hits" || true)
   if [[ -n $hits ]]; then
     printf '%s\n' "$hits"
-    echo "em-dash or en-dash found"
+    echo "Replace the em or en dashes listed above with plain punctuation."
     return 1
   fi
-  echo "no em-dash or en-dash"
+  echo "No em or en dashes found."
 }
 
 checks=(format lint tests types gate lock dashes)
 
 failed=0
 for name in "${checks[@]}"; do
+  case "$name" in
+    format) label="Ruff formatting" ;;
+    lint) label="Ruff lint" ;;
+    tests) label="Tests (no live APIs)" ;;
+    types) label="Type check (mypy)" ;;
+    gate) label="Repository conventions" ;;
+    lock) label="uv lockfile" ;;
+    dashes) label="Dash check" ;;
+  esac
   if "check_$name" >"$log" 2>&1; then
-    printf 'ok   %-7s %s\n' "$name" "$(grep -v '^[[:space:]]*$' "$log" | tail -n 1 || true)"
+    printf 'PASS %s: %s\n' "$label" "$(grep -v '^[[:space:]]*$' "$log" | tail -n 1 || true)"
     continue
   fi
+  echo "FAIL $label"
   cat -- "$log"
-  echo "FAIL $name"
   failed=1
   if [[ $keep_going == false ]]; then
     exit 1

@@ -43,21 +43,24 @@ def report(applied: Sequence[Finding], findings: Sequence[Finding]) -> int:
     repair needs a person.
     """
     for finding in applied:
-        print(f"repaired {finding.rule:<14} {finding.path}", file=sys.stderr)
+        print(
+            f"Fixed [{finding.rule}] {finding.path}: {finding.message}",
+            file=sys.stderr,
+        )
     for finding in sorted(findings, key=lambda f: (f.repair is None, f.rule, f.path)):
         print(finding.render(), file=sys.stderr)
     mechanical = sum(f.repair is not None for f in findings)
     blocking = len(findings) - mechanical
     if mechanical:
         print(
-            f"\n{mechanical} finding(s) are mechanical; run btm-repo-gate fix.",
+            f"\nAutomatic fixes available: {mechanical}. Run btm-repo-gate fix.",
             file=sys.stderr,
         )
     if blocking:
-        print(f"\n{blocking} finding(s) need a human.", file=sys.stderr)
+        print(f"\nFix manually: {blocking}. See the findings above.", file=sys.stderr)
     if findings:
         return 1
-    print("repository conventions hold.", file=sys.stderr)
+    print("Repository conventions passed.", file=sys.stderr)
     return 0
 
 

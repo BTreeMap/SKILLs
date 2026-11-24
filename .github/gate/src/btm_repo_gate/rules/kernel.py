@@ -128,16 +128,15 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
                 yield Finding(
                     "kernel",
                     str(link),
-                    "kernel symlink is legacy; the member manifest declares "
-                    "the dependency",
+                    "Remove the old kernel symlink. The member manifest "
+                    "already declares the dependency.",
                     RemovePath(link),
                 )
             case LinkFarm() | Occupied():
                 yield Finding(
                     "kernel",
                     str(link),
-                    "real content stands at the legacy kernel-symlink path; "
-                    "move it aside",
+                    "Move the existing files out of the old kernel symlink path.",
                 )
     # Checks every module of a consumer, not just its console entry.
     roots = _kernel_consumers(repo)
@@ -149,5 +148,5 @@ def rule_kernel(repo: Repo) -> Iterator[Finding]:
             yield Finding(
                 "kernel",
                 str(path),
-                f"kernel symbol redefined in a consumer: {found}",
+                f"Use the shared kernel definitions instead of redefining: {found}",
             )
