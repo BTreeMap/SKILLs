@@ -10,7 +10,7 @@ dependencies = ["btm-corekit", "httpx>=0.28,<1", "pydantic>=2.9,<3"]
 btm-asd-ste100 = "btm_asd_ste100.cli:main"
 
 [build-system]
-requires = ["uv_build>=0.12.6,<0.13.0"]
+requires = ["uv_build>=0.13.9,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.uv.sources]

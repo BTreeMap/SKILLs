@@ -51,7 +51,7 @@ defaults:
 env:
   # Rule codes and formatting move between ruff releases, so CI names the exact
   # build. ruff.toml states the floor any run must satisfy.
-  RUFF_VERSION: 0.16.1
+  RUFF_VERSION: 0.17.6
 
 jobs:
   fix:

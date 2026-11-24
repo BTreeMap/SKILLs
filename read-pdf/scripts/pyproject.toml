@@ -4,13 +4,13 @@ version = "1.0.0"
 description = "Extract analysis-ready text and metadata from a PDF using pypdf only"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["btm-corekit", "httpx>=0.28,<1", "pypdf[crypto]>=6,<7"]
+dependencies = ["btm-corekit", "httpx>=0.28,<1", "pypdf[crypto]>=7.1.1,<8"]
 
 [project.scripts]
 btm-read-pdf = "btm_read_pdf.cli:main"
 
 [build-system]
-requires = ["uv_build>=0.12.6,<0.13.0"]
+requires = ["uv_build>=0.13.9,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.uv.sources]

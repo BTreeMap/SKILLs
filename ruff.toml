@@ -10,7 +10,7 @@
 
 # Rule codes and formatting both move between ruff releases, so a run older
 # than this would disagree with CI about a clean tree.
-required-version = ">=0.16"
+required-version = ">=0.17.6"
 
 # Every workspace member declares requires-python >=3.11, so no rule can
 # rewrite a module into syntax its own manifest forbids. Raise this only after

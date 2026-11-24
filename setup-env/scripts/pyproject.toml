@@ -4,13 +4,13 @@ version = "1.0.0"
 description = "Typed, userspace, per-project development environment installer"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = ["btm-corekit", "certifi", "httpx[brotli,http2,socks,zstd]>=0.28,<1"]
+dependencies = ["btm-corekit", "certifi>=2026.10.18", "httpx[brotli,http2,socks,zstd]>=0.28,<1"]
 
 [project.scripts]
 btm-setup-env = "btm_setup_env.cli:main"
 
 [build-system]
-requires = ["uv_build>=0.12.6,<0.13.0"]
+requires = ["uv_build>=0.13.9,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.uv.sources]

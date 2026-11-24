@@ -18,6 +18,14 @@
 # workspace root is not a lexical ancestor. Plumbing members (`.corekit`,
 # `.github/gate`) hold only code, so they are members at their own roots.
 
+[tool.uv]
+# Safe floors for transitive dependencies flagged by the vulnerability audit.
+constraint-dependencies = [
+  "brotli>=1.2.1",
+  "brotlicffi>=1.2.1.0",
+  "urllib3>=2.8.0",
+]
+
 [tool.uv.workspace]
 members = [
   ".corekit",
